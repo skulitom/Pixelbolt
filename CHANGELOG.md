@@ -2,6 +2,19 @@
 
 Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skulitom/Pixelbolt/releases).
 
+## Unreleased
+
+### Live fluids
+
+- **`createLiveFluid(source, { effect, warmup })`** in `src/fluid.js`, exported from the package and from `pixelbolt/fluid`, runs one effect of a fluid source live, a frame at a time, for interactive pages:
+  - `step(n)` advances it;
+  - `push` stirs the flow with a soft disc, and `puff` adds or takes away smoke, heat or water;
+  - `boost` scales a named emitter for some frames;
+  - `render()` returns `{ rgba, keys }`, drawn with the effect's own look, sparks, whitewater and obstacles.
+- It shares the compiler's simulation and makes the same checks as `compileFluid` before simulating, with the same error paths. Pointer inputs out of range are clamped rather than refused, and live runs don't stop at the particle or spark limits. The same calls give the same pixels in Node, Chromium, Firefox and WebKit, and golden hashes of two scripted sessions check that on every CI system. A 128 × 60 steam plume steps in about 7–9 ms on a desktop CPU.
+- `compileFluid`'s output is unchanged: its golden hashes and the showcase GIFs are byte-identical.
+- **Docs:** [live fluids](docs/art-workflow.md#live-fluids) in the art workflow guide, with a note in the authoring guide.
+
 ## 0.9.0 (2026-10-18)
 
 ### Fluid effects

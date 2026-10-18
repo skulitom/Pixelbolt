@@ -6,7 +6,8 @@
 // dissipation and cooling. Liquids (water, splashes, drips, potions) use FLIP particles on the same grid and pressure
 // solve. Fields become pixels through palette ramps and ordered dither. Browser-compatible and deterministic: only
 // + − × ÷ and sqrt, craft.js's polynomial trigonometry and seeded hash, a fixed timestep and fixed iteration counts.
-import { PixelError, renderProject } from './core.js';
+// createLiveFluid runs the same simulation a frame at a time for interactive pages, with pushes, puffs and boosts.
+import { PixelError, renderProject, parseColor } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, random, sinDeg, cosDeg } from './craft.js';
 
@@ -388,10 +389,11 @@ function valueNoise(seed, emitter, frame, salt, x, y) {
 // Where an emitter is this frame, and how strongly it emits: rate or burst, times its pulse. Flicker varies the
 // strength from cell to cell and frame to frame (seeded value noise), so a flame's base breaks into tongues.
 // `along` places an orbiting emitter between frames (it defaults to the frame itself); pulse and flicker keep the frame's.
-function emitterState(e, index, cycle, seed, along = cycle) {
+// `factor` scales the strength, as a live runner's boost does.
+function emitterState(e, index, cycle, seed, along = cycle, factor = 1) {
   let [x, y] = e.at;
   if (e.orbit) { const angle = 360 * along / e.orbit.period + e.orbit.phase; x += e.orbit.radius[0] * cosDeg(angle); y += e.orbit.radius[1] * sinDeg(angle); }
-  let strength = e.strength;
+  let strength = e.strength * factor;
   if (e.pulse) strength *= 1 + e.pulse.amplitude * sinDeg(360 * cycle / e.pulse.period + e.pulse.phase);
   const flicker = (px, py) => (e.flicker ? strength * (1 + e.flicker * (2 * valueNoise(seed, index, cycle, SALT.flicker, px, py) - 1)) : strength);
   return { x, y, strength, flicker };
@@ -421,8 +423,8 @@ function push(e, dx, dy, axis, expand) {
 }
 // Divergence per covered cell that sends `expand` pixels per frame out through the emitter's rim.
 const spread = e => e.expand * (e.radius !== null ? 2 / e.radius : 2 * (e.area[0] + e.area[1]) / (e.area[0] * e.area[1]));
-function emitGas(g, state, e, index, cycle, seed, along = cycle, share = 1) {
-  const { W, H, u, v, solid } = g, { d, T, source } = state, here = emitterState(e, index, cycle, seed, along), { x, y, flicker } = here, r = reach(e);
+function emitGas(g, state, e, index, cycle, seed, along = cycle, share = 1, factor = 1) {
+  const { W, H, u, v, solid } = g, { d, T, source } = state, here = emitterState(e, index, cycle, seed, along, factor), { x, y, flicker } = here, r = reach(e);
   const x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(W - 1, Math.ceil(x + r)), y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H - 1, Math.ceil(y + r));
   if (x0 > x1 || y0 > y1) return here;
   // A burst adds its amounts once; a rate emitter raises its cells toward them every frame (a negative amount drains),
@@ -535,8 +537,8 @@ function fillLiquid(state, effect) {
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!solid[j * W + i] && fill.inside(i + 0.5, j + 0.5)) seedCell(state, i, j, PER_CELL, 0, fill.velocity, [effect.seed, 1000 + f, i, j]);
   });
 }
-function emitLiquid(state, e, index, cycle, seed, along = cycle) {
-  const { g } = state, { W, H, solid } = g, here = emitterState(e, index, cycle, seed, along), { x, y, flicker } = here, r = reach(e);
+function emitLiquid(state, e, index, cycle, seed, along = cycle, factor = 1) {
+  const { g } = state, { W, H, solid } = g, here = emitterState(e, index, cycle, seed, along, factor), { x, y, flicker } = here, r = reach(e);
   const x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(W - 1, Math.ceil(x + r)), y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H - 1, Math.ceil(y + r));
   const velocityAt = (px, py) => [push(e, px - x, py - y, 0, e.expand), push(e, px - x, py - y, 1, e.expand)];
   // Particles already inside follow the emitter's push (a jet), or drain away through it.
@@ -821,65 +823,100 @@ function renderFields(effect, base, width, height) {
 // ---- Simulation -------------------------------------------------------------------------------------------------------
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
 const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
+const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
+const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
+const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`;
+
+// One running simulation of an effect, shared by compileFluid and the live runner: the solver's state, the fields the
+// look reads (density, temperature and speed) and the sparks in flight.
+function createRun(effect, width, height, path) {
+  const N = width * height, state = effect.liquid ? createLiquid(effect, width, height) : createGas(effect, width, height);
+  if (effect.liquid) { fillLiquid(state, effect); if (state.full) crowded(path); }
+  return { effect, state, base: [new Float64Array(N), new Float64Array(N), new Float64Array(N)], sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0 };
+}
+// Frame `t` of a run, `cycle` within the effect's cycle: every active emitter adds its share, its strength scaled by
+// `factors[index]` when given. Returns where each emitter was, or null where it was idle, for its sparks.
+function emitFrame(run, t, cycle, factors = null) {
+  const { effect, state } = run, { frames, loop, seed, emitters, liquid } = effect;
+  if (!liquid) state.source.fill(0);
+  return emitters.map((e, index) => {
+    if (!active(e, cycle)) return null;
+    const factor = factors ? factors[index] : 1;
+    const emit = (along, share) => (liquid ? emitLiquid(state, e, index, cycle, seed, along, factor) : emitGas(state.g, state, e, index, cycle, seed, along, share, factor));
+    // An orbiting rate emitter is laid along the path it covered since the last frame, about a pixel apart, so a fast
+    // orbit leaves a smooth trail instead of a string of beads; its expansion is shared out along the way.
+    if (!e.orbit || e.burst || !t || !active(e, loop ? (cycle + frames - 1) % frames : cycle - 1)) return emit(cycle, 1);
+    const steps = Math.max(1, Math.ceil(2 * Math.PI * Math.max(e.orbit.radius[0], e.orbit.radius[1]) / Math.abs(e.orbit.period)));
+    for (let k = 1; k < steps; k++) emit(cycle - 1 + k / steps, 1 / steps);
+    return emit(cycle, 1 / steps);
+  });
+}
+// The solver's substeps for one frame.
+function solveFrame(run) {
+  const { effect, state } = run, dt = 1 / effect.substeps;
+  // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
+  if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
+  for (let s = 0; s < effect.substeps; s++) effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
+  if (effect.liquid) run.maxParticles = Math.max(run.maxParticles, state.n);
+}
+const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) : gasFields(run.state, run.base));
+// Sparks move with this frame's flow; then, while `spawning`, new ones join where their emitters were (`here`) and
+// whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
+function sparkFrame(run, here, cycle, spawning) {
+  const { effect, state, base, sparks, totals } = run;
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops);
+  let full = null;
+  if (spawning) {
+    effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
+    if (!full && effect.whitewater.length && !throwWhitewater(state, effect, base[0], sparks, cycle, totals)) full = WHITEWATER_FULL;
+  }
+  totals.maxAlive = Math.max(totals.maxAlive, totals.alive);
+  return full;
+}
+// Draws the sparks through `put(x, y, code)`: a spark is a size × size block in the colour for its age, and a trail
+// streaks back to where it was a frame ago in the next colour of its list. Popped bubbles follow and age a frame.
+function drawSparks(run, put) {
+  for (const p of run.sparks) {
+    // Spray is drawn once it has left the water, and streaks back only from where it was already drawn.
+    if (p.hide && !p.out) continue;
+    const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
+    p.seen = true;
+    if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
+    const head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (s.size - 1) / 2), y0 = Math.floor(p.y - (s.size - 1) / 2);
+    for (let j = 0; j < s.size; j++) for (let i = 0; i < s.size; i++) put(x0 + i, y0 + j, head);
+  }
+  // A popped bubble: the ring around its block, then a droplet off each upper corner.
+  const { pops } = run;
+  for (let k = pops.length - 1; k >= 0; k--) {
+    const b = pops[k], x0 = Math.floor(b.x - (b.size - 1) / 2), y0 = Math.floor(b.y - (b.size - 1) / 2);
+    if (b.age === 0) for (let i = 0; i < b.size; i++) { put(x0 + i, y0 - 1, b.code); put(x0 + i, y0 + b.size, b.code); put(x0 - 1, y0 + i, b.code); put(x0 + b.size, y0 + i, b.code); }
+    else { put(x0 - 1, y0 - 1, b.code); put(x0 + b.size, y0 - 1, b.code); }
+    if (++b.age > 1) pops.splice(k, 1);
+  }
+}
 // Runs one effect and returns its frames' operations plus figures for the metadata.
 function simulate(effect, context) {
-  const { width, height, path } = context, { frames, loop, seed, emitters, liquid, substeps } = effect, N = width * height, dt = 1 / substeps;
-  const state = liquid ? createLiquid(effect, width, height) : createGas(effect, width, height), g = state.g;
-  const crowded = () => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
-  if (liquid) { fillLiquid(state, effect); if (state.full) crowded(); }
+  const { width, height, path } = context, { frames, loop, liquid } = effect, N = width * height;
+  const run = createRun(effect, width, height, path), { state, base } = run;
   // A loop warms up for whole cycles under its periodic forcing, keeps the fields of the last cycle's closing frames,
   // and blends its own closing frames toward them: the last frame then flows into frame 0 as that cycle's did.
   const begin = effect.warmup * frames, total = simulatedFrames(effect), blend = effect.blend;
-  const base = [new Float64Array(N), new Float64Array(N), new Float64Array(N)], tail = loop ? Array.from({ length: blend }, () => base.map(() => new Float64Array(N))) : [];
-  const chars = Array.from({ length: frames }, () => null), sparks = [], pops = [], drawn = Array.from({ length: frames }, () => []), totals = { alive: 0, spawned: 0, maxAlive: 0 };
+  const tail = loop ? Array.from({ length: blend }, () => base.map(() => new Float64Array(N))) : [];
+  const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []);
   const peak = { density: 0, temperature: 0, speed: 0 };
-  let maxParticles = liquid ? state.n : 0;
   for (let t = 0; t < total; t++) {
     const cycle = loop ? t % frames : t, out = t - begin, recording = !loop || (out >= 0 && out < frames);
-    if (!liquid) state.source.fill(0);
-    const here = emitters.map((e, index) => {
-      if (!active(e, cycle)) return null;
-      const emit = (along, share) => (liquid ? emitLiquid(state, e, index, cycle, seed, along) : emitGas(g, state, e, index, cycle, seed, along, share));
-      // An orbiting rate emitter is laid along the path it covered since the last frame, about a pixel apart, so a fast
-      // orbit leaves a smooth trail instead of a string of beads; its expansion is shared out along the way.
-      if (!e.orbit || e.burst || !t || !active(e, loop ? (cycle + frames - 1) % frames : cycle - 1)) return emit(cycle, 1);
-      const steps = Math.max(1, Math.ceil(2 * Math.PI * Math.max(e.orbit.radius[0], e.orbit.radius[1]) / Math.abs(e.orbit.period)));
-      for (let k = 1; k < steps; k++) emit(cycle - 1 + k / steps, 1 / steps);
-      return emit(cycle, 1 / steps);
-    });
-    // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
-    if (liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
-    for (let s = 0; s < substeps; s++) liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
-    if (liquid) { maxParticles = Math.max(maxParticles, state.n); if (state.full) crowded(); }
-    if (loop && out < -blend && !sparks.length) continue;
-    liquid ? liquidFields(state, base) : gasFields(state, base);
+    const here = emitFrame(run, t, cycle);
+    solveFrame(run);
+    if (liquid && state.full) crowded(path);
+    if (loop && out < -blend && !run.sparks.length) continue;
+    fieldsOf(run);
     if (loop && out >= -blend && out < 0) { tail[out + blend].forEach((field, f) => field.set(base[f])); continue; }
-    // Sparks move with this frame's flow, then new ones join where their emitters are.
-    moveSparks(sparks, g, base[0], totals, liquid, pops);
-    if (recording) emitters.forEach((e, index) => { if (here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], seed, totals)) fail(path, `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`); });
-    if (recording && effect.whitewater.length && !throwWhitewater(state, effect, base[0], sparks, cycle, totals)) fail(path, `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`);
-    totals.maxAlive = Math.max(totals.maxAlive, totals.alive);
-    // A spark is a size × size block in the colour for its age; a trail streaks back to where it was a frame ago in
-    // the next colour of its list.
-    const list = drawn[(loop ? out : t) % frames], put = (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !effect.front[y * width + x]) list.push(y * width + x, code); };
-    if (loop || t < frames) for (const p of sparks) {
-      // Spray is drawn once it has left the water, and streaks back only from where it was already drawn.
-      if (p.hide && !p.out) continue;
-      const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
-      p.seen = true;
-      if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
-      const head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (s.size - 1) / 2), y0 = Math.floor(p.y - (s.size - 1) / 2);
-      for (let j = 0; j < s.size; j++) for (let i = 0; i < s.size; i++) put(x0 + i, y0 + j, head);
-    }
-    // A popped bubble: the ring around its block, then a droplet off each upper corner.
-    for (let k = pops.length - 1; k >= 0; k--) {
-      const b = pops[k], x0 = Math.floor(b.x - (b.size - 1) / 2), y0 = Math.floor(b.y - (b.size - 1) / 2);
-      if (loop || t < frames) {
-        if (b.age === 0) for (let i = 0; i < b.size; i++) { put(x0 + i, y0 - 1, b.code); put(x0 + i, y0 + b.size, b.code); put(x0 - 1, y0 + i, b.code); put(x0 + b.size, y0 + i, b.code); }
-        else { put(x0 - 1, y0 - 1, b.code); put(x0 + b.size, y0 - 1, b.code); }
-      }
-      if (++b.age > 1) pops.splice(k, 1);
-    }
+    // A looping effect spawns sparks during the recorded cycle only; those still alive after it are drawn from frame 0.
+    const full = sparkFrame(run, here, cycle, recording);
+    if (full) fail(path, full);
+    const list = drawn[(loop ? out : t) % frames];
+    drawSparks(run, (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !effect.front[y * width + x]) list.push(y * width + x, code); });
     if (!recording) continue;
     const frame = loop ? out : t;
     if (loop && frame >= frames - blend) {
@@ -910,13 +947,18 @@ function simulate(effect, context) {
     return { ops, pixels };
   });
   const round = value => Math.floor(value * 1000 + 0.5) / 1000;
+  const { totals } = run;
   return {
-    output, steps: total * substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed) },
-    ...(liquid && { particles: maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }
+    output, steps: total * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed) },
+    ...(liquid && { particles: run.maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }
   };
 }
 
-export function compileFluid(source) {
+// Reads a whole source and checks it as compileFluid does. Each effect is read in turn, checked against the frame and
+// work limits, and passed to `each(name, effect, { width, height, path })`, which returns its frames' operations (or
+// null to leave them empty, as a live runner does). The renderer then checks the recipe, so a live runner gets every
+// check compileFluid makes before simulating, with the same paths and messages.
+function buildRecipe(source, each) {
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'symbols', 'anchor', 'effects', 'sheet'], 'fluid');
   if (source.format !== 'pixelforge-fluid' || source.version !== 1) fail('fluid', 'expected version-1 pixelforge-fluid');
   const palette = source.palette ?? {};
@@ -929,7 +971,7 @@ export function compileFluid(source) {
     if (!Array.isArray(rows) || !rows.length || rows.length > 128 || typeof rows[0] !== 'string' || !rows[0].length || rows.some(row => typeof row !== 'string' || row.length !== rows[0].length)) fail(`fluid.symbols.${name}`, 'expected 1–128 equal-width text rows');
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fluid.effects', `expected 1–${LIMITS.effects} named effects`);
-  const frames = [], animations = {}, metadata = { format: 'pixelforge-fluid-metadata', version: 1, effects: {} }, seen = new Set();
+  const frames = [], animations = {}, seen = new Set();
   let work = 0;
   for (const [name, value] of Object.entries(source.effects)) {
     const path = `fluid.effects.${name}`;
@@ -942,19 +984,198 @@ export function compileFluid(source) {
     // Bounded work: about one update per cell per pressure sweep, per step. The presets need at most 60 million.
     work += width * height * simulatedFrames(effect) * effect.substeps * (effect.iterations + 10);
     if (work > LIMITS.work) fail(path, `the simulations need about ${Math.round(work / 1e6)} million cell updates, more than ${LIMITS.work / 1e6} million; lower frames, warmup, substeps, iterations or the canvas size`);
-    const run = simulate(effect, { width, height, path });
-    const names = run.output.map(({ ops }, i) => {
-      frames.push({ name: `${name}-${i}`, duration: effect.durations[i], ...(ops.length && { ops }) });
+    const ops = each(name, effect, { width, height, path });
+    const names = effect.durations.map((duration, i) => {
+      frames.push({ name: `${name}-${i}`, duration, ...(ops?.[i].length && { ops: ops[i] }) });
       return `${name}-${i}`;
     });
     animations[name] = { frames: names, ...(!effect.loop && { loop: false }) };
+  }
+  const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  renderProject(recipe);
+  return recipe;
+}
+
+export function compileFluid(source) {
+  const metadata = { format: 'pixelforge-fluid-metadata', version: 1, effects: {} };
+  const recipe = buildRecipe(source, (name, effect, context) => {
+    const run = simulate(effect, context);
     metadata.effects[name] = {
       kind: effect.kind, frames: effect.frames, loop: effect.loop, seed: effect.seed, steps: run.steps, ...(effect.loop && { warmup: effect.warmup, blend: effect.blend }),
       peak: run.peak, ...(run.particles !== undefined && { particles: run.particles }), sparks: run.sparks,
       pixels: run.output.map(frame => frame.pixels), ...(!effect.loop && { residue: run.output.at(-1).pixels })
     };
-  }
-  const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
-  renderProject(recipe);
+    return run.output.map(frame => frame.ops);
+  });
   return JSON.parse(JSON.stringify({ recipe, metadata }));
+}
+
+// ---- Live runner ------------------------------------------------------------------------------------------------------
+// Live pushes and puffs draw from their own random streams, keyed apart from the emitters and whitewater.
+const LIVE = 2000;
+// Inputs waiting for the next step; past this, the oldest are dropped.
+const QUEUED = 1024;
+// Pointer-driven inputs clamp to their range instead of failing, so a fast flick can't throw mid-interaction.
+const clamp = (value, path, min, max) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) fail(path, `expected a number (values beyond ${min} to ${max} are clamped)`);
+  return value < min ? min : value > max ? max : value;
+};
+// A soft disc: 1 at its centre, falling smoothly to 0 at its rim.
+const soft = (dx, dy, radius) => { const s = (dx * dx + dy * dy) / (radius * radius); return s >= 1 ? 0 : (1 - s) * (1 - s); };
+// The renderer's alpha compositing (core.js), so render() draws exactly what a compiled frame shows.
+function composite(data, at, color) {
+  const a = color[3] / 255;
+  if (a === 0) return;
+  if (a === 1) { data.set(color, at); return; }
+  const old = data[at + 3] / 255, out = a + old * (1 - a);
+  for (let c = 0; c < 3; c++) data[at + c] = Math.round((color[c] * a + data[at + c] * old * (1 - a)) / out);
+  data[at + 3] = Math.round(out * 255);
+}
+
+// Runs one effect of a source live, a frame at a time, for interactive pages: step it, push its flow, puff smoke or
+// water into it, boost an emitter, and render the current frame with the effect's own look. The same source and the same
+// calls give the same pixels in every engine. Emitters, pulses and orbits cycle with the frame number modulo the
+// effect's frames, as a loop's do (a one-shot repeats); there is no seam to blend, and sparks join on every frame.
+export function createLiveFluid(source, options = {}) {
+  fields(options, ['effect', 'warmup'], 'live');
+  const names = [];
+  let chosen = null;
+  const recipe = buildRecipe(source, (name, effect, context) => {
+    names.push(name);
+    if (!chosen && (options.effect ?? name) === name) chosen = { effect, ...context };
+    return null;
+  });
+  if (!chosen) fail('live.effect', `no effect named ${JSON.stringify(options.effect)}; the source has ${names.join(', ')}`);
+  const { effect, width, height, path } = chosen, { emitters, liquid, seed } = effect, N = width * height;
+  const warmup = options.warmup === undefined ? effect.frames : integer(options.warmup, 'live.warmup', 0, 2048);
+  if (N * warmup * effect.substeps * (effect.iterations + 10) > LIMITS.work) fail('live.warmup', `warming up ${warmup} frames needs more than ${LIMITS.work / 1e6} million cell updates; warm up fewer frames`);
+
+  // Colours by palette key, and the obstacles stamped under and over the fluid, composited in a compiled frame's order.
+  const palette = {}, colours = new Map();
+  for (const [key, value] of Object.entries(recipe.palette)) {
+    const rgba = parseColor(value);
+    palette[key] = `#${rgba.slice(0, rgba[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('')}`;
+    if (key.length === 1) colours.set(key.charCodeAt(0), rgba);
+  }
+  const under = new Uint8ClampedArray(N * 4), underKeys = new Uint16Array(N), over = [];
+  for (const o of effect.obstacles) if (o.draw !== 'none') recipe.symbols[o.symbol].forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) {
+      if (row[i] === '.' || row[i] === ' ') continue;
+      const c = (o.y + j) * width + o.x + i, code = row.charCodeAt(i);
+      if (o.draw === 'under') { composite(under, c * 4, colours.get(code)); underKeys[c] = code; } else over.push(c, code);
+    }
+  });
+
+  const run = createRun(effect, width, height, path), { state } = run, boosts = emitters.map(() => ({ factor: 1, frames: 0 }));
+  let t = 0, queue = [], overlay = [];
+  const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !effect.front[y * width + x]) overlay.push(y * width + x, code); };
+  // One frame: the emitters (boosted), then the queued pushes and puffs in the order they were made, the solver, the
+  // fields and the sparks. Live runs never stop at a limit: particles, sparks and droplets beyond it are not added, and
+  // the limits compileFluid meets while simulating (and the renderer's drawing budget) are not checked.
+  const advance = () => {
+    const cycle = t % effect.frames, here = emitFrame(run, t, cycle, boosts.map(b => (b.frames ? b.factor : 1)));
+    queue.forEach((input, n) => input(n));
+    queue = [];
+    solveFrame(run);
+    fieldsOf(run);
+    sparkFrame(run, here, cycle, true);
+    overlay = [];
+    drawSparks(run, put);
+    for (const b of boosts) if (b.frames) b.frames--;
+    t++;
+  };
+  const enqueue = input => {
+    if (queue.length >= QUEUED) queue.shift();
+    queue.push(input);
+  };
+  const spot = (input, path, keys) => {
+    fields(input, keys, path);
+    return [clamp(input.x, `${path}.x`, -256, 512), clamp(input.y, `${path}.y`, -256, 512), clamp(input.radius ?? 4, `${path}.radius`, 0.5, 64)];
+  };
+  // The cells or faces within `radius` of (x, y): columns i0..i1 and rows j0..j1 of an nx × ny lattice.
+  const around = (x, y, radius, nx, ny) => [Math.max(0, Math.floor(x - radius)), Math.min(nx - 1, Math.ceil(x + radius)), Math.max(0, Math.floor(y - radius)), Math.min(ny - 1, Math.ceil(y + radius))];
+
+  // A push adds velocity to the gas's faces, or to the liquid's particles, with a soft disc falloff.
+  const push = (x, y, radius, vx, vy) => {
+    if (liquid) {
+      for (let k = 0; k < state.n; k++) { const w = soft(state.x[k] - x, state.y[k] - y, radius); if (w) { state.vx[k] += vx * w; state.vy[k] += vy * w; } }
+      return;
+    }
+    const { W, H, u, v, uFixed, vFixed } = state.g;
+    let [i0, i1, j0, j1] = around(x, y, radius, W + 1, H);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const k = j * (W + 1) + i, w = soft(i - x, j + 0.5 - y, radius); if (w && !uFixed[k]) u[k] += vx * w; }
+    [i0, i1, j0, j1] = around(x, y, radius, W, H + 1);
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const k = j * W + i, w = soft(i + 0.5 - x, j - y, radius); if (w && !vFixed[k]) v[k] += vy * w; }
+  };
+  // A gas puff adds density and heat with a soft disc falloff (negative amounts take them away). A liquid puff works as
+  // a liquid emitter's disc does: it fills its cells to `density` (the share filled) with still water, or drains that
+  // share of the particles there when negative, with a soft one-pixel rim.
+  const puff = (x, y, radius, density, temperature, n) => {
+    const { W, H, solid } = state.g, disc = { radius }, [i0, i1, j0, j1] = around(x, y, liquid ? radius + 1 : radius, W, H);
+    if (!liquid) {
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const c = j * W + i, w = soft(i + 0.5 - x, j + 0.5 - y, radius);
+        if (!w || solid[c]) continue;
+        state.d[c] += density * w; state.T[c] += temperature * w;
+        if (state.d[c] < 0) state.d[c] = 0;
+        if (state.T[c] < 0) state.T[c] = 0;
+      }
+    } else if (density < 0) {
+      for (let k = state.n - 1; k >= 0; k--) { const w = coverage(disc, state.x[k] - x, state.y[k] - y); if (w && random(seed, LIVE, t, n, SALT.drain, state.id[k]) < -density * w) removeParticle(state, k); }
+    } else {
+      countCells(state);
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+        const c = j * W + i, want = Math.floor(PER_CELL * density * coverage(disc, i + 0.5 - x, j + 0.5 - y) + 0.5);
+        if (!solid[c] && want > state.cells[c] && !seedCell(state, i, j, want, state.cells[c], [0, 0], [seed, LIVE, t, n, i, j])) return;
+      }
+    }
+  };
+
+  const live = {
+    width, height, kind: effect.kind, palette, frames: effect.frames,
+    // Frames simulated so far, warm-up included; the emitters are at frame `frame % frames` of their cycle.
+    get frame() { return t; },
+    get particles() { return liquid ? state.n : 0; },
+    get sparks() { return run.sparks.length; },
+    step(n = 1) {
+      integer(n, 'step', 0, 2048);
+      for (let k = 0; k < n; k++) advance();
+      return live;
+    },
+    push(input) {
+      const [x, y, radius] = spot(input, 'push', ['x', 'y', 'vx', 'vy', 'radius']);
+      const vx = clamp(input.vx ?? 0, 'push.vx', -16, 16), vy = clamp(input.vy ?? 0, 'push.vy', -16, 16);
+      enqueue(() => push(x, y, radius, vx, vy));
+      return live;
+    },
+    puff(input) {
+      const [x, y, radius] = spot(input, 'puff', ['x', 'y', 'radius', 'density', 'temperature']);
+      if (liquid && input.temperature !== undefined) fail('puff.temperature', 'temperature drives gases; a liquid puff adds water');
+      const density = clamp(input.density ?? 1, 'puff.density', liquid ? -1 : -16, liquid ? 1 : 16), temperature = clamp(input.temperature ?? 0, 'puff.temperature', -16, 16);
+      enqueue(n => puff(x, y, radius, density, temperature, n));
+      return live;
+    },
+    boost(name, strength, frames) {
+      const named = emitters.filter(e => e.name !== undefined).map(e => e.name);
+      if (!named.includes(name)) fail('boost.name', `no emitter named ${JSON.stringify(name)}; ${named.length ? `this effect's emitters are named ${[...new Set(named)].join(', ')}` : 'give the emitter a name in the source'}`);
+      const factor = number(strength, 'boost.strength', 0, 16), count = integer(frames, 'boost.frames', 0, 65536);
+      emitters.forEach((e, index) => { if (e.name === name) boosts[index] = { factor, frames: count }; });
+      return live;
+    },
+    // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
+    // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
+    // pixel ('.' empty); where a translucent colour blends over another, the pixel is a mix and the key its top layer.
+    render() {
+      const chars = renderFields(effect, run.base, width, height);
+      for (let k = 0; k < overlay.length; k += 2) chars[overlay[k]] = overlay[k + 1];
+      const rgba = under.slice(), codes = underKeys.slice();
+      for (let c = 0; c < N; c++) if (chars[c]) { composite(rgba, c * 4, colours.get(chars[c])); codes[c] = chars[c]; }
+      for (let k = 0; k < over.length; k += 2) { composite(rgba, over[k] * 4, colours.get(over[k + 1])); codes[over[k]] = over[k + 1]; }
+      const keys = [];
+      for (let j = 0; j < height; j++) { let row = ''; for (let i = 0; i < width; i++) { const code = codes[j * width + i]; row += code ? String.fromCharCode(code) : '.'; } keys.push(row); }
+      return { rgba, keys };
+    }
+  };
+  if (warmup) live.step(warmup); else fieldsOf(run);
+  return live;
 }
