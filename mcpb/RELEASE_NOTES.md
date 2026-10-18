@@ -2,7 +2,7 @@
 
 Fluid effects. A new source format, `pixelforge-fluid`, runs a small fluid simulation and bakes every frame into palette pixels: smoke, fire, steam, explosions, magic swirls, splashes, waterfalls, drips and a bubbling potion. The result is an ordinary editable recipe, so it inspects, patches and exports like any other, and it never uses a colour outside the palette. Loops are seamless, and the same source gives the same pixels on every machine and in the browser.
 
-- Liquids throw spray and foam off the water by their own motion (`whitewater`), and an emitter can fade toward its rim (`falloff`) or orbit in an ellipse.
+- Liquids can throw spray and foam off the water by their own motion (`whitewater`), and an emitter can fade toward its rim (`falloff`) or orbit in an ellipse.
 - Ten presets in `examples/*.fluid.json`, polished after an art review; each compiles in well under a second.
 - `pixelbolt compile`, `preview` and `sequence` accept fluid sources; MCP `pixel_compile` compiles them, and `pixel_help` with `topic: "fluid"` returns the schema.
 - The studio's Fluid lab (`/fluid.html`) tunes a preset in the browser and downloads the GIF, sprite sheet, recipe or source.
