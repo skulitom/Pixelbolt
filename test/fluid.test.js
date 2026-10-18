@@ -571,13 +571,30 @@ test('live runners check sources like compileFluid, and their own inputs with pa
   fails(() => live.push({ y: 3 }), 'push.x', /expected a number/);
   fails(() => live.push({ x: 1, y: 1, vx: NaN }), 'push.vx', /expected a number/);
   fails(() => live.push({ x: 1, y: 1, vy: '2' }), 'push.vy', /expected a number/);
-  // Values out of range, as a fast flick sends them, are clamped rather than refused.
+  // Values out of range, as a fast flick sends them, are clamped rather than refused: each call beyond a bound draws the
+  // same frame as the call at the bound, which itself changes the frame.
   const after = (source, call) => { const runner = createLiveFluid(source, { warmup: 2 }); call(runner); return runner.step(2).render(); };
-  const potion = (await example('potion')).source;
-  assert.deepEqual(after(torch, runner => runner.push({ x: 8, y: 20, vx: 99, radius: 99 })), after(torch, runner => runner.push({ x: 8, y: 20, vx: 16, radius: 64 })));
-  assert.notDeepEqual(after(torch, runner => runner.push({ x: 8, y: 20, vx: 99, radius: 99 })), after(torch, () => {}));
-  assert.deepEqual(after(potion, runner => runner.puff({ x: 16, y: 10, density: 2, radius: 0 })), after(potion, runner => runner.puff({ x: 16, y: 10, density: 1, radius: 0.5 })));
-  assert.deepEqual(after(torch, runner => runner.push({ x: -9999, y: 9999, vx: 2 })), after(torch, runner => runner.push({ x: -256, y: 512, vx: 2 })));
+  const potion = (await example('potion')).source, plume = gas({ frames: 64, buoyancy: 0.2, emitters: [{ at: [8, 13], radius: 2, rate: 1, density: 0.6, temperature: 0.4 }], look: smoke });
+  const untouched = new Map([torch, potion, plume].map(source => [source, after(source, () => {})]));
+  const clamps = (what, source, beyond, bound) => {
+    const clamped = after(source, beyond);
+    assert.deepEqual(clamped, after(source, bound), `${what} is clamped`);
+    assert.notDeepEqual(clamped, untouched.get(source), `${what} changes the frame`);
+  };
+  clamps('push vx and radius', torch, live => live.push({ x: 8, y: 20, vx: 99, radius: 99 }), live => live.push({ x: 8, y: 20, vx: 16, radius: 64 }));
+  clamps('push vy', torch, live => live.push({ x: 8, y: 20, vy: 99 }), live => live.push({ x: 8, y: 20, vy: 16 }));
+  clamps('negative push', torch, live => live.push({ x: 8, y: 20, vx: -99, vy: -99 }), live => live.push({ x: 8, y: 20, vx: -16, vy: -16 }));
+  clamps('gas puff density', plume, live => live.puff({ x: 8, y: 5, radius: 3, density: 99 }), live => live.puff({ x: 8, y: 5, radius: 3, density: 16 }));
+  clamps('gas puff temperature', torch, live => live.puff({ x: 8, y: 10, radius: 3, temperature: 99 }), live => live.puff({ x: 8, y: 10, radius: 3, temperature: 16 }));
+  // Four puffs stack smoke denser than 16, so taking 99 away clears what taking 16 away leaves.
+  const stacked = take => live => [16, 16, 16, 16, take].forEach(density => live.puff({ x: 8, y: 5, radius: 3, density }));
+  clamps('negative gas puff', plume, stacked(-99), stacked(-16));
+  clamps('negative temperature', torch, live => live.puff({ x: 8, y: 24, radius: 4, temperature: -99 }), live => live.puff({ x: 8, y: 24, radius: 4, temperature: -16 }));
+  clamps('puff radius', plume, live => live.puff({ x: 8.5, y: 4.5, radius: 0, density: 16 }), live => live.puff({ x: 8.5, y: 4.5, radius: 0.5, density: 16 }));
+  clamps('liquid puff', potion, live => live.puff({ x: 16, y: 10, radius: 3, density: 2 }), live => live.puff({ x: 16, y: 10, radius: 3, density: 1 }));
+  clamps('liquid drain', potion, live => live.puff({ x: 16, y: 30, radius: 4, density: -5 }), live => live.puff({ x: 16, y: 30, radius: 4, density: -1 }));
+  // A push far off the canvas stays off it and changes nothing.
+  assert.deepEqual(after(torch, live => live.push({ x: -9999, y: 9999, vx: 2 })), untouched.get(torch));
   fails(() => live.push({ x: 1, y: 1, spin: 2 }), 'push.spin', /unknown/);
   fails(() => live.push(null), 'push', /object/);
   fails(() => pool.puff({ x: 1, y: 1, temperature: 1 }), 'puff.temperature', /gases/);
