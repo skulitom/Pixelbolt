@@ -424,23 +424,34 @@ test('a live runner steps the simulation compileFluid bakes, frame for frame', a
     assert.deepEqual([live.width, live.height, live.kind, live.frames, live.frame], [source.width, source.height, source.effects[name].kind ?? 'gas', source.effects[name].frames, 0]);
     project.frames.forEach((frame, f) => assert.ok(sameData(live.step().render().rgba, frame.data), `${name} frame ${f}`));
   }
-  // A loop matches once it has warmed up for the compiler's cycles, until the compiler blends its seam.
-  const { source, project, metadata } = await example('steam-vent'), { warmup, blend, frames } = metadata.effects['steam-vent'];
-  const live = createLiveFluid(source, { warmup: warmup * frames });
-  for (let f = 0; f < frames - blend; f++) assert.ok(sameData(live.step().render().rgba, project.frames[f].data), `steam-vent frame ${f}`);
-  assert.equal(live.frame, (warmup + 1) * frames - blend);
+  // A loop without sparks matches once it has warmed up for the compiler's cycles, until the compiler blends its seam
+  // (the compiler adds sparks during the recorded cycle only; a live run adds them on every frame).
+  const potion = structuredClone((await example('potion')).source);
+  for (const emitter of potion.effects.potion.emitters) delete emitter.sparks;
+  for (const [name, source] of [['steam-vent', (await example('steam-vent')).source], ['potion', potion]]) {
+    const { recipe, metadata } = compileFluid(source), project = renderProject(recipe), { warmup, blend, frames } = metadata.effects[name];
+    const live = createLiveFluid(source, { warmup: warmup * frames });
+    for (let f = 0; f < frames - blend; f++) assert.ok(sameData(live.step().render().rgba, project.frames[f].data), `${name} frame ${f}`);
+    assert.equal(live.frame, (warmup + 1) * frames - blend);
+  }
   // Obstacles stamped under and over the fluid, an outline and translucent colours composite as the renderer draws them.
-  const glass = gas({ frames: 6, outline: 'o', emitters: [{ at: [8, 12], radius: 2.5, rate: 1, density: 2, temperature: 1, sparks: { count: 0.5, life: 4, colors: ['y'] } }], obstacles: [{ symbol: 'back', x: 2, y: 2, draw: 'under' }, { symbol: 'lid', x: 4, y: 6 }],
-    look: [{ field: 'density', colors: ['h', 'w'], thresholds: [0.2, 0.6] }] }, { symbols: { back: ['hhhhhhhhhhhh', 'h.k......k.h'], lid: ['kkkkkkkk'] }, palette: { s: '#888', w: '#fff', y: '#fd6', k: '#000', o: '#00f', h: '#8cf8' } });
+  // A translucent outline lands on a translucent glass bar stamped under the fluid: two translucent colours composite.
+  const glass = gas({ frames: 6, outline: 'o', emitters: [{ at: [8, 12], radius: 2.5, rate: 1, density: 2, temperature: 1, sparks: { count: 0.5, life: 4, colors: ['y'] } }], obstacles: [{ symbol: 'bar', x: 11, y: 8, draw: 'under' }, { symbol: 'lid', x: 4, y: 6 }],
+    look: [{ field: 'density', colors: ['h', 'w'], thresholds: [0.2, 0.6] }] }, { symbols: { bar: Array(8).fill('hh'), lid: ['kkkkkkkk'] }, palette: { s: '#888', w: '#fff', y: '#fd6', k: '#000', o: '#00f8', h: '#8cf8' } });
   const stamped = renderProject(compileFluid(glass).recipe), runner = createLiveFluid(glass, { warmup: 0 });
+  let layered = 0;
   stamped.frames.forEach((frame, f) => {
     const { rgba, keys } = runner.step().render();
     assert.ok(sameData(rgba, frame.data), `glass frame ${f}`);
-    assert.equal(keys[2].slice(2, 14), 'hhhhhhhhhhhh');
     assert.equal(keys[6].slice(4, 12), 'kkkkkkkk');
+    for (let y = 8; y < 16; y++) {
+      assert.match(keys[y].slice(11, 13), /^[ho]h$/);
+      // 0x88 over 0x88 composites to an alpha of 199.
+      if (keys[y][11] === 'o') { assert.equal(rgba[(y * 16 + 11) * 4 + 3], 199); layered++; }
+    }
   });
-  assert.ok(stamped.frames.some(frame => frame.data.some((value, i) => i % 4 === 3 && value > 0 && value < 255)), 'translucent pixels are drawn');
-  assert.deepEqual(runner.palette, { s: '#888888', w: '#ffffff', y: '#ffdd66', k: '#000000', o: '#0000ff', h: '#88ccff88' });
+  assert.ok(layered > 0, 'the outline reaches the glass');
+  assert.deepEqual(runner.palette, { s: '#888888', w: '#ffffff', y: '#ffdd66', k: '#000000', o: '#0000ff88', h: '#88ccff88' });
 });
 
 test('live runs are deterministic: the same calls give the same pixels everywhere', async () => {
@@ -525,11 +536,10 @@ test('live runs stay inside the limits instead of stopping at them', () => {
   // A boosted spark emitter keeps at most 4,096 sparks alive.
   const fountain = gas({ frames: 64, buoyancy: 0, emitters: [{ name: 'fountain', at: [8, 8], radius: 2, rate: 1, sparks: { count: 16, life: 256, colors: ['w'] } }], look: smoke });
   assert.equal(createLiveFluid(fountain, { warmup: 0 }).boost('fountain', 16, 64).step(20).sparks, 4096);
-  // Pushes and puffs wait for the next step, up to 1,024 of them.
-  const runner = createLiveFluid(fountain, { warmup: 0 });
-  for (let k = 0; k < 1024; k++) runner.push({ x: 8, y: 8, vx: 0.001 });
-  assert.throws(() => runner.puff({ x: 8, y: 8 }), error => error.path === 'puff' && /at most 1024 .* step\(\) first/.test(error.message));
-  runner.step().push({ x: 8, y: 8 });
+  // Up to 1,024 pushes and puffs wait for the next step; beyond that the oldest are dropped.
+  const smoked = queued => { const runner = createLiveFluid(fountain, { warmup: 0 }).puff({ x: 3, y: 3, radius: 2, density: 2 }); for (let k = 0; k < queued; k++) runner.push({ x: 12, y: 12, vx: 0.001 }); return keysCount(runner.step().render().keys.slice(1, 6).map(row => row.slice(1, 6)), char => char !== '.'); };
+  assert.ok(smoked(1023) > 0);
+  assert.equal(smoked(1024), 0);
 });
 
 test('live runners check sources like compileFluid, and their own inputs with paths', async () => {
@@ -558,13 +568,19 @@ test('live runners check sources like compileFluid, and their own inputs with pa
   fails(() => createLiveFluid(torch, { warmup: -1 }), 'live.warmup', /0 to 2048/);
   fails(() => createLiveFluid({ ...gas({ frames: 4, iterations: 200, substeps: 4, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 }, { warmup: 2048 }), 'live.warmup', /million cell updates/);
   const live = createLiveFluid(torch, { warmup: 0 }), pool = createLiveFluid((await example('potion')).source, { warmup: 0 });
-  fails(() => live.push({ y: 3 }), 'push.x', /-256 to 512/);
-  fails(() => live.push({ x: 1, y: 1, vx: 99 }), 'push.vx', /-16 to 16/);
+  fails(() => live.push({ y: 3 }), 'push.x', /expected a number/);
+  fails(() => live.push({ x: 1, y: 1, vx: NaN }), 'push.vx', /expected a number/);
+  fails(() => live.push({ x: 1, y: 1, vy: '2' }), 'push.vy', /expected a number/);
+  // Values out of range, as a fast flick sends them, are clamped rather than refused.
+  const after = (source, call) => { const runner = createLiveFluid(source, { warmup: 2 }); call(runner); return runner.step(2).render(); };
+  const potion = (await example('potion')).source;
+  assert.deepEqual(after(torch, runner => runner.push({ x: 8, y: 20, vx: 99, radius: 99 })), after(torch, runner => runner.push({ x: 8, y: 20, vx: 16, radius: 64 })));
+  assert.notDeepEqual(after(torch, runner => runner.push({ x: 8, y: 20, vx: 99, radius: 99 })), after(torch, () => {}));
+  assert.deepEqual(after(potion, runner => runner.puff({ x: 16, y: 10, density: 2, radius: 0 })), after(potion, runner => runner.puff({ x: 16, y: 10, density: 1, radius: 0.5 })));
+  assert.deepEqual(after(torch, runner => runner.push({ x: -9999, y: 9999, vx: 2 })), after(torch, runner => runner.push({ x: -256, y: 512, vx: 2 })));
   fails(() => live.push({ x: 1, y: 1, spin: 2 }), 'push.spin', /unknown/);
   fails(() => live.push(null), 'push', /object/);
-  fails(() => live.puff({ x: 1, y: 1, radius: 0 }), 'puff.radius', /0.5 to 64/);
   fails(() => pool.puff({ x: 1, y: 1, temperature: 1 }), 'puff.temperature', /gases/);
-  fails(() => pool.puff({ x: 1, y: 1, density: 2 }), 'puff.density', /-1 to 1/);
   fails(() => live.boost('fire', 2, 4), 'boost.name', /no emitter named "fire"; this effect's emitters are named flame, embers/);
   const unnamed = createLiveFluid((await example('smoke-puff')).source, { warmup: 0 });
   fails(() => unnamed.boost('puff', 2, 4), 'boost.name', /give the emitter a name/);

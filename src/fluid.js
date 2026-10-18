@@ -956,7 +956,8 @@ function simulate(effect, context) {
 
 // Reads a whole source and checks it as compileFluid does. Each effect is read in turn, checked against the frame and
 // work limits, and passed to `each(name, effect, { width, height, path })`, which returns its frames' operations (or
-// null to leave them empty). The renderer then checks the recipe, so a source fails here exactly as it fails to compile.
+// null to leave them empty, as a live runner does). The renderer then checks the recipe, so a live runner gets every
+// check compileFluid makes before simulating, with the same paths and messages.
 function buildRecipe(source, each) {
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'symbols', 'anchor', 'effects', 'sheet'], 'fluid');
   if (source.format !== 'pixelforge-fluid' || source.version !== 1) fail('fluid', 'expected version-1 pixelforge-fluid');
@@ -1012,8 +1013,13 @@ export function compileFluid(source) {
 // ---- Live runner ------------------------------------------------------------------------------------------------------
 // Live pushes and puffs draw from their own random streams, keyed apart from the emitters and whitewater.
 const LIVE = 2000;
-// Inputs waiting for the next step; a page that queues more without stepping is asked to step.
+// Inputs waiting for the next step; past this, the oldest are dropped.
 const QUEUED = 1024;
+// Pointer-driven inputs clamp to their range instead of failing, so a fast flick can't throw mid-interaction.
+const clamp = (value, path, min, max) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) fail(path, `expected a number (values beyond ${min} to ${max} are clamped)`);
+  return value < min ? min : value > max ? max : value;
+};
 // A soft disc: 1 at its centre, falling smoothly to 0 at its rim.
 const soft = (dx, dy, radius) => { const s = (dx * dx + dy * dy) / (radius * radius); return s >= 1 ? 0 : (1 - s) * (1 - s); };
 // The renderer's alpha compositing (core.js), so render() draws exactly what a compiled frame shows.
@@ -1064,7 +1070,8 @@ export function createLiveFluid(source, options = {}) {
   let t = 0, queue = [], overlay = [];
   const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !effect.front[y * width + x]) overlay.push(y * width + x, code); };
   // One frame: the emitters (boosted), then the queued pushes and puffs in the order they were made, the solver, the
-  // fields and the sparks. Live runs never stop at a limit: particles, sparks and droplets beyond it are not added.
+  // fields and the sparks. Live runs never stop at a limit: particles, sparks and droplets beyond it are not added, and
+  // the limits compileFluid meets while simulating (and the renderer's drawing budget) are not checked.
   const advance = () => {
     const cycle = t % effect.frames, here = emitFrame(run, t, cycle, boosts.map(b => (b.frames ? b.factor : 1)));
     queue.forEach((input, n) => input(n));
@@ -1077,13 +1084,13 @@ export function createLiveFluid(source, options = {}) {
     for (const b of boosts) if (b.frames) b.frames--;
     t++;
   };
-  const enqueue = (path, input) => {
-    if (queue.length >= QUEUED) fail(path, `at most ${QUEUED} pushes and puffs wait for the next step; call step() first`);
+  const enqueue = input => {
+    if (queue.length >= QUEUED) queue.shift();
     queue.push(input);
   };
   const spot = (input, path, keys) => {
     fields(input, keys, path);
-    return [number(input.x, `${path}.x`, -256, 512), number(input.y, `${path}.y`, -256, 512), number(input.radius ?? 4, `${path}.radius`, 0.5, 64)];
+    return [clamp(input.x, `${path}.x`, -256, 512), clamp(input.y, `${path}.y`, -256, 512), clamp(input.radius ?? 4, `${path}.radius`, 0.5, 64)];
   };
   // The cells or faces within `radius` of (x, y): columns i0..i1 and rows j0..j1 of an nx × ny lattice.
   const around = (x, y, radius, nx, ny) => [Math.max(0, Math.floor(x - radius)), Math.min(nx - 1, Math.ceil(x + radius)), Math.max(0, Math.floor(y - radius)), Math.min(ny - 1, Math.ceil(y + radius))];
@@ -1137,15 +1144,15 @@ export function createLiveFluid(source, options = {}) {
     },
     push(input) {
       const [x, y, radius] = spot(input, 'push', ['x', 'y', 'vx', 'vy', 'radius']);
-      const vx = number(input.vx ?? 0, 'push.vx', -16, 16), vy = number(input.vy ?? 0, 'push.vy', -16, 16);
-      enqueue('push', () => push(x, y, radius, vx, vy));
+      const vx = clamp(input.vx ?? 0, 'push.vx', -16, 16), vy = clamp(input.vy ?? 0, 'push.vy', -16, 16);
+      enqueue(() => push(x, y, radius, vx, vy));
       return live;
     },
     puff(input) {
       const [x, y, radius] = spot(input, 'puff', ['x', 'y', 'radius', 'density', 'temperature']);
       if (liquid && input.temperature !== undefined) fail('puff.temperature', 'temperature drives gases; a liquid puff adds water');
-      const density = number(input.density ?? 1, 'puff.density', liquid ? -1 : -16, liquid ? 1 : 16), temperature = number(input.temperature ?? 0, 'puff.temperature', -16, 16);
-      enqueue('puff', n => puff(x, y, radius, density, temperature, n));
+      const density = clamp(input.density ?? 1, 'puff.density', liquid ? -1 : -16, liquid ? 1 : 16), temperature = clamp(input.temperature ?? 0, 'puff.temperature', -16, 16);
+      enqueue(n => puff(x, y, radius, density, temperature, n));
       return live;
     },
     boost(name, strength, frames) {
