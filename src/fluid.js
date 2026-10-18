@@ -1163,7 +1163,8 @@ export function createLiveFluid(source, options = {}) {
       return live;
     },
     // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
-    // obstacles stamped under or over, as a compiled frame draws them. `keys` names each pixel's palette key ('.' empty).
+    // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
+    // pixel ('.' empty); where a translucent colour blends over another, the pixel is a mix and the key its top layer.
     render() {
       const chars = renderFields(effect, run.base, width, height);
       for (let k = 0; k < overlay.length; k += 2) chars[overlay[k]] = overlay[k + 1];
