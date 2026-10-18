@@ -7,8 +7,8 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderProject, analyzeProject, PixelError } from '../src/core.js';
-import { compileFluid, FLUID_FIELDS } from '../src/fluid.js';
+import { renderProject, analyzeProject, parseColor, PixelError } from '../src/core.js';
+import { compileFluid, createLiveFluid, FLUID_FIELDS } from '../src/fluid.js';
 import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { FLUID_SHOWCASE, buildFluidGIFs } from '../showcase/fluid/build.mjs';
@@ -380,10 +380,216 @@ test('the documented fluid example compiles as written', async () => {
   assert.ok(metadata.effects.torch.pixels.every(count => count > 20));
 });
 
+test('the documented live example runs as written', async () => {
+  const guide = await readFile(path.join(root, 'docs/art-workflow.md'), 'utf8'), block = guide.split('### Live fluids')[1].split('```js')[1].split('```')[0];
+  const body = block.split('\n').filter(line => !line.startsWith('import ')).join('\n');
+  const { live, rgba, keys } = new Function('createLiveFluid', 'source', `${body}\nreturn { live, rgba, keys };`)(createLiveFluid, (await example('torch')).source);
+  assert.deepEqual([live.frame, rgba.length, keys.length], [17, 16 * 32 * 4, 32]);
+  assert.ok(keysCount(keys, key => key !== '.') > 20);
+});
+
 test('the package ships the fluid schema and example sources', async () => {
   const files = await packageFiles();
   assert.ok(files.includes('fluid.schema.json'));
   assert.ok(files.includes('src/fluid.js'));
   for (const name of FLUID_SHOWCASE) assert.ok(files.includes(`examples/${name}.fluid.json`), name);
   assert.ok(!files.some(file => file.startsWith('showcase/')));
+});
+
+// ---- Live runner ------------------------------------------------------------------------------------------------------
+const sameData = (a, b) => a.length === b.length && a.every((value, i) => value === b[i]);
+const keysCount = (keys, test) => keys.reduce((n, row) => n + [...row].filter(test).length, 0);
+// A scripted session: pushes, puffs and a boost between steps, hashed frame by frame.
+const session = (source, script) => {
+  const live = createLiveFluid(source, { warmup: 8 }), hash = createHash('sha256');
+  for (let k = 0; k < 24; k++) {
+    script(live, k);
+    const { rgba, keys } = live.step().render();
+    hash.update(keys.join('\n')).update(rgba);
+  }
+  return hash.digest('hex');
+};
+// The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
+// Firefox and WebKit as well as Node).
+const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: '73508e4cc6748a5f7399c116abe8179c0665a5615b8a3152e82f930f152bba1a' };
+const scripts = {
+  torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
+  potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
+};
+
+test('a live runner steps the simulation compileFluid bakes, frame for frame', async () => {
+  // One-shot effects match from frame 0, sparks and whitewater included.
+  for (const name of ['explosion', 'splash']) {
+    const { source, project } = await example(name), live = createLiveFluid(source, { warmup: 0 });
+    assert.deepEqual([live.width, live.height, live.kind, live.frames, live.frame], [source.width, source.height, source.effects[name].kind ?? 'gas', source.effects[name].frames, 0]);
+    project.frames.forEach((frame, f) => assert.ok(sameData(live.step().render().rgba, frame.data), `${name} frame ${f}`));
+  }
+  // A loop matches once it has warmed up for the compiler's cycles, until the compiler blends its seam.
+  const { source, project, metadata } = await example('steam-vent'), { warmup, blend, frames } = metadata.effects['steam-vent'];
+  const live = createLiveFluid(source, { warmup: warmup * frames });
+  for (let f = 0; f < frames - blend; f++) assert.ok(sameData(live.step().render().rgba, project.frames[f].data), `steam-vent frame ${f}`);
+  assert.equal(live.frame, (warmup + 1) * frames - blend);
+  // Obstacles stamped under and over the fluid, an outline and translucent colours composite as the renderer draws them.
+  const glass = gas({ frames: 6, outline: 'o', emitters: [{ at: [8, 12], radius: 2.5, rate: 1, density: 2, temperature: 1, sparks: { count: 0.5, life: 4, colors: ['y'] } }], obstacles: [{ symbol: 'back', x: 2, y: 2, draw: 'under' }, { symbol: 'lid', x: 4, y: 6 }],
+    look: [{ field: 'density', colors: ['h', 'w'], thresholds: [0.2, 0.6] }] }, { symbols: { back: ['hhhhhhhhhhhh', 'h.k......k.h'], lid: ['kkkkkkkk'] }, palette: { s: '#888', w: '#fff', y: '#fd6', k: '#000', o: '#00f', h: '#8cf8' } });
+  const stamped = renderProject(compileFluid(glass).recipe), runner = createLiveFluid(glass, { warmup: 0 });
+  stamped.frames.forEach((frame, f) => {
+    const { rgba, keys } = runner.step().render();
+    assert.ok(sameData(rgba, frame.data), `glass frame ${f}`);
+    assert.equal(keys[2].slice(2, 14), 'hhhhhhhhhhhh');
+    assert.equal(keys[6].slice(4, 12), 'kkkkkkkk');
+  });
+  assert.ok(stamped.frames.some(frame => frame.data.some((value, i) => i % 4 === 3 && value > 0 && value < 255)), 'translucent pixels are drawn');
+  assert.deepEqual(runner.palette, { s: '#888888', w: '#ffffff', y: '#ffdd66', k: '#000000', o: '#0000ff', h: '#88ccff88' });
+});
+
+test('live runs are deterministic: the same calls give the same pixels everywhere', async () => {
+  for (const name of ['torch', 'potion']) {
+    const source = (await example(name)).source, first = session(source, scripts[name]);
+    assert.equal(session(source, scripts[name]), first, `${name} repeats`);
+    assert.equal(first, LIVE_GOLDEN[name], `${name} ran differently; if the change is intended, update LIVE_GOLDEN`);
+    // The same calls a frame later make a different session.
+    assert.notEqual(session(source, (live, k) => scripts[name](live, k - 1)), first);
+  }
+});
+
+test('a live push stirs the gas and moves the water from the next step on', () => {
+  // A still blob of smoke: pushed right, its middle ends up right of an unpushed twin's.
+  const blob = gas({ frames: 64, buoyancy: 0, dissipation: 0, emitters: [{ at: [10, 16], radius: 3, burst: 1, density: 1 }], look: smoke }, { width: 32, height: 32 });
+  const middle = keys => { let sum = 0, n = 0; keys.forEach(row => [...row].forEach((char, x) => { if (char !== '.') { sum += x; n++; } })); return sum / n; };
+  const still = createLiveFluid(blob, { warmup: 1 }), stirred = createLiveFluid(blob, { warmup: 1 });
+  stirred.push({ x: 10, y: 16, vx: 3, radius: 6 });
+  assert.deepEqual(stirred.render(), still.render(), 'a push waits for the next step');
+  still.step(6); stirred.step(6);
+  assert.ok(middle(stirred.render().keys) > middle(still.render().keys) + 1, `${middle(stirred.render().keys)} vs ${middle(still.render().keys)}`);
+  // A pool pushed right heaps its water up against the right wall.
+  const pool = { ...gas(null), width: 32, height: 24, effects: { pool: { kind: 'liquid', frames: 64, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 18, w: 32, h: 6 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } };
+  const tilt = keys => keysCount(keys.map(row => row.slice(16)), char => char === 's') - keysCount(keys.map(row => row.slice(0, 16)), char => char === 's');
+  const calm = createLiveFluid(pool, { warmup: 4 }), sloshed = createLiveFluid(pool, { warmup: 4 });
+  sloshed.push({ x: 16, y: 21, vx: 4, radius: 10 });
+  calm.step(6); sloshed.step(6);
+  assert.ok(tilt(sloshed.render().keys) > tilt(calm.render().keys) + 6, `${tilt(sloshed.render().keys)} vs ${tilt(calm.render().keys)}`);
+  assert.equal(sloshed.particles, calm.particles);
+});
+
+test('a live puff adds or takes away smoke and water, and a boost scales an emitter for a while', () => {
+  const air = gas({ frames: 64, buoyancy: 0.2, emitters: [{ name: 'vent', at: [12, 20], radius: 2, rate: 1, density: 0.4, temperature: 0.4, sparks: { count: 0.5, life: 8, colors: ['y'] } }], look: smoke }, { width: 24, height: 24 });
+  const corner = keys => keysCount(keys.slice(1, 9).map(row => row.slice(1, 9)), char => char !== '.');
+  const runner = createLiveFluid(air, { warmup: 8 });
+  assert.equal(corner(runner.render().keys), 0);
+  runner.puff({ x: 5, y: 5, radius: 3, density: 2 }).step();
+  assert.ok(corner(runner.render().keys) > 10);
+  runner.puff({ x: 5, y: 5, radius: 5, density: -16 }).step();
+  assert.equal(corner(runner.render().keys), 0);
+  // Boosted, the vent holds denser smoke and throws more sparks; at strength 0 it stops.
+  const dense = keys => keysCount(keys, char => char === 'w'), smoky = keys => keysCount(keys, char => char !== '.');
+  const [plain, boosted, off] = [null, 4, 0].map(strength => { const live = createLiveFluid(air, { warmup: 8 }); if (strength !== null) live.boost('vent', strength, 12); return live.step(10); });
+  assert.ok(dense(boosted.render().keys) > dense(plain.render().keys), `${dense(boosted.render().keys)} vs ${dense(plain.render().keys)}`);
+  assert.ok(boosted.sparks > plain.sparks, `${boosted.sparks} vs ${plain.sparks}`);
+  assert.ok(smoky(off.render().keys) < smoky(plain.render().keys), `${smoky(off.render().keys)} vs ${smoky(plain.render().keys)}`);
+  // A liquid puff fills its cells with water, and a negative one drains them.
+  const pool = { ...gas(null), width: 24, height: 24, effects: { pool: { kind: 'liquid', frames: 64, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 18, w: 24, h: 6 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } };
+  const water = createLiveFluid(pool, { warmup: 2 }), before = water.particles;
+  water.puff({ x: 12, y: 6, radius: 3 }).step();
+  // A radius-3 puff fills a disc of about 30 cells, four particles each, as a liquid emitter's disc does.
+  assert.ok(water.particles >= before + 100, `${water.particles} after ${before}`);
+  assert.ok(keysCount(water.render().keys.slice(2, 11), char => char === 's') >= 20, water.render().keys.join('\n'));
+  water.puff({ x: 12, y: 21, radius: 4, density: -1 }).step();
+  assert.ok(water.particles < before, `${water.particles} after ${before}`);
+});
+
+test('live frames use only palette colours, and keys name each pixel\'s colour', async () => {
+  for (const name of FLUID_SHOWCASE) {
+    const { source } = await example(name), live = createLiveFluid(source, { warmup: 6 }), { width, height } = live, colours = new Map();
+    for (const [key, value] of Object.entries(source.palette)) colours.set(key, parseColor(value).join());
+    live.push({ x: width / 2, y: height / 2, vx: 1.5, vy: -1, radius: 6 }).step(2).puff({ x: width / 3, y: height / 3, radius: 3 }).step(3);
+    const { rgba, keys } = live.render();
+    assert.equal(rgba.length, width * height * 4);
+    assert.deepEqual(keys.map(row => row.length), Array(height).fill(width));
+    keys.forEach((row, y) => [...row].forEach((key, x) => {
+      const at = (y * width + x) * 4, pixel = [...rgba.subarray(at, at + 4)].join();
+      if (key === '.') assert.equal(rgba[at + 3], 0, `${name} ${x},${y}`);
+      else assert.equal(pixel, colours.get(key), `${name} ${x},${y} draws ${key}`);
+    }));
+    assert.ok(keysCount(keys, key => key !== '.') > 0, name);
+  }
+});
+
+test('live runs stay inside the limits instead of stopping at them', () => {
+  // A canvas flooded by puffs holds at most 32,768 particles.
+  const tank = { ...gas(null), width: 128, height: 128, effects: { tank: { kind: 'liquid', frames: 8, substeps: 1, iterations: 1, walls: ['left', 'right', 'bottom'], emitters: [{ at: [2, 2], radius: 1, rate: 1, density: 0 }], look: smoke } } };
+  const flood = createLiveFluid(tank, { warmup: 0 });
+  for (const [x, y] of [[32, 32], [96, 32], [32, 96], [96, 96], [64, 64]]) flood.puff({ x, y, radius: 64 });
+  assert.equal(flood.step().particles, 32768);
+  assert.ok(flood.step(2).particles <= 32768);
+  // A boosted spark emitter keeps at most 4,096 sparks alive.
+  const fountain = gas({ frames: 64, buoyancy: 0, emitters: [{ name: 'fountain', at: [8, 8], radius: 2, rate: 1, sparks: { count: 16, life: 256, colors: ['w'] } }], look: smoke });
+  assert.equal(createLiveFluid(fountain, { warmup: 0 }).boost('fountain', 16, 64).step(20).sparks, 4096);
+  // Pushes and puffs wait for the next step, up to 1,024 of them.
+  const runner = createLiveFluid(fountain, { warmup: 0 });
+  for (let k = 0; k < 1024; k++) runner.push({ x: 8, y: 8, vx: 0.001 });
+  assert.throws(() => runner.puff({ x: 8, y: 8 }), error => error.path === 'puff' && /at most 1024 .* step\(\) first/.test(error.message));
+  runner.step().push({ x: 8, y: 8 });
+});
+
+test('live runners check sources like compileFluid, and their own inputs with paths', async () => {
+  // A broken source fails exactly as it fails to compile, including the checks the renderer makes on the recipe.
+  const torch = (await example('torch')).source;
+  const broken = [
+    s => { s.effects.torch.emitters[0].rate = 99; },
+    s => { s.effects.torch.wobble = 1; },
+    s => { s.name = 'con'; },
+    s => { s.symbols.torch[0] = 'Q' + s.symbols.torch[0].slice(1); },
+    s => { s.palette = { $ref: 'palette.json' }; },
+    s => { s.effects.torch.frames = 200; s.effects.extra = { ...s.effects.torch }; },
+    s => { s.width = 128; s.height = 128; Object.assign(s.effects.torch, { frames: 256, warmup: 8, substeps: 4, iterations: 200 }); s.effects.torch.emitters.forEach(e => { delete e.pulse; delete e.orbit; }); }
+  ];
+  for (const breakIt of broken) {
+    const source = structuredClone(torch);
+    breakIt(source);
+    let expected = null;
+    try { compileFluid(source); } catch (error) { expected = error; }
+    assert.ok(expected instanceof PixelError, String(breakIt));
+    assert.throws(() => createLiveFluid(source), error => error instanceof PixelError && error.path === expected.path && error.message === expected.message, String(breakIt));
+  }
+  const fails = (run, where, message) => assert.throws(run, error => error instanceof PixelError && error.path === where && (!message || message.test(error.message)), where);
+  fails(() => createLiveFluid(torch, { effect: 'smoke' }), 'live.effect', /no effect named "smoke"; the source has torch/);
+  fails(() => createLiveFluid(torch, { speed: 2 }), 'live.speed', /unknown/);
+  fails(() => createLiveFluid(torch, { warmup: -1 }), 'live.warmup', /0 to 2048/);
+  fails(() => createLiveFluid({ ...gas({ frames: 4, iterations: 200, substeps: 4, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 }, { warmup: 2048 }), 'live.warmup', /million cell updates/);
+  const live = createLiveFluid(torch, { warmup: 0 }), pool = createLiveFluid((await example('potion')).source, { warmup: 0 });
+  fails(() => live.push({ y: 3 }), 'push.x', /-256 to 512/);
+  fails(() => live.push({ x: 1, y: 1, vx: 99 }), 'push.vx', /-16 to 16/);
+  fails(() => live.push({ x: 1, y: 1, spin: 2 }), 'push.spin', /unknown/);
+  fails(() => live.push(null), 'push', /object/);
+  fails(() => live.puff({ x: 1, y: 1, radius: 0 }), 'puff.radius', /0.5 to 64/);
+  fails(() => pool.puff({ x: 1, y: 1, temperature: 1 }), 'puff.temperature', /gases/);
+  fails(() => pool.puff({ x: 1, y: 1, density: 2 }), 'puff.density', /-1 to 1/);
+  fails(() => live.boost('fire', 2, 4), 'boost.name', /no emitter named "fire"; this effect's emitters are named flame, embers/);
+  const unnamed = createLiveFluid((await example('smoke-puff')).source, { warmup: 0 });
+  fails(() => unnamed.boost('puff', 2, 4), 'boost.name', /give the emitter a name/);
+  fails(() => live.boost('flame', 99, 4), 'boost.strength', /0 to 16/);
+  fails(() => live.boost('flame', 2, -1), 'boost.frames', /0 to 65536/);
+  fails(() => live.step(-1), 'step', /0 to 2048/);
+  fails(() => live.step(1.5), 'step', /integer/);
+});
+
+test('a live runner steps a hero-sized steam plume in milliseconds', t => {
+  // 128 × 60, the size of the portfolio hero's steam: a breathing source, wind and a draining band near the top.
+  const steam = { ...gas(null), width: 128, height: 60, effects: { steam: { frames: 48, loop: true, buoyancy: 0.2, vorticity: 0.35, dissipation: 0.04, cooling: 0, drag: 0.09, wind: [-0.035, 0],
+    emitters: [{ name: 'breath', at: [86, 54], radius: 2, rate: 1, density: 0.6, temperature: 0.5, velocity: [0, -1.1], noise: 0.15, flicker: 0.2, pulse: { amplitude: 0.6, period: 16 } }, { at: [64, 0], area: [128, 12], rate: 1, density: -0.3 }],
+    look: [{ field: 'density', colors: ['s', 'w'], thresholds: [0.16, 0.5] }, { field: 'shadow', colors: ['k'], thresholds: [0.5], dither: 0 }], cleanup: { strays: true, corners: true } } } };
+  const live = createLiveFluid(steam, { warmup: 24 }), frames = 48, timed = [0, 0];
+  for (let k = 0; k < frames; k++) {
+    if (k % 8 === 0) live.push({ x: 60 + k, y: 30, vx: 1.5, vy: -0.5, radius: 6 });
+    let started = performance.now();
+    live.step();
+    timed[0] += performance.now() - started;
+    started = performance.now();
+    live.render();
+    timed[1] += performance.now() - started;
+  }
+  const [step, render] = timed.map(ms => ms / frames);
+  t.diagnostic(`128 × 60 steam: ${step.toFixed(2)} ms a step, ${render.toFixed(2)} ms a render, ${Math.round(1000 / (step + render))} frames per second`);
+  assert.ok(step + render < 250, `${step + render} ms a frame`);
 });

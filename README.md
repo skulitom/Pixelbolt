@@ -70,7 +70,7 @@ node bin/pixelbolt.js compile examples/campfire.fluid.json --out output/campfire
 node bin/pixelbolt.js gif output/campfire.json --scale 4 --out output/campfire.gif
 ```
 
-The ten presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks and loops.
+The ten presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks and loops. In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
 
 ## Start
 
@@ -342,7 +342,7 @@ For a game engine, use the atlas rectangles or individual PNGs. For regular-grid
 ## JavaScript API
 
 ```js
-import { renderProject, inspectProject, patchRecipe, compareProjects, createBundle, writeBundle, compileEffects, compileFluid, animationGIF, folderGIF, frameGrid } from './src/index.js';
+import { renderProject, inspectProject, patchRecipe, compareProjects, createBundle, writeBundle, compileEffects, compileFluid, createLiveFluid, animationGIF, folderGIF, frameGrid } from './src/index.js';
 
 const project = renderProject(recipe); // RGBA buffers, durations, warnings
 const view = inspectProject(project, { grid: true }); // contact sheet RGBA, palette-key grids
@@ -352,6 +352,7 @@ const bundle = await createBundle(recipe);
 await writeBundle(bundle, './output/my-sprite');
 const { recipe: effects } = compileEffects(fxSource); // seeded particles baked into an ordinary recipe
 const { recipe: fire, metadata } = compileFluid(fluidSource); // a fluid simulation baked into palette grids
+const { rgba, keys } = createLiveFluid(fluidSource).push({ x: 8, y: 20, vx: 2 }).step().render(); // the same simulation, live
 const gif = animationGIF(project, 'idle', { scale: 8 }); // { data, width, height, notes, ... }
 const loop = folderGIF('shots/prism', { fps: 25 }); // GIF from numbered PNG frames; framesGIF takes RGBA frames
 const grid = frameGrid(project, 30); // durations off a 30 fps video frame grid
