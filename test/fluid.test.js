@@ -24,9 +24,9 @@ const GOLDEN = {
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '1653a23c933b250d5cc6aa8c0a5e1878e7438b11169ef85c52d733e019263828',
   splash: '1b2a22fe73a5f818858199a0b5098c326395ba26ed5c5a9996dc178bb997f5f4',
-  waterfall: '2dd5ed11bff959daa551caca7deb04ff2ae276f8c61bd2e1eaabe95b665be5a8',
-  drip: '1147551d26b4945e65773fe243ebf0858779c20acf8200068866f247d63e5480',
-  potion: '11636b6972e45c5c7e65fb9b473cc20981133ed724650b17c491efac78d92d74',
+  waterfall: '362d3c9133333812fa23bc83286bd7884cae96814ece9de9ddcfad4803c75b3a',
+  drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
+  potion: 'b13996872f8758a39191c2745cac83b4196d0a23bb484f3d8c95e1ed171fb22c',
   honey: '35f6a04177821b70eee2e561a8ae57179394f5ba916a703d843a4070f9f15174',
   slime: '8b3d0c01e33c324fe2133151804e674e55531473a778995a04b41d9dd84b1433'
 };
@@ -304,6 +304,22 @@ test('sharp advection keeps a puff crisp, and a viscous gas calms swirls but not
   assert.ok(turning(swirl({})) > 50 && turning(swirl({ viscosity: 1 })) < turning(swirl({})) / 4);
 });
 
+test('nothing passes through a wall one pixel thick, however fast it moves', () => {
+  const walled = (effect, symbol = 'wall') => ({ ...gas(null), width: 32, height: 32, symbols: { wall: Array(32).fill('k'), stairs: Array.from({ length: 32 }, (_, y) => '.'.repeat(y % 32) + 'k' + '.'.repeat(31 - (y % 32))) }, effects: { e: { ...effect, obstacles: [{ symbol, x: symbol === 'wall' ? 16 : 0, y: 0, draw: 'none' }] } } });
+  const beyond = (recipe, past) => { let n = 0; for (const frame of recipe.frames) for (const op of frame.ops ?? []) if (op.op === 'grid') op.rows.forEach((row, j) => [...row].forEach((char, i) => { if (char !== '.' && past(op.x + i, op.y + j)) n++; })); return n; };
+  // Sparks fired at the wall, straight and at an angle, at up to 9 pixels a frame.
+  const sparks = walled({ frames: 12, buoyancy: 0, emitters: [{ at: [6, 16], radius: 2, burst: 1, density: 0, sparks: { count: 40, life: 12, colors: ['w'], angle: [-30, 30], speed: [6, 9], follow: 0, drag: 0 } }], look: smoke });
+  assert.equal(beyond(compileFluid(sparks).recipe, x => x > 16), 0);
+  // Nor through a diagonal wall of single pixels touching only at their corners.
+  const diagonal = walled({ frames: 12, buoyancy: 0, emitters: [{ at: [6, 26], radius: 2, burst: 1, density: 0, sparks: { count: 40, life: 12, colors: ['w'], angle: [-60, -30], speed: [3, 9], follow: 0, drag: 0 } }], look: smoke }, 'stairs');
+  assert.equal(beyond(compileFluid(diagonal).recipe, (x, y) => x > y), 0);
+  // A jet of water at 16 pixels a frame, with a single substep.
+  for (const substeps of [1, 2]) {
+    const jet = walled({ kind: 'liquid', frames: 10, substeps, gravity: [0, 0], walls: FLUID_WALLS, fill: [{ x: 2, y: 10, w: 8, h: 12, velocity: [16, 0] }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.25], dither: 0 }] });
+    assert.equal(beyond(compileFluid(jet).recipe, x => x > 16), 0, `substeps ${substeps}`);
+  }
+});
+
 test('fluid sources fail early with paths an agent can act on', async () => {
   const emitter = { at: [8, 8], rate: 1, density: 1 }, ok = { frames: 6, emitters: [emitter], look: smoke };
   const bad = (change, where, message) => {
@@ -375,6 +391,10 @@ test('limits are reported with the effect path, extreme settings stay finite, an
   const wild = compileFluid({ ...gas({ frames: 48, walls: ['left', 'right', 'top', 'bottom'], substeps: 1, vorticity: 2, buoyancy: 2, dissipation: 0, cooling: 0, drag: 0,
     emitters: [{ at: [8, 8], radius: 6, rate: 64, density: 16, temperature: 16, vortex: 16, noise: 8, flicker: 1, sparks: { count: 4, life: 20, colors: ['w'], trail: true } }], look: smoke }), width: 32, height: 32 });
   assert.ok(Number.isFinite(wild.metadata.effects.plume.peak.speed) && wild.metadata.effects.plume.peak.speed <= 46);
+  // Liquid particles keep to the cap too, cohesion included: 32 pixels a frame along each axis.
+  const flung = compileFluid({ ...gas(null), width: 32, height: 32, effects: { flood: { kind: 'liquid', frames: 10, substeps: 1, tension: 4, gravity: [2, 2], walls: FLUID_WALLS, fill: [{ x: 2, y: 2, w: 28, h: 28, velocity: [16, -16] }], emitters: [{ at: [16, 16], radius: 8, rate: 64, density: 1, velocity: [16, 16], vortex: 16, noise: 8 }], look: smoke } } });
+  // (Peaks in the metadata are rounded to thousandths, so 32√2 = 45.2548… reads as 45.255.)
+  assert.ok(flung.metadata.effects.flood.peak.speed <= 45.255, `liquid peak speed ${flung.metadata.effects.flood.peak.speed}`);
   // Palette keys beyond Latin-1 keep their own colour in the grid rows.
   const accented = compileFluid({ ...gas({ frames: 2, emitters: [{ at: [8, 8], radius: 3, burst: 1, density: 2 }], look: [{ field: 'density', colors: ['ŧ'], thresholds: [0.5] }] }), palette: { 'ŧ': '#f00', g: '#0f0' } });
   assert.ok(accented.recipe.frames[0].ops[0].rows.join('').includes('ŧ'));
@@ -495,7 +515,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: '73508e4cc6748a5f7399c116abe8179c0665a5615b8a3152e82f930f152bba1a' };
+const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: 'ab3e9a0447f96db3abfbf3a73cf3d21a05d18ad2646a931e5837950de838c3b6' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }

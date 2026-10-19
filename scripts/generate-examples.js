@@ -237,7 +237,7 @@ const splash = fluidSource('splash', 48, 40, water, {
     { impact: 2.5, chance: 0.3, throw: 1.6, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
   look: waterLook(9, 5), cleanup: { strays: true }
 });
-// A shallow stream runs along the cliff top, pours over the mossy lip and falls down the cliff face into a basin. The
+// A shallow stream runs along the cliff top, pours over the mossy lip and falls clear of the cliff face into a basin. The
 // source pulses, so fuller and thinner stretches run down the fall, and glints carried by the flow streak down it; the
 // fall is drawn by its speed, darker where it leaves the lip with lighter flecks as it speeds up. Whitewater froths its
 // edges with foam that rides the surface down and drifts where the water churns, and throws the odd droplet off it;

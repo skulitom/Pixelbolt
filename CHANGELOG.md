@@ -15,7 +15,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - **Two presets:** [honey](examples/honey.fluid.json), a rope of honey from a dipper folding into a mound on a calm surface in a jar (viscosity, APIC, adhesion), and [slime](examples/slime.fluid.json), a blob that squashes, springs back and holds a peak with a second blob on top (yield stress). Both have golden hashes and README GIFs.
 - **Fluid lab:** the two presets, and Thickness (viscosity) and Firmness (yield) sliders for liquids beside Liveliness (flip); the drag slider is now Resistance (drag).
 - **Work budget:** a viscous or yield-stress effect counts about three times the cell updates per step, and sharp advection about thirty more per cell, so expensive sources are still refused before they run.
-- Every new setting is off by default, so existing sources compile exactly as before: the ten earlier presets' golden hashes, showcase GIFs and live-session hashes are unchanged.
+- Every new setting is off by default, so these settings leave existing sources as they were.
+
+### Fluid fixes
+
+- **Nothing passes through thin obstacles any more.** Sparks (and so whitewater spray) moved their whole step at once and were only checked where they landed, so anything faster than a pixel a frame could skip a wall one pixel thick; fast liquid particles could too. Both now walk every cell along their path and stop at the first solid one, which also stops them slipping between two pixels that touch only at their corners. This changes the waterfall (the water now leaves the lip in a free arc instead of creeping down the stepped cliff face around its corners), and the drip and potion slightly; their golden hashes, GIFs and the potion's live-session hash are updated.
+- **Liquid particles keep to the speed cap.** Cohesion was added after the cap, so at extreme settings a particle could reach 48 pixels a frame; the cap now comes last.
+- **Docs:** sharp advection blurs less smoke away, so a one-shot gas needs more `dissipation` to end empty.
 
 ### Claude Code plugin
 

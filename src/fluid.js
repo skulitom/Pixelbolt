@@ -614,6 +614,23 @@ function confine(g, strength, dt, curl, magnitude) {
   }
 }
 
+// Whether the straight path from (x0, y0) to (x1, y1) enters a solid cell after the one it starts in. It visits every
+// cell the path passes through, in order (Amanatides and Woo's grid walk), so nothing that moves several pixels in a step
+// can skip over a wall one pixel thick, or slip between two pixels that touch only at their corners. Cells beyond the
+// grid are open.
+function crossesSolid(solid, W, H, x0, y0, x1, y1) {
+  let i = Math.floor(x0), j = Math.floor(y0);
+  const dx = x1 - x0, dy = y1 - y0, si = dx > 0 ? 1 : dx < 0 ? -1 : 0, sj = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+  // How far along the path (0 to 1) the next vertical and horizontal cell edges are, and how far apart they lie.
+  let tx = si ? ((si > 0 ? i + 1 : i) - x0) / dx : 2, ty = sj ? ((sj > 0 ? j + 1 : j) - y0) / dy : 2;
+  const stepX = si ? si / dx : 0, stepY = sj ? sj / dy : 0;
+  for (let n = Math.abs(Math.floor(x1) - i) + Math.abs(Math.floor(y1) - j); n > 0; n--) {
+    if (tx < ty) { i += si; tx += stepX; } else { j += sj; ty += stepY; }
+    if (i >= 0 && j >= 0 && i < W && j < H && solid[j * W + i]) return true;
+  }
+  return false;
+}
+
 // ---- Emitters ---------------------------------------------------------------------------------------------------------
 // Seeded value noise on a lattice three cells apart, smoothstep-blended: coherent eddies instead of per-cell static.
 function valueNoise(seed, emitter, frame, salt, x, y) {
@@ -943,13 +960,14 @@ function stepLiquid(state, effect, dt) {
       if (size > limit * limit) { const scale = limit / Math.sqrt(size); na *= scale; nb *= scale; }
       state.ea[k] = na; state.eb[k] = nb;
     }
-    if (state.vx[k] > MAX_SPEED) state.vx[k] = MAX_SPEED; else if (state.vx[k] < -MAX_SPEED) state.vx[k] = -MAX_SPEED;
-    if (state.vy[k] > MAX_SPEED) state.vy[k] = MAX_SPEED; else if (state.vy[k] < -MAX_SPEED) state.vy[k] = -MAX_SPEED;
     if (pull) {
       const fx = x - 0.5, fy = y - 0.5;
       state.vx[k] += pull * (bilinear(rho, W, H, fx + 1, fy) - bilinear(rho, W, H, fx - 1, fy));
       state.vy[k] += pull * (bilinear(rho, W, H, fx, fy + 1) - bilinear(rho, W, H, fx, fy - 1));
     }
+    // The speed cap comes last, so cohesion cannot push a particle past it.
+    if (state.vx[k] > MAX_SPEED) state.vx[k] = MAX_SPEED; else if (state.vx[k] < -MAX_SPEED) state.vx[k] = -MAX_SPEED;
+    if (state.vy[k] > MAX_SPEED) state.vy[k] = MAX_SPEED; else if (state.vy[k] < -MAX_SPEED) state.vy[k] = -MAX_SPEED;
     const mx = x + 0.5 * dt * pu, my = y + 0.5 * dt * pv;
     let nx = x + dt * sampleU(g, u, mx, my), ny = y + dt * sampleV(g, v, mx, my);
     if (cling) {
@@ -968,8 +986,9 @@ function stepLiquid(state, effect, dt) {
     if (walls.top && ny < 0.01) { ny = 0.01; if (state.vy[k] < 0) state.vy[k] = 0; }
     if (walls.bottom && ny > H - 0.01) { ny = H - 0.01; if (state.vy[k] > 0) state.vy[k] = 0; }
     if (nx < 0 || ny < 0 || nx >= W || ny >= H) { removeParticle(state, k); continue; }
-    // Particles never enter an obstacle: they slide along it, or stay put and lose the speed into it.
-    const blocked = (px, py) => solid[Math.floor(py) * W + Math.floor(px)];
+    // Particles never enter an obstacle, however far they move in a step: they slide along it, or stay put and lose the
+    // speed into it.
+    const blocked = (px, py) => crossesSolid(solid, W, H, x, y, px, py);
     if (blocked(nx, ny)) {
       if (!blocked(nx, y)) { ny = y; state.vy[k] = 0; }
       else if (!blocked(x, ny)) { nx = x; state.vx[k] = 0; }
@@ -1028,14 +1047,16 @@ function moveSparks(list, g, density, total, liquid, pops) {
     p.vx = (p.vx + s.gravity[0]) * (1 - s.drag); p.vy = (p.vy + s.gravity[1]) * (1 - s.drag);
     p.px = p.x; p.py = p.y; p.x += fx + p.vx; p.y += fy + p.vy;
     const i = Math.floor(p.x), j = Math.floor(p.y), inside = i >= 0 && j >= 0 && i < W && j < H, wet = liquid && inside && density[j * W + i] >= LEVEL;
-    const popped = s.pop && !wet && Number.isFinite(p.x + p.y);
+    // A spark that meets an obstacle anywhere along this frame's path ends there, not only one that lands inside it.
+    const finite = Number.isFinite(p.x + p.y), hit = finite && crossesSolid(solid, W, H, p.px, p.py, p.x, p.y);
+    const popped = s.pop && !wet && finite && !hit;
     // Whitewater foam rides the surface: it ends once the flow has carried it under, with water on every side, or once
     // it is lifted off into the air, with no water beside it.
     const dry = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !solid[y * W + x] && density[y * W + x] < LEVEL;
     const soaked = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !solid[y * W + x] && density[y * W + x] >= LEVEL;
     const sunk = p.foam && (wet ? !dry(i - 1, j) && !dry(i + 1, j) && !dry(i, j - 1) && !dry(i, j + 1) : !soaked(i - 1, j) && !soaked(i + 1, j) && !soaked(i, j - 1) && !soaked(i, j + 1));
     if (popped) pops.push({ x: p.x, y: p.y, size: s.size, code: sparkColor(p), age: 0 });
-    if (p.age >= p.life || !Number.isFinite(p.x + p.y) || (inside && solid[j * W + i]) || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
+    if (p.age >= p.life || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
 }

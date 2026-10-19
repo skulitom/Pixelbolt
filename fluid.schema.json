@@ -192,7 +192,7 @@
               "smooth",
               "sharp"
             ],
-            "description": "Gas: smooth (default) is plain semi-Lagrangian advection, which blurs a little every step; sharp (MacCormack with a limiter) keeps edges and small swirls crisp, at up to twice the cost."
+            "description": "Gas: smooth (default) is plain semi-Lagrangian advection, which blurs a little every step; sharp (MacCormack with a limiter) keeps edges and small swirls crisp, at up to twice the cost; smoke lingers longer, so a one-shot may need more dissipation to end empty."
           },
           "viscosity": {
             "type": "number",
