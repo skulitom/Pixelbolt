@@ -251,7 +251,15 @@ The studio's **Frames** button downloads the same files for the animation on scr
 
 ## Connect an agent through MCP
 
-Clone the repository first, then add the server to your agent's MCP configuration. Replace `/absolute/path/to/Pixelbolt` with your checkout's absolute path; on Windows use forward slashes, for example `C:/DEV/Pixelbolt`:
+**Claude Code plugin.** One command installs the MCP server and the pixel art skill, with nothing to clone (Claude Code 2.1.292 or later):
+
+```
+claude plugin install pixelbolt --marketplace skulitom/Pixelbolt
+```
+
+Inside a session, `/plugin install pixelbolt --marketplace skulitom/Pixelbolt` does the same from Claude Code 2.1.275. On older versions, add the marketplace first with `claude plugin marketplace add skulitom/Pixelbolt`, then run `claude plugin install pixelbolt@pixelbolt`. The plugin runs its own copy of `bin/pixelbolt.js` with your Node.js (20 or later), in the project folder you open in Claude Code: file references resolve inside that folder and exports go to its `output/` folder. Restart Claude Code after installing.
+
+**Other MCP clients.** Clone the repository first, then add the server to your agent's MCP configuration. Replace `/absolute/path/to/Pixelbolt` with your checkout's absolute path; on Windows use forward slashes, for example `C:/DEV/Pixelbolt`:
 
 ```json
 {

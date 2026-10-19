@@ -1,11 +1,13 @@
 ---
 name: pixelbolt-pixel-art
-description: Create and revise deterministic pixel art and animations with Pixelbolt JSON recipes; export PNG sheets, APNG and game metadata.
+description: Make or fix pixel art - sprites, sprite sheets, tiles and tilesets, icons, game effects such as fire, smoke, water or sparks, and short frame animations - and save them as PNG, GIF, APNG or frames for a video. Use when someone asks to draw, animate, fix or export pixel art or game sprites. Pixelbolt JSON recipes, local, no account, no API key.
 ---
 
 # Pixelbolt pixel art
 
 Use this when creating pixel sprites, tiles, icons, effects or short sprite animations. Pixelbolt lives at the project root two directories above this skill's directory. Run its CLI with Node.js, or use its MCP tools if configured.
+
+In the Claude Code plugin, the MCP tools (`pixel_help`, `pixel_validate`, `pixel_inspect`, `pixel_patch`, `pixel_render` and the rest) come with this skill. If they are missing, the plugin's server did not start: it needs Node.js 20 or later on PATH (`node --version`). Install Node.js from https://nodejs.org, then restart Claude Code.
 
 In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixelbolt` elsewhere from the build folder instead of `node bin/pixelbolt.js`.
 
