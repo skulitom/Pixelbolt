@@ -12,7 +12,7 @@ English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README
 
 ![A campfire simulated by Pixelbolt's fluid compiler: flames lick up from the logs, embers drift up and smoke curls away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/explosion.gif)
 
-Fire, smoke, steam, explosions, magic and water come from a real fluid simulation that runs on your own CPU in well under a second and bakes every frame into palette pixels you can edit, with seamless loops ([fluid effects](#fluid-effects)).
+Fire, smoke, steam, explosions, magic, water, honey and slime come from a real fluid simulation that runs on your own CPU in well under a second and bakes every frame into palette pixels you can edit, with seamless loops ([fluid effects](#fluid-effects)).
 
 - **Who it's for:** game developers, game-jam teams and web or video makers who want an agent such as Claude, Codex or Cursor to draw and revise their pixel art, and people building agents that need exact, repeatable images.
 - **Use it when** you want small 2D game assets that stay editable as text: the agent reads every pixel back, fixes one pixel or one frame without redrawing the rest, and the same recipe renders the same image every time.
@@ -57,7 +57,7 @@ An AI agent drew these with Pixelbolt. Its scripts write the recipes, particle s
 
 ## Fluid effects
 
-A `pixelforge-fluid` source runs a small, deterministic fluid simulation and compiles it into an ordinary recipe of palette grids: gases with buoyancy, swirling vorticity, cooling and dissipation, and liquids as FLIP particles on the same grid. Look layers map density, temperature, speed and depth onto your palette ramps through ordered dither, so no colour outside the palette can appear, and looping effects close their seam. Each preset below compiles in well under a second on a laptop CPU, with no GPU and no model calls. Shown at 4×.
+A `pixelforge-fluid` source runs a small, deterministic fluid simulation and compiles it into an ordinary recipe of palette grids: gases with buoyancy, swirling vorticity, cooling and dissipation, and liquids as FLIP particles on the same grid, thin as water, thick as honey (a stream that never breaks, a mound that slowly sinks) or firm as slime (a blob that squashes, springs back and holds its shape). Look layers map density, temperature, speed and depth onto your palette ramps through ordered dither, so no colour outside the palette can appear, and looping effects close their seam. Each preset below compiles in well under a second on a laptop CPU, with no GPU and no model calls. Shown at 4×.
 
 ![A campfire: flames lick up from crossed logs, embers drift up and smoke curls away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![A torch: a small flame flickers on a wooden handle with a metal cup](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/torch.gif) ![Steam puffs rhythmically from a pipe, rises, curls and thins](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/steam-vent.gif) ![A magic swirl: two glowing sources orbit and leave purple mana that spirals](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/magic-swirl.gif)
 
@@ -65,12 +65,14 @@ A `pixelforge-fluid` source runs a small, deterministic fluid simulation and com
 
 ![A waterfall: water flows over a mossy ledge, falls with foam and churns into a basin that overflows](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/waterfall.gif) ![A drop falls from a stalactite and splashes into a small pool](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/drip.gif) ![A green potion bubbles in a round flask: the surface heaves and bubbles rise and pop](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/potion.gif) ![A drop falls into a pool, throws up a crown and spray, and the waves settle](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/splash.gif)
 
+![Honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the calm surface](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/honey.gif) ![A blob of green slime drops, squashes and springs back; a second blob lands on it and they settle into a peak that holds](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/slime.gif)
+
 ```sh
 node bin/pixelbolt.js compile examples/campfire.fluid.json --out output/campfire.json
 node bin/pixelbolt.js gif output/campfire.json --scale 4 --out output/campfire.gif
 ```
 
-The ten presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks and loops. In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
+The twelve presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops and thick fluids (viscosity, yield stress, adhesion). In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
 
 ## Start
 
@@ -153,7 +155,7 @@ Use Pixelbolt to create or revise pixel sprites, tiles, icons, effects and short
 | [Pixel art skill](skills/pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow |
 | [Authoring guide](docs/agent-guide.md) | Recipe fields, drawing operations and limits |
 | [JSON Schema](schema.json) | Machine-readable recipe structure |
-| [Examples](examples/) | Complete forest spirit, campfire, coin and shrine recipes, a caption with pixel text, a rotated sword swing, a particle effects source and ten fluid presets |
+| [Examples](examples/) | Complete forest spirit, campfire, coin and shrine recipes, a caption with pixel text, a rotated sword swing, a particle effects source and twelve fluid presets |
 | [AGENTS.md](AGENTS.md) | Instructions for agents contributing to the toolkit |
 
 Start with the authoring guide or MCP's `pixel_help`. Write a recipe, validate it, inspect every frame with `pixel_inspect` or `pixelbolt inspect`, revise with targeted patches, then render to a fresh output directory. Validation checks the format; image inspection checks the art.

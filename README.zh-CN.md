@@ -10,7 +10,7 @@
 
 ![用 Pixelbolt 的流体编译器模拟的篝火：火焰从木柴上蹿起，火星飘起，烟雾卷曲散去](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![用 Pixelbolt 模拟的爆炸：白色闪光膨胀成橙色火球，上升、冷却并卷成烟雾](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/explosion.gif)
 
-火焰、烟雾、蒸汽、爆炸、魔法和水都来自真正的流体模拟：在你自己的 CPU 上运行，用时远不到一秒，每一帧都烘焙成可以编辑的调色板像素，循环首尾无缝衔接（见英文 README 的 [Fluid effects](https://github.com/skulitom/Pixelbolt#fluid-effects)）。
+火焰、烟雾、蒸汽、爆炸、魔法、水、蜂蜜和史莱姆都来自真正的流体模拟：在你自己的 CPU 上运行，用时远不到一秒，每一帧都烘焙成可以编辑的调色板像素，循环首尾无缝衔接（见英文 README 的 [Fluid effects](https://github.com/skulitom/Pixelbolt#fluid-effects)）。
 
 - **适合谁：** 希望让 Claude、Codex、Cursor 等智能体绘制和修改像素画的游戏开发者、游戏开发马拉松（game jam）团队、网页或视频创作者，以及需要精确、可重复图像输出的智能体开发者。
 - **什么时候用：** 你需要以文本形式保持可编辑的小型 2D 游戏素材时。智能体可以读回每一个像素，只修改一个像素或一帧而不必重画其余部分，同一份配方每次都渲染出完全相同的图像。
@@ -78,7 +78,7 @@ Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pi
 - **`pixel_inspect`**：不导出素材，直接以帧总览图（contact sheet）查看每一帧；可选调色板键文本网格、剪影、灰度、洋葱皮视图和诊断信息。
 - **`pixel_patch`**：用有针对性的编辑修改配方，例如改一个像素、一种颜色或某一帧，并返回改动了哪些像素和前后对比图。
 - **`pixel_render`**：导出精灵表、图集 JSON、单帧 PNG、APNG 动画、CSS 和 Canvas 播放器；可选同时导出 GIF 和/或供视频剪辑使用的逐帧 PNG。每次调用写入一个新的文件夹。
-- **`pixel_compile`**：把姿势（poses）源文件、自动图块（autotile）模板、粒子特效源文件、流体源文件（模拟的烟、火、爆炸、魔法和水）或法线贴图源文件编译成普通配方。
+- **`pixel_compile`**：把姿势（poses）源文件、自动图块（autotile）模板、粒子特效源文件、流体源文件（模拟的烟、火、爆炸、魔法、水，以及蜂蜜、史莱姆等黏稠液体）或法线贴图源文件编译成普通配方。
 - **`pixel_scene`**：渲染场景清单（图块地图、素材摆放、光照等），可导出场景或逐帧 PNG。
 - **`pixel_import`**：把原始分辨率的 8 位 RGB/RGBA PNG 无损导入为可编辑配方。
 

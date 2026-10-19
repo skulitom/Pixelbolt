@@ -298,7 +298,39 @@ const potion = fluidSource('potion', 32, 40, { G: '#1f6a3f', g: '#3fa34d', l: '#
     ...[[10, 0.4, 0], [21, -0.4, 180]].map(([x, push, phase], i) => ({ name: `rock-${i + 1}`, at: [x, 26], area: [6, 6], rate: 1, density: 0, velocity: [push, -0.2], pulse: { amplitude: 1, period: 24, ...(phase && { phase }) } }))],
   look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'l', 'g', 'G'], thresholds: [1, 2, 4, 9], dither: 0 }], cleanup: { strays: true }
 }, { flask });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion };
+// Honey runs off a dipper into a jar as one unbroken rope that folds and piles into a mound where it lands, and the mound
+// slowly sinks into a calm surface: viscosity resists shearing, never falling, so the rope falls as fast as water would
+// but never breaks into drops or throws a wave; it thins as it speeds up, as a honey stream does. APIC keeps the folds
+// turning instead of smearing them, a little adhesion holds the honey to the glass, and low cohesion keeps the thin rope
+// from pulling itself into beads. The source swells and thins over the loop, and a seep at the surface keeps the level.
+const dipper = shapeRows(28, 9, (x, y) => {
+  if (x >= 9 && y >= 3 && y <= 5) return y === 3 ? 'n' : y === 5 ? 'b' : 'B';
+  if (x > 9) return null;
+  const r = Math.abs(y - 4);
+  if (r > 4 - (x === 0 || x === 9 ? 1 : 0)) return null;
+  return x % 3 === 0 || r === 4 ? 'b' : y < 4 ? 'n' : 'B';
+});
+const jar = shapeRows(26, 22, (x, y) => (y === 21 || x === 0 || x === 25 || (y <= 1 && (x <= 2 || x >= 23)) ? 'k' : x === 1 || x === 24 ? 'q' : null));
+const honey = fluidSource('honey', 40, 48, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', D: '#6b3a0b', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
+  kind: 'liquid', frames: 24, duration: 70, loop: true, warmup: 3, seed: 6, iterations: 24, walls: ['left', 'right', 'bottom'], viscosity: 10, apic: true, adhesion: 1.5, tension: 0.3,
+  obstacles: [{ symbol: 'dipper', x: 12, y: 2 }, { symbol: 'jar', x: 7, y: 26 }], fill: [{ x: 9, y: 37, w: 22, h: 10 }],
+  emitters: [{ name: 'drizzle', at: [16.5, 13], radius: 2, rate: 1, velocity: [0, 0.8], pulse: { amplitude: 0.3, period: 12 } },
+    { name: 'seep', at: [20, 36.5], area: [22, 1], rate: 1, density: -0.25 }],
+  // The rope is thin, so it is drawn by its speed as well as its density, as the waterfall is.
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'speed', colors: ['a'], thresholds: [0.3], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A', 'D'], thresholds: [1, 2, 3, 7, 13], dither: 0 }], cleanup: { strays: true }
+}, { dipper, jar });
+// A blob of slime drops, squashes flat where it lands and springs back into a dome; a second, smaller blob lands on top
+// and the two settle into a peak that holds. A yield stress makes it elastic until it is pushed hard enough to flow, so
+// it keeps the shape it settles into instead of spreading flat as water or honey would.
+const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8be36a', w: '#e6ffc9', k: '#1b1a26', ...stone }, {
+  kind: 'liquid', frames: 40, duration: 60, seed: 4, walls: ['left', 'right', 'bottom'], gravity: [0, 0.5], yield: 6, apic: true, tension: 1,
+  obstacles: [{ symbol: 'ground', x: 0, y: 28 }], fill: [{ at: [15.5, 6], radius: 5.5, velocity: [0, 0.5] }],
+  emitters: [{ name: 'second', at: [15.5, 4], radius: 3.5, burst: 1, start: 14, velocity: [0, 1] }],
+  // Lit from the upper left: a pale rim toward the light, a dark one away from it, and darker deeper inside.
+  look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['l', 'g', 'G'], thresholds: [1, 2, 5], dither: 0 },
+    { field: 'shadow', colors: ['G'], thresholds: [0.8], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }], outline: 'k', cleanup: { strays: true, corners: true }
+}, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { compileFluid, renderProject, encodeGIF } from '../../src/index.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-export const FLUID_SHOWCASE = ['campfire', 'explosion', 'smoke-puff', 'steam-vent', 'magic-swirl', 'torch', 'splash', 'waterfall', 'drip', 'potion'];
+export const FLUID_SHOWCASE = ['campfire', 'explosion', 'smoke-puff', 'steam-vent', 'magic-swirl', 'torch', 'splash', 'waterfall', 'drip', 'potion', 'honey', 'slime'];
 const BACKDROP = [38, 42, 61, 255], SCALE = 4, HOLD = 600;
 
 // One GIF per example: `recipes` may hand in recipes compiled elsewhere (the tests), keyed by example name.

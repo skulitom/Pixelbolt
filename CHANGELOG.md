@@ -4,6 +4,19 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Thick fluids
+
+- **`viscosity`** (gases and liquids, 0–64 square pixels per frame): an implicit viscosity solve in stress form (after Batty and Bridson, 2008), with Jacobi-preconditioned conjugate gradients and a stress-free surface. It slows shearing and stretching, never motion as a whole, so a drop of honey falls exactly as fast as a drop of water, a stream stays one unbroken rope, and a heap spreads slowly instead of splashing. Walls and obstacles hold a viscous fluid; **`slip: true`** lets it slide along them. In a viscous liquid, the pressure solve runs again after the viscosity solve, so a heap does not slump a step at a time, and the particles' own jitter fades with the thickness (the FLIP share falls where the liquid is thick).
+- **`yield`** (liquids, 0–16): a yield stress for mud, slime, dough and toothpaste, after Goktekin, Bargteil and O'Brien (2004). Each particle carries an elastic strain, turned with the flow and capped at the yield; the elastic stress is split as implicit elasticity is, so it is stable at any timestep. Below the yield a blob squashes where it lands and springs back, and a heap keeps its shape (a heap *h* pixels high holds when the yield is more than about gravity × *h* / 2); past it, the liquid flows.
+- **`apic: true`** (liquids): affine particle-in-cell transfers, so the calm share of each particle's velocity keeps the turning and shearing of the flow around it. A spinning blob of syrup keeps about three times as much spin as with plain PIC.
+- **`adhesion`** (liquids, 0–4): liquid touching a wall or obstacle stays on it unless pulled away faster than about `adhesion` ÷ 2 pixels per frame, so a film clings under a ledge or to a spoon.
+- **`advection: "sharp"`** (gases): MacCormack advection with the limiter of Selle et al. (2008). A puff carried by the wind keeps more than twice as many dense pixels after 30 frames, with no new peaks, at up to twice the cost.
+- **`drag`** is documented as resistance from the surroundings, which slows falling too; thickness is `viscosity`.
+- **Two presets:** [honey](examples/honey.fluid.json), a rope of honey from a dipper folding into a mound on a calm surface in a jar (viscosity, APIC, adhesion), and [slime](examples/slime.fluid.json), a blob that squashes, springs back and holds a peak with a second blob on top (yield stress). Both have golden hashes and README GIFs.
+- **Fluid lab:** the two presets, and Thickness (viscosity) and Firmness (yield) sliders for liquids beside Liveliness (flip); the drag slider is now Resistance (drag).
+- **Work budget:** a viscous or yield-stress effect counts about three times the cell updates per step, and sharp advection about thirty more per cell, so expensive sources are still refused before they run.
+- Every new setting is off by default, so existing sources compile exactly as before: the ten earlier presets' golden hashes, showcase GIFs and live-session hashes are unchanged.
+
 ### Claude Code plugin
 
 - **Install in one command:** `claude plugin install pixelbolt --marketplace skulitom/Pixelbolt` (Claude Code 2.1.292 or later) installs the MCP server and the pixel art skill. The plugin (`.claude-plugin/`) runs the checkout's own `bin/pixelbolt.js` with the user's Node.js 20 or later, in the project folder Claude Code has open, so there is nothing to download or build.
