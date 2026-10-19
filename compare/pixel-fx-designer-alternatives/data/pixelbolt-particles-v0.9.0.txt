@@ -1,0 +1,7 @@
+Pixelbolt v0.9.0 (2c180d6), particle source examples/effects.fx.json, compiled three times on 2026-10-19
+Command: node bin/pixelbolt.js compile examples/effects.fx.json --out fx-N.json (each run its own process; times include Node start-up)
+Times: run 1 144 ms, run 2 139 ms, run 3 142 ms
+run 1 SHA-256 8e38dbe45ce74ef50f898a1bf9d24883d9093f0f894a4c6fa25dc07887bb38a0
+run 2 SHA-256 8e38dbe45ce74ef50f898a1bf9d24883d9093f0f894a4c6fa25dc07887bb38a0
+run 3 SHA-256 8e38dbe45ce74ef50f898a1bf9d24883d9093f0f894a4c6fa25dc07887bb38a0
+Result: 48x40 canvas, 57 frames, animations sparks, embers, dust, leaves, shatter; the three recipes are byte-identical.

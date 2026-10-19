@@ -1,0 +1,1658 @@
+{
+ "commit": "d8776d4447ad228aa41727c3d07baf705793ca4b",
+ "describe": "v0.9.0-11-gd8776d4",
+ "version": "0.9.0",
+ "node": "v24.19.0",
+ "platform": "win32 x64 10.0.26200",
+ "cpu": "AMD Ryzen 9 7950X3D 16-Core Processor",
+ "cores": 32,
+ "memGiB": 63,
+ "runs": 3,
+ "work": "<work>/",
+ "presets": [
+  {
+   "preset": "examples/campfire.fluid.json",
+   "name": "campfire",
+   "width": 32,
+   "height": 48,
+   "frames": 24,
+   "animations": {
+    "campfire": {
+     "frames": [
+      "campfire-0",
+      "campfire-1",
+      "campfire-2",
+      "campfire-3",
+      "campfire-4",
+      "campfire-5",
+      "campfire-6",
+      "campfire-7",
+      "campfire-8",
+      "campfire-9",
+      "campfire-10",
+      "campfire-11",
+      "campfire-12",
+      "campfire-13",
+      "campfire-14",
+      "campfire-15",
+      "campfire-16",
+      "campfire-17",
+      "campfire-18",
+      "campfire-19",
+      "campfire-20",
+      "campfire-21",
+      "campfire-22",
+      "campfire-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "u": "#4d4558",
+    "S": "#6e6678",
+    "r": "#b8322f",
+    "o": "#f0772b",
+    "y": "#ffcc4d",
+    "W": "#fff6d1",
+    "b": "#5a3825",
+    "B": "#8a5a36",
+    "k": "#2a1c18"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "campfire",
+     "kind": "gas",
+     "frames": 24,
+     "loop": true,
+     "seed": 3,
+     "steps": 172,
+     "sparks": {
+      "spawned": 13,
+      "maxAlive": 6
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 232,
+     "recipeSha256": "a936046b32f7a321b5265ba4d59f5403d0425b03431f11b6e14b297ba2864528",
+     "metadataSha256": "e1f9dded1ec3c36d31548ed34e7b6c7741f666367e6412ff280400f1b8994d55",
+     "bytes": 28102
+    },
+    {
+     "ms": 226,
+     "recipeSha256": "a936046b32f7a321b5265ba4d59f5403d0425b03431f11b6e14b297ba2864528",
+     "metadataSha256": "e1f9dded1ec3c36d31548ed34e7b6c7741f666367e6412ff280400f1b8994d55",
+     "bytes": 28102
+    },
+    {
+     "ms": 226,
+     "recipeSha256": "a936046b32f7a321b5265ba4d59f5403d0425b03431f11b6e14b297ba2864528",
+     "metadataSha256": "e1f9dded1ec3c36d31548ed34e7b6c7741f666367e6412ff280400f1b8994d55",
+     "bytes": 28102
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 118,
+    "msB": 117,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/campfire",
+    "sheetSha256": "265619d5c7929ed1fd9d37581e69b7bf65a98517457007b3a7984adc9c75af58"
+   },
+   "gif": {
+    "msA": 84,
+    "msB": 83,
+    "bytes": 4368,
+    "identical": true,
+    "path": "<work>/gif-a/campfire.gif",
+    "colors": 9,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1680,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/campfire.json"
+  },
+  {
+   "preset": "examples/drip.fluid.json",
+   "name": "drip",
+   "width": 16,
+   "height": 32,
+   "frames": 24,
+   "animations": {
+    "drip": {
+     "frames": [
+      "drip-0",
+      "drip-1",
+      "drip-2",
+      "drip-3",
+      "drip-4",
+      "drip-5",
+      "drip-6",
+      "drip-7",
+      "drip-8",
+      "drip-9",
+      "drip-10",
+      "drip-11",
+      "drip-12",
+      "drip-13",
+      "drip-14",
+      "drip-15",
+      "drip-16",
+      "drip-17",
+      "drip-18",
+      "drip-19",
+      "drip-20",
+      "drip-21",
+      "drip-22",
+      "drip-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "B": "#1d3f7a",
+    "b": "#2f6fc0",
+    "c": "#5fb4e8",
+    "w": "#dff6ff",
+    "r": "#5b5568",
+    "R": "#433e50",
+    "k": "#2b2735"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "drip",
+     "kind": "liquid",
+     "frames": 24,
+     "loop": true,
+     "seed": 2,
+     "steps": 220,
+     "sparks": {
+      "spawned": 4,
+      "maxAlive": 4
+     },
+     "particles": 302
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 138,
+     "recipeSha256": "9a11bed3b69e5518c5e7e1157717cdbefd3d1d1edd8a4634dedda46dfab8afb2",
+     "metadataSha256": "9b9b4c14be3171516fab531688ed6772099ceda8717e2ea8fecbfc5773c3fef0",
+     "bytes": 20773
+    },
+    {
+     "ms": 136,
+     "recipeSha256": "9a11bed3b69e5518c5e7e1157717cdbefd3d1d1edd8a4634dedda46dfab8afb2",
+     "metadataSha256": "9b9b4c14be3171516fab531688ed6772099ceda8717e2ea8fecbfc5773c3fef0",
+     "bytes": 20773
+    },
+    {
+     "ms": 137,
+     "recipeSha256": "9a11bed3b69e5518c5e7e1157717cdbefd3d1d1edd8a4634dedda46dfab8afb2",
+     "metadataSha256": "9b9b4c14be3171516fab531688ed6772099ceda8717e2ea8fecbfc5773c3fef0",
+     "bytes": 20773
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 105,
+    "msB": 108,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/drip",
+    "sheetSha256": "ff04af2d5434541838073f558e13cc65b2ff6d8ea48d9734bdfe84a707688a7f"
+   },
+   "gif": {
+    "msA": 83,
+    "msB": 79,
+    "bytes": 1071,
+    "identical": true,
+    "path": "<work>/gif-a/drip.gif",
+    "colors": 4,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1680,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/drip.json"
+  },
+  {
+   "preset": "examples/explosion.fluid.json",
+   "name": "explosion",
+   "width": 64,
+   "height": 64,
+   "frames": 32,
+   "animations": {
+    "explosion": {
+     "frames": [
+      "explosion-0",
+      "explosion-1",
+      "explosion-2",
+      "explosion-3",
+      "explosion-4",
+      "explosion-5",
+      "explosion-6",
+      "explosion-7",
+      "explosion-8",
+      "explosion-9",
+      "explosion-10",
+      "explosion-11",
+      "explosion-12",
+      "explosion-13",
+      "explosion-14",
+      "explosion-15",
+      "explosion-16",
+      "explosion-17",
+      "explosion-18",
+      "explosion-19",
+      "explosion-20",
+      "explosion-21",
+      "explosion-22",
+      "explosion-23",
+      "explosion-24",
+      "explosion-25",
+      "explosion-26",
+      "explosion-27",
+      "explosion-28",
+      "explosion-29",
+      "explosion-30",
+      "explosion-31"
+     ],
+     "loop": false
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "W": "#fffbe6",
+    "y": "#ffd34d",
+    "o": "#ff8a2b",
+    "r": "#d6402b",
+    "R": "#8f2a2e",
+    "s": "#b3a5ad",
+    "S": "#867882",
+    "k": "#5a4e5b"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "explosion",
+     "kind": "gas",
+     "frames": 32,
+     "loop": false,
+     "seed": 7,
+     "steps": 64,
+     "sparks": {
+      "spawned": 16,
+      "maxAlive": 16
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 266,
+     "recipeSha256": "95a389b40373ee6ed91039f01d5dd0f2a6c8a68e349fbe98f56de212d3052be7",
+     "metadataSha256": "f8415edd93062e079900bfcd841cec3eeffe935afd69dd04d08c1d5402cfbc7f",
+     "bytes": 72229
+    },
+    {
+     "ms": 264,
+     "recipeSha256": "95a389b40373ee6ed91039f01d5dd0f2a6c8a68e349fbe98f56de212d3052be7",
+     "metadataSha256": "f8415edd93062e079900bfcd841cec3eeffe935afd69dd04d08c1d5402cfbc7f",
+     "bytes": 72229
+    },
+    {
+     "ms": 269,
+     "recipeSha256": "95a389b40373ee6ed91039f01d5dd0f2a6c8a68e349fbe98f56de212d3052be7",
+     "metadataSha256": "f8415edd93062e079900bfcd841cec3eeffe935afd69dd04d08c1d5402cfbc7f",
+     "bytes": 72229
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 156,
+    "msB": 155,
+    "files": 40,
+    "identical": true,
+    "dir": "<work>/render-a/explosion",
+    "sheetSha256": "442aa7d65517a4b3784d320c4ae008c2deb7ad908ac9807494dc49f3443d34aa"
+   },
+   "gif": {
+    "msA": 123,
+    "msB": 136,
+    "bytes": 7777,
+    "identical": true,
+    "path": "<work>/gif-a/explosion.gif",
+    "colors": 8,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 32,
+    "duration": 1920,
+    "loop": false
+   },
+   "recipePath": "<work>/compile-1/explosion.json"
+  },
+  {
+   "preset": "examples/honey.fluid.json",
+   "name": "honey",
+   "width": 40,
+   "height": 48,
+   "frames": 24,
+   "animations": {
+    "honey": {
+     "frames": [
+      "honey-0",
+      "honey-1",
+      "honey-2",
+      "honey-3",
+      "honey-4",
+      "honey-5",
+      "honey-6",
+      "honey-7",
+      "honey-8",
+      "honey-9",
+      "honey-10",
+      "honey-11",
+      "honey-12",
+      "honey-13",
+      "honey-14",
+      "honey-15",
+      "honey-16",
+      "honey-17",
+      "honey-18",
+      "honey-19",
+      "honey-20",
+      "honey-21",
+      "honey-22",
+      "honey-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "H": "#fff3b0",
+    "y": "#f7c948",
+    "a": "#e09a1f",
+    "A": "#a85f0e",
+    "b": "#6e4426",
+    "B": "#9c6a3c",
+    "n": "#c79a5b",
+    "q": "#c7d6e6",
+    "k": "#1b1a26"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "honey",
+     "kind": "liquid",
+     "frames": 24,
+     "loop": true,
+     "seed": 6,
+     "steps": 192,
+     "sparks": {
+      "spawned": 0,
+      "maxAlive": 0
+     },
+     "particles": 1182
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 384,
+     "recipeSha256": "3adc9a9483609c2f23ec447253307a74335d52d4352e60de8c18ff1af40fd88d",
+     "metadataSha256": "f4a53deb292397846d3cc1e84087c404898736a8952cb2c15e645e5e555cc4a2",
+     "bytes": 42545
+    },
+    {
+     "ms": 384,
+     "recipeSha256": "3adc9a9483609c2f23ec447253307a74335d52d4352e60de8c18ff1af40fd88d",
+     "metadataSha256": "f4a53deb292397846d3cc1e84087c404898736a8952cb2c15e645e5e555cc4a2",
+     "bytes": 42545
+    },
+    {
+     "ms": 386,
+     "recipeSha256": "3adc9a9483609c2f23ec447253307a74335d52d4352e60de8c18ff1af40fd88d",
+     "metadataSha256": "f4a53deb292397846d3cc1e84087c404898736a8952cb2c15e645e5e555cc4a2",
+     "bytes": 42545
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 119,
+    "msB": 119,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/honey",
+    "sheetSha256": "93cf799c12a2fdd3ef0270ab624185a293667b83c52cef64584b5a1ec146ca9b"
+   },
+   "gif": {
+    "msA": 90,
+    "msB": 90,
+    "bytes": 6857,
+    "identical": true,
+    "path": "<work>/gif-a/honey.gif",
+    "colors": 9,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1680,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/honey.json"
+  },
+  {
+   "preset": "examples/magic-swirl.fluid.json",
+   "name": "magic-swirl",
+   "width": 48,
+   "height": 48,
+   "frames": 24,
+   "animations": {
+    "magic-swirl": {
+     "frames": [
+      "magic-swirl-0",
+      "magic-swirl-1",
+      "magic-swirl-2",
+      "magic-swirl-3",
+      "magic-swirl-4",
+      "magic-swirl-5",
+      "magic-swirl-6",
+      "magic-swirl-7",
+      "magic-swirl-8",
+      "magic-swirl-9",
+      "magic-swirl-10",
+      "magic-swirl-11",
+      "magic-swirl-12",
+      "magic-swirl-13",
+      "magic-swirl-14",
+      "magic-swirl-15",
+      "magic-swirl-16",
+      "magic-swirl-17",
+      "magic-swirl-18",
+      "magic-swirl-19",
+      "magic-swirl-20",
+      "magic-swirl-21",
+      "magic-swirl-22",
+      "magic-swirl-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "v": "#3d2a6b",
+    "p": "#7a44c9",
+    "m": "#c06cf0",
+    "c": "#6fe3f2",
+    "W": "#f4f0ff"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "magic-swirl",
+     "kind": "gas",
+     "frames": 24,
+     "loop": true,
+     "seed": 9,
+     "steps": 92,
+     "sparks": {
+      "spawned": 32,
+      "maxAlive": 22
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 236,
+     "recipeSha256": "acfcdf0f8199fe8d34798007b822fad7f5a598c74a56c1fd735d3e3f1f51d2b4",
+     "metadataSha256": "3b22e0ed2faf991454b892af80e032579570d40eae824a577d44e3c7b5b8c658",
+     "bytes": 32496
+    },
+    {
+     "ms": 233,
+     "recipeSha256": "acfcdf0f8199fe8d34798007b822fad7f5a598c74a56c1fd735d3e3f1f51d2b4",
+     "metadataSha256": "3b22e0ed2faf991454b892af80e032579570d40eae824a577d44e3c7b5b8c658",
+     "bytes": 32496
+    },
+    {
+     "ms": 249,
+     "recipeSha256": "acfcdf0f8199fe8d34798007b822fad7f5a598c74a56c1fd735d3e3f1f51d2b4",
+     "metadataSha256": "3b22e0ed2faf991454b892af80e032579570d40eae824a577d44e3c7b5b8c658",
+     "bytes": 32496
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 129,
+    "msB": 124,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/magic-swirl",
+    "sheetSha256": "f68c744493a45043034100386f71101fc8ca1b4ed05b3e3f2da9bbb8295e89ef"
+   },
+   "gif": {
+    "msA": 95,
+    "msB": 90,
+    "bytes": 4446,
+    "identical": true,
+    "path": "<work>/gif-a/magic-swirl.gif",
+    "colors": 5,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1440,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/magic-swirl.json"
+  },
+  {
+   "preset": "examples/potion.fluid.json",
+   "name": "potion",
+   "width": 32,
+   "height": 40,
+   "frames": 24,
+   "animations": {
+    "potion": {
+     "frames": [
+      "potion-0",
+      "potion-1",
+      "potion-2",
+      "potion-3",
+      "potion-4",
+      "potion-5",
+      "potion-6",
+      "potion-7",
+      "potion-8",
+      "potion-9",
+      "potion-10",
+      "potion-11",
+      "potion-12",
+      "potion-13",
+      "potion-14",
+      "potion-15",
+      "potion-16",
+      "potion-17",
+      "potion-18",
+      "potion-19",
+      "potion-20",
+      "potion-21",
+      "potion-22",
+      "potion-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "G": "#1f6a3f",
+    "g": "#3fa34d",
+    "l": "#8be36a",
+    "w": "#e6ffc9",
+    "k": "#1b1a26",
+    "h": "#8fa3b8",
+    "H": "#e4f0ff"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "potion",
+     "kind": "liquid",
+     "frames": 24,
+     "loop": true,
+     "seed": 8,
+     "steps": 208,
+     "sparks": {
+      "spawned": 7,
+      "maxAlive": 6
+     },
+     "particles": 1032
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 211,
+     "recipeSha256": "f08e7c5a457229d5fb2a8bb461837f409e55d3334b7373f7f27d084450abf66a",
+     "metadataSha256": "7038f3650d5ed92759507b0cd8da99a35db68bf5843381b0621c593cbb73e027",
+     "bytes": 23029
+    },
+    {
+     "ms": 212,
+     "recipeSha256": "f08e7c5a457229d5fb2a8bb461837f409e55d3334b7373f7f27d084450abf66a",
+     "metadataSha256": "7038f3650d5ed92759507b0cd8da99a35db68bf5843381b0621c593cbb73e027",
+     "bytes": 23029
+    },
+    {
+     "ms": 217,
+     "recipeSha256": "f08e7c5a457229d5fb2a8bb461837f409e55d3334b7373f7f27d084450abf66a",
+     "metadataSha256": "7038f3650d5ed92759507b0cd8da99a35db68bf5843381b0621c593cbb73e027",
+     "bytes": 23029
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 116,
+    "msB": 118,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/potion",
+    "sheetSha256": "e176ac78802f843bb26292c0a64f32c65b2c22d8cd2c599d02b87425f3796364"
+   },
+   "gif": {
+    "msA": 87,
+    "msB": 86,
+    "bytes": 1871,
+    "identical": true,
+    "path": "<work>/gif-a/potion.gif",
+    "colors": 7,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1680,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/potion.json"
+  },
+  {
+   "preset": "examples/slime.fluid.json",
+   "name": "slime",
+   "width": 32,
+   "height": 32,
+   "frames": 40,
+   "animations": {
+    "slime": {
+     "frames": [
+      "slime-0",
+      "slime-1",
+      "slime-2",
+      "slime-3",
+      "slime-4",
+      "slime-5",
+      "slime-6",
+      "slime-7",
+      "slime-8",
+      "slime-9",
+      "slime-10",
+      "slime-11",
+      "slime-12",
+      "slime-13",
+      "slime-14",
+      "slime-15",
+      "slime-16",
+      "slime-17",
+      "slime-18",
+      "slime-19",
+      "slime-20",
+      "slime-21",
+      "slime-22",
+      "slime-23",
+      "slime-24",
+      "slime-25",
+      "slime-26",
+      "slime-27",
+      "slime-28",
+      "slime-29",
+      "slime-30",
+      "slime-31",
+      "slime-32",
+      "slime-33",
+      "slime-34",
+      "slime-35",
+      "slime-36",
+      "slime-37",
+      "slime-38",
+      "slime-39"
+     ],
+     "loop": false
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "G": "#1f6a3f",
+    "g": "#3fa34d",
+    "l": "#8be36a",
+    "w": "#e6ffc9",
+    "k": "#2b2735",
+    "r": "#5b5568",
+    "R": "#433e50"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "slime",
+     "kind": "liquid",
+     "frames": 40,
+     "loop": false,
+     "seed": 4,
+     "steps": 160,
+     "sparks": {
+      "spawned": 0,
+      "maxAlive": 0
+     },
+     "particles": 548
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 276,
+     "recipeSha256": "e85da158596f21924c1582cfd07a788b9117a917acb5dfdc0219baaa8edb6571",
+     "metadataSha256": "c8f99aec68cfcd1dd3bea4cfc546d174ced96528923879d7bc9738df7cba1192",
+     "bytes": 27767
+    },
+    {
+     "ms": 273,
+     "recipeSha256": "e85da158596f21924c1582cfd07a788b9117a917acb5dfdc0219baaa8edb6571",
+     "metadataSha256": "c8f99aec68cfcd1dd3bea4cfc546d174ced96528923879d7bc9738df7cba1192",
+     "bytes": 27767
+    },
+    {
+     "ms": 264,
+     "recipeSha256": "e85da158596f21924c1582cfd07a788b9117a917acb5dfdc0219baaa8edb6571",
+     "metadataSha256": "c8f99aec68cfcd1dd3bea4cfc546d174ced96528923879d7bc9738df7cba1192",
+     "bytes": 27767
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 120,
+    "msB": 120,
+    "files": 48,
+    "identical": true,
+    "dir": "<work>/render-a/slime",
+    "sheetSha256": "614f91a6843f65381599289657f75b421758e32bbb84423cb879c66ef6af8907"
+   },
+   "gif": {
+    "msA": 86,
+    "msB": 85,
+    "bytes": 3962,
+    "identical": true,
+    "path": "<work>/gif-a/slime.gif",
+    "colors": 7,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 40,
+    "duration": 2400,
+    "loop": false
+   },
+   "recipePath": "<work>/compile-1/slime.json"
+  },
+  {
+   "preset": "examples/smoke-puff.fluid.json",
+   "name": "smoke-puff",
+   "width": 32,
+   "height": 32,
+   "frames": 19,
+   "animations": {
+    "smoke-puff": {
+     "frames": [
+      "smoke-puff-0",
+      "smoke-puff-1",
+      "smoke-puff-2",
+      "smoke-puff-3",
+      "smoke-puff-4",
+      "smoke-puff-5",
+      "smoke-puff-6",
+      "smoke-puff-7",
+      "smoke-puff-8",
+      "smoke-puff-9",
+      "smoke-puff-10",
+      "smoke-puff-11",
+      "smoke-puff-12",
+      "smoke-puff-13",
+      "smoke-puff-14",
+      "smoke-puff-15",
+      "smoke-puff-16",
+      "smoke-puff-17",
+      "smoke-puff-18"
+     ],
+     "loop": false
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "k": "#121019",
+    "d": "#5d5872",
+    "m": "#9a95ad",
+    "l": "#cfcadb",
+    "w": "#f8f6fc"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "smoke-puff",
+     "kind": "gas",
+     "frames": 19,
+     "loop": false,
+     "seed": 5,
+     "steps": 38,
+     "sparks": {
+      "spawned": 0,
+      "maxAlive": 0
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 125,
+     "recipeSha256": "8141142d19e3beb35043a6d2e2bec011864c1e6f5c7d373c6207b4c4fc96b41c",
+     "metadataSha256": "dc2ac8fdf3eb54c010bde113f5c37294ef4b3886511ed2974ea5870681eefa46",
+     "bytes": 17645
+    },
+    {
+     "ms": 121,
+     "recipeSha256": "8141142d19e3beb35043a6d2e2bec011864c1e6f5c7d373c6207b4c4fc96b41c",
+     "metadataSha256": "dc2ac8fdf3eb54c010bde113f5c37294ef4b3886511ed2974ea5870681eefa46",
+     "bytes": 17645
+    },
+    {
+     "ms": 123,
+     "recipeSha256": "8141142d19e3beb35043a6d2e2bec011864c1e6f5c7d373c6207b4c4fc96b41c",
+     "metadataSha256": "dc2ac8fdf3eb54c010bde113f5c37294ef4b3886511ed2974ea5870681eefa46",
+     "bytes": 17645
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 106,
+    "msB": 105,
+    "files": 27,
+    "identical": true,
+    "dir": "<work>/render-a/smoke-puff",
+    "sheetSha256": "32bc9ce55a2f5936271645f840d0023255c1fa3c2afacee5b3d2dc9c025b5f3a"
+   },
+   "gif": {
+    "msA": 82,
+    "msB": 82,
+    "bytes": 2229,
+    "identical": true,
+    "path": "<work>/gif-a/smoke-puff.gif",
+    "colors": 5,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 19,
+    "duration": 1140,
+    "loop": false
+   },
+   "recipePath": "<work>/compile-1/smoke-puff.json"
+  },
+  {
+   "preset": "examples/splash.fluid.json",
+   "name": "splash",
+   "width": 48,
+   "height": 40,
+   "frames": 40,
+   "animations": {
+    "splash": {
+     "frames": [
+      "splash-0",
+      "splash-1",
+      "splash-2",
+      "splash-3",
+      "splash-4",
+      "splash-5",
+      "splash-6",
+      "splash-7",
+      "splash-8",
+      "splash-9",
+      "splash-10",
+      "splash-11",
+      "splash-12",
+      "splash-13",
+      "splash-14",
+      "splash-15",
+      "splash-16",
+      "splash-17",
+      "splash-18",
+      "splash-19",
+      "splash-20",
+      "splash-21",
+      "splash-22",
+      "splash-23",
+      "splash-24",
+      "splash-25",
+      "splash-26",
+      "splash-27",
+      "splash-28",
+      "splash-29",
+      "splash-30",
+      "splash-31",
+      "splash-32",
+      "splash-33",
+      "splash-34",
+      "splash-35",
+      "splash-36",
+      "splash-37",
+      "splash-38",
+      "splash-39"
+     ],
+     "loop": false
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "B": "#1d3f7a",
+    "b": "#2f6fc0",
+    "c": "#5fb4e8",
+    "w": "#dff6ff"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "splash",
+     "kind": "liquid",
+     "frames": 40,
+     "loop": false,
+     "seed": 3,
+     "steps": 80,
+     "sparks": {
+      "spawned": 12,
+      "maxAlive": 12
+     },
+     "particles": 2432
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 198,
+     "recipeSha256": "70eec430320aaadcea1cdf2549d83f2ab83a5ab848caf3a23200e1f8876cb912",
+     "metadataSha256": "1c223062c4d60c2d1de976ca0ebcc8355be5690e77f69d8a2082b3c370b5c4b3",
+     "bytes": 64759
+    },
+    {
+     "ms": 203,
+     "recipeSha256": "70eec430320aaadcea1cdf2549d83f2ab83a5ab848caf3a23200e1f8876cb912",
+     "metadataSha256": "1c223062c4d60c2d1de976ca0ebcc8355be5690e77f69d8a2082b3c370b5c4b3",
+     "bytes": 64759
+    },
+    {
+     "ms": 199,
+     "recipeSha256": "70eec430320aaadcea1cdf2549d83f2ab83a5ab848caf3a23200e1f8876cb912",
+     "metadataSha256": "1c223062c4d60c2d1de976ca0ebcc8355be5690e77f69d8a2082b3c370b5c4b3",
+     "bytes": 64759
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 138,
+    "msB": 134,
+    "files": 48,
+    "identical": true,
+    "dir": "<work>/render-a/splash",
+    "sheetSha256": "cc6308ec6253cca40a27da766da737995a263889aa69083d6d2b32d3265d4e46"
+   },
+   "gif": {
+    "msA": 110,
+    "msB": 111,
+    "bytes": 4640,
+    "identical": true,
+    "path": "<work>/gif-a/splash.gif",
+    "colors": 4,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 40,
+    "duration": 2400,
+    "loop": false
+   },
+   "recipePath": "<work>/compile-1/splash.json"
+  },
+  {
+   "preset": "examples/steam-vent.fluid.json",
+   "name": "steam-vent",
+   "width": 32,
+   "height": 48,
+   "frames": 24,
+   "animations": {
+    "steam-vent": {
+     "frames": [
+      "steam-vent-0",
+      "steam-vent-1",
+      "steam-vent-2",
+      "steam-vent-3",
+      "steam-vent-4",
+      "steam-vent-5",
+      "steam-vent-6",
+      "steam-vent-7",
+      "steam-vent-8",
+      "steam-vent-9",
+      "steam-vent-10",
+      "steam-vent-11",
+      "steam-vent-12",
+      "steam-vent-13",
+      "steam-vent-14",
+      "steam-vent-15",
+      "steam-vent-16",
+      "steam-vent-17",
+      "steam-vent-18",
+      "steam-vent-19",
+      "steam-vent-20",
+      "steam-vent-21",
+      "steam-vent-22",
+      "steam-vent-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "q": "#7d8ca3",
+    "Q": "#b4c2d6",
+    "w": "#eef4fb",
+    "p": "#4a5160",
+    "P": "#6f7889",
+    "h": "#9aa3b3",
+    "k": "#262a33"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "steam-vent",
+     "kind": "gas",
+     "frames": 24,
+     "loop": true,
+     "seed": 2,
+     "steps": 144,
+     "sparks": {
+      "spawned": 0,
+      "maxAlive": 0
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 222,
+     "recipeSha256": "f6a4f010345f9714d11dad0369bf6c51880cd2be1ee31af9c08b68d967388e2f",
+     "metadataSha256": "ff3833dcdfd8109e7984451763c14041e4c9a5402f0f0d02e638e8956099c043",
+     "bytes": 33298
+    },
+    {
+     "ms": 223,
+     "recipeSha256": "f6a4f010345f9714d11dad0369bf6c51880cd2be1ee31af9c08b68d967388e2f",
+     "metadataSha256": "ff3833dcdfd8109e7984451763c14041e4c9a5402f0f0d02e638e8956099c043",
+     "bytes": 33298
+    },
+    {
+     "ms": 223,
+     "recipeSha256": "f6a4f010345f9714d11dad0369bf6c51880cd2be1ee31af9c08b68d967388e2f",
+     "metadataSha256": "ff3833dcdfd8109e7984451763c14041e4c9a5402f0f0d02e638e8956099c043",
+     "bytes": 33298
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 126,
+    "msB": 121,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/steam-vent",
+    "sheetSha256": "4ed5cec368d86f7c1220959dd795c52ab1f9ea19476db5103a2b48ecb1aad4e4"
+   },
+   "gif": {
+    "msA": 86,
+    "msB": 85,
+    "bytes": 3321,
+    "identical": true,
+    "path": "<work>/gif-a/steam-vent.gif",
+    "colors": 7,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1680,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/steam-vent.json"
+  },
+  {
+   "preset": "examples/torch.fluid.json",
+   "name": "torch",
+   "width": 16,
+   "height": 32,
+   "frames": 16,
+   "animations": {
+    "torch": {
+     "frames": [
+      "torch-0",
+      "torch-1",
+      "torch-2",
+      "torch-3",
+      "torch-4",
+      "torch-5",
+      "torch-6",
+      "torch-7",
+      "torch-8",
+      "torch-9",
+      "torch-10",
+      "torch-11",
+      "torch-12",
+      "torch-13",
+      "torch-14",
+      "torch-15"
+     ]
+    }
+   },
+   "durationsMs": [
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70,
+    70
+   ],
+   "palette": {
+    "r": "#c23b2e",
+    "o": "#f57f2a",
+    "y": "#ffd257",
+    "W": "#fff7d6",
+    "b": "#5c3a24",
+    "B": "#8c5a32",
+    "g": "#8a8f99",
+    "G": "#c4c8cf",
+    "k": "#221a1c"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "torch",
+     "kind": "gas",
+     "frames": 16,
+     "loop": true,
+     "seed": 4,
+     "steps": 112,
+     "sparks": {
+      "spawned": 2,
+      "maxAlive": 1
+     },
+     "particles": null
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 124,
+     "recipeSha256": "31816003e00d1b200a0bd4328644b9577523e96008b85c78c91db33f1bb5f53f",
+     "metadataSha256": "2742f0eb6d4d58271d9071882017303d548159c52058d0670a14dd2d4801966b",
+     "bytes": 10929
+    },
+    {
+     "ms": 123,
+     "recipeSha256": "31816003e00d1b200a0bd4328644b9577523e96008b85c78c91db33f1bb5f53f",
+     "metadataSha256": "2742f0eb6d4d58271d9071882017303d548159c52058d0670a14dd2d4801966b",
+     "bytes": 10929
+    },
+    {
+     "ms": 125,
+     "recipeSha256": "31816003e00d1b200a0bd4328644b9577523e96008b85c78c91db33f1bb5f53f",
+     "metadataSha256": "2742f0eb6d4d58271d9071882017303d548159c52058d0670a14dd2d4801966b",
+     "bytes": 10929
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 101,
+    "msB": 102,
+    "files": 24,
+    "identical": true,
+    "dir": "<work>/render-a/torch",
+    "sheetSha256": "d27ffacf429e924fb0155a17c0e0f3bfe6ec5c3f0be5d2a1b98952f86c691b7c"
+   },
+   "gif": {
+    "msA": 80,
+    "msB": 82,
+    "bytes": 1232,
+    "identical": true,
+    "path": "<work>/gif-a/torch.gif",
+    "colors": 9,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 16,
+    "duration": 1120,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/torch.json"
+  },
+  {
+   "preset": "examples/waterfall.fluid.json",
+   "name": "waterfall",
+   "width": 48,
+   "height": 64,
+   "frames": 24,
+   "animations": {
+    "waterfall": {
+     "frames": [
+      "waterfall-0",
+      "waterfall-1",
+      "waterfall-2",
+      "waterfall-3",
+      "waterfall-4",
+      "waterfall-5",
+      "waterfall-6",
+      "waterfall-7",
+      "waterfall-8",
+      "waterfall-9",
+      "waterfall-10",
+      "waterfall-11",
+      "waterfall-12",
+      "waterfall-13",
+      "waterfall-14",
+      "waterfall-15",
+      "waterfall-16",
+      "waterfall-17",
+      "waterfall-18",
+      "waterfall-19",
+      "waterfall-20",
+      "waterfall-21",
+      "waterfall-22",
+      "waterfall-23"
+     ]
+    }
+   },
+   "durationsMs": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "palette": {
+    "B": "#1d3f7a",
+    "b": "#2f6fc0",
+    "c": "#5fb4e8",
+    "w": "#dff6ff",
+    "r": "#5b5568",
+    "R": "#433e50",
+    "k": "#2b2735",
+    "L": "#7b7590",
+    "m": "#5f9a4a"
+   },
+   "sourceEffects": 1,
+   "effects": [
+    {
+     "effect": "waterfall",
+     "kind": "liquid",
+     "frames": 24,
+     "loop": true,
+     "seed": 5,
+     "steps": 438,
+     "sparks": {
+      "spawned": 414,
+      "maxAlive": 61
+     },
+     "particles": 2341
+    }
+   ],
+   "compiles": [
+    {
+     "ms": 534,
+     "recipeSha256": "2f5ee7882bee96c65b2f81086d211b73c4ad58f4b259cd55bc16625b82cccf85",
+     "metadataSha256": "babe702ca0a4b8c3fc7570cd6ab86aefebc4a3f2b6ff87dc9048b944a04eb282",
+     "bytes": 96449
+    },
+    {
+     "ms": 536,
+     "recipeSha256": "2f5ee7882bee96c65b2f81086d211b73c4ad58f4b259cd55bc16625b82cccf85",
+     "metadataSha256": "babe702ca0a4b8c3fc7570cd6ab86aefebc4a3f2b6ff87dc9048b944a04eb282",
+     "bytes": 96449
+    },
+    {
+     "ms": 536,
+     "recipeSha256": "2f5ee7882bee96c65b2f81086d211b73c4ad58f4b259cd55bc16625b82cccf85",
+     "metadataSha256": "babe702ca0a4b8c3fc7570cd6ab86aefebc4a3f2b6ff87dc9048b944a04eb282",
+     "bytes": 96449
+    }
+   ],
+   "compileIdentical": true,
+   "render": {
+    "msA": 137,
+    "msB": 138,
+    "files": 32,
+    "identical": true,
+    "dir": "<work>/render-a/waterfall",
+    "sheetSha256": "4acb7f895d435b9709105dc0ff0f6254c901abc85cfd3820dea07dbb87224fe0"
+   },
+   "gif": {
+    "msA": 127,
+    "msB": 125,
+    "bytes": 11484,
+    "identical": true,
+    "path": "<work>/gif-a/waterfall.gif",
+    "colors": 9,
+    "partialAlpha": 0,
+    "notes": [],
+    "warnings": [],
+    "frames": 24,
+    "duration": 1440,
+    "loop": true
+   },
+   "recipePath": "<work>/compile-1/waterfall.json"
+  }
+ ]
+}

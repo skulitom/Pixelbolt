@@ -1,0 +1,401 @@
+{
+ "bin": "<mcpb>/bin/pixelbolt.js",
+ "examples": "<clone>/examples",
+ "node": "v24.19.0",
+ "calls": [],
+ "presets": [
+  {
+   "preset": "campfire",
+   "sourceBytes": 2742,
+   "msA": 230.8,
+   "msB": 193.7,
+   "ok": true,
+   "revisionA": "1a789c44e352",
+   "revisionB": "1a789c44e352",
+   "sameRevision": true,
+   "cliRevision": "1a789c44e352",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "32x48",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 34052
+   },
+   "replyBytes": 35947,
+   "error": null
+  },
+  {
+   "preset": "drip",
+   "sourceBytes": 3944,
+   "msA": 97.8,
+   "msB": 81.4,
+   "ok": true,
+   "revisionA": "1147551d26b4",
+   "revisionB": "1147551d26b4",
+   "sameRevision": true,
+   "cliRevision": "1147551d26b4",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "16x32",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 18464
+   },
+   "replyBytes": 20225,
+   "error": null
+  },
+  {
+   "preset": "explosion",
+   "sourceBytes": 8497,
+   "msA": 229.6,
+   "msB": 222.5,
+   "ok": true,
+   "revisionA": "cc5409a9598f",
+   "revisionB": "cc5409a9598f",
+   "sameRevision": true,
+   "cliRevision": "cc5409a9598f",
+   "matchesCli": true,
+   "frames": 32,
+   "size": "64x64",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 28008
+   },
+   "replyBytes": 30319,
+   "error": null
+  },
+  {
+   "preset": "magic-swirl",
+   "sourceBytes": 5733,
+   "msA": 215.7,
+   "msB": 201.7,
+   "ok": true,
+   "revisionA": "24cc577124e2",
+   "revisionB": "24cc577124e2",
+   "sameRevision": true,
+   "cliRevision": "24cc577124e2",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "48x48",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 35272
+   },
+   "replyBytes": 37248,
+   "error": null
+  },
+  {
+   "preset": "potion",
+   "sourceBytes": 5168,
+   "msA": 168.4,
+   "msB": 155.4,
+   "ok": true,
+   "revisionA": "11636b6972e4",
+   "revisionB": "11636b6972e4",
+   "sameRevision": true,
+   "cliRevision": "11636b6972e4",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "32x40",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 25664
+   },
+   "replyBytes": 27505,
+   "error": null
+  },
+  {
+   "preset": "smoke-puff",
+   "sourceBytes": 2747,
+   "msA": 85.9,
+   "msB": 75.8,
+   "ok": true,
+   "revisionA": "4cec863e2802",
+   "revisionB": "4cec863e2802",
+   "sameRevision": true,
+   "cliRevision": "4cec863e2802",
+   "matchesCli": true,
+   "frames": 19,
+   "size": "32x32",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 25456
+   },
+   "replyBytes": 27135,
+   "error": null
+  },
+  {
+   "preset": "splash",
+   "sourceBytes": 2564,
+   "msA": 144.9,
+   "msB": 129.1,
+   "ok": true,
+   "revisionA": "1b2a22fe73a5",
+   "revisionB": "1b2a22fe73a5",
+   "sameRevision": true,
+   "cliRevision": "1b2a22fe73a5",
+   "matchesCli": true,
+   "frames": 40,
+   "size": "48x40",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 23508
+   },
+   "replyBytes": 26076,
+   "error": null
+  },
+  {
+   "preset": "steam-vent",
+   "sourceBytes": 5736,
+   "msA": 193.5,
+   "msB": 187.7,
+   "ok": true,
+   "revisionA": "00ff7b5fc9cb",
+   "revisionB": "00ff7b5fc9cb",
+   "sameRevision": true,
+   "cliRevision": "00ff7b5fc9cb",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "32x48",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 33032
+   },
+   "replyBytes": 34981,
+   "error": null
+  },
+  {
+   "preset": "torch",
+   "sourceBytes": 2070,
+   "msA": 67.9,
+   "msB": 65.9,
+   "ok": true,
+   "revisionA": "1653a23c933b",
+   "revisionB": "1653a23c933b",
+   "sameRevision": true,
+   "cliRevision": "1653a23c933b",
+   "matchesCli": true,
+   "frames": 16,
+   "size": "16x32",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 20268
+   },
+   "replyBytes": 21701,
+   "error": null
+  },
+  {
+   "preset": "waterfall",
+   "sourceBytes": 6265,
+   "msA": 511.5,
+   "msB": 607.7,
+   "ok": true,
+   "revisionA": "2dd5ed11bff9",
+   "revisionB": "2dd5ed11bff9",
+   "sameRevision": true,
+   "cliRevision": "2dd5ed11bff9",
+   "matchesCli": true,
+   "frames": 24,
+   "size": "48x64",
+   "image": {
+    "mimeType": "image/png",
+    "base64Length": 28772
+   },
+   "replyBytes": 30697,
+   "error": null
+  }
+ ],
+ "server": {
+  "name": "pixelbolt",
+  "version": "0.9.0"
+ },
+ "tools": {
+  "count": 8,
+  "names": [
+   "pixel_help",
+   "pixel_validate",
+   "pixel_inspect",
+   "pixel_patch",
+   "pixel_render",
+   "pixel_compile",
+   "pixel_scene",
+   "pixel_import"
+  ],
+  "replyBytes": 135553
+ },
+ "helpFluid": {
+  "ms": 1.2,
+  "replyBytes": 22482,
+  "isError": false
+ },
+ "renderCampfire": {
+  "ms": 175.9,
+  "ok": true,
+  "summary": {
+   "ok": true,
+   "revision": "1a789c44e352",
+   "directory": "<work>/campfire-xl8ZIm",
+   "files": [
+    "campfire.png",
+    "campfire.atlas.json",
+    "campfire.pixel.json",
+    "campfire.css",
+    "animations/campfire.png",
+    "player.js",
+    "preview.html",
+    "README.txt"
+   ],
+   "frames": {
+    "directory": "frames",
+    "count": 24
+   },
+   "animations": {
+    "directory": "animations",
+    "count": 1
+   },
+   "playback": "<work>/campfire-xl8ZIm/preview.html",
+   "gifs": {
+    "directory": "gifs",
+    "count": 1,
+    "scale": 5,
+    "width": 160,
+    "height": 240,
+    "files": [
+     "gifs/campfire.gif"
+    ],
+    "notes": []
+   },
+   "preview": {
+    "cells": [
+     {
+      "frame": "campfire-0",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-1",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-2",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-3",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-4",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-5",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-6",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-7",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-8",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-9",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-10",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-11",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-12",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-13",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-14",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-15",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-16",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-17",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-18",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-19",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-20",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-21",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-22",
+      "duration": 70
+     },
+     {
+      "frame": "campfire-23",
+      "duration": 70
+     }
+    ],
+    "region": {
+     "x": 0,
+     "y": 0,
+     "w": 32,
+     "h": 48
+    },
+    "sheet": {
+     "columns": 6,
+     "rows": 4,
+     "scale": 5,
+     "gap": 5,
+     "width": 995,
+     "height": 985
+    }
+   },
+   "warnings": []
+  },
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 34052
+   }
+  ],
+  "replyBytes": 36100
+ },
+ "windyCampfire": {
+  "ms": 277.4,
+  "ok": true,
+  "revision": "7f9d3c5dac9f",
+  "differsFromCampfire": true,
+  "error": null
+ },
+ "stderr": "",
+ "outFiles": 44
+}

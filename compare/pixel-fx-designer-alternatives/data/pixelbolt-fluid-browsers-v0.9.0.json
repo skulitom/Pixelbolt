@@ -1,0 +1,72 @@
+{
+ "clone": "<clone>",
+ "node": "v24.19.0",
+ "presets": [
+  "campfire.fluid.json",
+  "drip.fluid.json",
+  "explosion.fluid.json",
+  "magic-swirl.fluid.json",
+  "potion.fluid.json",
+  "smoke-puff.fluid.json",
+  "splash.fluid.json",
+  "steam-vent.fluid.json",
+  "torch.fluid.json",
+  "waterfall.fluid.json"
+ ],
+ "hashes": {
+  "node": {
+   "campfire.fluid.json": "1a789c44e352",
+   "drip.fluid.json": "1147551d26b4",
+   "explosion.fluid.json": "cc5409a9598f",
+   "magic-swirl.fluid.json": "24cc577124e2",
+   "potion.fluid.json": "11636b6972e4",
+   "smoke-puff.fluid.json": "4cec863e2802",
+   "splash.fluid.json": "1b2a22fe73a5",
+   "steam-vent.fluid.json": "00ff7b5fc9cb",
+   "torch.fluid.json": "1653a23c933b",
+   "waterfall.fluid.json": "2dd5ed11bff9"
+  },
+  "chromium": {
+   "campfire.fluid.json": "1a789c44e352",
+   "drip.fluid.json": "1147551d26b4",
+   "explosion.fluid.json": "cc5409a9598f",
+   "magic-swirl.fluid.json": "24cc577124e2",
+   "potion.fluid.json": "11636b6972e4",
+   "smoke-puff.fluid.json": "4cec863e2802",
+   "splash.fluid.json": "1b2a22fe73a5",
+   "steam-vent.fluid.json": "00ff7b5fc9cb",
+   "torch.fluid.json": "1653a23c933b",
+   "waterfall.fluid.json": "2dd5ed11bff9"
+  },
+  "firefox": {
+   "campfire.fluid.json": "1a789c44e352",
+   "drip.fluid.json": "1147551d26b4",
+   "explosion.fluid.json": "cc5409a9598f",
+   "magic-swirl.fluid.json": "24cc577124e2",
+   "potion.fluid.json": "11636b6972e4",
+   "smoke-puff.fluid.json": "4cec863e2802",
+   "splash.fluid.json": "1b2a22fe73a5",
+   "steam-vent.fluid.json": "00ff7b5fc9cb",
+   "torch.fluid.json": "1653a23c933b",
+   "waterfall.fluid.json": "2dd5ed11bff9"
+  },
+  "webkit": {
+   "campfire.fluid.json": "1a789c44e352",
+   "drip.fluid.json": "1147551d26b4",
+   "explosion.fluid.json": "cc5409a9598f",
+   "magic-swirl.fluid.json": "24cc577124e2",
+   "potion.fluid.json": "11636b6972e4",
+   "smoke-puff.fluid.json": "4cec863e2802",
+   "splash.fluid.json": "1b2a22fe73a5",
+   "steam-vent.fluid.json": "00ff7b5fc9cb",
+   "torch.fluid.json": "1653a23c933b",
+   "waterfall.fluid.json": "2dd5ed11bff9"
+  }
+ },
+ "versions": {
+  "chromium": "156.0.8078.4",
+  "firefox": "157.0",
+  "webkit": "26.6"
+ },
+ "allMatch": true
+}

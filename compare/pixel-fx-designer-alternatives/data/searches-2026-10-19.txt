@@ -1,0 +1,67 @@
+Searches behind this page, run 2026-10-19 at about 15:00 UK time
+Tool: an AI agent's web search tool (US results); "Summary gist" is the summary it returned. Pixelbolt appeared in none of the four below.
+
+1. "Pixel FX Designer alternative"
+   Results, in order: itch.io post 12655775; boingboing.net (2018) "Tool to create pixel art particle effects";
+   codemanu.itch.io devlog "pixel fx designer v1180 released"; codemanu.itch.io/particle-fx-designer;
+   itch.io post 12658521; store.steampowered.com/sub/815848 (the Pixel FX Designer package on Steam); codemanu.itch.io purchase page;
+   gg.deals; opengameart.org "pixel fx pack"; an unrelated "Pixel Studio Fx" page.
+   Summary gist: the strongest alternative named is SpriteMancer (the Steam page says it has most of Pixel FX
+   Designer's functionality); JuiceFX, Smear FX and Fluid FX are named as other options (same maker); results come from the product's
+   own store pages and user comments, "so they don't offer an independent side-by-side comparison".
+
+2. "free pixel art fire smoke explosion effect generator sprite sheet"
+   Results: rs-pixel-store.itch.io pixel explosion vfx pack; several stock.adobe.com sprite sheets; itch.io
+   "games like pixel simulations"; opengameart.org comment; aim-studios.itch.io "Explosions - Pixel Art";
+   pixa.com "pixel art particle effect generator".
+   Summary gist: "Most free results are pre-made pixel effect packs, not generators. I didn't find a free procedural
+   sprite-sheet generator for pixel fire or smoke." Pixa's AI generator is the one generator named.
+
+3. "pixel art fluid simulation effects tool open source"
+   Results: sinopskyd.itch.io/phosphor; github.com/StefanoGR/LiquidFunPaint; a Steam app 2299600; a LiquidFunPaint
+   mirror; doyubkim/fluid-engine-dev; codemanu.itch.io/fluid-fx; GitHub topic flip-fluids; FluidNinja VFX Tools;
+   boingboing.net (2018, Pixel FX Designer); a nostr post.
+   Summary gist: "No single result clearly meets all three criteria (open source, pixel-art focused, fluid
+   simulation)." Candidates named: PHOSPHOR, WebGL Fluid Simulation, LiquidFun Paint, Pixel Composer, Pixel FX
+   Designer, Fluid FX (paid, Windows), FLIP Fluids (Blender, 3D).
+
+4. "pixel art VFX particle effects tool for AI agents MCP"
+   Results: Glama pages for freema/pixelforge-mcp, a Glama server ly1xau145c, rxolve/pixscii; mcpmarket.com piskel;
+   pkg.go.dev willibrandon/pixel-mcp; Glama "Best Aseprite MCP Servers"; mcpmarket.com pixel-art; Glama
+   liamlz11/pixelsmith; remoteopenclaw ZeroTian/aseprite-mcp; remoteopenclaw zilibobi/vfx-forge-mcp.
+   Summary gist: "I found no dedicated pixel-art particle or VFX tool exposed over MCP." Nearest: VFX Forge MCP
+   (a Roblox plugin), pixelforge-mcp (Gemini), pixscii, pixelsmith, pixel-mcp, Aseprite servers. "none of these
+   describes a particle system (emitters, particles over time) for pixel art."
+   Note: our live page https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/
+   (published 17 October 2026) did not appear either.
+
+Further searches while researching the tools (same day, same kind of search tool). Pixelbolt appeared in none of 5 to 8; the results of 9 were not recorded.
+
+5. "Pixel FX Designer vs Pixel Composer"
+   Results: boingboing.net (2018) "Tool to create pixel art particle effects"; codemanu.itch.io/particle-fx-designer;
+   docs.pixel-composer.com; itch.io post 12655775; wnhub.io news on Pixel Composer; store.steampowered.com/sub/815848;
+   codemanu.itch.io devlog "pixel fx designer v1180 released"; gameworldobserver.com (2022) on Pixel Composer 1.0;
+   itch.io post 12658521; itch.io Pixel Composer 1.0 devlog.
+   Summary gist: no head-to-head comparison page ranks; Pixel FX Designer described as a slider-based particle tool,
+   Pixel Composer as a node-based compositor.
+
+6. "pixel art particle effect editor free"
+   Results: itch.io "games like Pixelpart"; glideengine.itch.io/particles-editor; soeren-m.itch.io/pixelpart;
+   producthunt.com Pixanima; itch.io "games like BlastFX"; Pixanima reviews; rhythmlynx.itch.io/pfx;
+   pixa.com "pixel art particle effect generator"; pixnote.net editor lite.
+   Summary gist: free options named are glideengine's Particles Editor (freemium), the PFX particle editor (pay what
+   you want), Particle Designer (unTied Games, for GameMaker), Pixanima; paid Pixelpart; Pixa's generator.
+
+7. "Fluid FX CodeManu review"
+   Results: codemanu.itch.io/fluid-fx and its community page; dekudeals; three gg.deals price pages; codemanu.itch.io;
+   an itch.io sale page; a third-party download site (not visited); an itch.io thread about a Linux release.
+   Summary gist: no independent reviews; the summary restates the store listing.
+
+8. "pixel art explosion smoke fire sprite sheet generator tool 2026"
+   Results: boingboing.net (2018); heosphorus.itch.io/heos-explosions; an explosion asset pack on itch.io; pixa.com
+   (now 404); a solar2d forum thread; Heos Fireworks; further explosion asset packs; Adobe Stock.
+   Summary gist: mostly hand-drawn asset packs; the one generator besides Pixel FX Designer and Pixa was the Heos
+   Aseprite script.
+
+9. A search about Effekseer's sprite-sheet export surfaced BlastFX (mnkytech.itch.io/blastfx); its exact wording was
+   not recorded.

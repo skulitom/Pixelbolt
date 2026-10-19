@@ -1,0 +1,49 @@
+Pixelbolt 0.9.0 release bundle against the tagged source, checked 2026-10-19
+Bundle: https://github.com/skulitom/Pixelbolt/releases/download/v0.9.0/pixelbolt.mcpb
+Bundle SHA-256: 8e71223eadd0eced17a6b2fbe39be2d953cf4b02e9ccb7fac1c4e9d0fb61f906
+Published pixelbolt.mcpb.sha256: 8e71223eadd0eced17a6b2fbe39be2d953cf4b02e9ccb7fac1c4e9d0fb61f906
+Tag: v0.9.0 = 2c180d691823828aa77c5d5f76a31428c9cc5166
+Unpacked with tar -xf; each bundle file compared with the same path in the tag (SHA-256).
+
+LICENSE  77b5878a87fe6d3ee85403c7964b9e8da283a692985b1435e559c75ee3263696  identical
+README.md  50f2582531ef57dec593e641be194f6f8d8186f06396d2d606e0c7686367034e  identical
+autotile.schema.json  020b44771532ae1c662459d6ad1dfa3abb24ac1c7ff62aacbecc9ec83cd4f199  identical
+bin/pixelbolt.js  0a9abc588049748901879b944343d73f15a707f6b69145f17add794f9d53ee85  identical
+bin/pixelforge.js  5cc5444310d26b0c51bc32dc67d7943db17cd66c53d727d2aae4582cb479a57a  identical
+docs/agent-guide.md  0958f19faade6127f8a6180ea169cd0b129a6bf994173b467d30235527ea7b73  identical
+docs/art-workflow.md  05cae4ec84ba353ab37334225af6c683594342d69ee01a4a814fbd092d6ff10b  identical
+examples/forest-spirit.json  e78971dba670cb99a86e8efd32daa28fa66e84551e12ecd3a13ee122d078ec0f  identical
+fluid.schema.json  50fdab32f4ee36d1718390b10be91f0585f7f91329024784fa8f55ec46bb7e28  identical
+fx.schema.json  37009bc22641b778b2dd026c7b5d328e14078ed6b4465cf19a5bf8ee83a4336a  identical
+manifest.json  56302c37af36ad924c6a8019fa255c41d9dedc8cf4308b6363823b68e33b9fc4  not at this path in the tag: built by the release from mcpb/manifest.json, so it differs from that file
+normals.schema.json  81278e6e3c8baed2e7b54568584e4087bdf44ee30472f7e8935cafd874c3c6b3  identical
+package.json  f7ad1c96266ee9c2e747190e6182a435b37020135323f6a606d001590a820fb5  identical
+poses.schema.json  e0ad95837b9891a2899d3815081876f3a44d84658b50e0a961d556d857015a0a  identical
+scene.schema.json  ee915a09a7689c7741933034ba79fe9a4165c894eb3d8f423fb4c0d0eaec69d5  identical
+schema.json  d55ae0e2f2d191564f17214c8ee7311c199de064321961783c411d493a70d6ed  identical
+src/authoring.js  ce96dd651a69ecbdec0b08ecb698575f77b534f1dfc95c422ff01f64de78412f  identical
+src/autotile.js  5740d8f9e91973be8f04a5024ec280c416a66198a2ca0f14f4a33f0322c9f06c  identical
+src/core.js  34bd581b0f52e4cccb3f40985dc87dc78514107a4899310441617a97b4ac3322  identical
+src/craft.js  e9e447f0ea77e3fed108b0b61acd22497a769d0468b177adb919572a8245afb0  identical
+src/export.js  73783f0c034ebf2019aaf1ed9aec3fc09e598b1743fa2749d1d2a8fdf0c8da59  identical
+src/fluid.js  cba4f07ceef0bcc34eafe98f5ae488825440a388c116d5644512ffcda3066c7e  identical
+src/font.js  56e086d5e1d888d1856aa369a353b9036302307a2b5e8dc7aa994b1c220d87d5  identical
+src/frame-folder.js  9876fa84e532b7baf5d10ae389ba30f99663b07feaa4e926a9b53fda7544d232  identical
+src/fx.js  763e81c4cb9b07b00262b703c8e2956569cf61fd9dd838ea2d932d002385d98f  identical
+src/gif.js  50276187e1ad4ce88221f31e7ff7348426ea3bee8d3930257e5a9576c1398f29  identical
+src/import.js  b6b06f8945bcba06e88431a48108aa3463af154d5335784b456d1042148858c8  identical
+src/index.js  c952c5df7a2d5c3a2548494736e93edcf27933009d2ed20ea1b4d816e0241c16  identical
+src/mcp.js  36f4746e8cf22bf95f3859aa6d6fbc3b4a257482f3890a383ee58da09b255be2  identical
+src/overlays.js  4adbd6e93b4a976a37c0b5d7ce91894345ca2c68ebb91ceec997840d26f32bc0  identical
+src/patch.js  8983a3cda5c40131e37b655874d3604fd0602c20053b6d624d191ba7b4a11f47  identical
+src/png.js  bceddcece19358c9bc96e1cb7a1cad0515837c2719a66f2452a25c97a379d791  identical
+src/resolve.js  c3adbaf125b99f2075fbb98ccb40bf113eb0e4507c3694e7c1c82fd6d63f5c21  identical
+src/revisions.js  7c178041900714803069f247c86f11f7004f56852bfbe66205d738b1f28227f9  identical
+src/runtime.js  034410951636ec8325b4fddf658dbd0bbc780562a3c9e3b5179ef421fe100d89  identical
+src/scene-export.js  101b73d7d4003a423cb43493588dc6c7f4ea1881c3a0f62978f8ddee6b31d07d  identical
+src/scene.js  f3f10e9b75bc39d70a5844a111f0eacfb63a351215635c796cafa4ac3026d939  identical
+src/sequence.js  3cea087c706c0f408a57750ca36ff99259b00e2c6dfdb298611b80c3cb48ba59  identical
+studio/scene-player.js  cf84a0a0b989657ca5e8e1c23c1b6fd6555d727fd33ebedff223c557b5b80229  identical
+studio/scene.css  a98fa105b4b7e348947eee6fa9405a32042a6e9bb0bfc32595c535fedae9db40  identical
+studio/scene.html  18bdd5a8d5bf68c06270fbbf61de9ecb39b779c0c52dd2c1150d826fcb1a3b2f  identical
+Result: 40 of 41 files identical; manifest.json is generated at release time.
