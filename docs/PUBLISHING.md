@@ -8,7 +8,7 @@ Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its is
 
 ## Release
 
-1. Bump `package.json` and the metadata-only `server.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
+1. Bump `package.json`, the metadata-only `server.json` and the Claude Code plugin's `.claude-plugin/plugin.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
 2. Tag that commit and push the tag (substitute the version):
 
    ```sh

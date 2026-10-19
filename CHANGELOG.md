@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Claude Code plugin
+
+- **Install in one command:** `claude plugin install pixelbolt --marketplace skulitom/Pixelbolt` (Claude Code 2.1.292 or later) installs the MCP server and the pixel art skill. The plugin (`.claude-plugin/`) runs the checkout's own `bin/pixelbolt.js` with the user's Node.js 20 or later, in the project folder Claude Code has open, so there is nothing to download or build.
+- **MCP:** every tool now has a `title` annotation, and `pixel_help` also declares `destructiveHint`, `idempotentHint` and `openWorldHint`. The server's `instructions` begin with when to use Pixelbolt and when not (photos, vector logos, full-resolution illustrations), and say it runs locally with no account and no API key. Tool names, inputs and outputs are unchanged.
+- **Skill:** `skills/pixel-art` describes itself in the words a user would use, and says what to do when the plugin's tools are missing.
+- **Evals:** `evals/` holds a `claude plugin eval` suite: three requests that should choose Pixelbolt and one (a vector logo) that must not, with every tool mocked from the real `tools/list`.
+
 ### Live fluids
 
 - **`createLiveFluid(source, { effect, warmup })`** in `src/fluid.js`, exported from the package and from `pixelbolt/fluid`, runs one effect of a fluid source live, a frame at a time, for interactive pages:
