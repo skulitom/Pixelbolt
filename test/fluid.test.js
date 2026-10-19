@@ -31,8 +31,8 @@ const GOLDEN = {
 const examples = new Map();
 const example = async name => {
   if (!examples.has(name)) {
-    const source = await read(`examples/${name}.fluid.json`), started = performance.now(), compiled = compileFluid(source);
-    examples.set(name, { source, ...compiled, ms: performance.now() - started, project: renderProject(compiled.recipe) });
+    const source = await read(`examples/${name}.fluid.json`), compiled = compileFluid(source);
+    examples.set(name, { source, ...compiled, project: renderProject(compiled.recipe) });
   }
   return examples.get(name);
 };

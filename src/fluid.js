@@ -192,7 +192,7 @@ function readEffect(effect, path, source) {
   if (!loop) for (const key of ['warmup', 'blend']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} shapes the seam of a looping effect; set loop: true`);
   if (loop && frames < 4) fail(`${path}.frames`, 'a looping effect needs at least 4 frames');
   const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647);
-  const context = { frames, loop, liquid, palette, seed, width, height };
+  const context = { frames, loop, liquid, palette, seed };
   const solid = new Uint8Array(width * height), front = new Uint8Array(width * height), obstacles = [];
   const listed = (value, key, max) => {
     if (value === undefined) return [];
@@ -296,12 +296,12 @@ function enforce(g) {
 // Makes the flow divergence-free over the active cells (every open cell for a gas, the cells holding particles for a
 // liquid) with a fixed number of over-relaxed Gauss-Seidel sweeps. Obstacles and closed edges are walls; open edges
 // and air cells hold zero pressure. `target` asks a cell to spread by that much (crowded liquid particles).
-function project(g, active, iterations, target = null) {
+function project(g, active, iterations, target) {
   const { W, H, u, v, p, div, solid, walls, count } = g, omega = 1.6;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const c = j * W + i;
     if (!active[c]) { p[c] = 0; count[c] = 0; continue; }
-    div[c] = u[j * (W + 1) + i + 1] - u[j * (W + 1) + i] + v[(j + 1) * W + i] - v[j * W + i] - (target ? target[c] : 0);
+    div[c] = u[j * (W + 1) + i + 1] - u[j * (W + 1) + i] + v[(j + 1) * W + i] - v[j * W + i] - target[c];
     count[c] = (i > 0 ? (solid[c - 1] ? 0 : 1) : (walls.left ? 0 : 1)) + (i < W - 1 ? (solid[c + 1] ? 0 : 1) : (walls.right ? 0 : 1))
       + (j > 0 ? (solid[c - W] ? 0 : 1) : (walls.top ? 0 : 1)) + (j < H - 1 ? (solid[c + W] ? 0 : 1) : (walls.bottom ? 0 : 1));
   }
@@ -396,7 +396,7 @@ function emitterState(e, index, cycle, seed, along = cycle, factor = 1) {
   let strength = e.strength * factor;
   if (e.pulse) strength *= 1 + e.pulse.amplitude * sinDeg(360 * cycle / e.pulse.period + e.pulse.phase);
   const flicker = (px, py) => (e.flicker ? strength * (1 + e.flicker * (2 * valueNoise(seed, index, cycle, SALT.flicker, px, py) - 1)) : strength);
-  return { x, y, strength, flicker };
+  return { x, y, flicker };
 }
 const active = (e, cycle) => e.burst ? cycle === e.start : cycle >= e.start && cycle < e.end;
 // Coverage of a point by the emitter's disc or box, with a soft one-cell rim.
@@ -612,14 +612,14 @@ function stepLiquid(state, effect, dt) {
   // Crowded cells spread and sparse cells inside the liquid draw particles in, so splashes neither shrink the volume nor
   // thin it out into a larger, emptier one. Cells on the surface only spread.
   countCells(state);
-  const wet = (c, inside) => inside && (solid[c] || fluid[c]);
+  const wet = c => solid[c] || fluid[c];
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const c = j * W + i, error = state.cells[c] / PER_CELL - 1;
-    const interior = fluid[c] && (i > 0 ? wet(c - 1, true) : walls.left) && (i < W - 1 ? wet(c + 1, true) : walls.right) && (j > 0 ? wet(c - W, true) : walls.top) && (j < H - 1 ? wet(c + W, true) : walls.bottom);
+    const interior = fluid[c] && (i > 0 ? wet(c - 1) : walls.left) && (i < W - 1 ? wet(c + 1) : walls.right) && (j > 0 ? wet(c - W) : walls.top) && (j < H - 1 ? wet(c + W) : walls.bottom);
     target[c] = error > 0 || interior ? 0.5 * error : 0;
   }
   project(g, fluid, effect.iterations, target);
-  const uValid = Uint8Array.from(state.uValid), vValid = Uint8Array.from(state.vValid);
+  const uValid = new Uint8Array(state.uValid.length), vValid = new Uint8Array(state.vValid.length);
   for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * (W + 1) + i; uValid[k] = g.uFixed[k] || (i > 0 && fluid[j * W + i - 1]) || (i < W && fluid[j * W + i]) ? 1 : 0; }
   for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vValid[k] = g.vFixed[k] || (j > 0 && fluid[(j - 1) * W + i]) || (j < H && fluid[j * W + i]) ? 1 : 0; }
   extrapolate(u, uValid, W + 1, H, 3); extrapolate(v, vValid, W, H + 1, 3);
