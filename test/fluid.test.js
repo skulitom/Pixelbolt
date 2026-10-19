@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, analyzeProject, parseColor, PixelError } from '../src/core.js';
-import { compileFluid, createLiveFluid, FLUID_FIELDS } from '../src/fluid.js';
+import { compileFluid, createLiveFluid, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
 import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { FLUID_SHOWCASE, buildFluidGIFs } from '../showcase/fluid/build.mjs';
@@ -26,7 +26,9 @@ const GOLDEN = {
   splash: '1b2a22fe73a5f818858199a0b5098c326395ba26ed5c5a9996dc178bb997f5f4',
   waterfall: '2dd5ed11bff959daa551caca7deb04ff2ae276f8c61bd2e1eaabe95b665be5a8',
   drip: '1147551d26b4945e65773fe243ebf0858779c20acf8200068866f247d63e5480',
-  potion: '11636b6972e45c5c7e65fb9b473cc20981133ed724650b17c491efac78d92d74'
+  potion: '11636b6972e45c5c7e65fb9b473cc20981133ed724650b17c491efac78d92d74',
+  honey: '35f6a04177821b70eee2e561a8ae57179394f5ba916a703d843a4070f9f15174',
+  slime: '8b3d0c01e33c324fe2133151804e674e55531473a778995a04b41d9dd84b1433'
 };
 const examples = new Map();
 const example = async name => {
@@ -233,6 +235,75 @@ test('loops repeat their forcing, blend their seam and wrap sparks round', () =>
   assert.deepEqual(compileFluid(gas(effect)).recipe, recipe);
 });
 
+// ---- Thick fluids -----------------------------------------------------------------------------------------------------
+// The drawn pixels of a compiled frame, as [x, y].
+const drawn = (recipe, frame) => {
+  const op = recipe.frames[frame].ops?.find(o => o.op === 'grid'), cells = [];
+  if (op) op.rows.forEach((row, j) => [...row].forEach((char, i) => { if (char !== '.') cells.push([op.x + i, op.y + j]); }));
+  return cells;
+};
+const lowest = cells => Math.max(...cells.map(([, y]) => y)), highest = cells => Math.min(...cells.map(([, y]) => y)), widest = cells => Math.max(...cells.map(([x]) => x)) - Math.min(...cells.map(([x]) => x)) + 1;
+const goo = (settings, fill, extra = {}) => ({ ...gas(null), width: 48, height: 32, ...extra, effects: { goo: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], ...settings, fill, emitters: settings.emitters ?? [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+
+test('viscosity slows spreading but never falling, and walls hold a viscous liquid unless it slips', () => {
+  // A drop falls as fast at any viscosity: viscosity resists shearing, not motion as a whole.
+  const fall = settings => { const { recipe } = compileFluid(goo(settings, [{ at: [24, 5], radius: 3 }])); return recipe.frames.findIndex((_, f) => lowest(drawn(recipe, f)) >= 26); };
+  assert.equal(fall({ viscosity: 16 }), fall({}));
+  assert.ok(fall({ drag: 0.3 }) > fall({}) + 3, 'drag, by contrast, slows the fall');
+  // A column released against the left wall runs out along the floor more slowly the thicker it is.
+  const front = settings => { const { recipe } = compileFluid(goo(settings, [{ x: 0, y: 14, w: 10, h: 18 }])); return Math.max(...drawn(recipe, 20).filter(([, y]) => y === 31).map(([x]) => x)); };
+  const runs = [front({}), front({ viscosity: 2 }), front({ viscosity: 16 })];
+  assert.ok(runs[0] > runs[1] + 8 && runs[1] > runs[2] + 8, `fronts ${runs}`);
+  // The floor holds a viscous liquid back; with slip it slides along it.
+  assert.ok(front({ viscosity: 16, slip: true }) > runs[2] + 4);
+  // Thick liquids stay calm: a pool at rest keeps every pixel.
+  const pool = compileFluid(goo({ viscosity: 8, apic: true }, [{ x: 0, y: 24, w: 48, h: 8 }]));
+  assert.deepEqual(new Set(pool.metadata.effects.goo.pixels), new Set([384]));
+});
+
+test('a yield stress holds a heap up, squashes and springs back, and flows once pushed past it', () => {
+  const heap = settings => { const { recipe } = compileFluid(goo(settings, [{ x: 18, y: 20, w: 12, h: 12 }])); const last = drawn(recipe, 39); return [32 - highest(last), widest(last)]; };
+  // A 12-pixel heap needs a yield of about gravity × 12 / 2 = 1.8 to hold itself up.
+  const [held, water, soft] = [heap({ yield: 4 }), heap({}), heap({ yield: 0.5 })];
+  assert.ok(held[0] >= 11 && held[1] <= 14, `held ${held}`);
+  assert.ok(water[0] < held[0] - 4 && water[1] >= 40, `water ${water}`);
+  assert.ok(soft[0] < held[0] - 3 && soft[1] > held[1] + 8, `soft ${soft}`);
+  // A dropped blob squashes where it lands, then springs back up into a dome.
+  const { recipe } = compileFluid(goo({ yield: 6, gravity: [0, 0.5] }, [{ at: [24, 6], radius: 5 }]));
+  const heights = recipe.frames.map((_, f) => 32 - highest(drawn(recipe, f))), landed = heights.findIndex((h, f) => f > 2 && lowest(drawn(recipe, f)) === 31);
+  const squash = Math.min(...heights.slice(landed, landed + 4));
+  assert.ok(heights.at(-1) > squash, `squashed to ${squash}, settled at ${heights.at(-1)}`);
+});
+
+test('adhesion keeps a film under a ledge, APIC keeps a thick liquid turning', () => {
+  // Liquid under a slab: water falls away; with adhesion a film stays on the slab's underside.
+  const film = settings => { const { recipe } = compileFluid(goo({ ...settings, obstacles: [{ symbol: 'slab', x: 14, y: 6 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })); return drawn(recipe, 30).filter(([, y]) => y === 7).length; };
+  assert.equal(film({}), 0);
+  assert.ok(film({ adhesion: 4 }) >= 8, `film ${film({ adhesion: 4 })}`);
+  // A spinning blob of syrup in still air: the grid share (PIC) smears its spin away, APIC keeps it turning.
+  const spin = apic => {
+    const source = goo({ viscosity: 2, flip: 0, apic, gravity: [0, 0], tension: 0, walls: FLUID_WALLS, emitters: [{ at: [24, 16], radius: 9, burst: 1, density: 0, vortex: 1 }] }, [{ at: [24, 16], radius: 9 }]);
+    source.effects.goo.look = [{ field: 'speed', colors: ['s'], thresholds: [0.6], dither: 0 }];
+    return drawn(compileFluid(source).recipe, 39).length;
+  };
+  const [pic, affine] = [spin(false), spin(true)];
+  assert.ok(affine > pic * 1.5, `APIC ${affine} vs PIC ${pic} pixels still turning`);
+});
+
+test('sharp advection keeps a puff crisp, and a viscous gas calms swirls but not drift', () => {
+  const drift = settings => compileFluid(gas({ frames: 30, buoyancy: 0, dissipation: 0, cooling: 0, drag: 0, vorticity: 0, wind: [0.08, 0], ...settings, emitters: [{ at: [8, 16], radius: 4, burst: 1, density: 1 }], look: [{ field: 'density', colors: ['s', 'w'], thresholds: [0.2, 0.7], dither: 0 }] }, { width: 48, height: 32 }));
+  const core = ({ recipe }) => recipe.frames[29].ops[0].rows.join('').split('w').length - 1;
+  const smooth = drift({}), sharp = drift({ advection: 'sharp' });
+  assert.ok(core(sharp) > core(smooth) * 1.5, `core ${core(sharp)} sharp vs ${core(smooth)} smooth`);
+  assert.ok(sharp.metadata.effects.plume.peak.density <= 1, 'the limiter makes no new peaks');
+  // Drifting as a whole has no shear, so viscosity leaves it exactly as it was.
+  assert.deepEqual(drift({ viscosity: 4 }).recipe, smooth.recipe);
+  // A swirl, though, dies away.
+  const swirl = settings => compileFluid(gas({ frames: 16, buoyancy: 0, dissipation: 0, drag: 0, vorticity: 0, ...settings, emitters: [{ at: [16, 16], radius: 8, burst: 1, density: 1, vortex: 2 }], look: [{ field: 'speed', colors: ['s'], thresholds: [0.3], dither: 0 }] }, { width: 32, height: 32 }));
+  const turning = ({ recipe }) => drawn(recipe, 15).length;
+  assert.ok(turning(swirl({})) > 50 && turning(swirl({ viscosity: 1 })) < turning(swirl({})) / 4);
+});
+
 test('fluid sources fail early with paths an agent can act on', async () => {
   const emitter = { at: [8, 8], rate: 1, density: 1 }, ok = { frames: 6, emitters: [emitter], look: smoke };
   const bad = (change, where, message) => {
@@ -257,6 +328,16 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.emitters = [{ ...emitter, orbit: { radius: 2, period: 0 } }]; }, 'fluid.effects.plume.emitters[0].orbit.period', /anticlockwise/);
   bad(e => { e.blend = 2; }, 'fluid.effects.plume.blend', /loop: true/);
   bad(e => { e.emitters = [{ ...emitter, sparks: { count: 1, colors: ['s'], pop: true } }]; }, 'fluid.effects.plume.emitters[0].sparks.pop', /liquids/);
+  bad(e => { e.yield = 1; }, 'fluid.effects.plume.yield', /applies to liquids/);
+  bad(e => { e.apic = true; }, 'fluid.effects.plume.apic', /applies to liquids/);
+  bad(e => { e.adhesion = 1; }, 'fluid.effects.plume.adhesion', /applies to liquids/);
+  bad(e => { e.kind = 'liquid'; e.advection = 'sharp'; }, 'fluid.effects.plume.advection', /applies to gases/);
+  bad(e => { e.advection = 'crisp'; }, 'fluid.effects.plume.advection', /smooth .* sharp/);
+  bad(e => { e.slip = true; }, 'fluid.effects.plume.slip', /set viscosity$/);
+  bad(e => { e.kind = 'liquid'; e.slip = true; }, 'fluid.effects.plume.slip', /set viscosity or yield/);
+  bad(e => { e.viscosity = 65; }, 'fluid.effects.plume.viscosity', /0 to 64/);
+  bad(e => { e.kind = 'liquid'; e.yield = 17; }, 'fluid.effects.plume.yield', /0 to 16/);
+  bad(e => { e.kind = 'liquid'; e.viscosity = 1; e.slip = 'yes'; }, 'fluid.effects.plume.slip', /true or false/);
   bad(e => { e.walls = ['top', 'top']; }, 'fluid.effects.plume.walls', /once/);
   bad(e => { e.walls = ['up']; }, 'fluid.effects.plume.walls[0]', /left, right, top, bottom/);
   bad(e => { e.obstacles = [{ symbol: 'nope' }]; }, 'fluid.effects.plume.obstacles[0].symbol', /unknown symbol/);
@@ -287,6 +368,9 @@ test('limits are reported with the effect path, extreme settings stay finite, an
   const started = performance.now();
   assert.throws(() => compileFluid({ ...gas({ frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 }), error => error.path === 'fluid.effects.plume' && /million cell updates/.test(error.message));
   assert.ok(performance.now() - started < 1000);
+  // A viscosity solve costs about three times a plain step, and the budget counts it.
+  const plain = { ...gas({ frames: 20, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 };
+  assert.throws(() => compileFluid({ ...plain, effects: { plume: { ...plain.effects.plume, viscosity: 1 } } }), error => error.path === 'fluid.effects.plume' && /million cell updates/.test(error.message));
   // The strongest in-range forcing stays finite: flows are capped at 32 pixels per frame.
   const wild = compileFluid({ ...gas({ frames: 48, walls: ['left', 'right', 'top', 'bottom'], substeps: 1, vorticity: 2, buoyancy: 2, dissipation: 0, cooling: 0, drag: 0,
     emitters: [{ at: [8, 8], radius: 6, rate: 64, density: 16, temperature: 16, vortex: 16, noise: 8, flicker: 1, sparks: { count: 4, life: 20, colors: ['w'], trail: true } }], look: smoke }), width: 32, height: 32 });
@@ -419,7 +503,7 @@ const scripts = {
 
 test('a live runner steps the simulation compileFluid bakes, frame for frame', async () => {
   // One-shot effects match from frame 0, sparks and whitewater included.
-  for (const name of ['explosion', 'splash']) {
+  for (const name of ['explosion', 'splash', 'slime']) {
     const { source, project } = await example(name), live = createLiveFluid(source, { warmup: 0 });
     assert.deepEqual([live.width, live.height, live.kind, live.frames, live.frame], [source.width, source.height, source.effects[name].kind ?? 'gas', source.effects[name].frames, 0]);
     project.frames.forEach((frame, f) => assert.ok(sameData(live.step().render().rgba, frame.data), `${name} frame ${f}`));
