@@ -98,7 +98,7 @@ function compile() {
     for (const frame of project.frames) for (let i = 0; i < frame.data.length; i += 4) if (frame.data[i + 3]) colors.add(frame.data[i] << 16 | frame.data[i + 1] << 8 | frame.data[i + 2]);
     $('status').textContent = `${animation.frames.length} frames of ${project.frames[0].duration} ms · ${animation.loop ? 'loops seamlessly' : 'plays once'} · ${colors.size} palette colours · ${effect.particles ? `${effect.particles} particles · ` : ''}simulated in ${ms} ms in this browser`;
     $('error').hidden = true;
-    for (const id of ['gif', 'sheet', 'recipe', 'fluid-source']) $(id).disabled = false;
+    for (const id of ['gif', 'sheet', 'recipe']) $(id).disabled = false;
     draw();
   } catch (error) {
     $('error').textContent = error.message; $('error').hidden = false;
