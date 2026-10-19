@@ -111,6 +111,13 @@ test('a background blends the alpha away, and the notes say what the frame grid 
   // #00ff0080 over #102030: every channel is the rounded blend, and the result is opaque.
   assert.deepEqual([pixel(half, 0, 0), pixel(half, 2, 1)], [[8, 144, 24, 255], [16, 32, 48, 255]]);
   assert.match(matte.info.commands.h264, /^ffmpeg -framerate 30000\/1001 .* -c:v libx264 .* "probe-cycle\.mp4"$/);
+  // H.264 keeps every colour in lossless 4:4:4; 4:2:0, which shares colour between each 2 × 2 pixels, is the compatible
+  // extra and needs an even canvas. With 4:4:4 an odd canvas still gets an H.264 command.
+  assert.match(matte.info.commands.h264, / -qp 0 -pix_fmt yuv444p /);
+  assert.match(matte.info.commands.h264Compatible, /^ffmpeg -framerate 30000\/1001 .* -crf 14 -pix_fmt yuv420p .* "probe-cycle-yuv420\.mp4"$/);
+  const odd = createSequence(project, { fps: 10, background: 'k', size: '5x3' });
+  assert.deepEqual([odd.info.width, Object.keys(odd.info.commands)], [5, ['prores4444', 'h264']]);
+  for (const command of [matte.info.commands.h264, matte.info.commands.h264Compatible]) assert.ok(matte.files.get('README.txt').toString().includes(command));
   assert.deepEqual(matte.info.notes, [
     '3 of 3 poses changed length to fit whole video frames: red 100→100.1 ms, half 50→66.733 ms, blue 50→33.367 ms.',
     'One pass is 5.994 video frames, so this clip does not end exactly where the loop does and will hitch if the editor loops it.'
@@ -134,7 +141,7 @@ test('a scene becomes a shot: each frame is the scene at that moment, and still 
   // On a canvas it does not fill, the margins take the scene's own background colour, so the shot is opaque edge to
   // edge, and the note says how to fill the canvas.
   const letterboxed = createSceneSequence(scene, source.name, { fps: 6, size: '1080p', seconds: 1 });
-  assert.deepEqual([letterboxed.info.frames, letterboxed.info.placement.scale, letterboxed.info.loop.seamless, letterboxed.info.alpha, Object.keys(letterboxed.info.commands)], [6, 10, false, 'none: opaque background', ['prores4444', 'h264']]);
+  assert.deepEqual([letterboxed.info.frames, letterboxed.info.placement.scale, letterboxed.info.loop.seamless, letterboxed.info.alpha, Object.keys(letterboxed.info.commands)], [6, 10, false, 'none: opaque background', ['prores4444', 'h264', 'h264Compatible']]);
   assert.deepEqual(scene.background, [24, 34, 57, 255]);
   const margin = decodePNG(letterboxed.files.get('skink-stride-study_0001.png'));
   assert.deepEqual([pixel(margin, 0, 0), pixel(margin, 1919, 1079)], [[24, 34, 57, 255], [24, 34, 57, 255]]);

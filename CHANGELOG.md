@@ -30,6 +30,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - An emitter's vertical `sway` no longer draws a particle resting on its `floor` below it.
 
+### Export fixes
+
+- **GIF holes stay clear outside browsers.** A frame that is cleared after it is shown (because the next one is transparent where it is not) named no transparent index when it had no transparent pixels of its own, such as an opaque first frame. Browsers clear it anyway, but Pillow, and ffmpeg with a shared colour table, restore the background colour, so the next frame's holes showed opaque black. Such a frame now names the transparent index, or a spare entry of its own table; a frame that uses all 256 entries of its own table has none to spare, and the GIF's `notes` say so. The tests' own GIF decoder now reads disposal the strict way, which also caught this in two existing tests.
+- **H.264 keeps every colour.** The `h264` command used 4:2:0, which stores colour once for each 2 × 2 pixels: at an odd scale or offset the colours of neighbouring sprite pixels mixed even in ffmpeg's own decoder, and at any scale once a player interpolates the colour (bicubic: up to 34% of sprite pixels off the palette). It is now lossless 4:4:4 (`-qp 0 -pix_fmt yuv444p`), exact to within 1 level and no larger for pixel art, and works on canvases of odd size. QuickTime, Safari and Windows' own players may not play 4:4:4, so on an even canvas `h264Compatible` keeps the previous 4:2:0 command, writing `<name>-yuv420.mp4`. `scripts/verify-exports.py` checks the new command with ffmpeg at an odd scale.
+- **`drawFrame` snaps to whole pixels.** Fractional positions drew a frame between pixels, and Chromium blended its edges into semi-transparent pixels even with smoothing off. The bundled runtime now rounds the position first.
+
 ### Claude Code plugin
 
 - **Install in one command:** `claude plugin install pixelbolt --marketplace skulitom/Pixelbolt` (Claude Code 2.1.292 or later) installs the MCP server and the pixel art skill. The plugin (`.claude-plugin/`) runs the checkout's own `bin/pixelbolt.js` with the user's Node.js 20 or later, in the project folder Claude Code has open, so there is nothing to download or build.

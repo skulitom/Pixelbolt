@@ -40,6 +40,20 @@ image = Image.open(io.BytesIO(subprocess.check_output(['node', '--input-type=mod
 image.seek(1)
 assert list(image.convert('RGBA').getdata()) == [(0, 0, 0, 0), (0, 255, 0, 128)]
 
+# A GIF frame with no transparent pixels of its own, then one with holes. Pillow restores a cleared frame to the
+# background colour unless the frame names a transparent index, so the holes must still read as clear here.
+program = """
+import { encodeGIF } from './src/gif.js';
+const red = [255, 0, 0, 255], blue = [0, 0, 255, 255], clear = [0, 0, 0, 0];
+process.stdout.write(encodeGIF([
+  { data: Uint8Array.from(Array(16).fill(red).flat()), duration: 100 },
+  { data: Uint8Array.from(Array.from({ length: 16 }, (_, i) => i === 5 ? blue : clear).flat()), duration: 100 }
+], 4, 4).data);
+"""
+image = Image.open(io.BytesIO(subprocess.check_output(['node', '--input-type=module', '-e', program], cwd=root)))
+image.seek(1)
+assert list(image.convert('RGBA').getdata()) == [(0, 0, 255, 255) if i == 5 else (0, 0, 0, 0) for i in range(16)]
+
 program = """
 import { readFile } from 'node:fs/promises';
 import { createBundle, createZip } from './src/export.js';
@@ -232,6 +246,19 @@ with tempfile.TemporaryDirectory() as temporary:
         worst = max(abs(a - b) for original, decoded in zip(first.getdata(), back.getdata()) if original[3] for a, b in zip(original[:3], decoded[:3]))
         assert worst <= 3, worst
         video = f'ffmpeg made a {stream["pix_fmt"]} ProRes video of {stream["nb_read_frames"]} frames with exact alpha and colours within {worst} of 255'
+        # The H.264 command keeps every colour (lossless 4:4:4), even at an odd scale: 24 pixels fit 180 seven times.
+        # It is read back with bicubic chroma, as players do, which would smear the colours of a 4:2:0 file.
+        matte = Path(temporary) / 'matte'
+        subprocess.check_output(['node', 'bin/pixelbolt.js', 'sequence', 'examples/forest-spirit.json', '--fps', '10', '--size', '320x180',
+                                 '--background', '#1a1c2c', '--seconds', '0.2', '--out', str(matte)], cwd=root)
+        matted = json.loads((matte / 'sequence.json').read_text(encoding='utf-8'))
+        subprocess.run(matted['commands']['h264'] + ' -loglevel error', cwd=matte, shell=True, check=True)
+        subprocess.run(['ffmpeg', '-loglevel', 'error', '-i', str(matte / (matted['name'] + '.mp4')), '-vf', 'scale=in_color_matrix=bt709:flags=bicubic+full_chroma_int+full_chroma_inp+accurate_rnd,format=rgb24',
+                        '-frames:v', '1', str(matte / 'back.png')], check=True)
+        first, back = Image.open(matte / (matted['pattern'] % 1)).convert('RGB'), Image.open(matte / 'back.png').convert('RGB')
+        h264_worst = max(abs(a - b) for original, decoded in zip(first.getdata(), back.getdata()) for a, b in zip(original, decoded))
+        assert matted['placement']['scale'] == 7 and h264_worst <= 2, (matted['placement'], h264_worst)
+        video += f', and an H.264 video at scale 7 with colours within {h264_worst} of 255'
     sequence_frames = info['frames']
     # The sequence folder back as a GIF at its own rate. Each frame must be its PNG with alpha below 128 cleared, and
     # each delay the step between frame starts rounded to centiseconds, worked out here with fractions.
@@ -246,6 +273,8 @@ with tempfile.TemporaryDirectory() as temporary:
         source = Image.open(out / (info['pattern'] % number)).convert('RGBA')
         wanted = bytes(channel for r, g, b, a in source.getdata() for channel in ((r, g, b, 255) if a >= 128 else (0, 0, 0, 0)))
         assert image.convert('RGBA').tobytes() == wanted, number
+    # Pillow keeps an animated file open for seeking; Windows cannot delete the folder until it is closed.
+    image.close()
     # Frames whose colours differ: 1,200 in all, 200 per frame, some one level apart. Each frame needs a table of its
     # own, and every colour must come back exactly.
     many = Path(temporary) / 'many'
@@ -260,6 +289,7 @@ with tempfile.TemporaryDirectory() as temporary:
     for number in range(6):
         image.seek(number)
         assert image.info['duration'] == 40 and image.convert('RGB').tobytes() == Image.open(many / f'flash_{number + 1:03d}.png').tobytes(), number
+    image.close()
     # Cover: 24 pixels cover 100 × 60 five times (120 × 120); from the top-right corner, 20 pixels are cut on the left
     # and 60 at the bottom. Pillow crops the same enlarged pose itself.
     cover = Path(temporary) / 'cover'

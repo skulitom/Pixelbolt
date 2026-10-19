@@ -14,8 +14,11 @@ import { encodePNG } from '../src/png.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 // A separate, plain reading of the GIF89a structure and its LZW stream: it shares no code with the encoder. Frames
 // are composited the way a viewer shows them: a frame paints its rectangle over what the last one left, and
-// disposal 2 clears that rectangle afterwards.
-function decodeGIF(bytes) {
+// disposal 2 restores that rectangle to the background afterwards. That is read the strict way, as Pillow does (and
+// ffmpeg with a shared table): transparent only when the frame names a transparent index, else the background colour
+// of the frame's table, so a file that passes here clears to transparency in every viewer. `browser: true` clears it
+// either way, as browsers do.
+function decodeGIF(bytes, { browser = false } = {}) {
   assert.equal(Buffer.from(bytes.subarray(0, 6)).toString('latin1'), 'GIF89a');
   const word = at => bytes[at] | bytes[at + 1] << 8, gif = { width: word(6), height: word(8), loop: null, frames: [] };
   let at = 13, control = null, canvas = Array(gif.width * gif.height).fill('clear');
@@ -53,7 +56,10 @@ function decodeGIF(bytes) {
     inside((to, from) => { if (indices[from] !== control.transparent) pixels[to] = Buffer.from(colors.subarray(indices[from] * 3, indices[from] * 3 + 3)).toString('hex'); });
     gif.frames.push({ ...control, local: Boolean(flags & 0x80), colors: colors.length / 3, rect, pixels });
     canvas = pixels.slice();
-    if (control.disposal === 2) inside(to => { canvas[to] = 'clear'; });
+    if (control.disposal === 2) {
+      const background = browser || control.transparent !== null ? 'clear' : Buffer.from(colors.subarray(bytes[11] * 3, bytes[11] * 3 + 3)).toString('hex');
+      inside(to => { canvas[to] = background; });
+    }
   }
   assert.equal(at, bytes.length);
   return gif;
@@ -88,10 +94,12 @@ test('GIF blends onto a background instead of thresholding, and keeps a sequence
 test('GIF uses a table per frame when the animation needs more than 256 colours, and never quantizes', () => {
   const shades = (count, blue) => Array.from({ length: 256 }, (_, i) => i < count ? [i, 255 - i, blue, 255] : CLEAR);
   const frames = [{ data: rgba(...shades(256, 1)), duration: 100 }, { data: rgba(...shades(255, 2)), duration: 100 }];
-  const gif = encodeGIF(frames, 16, 16), decoded = decodeGIF(gif.data);
+  const gif = encodeGIF(frames, 16, 16), decoded = decodeGIF(gif.data, { browser: true });
   assert.deepEqual([gif.colors, decoded.shared, decoded.frames.map(frame => frame.local)], [511, false, [true, true]]);
   for (const [position, frame] of frames.entries()) assert.deepEqual(decoded.frames[position].pixels, Array.from({ length: 256 }, (_, i) => frame.data[i * 4 + 3] ? Buffer.from(frame.data.subarray(i * 4, i * 4 + 3)).toString('hex') : 'clear'));
-  assert.deepEqual(decoded.frames.map(frame => frame.transparent), [null, 0]);
+  // The first frame fills all 256 entries of its own table, so it has no index to name as transparent for the pixel
+  // that turns transparent next: browsers and ffmpeg clear it, Pillow shows a colour of its table, and it is counted.
+  assert.deepEqual([gif.backgroundClears, decoded.frames.map(frame => [frame.disposal, frame.transparent])], [1, [[2, null], [1, 0]]]);
   const tooMany = rgba(...Array.from({ length: 257 }, (_, i) => [i & 255, i >> 8, 7, 255]));
   assert.throws(() => encodeGIF([{ data: tooMany, duration: 100 }], 257, 1), error => error instanceof PixelError && /frame 1 of the animation uses 257 colours; a GIF frame holds 256 and Pixelbolt does not quantize/.test(error.message));
   assert.throws(() => encodeGIF([{ data: rgba(...shades(256, 1), CLEAR), duration: 100 }], 257, 1), /256 colours beside transparency/);
@@ -164,6 +172,28 @@ test('GIF writes the end code as wide as a decoder reads it after the last code 
   // decoder fails on bytes left over, or missing, after the end code.
   const four = [RED, BLUE, [0, 255, 0, 255], [9, 9, 9, 255]], row = { data: rgba(...Array.from({ length: 15 }, (_, i) => four[(i * 7 + (i >> 2)) % 4])), duration: 100 };
   assert.deepEqual(decodeGIF(encodeGIF([row], 15, 1).data).frames[0].pixels, hexPixels(row));
+});
+test('a frame that clears names a transparent index, so the holes after it are clear in ffmpeg and Pillow too', () => {
+  // An opaque frame, then one with holes: the first is cleared after it is shown (disposal 2). It has no transparent
+  // pixels of its own but names the transparent index anyway; without that, ffmpeg and Pillow restore the background
+  // colour, and the holes show opaque black.
+  const opaque = { data: rgba(...Array(16).fill(RED)), duration: 100 }, holes = { data: rgba(...Array.from({ length: 16 }, (_, i) => (i === 5 ? BLUE : CLEAR))), duration: 100 };
+  const decoded = decodeGIF(encodeGIF([opaque, holes], 4, 4).data);
+  assert.deepEqual(decoded.frames.map(frame => [frame.disposal, frame.transparent]), [[2, 0], [1, 0]]);
+  assert.deepEqual(decoded.frames.map(frame => frame.pixels), [opaque, holes].map(hexPixels));
+  // With a colour table per frame (200 colours each, 400 in all), the opaque frame names one more entry of its own.
+  const own = [7, 200].map(blue => ({ data: rgba(...Array.from({ length: 200 }, (_, i) => (blue === 200 && i % 3 === 0 ? CLEAR : [i % 20 * 12, Math.floor(i / 20) * 20, blue, 255]))), duration: 100 }));
+  const split = decodeGIF(encodeGIF(own, 20, 10).data);
+  assert.deepEqual([split.shared, split.frames.map(frame => [frame.local, frame.disposal, frame.transparent])], [false, [[true, 2, 200], [true, 1, 0]]]);
+  assert.deepEqual(split.frames.map(frame => frame.pixels), own.map(hexPixels));
+  // A frame with 256 colours of its own before holes is cleared without naming an index, and the notes say what Pillow
+  // will show there.
+  const full = Array.from({ length: 256 }, (_, i) => [i, 255 - i, 9, 255]);
+  const trapped = [{ data: rgba(...Array(256).fill([1, 2, 3, 255])), duration: 100 }, { data: rgba(...full), duration: 100 }, { data: rgba(...full.map((pixel, i) => (i % 2 ? CLEAR : pixel))), duration: 100 }];
+  assert.equal(encodeGIF(trapped, 16, 16).backgroundClears, 1);
+  const frames = { [Symbol.iterator]: function* () { for (const { data } of trapped) yield { data, width: 16, height: 16 }; } };
+  assert.ok(framesGIF(frames, { fps: { numerator: 10, denominator: 1 } }).notes.some(note => /^1 frame with 256 colours of its own is followed by transparent pixels .* Pillow shows a colour of the frame's table there/.test(note)));
+  assert.equal(encodeGIF(own, 20, 10).backgroundClears, 0);
 });
 test('a sprite with transparency is cleared only where a pixel turns transparent, also when the loop restarts', () => {
   // A sprite appears, steps right, grows, holds a frame and jumps; the green block never changes. Frame 1 is clear where

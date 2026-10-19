@@ -48,6 +48,11 @@ test('runtime helpers look up frames by time and draw trimmed, anchored and mirr
   assert.deepEqual(calls.slice(-5), [['save'], ['translate', 99, 45], ['scale', -1, 1], ['draw', 4, 0, 2, 3, 0, 0, 2, 3], ['restore']]);
   drawFrame(context, sheet, 'b', 10, 10, { anchor: false });
   assert.deepEqual(calls.pop(), ['draw', 0, 0, 4, 4, 10, 10, 4, 4]);
+  // Fractional positions snap to whole pixels, mirrored or not: a canvas would blend the edges of a sprite between pixels.
+  drawFrame(context, sheet, 'b', 10.4, 9.6, { anchor: false, scale: 3 });
+  assert.deepEqual(calls.pop(), ['draw', 0, 0, 4, 4, 10, 10, 12, 12]);
+  drawFrame(context, sheet, 'a', 100.5, 49.5, { flipX: true });
+  assert.deepEqual(calls.slice(-5), [['save'], ['translate', 100, 45], ['scale', -1, 1], ['draw', 4, 0, 2, 3, 0, 0, 2, 3], ['restore']]);
   // The loader resolves on the image's load event and never waits on decode().
   const saved = { fetch: globalThis.fetch, Image: globalThis.Image, document: globalThis.document };
   t.after(() => Object.assign(globalThis, saved));
