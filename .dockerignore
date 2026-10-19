@@ -1,0 +1,24 @@
+# Keep the build context to what `npm pack` can ship; the Dockerfile packs
+# from package.json "files", so nothing listed there may be excluded here.
+.git
+.github
+.claude-plugin
+**/node_modules
+**/output
+**/.revisions
+**/.env
+**/.env.*
+*.tgz
+*.log
+coverage
+test-results
+dist
+test
+showcase
+demo
+evals
+scripts
+mcpb
+packaging
+Dockerfile
+.dockerignore
