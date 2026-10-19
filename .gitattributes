@@ -3,4 +3,4 @@
 *.gif binary
 *.zip binary
 *.tgz binary
-*.cmd text eol=crlf
+*.cmd -text
