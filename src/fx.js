@@ -146,11 +146,12 @@ function simulate(effect, context) {
     if (alive.length > LIMITS.alive) fail(context.path, `more than ${LIMITS.alive} particles are alive at once; lower burst, rate or life`);
     if (drawing) emitters.forEach((e, index) => { stats[index].maxAlive = Math.max(stats[index].maxAlive, alive.filter(p => p.index === index).length); });
     // Draw every live particle, oldest first, at its rounded (and swayed) position. Particles partly off the canvas are
-    // cropped into grid operations and trails keep only their on-canvas pixels, so nothing clips.
+    // cropped into grid operations and trails keep only their on-canvas pixels, so nothing clips. Sway never carries a
+    // particle below its floor.
     for (const p of alive) {
       const e = p.emitter, sway = e.sway;
       const sx = sway ? sway.amplitude[0] * sinDeg(360 * p.age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * p.age / sway.period + p.phase) : 0;
-      const X = Math.floor(p.x + sx + 0.5), Y = Math.floor(p.y + sy + 0.5);
+      const X = Math.floor(p.x + sx + 0.5), Y = Math.floor((e.floor !== null && p.y + sy > e.floor ? e.floor : p.y + sy) + 0.5);
       p.trail.push([X, Y]);
       if (p.trail.length > 17) p.trail.shift();
       if (!drawing) continue;

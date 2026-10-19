@@ -1001,16 +1001,19 @@ function liquidFields(state, out) {
   const { g, splat: count, blur, speedSum } = state, { W, H, solid } = g, [density, , speed] = out;
   count.fill(0); speedSum.fill(0);
   for (let k = 0; k < state.n; k++) splat(speedSum, count, W, H, state.x[k] - 0.5, state.y[k] - 0.5, Math.sqrt(state.vx[k] * state.vx[k] + state.vy[k] * state.vy[k]));
-  // A light 3 × 3 blur turns particles into a continuous surface.
+  // A light 3 × 3 blur turns particles into a continuous surface. What particles beside an obstacle splat into it counts
+  // only for cells that hold water themselves, so it shapes the water's own edge but never shows on the dry far side of a
+  // wall one pixel thick.
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const wet = count[j * W + i] > 0;
     let sum = 0, weights = 0;
     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
       const x = i + di, y = j + dj;
-      if (x < 0 || y < 0 || x >= W || y >= H) continue;
+      if (x < 0 || y < 0 || x >= W || y >= H || (!wet && solid[y * W + x])) continue;
       const w = (di ? 1 : 2) * (dj ? 1 : 2);
       sum += count[y * W + x] * w; weights += w;
     }
-    blur[j * W + i] = sum / weights;
+    blur[j * W + i] = weights ? sum / weights : 0;
   }
   // Speed only counts where there is some water (a quarter of a full cell), so a thin, fast stream or a falling drop
   // can be drawn by its speed without a halo around every particle.

@@ -39,6 +39,9 @@ test('gravity, floors, trails, variants, remaps and dissolve bake into stamps, g
   const heights = opsOf(fall.recipe).map(ops => ops.find(op => op.op === 'stamp').y);
   assert.deepEqual(heights, [4, 5, 7, 10, 14, 18, 18, 18]);
   assert.deepEqual(opsOf(fall.recipe)[2][0], { op: 'line', x: 12, y: 5, x2: 12, y2: 7, color: 'o' });
+  // Sway wobbles a particle in the air but never carries it below its floor.
+  const resting = compileEffects(effects({ frames: 20, emitters: [{ at: [12, 4], burst: 1, gravity: [0, 1], floor: 18, life: 20, shapes: ['dot'], sway: { amplitude: [0, 3], period: 8 } }] }));
+  assert.equal(Math.max(...opsOf(resting.recipe).flat().map(op => op.y)), 18);
   // Particles partly off the canvas are cropped into grids and trails keep only on-canvas pixels: no clipping.
   const edge = compileEffects(effects({ frames: 4, emitters: [{ at: [22, 12], burst: 1, angle: 0, speed: 1.5, shapes: ['chip'], trail: { color: 'o', length: 2 } }] }));
   assert.deepEqual(renderProject(edge.recipe).warnings, []);

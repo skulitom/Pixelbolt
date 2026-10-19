@@ -171,7 +171,7 @@ const emitter = object({
   gravity: vector(-8, 8, 'Acceleration [x, y] added each frame.'), drag: num(0, 1, 'Share of velocity lost each frame.'),
   attract: { ...object({ at: vector(-4096, 4096), strength: num(-8, 8, 'Acceleration toward at (negative repels); default 0.5.') }, ['at']), description: 'Pull every particle toward a point.' },
   sway: { ...object({ amplitude: vector(0, 32, 'Drawn offset [x, y]: x follows a sine and y a cosine, from a random phase.'), period: num(1, 256, 'Frames per cycle; default 8.') }, ['amplitude']), description: 'Wobble, added when drawing (drifting leaves, rising embers).' },
-  floor: int(-4096, 4096, 'Particles never go below this y.'), bounce: num(0, 1, 'Share of downward speed returned at the floor; default 0 (they settle).'),
+  floor: int(-4096, 4096, 'Particles never go below this y, sway included.'), bounce: num(0, 1, 'Share of downward speed returned at the floor; default 0 (they settle).'),
   shapes: { oneOf: [{ ...array(id, 64), minItems: 1 }, { ...array({ ...array(id, 64), minItems: 1 }, 64), minItems: 1 }], description: 'Symbol names drawn centred on the particle: one sequence, or a list of sequences with one picked per particle.' },
   play: { enum: ['life', 'loop', 'once'], description: 'life spreads the sequence over the lifetime (default); loop steps one symbol per frame from a random start; once steps and holds the last.' },
   remaps: { ...array(remap, 64), description: 'Colour variants; each particle picks one.' },
@@ -221,7 +221,7 @@ const fluidEmitter = object({
   }, ['count', 'colors']), description: 'One-pixel particles carried by the flow and drawn over it: embers, sparkles, debris, bubbles. In a loop they wrap round, so they loop exactly.' }
 }, ['at']);
 const fluidLook = object({
-  field: { enum: FLUID_FIELDS, description: 'density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew).' },
+  field: { enum: FLUID_FIELDS, description: 'density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew).' },
   colors: keys('Palette keys from the lowest level to the highest.'),
   thresholds: { ...array(num(0.001, 256), 16), minItems: 1, description: 'One rising value per colour: each colour is fully on from its threshold up.' },
   dither: num(0, 1, 'Feather each colour in below its threshold through the pattern, over this share of the gap to the previous threshold (to 0 for the first). 0 draws hard bands; default 0.5.'),

@@ -20,10 +20,15 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Fluid fixes
 
 - **Nothing passes through thin obstacles any more.** Sparks (and so whitewater spray) moved their whole step at once and were only checked where they landed, so anything faster than a pixel a frame could skip a wall one pixel thick; fast liquid particles could too. Both now walk every cell along their path and stop at the first solid one, which also stops them slipping between two pixels that touch only at their corners. This changes the waterfall (the water now leaves the lip in a free arc instead of creeping down the stepped cliff face around its corners), and the drip and potion slightly; their golden hashes, GIFs and the potion's live-session hash are updated.
+- **Water no longer shows through a thin wall.** The blur that turns liquid particles into a surface also read what particles beside a wall had splatted into its cells, so a pool resting against a wall one pixel thick drew faint water down its far side at low look thresholds or with heavy dither. What lands in an obstacle cell now counts only for cells that hold water themselves, so it still shapes the water's own edge; every preset is unchanged apart from three shading pixels in honey and slime.
 - **Liquid particles keep to the speed cap.** Cohesion was added after the cap, so at extreme settings a particle could reach 48 pixels a frame; the cap now comes last.
 - **Docs:** sharp advection blurs less smoke away, so a one-shot gas needs more `dissipation` to end empty.
 - **Depth bands under overhangs.** Liquid whose column starts right under a wall or obstacle took its depth from there, so water under an overhang showed a surface highlight deep in the pool (a pale block in the waterfall's basin). It now takes the depth of the nearest open water along the row; a drop hanging under a rock, with no open water beside it, keeps its own highlight.
 - **Waterfall polished** for the corrected collisions, after blind reviews of a cliff-hugging curtain against an arc: the water now leaves the lip in one unbroken, foaming arc into the middle of the basin, and the spray rises where it actually lands instead of over calm water.
+
+### Particle effects
+
+- An emitter's vertical `sway` no longer draws a particle resting on its `floor` below it.
 
 ### Claude Code plugin
 

@@ -684,7 +684,7 @@
                     "light",
                     "shadow"
                   ],
-                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew)."
+                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew)."
                 },
                 "colors": {
                   "type": "array",

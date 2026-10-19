@@ -27,8 +27,8 @@ const GOLDEN = {
   waterfall: '0ebd8edbb0bca1c4f3a0642dcb0bcf41b6289663eec4b4b38c999b5df49cd064',
   drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
   potion: 'b13996872f8758a39191c2745cac83b4196d0a23bb484f3d8c95e1ed171fb22c',
-  honey: '5ae9d312842729a442a7fa16d721fa70750396ff732053108fc86acea169ac8d',
-  slime: 'b0910ec06efba928d495f4cee4aa405628eceda7410b7daab0ee18504a3fc7ec'
+  honey: '2beb539dc3c98377a1c24af2ffe18fb0d74bc5aad56b1c70ec58d1613cf6ffa7',
+  slime: '3da5a16ae70f2f9b529c40447b9d65b1cd9bbe96c761b8f1380874e76c7db25c'
 };
 const examples = new Map();
 const example = async name => {
@@ -319,7 +319,9 @@ test('sharp advection keeps a puff crisp, and a viscous gas calms swirls but not
 });
 
 test('nothing passes through a wall one pixel thick, however fast it moves', () => {
-  const walled = (effect, symbol = 'wall') => ({ ...gas(null), width: 32, height: 32, symbols: { wall: Array(32).fill('k'), stairs: Array.from({ length: 32 }, (_, y) => '.'.repeat(y % 32) + 'k' + '.'.repeat(31 - (y % 32))) }, effects: { e: { ...effect, obstacles: [{ symbol, x: symbol === 'wall' ? 16 : 0, y: 0, draw: 'none' }] } } });
+  // A jar's sides and floor are one pixel thick: columns 8 and 23 from row 10 down, and row 29.
+  const jar = Array.from({ length: 32 }, (_, y) => Array.from({ length: 32 }, (_, x) => ((y >= 10 && y <= 29 && (x === 8 || x === 23)) || (y === 29 && x >= 8 && x <= 23) ? 'k' : '.')).join(''));
+  const walled = (effect, symbol = 'wall') => ({ ...gas(null), width: 32, height: 32, symbols: { wall: Array(32).fill('k'), stairs: Array.from({ length: 32 }, (_, y) => '.'.repeat(y % 32) + 'k' + '.'.repeat(31 - (y % 32))), jar }, effects: { e: { ...effect, obstacles: [{ symbol, x: symbol === 'wall' ? 16 : 0, y: 0, draw: 'none' }] } } });
   const beyond = (recipe, past) => { let n = 0; for (const frame of recipe.frames) for (const op of frame.ops ?? []) if (op.op === 'grid') op.rows.forEach((row, j) => [...row].forEach((char, i) => { if (char !== '.' && past(op.x + i, op.y + j)) n++; })); return n; };
   // Sparks fired at the wall, straight and at an angle, at up to 9 pixels a frame.
   const sparks = walled({ frames: 12, buoyancy: 0, emitters: [{ at: [6, 16], radius: 2, burst: 1, density: 0, sparks: { count: 40, life: 12, colors: ['w'], angle: [-30, 30], speed: [6, 9], follow: 0, drag: 0 } }], look: smoke });
@@ -332,6 +334,12 @@ test('nothing passes through a wall one pixel thick, however fast it moves', () 
     const jet = walled({ kind: 'liquid', frames: 10, substeps, gravity: [0, 0], walls: FLUID_WALLS, fill: [{ x: 2, y: 10, w: 8, h: 12, velocity: [16, 0] }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.25], dither: 0 }] });
     assert.equal(beyond(compileFluid(jet).recipe, x => x > 16), 0, `substeps ${substeps}`);
   }
+  // Water resting against the wall leaves no trace beyond it, even at the faintest density a look draws.
+  const pool = walled({ kind: 'liquid', frames: 20, gravity: [1, 0.3], walls: FLUID_WALLS, fill: [{ x: 0, y: 12, w: 16, h: 20 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.02], dither: 0 }] });
+  assert.equal(beyond(compileFluid(pool).recipe, x => x > 16), 0);
+  // Bubbles that drift into a jar's side end there; only those that reach the open top burst.
+  const bubbles = walled({ kind: 'liquid', frames: 30, fill: [{ x: 9, y: 14, w: 14, h: 15 }], emitters: [{ at: [16, 26], radius: 1, rate: 1, density: 0.01, sparks: { count: 1, life: [20, 30], colors: ['w'], angle: [150, 210], speed: [0.6, 1.2], drag: 0, gravity: [0, -0.05], pop: true } }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] }, 'jar');
+  assert.equal(beyond(compileFluid(bubbles).recipe, (x, y) => x < 8 || x > 23 || y > 29), 0);
 });
 
 test('fluid sources fail early with paths an agent can act on', async () => {
