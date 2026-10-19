@@ -1098,10 +1098,29 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
 function renderFields(effect, base, width, height) {
   // Colour codes are 16-bit: a palette key may be any single character, such as an accented letter.
   const N = width * height, { solid, front } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
-  const [density] = base;
+  const [density] = base, covered = new Uint8Array(N);
   for (let i = 0; i < width; i++) {
-    let run = 0;
-    for (let j = 0; j < height; j++) { const c = j * width + i; run = !solid[c] && density[c] >= LEVEL ? run + 1 : 0; runs[c] = run; }
+    let run = 0, under = 0;
+    for (let j = 0; j < height; j++) {
+      const c = j * width + i;
+      if (!solid[c] && density[c] >= LEVEL) { if (!run) under = j > 0 && solid[c - width] ? 1 : 0; run++; } else run = 0;
+      runs[c] = run; covered[c] = run ? under : 0;
+    }
+  }
+  // Liquid whose column starts right under a wall or obstacle has no surface above it. It takes the depth of the nearest
+  // liquid along the row whose column does reach a surface, so water under an overhang is as deep as the pool beside it
+  // instead of showing a surface highlight in the deep; where there is none (a drop hanging under a rock), it keeps its own.
+  for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+    const c = j * width + i;
+    if (!covered[c]) continue;
+    let left = i - 1, right = i + 1;
+    for (;;) {
+      const l = left >= 0 && runs[j * width + left], r = right < width && runs[j * width + right];
+      if (!l && !r) break;
+      if (l && !covered[j * width + left]) { runs[c] = runs[j * width + left]; break; }
+      if (r && !covered[j * width + right]) { runs[c] = runs[j * width + right]; break; }
+      left = l ? left - 1 : -1; right = r ? right + 1 : width;
+    }
   }
   // Below its first two rows, depth follows the shallowest surface within DEPTH_REACH pixels along the row through the
   // liquid, so the deeper bands stay level under a drop that lands or a crest that rises instead of sinking beneath it.

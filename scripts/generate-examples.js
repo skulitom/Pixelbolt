@@ -237,17 +237,18 @@ const splash = fluidSource('splash', 48, 40, water, {
     { impact: 2.5, chance: 0.3, throw: 1.6, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
   look: waterLook(9, 5), cleanup: { strays: true }
 });
-// A shallow stream runs along the cliff top, pours over the mossy lip and falls clear of the cliff face into a basin. The
-// source pulses, so fuller and thinner stretches run down the fall, and glints carried by the flow streak down it; the
-// fall is drawn by its speed, darker where it leaves the lip with lighter flecks as it speeds up. Whitewater froths its
-// edges with foam that rides the surface down and drifts where the water churns, and throws the odd droplet off it;
-// spray rises where it lands. A seep along the basin's surface takes much of the inflow, so the level stays just above the right
+// A stream runs along the cliff top and pours over the mossy lip in one unbroken arc that falls clear of the cliff face,
+// thick where it leaves the lip and thinning as it speeds up, into the middle of a basin. The source pulses, so fuller and
+// thinner stretches run down the fall, and glints carried by the flow streak down it; the fall is drawn by its speed,
+// darker where it leaves the lip with lighter flecks as it speeds up. Whitewater froths its edges with foam that rides the
+// surface down and drifts where the water churns, and throws the odd droplet off it; short-lived spray rises where it
+// lands. A seep along the basin's surface takes much of the inflow, so the level stays just above the right
 // lip and a steady stream spills over it through the open edge.
 const waterfall = fluidSource('waterfall', 48, 64, { ...water, ...stone, L: '#7b7590', m: '#5f9a4a' }, {
   kind: 'liquid', frames: 24, duration: 60, loop: true, seed: 5, warmup: 4, substeps: 3, walls: ['left'], flip: 0.6, drag: 0.06,
   obstacles: [{ symbol: 'cliff', x: 0, y: 12 }, { symbol: 'basin', x: 0, y: 49 }], fill: [{ x: 18, y: 49, w: 22, h: 12 }],
-  emitters: [{ name: 'source', at: [7.5, 10.5], area: [15, 3], rate: 1, velocity: [1.2, 0], pulse: { amplitude: 0.5, period: 6 } },
-    { name: 'spray', at: [22, 48], radius: 2, rate: 1, density: 0, sparks: { count: 0.8, life: [6, 12], colors: ['w', 'c'], angle: [220, 320], speed: [0.8, 2], gravity: [0, 0.2], follow: 0 } },
+  emitters: [{ name: 'source', at: [7.5, 10], area: [15, 4], rate: 1, velocity: [1.1, 0], pulse: { amplitude: 0.5, period: 6 } },
+    { name: 'spray', at: [28, 46], radius: 2, rate: 1, density: 0, sparks: { count: 0.8, life: [5, 9], colors: ['w', 'c'], angle: [220, 320], speed: [0.8, 1.6], gravity: [0, 0.25], follow: 0 } },
     { name: 'seep', at: [27, 48.5], area: [18, 3], rate: 1, density: -0.05 },
     { name: 'glints', at: [16, 10], radius: 1.5, rate: 1, density: 0, sparks: { count: 1, life: [18, 26], colors: ['w', 'w', 'w', 'c'], trail: true, follow: 1, speed: 0, drag: 0 } }],
   whitewater: [{ speed: 3, chance: 0.05, throw: 1.2, spread: 15, life: [8, 14], colors: ['w', 'c'] }, { speed: 1.4, chance: 0.04, life: [3, 6], colors: ['w', 'c'], follow: 1 }],
@@ -302,7 +303,8 @@ const potion = fluidSource('potion', 32, 40, { G: '#1f6a3f', g: '#3fa34d', l: '#
 // slowly sinks into a calm surface: viscosity resists shearing, never falling, so the rope falls as fast as water would
 // but never breaks into drops or throws a wave; it thins as it speeds up, as a honey stream does. APIC keeps the folds
 // turning instead of smearing them, a little adhesion holds the honey to the glass, and low cohesion keeps the thin rope
-// from pulling itself into beads. The source swells and thins over the loop, and a seep at the surface keeps the level.
+// from pulling itself into beads. The source swells and thins a little over the loop (more makes the rope sway differently
+// each cycle, so the loop's blended closing frames show two ropes at once), and a seep at the surface keeps the level.
 const dipper = shapeRows(28, 9, (x, y) => {
   if (x >= 9 && y >= 3 && y <= 5) return y === 3 ? 'n' : y === 5 ? 'b' : 'B';
   if (x > 9) return null;
@@ -311,24 +313,28 @@ const dipper = shapeRows(28, 9, (x, y) => {
   return x % 3 === 0 || r === 4 ? 'b' : y < 4 ? 'n' : 'B';
 });
 const jar = shapeRows(26, 22, (x, y) => (y === 21 || x === 0 || x === 25 || (y <= 1 && (x <= 2 || x >= 23)) ? 'k' : x === 1 || x === 24 ? 'q' : null));
-const honey = fluidSource('honey', 40, 48, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', D: '#6b3a0b', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
+const honey = fluidSource('honey', 40, 48, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
   kind: 'liquid', frames: 24, duration: 70, loop: true, warmup: 3, seed: 6, iterations: 24, walls: ['left', 'right', 'bottom'], viscosity: 10, apic: true, adhesion: 1.5, tension: 0.3,
   obstacles: [{ symbol: 'dipper', x: 12, y: 2 }, { symbol: 'jar', x: 7, y: 26 }], fill: [{ x: 9, y: 37, w: 22, h: 10 }],
-  emitters: [{ name: 'drizzle', at: [16.5, 13], radius: 2, rate: 1, velocity: [0, 0.8], pulse: { amplitude: 0.3, period: 12 } },
+  emitters: [{ name: 'drizzle', at: [16.5, 13], radius: 2, rate: 1, velocity: [0, 0.8], pulse: { amplitude: 0.15, period: 12 } },
     { name: 'seep', at: [20, 36.5], area: [22, 1], rate: 1, density: -0.25 }],
-  // The rope is thin, so it is drawn by its speed as well as its density, as the waterfall is.
-  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'speed', colors: ['a'], thresholds: [0.3], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A', 'D'], thresholds: [1, 2, 3, 7, 13], dither: 0 }], cleanup: { strays: true }
+  // The rope is thin, so it is drawn by its speed as well as its density, as the waterfall is. The jar's honey darkens in
+  // bands with depth; the rope, a long column from the dipper that would darken in the same bands, is drawn over wherever
+  // it moves in the jar's middle amber. Then both are lit from the upper left, one ramp for the rope and the jar: a pale
+  // gloss line on the lit side and a dark amber edge on the other.
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'speed', colors: ['a'], thresholds: [0.3], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 },
+    { field: 'speed', colors: ['a'], thresholds: [0.3], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 }], cleanup: { strays: true }
 }, { dipper, jar });
-// A blob of slime drops, squashes flat where it lands and springs back into a dome; a second, smaller blob lands on top
-// and the two settle into a peak that holds. A yield stress makes it elastic until it is pushed hard enough to flow, so
-// it keeps the shape it settles into instead of spreading flat as water or honey would.
+// A blob of slime drops, squashes flat where it lands, springs up taller than it is wide, squashes again and wobbles to
+// rest as a dome that holds its shape. A high yield stress keeps it elastic through the landing, so it bounces back
+// instead of spreading flat as water or honey would; four substeps damp the wobble less, and cohesion rounds it.
 const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8be36a', w: '#e6ffc9', k: '#1b1a26', ...stone }, {
-  kind: 'liquid', frames: 40, duration: 60, seed: 4, walls: ['left', 'right', 'bottom'], gravity: [0, 0.5], yield: 6, apic: true, tension: 1,
-  obstacles: [{ symbol: 'ground', x: 0, y: 28 }], fill: [{ at: [15.5, 6], radius: 5.5, velocity: [0, 0.5] }],
-  emitters: [{ name: 'second', at: [15.5, 4], radius: 3.5, burst: 1, start: 14, velocity: [0, 1] }],
-  // Lit from the upper left: a pale rim toward the light, a dark one away from it, and darker deeper inside.
-  look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['l', 'g', 'G'], thresholds: [1, 2, 5], dither: 0 },
-    { field: 'shadow', colors: ['G'], thresholds: [0.8], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }], outline: 'k', cleanup: { strays: true, corners: true }
+  kind: 'liquid', frames: 40, duration: 60, seed: 4, substeps: 4, walls: ['left', 'right', 'bottom'], gravity: [0, 0.5], yield: 16, apic: true, tension: 2,
+  obstacles: [{ symbol: 'ground', x: 0, y: 28 }], fill: [{ at: [15.5, 9.5], radius: 6.5, velocity: [0, 0.5] }], emitters: [],
+  // Lit from the upper left: a pale top edge, a dark rim away from the light and a glint toward it. Lit rims rather than
+  // depth bands, which drew a dark wedge inside the ball.
+  look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['l', 'g'], thresholds: [1, 2], dither: 0 },
+    { field: 'shadow', colors: ['G'], thresholds: [0.5], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }], outline: 'k', cleanup: { strays: true, corners: true }
 }, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
 const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime };
 

@@ -24,11 +24,11 @@ const GOLDEN = {
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '1653a23c933b250d5cc6aa8c0a5e1878e7438b11169ef85c52d733e019263828',
   splash: '1b2a22fe73a5f818858199a0b5098c326395ba26ed5c5a9996dc178bb997f5f4',
-  waterfall: '362d3c9133333812fa23bc83286bd7884cae96814ece9de9ddcfad4803c75b3a',
+  waterfall: '0ebd8edbb0bca1c4f3a0642dcb0bcf41b6289663eec4b4b38c999b5df49cd064',
   drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
   potion: 'b13996872f8758a39191c2745cac83b4196d0a23bb484f3d8c95e1ed171fb22c',
-  honey: '35f6a04177821b70eee2e561a8ae57179394f5ba916a703d843a4070f9f15174',
-  slime: '8b3d0c01e33c324fe2133151804e674e55531473a778995a04b41d9dd84b1433'
+  honey: '5ae9d312842729a442a7fa16d721fa70750396ff732053108fc86acea169ac8d',
+  slime: 'b0910ec06efba928d495f4cee4aa405628eceda7410b7daab0ee18504a3fc7ec'
 };
 const examples = new Map();
 const example = async name => {
@@ -151,6 +151,20 @@ test('depth bands stay level under water standing on the surface', () => {
   const grid = recipe.frames[0].ops[0], row = y => grid.rows[y - grid.y];
   assert.equal(row(8).slice(6 - grid.x, 9 - grid.x), 'sss');
   assert.deepEqual([row(11), row(12), row(13), row(15)], ['s'.repeat(16), 's'.repeat(16), 'r'.repeat(16), 'r'.repeat(16)]);
+});
+
+test('water under an overhang is as deep as the pool beside it, and a hanging drop keeps its highlight', () => {
+  // A pool fills rows 6–15, and a shelf four pixels long juts from the left wall into it at row 9. The water under the
+  // shelf has no surface above it, so it takes the pool's bands, not a highlight of its own.
+  const look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 's', 'r'], thresholds: [1, 2, 4], dither: 0 }];
+  const { recipe } = compileFluid({ ...gas(null), symbols: { shelf: ['kkkk'] }, effects: { pool: { kind: 'liquid', frames: 1, walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'shelf', x: 0, y: 9, draw: 'none' }], fill: [{ x: 0, y: 6, w: 16, h: 10 }], emitters: [], look } } });
+  const grid = recipe.frames[0].ops[0], at = (x, y) => grid.rows[y - grid.y][x - grid.x];
+  for (let y = 10; y < 16; y++) for (let x = 0; x < 4; x++) assert.equal(at(x, y), 'r', `under the shelf at ${x}, ${y}`);
+  assert.equal(at(8, 6), 'w');
+  // A drop hanging under a rock has no open water beside it, so it keeps its own highlight on top.
+  const drop = compileFluid({ ...gas(null), symbols: { rock: ['kkkkkk'] }, effects: { drop: { kind: 'liquid', frames: 1, gravity: [0, 0], walls: FLUID_WALLS, obstacles: [{ symbol: 'rock', x: 5, y: 3, draw: 'none' }], fill: [{ x: 6, y: 4, w: 4, h: 4 }], emitters: [], look } } });
+  const dropGrid = drop.recipe.frames[0].ops[0];
+  assert.match(dropGrid.rows[4 - dropGrid.y], /w/);
 });
 
 test('whitewater throws spray where water lands and sheds drops off a fast stream', () => {
@@ -515,7 +529,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: 'ab3e9a0447f96db3abfbf3a73cf3d21a05d18ad2646a931e5837950de838c3b6' };
+const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: '41aedcb953cf977211b0cc29cfb551c7975318b6ed1965bf0ba0d9173ba52dfe' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
