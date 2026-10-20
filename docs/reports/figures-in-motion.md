@@ -199,3 +199,5 @@ Pillow independently verifies R2's sheet and all 40 GIF playback entries across 
 Inspected the saved [Motion view](../images/figures/m5-studio-motion.png), [contact overlay](../images/figures/m5-studio-contacts.png) and [narrow layout](../images/figures/m5-studio-narrow.png). The [final implementation review](figures-in-motion-review-2026-10-20.md) explicitly records the waived blind review; no preference or authoring-cost scores are invented.
 
 Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. The full cross-platform CI matrix and final landing are the remaining release checks.
+
+M5 implementation: `76db2df`. A final coverage audit added the explicit R1 compile and R2 image-review time assertions, plus a constrained-heap R3 compile on every CI Node/system combination. The resulting local suite passes **368 tests in 11.734 s**. These additions change verification only; no pixels or authoring behavior changed.

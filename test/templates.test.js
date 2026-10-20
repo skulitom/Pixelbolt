@@ -40,7 +40,8 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
   });
   const motions = make === heroRig ? ['idle', 'walk', 'run', 'jump', 'attack'] : ['idle', 'walk', 'run', 'jump', 'attack', 'hurt', 'prowl', 'charge'];
   for (const animation of motions) test(`${make.name}: ${animation} has clean parts, joined bones and passing motion measurements`, () => {
-    const f = fixture(make), view = inspectMotion(f.project, { animation, metadata: f.metadata, scale: 1 });
+    const f = fixture(make), start = performance.now(), view = inspectMotion(f.project, { animation, metadata: f.metadata, scale: 1 });
+    if (make === heroRig) assert.ok(performance.now() - start < 500, 'R2 image-inclusive motion review CI budget');
     for (const [name, pass] of Object.entries(view.motion.checks)) assert.notEqual(pass, false, `${name}: ${JSON.stringify(view.motion)}`);
     const names = new Set(f.project.animations[animation].frames.map(i => f.project.frames[i].name));
     for (const pose of f.expanded.poses.filter(p => names.has(p.name))) {

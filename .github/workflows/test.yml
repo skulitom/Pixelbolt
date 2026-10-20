@@ -33,6 +33,8 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - run: npm test
+      - name: Compile the large figure under a bounded heap
+        run: node --max-old-space-size=48 --max-semi-space-size=4 scripts/bench-figure-memory.mjs
       - run: npm pack --dry-run
 
 
