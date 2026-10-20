@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createZip } from '../src/export.js';
 import { browserChannel, studioPacker } from '../scripts/environment.mjs';
-import { root, TARGETS, hostTarget, readZip, writeZip, readTarGz, writeTarGz, forSystem, packageFiles, sourceState, assembleStudio, packStudio, manifest, sha256 } from '../scripts/build-studio.mjs';
+import { root, TARGETS, hostTarget, readZip, writeZip, readTarGz, writeTarGz, forSystem, packageFiles, studioFiles, NOT_IN_STUDIO, sourceState, assembleStudio, packStudio, manifest, sha256 } from '../scripts/build-studio.mjs';
 
 const source = { commit: 'c0ffee'.padEnd(40, '0'), date: new Date(Date.UTC(2026, 9, 2, 12, 30, 44)), dirty: [] };
 const standIn = { version: process.versions.node, exe: Buffer.from('MZ stand-in for node.exe'), license: Buffer.from('Node.js license\n'), origin: 'a test stand-in' };
@@ -71,7 +71,7 @@ test('the macOS and Linux builds hold shell launchers marked executable, their o
     assert.deepEqual([build.name, build.format, TARGETS[target].os], [`PixelboltStudio-${version}-${target}`, 'tar.gz', system]);
     const scripts = ['pixelbolt', 'pixelforge', 'pixelbolt-studio', 'connect-your-agent', ...launchers];
     assert.deepEqual(names.filter(name => !name.includes('/')).sort(), ['BUILD-INFO.txt', 'START HERE.txt', 'THIRD-PARTY-NOTICES.txt', 'first-edit.json', ...scripts].sort());
-    assert.deepEqual(names.filter(name => name.startsWith('app/')).map(name => name.slice(4)), await packageFiles());
+    assert.deepEqual(names.filter(name => name.startsWith('app/')).map(name => name.slice(4)), await studioFiles());
     assert.ok(inside('runtime/node').equals(standIn.exe)); assert.equal(inside('runtime/node.exe'), undefined);
     // Exactly the programs are executable; everything is LF, and the scripts start with a shell line.
     assert.deepEqual([...build.modes].map(([name, mode]) => [name.slice(build.name.length + 1), mode]).sort(), ['app/bin/pixelbolt.js', 'app/bin/pixelforge.js', 'runtime/node', ...scripts].sort().map(name => [name, 0o755]));
@@ -96,7 +96,7 @@ test('the build ships exactly the files npm pack ships', async t => {
 });
 
 test('every relative README link and image is shipped in the portable package', async () => {
-  const readme = await readFile(path.join(root, 'README.md'), 'utf8'), shipped = await packageFiles();
+  const readme = await readFile(path.join(root, 'README.md'), 'utf8'), shipped = await studioFiles();
   // Inline links/images and reference definitions; a directory is shipped when it contains a packaged file.
   const targets = [...readme.matchAll(/!?\[[^\]\n]*\]\(<?([^\s)>]+)>?(?:\s+"[^"]*")?\)/g), ...readme.matchAll(/^ {0,3}\[[^\]\n]+\]:\s*<?([^\s>]+)>?/gm)].map(match => match[1]);
   assert.ok(targets.length > 0);
@@ -114,7 +114,9 @@ test('the portable layout holds the package, runtime, launchers and build facts,
   assert.equal(build.name, `PixelboltStudio-${version}-win-x64`);
   const names = [...build.files.keys()], inside = file => build.files.get(`${build.name}/${file}`);
   assert.ok(names.every(name => name.startsWith(`${build.name}/`))); assert.deepEqual(names, [...names].sort());
-  assert.deepEqual(names.filter(name => name.startsWith(`${build.name}/app/`)).map(name => name.slice(build.name.length + 5)), await packageFiles());
+  assert.deepEqual(names.filter(name => name.startsWith(`${build.name}/app/`)).map(name => name.slice(build.name.length + 5)), await studioFiles());
+  // npm ships the contributor files; the Studio, a user's download, leaves them out.
+  for (const file of NOT_IN_STUDIO) assert.ok((await packageFiles()).includes(file) && !inside(`app/${file}`), file);
   assert.deepEqual(names.filter(name => /\/(demo|showcase|test|scripts|packaging|output)\//.test(name)), []);
   assert.ok(inside('app/src/server.js').equals(await readFile(path.join(root, 'src', 'server.js'))));
   assert.ok(inside('runtime/node.exe').equals(standIn.exe)); assert.ok(inside('runtime/NODE-LICENSE.txt').equals(standIn.license));
@@ -134,7 +136,8 @@ test('a release build takes its files from the commit, whatever line endings the
   const git = (...args) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', ...args], { cwd: repo, encoding: 'utf8' });
   if (git('init', '-q').status !== 0) { t.skip('git is not available'); return; }
   const write = async (file, text) => { await mkdir(path.dirname(path.join(repo, file)), { recursive: true }); await writeFile(path.join(repo, file), text); };
-  await write('.gitattributes', '* text=auto eol=lf\n'); await write('package.json', JSON.stringify({ version: '9.9.9', files: ['notes.txt'] }) + '\n');
+  await write('.gitattributes', '* text=auto eol=lf\n'); await write('package.json', JSON.stringify({ version: '9.9.9', files: ['notes.txt', 'AGENTS.md'] }) + '\n');
+  await write('AGENTS.md', 'maintainer rules\n');
   // Saved with Windows line endings and then added: git stores LF and calls the CRLF working copy unmodified.
   await write('notes.txt', 'one\r\ntwo\r\n'); await write('packaging/windows/run.cmd', '@echo off\n'); await write('scripts/build-studio.mjs', '\n');
   await write('scripts/environment.mjs', '\n');
@@ -146,6 +149,10 @@ test('a release build takes its files from the commit, whatever line endings the
   assert.equal(build.name, 'PixelboltStudio-9.9.9-win-x64');
   assert.equal(build.files.get(`${build.name}/app/notes.txt`).toString(), 'one\ntwo\n');
   assert.equal(build.files.get(`${build.name}/run.cmd`).toString(), '@echo off\r\n');
+  assert.equal(build.files.get(`${build.name}/app/AGENTS.md`), undefined);
+  // A file the Studio leaves out doesn't make it a development build when only that file is edited.
+  await write('AGENTS.md', 'edited rules\n');
+  assert.deepEqual((await sourceState(repo)).dirty, []);
   // A real edit or an untracked shipped file makes it a development build, which is read from the working copy.
   await write('notes.txt', 'one\r\nthree\r\n'); await write('packaging/windows/extra.txt', 'new\n');
   const edited = await sourceState(repo), dev = await assembleStudio({ runtime: standIn, source: edited, base: repo });

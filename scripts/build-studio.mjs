@@ -140,13 +140,18 @@ export async function packageFiles(base = root) {
   }
   return found.sort();
 }
+// The Studio is a user's download, so it leaves out the files written for contributors in a checkout: AGENTS.md (the
+// maintainer rules, which a user's coding agent would read as its own in that folder) and llms.txt (a checkout's
+// index). npm still ships both.
+export const NOT_IN_STUDIO = ['AGENTS.md', 'llms.txt'];
+export const studioFiles = async (base = root) => (await packageFiles(base)).filter(file => !NOT_IN_STUDIO.includes(file));
 // The commit a build is made from. A build is only named after a commit when every shipped file is tracked and
 // unmodified at it; otherwise the build is marked as a development build. A clean state also carries `read`, which
 // returns a shipped file's bytes from the commit itself: git calls a file unmodified when only its line endings
 // differ, so two working copies of one commit can hold different bytes.
 export async function sourceState(base = root) {
   const git = (...args) => execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 16 * 1024 * 1024 });
-  const shipped = [...await packageFiles(base), ...await walk(base, 'packaging')], inputs = [...shipped, 'scripts/build-studio.mjs', 'scripts/environment.mjs'];
+  const shipped = [...await studioFiles(base), ...await walk(base, 'packaging')], inputs = [...shipped, 'scripts/build-studio.mjs', 'scripts/environment.mjs'];
   let state;
   try {
     const commit = git('rev-parse', 'HEAD').trim(), date = new Date(Number(git('log', '-1', '--format=%ct').trim()) * 1000);
@@ -203,7 +208,7 @@ export async function assembleStudio({ runtime, source, target = 'win-x64', base
   const { version } = JSON.parse((await read('package.json')).toString()), name = `PixelboltStudio-${version}${release ? '' : '-dev'}-${target}`, files = new Map(), modes = new Map();
   // Windows batch files need CRLF to parse reliably and Notepad users expect it in text files; shell scripts need LF.
   const lines = (bytes, ending) => Buffer.from(bytes.toString('utf8').replace(/\r?\n/g, ending));
-  for (const file of await packageFiles(base)) files.set(`app/${file}`, await read(file));
+  for (const file of await studioFiles(base)) files.set(`app/${file}`, await read(file));
   modes.set('app/bin/pixelbolt.js', 0o755);
   modes.set('app/bin/pixelforge.js', 0o755);
   for (const folder of PACKAGING[os]) for (const file of await walk(base, `packaging/${folder}`)) {

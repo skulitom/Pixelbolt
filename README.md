@@ -151,12 +151,12 @@ Use Pixelbolt to create or revise pixel sprites, tiles, icons, effects and short
 
 | Entry point | Purpose |
 | --- | --- |
-| [llms.txt](llms.txt) | Compact documentation index with direct links for agents |
+| [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt) | Compact documentation index with direct links for agents |
 | [Pixel art skill](skills/pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow |
 | [Authoring guide](docs/agent-guide.md) | Recipe fields, drawing operations and limits |
 | [JSON Schema](schema.json) | Machine-readable recipe structure |
 | [Examples](examples/) | Complete forest spirit, campfire, coin and shrine recipes, a caption with pixel text, a rotated sword swing, a particle effects source and twelve fluid presets |
-| [AGENTS.md](AGENTS.md) | Instructions for agents contributing to the toolkit |
+| [AGENTS.md](https://github.com/skulitom/Pixelbolt/blob/main/AGENTS.md) | Instructions for agents contributing to the toolkit |
 
 Start with the authoring guide or MCP's `pixel_help`. Write a recipe, validate it, inspect every frame with `pixel_inspect` or `pixelbolt inspect`, revise with targeted patches, then render to a fresh output directory. Validation checks the format; image inspection checks the art.
 
@@ -406,7 +406,7 @@ Any machine can build any target; each archive comes with its `.sha256` and a pe
 
 ## Contributing
 
-Bug reports, recipe examples, documentation improvements and focused pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before changing the toolkit. Report reproducible bugs through [GitHub Issues](https://github.com/skulitom/Pixelbolt/issues).
+Bug reports, recipe examples, documentation improvements and focused pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](https://github.com/skulitom/Pixelbolt/blob/main/AGENTS.md) before changing the toolkit. Report reproducible bugs through [GitHub Issues](https://github.com/skulitom/Pixelbolt/issues).
 
 ## Sibling tools
 
