@@ -91,7 +91,7 @@ Use a `pixelforge-poses` version-1 sidecar, described by [poses.schema.json](../
 }
 ```
 
-`parts` define palette grids, local anchors and local named points. Each pose's `origin` is a source-canvas point (often the ground anchor). Instances draw in listed back-to-front order. Without `attach`, `at` offsets the instance's anchor from the pose origin. With `attach`, it offsets the anchor from a named point on an **earlier** instance. Definition points use the part grid's upper-left origin. A pose can use a different part definition under the same instance name, such as an open versus curled hand. An instance with `"flipX": true` mirrors its grid, anchor and points inside the part. A pose written as `{ "name": "walk-l-1", "mirror": "walk-r-1" }` reflects an earlier pose around its origin, including parts, points and markers, and inherits its duration; it takes no parts, markers or origin of its own. The origin becomes the frame anchor, which names the corner between pixel columns originX − 1 and originX, and the mirror reflects around that corner: pixel column c becomes 2 × originX − 1 − c. That is the same reflection as the runtime's `drawFrame` with `flipX` and engines that flip around the atlas pivot, so a compiled left-facing pose and a runtime-flipped right-facing one draw identical pixels. Centre a symmetric front view on the origin corner (for example columns 12–27 around origin x 20) and the side views mirror around the same line. No rotation, smoothing or automatic in-betweens are imposed unless you ask for them.
+`parts` define palette grids, local anchors and local named points. Each pose's `origin` is a source-canvas point (often the ground anchor). Instances draw in listed back-to-front order. Without `attach`, `at` offsets the instance's anchor from the pose origin. With `attach`, it offsets the anchor from a named point on any instance in the same pose (dependency cycles are rejected). Definition points use the part grid's upper-left origin. A pose can use a different part definition under the same instance name, such as an open versus curled hand. An instance with `"flipX": true` mirrors its grid, anchor and points inside the part. A pose written as `{ "name": "walk-l-1", "mirror": "walk-r-1" }` reflects an earlier pose around its origin, including parts, points and markers, and inherits its duration; it takes no parts, markers or origin of its own. The origin becomes the frame anchor, which names the corner between pixel columns originX − 1 and originX, and the mirror reflects around that corner: pixel column c becomes 2 × originX − 1 − c. That is the same reflection as the runtime's `drawFrame` with `flipX` and engines that flip around the atlas pivot, so a compiled left-facing pose and a runtime-flipped right-facing one draw identical pixels. Centre a symmetric front view on the origin corner (for example columns 12–27 around origin x 20) and the side views mirror around the same line. No rotation, smoothing or automatic in-betweens are imposed unless you ask for them.
 
 An instance with `"rotate": 30` turns its part clockwise by whole degrees (−360 to 360) around the centre of the part's anchor pixel, after any flip, and its points turn with it, so a held item stays in the hand. The rotated grid is baked into the compiled recipe as an ordinary, editable symbol named `<part>-r<degrees>` (`-fr` when flipped). Rotation never invents colours: three Scale2x passes enlarge the grid eight times, which rounds staircase edges, and each output pixel samples the enlarged grid where its rotated centre lands (the RotSprite approach). Right angles are exact. A cleanup pass then removes doubled corners the resampling leaves; set `"cleanup": false` to keep the raw result (`<part>-r<degrees>-raw`). Small parts lose detail at odd angles, so inspect the symbol and correct it by patching the compiled recipe or drawing a replacement part for key poses.
 
@@ -101,10 +101,45 @@ Compiled recipes carry each pose origin as the frame anchor (one recipe-level `a
 
 ```sh
 node bin/pixelbolt.js compile actor.poses.json --out actor.json --metadata actor.meta.json
-node bin/pixelbolt.js preview actor.json
+node bin/pixelbolt.js preview actor.poses.json
 ```
 
 The metadata exports each pose origin, resolved part anchors/points, markers, and expanded animation timing. Coordinates are **unscaled source pixels**, positive y down. For a game using `sheet.scale`, scale attachment coordinates explicitly; atlas rectangles already use exported pixels. Cue times are original milliseconds; divide by a positive playback rate in the consumer. Markers occur on entry into a pose, including repeated entries, reverse/pingpong positions and the first entry of a new loop. Nonlooping final holds do not repeatedly fire markers. Pixelbolt exports cues; the game owns event dispatch, collision and damage. Keep the `.poses.json` authoritative and reapply approved overlays after compilation.
+
+### Structural limbs and bodies
+
+Choose exactly one of `rows`, `bone` or `mass` per part. A bone is redrawn at its world angle, with integer pixels and palette ramp bands. Keep heads, hands, armour accents and props as grids where their particular shape matters. [Brass courier](../examples/brass-courier.poses.json) combines all three kinds; [bone skink](../examples/quality/skink-bones.poses.json) shows a smaller quadruped.
+
+```json
+{
+  "ramps": [["s", "a", "b", "c"]],
+  "light": 225,
+  "parts": {
+    "forearm": {
+      "bone": {"length": 7, "width": [3, 2], "ramp": 0, "base": 2, "outline": "k", "caps": ["socket", "round"]},
+      "points": {"wrist": "end"}
+    },
+    "torso": {
+      "mass": {"size": [10, 12], "ramp": 0, "base": 2, "outline": "k"},
+      "points": {"shoulder": [4, -3]}
+    }
+  }
+}
+```
+
+This fragment assumes those one-character keys exist in `palette`. Ramps run dark to light, with 2–32 keys; `ramp` selects a ramp and required `base` selects its main colour. Optional `outline` is a palette key, `"selective"` (the ramp's darkest colour on the shadow side), or `null`/omitted for no outline. `light` is a clockwise world angle, 0–359, default 225° (upper left).
+
+Bone `length` is 1–64 pixels. `width` has two values (start/end) or three (start/middle/end), each 1–16. `caps` has a start and end choice from `socket`, `round`, `flat`, `point`, default `["socket","round"]`. Thin spines use even stair steps and snap within 4° of clean slopes by default; `snap:false` keeps the requested direction. A bone anchors at its start; `"end"` names its rasterized endpoint. Numeric points are `[distanceAlong, distanceAcross]` relative to the start. A mass anchors at its centre and its numeric points are offsets from that centre. Structural parts cannot set a separate `anchor` or disable cleanup.
+
+Mass `size` is `[width,height]`, each 2–64. An instance's `squash` is 0.5–2 in steps of 0.05, default 1: height multiplies by squash and width divides by it. The rasterizer adjusts the discrete contour to keep opaque area, including the outline, within 10% of the rest mass. Exact analytic ellipse dimensions can shift by a pixel to preserve that area.
+
+### Relative joints, targets and views
+
+`angle` on an instance is relative to the parent's resolved world angle, or world-relative for a root. `rotate` retains its absolute meaning; do not combine them. Both accept whole degrees −360 through 360. Attachments may name any instance in the same pose, including one painted later; cycles are errors and paint order remains the listed order. An `at` offset stays in canvas axes. Relative-angle tweens use the shortest arc; legacy absolute rotations retain their previous interpolation. Squash and reach targets also interpolate, with final integer coordinates and 0.05 squash steps.
+
+Put `reach:[x,y]` on the last bone of a two-bone chain to target a **canvas** point. The child must attach to a named `"end"` point of its parent with no offset; reach replaces the child's `angle`/`rotate`. `bend` is `"forward"` (default) or `"back"`. Chains cannot share a solved bone. The solver chooses the closest integer endpoint, then the requested bend, smallest change from rest angles and lower angles. Outer unreachable targets straighten; inner unreachable targets use the closest fold. Warnings report the actual miss; `metadata.poses[name].parts` includes joint endpoints, world angles and reach error.
+
+Grid parts can supply up to 16 `views`, keyed by whole degrees 0–359. Each view has `rows`, a required `anchor`, and all the base part's named `points`. A view within 22.5° is used directly; otherwise the base drawing follows the existing grid rotation. This preserves a small hand or blade at key angles. Ordinary mirrors remain pixel-identical to runtime flipping. Add `relight:true` to a mirror pose to reflect its joints and redraw bones/masses under the unchanged world light.
 
 ### Motion templates
 
@@ -136,6 +171,8 @@ Declare the ground pixel row with `"rig": {"ground": 23}` and name planted marke
 Slide is the farthest distance between world-space positions of one marker in one continuous contact phase. The review samples **displayed-frame onsets**, not the continuous travel during a held drawing. Phases join across loop boundaries; a foot planted for the entire cycle includes its position at the next loop's start. Positive ground error means floating and negative means sinking. Loop review compares each joint's shortest angular jump with that joint's largest jump inside the cycle. Pose spread counts changed RGBA pixels divided by the union of the two opaque masks; adjacent poses use a 20% advisory threshold, and named `contact-a`/`contact-b` poses use 30%.
 
 All measurements are advisory and leave art unchanged. Missing contacts, speed, ground or joint angles produce `null` checks rather than a passing result. The strip shows the trajectory on the left and playback cells on the right, with planted footprints in yellow. It samples at most 32 positions, reports omissions and bounds image size; the numeric review still uses every frame. Travel too wide for the image is reported explicitly.
+
+The studio opens `.poses.json` directly, including from `pixelbolt preview character.poses.json`, and preserves that source when saving. Choose **Motion** for these same checks and strips, or **Show contacts** during playback. **Travel (px/s)** and **Ground row** override review settings; playback speed changes only preview timing. Export still produces ordinary recipe assets. The new Brass courier sample has five motions and retains editable template settings.
 
 ## Scene and tile review
 

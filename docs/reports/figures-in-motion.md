@@ -183,3 +183,19 @@ Inspected both complete native sheets, every animation's enlarged and silhouette
 - Guardian: [native](../images/figures/m4-craft-boss-native.png), [run](../images/figures/m4-craft-boss-run-4x.png), [silhouette](../images/figures/m4-craft-boss-run-silhouette.png), [ground GIF](../images/figures/m4-craft-boss-ground.gif), [motion](../images/figures/m4-craft-boss-motion-4x.png), [all motion results](../images/figures/m4-craft-boss-motion.json).
 
 The remaining animations are saved alongside those files. The first `m4-first-*` evidence and intermediate benchmark measurements are retained. The owner's waiver of outside reviewers remains in force.
+
+## M5 — 2026-10-20 — local interface and documentation checks passed
+
+The authoring guide, art workflow, pixel-art skill, README, `llms.txt`, MCP descriptions and changelog now cover structural parts, joints, reach, views, templates and motion review. `generate-examples.js` produces the new courier source, recipe and metadata; all pre-existing generated examples are unchanged. The new example is exactly R2 and is checked against its pinned fixture.
+
+The studio compiles editable pose sources in the browser, preserves them through save/open and draft recovery, plays their animations, displays quantitative motion review and overlays planted feet. Review speed and ground are explicit controls; source editing remains the authoring workflow. CLI preview and the loopback server preserve pose sources too. A direct CLI smoke check caught and fixed the server's remaining recipe-only validation path; a regression test now covers source preservation and rejection of invalid rigs. No write endpoint or runtime dependency was added.
+
+The final reference run passed **367 tests in 12.118 s**, within the 13.5 s target. New tests remain below 500 ms on this machine. The generated schema is unchanged after regeneration, all figure goldens and 861 legacy RGBA hashes match, and all 31 quality-lab assets reproduce.
+
+Browser QA passes **35/35 checks** in Edge, including figure playback, contact overlays, numeric review, source saving/reopening, wide/narrow windows and the existing sprite/scene/fluid workflows. [Compiled JSON and all 148 R1–R3 RGBA hashes](figures/m5-browser-hashes.json) match Node exactly. [Live edit timing](figures/m5-edit-latency.json) is **54.7 ms median / 75.9 ms p95**, including debounce, compile/render, DOM work and a paint, passing the 100 ms reference target.
+
+Pillow independently verifies R2's sheet and all 40 GIF playback entries across five animations, byte-for-byte RGBA and exact timing. The existing independent export verification also passes, including APNG, alpha, sequences, ZIP and MCP. MCPB reproducibility and its eight-tool smoke check pass.
+
+Inspected the saved [Motion view](../images/figures/m5-studio-motion.png), [contact overlay](../images/figures/m5-studio-contacts.png) and [narrow layout](../images/figures/m5-studio-narrow.png). The [final implementation review](figures-in-motion-review-2026-10-20.md) explicitly records the waived blind review; no preference or authoring-cost scores are invented.
+
+Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. The full cross-platform CI matrix and final landing are the remaining release checks.

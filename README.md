@@ -39,6 +39,18 @@ Write a JSON recipe with palettes, text grids, reusable symbols and drawing oper
 
 Zero runtime dependencies. No build step, API key, image model, network service or native graphics library. Requires **Node.js 20 or newer**. Works from a checkout on Windows, macOS and Linux.
 
+## Figures in motion
+
+Author limbs as bones, bodies as masses, and faces or props as grids. Relative joints and two-bone reach keep attachments together; idle, walk, run, jump, attack and hurt templates expand into editable poses. Review planted feet, ground contact and loop joins in the CLI, MCP or studio. The output uses the existing sprite player.
+
+```sh
+node bin/pixelbolt.js preview examples/brass-courier.poses.json
+node bin/pixelbolt.js compile examples/brass-courier.poses.json --expand --out courier-edit.poses.json
+node bin/pixelbolt.js inspect examples/brass-courier.poses.json --motion run --speed 48
+```
+
+[Pose and motion reference](docs/art-workflow.md#structural-limbs-and-bodies) · [Editable courier](examples/brass-courier.poses.json) · [Compiled recipe](examples/brass-courier.json)
+
 ## Gallery
 
 An AI agent drew these with Pixelbolt. Its scripts write the recipes, particle sources and scenes; Pixelbolt renders every sprite to a transparent sheet with an atlas, plays each 240×135 room as a scene and writes the GIFs. They are shown at 3×.
@@ -291,10 +303,10 @@ The eight tools are:
 
 - **`pixel_help`**: authoring guide, full schema and a complete sample; `topic` returns the poses, scenes, autotile, fx, fluid or normals schemas.
 - **`pixel_validate`**: validate `{ "project": ... }` and save its recipe revision without exporting assets. Reports every clipped location; `"fps": 30` adds `frameGrid`, the durations off that video frame grid and what a sequence would do to each animation.
-- **`pixel_inspect`**: contact sheets, exact regional grids, silhouette/grayscale/onion views, 3×3 tile repeats with seam evidence, native size, named layer isolation, saved-reference comparisons and advisory diagnostics. `frames` takes `*`/`?` patterns, `step`/`offset` keep every nth cell, and optional bounded samples expose omissions. Saves its recipe revision.
+- **`pixel_inspect`**: contact sheets, exact regional grids, silhouette/grayscale/onion views, 3×3 tile repeats with seam evidence, native size, named layer isolation, saved-reference comparisons, advisory diagnostics and motion review with contacts and explicit pose metadata. `frames` takes `*`/`?` patterns, `step`/`offset` keep every nth cell, and optional bounded samples expose omissions. Saves its recipe revision.
 - **`pixel_patch`**: apply targeted `set`, `insert`, `remove` and `paint` edits. For example, `{ "paint": "frames[blink]", "value": [{ "x": 9, "y": 7, "color": "k" }] }` corrects a pixel in final canvas coordinates after all layers; `transparent` erases it. Returns every frame whose pixels changed (exact pixels for small edits) and a before/after PNG. The source stays unchanged and successful edits get a new revision.
 - **`pixel_render`**: render `{ "project": ... }`, return a PNG contact sheet of every frame with cell names/timing plus the output folder, its key files and frame/animation counts (`listFiles: true` lists everything). Add `"animation": "idle"` to preview a sequence in playback order. The exported APNGs and HTML preview play the animation. Add `"gif": {}` (or `{ "scale": 8, "background": "#17191d" }`) to also write every animation as a GIF in `gifs/`, with notes on any alpha or timing change, and `"sequence": { "fps": 30, "size": "1080p" }` to write one animation as numbered PNG frames for a video editor in `sequence/`. Every call writes a fresh folder inside the configured output directory.
-- **`pixel_compile`**: compile a `pixelforge-poses` source (including rotated parts and tweened in-betweens), a `pixelforge-autotile` template, a `pixelforge-fx` particle source, a `pixelforge-fluid` source (simulated smoke, fire, explosions, magic and water) or a `pixelforge-normals` source (a normal pass derived from a recipe or revision) into a recipe revision, with a contact sheet and optional metadata.
+- **`pixel_compile`**: compile a `pixelforge-poses` source (including bones, masses, relative joints, reach targets and editable motion templates), a `pixelforge-autotile` template, a `pixelforge-fx` particle source, a `pixelforge-fluid` source (simulated smoke, fire, explosions, magic and water) or a `pixelforge-normals` source (a normal pass derived from a recipe or revision) into a recipe revision, with a contact sheet and optional metadata.
 - **`pixel_scene`**: render a `pixelforge-scene` manifest (tilemaps with autotile legends and neighbour rules, named cues, sequences, trajectories, attachments, ground sorting, shade placements, ramp or multiplied lighting, palette themes) at any time, export it, or write it as a shot of numbered PNG frames with `sequence`; assets may be revisions.
 - **`pixel_import`**: import a native-resolution PNG, given as base64 or a file inside the server root, as a lossless recipe revision.
 

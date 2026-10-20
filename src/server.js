@@ -6,6 +6,7 @@ import { createBundle, createZip } from './export.js';
 import { renderProject, MAX_REQUEST_BYTES, PixelError } from './core.js';
 import { createSequence } from './sequence.js';
 import { prepareScene } from './scene.js';
+import { compilePoses } from './authoring.js';
 
 const routes = new Map([
   ['/', ['../studio/index.html', 'text/html; charset=utf-8']],
@@ -30,6 +31,7 @@ const routes = new Map([
   ['/fluid-lab.js', ['../studio/fluid-lab.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
   ['/examples/quality/skink.json', ['../examples/quality/skink.json', 'application/json']],
+  ['/examples/brass-courier.poses.json', ['../examples/brass-courier.poses.json', 'application/json']],
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),
   // The fluid lab compiles these sources in the browser.
@@ -56,7 +58,10 @@ export function openBrowser(url) {
 // recovery lives in browser storage, which browsers keep per address: a draft is only found again on the same port.
 export async function startStudio({ port = STUDIO_PORT, fallback = false, project, quiet = false } = {}) {
   const scene = project?.format === 'pixelforge-scene';
-  if (project) { if (scene) prepareScene(project); else renderProject(project); }
+  if (project) {
+    if (scene) prepareScene(project);
+    else renderProject(project.format === 'pixelforge-poses' ? compilePoses(project).recipe : project);
+  }
   const server = http.createServer(async (req, res) => {
     const address = server.address(), hosts = [`127.0.0.1:${address.port}`, `localhost:${address.port}`];
     const reply = (status, type, body) => { res.writeHead(status, { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'" }); res.end(body); };

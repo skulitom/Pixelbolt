@@ -4,6 +4,12 @@ Create a small, editable JSON recipe; validate it; render it; inspect the PNG pr
 
 For visual quality decisions, regional corrections, pose compilation, scenes, material passes and PNG interchange, follow the [art workflow](art-workflow.md) and [original quality lab](art-quality-lab.md). These are supported extensions around version-1 recipes, not permission prompts or aesthetic guarantees.
 
+For a moving character, start from [Brass courier](../examples/brass-courier.poses.json) or the smaller [bone skink](../examples/quality/skink-bones.poses.json). Use `bone` limbs with length/width profiles, a `mass` torso with squash, and `rows` for detailed heads and props. Declare dark-to-light `ramps` and world `light` (default 225°). Relative `angle` follows the parent; legacy `rotate` stays absolute. Attachments resolve in any order while parts paint in listed order. A two-bone `reach` targets a canvas point; grid `views` preserve authored detail at key angles.
+
+Assign `rig` roles (`body`, `head`, `legs`, `arms`, `tail`, `ground`, `rest`) and add `motions` for idle, walk, run, jump, attack or hurt. Templates compile to ordinary recipes with named layers; `pixelbolt compile actor.poses.json --expand --out actor-edit.poses.json` exposes the generated poses. An authored pose with the same name overrides a generated pose. Keep the source authoritative and tune reach warnings, contacts and silhouette before export. [The full pose reference](art-workflow.md#structural-limbs-and-bodies) gives field ranges, defaults, points, joint rules and template parameters.
+
+Use `pixelbolt inspect actor.poses.json --motion run --speed 48` or MCP `pixel_inspect` with `{source, view:"motion", animation:"run", speed:48}`. A compiled recipe/revision needs explicit `metadata` from `pixel_compile` with `metadata:true`. Review slide, signed ground error, key-pose spread and joint loop seams; missing information is reported as unavailable. Contact checks sample frame onsets, not continuous travel during a held frame. In the studio, open the pose source, select **Motion** or **Show contacts**, and keep **Travel (px/s)** separate from playback speed.
+
 ## Project
 
 Required: `version: 1`, `name`, `width`, `height`, `frames`.

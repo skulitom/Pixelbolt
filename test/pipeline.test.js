@@ -8,6 +8,14 @@ import { prepareScene, renderScene, inspectTile } from '../src/scene.js';
 import { createSceneBundle } from '../src/scene-export.js';
 const asset = { version: 1, name: 'probe', width: 2, height: 2, frames: [{ name: 'a', duration: 75, pixels: [{ x: 0, y: 0, color: '#ff002280' }, { x: 1, y: 1, color: '#12345600' }] }, { name: 'b', duration: 125, ops: [{ op: 'pixel', x: 1, color: '#fff' }] }], animations: { once: { frames: ['b', 'a', 'a'], loop: false } }, sheet: { padding: 1 } };
 const scene = { format: 'pixelforge-scene', version: 1, name: 'room', width: 8, height: 8, assets: { prop: asset }, instances: [{ name: 'placed', asset: 'prop', at: [3, 4], anchor: [1, 1], animation: 'once', sequence: [{ time: 300, frame: 'b' }] }] };
+test('the generated courier example matches the pinned R2 source, recipe and metadata', async () => {
+  const { heroRig } = await import('../scripts/figure-rigs.mjs');
+  const { compilePoses } = await import('../src/authoring.js');
+  const read = name => readFile(new URL(`../examples/brass-courier${name}.json`, import.meta.url), 'utf8').then(JSON.parse);
+  const [source, recipe, metadata] = await Promise.all(['.poses', '', '.meta'].map(read));
+  assert.deepEqual(source, heroRig());
+  assert.deepEqual(compilePoses(source), { recipe, metadata });
+});
 test('native RGBA PNG and atlas roundtrip preserve hidden RGB, alpha, order, timing and once flags', () => {
   const rendered = renderProject(asset), atlas = buildAtlas(rendered), bytes = encodePNG(atlas.data, atlas.width, atlas.height);
   assert.deepEqual(decodePNG(bytes).data, atlas.data);

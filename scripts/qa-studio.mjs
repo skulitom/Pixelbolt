@@ -45,6 +45,7 @@ const note = text => { notes.push(text); console.log(`  note  ${text}`); };
 
 const { startStudio } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'server.js')));
 const { renderProject, MAX_REQUEST_BYTES } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'core.js')));
+const { compilePoses } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'authoring.js')));
 const server = await startStudio({ port: 0, quiet: true }), origin = `http://127.0.0.1:${server.address().port}`;
 const browser = spawn(program, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking', '--disable-component-update', '--disable-sync', '--mute-audio', '--window-size=1440,900', ...options['browser-arg'], 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
 let exitCode = 1, closeBrowser = null;
@@ -176,6 +177,67 @@ try {
     const [drawn, frames, hidden, status] = [(await canvas()).drawn, await evaluate(`document.getElementById('timeline').children.length`), await evaluate(`document.getElementById('error').hidden`), await text('compile-status')];
     assert.ok(drawn > 0 && frames > 0 && hidden, `drawn ${drawn}, frames ${frames}, error hidden ${hidden}`);
     await studio.shot(`sample-${sample.file.replace('/', '-')}`); return `${frames} frames, ${status.replace('● ', '')}`;
+  });
+
+  console.log('Moving figures');
+  await check('pose source opens, plays, reviews contacts and saves its editable source', async () => {
+    await click('#examples .example[data-file="brass-courier.poses"]');
+    await until(`document.getElementById('project-name').textContent === 'Brass courier'`, 'the courier');
+    await choose('animation', 'run');
+    if (await evaluate(`document.getElementById('play').getAttribute('aria-label') === 'Play animation'`)) await click('#play');
+    const before = await text('frame-counter'); await until(`document.getElementById('frame-counter').textContent !== ${JSON.stringify(before)}`, 'the figure to move');
+    await click('#timeline .frame:nth-child(1)');
+    const plain = await canvas(); await click('#contacts'); assert.notEqual((await canvas()).hash, plain.hash); await click('#contacts');
+    await click('#motion-view'); assert.match(await text('motion-summary'), /pass/); assert.doesNotMatch(await text('motion-summary'), /check|unavailable/);
+    assert.ok((await canvas()).width > plain.width); await studio.shot('figure-motion');
+    await choose('motion-speed', '0'); assert.match(await text('motion-summary'), /check/); await choose('motion-speed', '48');
+    await click('#animation-view'); await choose('zoom', '4'); await click('#contacts'); await studio.shot('figure-contacts');
+    await studio.size(390, 844);
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'figure controls cause horizontal overflow');
+    await studio.shot('figure-narrow'); await studio.size(1440, 900); await click('#contacts');
+    const saved = await download(() => click('#save'));
+    assert.equal(JSON.parse(await readFile(saved, 'utf8')).format, 'pixelforge-poses');
+    const { root: { nodeId } } = await studio.page('DOM.getDocument'), input = await studio.page('DOM.querySelector', { nodeId, selector: '#file' });
+    await studio.page('DOM.setFileInputFiles', { files: [saved], nodeId: input.nodeId });
+    await until(`document.getElementById('toast').textContent.startsWith('Opened ')`, 'saved poses to reopen');
+  });
+  await check('R1–R3 compiled JSON and every RGBA frame match Node in the browser', async () => {
+    const { skinkRig, heroRig, bossRig } = await import('./figure-rigs.mjs');
+    const hashes = [];
+    for (const build of [skinkRig, heroRig, bossRig]) {
+      const source = build(), compiled = compilePoses(source), project = renderProject(compiled.recipe);
+      const sha = data => createHash('sha256').update(data).digest('hex');
+      const expected = { compiled: sha(JSON.stringify(compiled)), rgba: project.frames.map(f => sha(f.data)) };
+      const actual = await evaluate(`(async () => {
+        const {compilePoses} = await import('/authoring.js'), {renderProject} = await import('/core.js');
+        const compiled = compilePoses(${JSON.stringify(source)}), project = renderProject(compiled.recipe);
+        const sha = async data => [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))].map(n => n.toString(16).padStart(2,'0')).join('');
+        return { compiled: await sha(new TextEncoder().encode(JSON.stringify(compiled))), rgba: await Promise.all(project.frames.map(f => sha(f.data))) };
+      })()`);
+      assert.deepEqual(actual, expected, build.name); hashes.push({ fixture: build.name, ...actual });
+    }
+    await writeFile(path.join(kept, 'figure-browser-hashes.json'), JSON.stringify(hashes, null, 2));
+    return 'all 148 frames and complete recipe/metadata JSON';
+  });
+  await check('R2 live edits redraw within the 500 ms CI budget', async () => {
+    // Include debounce, compile, render, DOM work and a browser paint, not just the compiler call.
+    const times = await evaluate(`(async () => {
+      const source = document.getElementById('source'), values = [];
+      for (let i=0; i<18; i++) {
+        const value = JSON.parse(source.value); value.motions.run.lean = i%2 ? 8 : 7;
+        const start = performance.now();
+        await new Promise(resolve => {
+          source.addEventListener('pixelbolt:rendered', () => requestAnimationFrame(() => requestAnimationFrame(resolve)), {once:true});
+          source.value = JSON.stringify(value, null, 2); source.dispatchEvent(new Event('input', {bubbles:true}));
+        });
+        if (i>=3) values.push(performance.now()-start);
+      }
+      return values.sort((a,b)=>a-b);
+    })()`);
+    const result = { medianMs: times[Math.floor(times.length / 2)], p95Ms: times[Math.ceil(times.length * .95) - 1], samples: times, browser: version.product };
+    await writeFile(path.join(kept, 'figure-edit-latency.json'), JSON.stringify(result, null, 2));
+    assert.ok(result.p95Ms <= 500, JSON.stringify(result));
+    return `${result.medianMs.toFixed(1)} ms median / ${result.p95Ms.toFixed(1)} ms p95; reference target 100 ms`;
   });
 
   console.log('Preview controls');

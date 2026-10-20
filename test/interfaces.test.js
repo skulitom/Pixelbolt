@@ -19,6 +19,13 @@ import { readZip } from '../scripts/build-studio.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const tiny = { version: 1, name: 'dot', width: 1, height: 1, frames: [{ name: 'idle', ops: [{ op: 'pixel', color: '#fff' }] }] };
 const strip = { version: 1, name: 'strip', width: 12, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 11, y: 1, color: 'k' }] }, { name: 'b' }] };
+test('studio validates pose sources and serves the editable rig instead of discarding it', async t => {
+  const source = heroRig(), server = await startStudio({ port: 0, project: source, quiet: true });
+  t.after(() => { server.closeAllConnections(); server.close(); });
+  assert.deepEqual(await (await fetch(`http://127.0.0.1:${server.address().port}/project.json`)).json(), source);
+  const invalid = structuredClone(source); invalid.rig.body = 'missing';
+  await assert.rejects(startStudio({ port: 0, project: invalid, quiet: true }), /poses\.rig: unknown rest-pose instance missing/);
+});
 function exchangeMCP(directory, messages, bin = 'pixelbolt') {
   const result = spawnSync(process.execPath, [`bin/${bin}.js`, 'mcp', '--out', directory], { cwd: root, input: messages.map(m => JSON.stringify(m)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
   assert.equal(result.status, 0, result.stderr);
