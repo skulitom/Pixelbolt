@@ -136,7 +136,8 @@ test('a release build takes its files from the commit, whatever line endings the
   const git = (...args) => spawnSync('git', ['-c', 'user.name=test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', ...args], { cwd: repo, encoding: 'utf8' });
   if (git('init', '-q').status !== 0) { t.skip('git is not available'); return; }
   const write = async (file, text) => { await mkdir(path.dirname(path.join(repo, file)), { recursive: true }); await writeFile(path.join(repo, file), text); };
-  await write('.gitattributes', '* text=auto eol=lf\n'); await write('package.json', JSON.stringify({ version: '9.9.9', files: ['notes.txt'] }) + '\n');
+  await write('.gitattributes', '* text=auto eol=lf\n'); await write('package.json', JSON.stringify({ version: '9.9.9', files: ['notes.txt', 'AGENTS.md'] }) + '\n');
+  await write('AGENTS.md', 'maintainer rules\n');
   // Saved with Windows line endings and then added: git stores LF and calls the CRLF working copy unmodified.
   await write('notes.txt', 'one\r\ntwo\r\n'); await write('packaging/windows/run.cmd', '@echo off\n'); await write('scripts/build-studio.mjs', '\n');
   await write('scripts/environment.mjs', '\n');
@@ -148,6 +149,10 @@ test('a release build takes its files from the commit, whatever line endings the
   assert.equal(build.name, 'PixelboltStudio-9.9.9-win-x64');
   assert.equal(build.files.get(`${build.name}/app/notes.txt`).toString(), 'one\ntwo\n');
   assert.equal(build.files.get(`${build.name}/run.cmd`).toString(), '@echo off\r\n');
+  assert.equal(build.files.get(`${build.name}/app/AGENTS.md`), undefined);
+  // A file the Studio leaves out doesn't make it a development build when only that file is edited.
+  await write('AGENTS.md', 'edited rules\n');
+  assert.deepEqual((await sourceState(repo)).dirty, []);
   // A real edit or an untracked shipped file makes it a development build, which is read from the working copy.
   await write('notes.txt', 'one\r\nthree\r\n'); await write('packaging/windows/extra.txt', 'new\n');
   const edited = await sourceState(repo), dev = await assembleStudio({ runtime: standIn, source: edited, base: repo });

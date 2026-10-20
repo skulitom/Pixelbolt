@@ -151,7 +151,7 @@ export const studioFiles = async (base = root) => (await packageFiles(base)).fil
 // differ, so two working copies of one commit can hold different bytes.
 export async function sourceState(base = root) {
   const git = (...args) => execFileSync('git', ['-c', 'core.quotepath=off', ...args], { cwd: base, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 16 * 1024 * 1024 });
-  const shipped = [...await packageFiles(base), ...await walk(base, 'packaging')], inputs = [...shipped, 'scripts/build-studio.mjs', 'scripts/environment.mjs'];
+  const shipped = [...await studioFiles(base), ...await walk(base, 'packaging')], inputs = [...shipped, 'scripts/build-studio.mjs', 'scripts/environment.mjs'];
   let state;
   try {
     const commit = git('rev-parse', 'HEAD').trim(), date = new Date(Number(git('log', '-1', '--format=%ct').trim()) * 1000);
