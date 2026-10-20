@@ -6,13 +6,14 @@ Implementation of the 20 October 2026 plan. The full goal covers M0–M5; comple
 
 - The owner requested implementation, a persistent goal, and commit/push to `main` when ready.
 - The owner subsequently waived the outside-review instructions as unnecessary. External reviewers, voting thresholds, the 18-attempt blind comparison and a separate approval for that review are not delivery blockers. Automated craft/motion checks, performance targets, visual inspection and honest reporting remain required. No blind-review preference or score is claimed.
+- The owner chose stable opaque pixel area over an exact ellipse under squash. A 12×7 outlined ellipse otherwise grows from 95 to 115 pixels at squash 0.5. Masses therefore use the closest ellipse-ranked contour to the unsquashed opaque area, including its outline.
 - New pose fields remain optional version-1 additions; `rotate` retains its absolute meaning. Studio scope is preview, motion inspection and contact overlays.
 - The existing untracked `.claude/` folder is unrelated and is preserved.
 - M0 lands independently after its gate. Subsequent work continues on `figures-in-motion` and lands when verified under the owner's direct authorization.
 
 ## M0 — 2026-10-20 — passed
 
-Baseline code: `862de088f3b23c4bef30f96fb0ff0833895ad340`. Implementation commit: the commit introducing this section, titled **Speed up sparse pose layers without changing rendered pixels**.
+Baseline code: `862de088f3b23c4bef30f96fb0ff0833895ad340`. Implementation commit: `e0ad3a1511ef4bb7f1f3d83c1bc64b06730d0531`, **Speed up sparse pose layers without changing rendered pixels**, pushed to `main`.
 
 The renderer tracks conservative bounds of all layer writes, composites only those bounds and reuses one scratch buffer per frame. It still executes global operations against the complete canvas, validates invisible layers, preserves hidden RGB semantics and counts clipping. Named layers remain available for isolation. `renderProject(recipe, {stats: true})` reports total charged drawing pixels, layer compositing pixels and operation count; normal calls retain their existing output shape.
 
@@ -38,7 +39,7 @@ The 128 px fixture charges 184,320 drawing pixels (0.275% of 67,108,864); the 25
 - All 87 existing on-disk recipes/pose sources under `examples/` and `showcase/`, including inline recipes in JSON, retain all 861 per-frame RGBA hashes, animation timelines and full pose compilation hashes. There was no pre-existing `test/fixtures/` directory. New tests also cover the inline regression fixtures.
 - The baseline was recorded before changing `src/core.js`; no expected hash was changed. `node scripts/check-figure-baseline.mjs` checks it without rewriting it. New snapshots require a new destination.
 - Tests compare bounded layers against independent full-canvas compositing, including fill, replace, rewrite, outline, copy, shade, hidden RGB, clears, opacity, invisible layers and offsets. Stamp validation tests cover timing, invalid fields, names, palettes, coordinates, atlas limits and exact clipped/trimmed layouts.
-- The runtime, schemas, drawing operations and binary encoders are unchanged. Cross-platform CI evidence will be recorded after pushing.
+- The runtime, schemas, drawing operations and binary encoders are unchanged. [CI run 39435581740](https://github.com/skulitom/Pixelbolt/actions/runs/39435581740) passed all Node 20/22/24 Ubuntu tests and Node 24 Windows/macOS tests. Two portable macOS packaging jobs were initially cancelled before running any steps; the failed-job rerun is tracked separately.
 
 ### Visual evidence
 
@@ -54,8 +55,41 @@ The GIF uses a camera-relative ground reference moving at 48 px/s and y=26. The 
 
 ## Remaining milestones
 
-- M1: deterministic bone/mass rasterizers, schema and exhaustive craft checks.
+- M1: implemented and verified below.
 - M2: hierarchy, reach, views, angular tweens, relit mirrors and a separate bone skink.
 - M3: contact markers and quantitative motion inspection through CLI/MCP.
 - M4: six editable motion templates and R2/R3 fixtures.
 - M5: documentation/skill/examples, studio inspection, export verification and final evidence. External blind review is waived as recorded above.
+
+## M1 — 2026-10-20 — primitive gate passed
+
+`rasterizeBone` draws a clean stepped spine, tapered or bulged fill, world-facing ramp bands, four cap types and an external outline. `rasterizeMass` maintains opaque pixel area under squash using the owner's contour decision above. Both return exact attachment coordinates and masks for inspection. Compilation bakes ordinary palette-row symbols and stamp operations; grids and plain mirrors retain their existing behavior. The pose schema includes the same optional fields as validation. Tidewatch's bundled copy of `craft.js` is synchronized; none of its art changed.
+
+Snapped endpoints quantize the major axis first and derive the minor coordinate from the clean integer ratio. This keeps short spines on that ratio. Two-pixel bones keep their attachment endpoints and permit De-Corner to shave an interior elbow. Neither adjustment alters grid parts or legacy poses.
+
+### Checks
+
+- All 318 tests pass in 11.543 s, compared with 11.312 s before M0. The 45 new M1 tests fit the suite-growth budget; the individual craft groups remain below 500 ms.
+- The angle matrix covers 360 whole-degree angles × widths 1–6 × lengths 3–16; all four start/end cap combinations are also checked across 360 angles. Tests check palette closure, De-Corner stability, fill strays, stepping, mid-width tolerance, highlight direction and retained joint endpoints.
+- Masses cover every 0.05 squash step from 0.5 through 2.0 at four angles, for sizes 2×2, 3×6, 12×7, 16×12 and 64×64. Opaque area remains within 10%.
+- Additional tests cover unoutlined/selective outlines, flips, unsnapped tapers, squash interpolation, shared baked variants, invalid-field paths, schema alignment and forbidden native mathematics.
+- The complete M0 baseline still matches: 87 source documents, 861 frame hashes and all old pose compiler metadata. Existing golden values were not updated.
+- An initial full run correctly failed because Tidewatch's bundled helper copy was stale; it passed after synchronizing that file.
+
+### Performance
+
+The [verified measurement](figures/m1-verified-bench.json) preserves the same 3-warmup, 15-run protocol and machine information. The specified 64-pixel, width-16 bone at its default angle takes **0.036 ms median**, **0.044 ms p95** during the compiler workflow, passing the 0.05 ms target. The 101-frame primitive fixture compiles in 3.296 ms and renders in 1.640 ms.
+
+This is a warmed workflow measurement, not a cold-start claim: the same bone before any compiler work takes 0.273 ms median. A 37° bone takes 0.098 ms median. Those additional probes are reported explicitly; they do not meet 0.05 ms. The first slower implementation and intermediate measurements are preserved alongside the verified measurement. Whole-rig budgets remain to be verified in M2/M4.
+
+### Visual evidence
+
+Inspected every native sheet, enlarged sheet, silhouette and frame of the ground strip. Thin strokes step evenly; wider bones carry a warm light band above and left; socket ends visibly open their outline. Squashed masses keep their pixel area but very small/extreme contours can be asymmetric by one pixel, as expected from the discrete-area choice. The files still match freshly generated output after the optimizations.
+
+| Primitive | Native | 4× | Silhouette |
+| --- | --- | --- | --- |
+| Bones | [Sheet](../images/figures/m1-bones-native.png) | [Sheet](../images/figures/m1-bones-4x.png) | [Sheet](../images/figures/m1-bones-silhouette.png) |
+| Masses | [Sheet](../images/figures/m1-masses-native.png) | [Sheet](../images/figures/m1-masses-4x.png) | [Sheet](../images/figures/m1-masses-silhouette.png) |
+| Caps | [Sheet](../images/figures/m1-caps-native.png) | [Sheet](../images/figures/m1-caps-4x.png) | [Sheet](../images/figures/m1-caps-silhouette.png) |
+
+[Primitive GIF](../images/figures/m1-ground.gif) and [all 20 frames](../images/figures/m1-ground-strip.png). The moving ground is a visual reference at 48 px/s, y=47, with 100 ms frames. These isolated rotating/squashing parts do not claim locomotion or foot contact. Character readability and joint seams remain M2/M3 work.

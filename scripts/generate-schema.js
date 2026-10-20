@@ -108,15 +108,35 @@ const schema = {
 await writeFile(new URL('../schema.json', import.meta.url), JSON.stringify(schema, null, 2) + '\n');
 
 // Sidecar formats evolve independently; compiled sprite recipes remain version 1.
+const structuralColor = {
+  ramp: int(0, 63, 'Index of a source ramp; structural parts use one-character palette keys.'),
+  base: int(0, 31, 'Neutral fill step inside that ramp.'),
+  outline: { oneOf: [{ type: 'string', minLength: 1, maxLength: 1 }, { const: 'selective' }, { type: 'null' }],
+    description: 'One-pixel outer line: a palette key, selective for the darkest ramp step, or null/omitted for none.' }
+};
+const structuralPoint = { ...pairOf(int(-64, 64)), description: '[along, across] relative to the part anchor; transformed with the part.' };
+const bonePart = object({
+  ...structuralColor, length: int(1, 64, 'Start-to-end joint distance in pixels.'),
+  width: { ...array(int(1, 16), 3), minItems: 2, description: '[start, end] or [start, middle, end] fill widths.' },
+  caps: pairOf({ enum: ['round', 'flat', 'point', 'socket'] }),
+  snap: { type: 'boolean', description: 'Snap within 4 degrees of a clean slope (default true); endpoints follow the stepped slope.' }
+}, ['length', 'width', 'ramp', 'base']);
+const massPart = object({ ...structuralColor, size: { ...pairOf(int(2, 64)), description: 'Unsquashed ellipse diameters [width, height].' } }, ['size', 'ramp', 'base']);
 const poses = {
   $schema: schema.$schema, title: 'Pixelbolt authored poses',
   ...object({ format: { const: 'pixelforge-poses' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
-    parts: { type: 'object', maxProperties: 256, propertyNames: id, additionalProperties: object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point } }, ['rows']) },
+    ramps: schema.properties.ramps, light: int(0, 359, 'Clockwise light direction: 0 right, 225 top left (default).'),
+    parts: { type: 'object', maxProperties: 256, propertyNames: id, additionalProperties: { oneOf: [
+      object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point } }, ['rows']),
+      object({ bone: bonePart, points: { type: 'object', propertyNames: id, additionalProperties: { oneOf: [structuralPoint, { const: 'end' }] } } }, ['bone']),
+      object({ mass: massPart, points: { type: 'object', propertyNames: id, additionalProperties: structuralPoint } }, ['mass'])
+    ] } },
     poses: { ...array({ ...object({ name: id, duration: int(1, 60000), origin: point,
       mirror: { ...id, description: 'Reflect an earlier pose (parts, points and markers) around its origin corner: pixel column c becomes 2 × originX − 1 − c, as drawFrame\'s flipX does. Omit parts, markers and origin.' },
       tween: { ...object({ from: id, to: id, t: num(0, 1, 'Position between the two poses.'), ease }, ['from', 'to', 't']), description: 'An in-between of two earlier authored or tweened poses with the same part instances: origin, offsets and angles interpolate and round; part definitions and flips switch at the eased halfway point. Omit parts and origin; markers are not inherited.' },
       parts: array(object({ name: id, part: id, at: point, attach: object({ part: id, point: id }, ['part', 'point']), flipX: { type: 'boolean', description: 'Mirror this part, its anchor and its points inside the part.' },
         rotate: int(-360, 360, 'Whole degrees clockwise around the part anchor pixel, after any flip. The rotated grid is baked into an editable symbol named <part>-r<degrees> (-fr when flipped); points turn with it; right angles are exact.'),
+        squash: { ...num(.5, 2, 'Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.'), multipleOf: .05 },
         cleanup: { type: 'boolean', description: 'Remove doubled corners the rotation leaves (default true; false names the symbol with -raw).' } }, ['name', 'part']), 64),
       markers: array(object({ name: id, part: id, point: id }, ['name', 'part', 'point']), 64)
     }, ['name']), anyOf: [{ required: ['parts'] }, { required: ['mirror'] }, { required: ['tween'] }] }, 256), minItems: 1 }, animations: schema.properties.animations, sheet: schema.properties.sheet

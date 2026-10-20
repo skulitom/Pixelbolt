@@ -38,6 +38,27 @@
         "pattern": "^(transparent|#([a-fA-F0-9]{3,4}|[a-fA-F0-9]{6}|[a-fA-F0-9]{8}))$"
       }
     },
+    "ramps": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "maxItems": 32,
+        "minItems": 2
+      },
+      "maxItems": 64,
+      "description": "Palette keys from dark to light, one list per material. shade and scene ramp lighting move a colour along its ramp instead of inventing one. A key belongs to one ramp. A shared palette file ({\"palette\": {...}, \"ramps\": [...]}) can supply them."
+    },
+    "light": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 359,
+      "description": "Clockwise light direction: 0 right, 225 top left (default)."
+    },
     "parts": {
       "type": "object",
       "maxProperties": 256,
@@ -47,46 +68,237 @@
         "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
       },
       "additionalProperties": {
-        "type": "object",
-        "properties": {
-          "rows": {
-            "$ref": "#/$defs/rows"
-          },
-          "anchor": {
-            "type": "array",
-            "items": {
-              "type": "integer",
-              "minimum": -4096,
-              "maximum": 4096
-            },
-            "maxItems": 2,
-            "minItems": 2,
-            "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
-          },
-          "points": {
+        "oneOf": [
+          {
             "type": "object",
-            "propertyNames": {
-              "type": "string",
-              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-              "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
-            },
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "integer",
-                "minimum": -4096,
-                "maximum": 4096
+            "properties": {
+              "rows": {
+                "$ref": "#/$defs/rows"
               },
-              "maxItems": 2,
-              "minItems": 2,
-              "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
-            }
+              "anchor": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -4096,
+                  "maximum": 4096
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+              },
+              "points": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                  "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": -4096,
+                    "maximum": 4096
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+                }
+              }
+            },
+            "required": [
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "bone": {
+                "type": "object",
+                "properties": {
+                  "ramp": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63,
+                    "description": "Index of a source ramp; structural parts use one-character palette keys."
+                  },
+                  "base": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 31,
+                    "description": "Neutral fill step inside that ramp."
+                  },
+                  "outline": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1
+                      },
+                      {
+                        "const": "selective"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "One-pixel outer line: a palette key, selective for the darkest ramp step, or null/omitted for none."
+                  },
+                  "length": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 64,
+                    "description": "Start-to-end joint distance in pixels."
+                  },
+                  "width": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 16
+                    },
+                    "maxItems": 3,
+                    "minItems": 2,
+                    "description": "[start, end] or [start, middle, end] fill widths."
+                  },
+                  "caps": {
+                    "type": "array",
+                    "items": {
+                      "enum": [
+                        "round",
+                        "flat",
+                        "point",
+                        "socket"
+                      ]
+                    },
+                    "maxItems": 2,
+                    "minItems": 2
+                  },
+                  "snap": {
+                    "type": "boolean",
+                    "description": "Snap within 4 degrees of a clean slope (default true); endpoints follow the stepped slope."
+                  }
+                },
+                "required": [
+                  "length",
+                  "width",
+                  "ramp",
+                  "base"
+                ],
+                "additionalProperties": false
+              },
+              "points": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                  "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+                },
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": -64,
+                        "maximum": 64
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "description": "[along, across] relative to the part anchor; transformed with the part."
+                    },
+                    {
+                      "const": "end"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "bone"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "mass": {
+                "type": "object",
+                "properties": {
+                  "ramp": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 63,
+                    "description": "Index of a source ramp; structural parts use one-character palette keys."
+                  },
+                  "base": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 31,
+                    "description": "Neutral fill step inside that ramp."
+                  },
+                  "outline": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1
+                      },
+                      {
+                        "const": "selective"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "One-pixel outer line: a palette key, selective for the darkest ramp step, or null/omitted for none."
+                  },
+                  "size": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 64
+                    },
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "description": "Unsquashed ellipse diameters [width, height]."
+                  }
+                },
+                "required": [
+                  "size",
+                  "ramp",
+                  "base"
+                ],
+                "additionalProperties": false
+              },
+              "points": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                  "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": -64,
+                    "maximum": 64
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "[along, across] relative to the part anchor; transformed with the part."
+                }
+              }
+            },
+            "required": [
+              "mass"
+            ],
+            "additionalProperties": false
           }
-        },
-        "required": [
-          "rows"
-        ],
-        "additionalProperties": false
+        ]
       }
     },
     "poses": {
@@ -215,6 +427,13 @@
                   "minimum": -360,
                   "maximum": 360,
                   "description": "Whole degrees clockwise around the part anchor pixel, after any flip. The rotated grid is baked into an editable symbol named <part>-r<degrees> (-fr when flipped); points turn with it; right angles are exact."
+                },
+                "squash": {
+                  "type": "number",
+                  "minimum": 0.5,
+                  "maximum": 2,
+                  "description": "Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.",
+                  "multipleOf": 0.05
                 },
                 "cleanup": {
                   "type": "boolean",

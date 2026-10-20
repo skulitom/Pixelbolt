@@ -21,3 +21,26 @@ export function mergedStamps(recipe) {
     ...frame, ops: layers.flatMap(layer => layer.ops)
   })) };
 }
+
+// M1 primitive coverage, independent of the future R1–R3 character rigs.
+export function structuralFixture() {
+  const parts = {}, poses = [], angles = [0, 15, 30, 45, 60, 75, 90, 120, 150, 180, 225, 270, 315];
+  const pose = (name, part, extra = {}) => poses.push({ name, origin: [24, 24], parts: [{ name: 'shape', part, ...extra }] });
+  for (let width = 1; width <= 6; width++) {
+    const name = `width-${width}`;
+    parts[name] = { bone: { length: 12, width: [width, width], ramp: 0, base: 2, outline: 'k' }, points: { tip: 'end' } };
+    for (const angle of angles) pose(`${name}-angle-${angle}`, name, { rotate: angle });
+  }
+  parts.mass = { mass: { size: [12, 7], ramp: 0, base: 2, outline: 'k' } };
+  for (const squash of [.5, .75, 1, 1.25, 1.5, 1.75, 2]) pose(`mass-${squash * 100}`, 'mass', { squash });
+  for (const start of ['round', 'flat', 'point', 'socket']) for (const end of ['round', 'flat', 'point', 'socket']) {
+    const name = `${start}-${end}`;
+    parts[name] = { bone: { length: 12, width: [3, 6, 2], ramp: 0, base: 2, outline: 'k', caps: [start, end] } };
+    pose(name, name, { rotate: 30 });
+  }
+  return {
+    format: 'pixelforge-poses', version: 1, name: 'structural-parts', width: 48, height: 48,
+    palette: { k: '#151321', a: '#392c36', b: '#72504b', c: '#bc7e60', d: '#f5c184' },
+    ramps: [['a', 'b', 'c', 'd']], light: 225, parts, poses, sheet: { columns: 13 }
+  };
+}

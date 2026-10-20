@@ -3,10 +3,38 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderProject, PixelError } from '../src/core.js';
 import { prepareScene } from '../src/scene.js';
+import { compilePoses } from '../src/authoring.js';
 
 const read = async file => JSON.parse(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'));
 // Runs `attempt` with one field present and reports whether the renderer rejected that field as unknown.
 const unknown = (attempt, where) => { try { attempt(); return false; } catch (error) { assert.ok(error instanceof PixelError, String(error)); return [`${where}: unknown field`, `${where}: unknown or null field`].includes(error.message); } };
+
+test('pose structural fields in the schema match the compiler', async () => {
+  const schema = await read('poses.schema.json');
+  const source = () => ({
+    format: 'pixelforge-poses', version: 1, name: 'schema-probe', width: 32, height: 32,
+    palette: { a: '#123', b: '#456', k: '#000' }, ramps: [['a', 'b']],
+    parts: { body: { mass: { size: [6, 4], ramp: 0, base: 1 } }, leg: { bone: { length: 5, width: [3, 2], ramp: 0, base: 1 } } },
+    poses: [{ name: 'stand', origin: [16, 16], parts: [{ name: 'body', part: 'body' }, { name: 'leg', part: 'leg' }] }]
+  });
+  const groups = [
+    [schema.properties, s => s, 'poses'],
+    [schema.properties.poses.items.properties, s => s.poses[0], 'poses.poses[0]'],
+    [schema.properties.poses.items.properties.parts.items.properties, s => s.poses[0].parts[0], 'poses.poses[0].parts[0]'],
+    ...schema.properties.parts.additionalProperties.oneOf.filter(p => p.properties.bone || p.properties.mass).map(p => {
+      const kind = p.properties.bone ? 'bone' : 'mass', name = kind === 'bone' ? 'leg' : 'body';
+      return [p.properties[kind].properties, s => s.parts[name][kind], `poses.parts.${name}.${kind}`];
+    })
+  ];
+  for (const [properties, select, path] of groups) {
+    for (const key of [...Object.keys(properties), 'notAField']) {
+      const s = source(), object = select(s); object[key] ??= 0;
+      assert.equal(unknown(() => compilePoses(s), `${path}.${key}`), key === 'notAField', `${path}.${key}`);
+    }
+  }
+  assert.equal(schema.properties.poses.items.properties.parts.items.properties.squash.multipleOf, .05);
+  assert.ok(schema.properties.parts.additionalProperties.oneOf[1].properties.bone.properties.outline.oneOf.some(p => p.type === 'null'));
+});
 
 test('every operation field the schema lists is one the renderer accepts, and no others', async () => {
   const schema = await read('schema.json');
