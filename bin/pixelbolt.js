@@ -2,6 +2,7 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
+import { expandPoses } from '../src/authoring.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference } from '../src/index.js';
 
 const HELP = `Pixelbolt — text to pixels, without dependencies
@@ -26,6 +27,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            Build a recipe from authored poses, an autotile template, particle effects,
                                            a fluid source (simulated smoke, fire, explosions, magic and water) or a
                                            normals source (a lighting normal pass derived from a colour recipe)
+  pixelbolt compile <source.json> --expand [--out expanded.poses.json]
+                                           Print editable poses with motion templates expanded
   pixelbolt autotile <template.json> --out recipe.json [--metadata masks.json]
                                            Build a 47-tile blob or 16-tile cardinal set
   pixelbolt scene <scene.json> --out dir   Export a bounded scene review and aligned material passes
@@ -67,7 +70,7 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
-    if (['--force', '--grid', '--native', '--diagnostics', '--open'].includes(args[i])) options[args[i].slice(2)] = true;
+    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand'].includes(args[i])) options[args[i].slice(2)] = true;
     else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
@@ -131,6 +134,7 @@ try {
     const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
+    allowed.compile.push('expand');
     for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     if (command === 'init') {
@@ -155,6 +159,12 @@ try {
       // A port you name is used or refused; the usual one gives way to any free port when something else has it.
       const server = await startStudio({ port, project, fallback: options.port === undefined });
       if (options.open && !await openBrowser(`http://127.0.0.1:${server.address().port}/`)) console.log('No browser was opened. Copy the address above into your browser.');
+    } else if (command === 'compile' && options.expand) {
+      if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');
+      if (options.out && !/\.json$/i.test(options.out)) throw new Error('--out must name a .json file');
+      const input = await readResolved(positional[0]), expanded = expandPoses(input.document);
+      if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force), ...referenced(input) }));
+      else process.stdout.write(formatJSON(expanded));
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
       let value, metadata, input;

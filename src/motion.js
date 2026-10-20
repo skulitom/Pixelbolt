@@ -1,11 +1,23 @@
 // Advisory motion measurements at displayed-frame onsets. Never changes the artwork.
-import { PixelError, parseColor, scalePixels } from './core.js';
+import { PixelError, parseColor } from './core.js';
 import { angleDelta } from './pose-geometry.js';
 
 const fail = (where, message) => { throw new PixelError(`motion.${where}`, message); };
 const rounded = n => Math.round(n * 1e6) / 1e6;
 const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
 const distance2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
+
+// Copy complete RGBA words, then duplicate rows. Endianness is irrelevant: no packed-channel arithmetic.
+function enlarge(data, width, height, scale) {
+  if (scale === 1) return data.slice();
+  const source = new Uint32Array(data.buffer, data.byteOffset, width * height), target = new Uint32Array(width * height * scale * scale), row = width * scale;
+  for (let y = 0; y < height; y++) {
+    const start = y * scale * row;
+    for (let x = 0; x < width; x++) target.fill(source[y * width + x], start + x * scale, start + (x + 1) * scale);
+    for (let dy = 1; dy < scale; dy++) target.set(target.subarray(start, start + row), start + dy * row);
+  }
+  return new Uint8ClampedArray(target.buffer);
+}
 
 // Convex hull + rotating calipers: exact farthest pair without quadratic contact-phase work.
 function diameter(points) {
@@ -95,8 +107,11 @@ export function inspectMotion(project, options = {}) {
     }
   }
   const slide = phases.map(({ marker, samples, points }) => ({ marker, samples, pixels: speed === null ? null : rounded(diameter(points)) }));
-  const pairs = entries.slice(1).map((entry, i) => [entries[i], entry, .2]);
-  if (animation.loop && entries.length > 1) pairs.push([entries.at(-1), entries[0], .2]);
+  const keyNames = metadata?.animations?.[options.animation]?.keyPoses;
+  if (keyNames !== undefined && (!Array.isArray(keyNames) || !keyNames.length || keyNames.length > 256 || new Set(keyNames).size !== keyNames.length || keyNames.some(name => !entries.some(e => e.frame.name === name)))) fail('metadata', 'keyPoses must name distinct frames in this animation');
+  const keyEntries = keyNames === undefined ? entries : keyNames.map(name => entries.find(e => e.frame.name === name));
+  const pairs = keyEntries.slice(1).map((entry, i) => [keyEntries[i], entry, .2]);
+  if (animation.loop && keyEntries.length > 1) pairs.push([keyEntries.at(-1), keyEntries[0], .2]);
   // Contact A/B are a separate key-pose comparison, even when there are intervening down/passing poses.
   const a = entries.find(e => /(?:^|-)contact-a$/.test(e.frame.name)), b = entries.find(e => /(?:^|-)contact-b$/.test(e.frame.name));
   if (a && b) pairs.push([a, b, .3]);
@@ -162,5 +177,5 @@ function motionStrip(project, entries, motion, requestedScale, background) {
   });
   return { cells, omitted: entries.length - count, trajectory: { shown: trajectory, ...(trajectory ? { origin: -left, width: panelWidth, lanes } : { reason: motion.speed === null ? 'Specify speed to draw the trajectory.' : 'Travel exceeds the 4096-pixel width or 4,194,304-pixel image limit.' }) },
     nativeSheet: { width, height, scale: 1, data },
-    sheet: { width: width * actualScale, height: height * actualScale, scale: actualScale, data: scalePixels(data, width, height, actualScale) } };
+    sheet: { width: width * actualScale, height: height * actualScale, scale: actualScale, data: enlarge(data, width, height, actualScale) } };
 }

@@ -96,6 +96,8 @@ test('every module the browser imports is served by the studio and packed with s
   const imports = async file => [...(await readFile(path.join(root, file), 'utf8')).matchAll(/^import [^;]*? from '([^']+)';/gm)].map(match => match[1]);
   const served = { '/core.js': 'src/core.js', '/craft.js': 'src/craft.js', '/font.js': 'src/font.js', '/gif.js': 'src/gif.js', '/authoring.js': 'src/authoring.js', '/autotile.js': 'src/autotile.js', '/scene.js': 'src/scene.js', '/studio.js': 'studio/studio.js', '/scene-player.js': 'studio/scene-player.js', '/draft.js': 'studio/draft.js', '/fluid.js': 'src/fluid.js', '/fluid-lab.js': 'studio/fluid-lab.js' };
   served['/pose-geometry.js'] = 'src/pose-geometry.js';
+  served['/motions.js'] = 'src/motions.js';
+  served['/motion.js'] = 'src/motion.js';
   for (const [route, file] of Object.entries(served)) {
     assert.ok(STUDIO_PATHS.includes(route), `${route} is not served`);
     for (const specifier of await imports(file)) assert.ok(STUDIO_PATHS.includes(`/${specifier.replace(/^\.?\//, '')}`), `${file} imports ${specifier}, which the studio does not serve`);

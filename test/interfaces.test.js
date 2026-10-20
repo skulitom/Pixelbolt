@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { heroRig } from '../scripts/figure-rigs.mjs';
+import { compilePoses } from '../src/authoring.js';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import http from 'node:http';
@@ -72,6 +74,14 @@ test('CLI motion inspection reads sources and explicit metadata without overwrit
   assert.equal(saved.status, 0, saved.stderr); assert.deepEqual(JSON.parse(saved.stdout).motion, view.motion);
   const refused = run([...args, '--out', out]); assert.equal(refused.status, 1); assert.match(refused.stderr, /already exists/);
   const bad = run([...args, '--frames', 'idle']); assert.equal(bad.status, 1); assert.match(bad.stderr, /cannot be combined/);
+});
+
+test('CLI --expand prints an editable source that compiles to identical recipe and metadata', () => {
+  const source = heroRig(), result = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'compile', '-', '--expand'], { cwd: root, input: JSON.stringify(source), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const expanded = JSON.parse(result.stdout);
+  assert.equal(expanded.motions, undefined); assert.equal(expanded.poses.length, 40);
+  assert.deepEqual(compilePoses(expanded), compilePoses(source));
 });
 
 test('CLI help describes its text output and commands for checkout and portable builds', () => {

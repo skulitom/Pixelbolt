@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { compilePoses } from '../src/authoring.js';
 import { renderProject } from '../src/core.js';
-import { skinkRig } from './figure-rigs.mjs';
+import { skinkRig, heroRig, bossRig } from './figure-rigs.mjs';
 import assert from 'node:assert/strict';
 
 const hash = data => createHash('sha256').update(data).digest('hex');
@@ -16,7 +16,7 @@ export function figureSnapshot(source) {
     frames: project.frames.map(frame => ({ name: frame.name, rgba: hash(frame.data) }))
   };
 }
-export const figureSources = { R1: skinkRig };
+export const figureSources = { R1: skinkRig, R2: heroRig, R3: bossRig };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const actual = Object.fromEntries(Object.entries(figureSources).map(([name, source]) => [name, figureSnapshot(source())]));

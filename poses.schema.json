@@ -67,12 +67,351 @@
           "minimum": 0,
           "maximum": 255,
           "description": "Canvas pixel row touched by planted markers; must be below height."
+        },
+        "body": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+        },
+        "head": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+        },
+        "rest": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+        },
+        "legs": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+              "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+            },
+            "maxItems": 3,
+            "minItems": 2
+          },
+          "maxItems": 8
+        },
+        "arms": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+              "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+            },
+            "maxItems": 3,
+            "minItems": 2
+          },
+          "maxItems": 8
+        },
+        "tail": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+            "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+          },
+          "maxItems": 16
         }
       },
       "required": [
         "ground"
       ],
       "additionalProperties": false
+    },
+    "motions": {
+      "type": "object",
+      "maxProperties": 16,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+        "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "walk"
+              },
+              "frames": {
+                "type": "integer",
+                "minimum": 4,
+                "maximum": 64,
+                "multipleOf": 2
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "speed": {
+                "type": "number",
+                "minimum": -1024,
+                "maximum": 1024
+              },
+              "stride": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "lift": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 32
+              },
+              "bob": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 8
+              },
+              "lean": {
+                "type": "integer",
+                "minimum": -45,
+                "maximum": 45
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "run"
+              },
+              "frames": {
+                "type": "integer",
+                "minimum": 6,
+                "maximum": 64,
+                "multipleOf": 2
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "speed": {
+                "type": "number",
+                "minimum": -1024,
+                "maximum": 1024
+              },
+              "stride": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 64
+              },
+              "lift": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 32
+              },
+              "bob": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 8
+              },
+              "lean": {
+                "type": "integer",
+                "minimum": -45,
+                "maximum": 45
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "idle"
+              },
+              "frames": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 4
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "breath": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.5
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "jump"
+              },
+              "frames": {
+                "const": 7
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "crouch": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 1
+              },
+              "stretch": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 2
+              },
+              "apex": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "attack"
+              },
+              "frames": {
+                "const": 4
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "arm": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 7
+              },
+              "windup": {
+                "type": "integer",
+                "minimum": -360,
+                "maximum": 360
+              },
+              "strike": {
+                "type": "integer",
+                "minimum": -360,
+                "maximum": 360
+              },
+              "hold": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 16
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "template": {
+                "const": "hurt"
+              },
+              "frames": {
+                "const": 2
+              },
+              "duration": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 60000
+              },
+              "recoil": {
+                "type": "integer",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "squash": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 2
+              }
+            },
+            "required": [
+              "template"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "motionInfo": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+        "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "enum": [
+              "walk",
+              "run",
+              "idle",
+              "jump",
+              "attack",
+              "hurt"
+            ]
+          },
+          "speed": {
+            "type": "number",
+            "minimum": -1024,
+            "maximum": 1024
+          },
+          "keyPoses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+              "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "template",
+          "speed",
+          "keyPoses"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Expansion annotations: generated animation speed and key poses. Retain these when editing --expand output; do not combine with motions."
     },
     "parts": {
       "type": "object",

@@ -9,6 +9,17 @@ import { renderProject, parseColor } from '../src/core.js';
 const ramp = ['a', 'b', 'c', 'd'];
 const shape = (length, width, extra = {}) => ({ length, width: [width, width], base: 2, outline: 'k', ...extra });
 const area = raster => raster.rows.join('').replaceAll('.', '').length;
+test('bone drawing cache cannot be changed through returned arrays or a later source edit', () => {
+  const bone = shape(12, 4), options = { ramp, angle: 37 }, original = rasterizeBone(bone, options), expectedRows = [...original.rows], expectedPoint = original.map([12, 0]);
+  const touched = rasterizeBone(bone, options);
+  touched.rows.fill('x'); touched.fill.fill(0); touched.outlineMask.fill(0); touched.pivot.fill(-100); touched.end.fill(-100); touched.spine[0].fill(-100);
+  const next = rasterizeBone(bone, options);
+  assert.deepEqual(next.rows, expectedRows); assert.deepEqual(next.fill, original.fill); assert.deepEqual(next.outlineMask, original.outlineMask);
+  assert.deepEqual(next.pivot, original.pivot); assert.deepEqual(next.end, original.end); assert.deepEqual(next.spine, original.spine);
+  bone.length = 8;
+  assert.deepEqual(original.map([12, 0]), expectedPoint);
+  assert.notDeepEqual(rasterizeBone(bone, options).end, next.end);
+});
 function craft(raster, where) {
   const { width, height, rows, fill, outlineMask } = raster;
   const ids = Uint32Array.from([...rows.join('')].map(c => c === '.' ? 0 : c.charCodeAt(0)));

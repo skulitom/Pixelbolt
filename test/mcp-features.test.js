@@ -10,7 +10,7 @@ import { startMCP } from '../src/mcp.js';
 import { MAX_REQUEST_BYTES } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { createOverlay } from '../src/overlays.js';
-import { skinkRig } from '../scripts/figure-rigs.mjs';
+import { skinkRig, heroRig } from '../scripts/figure-rigs.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temp = async (t, label) => {
@@ -27,6 +27,18 @@ function session(options) {
   return { input, running, request, call, waiting, init: () => request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } }) };
 }
 const strip = { version: 1, name: 'strip', width: 4, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 3, y: 1, color: 'k' }] }, { name: 'b', duration: 90 }] };
+
+test('MCP compiles the full 40-frame hero with metadata and images below one MiB', async t => {
+  const dir = await temp(t, 'hero-response'), mcp = session({ directory: dir }); await mcp.init();
+  try {
+    const response = await mcp.call('pixel_compile', { source: heroRig(), metadata: true });
+    assert.ok(!response.result.isError, JSON.stringify(response.info));
+    assert.equal(response.info.frames, 40);
+    const bytes = Buffer.byteLength(JSON.stringify(response.result));
+    assert.ok(bytes <= 1048576, `${bytes} response bytes`);
+    t.diagnostic(`R2 pixel_compile response with metadata: ${bytes} bytes`);
+  } finally { mcp.input.end(); await mcp.running; }
+});
 
 test('MCP motion review accepts a pose source or a revision with explicit compile metadata', async t => {
   const dir = await temp(t, 'motion'), mcp = session({ directory: dir, root: dir }); await mcp.init();

@@ -405,7 +405,30 @@ function finishPart(mask, w, h, left, top, { ramp, base, outline, light, thick, 
   return { rows, width, height, fill, outlineMask, pivot: [-left - x0, -top - y0] };
 }
 
-export function rasterizeBone(bone, { angle = 0, flipX = false, light = 225, ramp } = {}) {
+// Repeated compilations reuse immutable drawings; callers always own their arrays. Bound both entries and bytes
+// so a long authoring session cannot accumulate every angle of every skeleton.
+const boneDrawings = new Map();
+let boneDrawingBytes = 0;
+function copyBoneDrawing(part) {
+  return { ...part, rows: part.rows.slice(), fill: part.fill.slice(), outlineMask: part.outlineMask.slice(),
+    pivot: part.pivot.slice(), end: part.end.slice(), spine: part.spine.map(point => point.slice()) };
+}
+export function rasterizeBone(bone, options = {}) {
+  const key = JSON.stringify([bone.length, bone.width, bone.base, bone.outline, bone.caps, bone.snap,
+    options.angle ?? 0, options.flipX ?? false, options.light ?? 225, options.ramp]);
+  let cached = boneDrawings.get(key);
+  if (!cached) {
+    const part = drawBone(bone, options), bytes = part.fill.byteLength + part.outlineMask.byteLength + part.width * part.height * 2 + part.spine.length * 16 + 512;
+    while (boneDrawings.size && (boneDrawings.size >= 128 || boneDrawingBytes + bytes > 1048576)) {
+      const first = boneDrawings.keys().next().value;
+      boneDrawingBytes -= boneDrawings.get(first).bytes; boneDrawings.delete(first);
+    }
+    cached = { part, bytes }; boneDrawings.set(key, cached); boneDrawingBytes += bytes;
+  }
+  return copyBoneDrawing(cached.part);
+}
+
+function drawBone(bone, { angle = 0, flipX = false, light = 225, ramp } = {}) {
   const direction = boneDirection(angle, bone.snap !== false), sign = flipX ? -1 : 1;
   const ux = direction.x * sign, uy = direction.y * sign;
   const [endX, endY] = endOfBone(bone.length, direction, flipX);
@@ -491,11 +514,11 @@ export function rasterizeBone(bone, { angle = 0, flipX = false, light = 225, ram
     thick: Math.min(...widths) >= 3 ? true : Math.max(...widths) < 3 ? false
       : (x, y) => widthAt(widths, Math.max(0, Math.min(1, (x * ax + y * ay) / distance))) >= 3
   });
-  const [ox, oy] = result.pivot;
+  const [ox, oy] = result.pivot, length = bone.length;
   return {
     ...result, snapped: direction.snapped, end: [ox + endX, oy + endY],
     spine: spine.map(([x, y]) => [x + ox, y + oy]),
-    map: ([along, across]) => [ox + Math.round(endX * along / bone.length - ay * sign * across), oy + Math.round(endY * along / bone.length + ax * sign * across)]
+    map: ([along, across]) => [ox + Math.round(endX * along / length - ay * sign * across), oy + Math.round(endY * along / length + ax * sign * across)]
   };
 }
 

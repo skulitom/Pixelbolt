@@ -106,6 +106,27 @@ node bin/pixelbolt.js preview actor.json
 
 The metadata exports each pose origin, resolved part anchors/points, markers, and expanded animation timing. Coordinates are **unscaled source pixels**, positive y down. For a game using `sheet.scale`, scale attachment coordinates explicitly; atlas rectangles already use exported pixels. Cue times are original milliseconds; divide by a positive playback rate in the consumer. Markers occur on entry into a pose, including repeated entries, reverse/pingpong positions and the first entry of a new loop. Nonlooping final holds do not repeatedly fire markers. Pixelbolt exports cues; the game owns event dispatch, collision and damage. Keep the `.poses.json` authoritative and reapply approved overlays after compilation.
 
+### Motion templates
+
+`rig` assigns roles to instances in one authored rest pose: `body` (a root mass), optional `head`, `ground`, `rest`, `legs` and `arms` (arrays of two- or three-bone chains), and `tail` (up to sixteen instances). Chain children attach to a named `"end"` point with zero offset. In a three-bone leg, the first bone supplies the upper pose and the last two solve the foot target. Give each chain's final bone a named endpoint, such as `"points": {"end": "end"}`.
+
+`motions` maps animation names to templates. For example, `"run": {"template": "run", "speed": 48, "stride": 10, "lift": 5, "bob": 1, "lean": 8, "frames": 8, "duration": 40}` expands into named poses, contact markers and a looping animation. All positions and angles are deterministic integer samples. Mass squash rounds to 0.05 steps.
+
+| Template | Parameters and defaults | Frames |
+| --- | --- | --- |
+| `walk` | `speed:24`, `stride:10`, `lift:2`, `bob:1`, `lean:0`, `duration:80` | 8 by default; even 4–64 |
+| `run` | `speed:48`, `stride:10`, `lift:4`, `bob:1`, `lean:8`, `duration:80` | 10 by default; even 6–64 |
+| `idle` | `breath:0.05`, `duration:200`; head moves at most one pixel, secondary parts sway | 4 by default; 2–4 |
+| `jump` | `crouch:0.8`, `stretch:1.15`, `apex:4`, `duration:80` | crouch, take-off, rise, apex, fall, land, recover |
+| `attack` | `arm:0`, `windup:-130`, `strike:50`, `hold:2`, `duration:80` | anticipation, strike, follow-through, recover; strike repeats `hold` times |
+| `hurt` | `recoil:-20`, `squash:0.85`, `duration:80` | recoil, recover |
+
+Durations are milliseconds per displayed frame; speeds are horizontal pixels per second and can be negative. Stride is the foot's travel envelope. Contact duration is bounded by both the gait's stance fraction and the time that fits within that stride. Each planted target moves backward at `speed × elapsedTime`, rounded only at the final target, so rounding does not accumulate. Lift phases return the foot forward. Alternate leg pairs begin half a cycle apart. At the second half-cycle, paired limb subtrees—including held items—exchange their original positions in the draw order. These are editable template decisions, not a runtime skeleton.
+
+`pixelbolt compile character.poses.json --expand` prints a source with templates replaced by poses; `--out new.poses.json` saves it with overwrite protection. `expandPoses(source)` is the equivalent JavaScript API. An authored pose with a generated name replaces that entire generated pose. Keep its markers and contacts when they still apply. The generated `motionInfo` annotations record animation speed and meaningful `keyPoses`; keep them when editing expanded sources so compilation and motion review round-trip. Do not combine `motionInfo` with unexpanded `motions`. Expanded sources retain named layers and deduplicate identical symbol drawings in a deterministic order.
+
+Templates are starting points: an unsuitable stride, body lean or limb length can still produce a reach warning or an advisory motion failure. Inspect contacts, motion strips and the silhouette, then adjust parameters or override the affected pose. In-betweens and held strike entries are not treated as distinct key poses for the pose-spread threshold.
+
 ### Reviewing motion
 
 Declare the ground pixel row with `"rig": {"ground": 23}` and name planted markers on each pose with `"contacts": ["nearFoot"]`. Contact names must be unique and refer to that pose's markers. Mirrors inherit contacts; tweens declare their own. Contacts remain in pose metadata and each animation entry, while the compiled recipe stays ordinary version 1.

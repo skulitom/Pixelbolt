@@ -3,6 +3,7 @@ import { PixelError, parseColor, renderProject, describeStampRecipe, readRows } 
 import { BLOB_MASKS, CARDINAL_MASKS } from './autotile.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
+import { expandMotions, validateRig, MOTION_TEMPLATES } from './motions.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 export function fields(value, keys, path, nullable = []) {
@@ -48,15 +49,15 @@ function structuralPart(part, source, path) {
   if (part.anchor !== undefined) fail(`${path}.anchor`, 'bones anchor at the start joint; masses anchor at their centre');
 }
 
+export function expandPoses(source) { return expandMotions(source, compilePoses); }
+
 export function compilePoses(source) {
-  fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'rig', 'parts', 'poses', 'animations', 'sheet'], 'poses');
+  if (source?.motions !== undefined) source = expandPoses(source);
+  fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'rig', 'motionInfo', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   if (source.light !== undefined && (!Number.isInteger(source.light) || source.light < 0 || source.light > 359)) fail('poses.light', 'expected whole degrees from 0 to 359');
   if (source.ramps !== undefined && (!Array.isArray(source.ramps) || source.ramps.length > 64)) fail('poses.ramps', 'expected at most 64 colour ramps');
-  if (source.rig !== undefined) {
-    fields(source.rig, ['ground'], 'poses.rig');
-    if (!Number.isInteger(source.rig.ground) || source.rig.ground < 0 || source.rig.ground >= source.height) fail('poses.rig.ground', 'expected a ground pixel row inside the canvas');
-  }
+  if (source.rig !== undefined) validateRig(source.rig, source.height);
   if (!source.parts || Array.isArray(source.parts) || typeof source.parts !== 'object' || Object.keys(source.parts).length > 256) fail('poses.parts', 'expected at most 256 part definitions');
   const symbols = Object.create(null);
   for (const [name, part] of Object.entries(source.parts)) {
@@ -359,10 +360,39 @@ export function compilePoses(source) {
   const shared = frames.every(frame => frame.anchor[0] === frames[0].anchor[0] && frame.anchor[1] === frames[0].anchor[1]);
   if (shared) for (const frame of frames) delete frame.anchor;
   const recipe = { version: 1, name: source.name, width: source.width, height: source.height, palette: source.palette ?? {}, ...(source.ramps !== undefined && { ramps: source.ramps }), ...(shared && { anchor: compiled[source.poses[0].name].origin }), symbols, frames, ...(source.animations !== undefined && { animations: source.animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  if (source.rig?.rest !== undefined) {
+    const rest = compiled[source.rig.rest];
+    if (!rest) fail('poses.rig.rest', 'unknown rest pose');
+    for (const name of [source.rig.body, source.rig.head, ...(source.rig.legs ?? []).flat(), ...(source.rig.arms ?? []).flat(), ...(source.rig.tail ?? [])].filter(n => n !== undefined)) if (!Object.hasOwn(rest.placed, name)) fail('poses.rig', `unknown rest-pose instance ${name}`);
+    // Rig output keeps only used, distinct drawings. Lexical selection is independent of cache insertion order.
+    const used = [...new Set(frames.flatMap(frame => frame.layers.map(layer => layer.ops[0].symbol)))].sort();
+    const canonical = new Map(), aliases = new Map(), unique = {};
+    for (const name of used) {
+      const rows = symbols[name], key = JSON.stringify(rows);
+      if (!canonical.has(key)) { canonical.set(key, name); unique[name] = rows; }
+      aliases.set(name, canonical.get(key));
+    }
+    for (const frame of frames) for (const layer of frame.layers) {
+      const stamp = layer.ops[0], before = stamp.symbol; stamp.symbol = aliases.get(before);
+      const part = metadata.poses[frame.name].parts[layer.name];
+      if (part.symbol || before !== stamp.symbol) part.symbol = stamp.symbol;
+    }
+    recipe.symbols = unique;
+  }
   const project = describeStampRecipe(recipe);
+  if (source.motionInfo !== undefined) {
+    fields(source.motionInfo, Object.keys(project.animations), 'poses.motionInfo');
+    for (const [name, info] of Object.entries(source.motionInfo)) {
+      const path = `poses.motionInfo.${name}`; fields(info, ['template', 'speed', 'keyPoses'], path);
+      if (!MOTION_TEMPLATES.includes(info.template)) fail(`${path}.template`, 'expected a motion template name');
+      if (typeof info.speed !== 'number' || !Number.isFinite(info.speed) || Math.abs(info.speed) > 1024) fail(`${path}.speed`, 'expected pixels per second within ±1024');
+      const names = new Set(project.animations[name].frames.map(index => project.frames[index].name));
+      if (!Array.isArray(info.keyPoses) || !info.keyPoses.length || info.keyPoses.length > 256 || new Set(info.keyPoses).size !== info.keyPoses.length || info.keyPoses.some(pose => !names.has(pose))) fail(`${path}.keyPoses`, 'expected unique key-pose names from this animation');
+    }
+  }
   for (const [name, animation] of Object.entries(project.animations)) {
     let start = 0;
-    metadata.animations[name] = { duration: animation.duration, loop: animation.loop, entries: animation.frames.map((index, position) => {
+    metadata.animations[name] = { duration: animation.duration, loop: animation.loop, ...(source.motionInfo?.[name] && source.motionInfo[name]), entries: animation.frames.map((index, position) => {
       const frame = project.frames[index], pose = metadata.poses[frame.name], entry = { position, frame: frame.name, start, duration: frame.duration, markers: pose.markers, ...(pose.contacts !== undefined && { contacts: pose.contacts }) };
       start += frame.duration; return entry;
     }) };

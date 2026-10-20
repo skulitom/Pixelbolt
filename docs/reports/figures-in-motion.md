@@ -144,3 +144,42 @@ Known-value tests cover positive/negative speed, exact 3–4–5 drift, floating
 The R1 compiled golden changed deliberately **only for new metadata** (`rig.ground`, pose and playback contacts); every R1 RGBA hash and its compiled recipe stayed unchanged. All 87 legacy recipes / 861 frame hashes and old pose metadata remain unchanged, and all 31 quality-lab outputs reproduce.
 
 Inspected the [native sheet](../images/figures/m3-reviewed-native.png), [4× sheet](../images/figures/m3-reviewed-4x.png), [silhouettes](../images/figures/m3-reviewed-silhouette.png), [moving-ground frames](../images/figures/m3-reviewed-ground-strip.png), and [motion strip](../images/figures/m3-reviewed-motion-4x.png). [GIF](../images/figures/m3-reviewed-ground.gif), [native motion strip](../images/figures/m3-reviewed-motion-native.png) and [numeric report](../images/figures/m3-reviewed-motion.json) are saved alongside them. The `m3-motion-*` draft is retained: visual inspection led to moving the trajectory beside the timing panel and giving the six run samples separate lanes.
+
+## M4 — 2026-10-20 — template gate passed
+
+Six parameterized templates expand rig roles into ordinary editable poses: idle, walk, run, jump, attack and hurt. Locomotion places feet against speed and frame duration, swaps complete limb subtrees (including held props), and annotates key poses separately from in-betweens. Authored poses override generated poses by name. Attack exposes a strike marker and repeated strike hold. `compile --expand` preserves all annotations and round-trips to identical compiled recipe and metadata.
+
+R2 is a 48×48 courier with 18 parts and 40 poses across five motions. R3 is a 128×128 guardian with 32 parts and 96 poses across eight motions, four leg chains, two squashing masses and multiple attachment levels. Both retain grid heads and props. Their recipe and RGBA golden hashes are newly pinned; R1's hashes remain unchanged. Reordering independent poses preserves each named frame, its metadata and the sorted deduplicated symbol table; array order still follows authored pose order intentionally.
+
+Every fixture frame passes palette closure, corner/orphan, squash-area and local joint checks, with no clipping or reach warnings. Every animation passes the applicable slide, ground, key-pose spread and per-joint seam checks; non-looping seams are unavailable. No motion thresholds changed. Initial run/charge failures were corrected by adjusting frame allocation, lean and lift, rather than weakening checks. Zero lift explicitly keeps swing targets on the ground.
+
+### Performance
+
+[Final benchmark](figures/m4-final-bench.json), reference Windows machine / Node 24.19, three warmups and fifteen measured runs:
+
+| Measurement | Median / p95 | Target | Result |
+| --- | --- | --- | --- |
+| R1 compile | 4.238 / 6.282 ms | median ≤5 ms | Pass |
+| R2 compile | 13.296 / 16.384 ms | ≤50 / 80 ms | Pass |
+| R3 compile | 61.558 / 81.409 ms | median ≤250 ms | Pass |
+| R2 render | 3.693 / 4.664 ms | median ≤15 ms | Pass |
+| R3 render | 32.859 / 35.039 ms | median ≤60 ms | Pass |
+| Bone 64×16, repeated | 0.002 / 0.003 ms | median ≤0.05 ms | Pass |
+| Reach solve | 0.087 / 0.343 ms | median ≤0.5 ms | Pass |
+| R2 expansion | 1.599 / 1.970 ms | ≤5 ms | Pass |
+| R2 motion review with images | 7.345 / 10.245 ms | ≤50 ms | Pass |
+
+R2 recipe: **73,801 bytes**, no duplicate symbol rows. MCP compile including metadata: **201,417 bytes**, below 1 MiB. R3 charges **926,140 pixels**, below 6.7 million. A fresh process compiles R3 under an enforced **60 MiB total V8 heap ceiling**, a stronger bound than 64 MiB additional heap; external typed-array backing stores are not JS heap. Named-layer and merged renders remain identical.
+
+The bounded bone cache keeps at most 128 immutable drawings / 1 MiB of accounted storage and returns copies. First-call rasterization is separately reported at 0.585 ms; the target above measures warmed repeated calls, as specified by the benchmark protocol. Cache eviction and caller mutation cannot change drawing results. The original R2 review took 58 ms; copying enlarged pixel rows reduced it to 7 ms, with an exact byte comparison against the previous scaler.
+
+Full verification passed **365 tests in 12.786 s**, within the 13.5 s suite target, with every new test below 500 ms. All 87 legacy recipes / 861 RGBA frames and old pose metadata remain unchanged; all 31 quality-lab assets reproduce exactly. Studio edit latency and browser/cross-platform hashes are M5 checks.
+
+### Visual evidence
+
+Inspected both complete native sheets, every animation's enlarged and silhouette sheet, both moving-ground strips and native/enlarged motion strips. The final `m4-craft-*` revision separates the limb shadow from its outline colour, improving the visible bands. Jump height and attack anticipation are legible; the guardian's extra limbs overlap densely in some poses. These are inspection observations, not reviewer preference scores.
+
+- Courier: [native](../images/figures/m4-craft-hero-native.png), [run](../images/figures/m4-craft-hero-run-4x.png), [silhouette](../images/figures/m4-craft-hero-run-silhouette.png), [ground GIF](../images/figures/m4-craft-hero-ground.gif), [motion](../images/figures/m4-craft-hero-motion-4x.png), [all motion results](../images/figures/m4-craft-hero-motion.json).
+- Guardian: [native](../images/figures/m4-craft-boss-native.png), [run](../images/figures/m4-craft-boss-run-4x.png), [silhouette](../images/figures/m4-craft-boss-run-silhouette.png), [ground GIF](../images/figures/m4-craft-boss-ground.gif), [motion](../images/figures/m4-craft-boss-motion-4x.png), [all motion results](../images/figures/m4-craft-boss-motion.json).
+
+The remaining animations are saved alongside those files. The first `m4-first-*` evidence and intermediate benchmark measurements are retained. The owner's waiver of outside reviewers remains in force.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { compilePoses } from '../src/authoring.js';
-import { renderProject } from '../src/core.js';
+import { renderProject, scalePixels } from '../src/core.js';
 import { inspectMotion } from '../src/motion.js';
 import { skinkRig } from '../scripts/figure-rigs.mjs';
 
@@ -72,6 +72,7 @@ test('motion reports missing information instead of claiming contacts or angles 
   assert.equal(unknown.motion.checks.slide, null); assert.equal(unknown.motion.checks.ground, null);
   assert.equal(unknown.motion.checks.loopSeam, null); assert.equal(unknown.trajectory.shown, false);
   assert.equal(unknown.nativeSheet.scale, 1); assert.equal(unknown.sheet.scale, 4);
+  assert.deepEqual(unknown.sheet.data, scalePixels(unknown.nativeSheet.data, unknown.nativeSheet.width, unknown.nativeSheet.height, 4));
   const many = fixture(Array.from({ length: 40 }, () => [4, 12]), { durations: Array(40).fill(60000) }).review({ speed: 4096, scale: 16 });
   assert.equal(many.cells.length, 32); assert.equal(many.omitted, 8); assert.equal(many.trajectory.shown, false);
   assert.ok(many.sheet.width * many.sheet.height <= 4194304);
