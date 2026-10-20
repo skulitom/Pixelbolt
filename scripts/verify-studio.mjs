@@ -13,7 +13,7 @@ import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { NODE_VERSION, TARGETS, readZip, readTarGz, sha256 } from './build-studio.mjs';
+import { NODE_VERSION, NOT_IN_STUDIO, TARGETS, readZip, readTarGz, sha256 } from './build-studio.mjs';
 
 const SHARED = ['START HERE.txt', 'first-edit.json', 'BUILD-INFO.txt', 'THIRD-PARTY-NOTICES.txt', 'runtime/NODE-LICENSE.txt', 'launcher/studio.mjs', 'launcher/connect.mjs', 'launcher/layout.mjs', 'app/package.json', 'app/LICENSE', 'app/bin/pixelbolt.js', 'app/bin/pixelforge.js'];
 // What each system starts: the studio launcher, the command line, the connect helper, the runtime, and the names
@@ -99,8 +99,9 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
     assert.deepEqual([...SHARED, names.studio, names.cli, names.alias, names.helper, names.node, ...names.scripts].filter(file => !files.includes(file)), []);
     return `${info.Target}`;
   });
-  await check('app/ holds every entry of package.json\'s files list and no demo, test or development script', () => {
-    assert.deepEqual(pkg.files.filter(entry => !files.some(file => file === `app/${entry}` || file.startsWith(`app/${entry}/`))), []);
+  await check(`app/ holds every entry of package.json's files list but the contributor files (${NOT_IN_STUDIO.join(', ')}), and no demo, test or development script`, () => {
+    assert.deepEqual(pkg.files.filter(entry => !NOT_IN_STUDIO.includes(entry) && !files.some(file => file === `app/${entry}` || file.startsWith(`app/${entry}/`))), []);
+    assert.deepEqual(NOT_IN_STUDIO.filter(entry => files.includes(`app/${entry}`)), []);
     assert.deepEqual(files.filter(file => FORBIDDEN.some(folder => file.startsWith(`${folder}/`) || file.startsWith(`app/${folder}/`)) || /\.test\.[cm]?js$/.test(file)), []);
     return `${files.filter(file => file.startsWith('app/')).length} files`;
   });

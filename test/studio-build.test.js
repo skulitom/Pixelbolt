@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createZip } from '../src/export.js';
 import { browserChannel, studioPacker } from '../scripts/environment.mjs';
-import { root, TARGETS, hostTarget, readZip, writeZip, readTarGz, writeTarGz, forSystem, packageFiles, sourceState, assembleStudio, packStudio, manifest, sha256 } from '../scripts/build-studio.mjs';
+import { root, TARGETS, hostTarget, readZip, writeZip, readTarGz, writeTarGz, forSystem, packageFiles, studioFiles, NOT_IN_STUDIO, sourceState, assembleStudio, packStudio, manifest, sha256 } from '../scripts/build-studio.mjs';
 
 const source = { commit: 'c0ffee'.padEnd(40, '0'), date: new Date(Date.UTC(2026, 9, 2, 12, 30, 44)), dirty: [] };
 const standIn = { version: process.versions.node, exe: Buffer.from('MZ stand-in for node.exe'), license: Buffer.from('Node.js license\n'), origin: 'a test stand-in' };
@@ -71,7 +71,7 @@ test('the macOS and Linux builds hold shell launchers marked executable, their o
     assert.deepEqual([build.name, build.format, TARGETS[target].os], [`PixelboltStudio-${version}-${target}`, 'tar.gz', system]);
     const scripts = ['pixelbolt', 'pixelforge', 'pixelbolt-studio', 'connect-your-agent', ...launchers];
     assert.deepEqual(names.filter(name => !name.includes('/')).sort(), ['BUILD-INFO.txt', 'START HERE.txt', 'THIRD-PARTY-NOTICES.txt', 'first-edit.json', ...scripts].sort());
-    assert.deepEqual(names.filter(name => name.startsWith('app/')).map(name => name.slice(4)), await packageFiles());
+    assert.deepEqual(names.filter(name => name.startsWith('app/')).map(name => name.slice(4)), await studioFiles());
     assert.ok(inside('runtime/node').equals(standIn.exe)); assert.equal(inside('runtime/node.exe'), undefined);
     // Exactly the programs are executable; everything is LF, and the scripts start with a shell line.
     assert.deepEqual([...build.modes].map(([name, mode]) => [name.slice(build.name.length + 1), mode]).sort(), ['app/bin/pixelbolt.js', 'app/bin/pixelforge.js', 'runtime/node', ...scripts].sort().map(name => [name, 0o755]));
@@ -96,7 +96,7 @@ test('the build ships exactly the files npm pack ships', async t => {
 });
 
 test('every relative README link and image is shipped in the portable package', async () => {
-  const readme = await readFile(path.join(root, 'README.md'), 'utf8'), shipped = await packageFiles();
+  const readme = await readFile(path.join(root, 'README.md'), 'utf8'), shipped = await studioFiles();
   // Inline links/images and reference definitions; a directory is shipped when it contains a packaged file.
   const targets = [...readme.matchAll(/!?\[[^\]\n]*\]\(<?([^\s)>]+)>?(?:\s+"[^"]*")?\)/g), ...readme.matchAll(/^ {0,3}\[[^\]\n]+\]:\s*<?([^\s>]+)>?/gm)].map(match => match[1]);
   assert.ok(targets.length > 0);
@@ -114,7 +114,9 @@ test('the portable layout holds the package, runtime, launchers and build facts,
   assert.equal(build.name, `PixelboltStudio-${version}-win-x64`);
   const names = [...build.files.keys()], inside = file => build.files.get(`${build.name}/${file}`);
   assert.ok(names.every(name => name.startsWith(`${build.name}/`))); assert.deepEqual(names, [...names].sort());
-  assert.deepEqual(names.filter(name => name.startsWith(`${build.name}/app/`)).map(name => name.slice(build.name.length + 5)), await packageFiles());
+  assert.deepEqual(names.filter(name => name.startsWith(`${build.name}/app/`)).map(name => name.slice(build.name.length + 5)), await studioFiles());
+  // npm ships the contributor files; the Studio, a user's download, leaves them out.
+  for (const file of NOT_IN_STUDIO) assert.ok((await packageFiles()).includes(file) && !inside(`app/${file}`), file);
   assert.deepEqual(names.filter(name => /\/(demo|showcase|test|scripts|packaging|output)\//.test(name)), []);
   assert.ok(inside('app/src/server.js').equals(await readFile(path.join(root, 'src', 'server.js'))));
   assert.ok(inside('runtime/node.exe').equals(standIn.exe)); assert.ok(inside('runtime/NODE-LICENSE.txt').equals(standIn.license));

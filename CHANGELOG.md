@@ -54,6 +54,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - `compileFluid`'s output is unchanged: its golden hashes and the showcase GIFs are byte-identical.
 - **Docs:** [live fluids](docs/art-workflow.md#live-fluids) in the art workflow guide, with a note in the authoring guide.
 
+### Pixelbolt Studio
+
+- The portable Studio no longer ships `AGENTS.md` or `llms.txt`. Both are written for contributors working in a checkout, and a user's coding agent in the Studio folder would read `AGENTS.md`'s maintainer rules as its own. The npm package still ships them, and README links to both on GitHub.
+
 ## 0.9.0 (2026-10-18)
 
 ### Fluid effects
