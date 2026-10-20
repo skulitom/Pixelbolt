@@ -1,0 +1,55 @@
+{
+  "R1": {
+    "compiled": "97fb1f6e7ae1c5ceb5f58dd0dbeab7894a252316b02be7d80135e2e4f631696f",
+    "frames": [
+      {
+        "name": "idle",
+        "rgba": "c7ba569c7171161a6a6ed74546035a7dbe56fe3373d71e9d32e7c50a4aadb2fd"
+      },
+      {
+        "name": "blink",
+        "rgba": "26525b288f917857bb2116c0973dfddc5c92122ced83f7d13edbeb209561a190"
+      },
+      {
+        "name": "contact-a",
+        "rgba": "dd32f4336f4d1f57ebd13a1b452d03206516367021fb2a49545383c998fcf599"
+      },
+      {
+        "name": "down-a",
+        "rgba": "33db9e4953bf6a0d30283dea01dc3b306bab81b6e3d340905adaa8edf2b6884c"
+      },
+      {
+        "name": "passing-a",
+        "rgba": "f6c245d13fd196845082059164000ec2b6184c7360c0d0649a7e2c9991680a86"
+      },
+      {
+        "name": "contact-b",
+        "rgba": "9e5baba54db9490a1ffbcab0da488b6a6db0d87136288a574da84a2fd02c9036"
+      },
+      {
+        "name": "down-b",
+        "rgba": "1133974ed0b73ccb04ba0f6251ddc2afb8e7ebdfe90c5d0a36df3cb55ca60a5d"
+      },
+      {
+        "name": "passing-b",
+        "rgba": "2e225718d9779a642edf7e5da483a7f480f0e09e1cd82ad3925d574d3e8ed61f"
+      },
+      {
+        "name": "gather",
+        "rgba": "dfd26cf5d1e9a350091e26255c2734eb6eeb29975639c07d2856827452bb5353"
+      },
+      {
+        "name": "release",
+        "rgba": "c8aff4397eca64a44fc96374c19e1963578464d2c83e85cc1386b8dd7fc1f01b"
+      },
+      {
+        "name": "recoil",
+        "rgba": "6edac004072f29bbb6f7f1f63fde2ed28e3ca9161c35862977c53ed5ade23625"
+      },
+      {
+        "name": "recover",
+        "rgba": "c7ba569c7171161a6a6ed74546035a7dbe56fe3373d71e9d32e7c50a4aadb2fd"
+      }
+    ]
+  }
+}

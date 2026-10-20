@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { compilePoses, renderProject, inspectProject, createOverlay, applyOverlay, prepareScene, renderScene, encodePNG, scalePixels } from '../src/index.js';
+import { skinkRig } from './figure-rigs.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), files = new Map();
 const palette = { k:'#0b1020', v:'#182239', b:'#26354c', s:'#3d5364', t:'#477975', g:'#72967d', h:'#afc4a0', y:'#e7ce89', w:'#f7edc4', a:'#cc8762', r:'#8d5260', p:'#573b57', c:'#75bfbc', d:'#3a8eaa' };
@@ -59,6 +60,10 @@ const parts={
 const pose=(name,duration,body='body',legs='stand',head='head',dy=0,tail='tail')=>({name,duration,origin:[14,15+dy],parts:[{name:'tail',part:tail,attach:undefined},{name:'body',part:body},{name:'feet',part:legs,attach:{part:'body',point:'hip'}},{name:'head',part:head,attach:{part:'body',point:'neck'}},{name:'charm',part:'charm',attach:{part:'body',point:'grip'},at:[0,0]}].map((p,i)=>i===0?{name:'tail',part:tail,at:[-7,0]}:p),markers:[{name:name.startsWith('contact')?'foot-contact':name==='release'?'spell-release':'pose',part:name==='release'?'head':'feet',point:name==='release'?'mouth':'foot'}]});
 const poses={format:'pixelforge-poses',version:1,name:'lantern-skink',width:32,height:26,palette,parts,poses:[pose('idle',880),pose('blink',100,'body','stand','blink'),pose('contact-a',90,'body','contactA'),pose('down-a',80,'compressed','downA','head',1),pose('passing-a',80,'body','passA','head',-1,'tailUp'),pose('contact-b',90,'body','contactB'),pose('down-b',80,'compressed','downB','head',1),pose('passing-b',80,'body','passB','head',-1),pose('gather',220,'compressed','downA','crest',1,'tailUp'),pose('release',80,'body','contactA','crest',-1,'tailUp'),pose('recoil',120,'compressed','downB','blink',1),pose('recover',180)],animations:{idle:{frames:['idle','blink','idle']},run:{frames:['contact-a','down-a','passing-a','contact-b','down-b','passing-b']},cast:{frames:['gather','release','recoil','recover'],loop:false}}};
 const character=compilePoses(poses);
+const bonePoses=skinkRig(), boneCharacter=compilePoses(bonePoses);
+json('examples/quality/skink-bones.poses.json',bonePoses);
+json('examples/quality/skink-bones.json',boneCharacter.recipe);
+json('examples/quality/skink-bones.meta.json',boneCharacter.metadata);
 
 const lampLines=[
 '.........yy', '........yhhy', '.......yhsshy', '......yhs..shy', '......ys....sy', '......ys....sy', '......ys....sy', '.....yyssssssyy', '.....yhaaaaashy', '......yaaaaay', '......yarrray', '......yarrpay', '.......yrrpy', '........ypy', '.........y', '.........s', '........sss', '.......sstss', '.......sttts', '......sstttss', '.....sstttttss', '....ssstttttsss', '...sssstttttssss', '..ssssstttttsssss'
@@ -232,6 +237,8 @@ const lampScene={...scene,name:'lantern-light-study',width:40,height:40,assets:{
 for(const [name,x] of [['left',-10],['right',50]]){const light=structuredClone(lampScene);light.lighting.lights[0].at=[x,12];png(`docs/images/quality/lantern-${name}.png`,renderScene(prepareScene(light)),4);}
 // A small replayable scene bundle is generated under output only on request; tracked art stays text-first.
 const check=process.argv.includes('--check'),force=process.argv.includes('--force');
+// A new study can be generated without rewriting any of the original quality-lab sources or assets.
+if(process.argv.includes('--bones-only'))for(const file of files.keys())if(!file.startsWith('examples/quality/skink-bones.'))files.delete(file);
 if(check){for(const [file,bytes] of files){if(!bytes.equals(await readFile(path.join(root,file))))throw new Error(`Generated asset differs: ${file}`);}console.log(`Verified ${files.size} deterministic quality-lab files.`);}
 else{
  if(!force)for(const file of files.keys()){try{await access(path.join(root,file));}catch(e){if(e.code==='ENOENT')continue;throw e;}throw new Error(`Refusing to replace ${file}; use --force for an intentional rebuild.`);}

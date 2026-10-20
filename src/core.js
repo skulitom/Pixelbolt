@@ -72,7 +72,7 @@ function blend(data, i, color, opacity = 1) {
   for (let c = 0; c < 3; c++) data[i + c] = Math.round((color[c] * a + data[i + c] * old * (1 - a)) / out);
   data[i + 3] = Math.round(out * 255);
 }
-function readRows(rows, path, palette) {
+export function readRows(rows, path, palette) {
   list(rows, path, 256);
   if (!rows.length) fail(path, 'grid must contain at least one row');
   if (typeof rows[0] !== 'string' || rows[0].length < 1 || rows[0].length > 256) fail(`${path}[0]`, 'row must contain 1–256 characters');

@@ -9,6 +9,8 @@ import { compilePoses } from '../src/authoring.js';
 import { renderProject } from '../src/core.js';
 import { rasterizeBone, rasterizeMass } from '../src/craft.js';
 import { stampRig, mergedStamps, structuralFixture } from './pose-fixtures.mjs';
+import { skinkRig } from './figure-rigs.mjs';
+import { solveReach } from '../src/pose-geometry.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export function measure(run, count = 15) {
@@ -24,7 +26,7 @@ async function main() {
   const skink = JSON.parse(await readFile(new URL('../examples/quality/skink.poses.json', import.meta.url), 'utf8'));
   const cases = [['stamp-skink', skink], ['stamp-64', stampRig(64, 16, 24)],
     ['stamp-128', stampRig(128, 32, 96)], ['stamp-256', stampRig(256, 64, 32)],
-    ['structural-parts-M1', structuralFixture()]];
+    ['structural-parts-M1', structuralFixture()], ['R1-skink', skinkRig()]];
   const bone = { length: 64, width: [16, 16], base: 2, outline: 'k' }, rasterOptions = { ramp: ['a', 'b', 'c', 'd'] };
   const report = {
     node: process.version, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
@@ -50,7 +52,8 @@ async function main() {
   report.primitives = {
     bone: measure(() => rasterizeBone(bone, rasterOptions)),
     boneOblique: measure(() => rasterizeBone(bone, { ...rasterOptions, angle: 37 })),
-    mass: measure(() => rasterizeMass({ size: [12, 7], base: 2, outline: 'k' }, { ...rasterOptions, squash: .5 }))
+    mass: measure(() => rasterizeMass({ size: [12, 7], base: 2, outline: 'k' }, { ...rasterOptions, squash: .5 })),
+    reach: measure(() => solveReach({ length: 16 }, { length: 12 }, [14, 16], { rest: [90, 40] }))
   };
   const text = JSON.stringify(report, null, 2) + '\n', at = process.argv.indexOf('--out');
   if (at >= 0) {

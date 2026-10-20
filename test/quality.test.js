@@ -131,5 +131,5 @@ test('authored part replacements keep held objects attached and export timing in
   assert.deepEqual(metadata.animations.cast.entries.map(e => e.start), [0, 80, 180]);
   assert.deepEqual(metadata.animations.cast.entries[1].markers[0].at, [2, 2]);
   source.poses[0].parts[1].attach.part = 'missing';
-  assert.throws(() => compilePoses(source), /earlier part/);
+  assert.throws(() => compilePoses(source), /part in this pose/);
 });

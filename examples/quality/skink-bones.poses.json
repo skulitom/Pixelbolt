@@ -1,0 +1,2438 @@
+{
+  "format": "pixelforge-poses",
+  "version": 1,
+  "name": "lantern-skink-bones",
+  "width": 32,
+  "height": 26,
+  "palette": {
+    "k": "#0b1020",
+    "p": "#573b57",
+    "r": "#8d5260",
+    "a": "#cc8762",
+    "y": "#e7ce89",
+    "w": "#f7edc4"
+  },
+  "ramps": [
+    [
+      "p",
+      "r",
+      "a",
+      "y"
+    ]
+  ],
+  "light": 225,
+  "parts": {
+    "body": {
+      "mass": {
+        "size": [
+          12,
+          6
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k"
+      },
+      "points": {
+        "hind": [
+          -4,
+          2
+        ],
+        "fore": [
+          4,
+          1
+        ],
+        "neck": [
+          5,
+          -1
+        ],
+        "tail": [
+          -6,
+          0
+        ],
+        "grip": [
+          3,
+          1
+        ]
+      }
+    },
+    "thigh": {
+      "bone": {
+        "length": 4,
+        "width": [
+          3,
+          2
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "shin": {
+      "bone": {
+        "length": 4,
+        "width": [
+          2,
+          1
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "farThigh": {
+      "bone": {
+        "length": 4,
+        "width": [
+          3,
+          2
+        ],
+        "ramp": 0,
+        "base": 1,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "farShin": {
+      "bone": {
+        "length": 4,
+        "width": [
+          2,
+          1
+        ],
+        "ramp": 0,
+        "base": 1,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "neck": {
+      "bone": {
+        "length": 2,
+        "width": [
+          3,
+          3
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "tail1": {
+      "bone": {
+        "length": 3,
+        "width": [
+          3,
+          2
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "tail2": {
+      "bone": {
+        "length": 3,
+        "width": [
+          2,
+          2
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "round"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "tail3": {
+      "bone": {
+        "length": 3,
+        "width": [
+          2,
+          1
+        ],
+        "ramp": 0,
+        "base": 2,
+        "outline": "k",
+        "caps": [
+          "socket",
+          "point"
+        ]
+      },
+      "points": {
+        "end": "end"
+      }
+    },
+    "head": {
+      "rows": [
+        "..y...y..",
+        "..ay.ya..",
+        "...ayaa..",
+        "..yaaaa..",
+        "..aaawaa.",
+        "..aaakyaa",
+        "...aarr..",
+        "....rr..."
+      ],
+      "anchor": [
+        2,
+        5
+      ],
+      "points": {
+        "mouth": [
+          7,
+          5
+        ]
+      }
+    },
+    "blink": {
+      "rows": [
+        "..y...y..",
+        "..ay.ya..",
+        "...ayaa..",
+        "..yaaaa..",
+        "..aaaaaa.",
+        "..aaakyaa",
+        "...aarr..",
+        "....rr..."
+      ],
+      "anchor": [
+        2,
+        5
+      ],
+      "points": {
+        "mouth": [
+          7,
+          5
+        ]
+      }
+    },
+    "charm": {
+      "rows": [
+        "y..",
+        "a..",
+        "yay",
+        "ywy",
+        "yay",
+        ".a."
+      ],
+      "anchor": [
+        0,
+        0
+      ]
+    }
+  },
+  "poses": [
+    {
+      "name": "idle",
+      "duration": 880,
+      "origin": [
+        17,
+        15
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 180
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 0,
+          "squash": 1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            13,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "blink",
+      "duration": 100,
+      "origin": [
+        17,
+        15
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 180
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 0,
+          "squash": 0.95
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            13,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "blink",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "contact-a",
+      "duration": 80,
+      "origin": [
+        17,
+        16
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            9,
+            21
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            24,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 175
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": -8,
+          "squash": 1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            16,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            18,
+            20
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "down-a",
+      "duration": 80,
+      "origin": [
+        17,
+        17
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            11,
+            20
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 185
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": -3,
+          "squash": 0.85
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            21
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "passing-a",
+      "duration": 80,
+      "origin": [
+        17,
+        14
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            14,
+            19
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            18,
+            19
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 195
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 8,
+          "squash": 1.1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            10,
+            20
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            24,
+            20
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "contact-b",
+      "duration": 80,
+      "origin": [
+        17,
+        15
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            16,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            18,
+            20
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 200
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 6,
+          "squash": 1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            10,
+            21
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            24,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "down-b",
+      "duration": 80,
+      "origin": [
+        17,
+        16
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            21
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 190
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 1,
+          "squash": 0.85
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            20
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "passing-b",
+      "duration": 80,
+      "origin": [
+        17,
+        14
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            10,
+            20
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            24,
+            20
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 175
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": -8,
+          "squash": 1.1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            15,
+            19
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            18,
+            19
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "gather",
+      "duration": 220,
+      "origin": [
+        17,
+        16
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 190
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": -8,
+          "squash": 0.8
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            13,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -65
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "duration": 80,
+      "origin": [
+        17,
+        14
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            21
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            21
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 195
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": -6,
+          "squash": 1.15
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            14,
+            21
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            22,
+            21
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -25
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "recoil",
+      "duration": 120,
+      "origin": [
+        17,
+        16
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 180
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 10,
+          "squash": 0.85
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            13,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -65
+        },
+        {
+          "name": "head",
+          "part": "blink",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    },
+    {
+      "name": "recover",
+      "duration": 180,
+      "origin": [
+        17,
+        15
+      ],
+      "parts": [
+        {
+          "name": "farHindThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farHindShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            12,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "farForeThigh",
+          "part": "farThigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "farForeShin",
+          "part": "farShin",
+          "attach": {
+            "part": "farForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            20,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "tail1",
+          "part": "tail1",
+          "attach": {
+            "part": "body",
+            "point": "tail"
+          },
+          "angle": 180
+        },
+        {
+          "name": "tail2",
+          "part": "tail2",
+          "attach": {
+            "part": "tail1",
+            "point": "end"
+          },
+          "angle": -20
+        },
+        {
+          "name": "tail3",
+          "part": "tail3",
+          "attach": {
+            "part": "tail2",
+            "point": "end"
+          },
+          "angle": -25
+        },
+        {
+          "name": "body",
+          "part": "body",
+          "angle": 0,
+          "squash": 1
+        },
+        {
+          "name": "nearHindThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "hind"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearHindShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearHindThigh",
+            "point": "end"
+          },
+          "reach": [
+            13,
+            23
+          ],
+          "bend": "forward"
+        },
+        {
+          "name": "nearForeThigh",
+          "part": "thigh",
+          "attach": {
+            "part": "body",
+            "point": "fore"
+          },
+          "angle": 90
+        },
+        {
+          "name": "nearForeShin",
+          "part": "shin",
+          "attach": {
+            "part": "nearForeThigh",
+            "point": "end"
+          },
+          "reach": [
+            21,
+            23
+          ],
+          "bend": "back"
+        },
+        {
+          "name": "neck",
+          "part": "neck",
+          "attach": {
+            "part": "body",
+            "point": "neck"
+          },
+          "angle": -40
+        },
+        {
+          "name": "head",
+          "part": "head",
+          "attach": {
+            "part": "neck",
+            "point": "end"
+          }
+        },
+        {
+          "name": "charm",
+          "part": "charm",
+          "attach": {
+            "part": "body",
+            "point": "grip"
+          }
+        }
+      ],
+      "markers": [
+        {
+          "name": "nearHindFoot",
+          "part": "nearHindShin",
+          "point": "end"
+        },
+        {
+          "name": "nearForeFoot",
+          "part": "nearForeShin",
+          "point": "end"
+        },
+        {
+          "name": "farHindFoot",
+          "part": "farHindShin",
+          "point": "end"
+        },
+        {
+          "name": "farForeFoot",
+          "part": "farForeShin",
+          "point": "end"
+        }
+      ]
+    }
+  ],
+  "animations": {
+    "idle": {
+      "frames": [
+        "idle",
+        "blink",
+        "idle"
+      ]
+    },
+    "run": {
+      "frames": [
+        "contact-a",
+        "down-a",
+        "passing-a",
+        "contact-b",
+        "down-b",
+        "passing-b"
+      ]
+    },
+    "cast": {
+      "frames": [
+        "gather",
+        "release",
+        "recoil",
+        "recover"
+      ],
+      "loop": false
+    }
+  },
+  "sheet": {
+    "columns": 6
+  }
+}

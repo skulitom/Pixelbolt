@@ -104,6 +104,58 @@
                   "minItems": 2,
                   "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
                 }
+              },
+              "views": {
+                "type": "object",
+                "minProperties": 1,
+                "maxProperties": 16,
+                "propertyNames": {
+                  "pattern": "^(0|[1-9][0-9]?|[12][0-9]{2}|3[0-5][0-9])$"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "rows": {
+                      "$ref": "#/$defs/rows"
+                    },
+                    "anchor": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": -4096,
+                        "maximum": 4096
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+                    },
+                    "points": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                        "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+                      },
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": -4096,
+                          "maximum": 4096
+                        },
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+                      }
+                    }
+                  },
+                  "required": [
+                    "rows",
+                    "anchor"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Authored grid drawings by world angle (0–359). Each supplies its anchor and every named point of the base part. Use the nearest drawing within 22.5 degrees; otherwise rotate the base grid."
               }
             },
             "required": [
@@ -332,6 +384,10 @@
             "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
             "description": "Reflect an earlier pose (parts, points and markers) around its origin corner: pixel column c becomes 2 × originX − 1 − c, as drawFrame's flipX does. Omit parts, markers and origin."
           },
+          "relight": {
+            "type": "boolean",
+            "description": "Mirror poses only: redraw structural parts with the source light unchanged; false/omitted preserves exact runtime-flipped pixels."
+          },
           "tween": {
             "type": "object",
             "properties": {
@@ -427,6 +483,30 @@
                   "minimum": -360,
                   "maximum": 360,
                   "description": "Whole degrees clockwise around the part anchor pixel, after any flip. The rotated grid is baked into an editable symbol named <part>-r<degrees> (-fr when flipped); points turn with it; right angles are exact."
+                },
+                "angle": {
+                  "type": "integer",
+                  "minimum": -360,
+                  "maximum": 360,
+                  "description": "Clockwise degrees relative to the parent world angle, or world degrees at a root. Mutually exclusive with rotate. Relative-angle tweens take the shorter arc."
+                },
+                "reach": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": -4096,
+                    "maximum": 4096
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "Canvas target [x, y] for the last bone of a two-bone chain. Replaces angle/rotate; attach to a named end point with zero at offset. Both bones are solved at whole degrees."
+                },
+                "bend": {
+                  "enum": [
+                    "forward",
+                    "back"
+                  ],
+                  "description": "Reach only: preferred clockwise (forward, default) or anticlockwise bend. Equal-error solutions prefer this bend, then rest-angle proximity and lower angles."
                 },
                 "squash": {
                   "type": "number",

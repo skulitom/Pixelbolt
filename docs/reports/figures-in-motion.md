@@ -7,6 +7,7 @@ Implementation of the 20 October 2026 plan. The full goal covers M0–M5; comple
 - The owner requested implementation, a persistent goal, and commit/push to `main` when ready.
 - The owner subsequently waived the outside-review instructions as unnecessary. External reviewers, voting thresholds, the 18-attempt blind comparison and a separate approval for that review are not delivery blockers. Automated craft/motion checks, performance targets, visual inspection and honest reporting remain required. No blind-review preference or score is claimed.
 - The owner chose stable opaque pixel area over an exact ellipse under squash. A 12×7 outlined ellipse otherwise grows from 95 to 115 pixels at squash 0.5. Masses therefore use the closest ellipse-ranked contour to the unsquashed opaque area, including its outline.
+- The owner chose to preserve clean diagonal strokes and enforce edge-to-edge connectivity locally at shared joints. Thin diagonal limbs may be eight-connected; requiring all their pixels to be four-connected would thicken the clean strokes. Tests still require a filled common joint with four-neighbour paths into both attached parts, continuous rendered masks, and no internal socket outline.
 - New pose fields remain optional version-1 additions; `rotate` retains its absolute meaning. Studio scope is preview, motion inspection and contact overlays.
 - The existing untracked `.claude/` folder is unrelated and is preserved.
 - M0 lands independently after its gate. Subsequent work continues on `figures-in-motion` and lands when verified under the owner's direct authorization.
@@ -39,7 +40,7 @@ The 128 px fixture charges 184,320 drawing pixels (0.275% of 67,108,864); the 25
 - All 87 existing on-disk recipes/pose sources under `examples/` and `showcase/`, including inline recipes in JSON, retain all 861 per-frame RGBA hashes, animation timelines and full pose compilation hashes. There was no pre-existing `test/fixtures/` directory. New tests also cover the inline regression fixtures.
 - The baseline was recorded before changing `src/core.js`; no expected hash was changed. `node scripts/check-figure-baseline.mjs` checks it without rewriting it. New snapshots require a new destination.
 - Tests compare bounded layers against independent full-canvas compositing, including fill, replace, rewrite, outline, copy, shade, hidden RGB, clears, opacity, invisible layers and offsets. Stamp validation tests cover timing, invalid fields, names, palettes, coordinates, atlas limits and exact clipped/trimmed layouts.
-- The runtime, schemas, drawing operations and binary encoders are unchanged. [CI run 39435581740](https://github.com/skulitom/Pixelbolt/actions/runs/39435581740) passed all Node 20/22/24 Ubuntu tests and Node 24 Windows/macOS tests. Two portable macOS packaging jobs were initially cancelled before running any steps; the failed-job rerun is tracked separately.
+- The runtime, schemas, drawing operations and binary encoders are unchanged. [CI run 39435581740](https://github.com/skulitom/Pixelbolt/actions/runs/39435581740) passed all Node 20/22/24 Ubuntu tests and Node 24 Windows/macOS tests. Two portable macOS packaging jobs were initially cancelled before running any steps; their rerun passed, and the complete run is green.
 
 ### Visual evidence
 
@@ -56,12 +57,14 @@ The GIF uses a camera-relative ground reference moving at 48 px/s and y=26. The 
 ## Remaining milestones
 
 - M1: implemented and verified below.
-- M2: hierarchy, reach, views, angular tweens, relit mirrors and a separate bone skink.
+- M2: implemented and verified below.
 - M3: contact markers and quantitative motion inspection through CLI/MCP.
 - M4: six editable motion templates and R2/R3 fixtures.
 - M5: documentation/skill/examples, studio inspection, export verification and final evidence. External blind review is waived as recorded above.
 
 ## M1 — 2026-10-20 — primitive gate passed
+
+Commit: `ca24bba`, **Add deterministic bone and area-preserving mass parts**, retained on `figures-in-motion` pending the remaining milestones.
 
 `rasterizeBone` draws a clean stepped spine, tapered or bulged fill, world-facing ramp bands, four cap types and an external outline. `rasterizeMass` maintains opaque pixel area under squash using the owner's contour decision above. Both return exact attachment coordinates and masks for inspection. Compilation bakes ordinary palette-row symbols and stamp operations; grids and plain mirrors retain their existing behavior. The pose schema includes the same optional fields as validation. Tidewatch's bundled copy of `craft.js` is synchronized; none of its art changed.
 
@@ -93,3 +96,31 @@ Inspected every native sheet, enlarged sheet, silhouette and frame of the ground
 | Caps | [Sheet](../images/figures/m1-caps-native.png) | [Sheet](../images/figures/m1-caps-4x.png) | [Sheet](../images/figures/m1-caps-silhouette.png) |
 
 [Primitive GIF](../images/figures/m1-ground.gif) and [all 20 frames](../images/figures/m1-ground-strip.png). The moving ground is a visual reference at 48 px/s, y=47, with 100 ms frames. These isolated rotating/squashing parts do not claim locomotion or foot contact. Character readability and joint seams remain M2/M3 work.
+
+## M2 — 2026-10-20 — joint gate passed
+
+Relative `angle` composes with its parent's world angle; legacy `rotate` remains absolute. Attachments resolve in dependency order and draw in authored order. Cycles identify each participating instance path. Relative-angle tweens take the shorter arc; reach targets and squash interpolate before placement.
+
+Two-bone reach searches whole-degree pixel endpoints, grouping equivalent endpoints without changing the result. Ties prefer the requested bend, then proximity to the rest angles, then lower angles. Far targets straighten the chain; targets inside the minimum radius of unequal bones use the closest folded pose. Both report their actual pixel miss. Rounded short-bone endpoints outside the analytic radius remain valid when they reach exactly. This treats the plan's "out of reach" straightening rule as the outer-radius case; straightening an inner-radius miss would move the foot farther away.
+
+Grid `views` supply rows, an anchor and every named point of the base drawing. The nearest view within 22.5° is selected; other angles use the original grid rotation. Plain mirrors preserve exact runtime-flipped pixels. `relight: true` reflects the attachment graph and redraws structural parts under the unchanged world light, including mirrors of mirrors. Bone metadata records world angles, start/end joints and reach errors.
+
+Socket outlines that would lie inside the parent's fill are omitted in a separately baked symbol. This preserves named layers and authored depth order. The joint tests use the owner's local connectivity decision above.
+
+### R1 and verification
+
+The new [source](../../examples/quality/skink-bones.poses.json), [recipe](../../examples/quality/skink-bones.json) and [metadata](../../examples/quality/skink-bones.meta.json) rebuild the skink as 15 instances over 12 frames: four two-bone legs, three tail sections, mass torso, neck, grid head and charm. All 48 leg targets resolve with zero error. Every bone-to-bone socket has a shared filled joint, a local four-neighbour connection into both parts, continuous rendered masks and no internal outline seam. The original skink and all other baseline art remain unchanged.
+
+Reach tests compare a grid of targets to an independent exhaustive 360×360 angle oracle, including repeatability, bends, rounded endpoints, unreachable targets and warnings. Additional tests cover dependency order, cycles, angle/rotate errors, views, relative and reach tweens, plain/relit mirrors, exact marker positions and invalid fields. R1's complete compiled JSON and every RGBA frame are now pinned in `test/fixtures/figure-goldens.json`; the immutable M0 baseline remains separate.
+
+The first full run caught the new browser module missing from the studio allowlist and scene bundle, and an old error-message assertion saying "earlier part." The module is now included in both places, and the assertion reflects attachments being allowed in any order.
+
+The final full run passed **332 tests in 11.272 s**, within the suite-growth budget; every new individual test stayed under 500 ms. All 31 quality-lab outputs reproduce exactly, and the M0 baseline remains unchanged. Cross-platform R1 golden checks will run with the completed branch.
+
+### Performance and images
+
+[M2 measurement](figures/m2-first-bench.json): R1 compile **3.687 ms median / 4.720 ms p95**, passing the 5 ms target; render **1.231 ms median**; reach solve **0.080 ms median**, passing 0.5 ms. The compiled recipe is 24,005 bytes and charges 12,177 drawing pixels. Named-layer and merged renders are pixel-identical.
+
+Inspected the [native sheet](../images/figures/m2-joints-native.png), [4× sheet](../images/figures/m2-joints-4x.png), [silhouettes](../images/figures/m2-joints-silhouette.png) and every [ground-strip frame](../images/figures/m2-joints-ground-strip.png). The limbs separate across the run and the ears, tail and charm remain visible. The [GIF](../images/figures/m2-joints-ground.gif) uses 80 ms frames and a 48 px/s ground reference. Before/after sheets and this GIF were shown to the owner. No reviewer preference or "better art" score is claimed.
+
+The earlier `m2-first-*` sheets remain as evidence of the first attempt: it had one target missed by 1 px. Lowering that contact pose and opening socket overlaps corrected it. Quantitative contact slide, ground error, pose spread and loop-seam acceptance remain M3 work.

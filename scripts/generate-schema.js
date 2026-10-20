@@ -127,15 +127,23 @@ const poses = {
   ...object({ format: { const: 'pixelforge-poses' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
     ramps: schema.properties.ramps, light: int(0, 359, 'Clockwise light direction: 0 right, 225 top left (default).'),
     parts: { type: 'object', maxProperties: 256, propertyNames: id, additionalProperties: { oneOf: [
-      object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point } }, ['rows']),
+      object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point },
+        views: { type: 'object', minProperties: 1, maxProperties: 16, propertyNames: { pattern: '^(0|[1-9][0-9]?|[12][0-9]{2}|3[0-5][0-9])$' },
+          additionalProperties: object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point } }, ['rows', 'anchor']),
+          description: 'Authored grid drawings by world angle (0–359). Each supplies its anchor and every named point of the base part. Use the nearest drawing within 22.5 degrees; otherwise rotate the base grid.' }
+      }, ['rows']),
       object({ bone: bonePart, points: { type: 'object', propertyNames: id, additionalProperties: { oneOf: [structuralPoint, { const: 'end' }] } } }, ['bone']),
       object({ mass: massPart, points: { type: 'object', propertyNames: id, additionalProperties: structuralPoint } }, ['mass'])
     ] } },
     poses: { ...array({ ...object({ name: id, duration: int(1, 60000), origin: point,
       mirror: { ...id, description: 'Reflect an earlier pose (parts, points and markers) around its origin corner: pixel column c becomes 2 × originX − 1 − c, as drawFrame\'s flipX does. Omit parts, markers and origin.' },
+      relight: { type: 'boolean', description: 'Mirror poses only: redraw structural parts with the source light unchanged; false/omitted preserves exact runtime-flipped pixels.' },
       tween: { ...object({ from: id, to: id, t: num(0, 1, 'Position between the two poses.'), ease }, ['from', 'to', 't']), description: 'An in-between of two earlier authored or tweened poses with the same part instances: origin, offsets and angles interpolate and round; part definitions and flips switch at the eased halfway point. Omit parts and origin; markers are not inherited.' },
       parts: array(object({ name: id, part: id, at: point, attach: object({ part: id, point: id }, ['part', 'point']), flipX: { type: 'boolean', description: 'Mirror this part, its anchor and its points inside the part.' },
         rotate: int(-360, 360, 'Whole degrees clockwise around the part anchor pixel, after any flip. The rotated grid is baked into an editable symbol named <part>-r<degrees> (-fr when flipped); points turn with it; right angles are exact.'),
+        angle: int(-360, 360, 'Clockwise degrees relative to the parent world angle, or world degrees at a root. Mutually exclusive with rotate. Relative-angle tweens take the shorter arc.'),
+        reach: { ...point, description: 'Canvas target [x, y] for the last bone of a two-bone chain. Replaces angle/rotate; attach to a named end point with zero at offset. Both bones are solved at whole degrees.' },
+        bend: { enum: ['forward', 'back'], description: 'Reach only: preferred clockwise (forward, default) or anticlockwise bend. Equal-error solutions prefer this bend, then rest-angle proximity and lower angles.' },
         squash: { ...num(.5, 2, 'Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.'), multipleOf: .05 },
         cleanup: { type: 'boolean', description: 'Remove doubled corners the rotation leaves (default true; false names the symbol with -raw).' } }, ['name', 'part']), 64),
       markers: array(object({ name: id, part: id, point: id }, ['name', 'part', 'point']), 64)

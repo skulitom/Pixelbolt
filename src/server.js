@@ -17,6 +17,7 @@ const routes = new Map([
   ['/gif.js', ['./gif.js', 'text/javascript; charset=utf-8']],
   ['/draft.js', ['../studio/draft.js', 'text/javascript; charset=utf-8']],
   ['/authoring.js', ['./authoring.js', 'text/javascript; charset=utf-8']],
+  ['/pose-geometry.js', ['./pose-geometry.js', 'text/javascript; charset=utf-8']],
   ['/autotile.js', ['./autotile.js', 'text/javascript; charset=utf-8']],
   ['/scene.js', ['./scene.js', 'text/javascript; charset=utf-8']],
   ['/scene-player.js', ['../studio/scene-player.js', 'text/javascript; charset=utf-8']],
