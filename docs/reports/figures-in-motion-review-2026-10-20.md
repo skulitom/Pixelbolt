@@ -24,4 +24,4 @@ The studio's [Motion view](../images/figures/m5-studio-motion.png), [contact ove
 
 These observations and passing numerical gates establish implemented behavior and pixel-craft constraints. They do not establish that independent artists prefer these figures to the old workflow.
 
-Cross-platform CI and final landing are recorded in the final section of the milestone report.
+The [final CI run](https://github.com/skulitom/Pixelbolt/actions/runs/39455136136) passes all 11 jobs on implementation commit `794198e`: Node 20/22/24, Windows/macOS, all five portable targets and MCPB. The final local suite passes 368 tests in 11.705 s. The final section of the milestone report records acceptance and the two test-harness corrections found by CI.

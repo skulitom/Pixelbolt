@@ -1,6 +1,6 @@
 # Figures in motion
 
-Implementation of the 20 October 2026 plan. The full goal covers M0–M5; completion of M0 is not completion of the bone/motion features.
+Implementation of the 20 October 2026 plan, completed through M5 with the owner's recorded review waiver. All engineering gates pass; the final release verification is recorded below.
 
 ## Accepted scope and decisions — 2026-10-20
 
@@ -198,10 +198,22 @@ Pillow independently verifies R2's sheet and all 40 GIF playback entries across 
 
 Inspected the saved [Motion view](../images/figures/m5-studio-motion.png), [contact overlay](../images/figures/m5-studio-contacts.png) and [narrow layout](../images/figures/m5-studio-narrow.png). The [final implementation review](figures-in-motion-review-2026-10-20.md) explicitly records the waived blind review; no preference or authoring-cost scores are invented.
 
-Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. The full cross-platform CI matrix and final landing are the remaining release checks.
+Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. Final cross-platform verification is recorded below.
 
 M5 implementation: `76db2df`. A final coverage audit added the explicit R1 compile and R2 image-review time assertions, plus a constrained-heap R3 compile on every CI Node/system combination. The resulting local suite passes **368 tests in 11.734 s**. These additions change verification only; no pixels or authoring behavior changed.
 
 The [first branch CI run](https://github.com/skulitom/Pixelbolt/actions/runs/39453440696) passed all five Node/system jobs, MCPB and four portable targets. The Intel Mac target under Rosetta failed one assertion: a single cold R2 expansion took 72.112 ms against the 50 ms CI ceiling. The test was incorrectly using a cold sample while the specified benchmark protocol uses warmups and medians. It now warms three times and checks a five-run median against the **same 50 ms ceiling**. No limit or rendering behavior changed; the failure is retained here.
 
 The [second run](https://github.com/skulitom/Pixelbolt/actions/runs/39454517132) passed the Node/system matrix with the new constrained-heap checks. The Apple silicon browser walk completed all figure checks but its final error check caught an existing GIF-test resource leak: an `ImageDecoder` result was garbage-collected without `VideoFrame.close()`. The QA script now closes both decoded frames and decoders in `finally` blocks, including the fluid GIF check. Its local rerun passes **35/35**. This fixes the test harness; product code is unchanged.
+
+## Final acceptance — 2026-10-20
+
+**M0–M5 engineering gates pass.** [Final CI run 39455136136](https://github.com/skulitom/Pixelbolt/actions/runs/39455136136), at `794198e4d4d6c921833166533f7d067da27dd48c`, is green across all **11 jobs**:
+
+- Node 20, 22 and 24 on Linux; Node 24 on Windows and macOS, including figure goldens and bounded-heap R3 compilation.
+- Portable Studio for Windows x64, Linux x64/arm64 and macOS x64/arm64, including reproducible builds, bundled-runtime tests and browser checks where available.
+- MCPB reproducibility, validation and tool smoke checks.
+
+The final local suite passes **368 tests in 11.705 s**, within the reference-machine growth budget. Local browser QA passes **35/35**, and independent export decoding passes. All strict reference performance targets, the unchanged legacy baseline, R1–R3 goldens and generated schema/example checks are documented above.
+
+The final reporting commit changes documentation only after that green run. The owner has directly authorized landing and pushing to main. External review and its preference/authoring-cost statistics remain explicitly waived, not measured or claimed. No implementation or verification work remains unresolved.
