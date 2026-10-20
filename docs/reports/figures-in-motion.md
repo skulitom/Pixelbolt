@@ -219,3 +219,30 @@ The [second run](https://github.com/skulitom/Pixelbolt/actions/runs/39454517132)
 The final local suite passes **368 tests in 11.705 s**, within the reference-machine growth budget. Local browser QA passes **35/35**, and independent export decoding passes. All strict reference performance targets, the unchanged legacy baseline, R1–R3 goldens and generated schema/example checks are documented above.
 
 The final reporting commit changes documentation only after that green run. The owner has directly authorized landing and pushing to main. External review and its preference/authoring-cost statistics remain explicitly waived, not measured or claimed. No implementation or verification work remains unresolved.
+
+## Fixes after review — 2026-10-20
+
+A differential fuzz of the M0 renderer change (more than 270,000 recipes against `862de08`) found no difference. A review of the pose code and a hands-on build of a new 32×32 character found the defects below. All were reproduced, fixed and covered by tests. They change figure pixels, so the R1–R3 goldens were regenerated deliberately: R1 9 of 12 frames, R2 26 of 40, R3 91 of 96. The legacy baseline (87 recipes, 861 frames) is unchanged.
+
+| Defect | Cause | Fix |
+| --- | --- | --- |
+| In the second half of every walk and run, the darker far arm and leg were drawn in front of the body | Templates exchanged paired limbs' draw order at the half-cycle, although the phase offset already alternates the poses | Draw order stays as authored; `swapDepth: true` restores the exchange for front or back views |
+| A relit mirror put joints 1–2 px off (352 of 11,520 bone ends, 2,156 spines) | `Math.round` rounds halves toward +∞, and `sinDeg(−θ)` is not bit-for-bit `−sinDeg(θ)` | Signed coordinates round halves away from zero; −θ uses the exact reflection of θ. Bone shapes now mirror exactly, except a 2 px limb's shadow-side column, which follows the fixed light by design |
+| Template defaults failed their own checks on an ordinary body: feet floated 1 px and slid 1.28 px | A bob or lean lifted the hip beyond the planted leg | Each motion's poses sink together, by up to 4 px, when a planted foot cannot reach; the bob keeps its shape |
+| Contact A/B failed at 7–21% on correct side-view cycles | Pixel share is the wrong measure when the legs trade places | A/B with joint angles also passes at a 20° joint turn; grid-part runs are still judged by pixels |
+| Walk failed its loop seam on a symmetric rig | One leg's swing-to-contact jump falls on the seam while its partner's falls mid-cycle | A joint's seam is compared with its own and its paired limb's internal jumps |
+| Attack follow-through barely differed from the strike (17%) | The arm moved only 20° further | It swings 45° past the strike and the body settles |
+| A source within all limits compiled for 14 s | Masses had no cache and no work budget | Masses are cached like bones; structural drawing is charged a nominal 8,388,608-pixel budget per compile, identical cached or not. The 14 s source fails in 0.3 s with a path |
+
+The new `plainRig` fixture, a 32×32 side-view humanoid with darker far limbs, runs all six templates at their defaults. Every motion check passes, with no reach warnings, and its output is pinned beside R1–R3. A hand-built test character with uneven rest angles (legs at 95° and 85°) still misses one walk seam by 3°. Reach ties prefer the rest angles, so the art workflow now asks for equal rest angles on paired legs.
+
+Reference timings (Ryzen 9 7950X3D, Node 24.19, median of 15 after 3 warmups), against the plan's targets:
+
+| Measurement | Before fixes | After | Target |
+| --- | --- | --- | --- |
+| R1 compile | 4.2 ms | 2.3 ms | ≤ 5 ms |
+| R2 compile | 13.3 ms | 13.1 ms | ≤ 50 ms |
+| R3 compile | 61.6 ms | 55.6 ms | ≤ 250 ms |
+| R2 expansion | 1.6 ms | 4.0 ms | ≤ 5 ms |
+
+Expansion is slower because templates now verify planted-foot reach on every planted pose. The check compiles only the planted chains, in a private probe mode that skips recipe assembly.

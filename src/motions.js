@@ -38,8 +38,9 @@ export function validateRig(rig, height) {
   }
 }
 
-// compileRest is supplied by authoring.js so this module has no circular compiler import.
-export function expandMotions(input, compileRest) {
+// compileRest and probeJoints are supplied by authoring.js so this module has no circular compiler import. probeJoints
+// resolves one pose's joints without assembling or validating a recipe.
+export function expandMotions(input, compileRest, probeJoints = compileRest) {
   if (!input || input.format !== 'pixelforge-poses' || input.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   const source = structuredClone(input);
   if (source.motions === undefined) return source;
@@ -54,6 +55,8 @@ export function expandMotions(input, compileRest) {
   if (!source.motions || typeof source.motions !== 'object' || Array.isArray(source.motions) || Object.keys(source.motions).length > 16) fail('poses.motions', 'expected up to sixteen named motions');
   const restSource = { ...source, poses: [rest], animations: { rest: { frames: [rest.name], loop: false } } };
   delete restSource.motions;
+  // Generated poses are checked one at a time for planted-foot reach; that needs joints, not the rig.
+  const checkSource = { ...restSource }; delete checkSource.rig;
   const restData = compileRest(restSource).metadata.poses[rest.name], instances = new Map(rest.parts.map(p => [p.name, p])), rig = source.rig;
   const restAngle = name => (restData.parts[name].rotate ?? 0) - (restData.parts[instances.get(name).attach?.part]?.rotate ?? 0);
   const requireInstance = (name, path) => { if (!instances.has(name)) fail(path, `unknown rest-pose instance ${name}`); return instances.get(name); };
@@ -84,7 +87,7 @@ export function expandMotions(input, compileRest) {
     const path = `poses.motions.${name}`; id(name, path);
     const template = motion?.template;
     if (!MOTION_TEMPLATES.includes(template)) fail(`${path}.template`, `expected ${MOTION_TEMPLATES.join(', ')}`);
-    const fields = { walk: ['speed', 'stride', 'lift', 'bob', 'lean'], run: ['speed', 'stride', 'lift', 'bob', 'lean'], idle: ['breath'], jump: ['crouch', 'stretch', 'apex'], attack: ['arm', 'windup', 'strike', 'hold'], hurt: ['recoil', 'squash'] };
+    const fields = { walk: ['speed', 'stride', 'lift', 'bob', 'lean', 'swapDepth'], run: ['speed', 'stride', 'lift', 'bob', 'lean', 'swapDepth'], idle: ['breath'], jump: ['crouch', 'stretch', 'apex'], attack: ['arm', 'windup', 'strike', 'hold'], hurt: ['recoil', 'squash'] };
     object(motion, ['template', 'frames', 'duration', ...fields[template]], path);
     const p = (key, fallback, lo, hi, integer = false) => number(motion[key], fallback, lo, hi, `${path}.${key}`, integer);
     const duration = p('duration', template === 'idle' ? 200 : 80, 1, 60000, true);
@@ -95,6 +98,8 @@ export function expandMotions(input, compileRest) {
     const speed = locomotion ? p('speed', template === 'walk' ? 24 : 48, -1024, 1024) : 0;
     const stride = locomotion ? p('stride', 10, 1, 64) : 0, lift = locomotion ? p('lift', template === 'walk' ? 2 : 4, 0, 32) : 0;
     const bob = locomotion ? p('bob', 1, 0, 8) : 0, lean = locomotion ? p('lean', template === 'run' ? 8 : 0, -45, 45, true) : 0;
+    if (motion.swapDepth !== undefined && typeof motion.swapDepth !== 'boolean') fail(`${path}.swapDepth`, 'expected a boolean');
+    const swapDepth = motion.swapDepth === true;
     const breath = template === 'idle' ? p('breath', .05, 0, .5) : 0;
     const crouch = template === 'jump' ? p('crouch', .8, .5, 1) : 1, stretch = template === 'jump' ? p('stretch', 1.15, 1, 2) : 1, apex = template === 'jump' ? p('apex', 4, 1, 32, true) : 0;
     const arm = template === 'attack' ? p('arm', 0, 0, (rig.arms?.length ?? 0) - 1, true) : 0;
@@ -126,7 +131,8 @@ export function expandMotions(input, compileRest) {
       if (locomotion) { dy = Math.round(bob * cosDeg(angle * 2)); bodySquash = template === 'run' ? (i % half === downIndex ? .9 : i % half === half - 1 ? 1.05 : 1) : 1; setAngle(torso, restAngle(rig.body) + lean); }
       if (template === 'idle') bodySquash = 1 + breath * sinDeg(angle);
       if (template === 'jump') { dy = [2, 0, -apex, -apex * 2, -apex, 2, 0][i]; bodySquash = [crouch, stretch, 1.05, 1, 1, crouch, 1][i]; }
-      if (template === 'attack') { setAngle(parts.get(rig.arms[arm][0]), [windup, strike, strike + 20, restAngle(rig.arms[arm][0])][i]); bodySquash = [.9, 1.05, 1, 1][i]; setAngle(torso, restAngle(rig.body) + [-8, 8, 12, 0][i]); }
+      // Follow-through carries the swing well past the strike and settles the body, so it reads as its own key pose.
+      if (template === 'attack') { setAngle(parts.get(rig.arms[arm][0]), [windup, strike, strike + 45, restAngle(rig.arms[arm][0])][i]); bodySquash = [.9, 1.05, .95, 1][i]; setAngle(torso, restAngle(rig.body) + [-8, 8, 14, 0][i]); }
       if (template === 'hurt') { setAngle(torso, restAngle(rig.body) + (i ? 0 : recoil)); bodySquash = i ? 1 : hurtSquash; }
       pose.origin[1] += dy; torso.squash = squash((body.squash ?? 1) * bodySquash);
       if (rig.head && template === 'idle') { const head = parts.get(rig.head); head.at = [...(head.at ?? [0, 0])]; head.at[1] -= Math.round(sinDeg(angle)); }
@@ -154,7 +160,10 @@ export function expandMotions(input, compileRest) {
         if (pose.markers.some(m => m.name === 'strike')) fail(path, 'the attack strike marker is reserved; rename the rest marker');
         pose.markers.push({ name: 'strike', part: last.name, point });
       }
-      if (locomotion && i >= half) {
+      if (locomotion && swapDepth && i >= half) {
+        // Only on request (front or back views, where the stepping limb comes nearer the camera). In a side view the
+        // near limbs stay in front: the half-cycle phase offset above already alternates the poses, and swapping depth
+        // too would put a darker far arm or leg in front of the body for half of every cycle.
         // Swap whole limb subtrees in their original paint slots; the attachment graph is unchanged.
         for (const chains of [rig.legs ?? [], rig.arms ?? []]) for (let j = 0; j + 1 < chains.length; j += 2) {
           const subtree = root => {
@@ -169,6 +178,37 @@ export function expandMotions(input, compileRest) {
       }
       generated.push(pose); names.push(pose.name);
     }
+    // A bob or lean must never lift a hip beyond its leg: a planted foot that misses its target floats and slides.
+    // Find how far each pose must sink (at most four pixels, while that reduces its planted feet's miss) and lower
+    // every pose of the motion by the deepest of those, so the bob keeps its shape and no frame dips on its own.
+    const sink = pose => {
+      const plantedLegs = legs.filter(leg => pose.contacts.includes(leg.marker));
+      if (!plantedLegs.length) return 0;
+      // Only the planted chains and what they hang from decide where a foot lands; compile just those.
+      const byName = new Map(pose.parts.map(p => [p.name, p])), needed = new Set();
+      for (const leg of plantedLegs) for (let name = leg.last; name && !needed.has(name); name = byName.get(name)?.attach?.part) needed.add(name);
+      const probe = { name: pose.name, origin: pose.origin, parts: pose.parts.filter(p => needed.has(p.name)) };
+      const probeParts = Object.fromEntries([...new Set(probe.parts.map(p => p.part))].map(name => [name, source.parts[name]]));
+      const miss = () => {
+        const placed = probeJoints({ ...checkSource, parts: probeParts, poses: [probe], animations: { check: { frames: [pose.name], loop: false } } }).metadata.poses[pose.name].parts;
+        return plantedLegs.reduce((sum, leg) => {
+          const end = placed[leg.last].joints.end, target = pose.parts.find(p => p.name === leg.last).reach;
+          return sum + Math.abs(end[0] - target[0]) + Math.abs(end[1] - target[1]);
+        }, 0);
+      };
+      const start = pose.origin[1];
+      let depth = 0;
+      for (let current = miss(); current && depth < 4;) {
+        pose.origin[1] = start + depth + 1;
+        const next = miss();
+        if (next >= current) break;
+        current = next; depth++;
+      }
+      pose.origin[1] = start;
+      return depth;
+    };
+    const motionPoses = generated.slice(-count), depth = Math.max(...motionPoses.map(sink));
+    if (depth) for (const pose of motionPoses) pose.origin[1] += depth;
     if (Object.hasOwn(animations, name)) fail(`${path}`, 'the generated animation name is already authored; choose another motion name');
     const playback = template === 'attack' ? [names[0], ...Array(hold).fill(names[1]), ...names.slice(2)] : names;
     animations[name] = { frames: playback, loop: locomotion || template === 'idle' };

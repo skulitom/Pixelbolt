@@ -11,6 +11,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Six motion templates generate editable key poses and in-betweens with foot targets, contacts, depth swaps and attack cues. `compile --expand` exposes them; authored poses override generated names.
 - CLI/MCP motion inspection measures foot slide, ground error, pose spread and loop seams. The studio edits pose sources directly and adds Motion and Show contacts controls.
 - Pinned figure hashes, performance fixtures, browser checks and independent PNG/GIF verification cover the workflow. Existing example pixels remain unchanged.
+- Walk and run keep near limbs, and anything they hold, in front of the body for the whole cycle; `swapDepth: true` restores the exchange for front or back views. Before, a darker far arm and leg were drawn in front for half of every cycle.
+- Relit mirrors are exact: bone ends, spines and points round halves away from zero, and the direction of −θ is the bit-exact reflection of θ. Before, 352 of 11,520 bone ends and 2,156 spines missed by a pixel.
+- Templates sink a motion's poses together, by up to four pixels, when a bob or lean would lift a hip beyond its planted leg, so feet neither float nor slide. Attack follow-through swings 45° past the strike. Every template at its defaults now passes its own motion checks on a plain 32×32 humanoid.
+- Motion review: contact A/B poses with joint angles also pass when a joint turns 20° or more (side-view contact poses can share most pixels), and a joint's loop seam may be as large as its paired limb's largest jump.
+- Masses are cached like bones, and drawing structural parts has an 8,388,608-pixel budget per compile. A source that took 14 s now fails in about a quarter of a second with a path.
 
 ### Pose rendering performance
 

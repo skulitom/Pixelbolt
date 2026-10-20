@@ -257,8 +257,16 @@ const CLEAN_DIRECTIONS = (() => {
   return out;
 })();
 const SNAP_COS = cosDeg(4);
+// Mirrors must be exact. A relit mirror draws a flipped part at the negated angle, so the direction of −θ is the
+// direction of θ reflected bit for bit (the polynomials alone differ in the last bit at some angles), and every
+// signed coordinate rounds halves away from zero (Math.round(−2.5) is −2, the mirror of 3).
+const unitAt = angle => {
+  const turn = ((angle % 360) + 360) % 360, folded = turn > 180 ? 360 - turn : turn, y = sinDeg(folded);
+  return [cosDeg(folded), turn > 180 ? -y : y];
+};
+export const roundHalfAway = value => (value < 0 ? -Math.round(-value) : Math.round(value)) + 0; // + 0 turns −0 into 0
 export function boneDirection(angle, snap = true) {
-  let x = cosDeg(angle), y = sinDeg(angle), snapped = false, stepX = x, stepY = y;
+  let [x, y] = unitAt(angle), snapped = false, stepX = x, stepY = y;
   if (snap) {
     let best = SNAP_COS, direction = null;
     for (const candidate of CLEAN_DIRECTIONS) {
@@ -271,12 +279,12 @@ export function boneDirection(angle, snap = true) {
 }
 function endOfBone(length, direction, flipX) {
   const sign = flipX ? -1 : 1, ux = direction.x * sign, uy = direction.y * sign;
-  let x = Math.round(ux * length), y = Math.round(uy * length);
+  let x = roundHalfAway(ux * length), y = roundHalfAway(uy * length);
   // At clean ratios, quantize the major-axis length first, then put the endpoint on that exact stepped slope.
   // Rounding both components independently would create a different slope (and uneven internal runs) on short bones.
   if (direction.snapped) {
-    if (Math.abs(ux) >= Math.abs(uy)) y = Math.round(x * direction.stepY / direction.stepX);
-    else x = Math.round(y * direction.stepX / direction.stepY);
+    if (Math.abs(ux) >= Math.abs(uy)) y = roundHalfAway(x * direction.stepY / direction.stepX);
+    else x = roundHalfAway(y * direction.stepX / direction.stepY);
   }
   return [x, y];
 }
@@ -449,8 +457,8 @@ function drawBone(bone, { angle = 0, flipX = false, light = 225, ramp } = {}) {
   // Midpoint distribution yields runs differing by at most one, with no orthogonal elbow at a diagonal step.
   for (let i = 0; i <= steps; i++) {
     const majorX = Math.abs(endX) >= Math.abs(endY);
-    const x = direction.snapped && !majorX ? Math.round((endY < 0 ? -i : i) * direction.stepX / direction.stepY) : Math.round(endX * i / steps);
-    const y = direction.snapped && majorX ? Math.round((endX < 0 ? -i : i) * direction.stepY / direction.stepX) : Math.round(endY * i / steps);
+    const x = direction.snapped && !majorX ? roundHalfAway((endY < 0 ? -i : i) * direction.stepX / direction.stepY) : roundHalfAway(endX * i / steps);
+    const y = direction.snapped && majorX ? roundHalfAway((endX < 0 ? -i : i) * direction.stepY / direction.stepX) : roundHalfAway(endY * i / steps);
     spine.push([x, y]); put(x, y);
   }
   const shadow = -uy * cosDeg(light) + ux * sinDeg(light) > 0 ? -1 : 1;
@@ -516,14 +524,36 @@ function drawBone(bone, { angle = 0, flipX = false, light = 225, ramp } = {}) {
   });
   const [ox, oy] = result.pivot, length = bone.length;
   return {
-    ...result, snapped: direction.snapped, end: [ox + endX, oy + endY],
+    ...result, snapped: direction.snapped, end: [ox + endX, oy + endY], work: w * h,
     spine: spine.map(([x, y]) => [x + ox, y + oy]),
-    map: ([along, across]) => [ox + Math.round(endX * along / length - ay * sign * across), oy + Math.round(endY * along / length + ax * sign * across)]
+    map: ([along, across]) => [ox + roundHalfAway(endX * along / length - ay * sign * across), oy + roundHalfAway(endY * along / length + ax * sign * across)]
   };
 }
 
-export function rasterizeMass(mass, { angle = 0, flipX = false, squash = 1, light = 225, ramp } = {}) {
-  const cos = cosDeg(angle), sin = sinDeg(angle), rx = mass.size[0] / squash / 2, ry = mass.size[1] * squash / 2;
+// Masses are cached like bones. `work` is the drawing's nominal cost in pixels visited, the same whether it was drawn
+// now or served from the cache, so a compiler budget built on it accepts or rejects a source the same way every time.
+const massDrawings = new Map();
+let massDrawingBytes = 0;
+const massMap = ({ pivot: [ox, oy], flipX, squash, cos, sin }) => ([x, y]) => {
+  const along = (flipX ? -x : x) / squash, across = y * squash;
+  return [ox + roundHalfAway(along * cos - across * sin), oy + roundHalfAway(along * sin + across * cos)];
+};
+export function rasterizeMass(mass, options = {}) {
+  const key = JSON.stringify([mass.size, mass.base, mass.outline, options.angle ?? 0, options.flipX ?? false, options.squash ?? 1, options.light ?? 225, options.ramp]);
+  let cached = massDrawings.get(key);
+  if (!cached) {
+    const part = drawMass(mass, options), bytes = part.fill.byteLength + part.outlineMask.byteLength + part.width * part.height * 2 + 512;
+    while (massDrawings.size && (massDrawings.size >= 128 || massDrawingBytes + bytes > 1048576)) {
+      const first = massDrawings.keys().next().value;
+      massDrawingBytes -= massDrawings.get(first).bytes; massDrawings.delete(first);
+    }
+    cached = { part, bytes }; massDrawings.set(key, cached); massDrawingBytes += bytes;
+  }
+  const part = cached.part, copy = { ...part, rows: part.rows.slice(), fill: part.fill.slice(), outlineMask: part.outlineMask.slice(), pivot: part.pivot.slice() };
+  return { ...copy, map: massMap(copy) };
+}
+function drawMass(mass, { angle = 0, flipX = false, squash = 1, light = 225, ramp } = {}) {
+  const [cos, sin] = unitAt(angle), rx = mass.size[0] / squash / 2, ry = mass.size[1] * squash / 2;
   const reachX = Math.ceil(Math.sqrt(rx * rx * cos * cos + ry * ry * sin * sin)) + 2;
   const reachY = Math.ceil(Math.sqrt(rx * rx * sin * sin + ry * ry * cos * cos)) + 2;
   const left = -reachX, top = -reachY, w = reachX * 2 + 1, h = reachY * 2 + 1, candidates = [];
@@ -532,8 +562,9 @@ export function rasterizeMass(mass, { angle = 0, flipX = false, squash = 1, ligh
     candidates.push({ at: (y - top) * w + x - left, score: u * u + v * v, u: flipX ? -u : u, v });
   }
   candidates.sort((a, b) => a.score - b.score || a.v - b.v || a.u - b.u);
-  const paint = (mask, width, height, x, y, thick) => finishPart(mask, width, height, x, y,
-    { ramp, base: mass.base, outline: mass.outline, light, thick });
+  let work = candidates.length;
+  const paint = (mask, width, height, x, y, thick) => { work += width * height; return finishPart(mask, width, height, x, y,
+    { ramp, base: mass.base, outline: mass.outline, light, thick }); };
   const area = part => part.rows.reduce((sum, row) => sum + [...row].filter(c => c !== '.').length, 0);
   // Pixel area, including the outline, takes precedence over an exact ellipse under squash (owner decision).
   // Use the unturned, unsquashed ellipse as the area target. Pick the closest ellipse-ranked pixel contour rather
@@ -562,11 +593,7 @@ export function rasterizeMass(mass, { angle = 0, flipX = false, squash = 1, ligh
     if (pixels < target) low = count + 1; else high = count - 1;
   }
   if (error) for (let count = Math.max(1, closest - 2), end = Math.min(candidates.length, closest + 2); count <= end; count++) consider(count);
-  const [ox, oy] = result.pivot;
-  return { ...result, targetArea: target, map: ([x, y]) => {
-    const along = (flipX ? -x : x) / squash, across = y * squash;
-    return [ox + Math.round(along * cos - across * sin), oy + Math.round(along * sin + across * cos)];
-  } };
+  return { ...result, targetArea: target, work, flipX, squash, cos, sin };
 }
 
 // ---- Rewrite rules -----------------------------------------------------------------------------------------------

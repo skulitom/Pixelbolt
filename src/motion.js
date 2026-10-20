@@ -117,14 +117,34 @@ export function inspectMotion(project, options = {}) {
   if (a && b) pairs.push([a, b, .3]);
   const poseSpread = pairs.map(([a, b, minimum]) => {
     const difference = pixelDifference(a.frame.data, b.frame.data);
-    return { from: a.frame.name, to: b.frame.name, ...difference, minimum, pass: difference.share >= minimum };
+    if (minimum !== .3) return { from: a.frame.name, to: b.frame.name, ...difference, minimum, pass: difference.share >= minimum };
+    // In a side view, contact A and B can share most pixels although the legs have traded places: the poses differ
+    // in which leg is forward, not in silhouette. Posed figures with joint angles therefore also pass when some
+    // joint turns at least 20° between them; drawings without joints (a grid-part run) are judged by pixels alone.
+    // When the rig names its legs, only leg joints count, so a swaying tail cannot pass identical legs.
+    const legs = new Set(Array.isArray(metadata?.rig?.legs) ? metadata.rig.legs.flat() : []);
+    const turns = jointDifference(a, b).joints.filter(j => !legs.size || legs.has(j.name)).map(j => j.degrees);
+    const joints = turns.length ? Math.max(...turns) : null;
+    return { from: a.frame.name, to: b.frame.name, ...difference, minimum, ...(joints !== null && { jointDegrees: joints, jointMinimum: 20 }),
+      pass: difference.share >= minimum || (joints !== null && joints >= 20) };
   });
   const seam = jointDifference(entries.at(-1), entries[0]);
   const internal = entries.slice(1).map((e, i) => jointDifference(entries[i], e));
   const maxima = internal.map(d => d.maximum).filter(n => n !== null), largestInternal = maxima.length ? Math.max(...maxima) : null;
+  // Paired rig limbs run half a cycle apart, so one leg's swing-to-contact jump falls on the loop seam while its
+  // partner makes the same jump inside the cycle. Each joint is compared with itself and its partner in the pair.
+  const partners = new Map();
+  for (const role of ['legs', 'arms']) {
+    const chains = Array.isArray(metadata?.rig?.[role]) ? metadata.rig[role] : [];
+    for (let j = 0; j + 1 < chains.length; j += 2) for (let k = 0; k < Math.min(chains[j].length, chains[j + 1].length); k++) {
+      partners.set(chains[j][k], chains[j + 1][k]); partners.set(chains[j + 1][k], chains[j][k]);
+    }
+  }
   for (const joint of seam.joints) {
-    const jumps = internal.flatMap(d => d.joints.filter(j => j.name === joint.name).map(j => j.degrees));
+    const names = partners.has(joint.name) ? [joint.name, partners.get(joint.name)] : [joint.name];
+    const jumps = internal.flatMap(d => d.joints.filter(j => names.includes(j.name)).map(j => j.degrees));
     joint.largestInternal = jumps.length ? Math.max(...jumps) : null;
+    if (names.length > 1) joint.partner = names[1];
     joint.pass = !animation.loop || joint.largestInternal === null ? null : joint.degrees <= joint.largestInternal;
   }
   const loopSeam = { ...pixelDifference(entries.at(-1).frame.data, entries[0].frame.data), ...seam, largestInternal,

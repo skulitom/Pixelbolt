@@ -125,6 +125,33 @@ test('plain mirrors preserve pixels and joints, while relit mirrors retain the w
   assert.equal(metadata.poses.relit.relight, true);
 });
 
+test('a relit mirror reflects every bone end, spine and mass point exactly', () => {
+  // Halves used to round toward +infinity, so a flipped bone at −θ missed the reflection of θ by a pixel.
+  const rel = (part, flip) => part.spine.map(([x, y]) => `${(x - part.pivot[0]) * (flip ? -1 : 1)},${y - part.pivot[1]}`).sort().join(' ');
+  for (const snap of [true, false]) for (let length = 1; length <= 16; length++) for (let angle = 0; angle < 360; angle++) {
+    const [x, y] = boneEnd(length, angle, snap), [fx, fy] = boneEnd(length, -angle, snap, true);
+    assert.deepEqual([fx, fy], [0 - x, y], `end of length ${length} at ${angle}° (snap ${snap})`);
+    if (!snap || length % 5) continue;
+    const thin = { length, width: [1, 1], base: 1, outline: null }, ramp = ['a', 'b', 'c'];
+    assert.equal(rel(rasterizeBone(thin, { angle: -angle, flipX: true, ramp }), true), rel(rasterizeBone(thin, { angle, ramp }), false), `spine ${length} at ${angle}°`);
+  }
+  for (let angle = 0; angle < 360; angle += 15) for (const squash of [.5, 1, 1.35]) {
+    const mass = { size: [12, 7], base: 1, outline: 'k' }, ramp = ['a', 'b', 'c'];
+    const a = rasterizeMass(mass, { angle, squash, ramp }), b = rasterizeMass(mass, { angle: -angle, squash, flipX: true, ramp });
+    const [ax, ay] = a.map([4, -2]), [bx, by] = b.map([4, -2]);
+    assert.deepEqual([bx - b.pivot[0], by - b.pivot[1]], [a.pivot[0] - ax, ay - a.pivot[1]], `mass point at ${angle}°, squash ${squash}`);
+  }
+  // The reviewer's case, through the compiler: a relit mirror's marker matches the plain mirror's.
+  for (let angle = 0; angle < 360; angle += 5) for (const length of [2, 3, 6, 9]) {
+    const s = { format: 'pixelforge-poses', version: 1, name: 'm', width: 48, height: 48, palette: { k: '#000000', a: '#333333', b: '#666666' }, ramps: [['a', 'b']],
+      parts: { arm: { bone: { length, width: [1, 1], ramp: 0, base: 1 }, points: { end: 'end' } } },
+      poses: [{ name: 'right', origin: [24, 24], parts: [{ name: 'arm', part: 'arm', rotate: angle }], markers: [{ name: 'tip', part: 'arm', point: 'end' }] },
+        { name: 'plain', mirror: 'right' }, { name: 'relit', mirror: 'right', relight: true }] };
+    const { poses } = compilePoses(s).metadata;
+    assert.deepEqual(poses.relit.markers[0].at, poses.plain.markers[0].at, `length ${length} at ${angle}°`);
+  }
+});
+
 test('relighting a plain mirrored hierarchy preserves attachments and squash', () => {
   const s = source();
   s.parts.body = { mass: { size: [7, 5], ramp: 0, base: 1, outline: 'k' }, points: { hip: [0, 2] } };

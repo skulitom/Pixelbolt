@@ -177,6 +177,10 @@
                 "type": "integer",
                 "minimum": -45,
                 "maximum": 45
+              },
+              "swapDepth": {
+                "type": "boolean",
+                "description": "Exchange the draw order of paired limbs in the second half-cycle, for front or back views where the stepping limb comes nearer the camera. Default false: side views keep near limbs in front."
               }
             },
             "required": [
@@ -225,6 +229,10 @@
                 "type": "integer",
                 "minimum": -45,
                 "maximum": 45
+              },
+              "swapDepth": {
+                "type": "boolean",
+                "description": "Exchange the draw order of paired limbs in the second half-cycle, for front or back views where the stepping limb comes nearer the camera. Default false: side views keep near limbs in front."
               }
             },
             "required": [

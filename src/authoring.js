@@ -49,9 +49,15 @@ function structuralPart(part, source, path) {
   if (part.anchor !== undefined) fail(`${path}.anchor`, 'bones anchor at the start joint; masses anchor at their centre');
 }
 
-export function expandPoses(source) { return expandMotions(source, compilePoses); }
+// Templates check planted-foot reach on many single poses; they need resolved joints, not a validated recipe. The
+// probe mode is private to this module (a symbol nobody else holds), so compilePoses' public contract is unchanged.
+const PROBE = Symbol('pose probe');
+export function expandPoses(source) { return expandMotions(source, compilePoses, probe => compilePoses(probe, PROBE)); }
+// Nominal pixels visited while drawing distinct bone and mass shapes in one compile (see rasterizeMass). Real rigs use
+// a few percent of it; a source that would draw for seconds fails fast with a path instead of blocking the caller.
+export const RASTER_BUDGET = 8388608;
 
-export function compilePoses(source) {
+export function compilePoses(source, mode) {
   if (source?.motions !== undefined) source = expandPoses(source);
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'rig', 'motionInfo', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
@@ -94,6 +100,7 @@ export function compilePoses(source) {
   const metadata = { format: 'pixelforge-pose-metadata', version: 1, coordinates: 'unscaled source pixels; top-left origin; positive y down; marker times are milliseconds before playback-rate adjustment', poses: Object.create(null), animations: Object.create(null) };
   if (source.rig !== undefined) metadata.rig = { ...source.rig };
   const compiled = Object.create(null), shapes = new Map(), warnings = [];
+  let rasterWork = 0;
   // The drawn shape of a part instance. Flips alone stay a stamp flag; a rotation (after any flip) is baked into a new
   // editable symbol named <part>-r<degrees> (-fr when flipped, -raw without cleanup) around the part's anchor pixel.
   const shapeOf = (name, flipX, rotate, cleanup, where, squash = 1) => {
@@ -107,6 +114,9 @@ export function compilePoses(source) {
         const shape = definition.bone ?? definition.mass;
         const options = { angle, flipX, squash, light: source.light ?? 225, ramp: source.ramps[shape.ramp] };
         const raster = definition.bone ? rasterizeBone(shape, options) : rasterizeMass(shape, options);
+        // Each distinct drawing is charged once per compile, by its nominal cost, so the verdict never depends on caches.
+        rasterWork += raster.work;
+        if (rasterWork > RASTER_BUDGET) fail(where, `drawing bone and mass parts exceeds the 8,388,608-pixel budget; reuse angles and squash values, or use smaller masses`);
         symbols[symbol] = raster.rows;
         shapes.set(key, { symbol, width: raster.width, height: raster.height, fill: raster.fill, outline: raster.outlineMask,
           flipX: false, anchor: raster.pivot, end: raster.end, point: p => p === 'end' ? raster.end : raster.map(p) });
@@ -357,6 +367,7 @@ export function compilePoses(source) {
     // The pose origin becomes the frame anchor; marker positions become named frame points in the atlas.
     return { name: pose.name, ...(duration !== undefined && { duration }), anchor: origin, ...(markers.length && { points: Object.fromEntries(markers.map(m => [m.name, m.at])) }), layers };
   });
+  if (mode === PROBE) return { metadata: { poses: metadata.poses } };
   // When every pose shares one origin, it is declared once as the recipe anchor.
   const shared = frames.every(frame => frame.anchor[0] === frames[0].anchor[0] && frame.anchor[1] === frames[0].anchor[1]);
   if (shared) for (const frame of frames) delete frame.anchor;

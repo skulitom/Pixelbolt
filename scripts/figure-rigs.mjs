@@ -151,3 +151,42 @@ export function bossRig() {
   }
   return source;
 }
+
+// A plain 32×32 side-view humanoid at template defaults: the regression fixture for "templates pass their own
+// motion checks on an ordinary body". Far limbs are a ramp step darker, as side-view sprites usually draw them.
+export function plainRig() {
+  const limb = (length, width, ramp, base, caps = ['socket', 'round']) => ({ bone: { length, width, ramp, base, outline: 'k', caps }, points: { end: 'end' } });
+  const side = (label, far) => [
+    { name: `${label}Thigh`, part: far ? 'farThigh' : 'thigh', attach: { part: 'torso', point: 'hip' }, angle: 90 },
+    { name: `${label}Shin`, part: far ? 'farShin' : 'shin', attach: { part: `${label}Thigh`, point: 'end' }, angle: 0 },
+    { name: `${label}Boot`, part: 'boot', attach: { part: `${label}Shin`, point: 'end' } }
+  ];
+  const arm = (label, far) => [
+    { name: `${label}Upper`, part: far ? 'farUpper' : 'upper', attach: { part: 'torso', point: 'shoulder' }, angle: 95 },
+    { name: `${label}Fore`, part: far ? 'farFore' : 'fore', attach: { part: `${label}Upper`, point: 'end' }, angle: -15 }
+  ];
+  return {
+    format: 'pixelforge-poses', version: 1, name: 'plain-walker', width: 32, height: 32,
+    palette: { k: '#1b1626', x: '#6e3f3a', y: '#c27b5c', z: '#f0b98e', r: '#3f1c2c', s: '#7f2b3d', t: '#b8463f', u: '#e07e52',
+      p: '#222844', q: '#39476b', o: '#5a6f99', b: '#3a2421', c: '#6e4430', h: '#f2c14e', g: '#c08a2a' },
+    ramps: [['x', 'y', 'z'], ['r', 's', 't', 'u'], ['p', 'q', 'o']],
+    light: 225,
+    parts: {
+      torso: { mass: { size: [7, 9], ramp: 1, base: 2, outline: 'k' }, points: { hip: [0, 4], shoulder: [1, -3], neck: [1, -4] } },
+      head: { rows: ['..kkkk..', '.kghhhk.', 'kgghhhhk', 'kghzzkzk', '.kgzzzzk', '.kyzzzyk', '..kyyyk.', '...kkk..'], anchor: [4, 7] },
+      thigh: limb(5, [3, 3], 2, 1, ['round', 'round']), shin: limb(5, [3, 2], 2, 1),
+      farThigh: limb(5, [3, 3], 2, 0, ['round', 'round']), farShin: limb(5, [3, 2], 2, 0),
+      upper: limb(4, [2, 2], 1, 2, ['round', 'round']), fore: limb(4, [2, 2], 0, 1),
+      farUpper: limb(4, [2, 2], 1, 1, ['round', 'round']), farFore: limb(4, [2, 2], 0, 0),
+      boot: { rows: ['kcck.', 'kbcck', 'kkkkk'], anchor: [1, 2] }
+    },
+    rig: { body: 'torso', head: 'head', ground: 30, rest: 'stand',
+      legs: [['nearThigh', 'nearShin'], ['farThigh', 'farShin']], arms: [['nearUpper', 'nearFore'], ['farUpper', 'farFore']] },
+    poses: [{ name: 'stand', duration: 200, origin: [15, 16], parts: [
+      ...arm('far', true), ...side('far', true),
+      { name: 'torso', part: 'torso' }, { name: 'head', part: 'head', attach: { part: 'torso', point: 'neck' } },
+      ...side('near', false), ...arm('near', false)
+    ] }],
+    motions: Object.fromEntries(['idle', 'walk', 'run', 'jump', 'attack', 'hurt'].map(template => [template, { template }]))
+  };
+}

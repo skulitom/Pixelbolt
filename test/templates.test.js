@@ -5,7 +5,7 @@ import { compilePoses, expandPoses } from '../src/authoring.js';
 import { renderProject, parseColor } from '../src/core.js';
 import { inspectMotion } from '../src/motion.js';
 import { cleanupIds, rasterizeBone, rasterizeMass } from '../src/craft.js';
-import { heroRig, bossRig } from '../scripts/figure-rigs.mjs';
+import { heroRig, bossRig, plainRig } from '../scripts/figure-rigs.mjs';
 
 const cached = new Map();
 function fixture(make) {
@@ -114,8 +114,14 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
 test('templates expose authored overrides, depth swaps, strike holds, metadata speed and two-pose breathing', () => {
   const source = heroRig(), expanded = expandPoses(source), a = expanded.poses.find(p => p.name === 'run-contact-a'), b = expanded.poses.find(p => p.name === 'run-contact-b');
   const ahead = (pose, first, second) => pose.parts.findIndex(p => p.name === first) < pose.parts.findIndex(p => p.name === second);
-  assert.ok(ahead(a, 'farThigh', 'body') && ahead(b, 'nearThigh', 'body'));
-  assert.ok(ahead(a, 'body', 'sword') && ahead(b, 'sword', 'body'), 'weapon stays in its arm subtree across unequal-depth swaps');
+  // A side view keeps its near limbs and held weapon in front in both halves of the cycle.
+  for (const pose of [a, b]) assert.ok(ahead(pose, 'farThigh', 'body') && ahead(pose, 'body', 'nearThigh') && ahead(pose, 'body', 'sword'), pose.name);
+  // swapDepth (front or back views) exchanges the paired subtrees in the second half, held items included.
+  const swapped = structuredClone(source); swapped.motions.run.swapDepth = true;
+  const [sa, sb] = ['run-contact-a', 'run-contact-b'].map(name => expandPoses(swapped).poses.find(p => p.name === name));
+  assert.ok(ahead(sa, 'farThigh', 'body') && ahead(sb, 'nearThigh', 'body'));
+  assert.ok(ahead(sa, 'body', 'sword') && ahead(sb, 'sword', 'body'), 'weapon stays in its arm subtree across unequal-depth swaps');
+  swapped.motions.run.swapDepth = 'yes'; assert.throws(() => expandPoses(swapped), /poses\.motions\.run\.swapDepth/);
   const changed = structuredClone(a); changed.duration = 123; source.poses.push(changed);
   assert.equal(expandPoses(source).poses.find(p => p.name === changed.name).duration, 123);
   assert.equal(expanded.animations.attack.frames.filter(name => name === 'attack-strike').length, 2);
@@ -168,4 +174,43 @@ test('malformed pose sources fail with a path, not a TypeError', () => {
   // A null pose beside motions once crashed the rest-pose lookup.
   const source = heroRig(); source.poses.push(null);
   for (const run of [() => expandPoses(source), () => compilePoses(source)]) assert.throws(run, error => error.name === 'PixelError' && /poses\.poses\[1\]/.test(error.message));
+});
+
+test('every template at its defaults passes its own motion checks on a plain side-view humanoid', () => {
+  const source = plainRig(), { recipe, metadata } = compilePoses(source), project = renderProject(recipe);
+  assert.deepEqual(metadata.warnings ?? [], []);
+  for (const animation of Object.keys(source.motions)) {
+    const { motion } = inspectMotion(project, { animation, metadata });
+    for (const [check, pass] of Object.entries(motion.checks)) assert.notEqual(pass, false, `${animation}.${check}`);
+  }
+  for (const animation of ['walk', 'run']) {
+    const { motion } = inspectMotion(project, { animation, metadata });
+    // Measured, not skipped: feet stay planted on the ground, and the contact poses trade legs.
+    assert.deepEqual(motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true }, animation);
+    const pair = motion.poseSpread.find(p => p.from === `${animation}-contact-a` && p.to === `${animation}-contact-b`);
+    assert.ok(pair.jointDegrees >= 20, `${animation} contact poses differ by ${pair.jointDegrees}°`);
+    // Near limbs stay in front of the body in both halves of a side-view cycle.
+    for (const name of [`${animation}-contact-a`, `${animation}-contact-b`]) {
+      const layers = recipe.frames.find(f => f.name === name).layers.map(l => l.name);
+      assert.ok(layers.indexOf('farThigh') < layers.indexOf('torso') && layers.indexOf('torso') < layers.indexOf('nearThigh'), name);
+    }
+  }
+});
+
+test('structural drawing has a deterministic work budget, and cached masses are copies', () => {
+  // Many distinct large masses (each squash and angle is a new drawing) fail fast with a path instead of drawing
+  // for seconds and blocking the MCP server or the studio thread.
+  const poses = Array.from({ length: 4 }, (_, i) => ({ name: `p${i}`, origin: [64, 64], parts: Array.from({ length: 64 }, (_, j) => ({ name: `m${j}`, part: 'blob', rotate: (i * 64 + j) % 360, squash: [.5, .75, 1.25, 1.5, 2][(i + j) % 5], flipX: (i + j) % 2 === 1 })) }));
+  const source = { format: 'pixelforge-poses', version: 1, name: 'heavy', width: 128, height: 128, palette: { k: '#000000', a: '#333333', b: '#666666' }, ramps: [['a', 'b']], parts: { blob: { mass: { size: [64, 64], ramp: 0, base: 1, outline: 'k' } } }, poses };
+  const failure = (() => { try { compilePoses(source); } catch (error) { return error; } })();
+  assert.equal(failure?.name, 'PixelError');
+  assert.match(failure.message, /^poses\.poses\[\d+\]\.parts\[\d+\]: drawing bone and mass parts exceeds the 8,388,608-pixel budget/);
+  // Work is nominal, so a cached drawing charges what drawing it would: the verdict never depends on the caches.
+  const mass = { size: [12, 7], base: 1, outline: 'k' }, options = { angle: 30, squash: 1.2, ramp: ['a', 'b', 'c'] };
+  const first = rasterizeMass(mass, options), second = rasterizeMass(mass, options);
+  assert.ok(first.work > 0 && first.work === second.work);
+  first.fill.fill(9); first.rows[0] = 'changed'; first.pivot[0] = 99;
+  const third = rasterizeMass(mass, options);
+  assert.deepEqual([third.rows, third.fill, third.pivot], [second.rows, second.fill, second.pivot]);
+  assert.deepEqual(third.map([3, -2]), second.map([3, -2]));
 });

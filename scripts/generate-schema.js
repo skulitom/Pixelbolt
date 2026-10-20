@@ -129,7 +129,7 @@ const poses = {
     rig: object({ ground: int(0, 255, 'Canvas pixel row touched by planted markers; must be below height.'), body: id, head: id, rest: id,
       legs: array({ ...array(id, 3), minItems: 2 }, 8), arms: array({ ...array(id, 3), minItems: 2 }, 8), tail: array(id, 16) }, ['ground']),
     motions: { type: 'object', maxProperties: 16, propertyNames: id, additionalProperties: { oneOf: [
-      ...['walk', 'run'].map(template => object({ template: { const: template }, frames: { ...int(template === 'walk' ? 4 : 6, 64), multipleOf: 2 }, duration: int(1, 60000), speed: num(-1024, 1024), stride: num(1, 64), lift: num(0, 32), bob: num(0, 8), lean: int(-45, 45) }, ['template'])),
+      ...['walk', 'run'].map(template => object({ template: { const: template }, frames: { ...int(template === 'walk' ? 4 : 6, 64), multipleOf: 2 }, duration: int(1, 60000), speed: num(-1024, 1024), stride: num(1, 64), lift: num(0, 32), bob: num(0, 8), lean: int(-45, 45), swapDepth: { type: 'boolean', description: 'Exchange the draw order of paired limbs in the second half-cycle, for front or back views where the stepping limb comes nearer the camera. Default false: side views keep near limbs in front.' } }, ['template'])),
       object({ template: { const: 'idle' }, frames: int(2, 4), duration: int(1, 60000), breath: num(0, .5) }, ['template']),
       object({ template: { const: 'jump' }, frames: { const: 7 }, duration: int(1, 60000), crouch: num(.5, 1), stretch: num(1, 2), apex: int(1, 32) }, ['template']),
       object({ template: { const: 'attack' }, frames: { const: 4 }, duration: int(1, 60000), arm: int(0, 7), windup: int(-360, 360), strike: int(-360, 360), hold: int(1, 16) }, ['template']),
