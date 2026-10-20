@@ -337,7 +337,7 @@ try {
     await choose('zoom', '4');
     const gif = await download(() => click('#gif')), bytes = await readFile(gif), expected = await evaluate(`document.getElementById('timeline').children.length`);
     assert.match(path.basename(gif), /^forest-spirit-.+\.gif$/); assert.equal(bytes.toString('latin1', 0, 6), 'GIF89a');
-    const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(bytes.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); await decoder.tracks.ready; await decoder.completed; const { image } = await decoder.decode({ frameIndex: 0 }); return { frames: decoder.tracks.selectedTrack.frameCount, width: image.displayWidth }; })()`);
+    const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(bytes.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); try { await decoder.tracks.ready; await decoder.completed; const { image } = await decoder.decode({ frameIndex: 0 }); try { return { frames: decoder.tracks.selectedTrack.frameCount, width: image.displayWidth }; } finally { image.close(); } } finally { decoder.close(); } })()`);
     assert.deepEqual(decoded, { frames: expected, width: still.width * 4 }); await choose('zoom', '12');
     return `${path.basename(gif)}, ${decoded.frames} frames, ${decoded.width} px wide`;
   });
@@ -488,7 +488,7 @@ try {
     assert.equal(source.effects.torch.buoyancy, 0.9);
     const gif = await readFile(await download(() => click('#gif')));
     assert.equal(gif.toString('latin1', 0, 6), 'GIF89a');
-    const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(gif.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); await decoder.tracks.ready; await decoder.completed; return decoder.tracks.selectedTrack.frameCount; })()`);
+    const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(gif.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); try { await decoder.tracks.ready; await decoder.completed; return decoder.tracks.selectedTrack.frameCount; } finally { decoder.close(); } })()`);
     assert.equal(decoded, 16);
     const sheet = await readFile(await download(() => click('#sheet')));
     assert.equal(sheet.toString('latin1', 1, 4), 'PNG');
