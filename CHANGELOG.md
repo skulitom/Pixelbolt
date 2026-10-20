@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Pose rendering performance
+
+- Named part layers blend and consume the drawing budget only within their drawn bounds. Layers share one cleared scratch buffer per frame, so sparse rigs no longer scan and allocate a canvas for every part.
+- Pose compilation builds timing metadata and validates stamp output without rendering every frame. Existing recipes, marker times, mirrors and trimmed atlas validation retain their behavior.
+- `node scripts/bench-poses.mjs` records repeatable stamp-rig timings; `renderProject(recipe, { stats: true })` includes drawing work counters. The pre-change corpus is pinned by 861 RGBA frame hashes and pose metadata checks.
+
 ### Thick fluids
 
 - **`viscosity`** (gases and liquids, 0–64 square pixels per frame): an implicit viscosity solve in stress form (after Batty and Bridson, 2008), with Jacobi-preconditioned conjugate gradients and a stress-free surface. It slows shearing and stretching, never motion as a whole, so a drop of honey falls exactly as fast as a drop of water, a stream stays one unbroken rope, and a heap spreads slowly instead of splashing. Walls and obstacles hold a viscous fluid; **`slip: true`** lets it slide along them. In a viscous liquid, the pressure solve runs again after the viscosity solve, so a heap does not slump a step at a time, and the particles' own jitter fades with the thickness (the FLIP share falls where the liquid is thick).

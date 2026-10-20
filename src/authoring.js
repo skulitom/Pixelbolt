@@ -1,5 +1,5 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
-import { PixelError, parseColor, renderProject } from './core.js';
+import { PixelError, parseColor, renderProject, describeStampRecipe } from './core.js';
 import { BLOB_MASKS, CARDINAL_MASKS } from './autotile.js';
 import { EASINGS, ease, rotateRows } from './craft.js';
 
@@ -156,7 +156,7 @@ export function compilePoses(source) {
   const shared = frames.every(frame => frame.anchor[0] === frames[0].anchor[0] && frame.anchor[1] === frames[0].anchor[1]);
   if (shared) for (const frame of frames) delete frame.anchor;
   const recipe = { version: 1, name: source.name, width: source.width, height: source.height, palette: source.palette ?? {}, ...(shared && { anchor: compiled[source.poses[0].name].origin }), symbols, frames, ...(source.animations !== undefined && { animations: source.animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
-  const project = renderProject(recipe);
+  const project = describeStampRecipe(recipe);
   for (const [name, animation] of Object.entries(project.animations)) {
     let start = 0;
     metadata.animations[name] = { duration: animation.duration, loop: animation.loop, entries: animation.frames.map((index, position) => {

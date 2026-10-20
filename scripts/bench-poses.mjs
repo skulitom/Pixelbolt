@@ -1,0 +1,54 @@
+// Run separately from the test suite for uncontended reference-machine measurements.
+// Optional --out <new.json> preserves a run; existing evidence is never overwritten.
+import { readFile, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import os from 'node:os';
+import { performance } from 'node:perf_hooks';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { compilePoses } from '../src/authoring.js';
+import { renderProject } from '../src/core.js';
+import { stampRig, mergedStamps } from './pose-fixtures.mjs';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+export function measure(run, count = 15) {
+  for (let i = 0; i < 3; i++) run();
+  const times = [];
+  for (let i = 0; i < count; i++) { const start = performance.now(); run(); times.push(performance.now() - start); }
+  times.sort((a, b) => a - b);
+  const round = n => Math.round(n * 1000) / 1000;
+  return { medianMs: round(times[Math.floor(count / 2)]), p95Ms: round(times[Math.ceil(count * .95) - 1]) };
+}
+
+async function main() {
+  const skink = JSON.parse(await readFile(new URL('../examples/quality/skink.poses.json', import.meta.url), 'utf8'));
+  const cases = [['stamp-skink', skink], ['stamp-64', stampRig(64, 16, 24)],
+    ['stamp-128', stampRig(128, 32, 96)], ['stamp-256', stampRig(256, 64, 32)]];
+  const report = {
+    node: process.version, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
+    cpu: os.cpus()[0].model, memoryGB: Math.round(os.totalmem() / 1024 ** 3),
+    commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
+    dirty: Boolean(execFileSync('git', ['diff', '--name-only'], { cwd: root, encoding: 'utf8' }).trim()),
+    warmups: 3, runs: 15, cases: {}
+  };
+  for (const [name, source] of cases) {
+    try {
+      const { recipe } = compilePoses(source), merged = mergedStamps(recipe);
+      const project = renderProject(recipe, { stats: true });
+      const expected = renderProject(merged);
+      if (project.frames.some((frame, i) => !Buffer.from(frame.data).equals(Buffer.from(expected.frames[i].data)))) throw new Error('merged-op reference pixels differ');
+      report.cases[name] = {
+        canvas: [source.width, source.height], instances: source.poses[0].parts.length, frames: source.poses.length,
+        compile: measure(() => compilePoses(source)), render: measure(() => renderProject(recipe)),
+        merged: measure(() => renderProject(merged)), recipeBytes: Buffer.byteLength(JSON.stringify(recipe)),
+        ...(project.work && { work: project.work }), mergedPixelsIdentical: true
+      };
+    } catch (error) { report.cases[name] = { error: error.message }; }
+  }
+  const text = JSON.stringify(report, null, 2) + '\n', at = process.argv.indexOf('--out');
+  if (at >= 0) {
+    if (!process.argv[at + 1]) throw new Error('--out needs a new JSON path');
+    await writeFile(process.argv[at + 1], text, { flag: 'wx' });
+  }
+  process.stdout.write(text);
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
