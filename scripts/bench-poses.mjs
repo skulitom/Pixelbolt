@@ -11,6 +11,7 @@ import { rasterizeBone, rasterizeMass } from '../src/craft.js';
 import { stampRig, mergedStamps, structuralFixture } from './pose-fixtures.mjs';
 import { skinkRig } from './figure-rigs.mjs';
 import { solveReach } from '../src/pose-geometry.js';
+import { inspectMotion } from '../src/motion.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export function measure(run, count = 15) {
@@ -37,7 +38,7 @@ async function main() {
   };
   for (const [name, source] of cases) {
     try {
-      const { recipe } = compilePoses(source), merged = mergedStamps(recipe);
+      const { recipe, metadata } = compilePoses(source), merged = mergedStamps(recipe);
       const project = renderProject(recipe, { stats: true });
       const expected = renderProject(merged);
       if (project.frames.some((frame, i) => !Buffer.from(frame.data).equals(Buffer.from(expected.frames[i].data)))) throw new Error('merged-op reference pixels differ');
@@ -47,6 +48,7 @@ async function main() {
         merged: measure(() => renderProject(merged)), recipeBytes: Buffer.byteLength(JSON.stringify(recipe)),
         ...(project.work && { work: project.work }), mergedPixelsIdentical: true
       };
+      if (name.startsWith('R')) report.cases[name].motionReview = measure(() => inspectMotion(project, { animation: 'run', metadata, speed: 48 }));
     } catch (error) { report.cases[name] = { error: error.message }; }
   }
   report.primitives = {

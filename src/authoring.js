@@ -49,10 +49,14 @@ function structuralPart(part, source, path) {
 }
 
 export function compilePoses(source) {
-  fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'parts', 'poses', 'animations', 'sheet'], 'poses');
+  fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'rig', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   if (source.light !== undefined && (!Number.isInteger(source.light) || source.light < 0 || source.light > 359)) fail('poses.light', 'expected whole degrees from 0 to 359');
   if (source.ramps !== undefined && (!Array.isArray(source.ramps) || source.ramps.length > 64)) fail('poses.ramps', 'expected at most 64 colour ramps');
+  if (source.rig !== undefined) {
+    fields(source.rig, ['ground'], 'poses.rig');
+    if (!Number.isInteger(source.rig.ground) || source.rig.ground < 0 || source.rig.ground >= source.height) fail('poses.rig.ground', 'expected a ground pixel row inside the canvas');
+  }
   if (!source.parts || Array.isArray(source.parts) || typeof source.parts !== 'object' || Object.keys(source.parts).length > 256) fail('poses.parts', 'expected at most 256 part definitions');
   const symbols = Object.create(null);
   for (const [name, part] of Object.entries(source.parts)) {
@@ -87,6 +91,7 @@ export function compilePoses(source) {
   }
   if (!Array.isArray(source.poses) || !source.poses.length || source.poses.length > 256) fail('poses.poses', 'expected 1–256 authored key poses');
   const metadata = { format: 'pixelforge-pose-metadata', version: 1, coordinates: 'unscaled source pixels; top-left origin; positive y down; marker times are milliseconds before playback-rate adjustment', poses: Object.create(null), animations: Object.create(null) };
+  if (source.rig !== undefined) metadata.rig = { ...source.rig };
   const compiled = Object.create(null), shapes = new Map(), warnings = [];
   // The drawn shape of a part instance. Flips alone stay a stamp flag; a rotation (after any flip) is baked into a new
   // editable symbol named <part>-r<degrees> (-fr when flipped, -raw without cleanup) around the part's anchor pixel.
@@ -145,14 +150,14 @@ export function compilePoses(source) {
   };
   const frames = source.poses.map((pose, index) => {
     const path = `poses.poses[${index}]`;
-    fields(pose, ['name', 'duration', 'origin', 'parts', 'markers', 'mirror', 'relight', 'tween'], path);
+    fields(pose, ['name', 'duration', 'origin', 'parts', 'markers', 'contacts', 'mirror', 'relight', 'tween'], path);
     identifier(pose.name, `${path}.name`);
     if (Object.hasOwn(compiled, pose.name)) fail(`${path}.name`, 'duplicate pose');
     let origin, placed, layers, markers, inputs = null, mirrorInputs = null, tween = null;
     if (pose.relight !== undefined && (typeof pose.relight !== 'boolean' || pose.mirror === undefined)) fail(`${path}.relight`, 'expected a boolean on a mirror pose');
     let mirroredFrom;
     if (pose.mirror !== undefined) {
-      for (const key of ['parts', 'markers', 'origin', 'tween']) if (pose[key] !== undefined) fail(`${path}.${key}`, 'mirrored poses reuse the source pose, its markers and its origin');
+      for (const key of ['parts', 'markers', 'contacts', 'origin', 'tween']) if (pose[key] !== undefined) fail(`${path}.${key}`, 'mirrored poses reuse the source pose, its markers, contacts and its origin');
       identifier(pose.mirror, `${path}.mirror`);
       mirroredFrom = compiled[pose.mirror];
       if (!mirroredFrom) fail(`${path}.mirror`, 'must name an earlier pose');
@@ -343,8 +348,10 @@ export function compilePoses(source) {
       });
     }
     const duration = pose.duration ?? (pose.mirror !== undefined ? compiled[pose.mirror].duration : undefined);
-    compiled[pose.name] = { origin, placed, layers, markers, duration, inputs, mirrorInputs };
-    metadata.poses[pose.name] = { origin, ...(pose.mirror !== undefined && { mirror: pose.mirror }), ...(pose.relight !== undefined && { relight: pose.relight }), ...(tween && { tween }), parts: placed, markers };
+    const contacts = pose.mirror !== undefined ? mirroredFrom.contacts : pose.contacts;
+    if (contacts !== undefined && (!Array.isArray(contacts) || contacts.length > 64 || new Set(contacts).size !== contacts.length || contacts.some(name => !markers.some(marker => marker.name === name)))) fail(`${path}.contacts`, 'expected up to 64 unique marker names from this pose');
+    compiled[pose.name] = { origin, placed, layers, markers, contacts, duration, inputs, mirrorInputs };
+    metadata.poses[pose.name] = { origin, ...(pose.mirror !== undefined && { mirror: pose.mirror }), ...(pose.relight !== undefined && { relight: pose.relight }), ...(tween && { tween }), parts: placed, markers, ...(contacts !== undefined && { contacts }) };
     // The pose origin becomes the frame anchor; marker positions become named frame points in the atlas.
     return { name: pose.name, ...(duration !== undefined && { duration }), anchor: origin, ...(markers.length && { points: Object.fromEntries(markers.map(m => [m.name, m.at])) }), layers };
   });
@@ -356,7 +363,7 @@ export function compilePoses(source) {
   for (const [name, animation] of Object.entries(project.animations)) {
     let start = 0;
     metadata.animations[name] = { duration: animation.duration, loop: animation.loop, entries: animation.frames.map((index, position) => {
-      const frame = project.frames[index], entry = { position, frame: frame.name, start, duration: frame.duration, markers: metadata.poses[frame.name].markers };
+      const frame = project.frames[index], pose = metadata.poses[frame.name], entry = { position, frame: frame.name, start, duration: frame.duration, markers: pose.markers, ...(pose.contacts !== undefined && { contacts: pose.contacts }) };
       start += frame.duration; return entry;
     }) };
   }

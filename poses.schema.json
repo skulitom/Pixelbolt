@@ -59,6 +59,21 @@
       "maximum": 359,
       "description": "Clockwise light direction: 0 right, 225 top left (default)."
     },
+    "rig": {
+      "type": "object",
+      "properties": {
+        "ground": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "description": "Canvas pixel row touched by planted markers; must be below height."
+        }
+      },
+      "required": [
+        "ground"
+      ],
+      "additionalProperties": false
+    },
     "parts": {
       "type": "object",
       "maxProperties": 256,
@@ -557,6 +572,17 @@
               "additionalProperties": false
             },
             "maxItems": 64
+          },
+          "contacts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+              "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+            },
+            "maxItems": 64,
+            "uniqueItems": true,
+            "description": "Markers planted on the ground in this pose. Mirrors inherit contacts; tweens must declare their own."
           }
         },
         "required": [

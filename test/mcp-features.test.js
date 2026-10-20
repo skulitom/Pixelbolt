@@ -10,6 +10,7 @@ import { startMCP } from '../src/mcp.js';
 import { MAX_REQUEST_BYTES } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { createOverlay } from '../src/overlays.js';
+import { skinkRig } from '../scripts/figure-rigs.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temp = async (t, label) => {
@@ -26,6 +27,26 @@ function session(options) {
   return { input, running, request, call, waiting, init: () => request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } }) };
 }
 const strip = { version: 1, name: 'strip', width: 4, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 3, y: 1, color: 'k' }] }, { name: 'b', duration: 90 }] };
+
+test('MCP motion review accepts a pose source or a revision with explicit compile metadata', async t => {
+  const dir = await temp(t, 'motion'), mcp = session({ directory: dir, root: dir }); await mcp.init();
+  try {
+    const source = skinkRig(), compiled = await mcp.call('pixel_compile', { source, metadata: true });
+    const options = { view: 'motion', animation: 'run', speed: 48, scale: 1 };
+    const direct = await mcp.call('pixel_inspect', { source, ...options });
+    const saved = await mcp.call('pixel_inspect', { revision: compiled.info.revision, metadata: compiled.info.metadata, ...options });
+    assert.ok(!direct.result.isError, JSON.stringify(direct.info));
+    assert.deepEqual(direct.result, saved.result);
+    assert.deepEqual(direct.info.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true });
+    assert.equal(direct.result.content.filter(c => c.type === 'image').length, 2);
+    const unknown = await mcp.call('pixel_inspect', { revision: compiled.info.revision, ...options });
+    assert.equal(unknown.info.motion.checks.slide, null);
+    const conflicting = await mcp.call('pixel_inspect', { source, revision: compiled.info.revision, ...options });
+    assert.equal(conflicting.result.isError, true);
+    const invalid = await mcp.call('pixel_inspect', { source, frames: ['idle'], ...options });
+    assert.equal(invalid.result.isError, true);
+  } finally { mcp.input.end(); await mcp.running; }
+});
 
 test('MCP answers an oversized request with an error, recovers its id and keeps serving', async t => {
   const dir = await temp(t, 'oversize'), { input, running, request, init, waiting } = session({ directory: dir });

@@ -44,7 +44,9 @@ export function skinkRig() {
   return {
     format: 'pixelforge-poses', version: 1, name: 'lantern-skink-bones', width: 32, height: 26,
     palette: { k: '#0b1020', p: '#573b57', r: '#8d5260', a: '#cc8762', y: '#e7ce89', w: '#f7edc4' },
-    ramps: [['p', 'r', 'a', 'y']], light: 225, parts, poses,
+    ramps: [['p', 'r', 'a', 'y']], light: 225, rig: { ground: 23 }, parts,
+    poses: poses.map(pose => ({ ...pose, contacts: ['contact-a', 'down-a'].includes(pose.name) ? ['nearHindFoot', 'farForeFoot']
+      : ['contact-b', 'down-b'].includes(pose.name) ? ['nearForeFoot', 'farHindFoot'] : [] })),
     animations: { idle: { frames: ['idle', 'blink', 'idle'] }, run: { frames: ['contact-a', 'down-a', 'passing-a', 'contact-b', 'down-b', 'passing-b'] },
       cast: { frames: ['gather', 'release', 'recoil', 'recover'], loop: false } }, sheet: { columns: 6 }
   };

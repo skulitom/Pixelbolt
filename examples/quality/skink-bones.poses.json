@@ -21,6 +21,9 @@
     ]
   ],
   "light": 225,
+  "rig": {
+    "ground": 23
+  },
   "parts": {
     "body": {
       "mass": {
@@ -443,7 +446,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "blink",
@@ -621,7 +625,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "contact-a",
@@ -799,6 +804,10 @@
           "part": "farForeShin",
           "point": "end"
         }
+      ],
+      "contacts": [
+        "nearHindFoot",
+        "farForeFoot"
       ]
     },
     {
@@ -977,6 +986,10 @@
           "part": "farForeShin",
           "point": "end"
         }
+      ],
+      "contacts": [
+        "nearHindFoot",
+        "farForeFoot"
       ]
     },
     {
@@ -1155,7 +1168,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "contact-b",
@@ -1333,6 +1347,10 @@
           "part": "farForeShin",
           "point": "end"
         }
+      ],
+      "contacts": [
+        "nearForeFoot",
+        "farHindFoot"
       ]
     },
     {
@@ -1511,6 +1529,10 @@
           "part": "farForeShin",
           "point": "end"
         }
+      ],
+      "contacts": [
+        "nearForeFoot",
+        "farHindFoot"
       ]
     },
     {
@@ -1689,7 +1711,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "gather",
@@ -1867,7 +1890,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "release",
@@ -2045,7 +2069,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "recoil",
@@ -2223,7 +2248,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     },
     {
       "name": "recover",
@@ -2401,7 +2427,8 @@
           "part": "farForeShin",
           "point": "end"
         }
-      ]
+      ],
+      "contacts": []
     }
   ],
   "animations": {

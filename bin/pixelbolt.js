@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { inspectMotion } from '../src/motion.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference } from '../src/index.js';
 
 const HELP = `Pixelbolt — text to pixels, without dependencies
@@ -43,6 +44,8 @@ Inspect: --frames a,b or --animation name picks cells (* and ? in a name match f
 --step n [--offset k] keeps every nth cell from position k (0 is the first); --region x,y,w,h crops;
 --grid adds palette-key rows; --scale 1-16 and --background color style the sheet.
 --view color|silhouette|grayscale|onion|tile; --native adds a 1x PNG; --diagnostics adds advisory evidence.
+--motion name --speed px/s reviews contacts, ground, pose spread and loop seam. Input may be a pose source,
+or a compiled recipe with --metadata meta.json. --ground row overrides the metadata's ground.
 --max-cells 1-256 samples long sequences with explicit omission metadata; evenly spaced samples can alias with a
 repeating pattern (a strobe alternating A and B), so pick positions with --step and --offset.
 Patch accepts correction overlays as --changes; a changed base fails with a fingerprint conflict.
@@ -65,7 +68,7 @@ function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
     if (['--force', '--grid', '--native', '--diagnostics', '--open'].includes(args[i])) options[args[i].slice(2)] = true;
-    else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix'].includes(args[i])) {
+    else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
       options[key] = args[++i];
@@ -127,6 +130,7 @@ try {
     if (positional.length > 1) throw new Error('Too many positional arguments');
     const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
+    allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     if (command === 'init') {
@@ -179,11 +183,17 @@ try {
       console.log(JSON.stringify({ ok: true, files: await writeBundle(bundle, options.out, options), warnings: bundle.warnings, ...referenced(input) }));
     } else if (command === 'inspect') {
       const layerOptions = options.layers === undefined ? {} : { layers: options.layers.split(',') };
-      if (positional[0] === '-' && options.reference === '-') throw new Error('Only one inspection input can use stdin');
-      const input = await readResolved(positional[0]), project = renderProject(input.document, layerOptions);
+      if ([positional[0], options.reference, options.metadata].filter(file => file === '-').length > 1) throw new Error('Only one inspection input can use stdin');
+      if (!options.motion && ['speed', 'ground', 'metadata'].some(key => options[key] !== undefined)) throw new Error('--speed, --ground and --metadata require --motion');
+      if (options.motion) for (const key of ['frames', 'animation', 'region', 'grid', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --motion`);
+      const input = await readResolved(positional[0]), compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : null;
+      if (compiled && options.metadata) throw new Error('A pose source supplies its own metadata; omit --metadata');
+      const project = renderProject(compiled?.recipe ?? input.document, layerOptions);
       const comparison = options.reference ? compareProjects(renderProject((await readResolved(options.reference)).document, layerOptions), project) : undefined;
       const { image: referenceImage, ...comparisonReport } = comparison ?? {};
-      const view = inspectProject(project, inspectOptions(options)), { data, ...sheet } = view.sheet;
+      const view = options.motion ? inspectMotion(project, { animation: options.motion, metadata: compiled?.metadata ?? (options.metadata ? await readProject(options.metadata) : undefined),
+        ...Object.fromEntries(['speed', 'ground', 'scale'].filter(key => options[key] !== undefined).map(key => [key, Number(options[key])])),
+        ...(options.background !== undefined && { background: options.background }) }) : inspectProject(project, inspectOptions(options)), { data, ...sheet } = view.sheet;
       if (options.out && !/\.png$/i.test(options.out)) throw new Error('inspect --out must name a .png file');
       const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height)], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height)] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height)] }) } : {}, options.force);
       // Pretty-printed so grid rows line up for reading.

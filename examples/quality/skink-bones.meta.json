@@ -512,7 +512,8 @@
             23
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "blink": {
       "origin": [
@@ -1023,7 +1024,8 @@
             23
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "contact-a": {
       "origin": [
@@ -1535,6 +1537,10 @@
             23
           ]
         }
+      ],
+      "contacts": [
+        "nearHindFoot",
+        "farForeFoot"
       ]
     },
     "down-a": {
@@ -2047,6 +2053,10 @@
             23
           ]
         }
+      ],
+      "contacts": [
+        "nearHindFoot",
+        "farForeFoot"
       ]
     },
     "passing-a": {
@@ -2558,7 +2568,8 @@
             19
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "contact-b": {
       "origin": [
@@ -3070,6 +3081,10 @@
             20
           ]
         }
+      ],
+      "contacts": [
+        "nearForeFoot",
+        "farHindFoot"
       ]
     },
     "down-b": {
@@ -3582,6 +3597,10 @@
             21
           ]
         }
+      ],
+      "contacts": [
+        "nearForeFoot",
+        "farHindFoot"
       ]
     },
     "passing-b": {
@@ -4094,7 +4113,8 @@
             20
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "gather": {
       "origin": [
@@ -4606,7 +4626,8 @@
             23
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "release": {
       "origin": [
@@ -5118,7 +5139,8 @@
             21
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "recoil": {
       "origin": [
@@ -5630,7 +5652,8 @@
             23
           ]
         }
-      ]
+      ],
+      "contacts": []
     },
     "recover": {
       "origin": [
@@ -6141,7 +6164,8 @@
             23
           ]
         }
-      ]
+      ],
+      "contacts": []
     }
   },
   "animations": {
@@ -6191,7 +6215,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 1,
@@ -6235,7 +6260,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 2,
@@ -6279,7 +6305,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         }
       ]
     },
@@ -6329,6 +6356,10 @@
                 23
               ]
             }
+          ],
+          "contacts": [
+            "nearHindFoot",
+            "farForeFoot"
           ]
         },
         {
@@ -6373,6 +6404,10 @@
                 23
               ]
             }
+          ],
+          "contacts": [
+            "nearHindFoot",
+            "farForeFoot"
           ]
         },
         {
@@ -6417,7 +6452,8 @@
                 19
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 3,
@@ -6461,6 +6497,10 @@
                 20
               ]
             }
+          ],
+          "contacts": [
+            "nearForeFoot",
+            "farHindFoot"
           ]
         },
         {
@@ -6505,6 +6545,10 @@
                 21
               ]
             }
+          ],
+          "contacts": [
+            "nearForeFoot",
+            "farHindFoot"
           ]
         },
         {
@@ -6549,7 +6593,8 @@
                 20
               ]
             }
-          ]
+          ],
+          "contacts": []
         }
       ]
     },
@@ -6599,7 +6644,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 1,
@@ -6643,7 +6689,8 @@
                 21
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 2,
@@ -6687,7 +6734,8 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         },
         {
           "position": 3,
@@ -6731,9 +6779,13 @@
                 23
               ]
             }
-          ]
+          ],
+          "contacts": []
         }
       ]
     }
+  },
+  "rig": {
+    "ground": 23
   }
 }

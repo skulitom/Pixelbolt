@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { compilePoses } from '../src/authoring.js';
 import { renderProject, inspectProject } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
+import { inspectMotion } from '../src/motion.js';
 import { skinkRig } from './figure-rigs.mjs';
 import { saveEvidence, movingGroundPreview } from './figure-preview.mjs';
 
@@ -15,3 +16,6 @@ for (const [suffix, scale, view] of [['native', 1, 'color'], ['4x', 4, 'color'],
   await saveEvidence(new URL(`${prefix}-${suffix}.png`, directory), encodePNG(sheet.data, sheet.width, sheet.height));
 }
 console.log(JSON.stringify({ warnings: compiled.metadata.warnings ?? [], ...await movingGroundPreview(project, directory, prefix, source.animations.run.frames, { ground: 24, speed: 48 }) }));
+const review = inspectMotion(project, { animation: 'run', metadata: compiled.metadata, speed: 48 });
+for (const [suffix, sheet] of [['motion-native', review.nativeSheet], ['motion-4x', review.sheet]]) await saveEvidence(new URL(`${prefix}-${suffix}.png`, directory), encodePNG(sheet.data, sheet.width, sheet.height));
+await saveEvidence(new URL(`${prefix}-motion.json`, directory), Buffer.from(JSON.stringify(review.motion, null, 2) + '\n'));

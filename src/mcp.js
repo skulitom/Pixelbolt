@@ -3,6 +3,7 @@ import path from 'node:path';
 import { PixelError, MAX_REQUEST_BYTES, renderProject, inspectProject, compareProjects, scalePixels, reviewPixels } from './core.js';
 import { patchRecipe } from './patch.js';
 import { createRevisionStore } from './revisions.js';
+import { inspectMotion } from './motion.js';
 import { encodePNG } from './png.js';
 import { createBundle, writeBundle } from './export.js';
 import { animationGIF } from './gif.js';
@@ -72,6 +73,10 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const inspectInput = { ...projectInput, properties: {
     ...source,
+    source: { type: 'object', description: 'A pixelforge-poses source, instead of project/revision; compiles it with contact and joint metadata for motion review.' },
+    metadata: { type: 'object', description: 'Pose metadata returned by pixel_compile with metadata:true. Needed with a compiled project/revision for contacts and joint angles; a source supplies its own.' },
+    speed: { type: 'number', minimum: -4096, maximum: 4096, description: 'Motion view: horizontal speed in pixels per second.' },
+    ground: { type: 'integer', minimum: 0, maximum: 255, description: 'Motion view: ground pixel row; overrides metadata.rig.ground.' },
     layers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 64, description: 'Isolate named layers, preserving inheritance/transforms/visibility. Omits frame ops, background and final canvas corrections, which do not belong to a named layer.' },
     reference: { type: 'string', description: 'Saved revision to compare against at the same origin. Adds a before/after image and changed-pixel report.' },
     frames: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1024, description: 'Frame names to show, in this order. * (any characters) and ? (one character) in a name select every matching frame in project order, such as "flash-*". Default: every frame.' },
@@ -80,7 +85,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     grid: { type: 'boolean', description: 'Also return each frame as palette-key text rows with x/y rulers. At most 16,384 pixels in total.' },
     scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024px.' },
     background: { type: 'string', description: 'Cell background: checker (default), transparent, a palette name or a hex color.' },
-    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile'], description: 'Onion uses pink previous/cyan next poses in animation playback order (requires animation). Tile repeats each frame 3x3 and reports doubled edges and wrap steps.' },
+    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'motion'], description: 'Onion uses pink previous/cyan next poses in playback order. Motion requires animation and reports slide, signed ground error, joint seam and pose spread, with native and enlarged trajectory/timing strips. Pass source or compile metadata to measure contacts. Tile repeats each frame 3x3.' },
     native: { type: 'boolean', description: 'Also return a native-size contact sheet beside the enlarged view.' },
     diagnostics: { type: 'boolean', description: 'Advisory duplicate, empty, isolated-pixel, palette and loop-boundary evidence, original animation timing, and per-frame counts of pixels a cleanup change would alter (corners, strays).' },
     maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Bound the preview with evenly spaced samples; returns omitted count and original positions. Does not alter exported animation. Evenly spaced samples can alias with a repeating pattern; use step and offset to choose positions.' },
@@ -160,8 +165,23 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
         const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe);
         result({ content: [textContent(withResolved({ ok: true, revision: await remember(recipe), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] });
       } else if (params.name === 'pixel_inspect') {
-        const { layers, reference, ...inspection } = options;
-        const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe, layers === undefined ? {} : { layers }), view = inspectProject(project, inspection);
+        const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
+        let recipe, resolved, metadata = suppliedMetadata;
+        if (poseSource !== undefined) {
+          if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
+          const input = await resolveReferences(poseSource, { baseDir: root, root });
+          ({ recipe, metadata } = compilePoses(input.document)); resolved = input.files.map(file => path.relative(root, file).split(path.sep).join('/'));
+        } else ({ recipe, resolved } = await recipeFrom(spec, revision));
+        const project = renderProject(recipe, layers === undefined ? {} : { layers });
+        let view;
+        if (inspection.view === 'motion') {
+          if (layers !== undefined || reference !== undefined) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers and reference');
+          const { view: mode, ...motionOptions } = inspection;
+          view = inspectMotion(project, { ...motionOptions, metadata, ...(speed !== undefined && { speed }), ...(ground !== undefined && { ground }) });
+        } else {
+          if (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'speed, ground and metadata require view: motion');
+          view = inspectProject(project, inspection);
+        }
         const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
         const content = [textContent(withResolved({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
         if (view.nativeSheet) content.push(imageContent(view.nativeSheet));

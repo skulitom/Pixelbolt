@@ -126,6 +126,7 @@ const poses = {
   $schema: schema.$schema, title: 'Pixelbolt authored poses',
   ...object({ format: { const: 'pixelforge-poses' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
     ramps: schema.properties.ramps, light: int(0, 359, 'Clockwise light direction: 0 right, 225 top left (default).'),
+    rig: object({ ground: int(0, 255, 'Canvas pixel row touched by planted markers; must be below height.') }, ['ground']),
     parts: { type: 'object', maxProperties: 256, propertyNames: id, additionalProperties: { oneOf: [
       object({ rows: ref('rows'), anchor: point, points: { type: 'object', propertyNames: id, additionalProperties: point },
         views: { type: 'object', minProperties: 1, maxProperties: 16, propertyNames: { pattern: '^(0|[1-9][0-9]?|[12][0-9]{2}|3[0-5][0-9])$' },
@@ -146,7 +147,8 @@ const poses = {
         bend: { enum: ['forward', 'back'], description: 'Reach only: preferred clockwise (forward, default) or anticlockwise bend. Equal-error solutions prefer this bend, then rest-angle proximity and lower angles.' },
         squash: { ...num(.5, 2, 'Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.'), multipleOf: .05 },
         cleanup: { type: 'boolean', description: 'Remove doubled corners the rotation leaves (default true; false names the symbol with -raw).' } }, ['name', 'part']), 64),
-      markers: array(object({ name: id, part: id, point: id }, ['name', 'part', 'point']), 64)
+      markers: array(object({ name: id, part: id, point: id }, ['name', 'part', 'point']), 64),
+      contacts: { ...array(id, 64), uniqueItems: true, description: 'Markers planted on the ground in this pose. Mirrors inherit contacts; tweens must declare their own.' }
     }, ['name']), anyOf: [{ required: ['parts'] }, { required: ['mirror'] }, { required: ['tween'] }] }, 256), minItems: 1 }, animations: schema.properties.animations, sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'width', 'height', 'parts', 'poses']), $defs: { rows: schema.$defs.rows }
 };
