@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { heroRig } from '../scripts/figure-rigs.mjs';
+import { heroRig, skinkRig } from '../scripts/figure-rigs.mjs';
 import { compilePoses } from '../src/authoring.js';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -72,12 +72,15 @@ test('CLI motion inspection reads sources and explicit metadata without overwrit
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-motion-'));
   t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
   const run = args => spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'inspect', ...args], { cwd: root, encoding: 'utf8' });
-  const out = path.join(dir, 'motion.png'), args = ['examples/quality/skink-bones.poses.json', '--motion', 'run', '--speed', '48', '--scale', '1'];
+  // The bone skink is a test fixture, written here rather than shipped as an example.
+  const source = skinkRig(), compiled = compilePoses(source), file = name => path.join(dir, `skink-bones${name}.json`);
+  await writeFile(file('.poses'), JSON.stringify(source)); await writeFile(file(''), JSON.stringify(compiled.recipe)); await writeFile(file('.meta'), JSON.stringify(compiled.metadata));
+  const out = path.join(dir, 'motion.png'), args = [file('.poses'), '--motion', 'run', '--speed', '48', '--scale', '1'];
   const direct = run([...args, '--out', out]); assert.equal(direct.status, 0, direct.stderr);
   const view = JSON.parse(direct.stdout);
   assert.deepEqual(view.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true });
   assert.ok((await readFile(out)).length > 100); assert.ok((await readFile(out.replace('.png', '.native.png'))).length > 100);
-  const saved = run(['examples/quality/skink-bones.json', '--metadata', 'examples/quality/skink-bones.meta.json', '--motion', 'run', '--speed', '48', '--scale', '1']);
+  const saved = run([file(''), '--metadata', file('.meta'), '--motion', 'run', '--speed', '48', '--scale', '1']);
   assert.equal(saved.status, 0, saved.stderr); assert.deepEqual(JSON.parse(saved.stdout).motion, view.motion);
   const refused = run([...args, '--out', out]); assert.equal(refused.status, 1); assert.match(refused.stderr, /already exists/);
   const bad = run([...args, '--frames', 'idle']); assert.equal(bad.status, 1); assert.match(bad.stderr, /cannot be combined/);

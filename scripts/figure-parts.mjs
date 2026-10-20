@@ -6,7 +6,7 @@ import { encodePNG } from '../src/png.js';
 import { structuralFixture } from './pose-fixtures.mjs';
 import { saveEvidence, movingGroundPreview } from './figure-preview.mjs';
 
-const directory = new URL('../docs/images/figures/', import.meta.url);
+const directory = new URL('../output/figures/', import.meta.url);
 await mkdir(directory, { recursive: true });
 const source = structuralFixture(), { recipe } = compilePoses(source), project = renderProject(recipe);
 const at = process.argv.indexOf('--prefix'), prefix = at < 0 ? 'm1' : process.argv[at + 1];

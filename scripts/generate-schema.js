@@ -155,7 +155,8 @@ const poses = {
         angle: int(-360, 360, 'Clockwise degrees relative to the parent world angle, or world degrees at a root. Mutually exclusive with rotate. Relative-angle tweens take the shorter arc.'),
         reach: { ...point, description: 'Canvas target [x, y] for the last bone of a two-bone chain. Replaces angle/rotate; attach to a named end point with zero at offset. Both bones are solved at whole degrees.' },
         bend: { enum: ['forward', 'back'], description: 'Reach only: preferred clockwise (forward, default) or anticlockwise bend. Equal-error solutions prefer this bend, then rest-angle proximity and lower angles.' },
-        squash: { ...num(.5, 2, 'Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.'), multipleOf: .05 },
+        // No multipleOf: 0.05 has no exact binary form, so validators would reject 0.95 or 1.15 that the compiler accepts.
+        squash: num(.5, 2, 'Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.'),
         cleanup: { type: 'boolean', description: 'Remove doubled corners the rotation leaves (default true; false names the symbol with -raw).' } }, ['name', 'part']), 64),
       markers: array(object({ name: id, part: id, point: id }, ['name', 'part', 'point']), 64),
       contacts: { ...array(id, 64), uniqueItems: true, description: 'Markers planted on the ground in this pose. Mirrors inherit contacts; tweens must declare their own.' }

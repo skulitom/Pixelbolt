@@ -2,6 +2,8 @@
 
 Implementation of the 20 October 2026 plan, completed through M5 with the owner's recorded review waiver. All engineering gates pass; the final release verification is recorded below.
 
+**Art removed, 20 October 2026.** The owner judged the figures drawn for this work (the bone skink, the brass courier and the guardian) not good enough to show, so the courier and bone-skink examples, the studio's courier sample and every image under `docs/images/figures/` were removed. The engine features, tests and pinned fixtures remain; R1–R3 live only as test fixtures in `scripts/figure-rigs.mjs`. The links below open the removed evidence at commit `8b94859`. The evidence scripts now write to the ignored `output/figures/`.
+
 ## Accepted scope and decisions — 2026-10-20
 
 - The owner requested implementation, a persistent goal, and commit/push to `main` when ready.
@@ -46,11 +48,11 @@ The 128 px fixture charges 184,320 drawing pixels (0.275% of 67,108,864); the 25
 
 Inspected the native and enlarged sheets, silhouettes and every frame of the moving-ground strip. The old skink retains its pointed ears, long tail, bright charm and small leg shapes. The two contact poses have very similar silhouettes; M0 does not improve that motion.
 
-- [Native run sheet](../images/figures/m0-skink-native.png)
-- [4× run sheet](../images/figures/m0-skink-4x.png)
-- [Silhouette sheet](../images/figures/m0-skink-silhouette.png)
-- [Moving-ground GIF](../images/figures/m0-skink-ground.gif)
-- [Every GIF frame in a strip](../images/figures/m0-skink-ground-strip.png)
+- [Native run sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m0-skink-native.png)
+- [4× run sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m0-skink-4x.png)
+- [Silhouette sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m0-skink-silhouette.png)
+- [Moving-ground GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m0-skink-ground.gif)
+- [Every GIF frame in a strip](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m0-skink-ground-strip.png)
 
 The GIF uses a camera-relative ground reference moving at 48 px/s and y=26. The old source declares no foot contacts or ground height, so this is a playback reference, not a measured ground-contact verdict. All six GIF delays match the original 90/80/80/90/80/80 ms and no partial alpha is lost. `scripts/figure-evidence.mjs` creates these new evidence files and refuses to overwrite them.
 
@@ -91,11 +93,11 @@ Inspected every native sheet, enlarged sheet, silhouette and frame of the ground
 
 | Primitive | Native | 4× | Silhouette |
 | --- | --- | --- | --- |
-| Bones | [Sheet](../images/figures/m1-bones-native.png) | [Sheet](../images/figures/m1-bones-4x.png) | [Sheet](../images/figures/m1-bones-silhouette.png) |
-| Masses | [Sheet](../images/figures/m1-masses-native.png) | [Sheet](../images/figures/m1-masses-4x.png) | [Sheet](../images/figures/m1-masses-silhouette.png) |
-| Caps | [Sheet](../images/figures/m1-caps-native.png) | [Sheet](../images/figures/m1-caps-4x.png) | [Sheet](../images/figures/m1-caps-silhouette.png) |
+| Bones | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-bones-native.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-bones-4x.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-bones-silhouette.png) |
+| Masses | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-masses-native.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-masses-4x.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-masses-silhouette.png) |
+| Caps | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-caps-native.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-caps-4x.png) | [Sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-caps-silhouette.png) |
 
-[Primitive GIF](../images/figures/m1-ground.gif) and [all 20 frames](../images/figures/m1-ground-strip.png). The moving ground is a visual reference at 48 px/s, y=47, with 100 ms frames. These isolated rotating/squashing parts do not claim locomotion or foot contact. Character readability and joint seams remain M2/M3 work.
+[Primitive GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-ground.gif) and [all 20 frames](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m1-ground-strip.png). The moving ground is a visual reference at 48 px/s, y=47, with 100 ms frames. These isolated rotating/squashing parts do not claim locomotion or foot contact. Character readability and joint seams remain M2/M3 work.
 
 ## M2 — 2026-10-20 — joint gate passed
 
@@ -109,7 +111,7 @@ Socket outlines that would lie inside the parent's fill are omitted in a separat
 
 ### R1 and verification
 
-The new [source](../../examples/quality/skink-bones.poses.json), [recipe](../../examples/quality/skink-bones.json) and [metadata](../../examples/quality/skink-bones.meta.json) rebuild the skink as 15 instances over 12 frames: four two-bone legs, three tail sections, mass torso, neck, grid head and charm. All 48 leg targets resolve with zero error. Every bone-to-bone socket has a shared filled joint, a local four-neighbour connection into both parts, continuous rendered masks and no internal outline seam. The original skink and all other baseline art remain unchanged.
+The new [source](https://github.com/skulitom/Pixelbolt/blob/8b94859/examples/quality/skink-bones.poses.json), [recipe](https://github.com/skulitom/Pixelbolt/blob/8b94859/examples/quality/skink-bones.json) and [metadata](https://github.com/skulitom/Pixelbolt/blob/8b94859/examples/quality/skink-bones.meta.json) rebuild the skink as 15 instances over 12 frames: four two-bone legs, three tail sections, mass torso, neck, grid head and charm. All 48 leg targets resolve with zero error. Every bone-to-bone socket has a shared filled joint, a local four-neighbour connection into both parts, continuous rendered masks and no internal outline seam. The original skink and all other baseline art remain unchanged.
 
 Reach tests compare a grid of targets to an independent exhaustive 360×360 angle oracle, including repeatability, bends, rounded endpoints, unreachable targets and warnings. Additional tests cover dependency order, cycles, angle/rotate errors, views, relative and reach tweens, plain/relit mirrors, exact marker positions and invalid fields. R1's complete compiled JSON and every RGBA frame are now pinned in `test/fixtures/figure-goldens.json`; the immutable M0 baseline remains separate.
 
@@ -121,7 +123,7 @@ The final full run passed **332 tests in 11.272 s**, within the suite-growth bud
 
 [M2 measurement](figures/m2-first-bench.json): R1 compile **3.687 ms median / 4.720 ms p95**, passing the 5 ms target; render **1.231 ms median**; reach solve **0.080 ms median**, passing 0.5 ms. The compiled recipe is 24,005 bytes and charges 12,177 drawing pixels. Named-layer and merged renders are pixel-identical.
 
-Inspected the [native sheet](../images/figures/m2-joints-native.png), [4× sheet](../images/figures/m2-joints-4x.png), [silhouettes](../images/figures/m2-joints-silhouette.png) and every [ground-strip frame](../images/figures/m2-joints-ground-strip.png). The limbs separate across the run and the ears, tail and charm remain visible. The [GIF](../images/figures/m2-joints-ground.gif) uses 80 ms frames and a 48 px/s ground reference. Before/after sheets and this GIF were shown to the owner. No reviewer preference or "better art" score is claimed.
+Inspected the [native sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m2-joints-native.png), [4× sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m2-joints-4x.png), [silhouettes](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m2-joints-silhouette.png) and every [ground-strip frame](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m2-joints-ground-strip.png). The limbs separate across the run and the ears, tail and charm remain visible. The [GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m2-joints-ground.gif) uses 80 ms frames and a 48 px/s ground reference. Before/after sheets and this GIF were shown to the owner. No reviewer preference or "better art" score is claimed.
 
 The earlier `m2-first-*` sheets remain as evidence of the first attempt: it had one target missed by 1 px. Lowering that contact pose and opening socket overlaps corrected it. Quantitative contact slide, ground error, pose spread and loop-seam acceptance remain M3 work.
 
@@ -143,7 +145,7 @@ Known-value tests cover positive/negative speed, exact 3–4–5 drift, floating
 
 The R1 compiled golden changed deliberately **only for new metadata** (`rig.ground`, pose and playback contacts); every R1 RGBA hash and its compiled recipe stayed unchanged. All 87 legacy recipes / 861 frame hashes and old pose metadata remain unchanged, and all 31 quality-lab outputs reproduce.
 
-Inspected the [native sheet](../images/figures/m3-reviewed-native.png), [4× sheet](../images/figures/m3-reviewed-4x.png), [silhouettes](../images/figures/m3-reviewed-silhouette.png), [moving-ground frames](../images/figures/m3-reviewed-ground-strip.png), and [motion strip](../images/figures/m3-reviewed-motion-4x.png). [GIF](../images/figures/m3-reviewed-ground.gif), [native motion strip](../images/figures/m3-reviewed-motion-native.png) and [numeric report](../images/figures/m3-reviewed-motion.json) are saved alongside them. The `m3-motion-*` draft is retained: visual inspection led to moving the trajectory beside the timing panel and giving the six run samples separate lanes.
+Inspected the [native sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-native.png), [4× sheet](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-4x.png), [silhouettes](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-silhouette.png), [moving-ground frames](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-ground-strip.png), and [motion strip](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-motion-4x.png). [GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-ground.gif), [native motion strip](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-motion-native.png) and [numeric report](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m3-reviewed-motion.json) are saved alongside them. The `m3-motion-*` draft is retained: visual inspection led to moving the trajectory beside the timing panel and giving the six run samples separate lanes.
 
 ## M4 — 2026-10-20 — template gate passed
 
@@ -179,8 +181,8 @@ Full verification passed **365 tests in 12.786 s**, within the 13.5 s suite targ
 
 Inspected both complete native sheets, every animation's enlarged and silhouette sheet, both moving-ground strips and native/enlarged motion strips. The final `m4-craft-*` revision separates the limb shadow from its outline colour, improving the visible bands. Jump height and attack anticipation are legible; the guardian's extra limbs overlap densely in some poses. These are inspection observations, not reviewer preference scores.
 
-- Courier: [native](../images/figures/m4-craft-hero-native.png), [run](../images/figures/m4-craft-hero-run-4x.png), [silhouette](../images/figures/m4-craft-hero-run-silhouette.png), [ground GIF](../images/figures/m4-craft-hero-ground.gif), [motion](../images/figures/m4-craft-hero-motion-4x.png), [all motion results](../images/figures/m4-craft-hero-motion.json).
-- Guardian: [native](../images/figures/m4-craft-boss-native.png), [run](../images/figures/m4-craft-boss-run-4x.png), [silhouette](../images/figures/m4-craft-boss-run-silhouette.png), [ground GIF](../images/figures/m4-craft-boss-ground.gif), [motion](../images/figures/m4-craft-boss-motion-4x.png), [all motion results](../images/figures/m4-craft-boss-motion.json).
+- Courier: [native](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-native.png), [run](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-run-4x.png), [silhouette](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-run-silhouette.png), [ground GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-ground.gif), [motion](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-motion-4x.png), [all motion results](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-motion.json).
+- Guardian: [native](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-native.png), [run](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-run-4x.png), [silhouette](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-run-silhouette.png), [ground GIF](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-ground.gif), [motion](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-motion-4x.png), [all motion results](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-boss-motion.json).
 
 The remaining animations are saved alongside those files. The first `m4-first-*` evidence and intermediate benchmark measurements are retained. The owner's waiver of outside reviewers remains in force.
 
@@ -196,7 +198,7 @@ Browser QA passes **35/35 checks** in Edge, including figure playback, contact o
 
 Pillow independently verifies R2's sheet and all 40 GIF playback entries across five animations, byte-for-byte RGBA and exact timing. The existing independent export verification also passes, including APNG, alpha, sequences, ZIP and MCP. MCPB reproducibility and its eight-tool smoke check pass.
 
-Inspected the saved [Motion view](../images/figures/m5-studio-motion.png), [contact overlay](../images/figures/m5-studio-contacts.png) and [narrow layout](../images/figures/m5-studio-narrow.png). The [final implementation review](figures-in-motion-review-2026-10-20.md) explicitly records the waived blind review; no preference or authoring-cost scores are invented.
+Inspected the saved [Motion view](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-motion.png), [contact overlay](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-contacts.png) and [narrow layout](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-narrow.png). The [final implementation review](figures-in-motion-review-2026-10-20.md) explicitly records the waived blind review; no preference or authoring-cost scores are invented.
 
 Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. Final cross-platform verification is recorded below.
 

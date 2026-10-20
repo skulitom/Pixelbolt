@@ -6,7 +6,7 @@ import { inspectMotion } from '../src/motion.js';
 import { skinkRig } from './figure-rigs.mjs';
 import { saveEvidence, movingGroundPreview } from './figure-preview.mjs';
 
-const directory = new URL('../docs/images/figures/', import.meta.url);
+const directory = new URL('../output/figures/', import.meta.url);
 await mkdir(directory, { recursive: true });
 const at = process.argv.indexOf('--prefix'), prefix = at < 0 ? 'm2-skink' : process.argv[at + 1];
 if (!prefix || !/^[a-z0-9-]+$/.test(prefix)) throw new Error('--prefix needs lowercase letters, digits or hyphens');

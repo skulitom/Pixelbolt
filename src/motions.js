@@ -47,6 +47,7 @@ export function expandMotions(input, compileRest) {
   validateRig(source.rig, source.height);
   id(source.rig.body, 'poses.rig.body'); id(source.rig.rest, 'poses.rig.rest');
   if (!Array.isArray(source.poses)) fail('poses.poses', 'expected authored poses including rig.rest');
+  source.poses.forEach((pose, i) => { if (!pose || typeof pose !== 'object' || Array.isArray(pose)) fail(`poses.poses[${i}]`, 'expected an object'); });
   const rest = source.poses.find(p => p.name === source.rig.rest);
   if (!rest?.parts || rest.mirror || rest.tween) fail('poses.rig.rest', 'must name an authored pose with parts and an origin');
   if (source.poses.filter(p => p.name === rest.name).length !== 1) fail('poses.rig.rest', 'rest pose must have a unique name');

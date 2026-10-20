@@ -32,7 +32,9 @@ test('pose structural fields in the schema match the compiler', async () => {
       assert.equal(unknown(() => compilePoses(s), `${path}.${key}`), key === 'notAField', `${path}.${key}`);
     }
   }
-  assert.equal(schema.properties.poses.items.properties.parts.items.properties.squash.multipleOf, .05);
+  // Squash has no multipleOf: 0.05 has no exact binary form, so standard validators reject valid values such as 0.95.
+  const squash = schema.properties.poses.items.properties.parts.items.properties.squash;
+  assert.deepEqual([squash.minimum, squash.maximum, squash.multipleOf], [.5, 2, undefined]);
   assert.ok(schema.properties.parts.additionalProperties.oneOf[1].properties.bone.properties.outline.oneOf.some(p => p.type === 'null'));
 });
 

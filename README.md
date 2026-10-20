@@ -44,12 +44,12 @@ Zero runtime dependencies. No build step, API key, image model, network service 
 Author limbs as bones, bodies as masses, and faces or props as grids. Relative joints and two-bone reach keep attachments together; idle, walk, run, jump, attack and hurt templates expand into editable poses. Review planted feet, ground contact and loop joins in the CLI, MCP or studio. The output uses the existing sprite player.
 
 ```sh
-node bin/pixelbolt.js preview examples/brass-courier.poses.json
-node bin/pixelbolt.js compile examples/brass-courier.poses.json --expand --out courier-edit.poses.json
-node bin/pixelbolt.js inspect examples/brass-courier.poses.json --motion run --speed 48
+node bin/pixelbolt.js preview character.poses.json
+node bin/pixelbolt.js compile character.poses.json --expand --out character-edit.poses.json
+node bin/pixelbolt.js inspect character.poses.json --motion run --speed 48
 ```
 
-[Pose and motion reference](docs/art-workflow.md#structural-limbs-and-bodies) · [Editable courier](examples/brass-courier.poses.json) · [Compiled recipe](examples/brass-courier.json)
+[Pose and motion reference](docs/art-workflow.md#structural-limbs-and-bodies)
 
 ## Gallery
 

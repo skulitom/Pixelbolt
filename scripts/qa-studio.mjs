@@ -181,8 +181,12 @@ try {
 
   console.log('Moving figures');
   await check('pose source opens, plays, reviews contacts and saves its editable source', async () => {
-    await click('#examples .example[data-file="brass-courier.poses"]');
-    await until(`document.getElementById('project-name').textContent === 'Brass courier'`, 'the courier');
+    // The R2 rig is a test fixture, not a shipped example: open it as a user would open their own pose source.
+    const { heroRig } = await import('./figure-rigs.mjs'), figure = path.join(kept, 'figure.poses.json');
+    await writeFile(figure, JSON.stringify(heroRig(), null, 2));
+    const { root: { nodeId: documentNode } } = await studio.page('DOM.getDocument'), picker = await studio.page('DOM.querySelector', { nodeId: documentNode, selector: '#file' });
+    await studio.page('DOM.setFileInputFiles', { files: [figure], nodeId: picker.nodeId });
+    await until(`document.getElementById('project-name').textContent === 'Brass courier'`, 'the figure');
     await choose('animation', 'run');
     if (await evaluate(`document.getElementById('play').getAttribute('aria-label') === 'Play animation'`)) await click('#play');
     const before = await text('frame-counter'); await until(`document.getElementById('frame-counter').textContent !== ${JSON.stringify(before)}`, 'the figure to move');

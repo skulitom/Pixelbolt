@@ -343,7 +343,8 @@ export function compilePoses(source) {
         if (seen.has(marker.name)) fail(`${path}.markers[${i}].name`, 'marker names are unique within a pose');
         seen.add(marker.name);
         identifier(marker.part, `${path}.markers[${i}].part`); identifier(marker.point, `${path}.markers[${i}].point`);
-        const part = placed[marker.part];
+        // `placed` is an ordinary object here, so look up own keys only: "toString" must not find Object.prototype.
+        const part = Object.hasOwn(placed, marker.part) ? placed[marker.part] : undefined;
         if (!part || !Object.hasOwn(part.points, marker.point)) fail(`${path}.markers[${i}]`, 'marker must name a placed attachment point');
         return { name: marker.name, part: marker.part, point: marker.point, at: part.points[marker.point] };
       });

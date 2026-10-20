@@ -10,7 +10,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Relative joint angles, attachment dependency resolution, deterministic two-bone reach, angle/reach tweens, relit mirrors and joint metadata extend version-1 pose sources without changing existing recipes.
 - Six motion templates generate editable key poses and in-betweens with foot targets, contacts, depth swaps and attack cues. `compile --expand` exposes them; authored poses override generated names.
 - CLI/MCP motion inspection measures foot slide, ground error, pose spread and loop seams. The studio edits pose sources directly and adds Motion and Show contacts controls.
-- New courier and bone-skink examples, pinned figure hashes, performance fixtures, browser checks and independent PNG/GIF verification document the workflow. Existing example pixels remain unchanged.
+- Pinned figure hashes, performance fixtures, browser checks and independent PNG/GIF verification cover the workflow. Existing example pixels remain unchanged.
 
 ### Pose rendering performance
 

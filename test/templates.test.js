@@ -156,3 +156,16 @@ test('templates reject bad roles, ranges, chains, annotations and conflicting na
 test('motion code uses deterministic polynomial mathematics', async () => {
   for (const file of ['motions.js', 'motion.js']) assert.doesNotMatch(await readFile(new URL(`../src/${file}`, import.meta.url), 'utf8'), /Math\.(sin|cos|tan|atan|atan2|acos|asin|hypot|pow|random)\s*\(/);
 });
+
+test('malformed pose sources fail with a path, not a TypeError', () => {
+  // A marker naming an Object.prototype key ("toString") once reached Object.hasOwn(undefined, ...).
+  const marker = { format: 'pixelforge-poses', version: 1, name: 'm', width: 8, height: 8, palette: { r: '#ff0000' }, parts: { dot: { rows: ['r'] } },
+    poses: [{ name: 'p', parts: [{ name: 'dot', part: 'dot' }], markers: [{ name: 'm', part: 'toString', point: 'x' }] }] };
+  for (const name of ['toString', 'constructor', 'hasOwnProperty']) {
+    marker.poses[0].markers[0].part = name;
+    assert.throws(() => compilePoses(marker), error => error.name === 'PixelError' && /poses\.poses\[0\]\.markers\[0\]/.test(error.message));
+  }
+  // A null pose beside motions once crashed the rest-pose lookup.
+  const source = heroRig(); source.poses.push(null);
+  for (const run of [() => expandPoses(source), () => compilePoses(source)]) assert.throws(run, error => error.name === 'PixelError' && /poses\.poses\[1\]/.test(error.message));
+});

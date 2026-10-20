@@ -1,5 +1,7 @@
 # Figures in motion: implementation review
 
+**Update, 20 October 2026:** after this review the owner judged the figures' art not good enough to show, and the courier and bone-skink examples and the evidence images were removed. The image links below open them at commit `8b94859`.
+
 The owner explicitly waived outside reviewers and the associated review process. There are no blind-review votes, preference percentages, comparative art scores or nine-attempt authoring-cost statistics. Those measures are **not performed**, rather than passed. The owner's request authorizes commit and push to main after engineering verification.
 
 The implementation covers bone/mass rasterization, relative joints and integer reach, motion review, six editable motion templates, CLI/MCP support, a pose-aware studio, examples and authoring documentation. Existing version-1 pixels and legacy pose metadata are unchanged across the captured baseline: 87 recipes and 861 frames.
@@ -18,9 +20,9 @@ The [milestone report](figures-in-motion.md) records the implementation, decisio
 
 ## Visual inspection
 
-All final M1–M4 native, enlarged, silhouette, moving-ground and motion-strip images were inspected. The [courier run](../images/figures/m4-craft-hero-run-4x.png) separates contact, down, passing and flight poses. Its [jump](../images/figures/m4-craft-hero-jump-4x.png) and [attack](../images/figures/m4-craft-hero-attack-4x.png) visibly change height and arm position. The teal shadow band was separated from the outline after the first visual pass. The guardian's extra limbs can still overlap densely; hand-authored replacements remain available.
+All final M1–M4 native, enlarged, silhouette, moving-ground and motion-strip images were inspected. The [courier run](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-run-4x.png) separates contact, down, passing and flight poses. Its [jump](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-jump-4x.png) and [attack](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m4-craft-hero-attack-4x.png) visibly change height and arm position. The teal shadow band was separated from the outline after the first visual pass. The guardian's extra limbs can still overlap densely; hand-authored replacements remain available.
 
-The studio's [Motion view](../images/figures/m5-studio-motion.png), [contact overlay](../images/figures/m5-studio-contacts.png) and [narrow layout](../images/figures/m5-studio-narrow.png) were inspected. Motion displays pixel-valued slide/ground measurements and degree-valued loop joins alongside the strip. Contacts are shown as yellow marks at the feet.
+The studio's [Motion view](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-motion.png), [contact overlay](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-contacts.png) and [narrow layout](https://github.com/skulitom/Pixelbolt/blob/8b94859/docs/images/figures/m5-studio-narrow.png) were inspected. Motion displays pixel-valued slide/ground measurements and degree-valued loop joins alongside the strip. Contacts are shown as yellow marks at the feet.
 
 These observations and passing numerical gates establish implemented behavior and pixel-craft constraints. They do not establish that independent artists prefer these figures to the old workflow.
 

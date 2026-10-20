@@ -108,7 +108,7 @@ The metadata exports each pose origin, resolved part anchors/points, markers, an
 
 ### Structural limbs and bodies
 
-Choose exactly one of `rows`, `bone` or `mass` per part. A bone is redrawn at its world angle, with integer pixels and palette ramp bands. Keep heads, hands, armour accents and props as grids where their particular shape matters. [Brass courier](../examples/brass-courier.poses.json) combines all three kinds; [bone skink](../examples/quality/skink-bones.poses.json) shows a smaller quadruped.
+Choose exactly one of `rows`, `bone` or `mass` per part. A bone is redrawn at its world angle, with integer pixels and palette ramp bands. Keep heads, hands, armour accents and props as grids where their particular shape matters.
 
 ```json
 {
@@ -172,7 +172,7 @@ Slide is the farthest distance between world-space positions of one marker in on
 
 All measurements are advisory and leave art unchanged. Missing contacts, speed, ground or joint angles produce `null` checks rather than a passing result. The strip shows the trajectory on the left and playback cells on the right, with planted footprints in yellow. It samples at most 32 positions, reports omissions and bounds image size; the numeric review still uses every frame. Travel too wide for the image is reported explicitly.
 
-The studio opens `.poses.json` directly, including from `pixelbolt preview character.poses.json`, and preserves that source when saving. Choose **Motion** for these same checks and strips, or **Show contacts** during playback. **Travel (px/s)** and **Ground row** override review settings; playback speed changes only preview timing. Export still produces ordinary recipe assets. The new Brass courier sample has five motions and retains editable template settings.
+The studio opens `.poses.json` directly, including from `pixelbolt preview character.poses.json`, and preserves that source when saving. Choose **Motion** for these same checks and strips, or **Show contacts** during playback. **Travel (px/s)** and **Ground row** override review settings; playback speed changes only preview timing. Export still produces ordinary recipe assets.
 
 ## Scene and tile review
 

@@ -866,8 +866,7 @@
                   "type": "number",
                   "minimum": 0.5,
                   "maximum": 2,
-                  "description": "Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable.",
-                  "multipleOf": 0.05
+                  "description": "Mass parts only, in steps of 0.05. Height scales by squash and width by its inverse; contour adjustments keep opaque pixel area stable."
                 },
                 "cleanup": {
                   "type": "boolean",

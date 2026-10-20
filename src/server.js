@@ -31,7 +31,6 @@ const routes = new Map([
   ['/fluid-lab.js', ['../studio/fluid-lab.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
   ['/examples/quality/skink.json', ['../examples/quality/skink.json', 'application/json']],
-  ['/examples/brass-courier.poses.json', ['../examples/brass-courier.poses.json', 'application/json']],
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),
   // The fluid lab compiles these sources in the browser.

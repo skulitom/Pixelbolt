@@ -4,7 +4,7 @@ import { renderProject, inspectProject, scalePixels } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { encodeGIF } from '../src/gif.js';
 
-const directory = new URL('../docs/images/figures/', import.meta.url);
+const directory = new URL('../output/figures/', import.meta.url);
 await mkdir(directory, { recursive: true });
 const recipe = JSON.parse(await readFile(new URL('../examples/quality/skink.json', import.meta.url), 'utf8'));
 const project = renderProject(recipe), save = (name, bytes) => writeFile(new URL(name, directory), bytes, { flag: 'wx' });
