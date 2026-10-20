@@ -201,3 +201,5 @@ Inspected the saved [Motion view](../images/figures/m5-studio-motion.png), [cont
 Implementation commits through this point: M1 `ca24bba`, M2 `431a033`, M3 `d5f4500`, M4 `3c0f86e`. The full cross-platform CI matrix and final landing are the remaining release checks.
 
 M5 implementation: `76db2df`. A final coverage audit added the explicit R1 compile and R2 image-review time assertions, plus a constrained-heap R3 compile on every CI Node/system combination. The resulting local suite passes **368 tests in 11.734 s**. These additions change verification only; no pixels or authoring behavior changed.
+
+The [first branch CI run](https://github.com/skulitom/Pixelbolt/actions/runs/39453440696) passed all five Node/system jobs, MCPB and four portable targets. The Intel Mac target under Rosetta failed one assertion: a single cold R2 expansion took 72.112 ms against the 50 ms CI ceiling. The test was incorrectly using a cold sample while the specified benchmark protocol uses warmups and medians. It now warms three times and checks a five-run median against the **same 50 ms ceiling**. No limit or rendering behavior changed; the failure is retained here.
