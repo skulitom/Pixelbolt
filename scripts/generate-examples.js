@@ -215,7 +215,7 @@ const magicSwirl = fluidSource('magic-swirl', 48, 48, { v: '#3d2a6b', p: '#7a44c
 const torch = fluidSource('torch', 16, 32, { r: '#c23b2e', o: '#f57f2a', y: '#ffd257', W: '#fff7d6', b: '#5c3a24', B: '#8c5a32', g: '#8a8f99', G: '#c4c8cf', k: '#221a1c' }, {
   frames: 16, duration: 70, loop: true, seed: 4, buoyancy: 0.45, vorticity: 0.45, dissipation: 0.14, cooling: 0.34, drag: 0.03,
   obstacles: [{ symbol: 'torch', x: 5, y: 22 }],
-  emitters: [{ name: 'flame', at: [8.5, 22.5], radius: 4, rate: 1, temperature: 1.1, velocity: [0, -1], noise: 0.8, flicker: 0.35 },
+  emitters: [{ name: 'flame', at: [8.5, 21], radius: 3.5, rate: 1, temperature: 1.1, velocity: [0, -1], noise: 0.8, flicker: 0.35 },
     { name: 'embers', at: [8.5, 15], radius: 1.5, rate: 1, sparks: { count: 0.15, life: [5, 8], colors: ['W', 'y', 'o'], trail: true, angle: [255, 285], speed: [0.3, 0.5] } }],
   look: [fireRamp(['r', 'o', 'y', 'W'], [0.32, 0.44, 0.64, 0.98], 0.5)]
 }, { torch: ['kGGGGGk', 'kgGGGgk', '.kgggk.', '.kBbbk.', '.kBbbk.', '.kBbbk.', '.kBbbk.', '.kBbbk.', '.kBbbk.', '..kkk..'] });

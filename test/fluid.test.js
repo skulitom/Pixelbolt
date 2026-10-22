@@ -22,7 +22,7 @@ const GOLDEN = {
   'smoke-puff': '4cec863e280296a4ab98ba271c60bb94c8b084049d780e8806d65eaf257013c7',
   'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
-  torch: '1653a23c933b250d5cc6aa8c0a5e1878e7438b11169ef85c52d733e019263828',
+  torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
   splash: '1b2a22fe73a5f818858199a0b5098c326395ba26ed5c5a9996dc178bb997f5f4',
   waterfall: '0ebd8edbb0bca1c4f3a0642dcb0bcf41b6289663eec4b4b38c999b5df49cd064',
   drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
@@ -537,7 +537,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '329c8a4af7c00a3e51844fa08a61266a548886c094c3053d0b46d5535708d3fa', potion: '41aedcb953cf977211b0cc29cfb551c7975318b6ed1965bf0ba0d9173ba52dfe' };
+const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '41aedcb953cf977211b0cc29cfb551c7975318b6ed1965bf0ba0d9173ba52dfe' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }

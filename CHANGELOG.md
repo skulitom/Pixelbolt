@@ -12,6 +12,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - **Timing and cues:** `duration: { "from", "to", "ease" }` eases frame durations across an effect (`in` front-loads an impact). `cue` names a point at an emitter's spawn centre in every frame it spawns; frames carry it as a named point, atlases export it and the metadata lists it, so game code can shake or pause on the hit.
 - Every existing source compiles to the same recipe as before: the new draws use their own salts, and the Tidewatch effects and the examples are unchanged.
 
+### Torch preset
+
+- The torch's flame no longer burns beside the handle under its metal cup. Its emitter was a radius-4 disc centred inside the cup, so its rim heated the empty pixels beside the narrower handle in every frame (76 pixels over the loop). It now sits 1.5 pixels higher with radius 3.5, which keeps about the same amount of flame and the tall tongues. Its golden and live hashes and README GIF are updated.
+
 ### Figures in motion
 
 - Bone and mass parts rasterize from structure under palette ramp lighting, with clean thin strokes, socket joints and area-preserving squash. Grid parts keep authored views for detailed hands, heads and props.
