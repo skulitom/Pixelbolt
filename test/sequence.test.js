@@ -188,12 +188,16 @@ test('CLI sequence writes a new folder for a recipe, an effects source and a sce
 test('MCP render and scene tools write a sequence on request, beside what they already write', async t => {
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-sequence-mcp-'));
   t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
-  const call = (directory, name, args) => {
-    const messages = [{ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-11-25' } }, { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }];
+  // One server process answers every [tool, args] call in the list, in order.
+  const calls = (directory, list) => {
+    const messages = [{ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-11-25' } }, ...list.map(([name, args], i) => ({ jsonrpc: '2.0', id: i + 1, method: 'tools/call', params: { name, arguments: args } }))];
     const result = spawnSync(process.execPath, ['bin/pixelbolt.js', 'mcp', '--out', directory], { cwd: root, input: messages.map(message => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
     assert.equal(result.status, 0, result.stderr);
-    return JSON.parse(result.stdout.trim().split('\n')[1]).result;
+    const replies = result.stdout.trim().split('\n').map(line => JSON.parse(line));
+    assert.deepEqual(replies.map(reply => reply.id), messages.map(message => message.id));
+    return replies.slice(1).map(reply => reply.result);
   };
+  const call = (directory, name, args) => calls(directory, [[name, args]])[0];
   const rendered = call(path.join(dir, 'recipe'), 'pixel_render', { project: recipe, animation: 'once', sequence: { fps: 10, scale: 3 } });
   assert.ok(!rendered.isError, JSON.stringify(rendered));
   const info = JSON.parse(rendered.content[0].text);
@@ -206,8 +210,7 @@ test('MCP render and scene tools write a sequence on request, beside what they a
   assert.deepEqual([shot.sequence.frames, shot.sequence.width, (await readdir(path.join(shot.directory, 'sequence'))).length], [4, 192, 6]);
   const cover = JSON.parse(call(path.join(dir, 'cover'), 'pixel_scene', { scene, sequence: { fps: 4, seconds: 0.5, size: '720p', fit: 'cover' } }).content[0].text);
   assert.deepEqual([cover.sequence.frames, cover.sequence.width, cover.sequence.height, cover.sequence.placement.fit], [2, 1280, 720, 'cover']);
-  for (const [tool, args] of [['pixel_render', { project: recipe, sequence: { fps: 0 } }], ['pixel_render', { project: recipe, sequence: { fps: 30, fit: 'cover' } }], ['pixel_render', { project: recipe, sequence: true }], ['pixel_scene', { scene, sequence: { fps: 30, step: 2 } }]]) {
-    const refused = call(path.join(dir, 'refused'), tool, args);
+  for (const refused of calls(path.join(dir, 'refused'), [['pixel_render', { project: recipe, sequence: { fps: 0 } }], ['pixel_render', { project: recipe, sequence: { fps: 30, fit: 'cover' } }], ['pixel_render', { project: recipe, sequence: true }], ['pixel_scene', { scene, sequence: { fps: 30, step: 2 } }]])) {
     assert.equal(refused.isError, true, JSON.stringify(refused)); assert.match(JSON.parse(refused.content[0].text).path, /^sequence/);
   }
   assert.deepEqual(await readdir(path.join(dir, 'refused')).catch(() => []), []);
