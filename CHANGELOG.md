@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Particle effects with structure
+
+- **Spawn shapes:** a `ring` (radius or `[min, max]`, an optional `arc`) or a `line` instead of the `area` box, with `even: true` to space the particles spawned together evenly. On an `outward` ring, `angle` is measured from each particle's outward direction, so an even ring makes a shockwave and an arc a fan of sparks.
+- **`face: true`** picks the sequence by direction of travel (2–16 sequences, the first facing right, turning clockwise), so sparks draw as streaks along their arc. **`tint`** lists colour stages over each life, so a spark cools from white to red without a symbol per colour.
+- **Child emitters:** `from` names an earlier emitter, and `when` spawns from its particles where they end (`death`), first land (`floor`) or every frame they live (`life`: trails), with `inherit` for a share of the parent's velocity. Loops stay seamless: children are keyed by their parent and the warm-up covers the longest chain of lives. **`behind: true`** draws an emitter under the others.
+- **Timing and cues:** `duration: { "from", "to", "ease" }` eases frame durations across an effect (`in` front-loads an impact). `cue` names a point at an emitter's spawn centre in every frame it spawns; frames carry it as a named point, atlases export it and the metadata lists it, so game code can shake or pause on the hit.
+- Every existing source compiles to the same recipe as before: the new draws use their own salts, and the Tidewatch effects and the examples are unchanged.
+
 ### Figures in motion
 
 - Bone and mass parts rasterize from structure under palette ramp lighting, with clean thin strokes, socket joints and area-preserving squash. Grid parts keep authored views for detailed hands, heads and props.

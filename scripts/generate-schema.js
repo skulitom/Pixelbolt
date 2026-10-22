@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
+import { FX_EVENTS } from '../src/fx.js';
 const int = (minimum, maximum, description) => ({ type: 'integer', minimum, maximum, ...(description ? { description } : {}) });
 const num = (minimum, maximum, description) => ({ type: 'number', minimum, maximum, ...(description ? { description } : {}) });
 const bool = { type: 'boolean' }, color = { type: 'string', description: 'Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA.' };
@@ -203,9 +204,15 @@ const autotile = {
 };
 const range = (minimum, maximum, description) => ({ oneOf: [num(minimum, maximum), pairOf(num(minimum, maximum))], description: `${description} [min, max] picks per particle.` });
 const vector = (minimum, maximum, description) => ({ ...pairOf(num(minimum, maximum)), ...(description && { description }) });
-const emitter = object({
-  name: id, at: vector(-4096, 4096, 'Spawn centre [x, y] in canvas pixels.'), area: { ...pairOf(int(1, 256)), description: 'Spawn box [w, h] centred on at; default [1, 1].' },
-  burst: int(1, 1024, 'Particles spawned at start (each cycle when looping).'), rate: num(0.001, 64, 'Particles per frame from start until end.'),
+const evenly = { type: 'boolean', description: 'Space the particles spawned together evenly instead of at random.' };
+const emitter = { ...object({
+  name: id, at: vector(-4096, 4096, 'Spawn centre [x, y] in canvas pixels. For a child (from), an offset from the parent particle; default [0, 0].'),
+  area: { ...pairOf(int(1, 256)), description: 'Spawn box [w, h] centred on at; default [1, 1]. Use one of area, ring and line.' },
+  ring: { ...object({ radius: range(0, 256, 'Distance from at.'), arc: { ...pairOf(num(-3600, 3600)), description: '[from, to] degrees clockwise (0 right, 90 down) to spawn over, at most 360 apart; default [0, 360].' }, even: evenly,
+    outward: { type: 'boolean', description: 'Measure angle from each particle\'s outward direction: 0 straight out (the default angle), 90 clockwise along the ring, 180 inward. Shockwaves and radial bursts.' } }, ['radius']),
+    description: 'Spawn on a circle or arc around at instead of in a box.' },
+  line: { ...object({ to: vector(-4096, 4096, 'The other end of the segment (for a child, an offset from the parent particle).'), even: evenly }, ['to']), description: 'Spawn along the segment from at to to instead of in a box.' },
+  burst: int(1, 1024, 'Particles spawned at start (each cycle when looping); for a child, particles per event.'), rate: num(0.001, 64, 'Particles per frame from start until end; for a child with when: life, per frame for each parent particle.'),
   start: int(0, 255, 'Frame of the burst or first spawn; default 0.'), end: int(1, 256, 'Frame where a rate emitter stops; default the last.'),
   life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames a particle lives; [min, max] picks per particle. Required to loop or dissolve; otherwise particles live to the end.' },
   angle: range(-3600, 3600, 'Launch direction in degrees, clockwise: 0 right, 90 down, 270 up. Default [0, 360].'), speed: range(0, 64, 'Launch speed in pixels per frame; default 0.'),
@@ -213,19 +220,28 @@ const emitter = object({
   attract: { ...object({ at: vector(-4096, 4096), strength: num(-8, 8, 'Acceleration toward at (negative repels); default 0.5.') }, ['at']), description: 'Pull every particle toward a point.' },
   sway: { ...object({ amplitude: vector(0, 32, 'Drawn offset [x, y]: x follows a sine and y a cosine, from a random phase.'), period: num(1, 256, 'Frames per cycle; default 8.') }, ['amplitude']), description: 'Wobble, added when drawing (drifting leaves, rising embers).' },
   floor: int(-4096, 4096, 'Particles never go below this y, sway included.'), bounce: num(0, 1, 'Share of downward speed returned at the floor; default 0 (they settle).'),
-  shapes: { oneOf: [{ ...array(id, 64), minItems: 1 }, { ...array({ ...array(id, 64), minItems: 1 }, 64), minItems: 1 }], description: 'Symbol names drawn centred on the particle: one sequence, or a list of sequences with one picked per particle.' },
+  shapes: { oneOf: [{ ...array(id, 64), minItems: 1 }, { ...array({ ...array(id, 64), minItems: 1 }, 64), minItems: 1 }], description: 'Symbol names drawn centred on the particle: one sequence, or a list of sequences with one picked per particle (or by direction, with face).' },
+  face: { type: 'boolean', description: 'Pick the sequence by direction of travel instead of at random: shapes lists 2–16 sequences, the first facing right and the rest turning clockwise, evenly spaced (with 8: right, down-right, down, down-left, left, up-left, up, up-right). Streaking sparks and debris; a particle at rest keeps its last direction.' },
   play: { enum: ['life', 'loop', 'once'], description: 'life spreads the sequence over the lifetime (default); loop steps one symbol per frame from a random start; once steps and holds the last.' },
   remaps: { ...array(remap, 64), description: 'Colour variants; each particle picks one.' },
+  tint: { ...array(remap, 64), minItems: 1, description: 'Colour stages over each life, the first at birth, spread like play: life. Each overrides the particle\'s remap for the characters it names, so a spark cools from white to red without a symbol per colour.' },
   trail: { ...object({ color, length: int(1, 16, 'Frames back the streak reaches; default 2.') }, ['color']), description: 'A one-pixel streak from an earlier position, drawn under the particle.' },
   dissolve: num(0, 1, 'Share of the life, at its end, during which the particle thins out through an ordered-dither pattern.'),
-  pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dissolve pattern, as for the dither operation: bayer2, bayer4 (default), bayer8, noise (ordered by the effect\'s seed) or a matrix of ranks, e.g. [[0, 1, 2], [1, 2, 0], [2, 0, 1]] for diagonal stripes.' }
-}, ['at', 'shapes']);
+  pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dissolve pattern, as for the dither operation: bayer2, bayer4 (default), bayer8, noise (ordered by the effect\'s seed) or a matrix of ranks, e.g. [[0, 1, 2], [1, 2, 0], [2, 0, 1]] for diagonal stripes.' },
+  from: { ...id, description: 'Make this a child of the earlier emitter with this (unique) name: it spawns from that emitter\'s particles at when, instead of on a schedule of its own (no start or end).' },
+  when: { enum: FX_EVENTS, description: 'For a child: death (default; burst particles where a parent particle ends), floor (burst where it first lands on its floor) or life (rate particles per frame from each parent while it lives: trails).' },
+  inherit: num(0, 2, 'For a child: the share of its parent particle\'s velocity it starts with, added to its own launch; default 0.'),
+  behind: { type: 'boolean', description: 'Draw this emitter\'s particles under every other emitter\'s (smoke behind sparks, a trail behind its bolt).' },
+  cue: { ...id, description: 'Name a point at the spawn centre in each frame this emitter spawns. Frames carry it as a named point, which atlases export for game code (a shake or a pause on impact); the metadata lists every cue.' }
+}, ['shapes']), anyOf: [{ required: ['at'] }, { required: ['from'] }] };
 const fx = {
   $schema: schema.$schema, title: 'Pixelbolt particle effects',
   description: 'Seeded particle emitters compiled into an ordinary recipe: one frame sequence and animation per effect (frames <effect>-0, <effect>-1…), drawn with stamp, grid and line operations on these symbols. Deterministic for a given seed.',
   ...object({ format: { const: 'pixelforge-fx' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
     symbols: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: ref('rows') }, anchor: schema.properties.anchor,
-    effects: { type: 'object', minProperties: 1, maxProperties: 64, propertyNames: id, additionalProperties: object({ frames: int(1, 256), duration: { oneOf: [int(1, 60000), array(int(1, 60000), 256)], description: 'Milliseconds per frame, or one per frame; default 100.' },
+    effects: { type: 'object', minProperties: 1, maxProperties: 64, propertyNames: id, additionalProperties: object({ frames: int(1, 256), duration: { oneOf: [int(1, 60000), array(int(1, 60000), 256),
+      object({ from: int(1, 60000, 'Milliseconds of the first frame.'), to: int(1, 60000, 'Milliseconds of the last frame.'), ease: { ...ease, description: 'How durations move from from to to: linear (default), in (quick frames, then a slow settle: impacts), out, inOut, hold, overshoot or bounce.' } }, ['from', 'to'])],
+      description: 'Milliseconds per frame, one per frame, or {from, to, ease} eased across the frames; default 100.' },
       loop: { type: 'boolean', description: 'Seamless loop: the simulation warms up so particles in flight at frame 0 are those alive at the end. Needs a finite life.' }, seed: int(0, 2147483647, 'Default 1.'), emitters: { ...array(emitter, 16), minItems: 1 } }, ['frames', 'emitters']) },
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'width', 'height', 'symbols', 'effects']), $defs: { rows: schema.$defs.rows }
