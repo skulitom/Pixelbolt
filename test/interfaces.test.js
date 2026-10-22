@@ -19,6 +19,17 @@ import { readZip } from '../scripts/build-studio.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const tiny = { version: 1, name: 'dot', width: 1, height: 1, frames: [{ name: 'idle', ops: [{ op: 'pixel', color: '#fff' }] }] };
 const strip = { version: 1, name: 'strip', width: 12, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 11, y: 1, color: 'k' }] }, { name: 'b' }] };
+// CLI runs that write no file are shared by the tests that make the same run, so each process starts once.
+const quietRuns = new Map();
+const quietCLI = (bin, args, input) => {
+  const key = JSON.stringify([bin, args, input ?? null]);
+  if (!quietRuns.has(key)) {
+    const result = spawnSync(process.execPath, [path.join(root, 'bin', `${bin}.js`), ...args], { cwd: root, input, encoding: 'utf8' });
+    assert.equal(result.error, undefined);
+    quietRuns.set(key, { status: result.status, stdout: result.stdout, stderr: result.stderr });
+  }
+  return quietRuns.get(key);
+};
 test('studio validates pose sources and serves the editable rig instead of discarding it', async t => {
   const source = heroRig(), server = await startStudio({ port: 0, project: source, quiet: true });
   t.after(() => { server.closeAllConnections(); server.close(); });
@@ -45,9 +56,9 @@ test('the legacy CLI agrees on help, stdin validation, errors and every rendered
     assert.equal(result.error, undefined); return { status: result.status, stdout: result.stdout, stderr: result.stderr };
   };
   for (const [args, input, status] of [[[], undefined, 0], [['help'], undefined, 0], [['--help'], undefined, 0], [['validate', '-'], JSON.stringify(tiny), 0], [['validate', '-'], '{', 1], [['unknown'], undefined, 1]]) {
-    const current = run('pixelbolt', args, input);
+    const current = quietCLI('pixelbolt', args, input);
     assert.equal(current.status, status, current.stderr);
-    assert.deepEqual(run('pixelforge', args, input), current);
+    assert.deepEqual(quietCLI('pixelforge', args, input), current);
   }
   const args = ['render', '-', '--out', 'rendered'], input = JSON.stringify(tiny);
   const first = run('pixelbolt', args, input); assert.equal(first.status, 0, first.stderr);
@@ -95,7 +106,7 @@ test('CLI --expand prints an editable source that compiles to identical recipe a
 });
 
 test('CLI help describes its text output and commands for checkout and portable builds', () => {
-  const result = spawnSync(process.execPath, ['bin/pixelbolt.js', 'help'], { cwd: root, encoding: 'utf8' });
+  const result = quietCLI('pixelbolt', ['help']);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stderr, '');
   assert.ok(result.stdout.includes('Command results except help and the preview server are JSON. Errors exit with code 1.\n'));
@@ -104,11 +115,11 @@ test('CLI help describes its text output and commands for checkout and portable 
 });
 
 test('CLI consumes stdin, emits machine-readable diagnostics and handles unknown flags', () => {
-  const result = spawnSync(process.execPath, ['bin/pixelbolt.js','validate','-'], { cwd: root, input: JSON.stringify(tiny), encoding: 'utf8' });
+  const result = quietCLI('pixelbolt', ['validate', '-'], JSON.stringify(tiny));
   assert.equal(result.status, 0); assert.equal(JSON.parse(result.stdout).frames, 1);
-  const bad = spawnSync(process.execPath, ['bin/pixelbolt.js','validate','-'], { cwd: root, input: '{', encoding: 'utf8' });
+  const bad = quietCLI('pixelbolt', ['validate', '-'], '{');
   assert.equal(bad.status, 1); assert.equal(JSON.parse(bad.stderr).ok, false);
-  const flags = spawnSync(process.execPath, ['bin/pixelbolt.js','validate','-','--typo'], { cwd: root, encoding: 'utf8' });
+  const flags = quietCLI('pixelbolt', ['validate', '-', '--typo']);
   assert.equal(flags.status, 1); assert.match(JSON.parse(flags.stderr).error, /Unknown option/);
 });
 

@@ -269,12 +269,16 @@ test('MCP pixel_render writes GIFs on request and leaves nothing behind when one
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-gif-mcp-'));
   t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
   const project = JSON.parse(await readFile(path.join(root, 'examples', 'forest-spirit.json'), 'utf8'));
-  const call = (directory, args) => {
-    const messages = [{ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-11-25' } }, { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'pixel_render', arguments: args } }];
+  // One server process answers every call in the list, in order.
+  const calls = (directory, list) => {
+    const messages = [{ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-11-25' } }, ...list.map((args, i) => ({ jsonrpc: '2.0', id: i + 1, method: 'tools/call', params: { name: 'pixel_render', arguments: args } }))];
     const result = spawnSync(process.execPath, ['bin/pixelbolt.js', 'mcp', '--out', directory], { cwd: root, input: messages.map(message => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
     assert.equal(result.status, 0, result.stderr);
-    return JSON.parse(result.stdout.trim().split('\n')[1]).result;
+    const replies = result.stdout.trim().split('\n').map(line => JSON.parse(line));
+    assert.deepEqual(replies.map(reply => reply.id), messages.map(message => message.id));
+    return replies.slice(1).map(reply => reply.result);
   };
+  const call = (directory, args) => calls(directory, [args])[0];
   const rendered = call(path.join(dir, 'with'), { project, gif: { scale: 2 } });
   assert.ok(!rendered.isError, JSON.stringify(rendered));
   const info = JSON.parse(rendered.content[0].text);
@@ -284,8 +288,7 @@ test('MCP pixel_render writes GIFs on request and leaves nothing behind when one
   // The bundle itself is unchanged: GIFs sit beside it and are not counted as animations.
   assert.deepEqual([info.animations.count, info.files.filter(file => file.endsWith('.gif'))], [3, []]);
   assert.equal(JSON.parse(call(path.join(dir, 'without'), { project }).content[0].text).gifs, undefined);
-  for (const gif of [{ scale: 99 }, { background: 's' }, 'yes']) {
-    const refused = call(path.join(dir, 'refused'), { project, gif });
+  for (const refused of calls(path.join(dir, 'refused'), [{ scale: 99 }, { background: 's' }, 'yes'].map(gif => ({ project, gif })))) {
     assert.equal(refused.isError, true); assert.match(JSON.parse(refused.content[0].text).path, /^gif/);
   }
   // A refused GIF writes nothing at all: no revision and no half-made export folder.
