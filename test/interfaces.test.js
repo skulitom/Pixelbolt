@@ -26,7 +26,7 @@ const quietCLI = (bin, args, input) => {
   if (!quietRuns.has(key)) {
     const result = spawnSync(process.execPath, [path.join(root, 'bin', `${bin}.js`), ...args], { cwd: root, input, encoding: 'utf8' });
     assert.equal(result.error, undefined);
-    quietRuns.set(key, { status: result.status, stdout: result.stdout, stderr: result.stderr });
+    quietRuns.set(key, Object.freeze({ status: result.status, stdout: result.stdout, stderr: result.stderr }));
   }
   return quietRuns.get(key);
 };
