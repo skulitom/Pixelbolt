@@ -30,6 +30,29 @@ test('diorama: every scene, lit or re-themed, keeps exactly its palette', async 
   }
 });
 
+test('diorama: by night the torch and candle lights follow their placements and flicker, and the pot flashes on the strike', async () => {
+  const scene = prepareScene(await load('room-night.scene.json')), lights = time => renderScene(scene, { time }).lights;
+  // Torches stand at y 23 and their lights 4 pixels above the flames; every light keeps to its placement.
+  assert.deepEqual(lights(0).map(light => light.at), [[52, 19], [108, 19], [68, 98], [92, 98], [107, 70]]);
+  const torch = Array.from({ length: 24 }, (_, k) => lights(k * 100)[0].strength);
+  assert.ok(new Set(torch).size > 5 && Math.min(...torch) >= 0.65 && Math.max(...torch) <= 1.35, JSON.stringify(torch));
+  // The flash is dark until strike+70 (1270 ms), peaks at strike+100 and is out again by strike+380.
+  assert.deepEqual([1200, 1300, 1580].map(time => lights(time)[4].strength), [0, 2.5, 0]);
+  // The flames keep their own colours (lit: false). Without it the night would shade some of them.
+  const source = await load('room-night.scene.json'), flames = ['torch-left', 'torch-right', 'candles-left', 'candles-right'];
+  const shaded = prepareScene({ ...source, instances: source.instances.map(({ lit, ...instance }) => instance) });
+  const unlit = renderScene(scene, { time: 0, lit: false }), boxes = unlit.placements.filter(p => flames.includes(p.name));
+  const fire = new Set(['#e2703a', '#fbc95e', '#fff3c2'].map(hex => parseColor(hex).join()));
+  const flamePixels = boxes.flatMap(box => Array.from({ length: box.w * box.h }, (_, k) => ((box.y + Math.floor(k / box.w)) * unlit.width + box.x + k % box.w) * 4))
+    .filter(at => fire.has([...unlit.data.subarray(at, at + 4)].join()));
+  const differ = view => flamePixels.filter(at => view.data.subarray(at, at + 4).some((v, c) => v !== unlit.data[at + c])).length;
+  assert.ok(flamePixels.length > 20, `${flamePixels.length} flame pixels`);
+  assert.equal(differ(renderScene(scene, { time: 0 })), 0);
+  assert.ok(differ(renderScene(shaded, { time: 0 })) > 0, 'without lit: false the night shades some flame pixels');
+  // The loop has no seam: the end of the scene is its start.
+  assert.deepEqual(renderScene(scene, { time: 2400 }).lights, lights(0));
+});
+
 test('diorama: the hero is drawn behind the barrel it walks past, and the smear only shows during the strike', async () => {
   const scene = prepareScene(await load('room.scene.json'));
   const order = time => renderScene(scene, { time }).placements.map(p => p.name);

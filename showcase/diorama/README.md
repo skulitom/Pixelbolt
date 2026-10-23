@@ -4,7 +4,9 @@ An original 3/4 top-down dungeon room in the "floating diorama" style: 8-pixel t
 
 ![The study room at 4×](../../docs/images/diorama/room.png)
 
-[Animated GIF](../../docs/images/diorama/room.gif) · [Blue theme](../../docs/images/diorama/room-blue.png) · [By torchlight](../../docs/images/diorama/room-night.png)
+![By torchlight at 3×: the torches and candles flicker, and the room flashes where the hero's strike breaks the pot](../../docs/images/diorama/room-night.gif)
+
+[Animated GIF](../../docs/images/diorama/room.gif) · [Blue theme](../../docs/images/diorama/room-blue.png) · [By torchlight, still](../../docs/images/diorama/room-night.png)
 
 ## Build and view
 
@@ -32,7 +34,11 @@ node bin/pixelbolt.js preview showcase/diorama/art/room.scene.json
   - the pot's shards, hidden until the hit.
 
   All cue times are offsets from one named cue, `strike`.
-- **Themes and light.** `room-blue.scene.json` is the same scene with `"palette": "palette-blue.json"` (eight colours changed). `room-night.scene.json` lights it with two torches in `lighting.mode: "ramp"`. Every render keeps exactly the palette's colours.
+- **Themes and light.** `room-blue.scene.json` is the same scene with `"palette": "palette-blue.json"` (eight colours changed). `room-night.scene.json` lights it in `lighting.mode: "ramp"`:
+  - each torch and candle group has a light that `follow`s it and `flicker`s on its own seed, while the flames themselves keep their colours (`lit: false`);
+  - a fifth light follows the target pot and stays dark until the strike, then its `keys` flash it to strength 2.5 at `strike+100` and fade it by `strike+380`.
+
+  Every render keeps exactly the palette's colours, and the flicker repeats once per loop, so the GIF has no seam.
 
 | File in `art/` | What it is |
 | --- | --- |
@@ -45,4 +51,4 @@ node bin/pixelbolt.js preview showcase/diorama/art/room.scene.json
 | `shadow.json` | The hero's shadow, drawn as a shade placement |
 | `slash.json` | The strike's smear |
 | `shards.fx.json` → `shards.json` | The pot's debris, a seeded particle burst |
-| `room.scene.json`, `room-blue.scene.json`, `room-night.scene.json` | The scene, re-themed and torch-lit |
+| `room.scene.json`, `room-blue.scene.json`, `room-night.scene.json` | The scene, re-themed, and lit by flickering torches and candles with a flash on the strike |

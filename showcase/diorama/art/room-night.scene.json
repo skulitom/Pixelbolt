@@ -52,8 +52,8 @@
       }
     },
     { "name": "foam", "asset": "props", "animation": "foam", "at": [80, 24], "anchor": "frame" },
-    { "name": "torch", "asset": "props", "animation": "torch", "at": [52, 23], "anchor": "frame" },
-    { "name": "torch", "asset": "props", "animation": "torch", "at": [108, 23], "anchor": "frame" },
+    { "name": "torch-left", "asset": "props", "animation": "torch", "at": [52, 23], "anchor": "frame", "lit": false },
+    { "name": "torch-right", "asset": "props", "animation": "torch", "at": [108, 23], "anchor": "frame", "lit": false },
     {
       "name": "hero-shadow",
       "asset": "shadow",
@@ -76,8 +76,24 @@
     { "name": "pot", "asset": "props", "frame": "pot", "at": [46, 86], "anchor": "frame", "sort": "ground" },
     { "name": "crate", "asset": "props", "frame": "crate", "at": [124, 85], "anchor": "frame", "sort": "ground" },
     { "name": "pot", "asset": "props", "frame": "pot", "at": [117, 86], "anchor": "frame", "sort": "ground" },
-    { "name": "candles", "asset": "props", "frame": "candles", "at": [90, 100], "anchor": "frame", "sort": "ground" },
-    { "name": "candles", "asset": "props", "frame": "candles", "at": [66, 100], "anchor": "frame", "sort": "ground" },
+    {
+      "name": "candles-right",
+      "asset": "props",
+      "frame": "candles",
+      "at": [90, 100],
+      "anchor": "frame",
+      "sort": "ground",
+      "lit": false
+    },
+    {
+      "name": "candles-left",
+      "asset": "props",
+      "frame": "candles",
+      "at": [66, 100],
+      "anchor": "frame",
+      "sort": "ground",
+      "lit": false
+    },
     { "name": "barrel", "asset": "props", "frame": "barrel", "at": [68, 81], "anchor": "frame", "sort": "ground" },
     {
       "name": "chest",
@@ -133,12 +149,55 @@
   "lighting": {
     "mode": "ramp",
     "scope": "all",
-    "ambient": 0.5,
-    "bands": 3,
-    "steps": 2,
+    "ambient": 0.3,
+    "bands": 4,
+    "steps": 3,
     "lights": [
-      { "at": [52, 19], "height": 10, "radius": 56, "color": "#ffd38a" },
-      { "at": [108, 19], "height": 10, "radius": 56, "color": "#ffd38a" }
+      {
+        "follow": { "instance": "torch-left" },
+        "at": [0, -4],
+        "height": 12,
+        "radius": 64,
+        "color": "#fff0c8",
+        "flicker": { "amount": 0.35, "every": 90, "seed": 1 }
+      },
+      {
+        "follow": { "instance": "torch-right" },
+        "at": [0, -4],
+        "height": 12,
+        "radius": 64,
+        "color": "#fff0c8",
+        "flicker": { "amount": 0.35, "every": 90, "seed": 2 }
+      },
+      {
+        "follow": { "instance": "candles-left" },
+        "at": [2, -2],
+        "height": 6,
+        "radius": 26,
+        "color": "#ffd090",
+        "flicker": { "amount": 0.45, "every": 70, "seed": 3 }
+      },
+      {
+        "follow": { "instance": "candles-right" },
+        "at": [2, -2],
+        "height": 6,
+        "radius": 26,
+        "color": "#ffd090",
+        "flicker": { "amount": 0.45, "every": 70, "seed": 4 }
+      },
+      {
+        "follow": { "instance": "target-pot" },
+        "at": [0, -5],
+        "height": 8,
+        "radius": 10,
+        "strength": 0,
+        "color": "#fff1c4",
+        "keys": [
+          { "time": "strike+70", "strength": 0 },
+          { "time": "strike+100", "strength": 2.5, "radius": 48, "ease": "out" },
+          { "time": "strike+380", "strength": 0, "radius": 10 }
+        ]
+      }
     ]
   }
 }

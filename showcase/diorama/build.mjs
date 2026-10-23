@@ -273,11 +273,12 @@ const instances = [
   // The waterfall's halves by rule: a column with another to its west is the right half.
   { name: 'falls', asset: 'falls', at: [OX, OY], tilemap: { rows: MAP, legend: { V: { rules: [{ where: ['...', 'V..', '...'], animation: 'fall-r', stop: true }, { animation: 'fall-l' }] }, W: null, F: null, P: null } } },
   { name: 'foam', asset: 'props', animation: 'foam', at: [OX + 8 * 8 + 8, OY + 2 * 8 + 2], anchor: 'frame' },
-  ...[[5, 2], [12, 2]].map(([x, y]) => ({ name: 'torch', asset: 'props', animation: 'torch', at: scene(x, y, 0, -6), anchor: 'frame' })),
+  // Named apart, so the night scene's lights can follow them.
+  ...[[5, 2, 'torch-left'], [12, 2, 'torch-right']].map(([x, y, name]) => ({ name, asset: 'props', animation: 'torch', at: scene(x, y, 0, -6), anchor: 'frame' })),
   // Listed before the props, so it lands on the floor under them; attached, so it follows the hero's feet.
   { name: 'hero-shadow', asset: 'shadow', frame: 'feet', at: [0, 0], anchor: 'frame', attach: { instance: 'hero', point: 'feet' }, shade: -1 },
   // Props and the hero are drawn by ground line, so the hero passes behind the barrel in the middle of the room.
-  ...standing.filter(([frame], i) => i < standing.length - 2).map(([frame, x, y, dx, dy]) => place(frame, frame, scene(x, y, dx, dy), { sort: 'ground' })),
+  ...standing.filter(([frame], i) => i < standing.length - 2).map(([frame, x, y, dx, dy]) => place(frame === 'candles' ? `candles-${x < 9 ? 'left' : 'right'}` : frame, frame, scene(x, y, dx, dy), { sort: 'ground' })),
   place('chest', 'chest', scene(8, 11, 4, -1), { sort: 'ground', sequence: [{ time: 'strike+800', animation: 'chest-open' }] }),
   place('target-pot', 'pot', potAt, { sort: 'ground', sequence: [{ time: 'strike+90', animation: 'pot-break' }] }),
   { name: 'hero', asset: 'hero', animation: 'right', at: heroEnd, anchor: 'frame', sort: 'ground', trajectory: [{ time: 0, at: scene(4, 8, 0, -2) }, { time: 'strike', at: heroEnd }],
@@ -294,8 +295,17 @@ const base = { format: 'pixelforge-scene', version: 1, width: 160, height: 128, 
 save('room.scene.json', { ...base, name: 'diorama' });
 // The same room in blue stone on a brown floor: one palette file, no copied recipes.
 save('room-blue.scene.json', { ...base, name: 'diorama-blue', palette: 'palette-blue.json' });
-// By torchlight: ramp lighting moves colours along their ramps, so the lit room keeps exactly its palette.
-const torches = [[5, 2], [12, 2]].map(([x, y]) => scene(x, y, 0, -10));
-save('room-night.scene.json', { ...base, name: 'diorama-night', lighting: { mode: 'ramp', scope: 'all', ambient: 0.5, bands: 3, steps: 2, lights: torches.map(at => ({ at, height: 10, radius: 56, color: '#ffd38a' })) } });
+// By torchlight: ramp lighting moves colours along their ramps, so the lit room keeps exactly its palette. Each torch
+// and candle light follows its placement and flickers on its own seed; the flames themselves keep their colours
+// (lit: false). On the strike, a flash rises at the pot as it breaks, quickly, then fades more slowly.
+const flames = new Set(['torch-left', 'torch-right', 'candles-left', 'candles-right']);
+const nightLights = [
+  ...['torch-left', 'torch-right'].map((instance, i) => ({ follow: { instance }, at: [0, -4], height: 12, radius: 64, color: '#fff0c8', flicker: { amount: 0.35, every: 90, seed: i + 1 } })),
+  ...['candles-left', 'candles-right'].map((instance, i) => ({ follow: { instance }, at: [2, -2], height: 6, radius: 26, color: '#ffd090', flicker: { amount: 0.45, every: 70, seed: i + 3 } })),
+  { follow: { instance: 'target-pot' }, at: [0, -5], height: 8, radius: 10, strength: 0, color: '#fff1c4',
+    keys: [{ time: 'strike+70', strength: 0 }, { time: 'strike+100', strength: 2.5, radius: 48, ease: 'out' }, { time: 'strike+380', strength: 0, radius: 10 }] }
+];
+save('room-night.scene.json', { ...base, name: 'diorama-night', instances: instances.map(instance => (flames.has(instance.name) ? { ...instance, lit: false } : instance)),
+  lighting: { mode: 'ramp', scope: 'all', ambient: 0.3, bands: 4, steps: 3, lights: nightLights } });
 if (check) { console.log(differing.length ? `Out of date: ${differing.join(', ')}` : 'All diorama sources match build.mjs.'); process.exitCode = differing.length ? 1 : 0; }
 else console.log(JSON.stringify({ ok: true, directory: out, files: written }));

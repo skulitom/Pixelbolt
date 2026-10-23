@@ -52,8 +52,8 @@
       }
     },
     { "name": "foam", "asset": "props", "animation": "foam", "at": [80, 24], "anchor": "frame" },
-    { "name": "torch", "asset": "props", "animation": "torch", "at": [52, 23], "anchor": "frame" },
-    { "name": "torch", "asset": "props", "animation": "torch", "at": [108, 23], "anchor": "frame" },
+    { "name": "torch-left", "asset": "props", "animation": "torch", "at": [52, 23], "anchor": "frame" },
+    { "name": "torch-right", "asset": "props", "animation": "torch", "at": [108, 23], "anchor": "frame" },
     {
       "name": "hero-shadow",
       "asset": "shadow",
@@ -76,8 +76,22 @@
     { "name": "pot", "asset": "props", "frame": "pot", "at": [46, 86], "anchor": "frame", "sort": "ground" },
     { "name": "crate", "asset": "props", "frame": "crate", "at": [124, 85], "anchor": "frame", "sort": "ground" },
     { "name": "pot", "asset": "props", "frame": "pot", "at": [117, 86], "anchor": "frame", "sort": "ground" },
-    { "name": "candles", "asset": "props", "frame": "candles", "at": [90, 100], "anchor": "frame", "sort": "ground" },
-    { "name": "candles", "asset": "props", "frame": "candles", "at": [66, 100], "anchor": "frame", "sort": "ground" },
+    {
+      "name": "candles-right",
+      "asset": "props",
+      "frame": "candles",
+      "at": [90, 100],
+      "anchor": "frame",
+      "sort": "ground"
+    },
+    {
+      "name": "candles-left",
+      "asset": "props",
+      "frame": "candles",
+      "at": [66, 100],
+      "anchor": "frame",
+      "sort": "ground"
+    },
     { "name": "barrel", "asset": "props", "frame": "barrel", "at": [68, 81], "anchor": "frame", "sort": "ground" },
     {
       "name": "chest",
