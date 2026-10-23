@@ -6,7 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Renders check themselves
 
-- `pixel_render` and `pixelbolt render` report a `check` of what they wrote: each frame's pixel size, every animation's frames and loop, the colours used, transparency and the GIF size. Give them what the user asked for (`expect` over MCP, `--expect` on the CLI: `width`, `height`, `frames`, `colors`, `transparent`, `loop`, `gifScale`) and `check.problems` names every file that misses it, with the patch or render call that fixes it; fully transparent frames are noted either way. Agents mostly exported their first try; this puts the check in the path. The tool descriptions, quick start and skill now say to work in that loop.
+- `pixel_render` and `pixelbolt render` report a `check` of what they wrote: each frame's pixel size, every animation's frames and loop, the colours used, transparency and the GIF size. Give them what the user asked for (`expect` over MCP, `--expect` on the CLI: `width`, `height`, `frames`, `colors`, `transparent`, `loop`, and over MCP `gifScale` for the GIFs) and `check.problems` names every file that misses it, with the patch or render call that fixes it; fully transparent frames are noted either way. Agents mostly exported their first try; this puts the check in the path. The tool descriptions, quick start and skill now say to work in that loop.
 
 ### GIFs at the size you drew
 

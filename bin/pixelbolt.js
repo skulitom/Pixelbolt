@@ -16,7 +16,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt patch <file.json|-> --changes <changes.json|-> [--out new.json] [--image diff.png]
                                            Preview edits; writes only --out and --image
   pixelbolt render <file.json|-> --out dir Export a complete asset bundle
-                                           --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it against the request
+                                           --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it
+                                           against the request; --animation <name> checks only that animation
   pixelbolt gif <file.json|-> --out anim.gif [--animation name] [--scale 1-16] [--background color]
                                            Share one animation as a GIF; writes only --out
   pixelbolt gif-frames <folder> --fps 25 --out loop.gif [--loops 0] [--background color] [--prefix name_]
@@ -138,7 +139,7 @@ try {
   else {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
-    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
+    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     allowed.compile.push('expand');
@@ -262,9 +263,12 @@ try {
       if (command === 'validate') { const project = renderProject(input.document); console.log(JSON.stringify({ ok: true, ...summary(project), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }), ...referenced(input) })); }
       else {
         if (!options.out) throw new Error('render requires --out <directory>');
+        if (positional[0] === '-' && options.expect === '-') throw new Error('Only one input can use stdin');
         const expect = options.expect === undefined ? undefined : readExpect(await readExpectOption(options.expect));
-        const bundle = await createBundle(input.document), files = await writeBundle(bundle, options.out, options);
-        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, check: checkDelivery(bundle.project, { expect }), ...referenced(input) }));
+        // The check runs before anything is written, so an unknown --animation writes nothing. render writes no GIFs.
+        const bundle = await createBundle(input.document), check = checkDelivery(bundle.project, { recipe: input.document, expect, animation: options.animation });
+        const files = await writeBundle(bundle, options.out, options);
+        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, check, ...referenced(input) }));
       }
     }
   }
