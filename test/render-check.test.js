@@ -59,7 +59,10 @@ test('the render check sees sheet.scale, frame counts, loops and an opaque backg
     ['animations/flash.png', 'a loop', 'one play']
   ]);
   assert.match(check.problems[2].fix, /"set": "animations.flash.loop", "value": true/);
-  assert.equal(checkDelivery(project, { expect: { transparent: false }, animation: 'flash' }).problems[0].got, 'transparent pixels in "b", "c"');
+  // With one animation named, only its frames count: "c" is not in flash.
+  assert.equal(checkDelivery(project, { expect: { transparent: false }, animation: 'flash' }).problems[0].got, 'transparent pixels in "b"');
+  assert.equal(checkDelivery(project, { expect: { transparent: false } }).problems[0].got, 'transparent pixels in "b", "c"');
+  assert.deepEqual(checkDelivery(project, { animation: 'flash' }).notes, undefined);
 });
 
 test('expect is refused by name when it is malformed', () => {

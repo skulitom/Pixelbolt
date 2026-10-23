@@ -21,7 +21,10 @@ const list = (names, limit = 8) => names.slice(0, limit).map(name => JSON.string
 // project: a rendered project; gifs: the animationGIF results written beside it; animation: the one animation the
 // agent asked about (checks every animation when omitted).
 export function checkDelivery(project, { gifs = [], expect, animation } = {}) {
-  const { name, width, height, sheet, frames, animations } = project, scale = sheet.scale;
+  const { name, width, height, sheet, animations } = project, scale = sheet.scale;
+  const names = animation !== undefined && Object.hasOwn(animations, animation) ? [animation] : Object.keys(animations);
+  // With one animation named, only its frames are checked.
+  const frames = names.length === 1 && animation !== undefined ? [...new Set(animations[animation].frames)].sort((a, b) => a - b).map(index => project.frames[index]) : project.frames;
   const colors = new Set(), empty = [], clear = [], solid = [];
   for (const frame of frames) {
     let transparent = 0, opaque = 0;
@@ -35,7 +38,6 @@ export function checkDelivery(project, { gifs = [], expect, animation } = {}) {
     if (transparent) clear.push(frame.name);
     if (opaque === pixels) solid.push(frame.name);
   }
-  const names = animation !== undefined && Object.hasOwn(animations, animation) ? [animation] : Object.keys(animations);
   const played = Object.fromEntries(names.slice(0, 16).map(key => [key, { frames: animations[key].frames.length, loop: animations[key].loop }]));
   const delivered = {
     size: [width * scale, height * scale], ...(scale !== 1 && { canvas: [width, height], scale }),
