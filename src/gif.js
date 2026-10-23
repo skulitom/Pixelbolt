@@ -140,13 +140,13 @@ function writeFrames(indexed, width, height, { loops = 0, scale = 1 }, all, shar
         for (let copy = 1; copy < scale; copy++) out.copyWithin(row + copy * w, row, row + w);
       }
       const packed = compress(out, minimum, slots, state);
-      return { local, minimum, packed, size: packed.length + (local ? local.bytes.length : 0), transparent: keeping || transparent, index: keeping ? keep : 0 };
+      return { local, minimum, packed, size: packed.length + (local ? local.bytes.length : 0), transparent: keeping || transparent };
     };
     let best = encode(false);
     if (position && keep >= 0 && count < (right - left + 1) * (bottom - top + 1)) { const kept = encode(true); if (kept.size < best.size) best = kept; }
     const named = best.transparent || (clears && keep >= 0);
     if (clears && !named) backgroundClears++;
-    push(0x21, 0xf9, 4, (clears ? 2 : 1) << 2 | (named ? 1 : 0), ...word(frame.delay), best.transparent ? best.index : named ? keep : 0, 0);
+    push(0x21, 0xf9, 4, (clears ? 2 : 1) << 2 | (named ? 1 : 0), ...word(frame.delay), named ? keep : 0, 0);
     push(0x2c, ...word(left * scale), ...word(top * scale), ...word(w), ...word(h), best.local ? 0x80 | best.local.bits - 1 : 0);
     if (best.local) chunks.push(best.local.bytes);
     push(best.minimum);

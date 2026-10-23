@@ -196,7 +196,7 @@ function simulate(effect, context) {
   emitters.forEach((e, i) => { chain[i] = (e.life ? e.life[1] : Infinity) + (e.parent === null ? 0 : chain[e.parent]); });
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
-  const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor', 'life'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
+  const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
   const alive = [], output = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
   const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0 }));
   let operations = 0, culled = 0;
@@ -225,7 +225,7 @@ function simulate(effect, context) {
     return {
       emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag,
       remap: e.remaps.length ? e.remaps[Math.min(e.remaps.length - 1, Math.floor(r(SALT.remap) * e.remaps.length))] : null,
-      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: e.face ? facing(e, vx, vy, 0) : 0
+      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0
     };
   };
   // Children of particle q, born in frame `born`: keyed by the parent's tag and age, so a looping parent has the same

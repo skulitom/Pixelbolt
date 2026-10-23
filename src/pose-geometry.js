@@ -34,7 +34,7 @@ export function solveReach(first, second, target, { rest = [0, 0], flip = [false
   const a = choices(first, flip[0], rest[0]), b = choices(second, flip[1], rest[1]);
   const [tx, ty] = target, reach = first.length + second.length, distance2 = tx * tx + ty * ty;
   const outside = distance2 > reach * reach, minimum = Math.abs(first.length - second.length);
-  let unreachable = false, straightened = false;
+  let straightened = false;
   let best = null, error = Infinity, wrongBend = Infinity, change = Infinity;
   const consider = (p, q) => {
     const dx = p.x + q.x - tx, dy = p.y + q.y - ty, miss = dx * dx + dy * dy;
@@ -48,7 +48,7 @@ export function solveReach(first, second, target, { rest = [0, 0], flip = [false
   // Rounding can put a valid end beyond the analytic radius, especially with one-pixel bones.
   // Search that small fringe before declaring a miss. Further targets cannot land on a rounded endpoint.
   if (distance2 <= (reach + 2) * (reach + 2)) for (const p of a) for (const q of b) consider(p, q);
-  unreachable = error > 0 && (outside || distance2 < minimum * minimum);
+  const unreachable = error > 0 && (outside || distance2 < minimum * minimum);
   if (unreachable && outside) {
     // Straighten rather than choosing a bent chain merely because its rounded pixels are slightly longer.
     best = null; error = wrongBend = change = Infinity; straightened = true;
@@ -60,6 +60,5 @@ export function solveReach(first, second, target, { rest = [0, 0], flip = [false
         { x: qx, y: qy, angle: secondAngle, change: Math.abs(angleDelta(rest[1], secondAngle)) });
     }
   }
-  return { angles: best.map(p => p.angle), elbow: [best[0].x, best[0].y],
-    end: [best[0].x + best[1].x, best[0].y + best[1].y], error: Math.sqrt(error), unreachable, straightened };
+  return { angles: best.map(p => p.angle), error: Math.sqrt(error), unreachable, straightened };
 }

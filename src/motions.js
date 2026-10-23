@@ -8,7 +8,7 @@ const object = (value, keys, path) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(path, 'expected an object');
   for (const key of Object.keys(value)) if (!keys.includes(key)) fail(`${path}.${key}`, 'unknown field');
 };
-const number = (value, fallback, lo, hi, path, integer = false) => {
+const number = (value, fallback, lo, hi, path, integer) => {
   if (value === undefined) value = fallback;
   if (typeof value !== 'number' || !Number.isFinite(value) || value < lo || value > hi || integer && !Number.isInteger(value)) fail(path, `expected ${integer ? 'an integer' : 'a number'} from ${lo} to ${hi}`);
   return value;
@@ -40,7 +40,7 @@ export function validateRig(rig, height) {
 
 // compileRest and probeJoints are supplied by authoring.js so this module has no circular compiler import. probeJoints
 // resolves one pose's joints without assembling or validating a recipe.
-export function expandMotions(input, compileRest, probeJoints = compileRest) {
+export function expandMotions(input, compileRest, probeJoints) {
   if (!input || input.format !== 'pixelforge-poses' || input.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   const source = structuredClone(input);
   if (source.motions === undefined) return source;
@@ -80,7 +80,7 @@ export function expandMotions(input, compileRest, probeJoints = compileRest) {
     const existing = rest.markers?.find(m => m.part === last.name && m.point === point);
     const marker = existing?.name ?? id(`${last.name}Foot`, `poses.rig.legs[${i}]`);
     if (!existing && rest.markers?.some(m => m.name === marker)) fail(`poses.rig.legs[${i}]`, `marker ${marker} is already used for another point`);
-    return { chain, last: last.name, point, marker, x: restData.parts[last.name].points[point][0] };
+    return { last: last.name, point, marker, x: restData.parts[last.name].points[point][0] };
   });
   const generated = [], animations = { ...(source.animations ?? {}) }, motionInfo = {};
   for (const [name, motion] of Object.entries(source.motions)) {
