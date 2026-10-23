@@ -64,6 +64,11 @@ test('the render check passes a delivery that matches the request and names each
   const matte = check(dot, { gifs: [animationGIF(dotProject, undefined, { background: '#ffffff' })], expect: { transparent: true, colors: 1 } });
   assert.deepEqual(matte.problems.map(problem => [problem.file, problem.asked, problem.got]), [['gifs/default.gif', 'a transparent background', 'an opaque GIF'], ['gifs/default.gif', 'at most 1 colours', 2]]);
   assert.equal(check(dot, { gifs: [animationGIF(dotProject, undefined, {})], expect: { transparent: true, colors: 1 } }).ok, true);
+  // With one animation named, only its GIF is checked: an opaque, three-colour "sky" doesn't fail the "sprite".
+  const two = { ...dot, palette: { r: '#ff0000', b: '#0000ff', w: '#ffffff' }, frames: [...dot.frames, { name: 'sky', ops: [{ op: 'rect', x: 0, y: 0, w: 2, h: 2, color: 'b' }, { op: 'pixel', x: 1, y: 1, color: 'w' }, { op: 'pixel', x: 0, y: 1, color: 'r' }] }], animations: { sprite: { frames: ['a'] }, sky: { frames: ['sky'] } } }, twoProject = renderProject(two);
+  const both = ['sprite', 'sky'].map(name => animationGIF(twoProject, name, {}));
+  assert.equal(check(two, { gifs: both, expect: { transparent: true, colors: 1 }, animation: 'sprite' }).ok, true);
+  assert.equal(check(two, { gifs: both, expect: { transparent: true, colors: 1 } }).ok, false);
   const solid = { ...dot, background: 'r' }, solidProject = renderProject(solid);
   assert.equal(check(solid, { gifs: [animationGIF(solidProject, undefined, {})], expect: { transparent: false } }).ok, true);
 });

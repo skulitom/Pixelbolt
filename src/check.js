@@ -66,20 +66,22 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     problems.push({ file: frameFiles, asked, got: { width: width * scale, height: height * scale }, fix });
   }
   if (gifs !== undefined) {
+    // Only the GIFs of the animations being checked.
+    const scoped = gifs.filter(gif => names.includes(gif.animation));
     // A GIF should be the asked frame size, times gifScale when one was asked for.
     const gifScale = expect.gifScale ?? 1, sized = expect.width !== undefined || expect.height !== undefined || expect.gifScale !== undefined;
     const wantW = (expect.width ?? width * scale) * gifScale, wantH = (expect.height ?? height * scale) * gifScale, k = wholeScale([[wantW, width], [wantH, height]], Infinity);
     const gifFix = k === null ? 'fix the frame size first (see the problem above), then render the GIFs again'
       : k > 16 ? `a GIF that size needs scale ${k}, above the limit of 16: ask for a smaller gifScale, or lower sheet.scale`
         : `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}`;
-    if (expect.gifScale !== undefined && !gifs.length) problems.push({ file: 'gifs/', asked: { width: wantW, height: wantH }, got: 'no GIF', fix: gifFix });
-    const wrong = sized ? gifs.filter(gif => gif.width !== wantW || gif.height !== wantH) : [];
+    if (expect.gifScale !== undefined && !scoped.length) problems.push({ file: 'gifs/', asked: { width: wantW, height: wantH }, got: 'no GIF', fix: gifFix });
+    const wrong = sized ? scoped.filter(gif => gif.width !== wantW || gif.height !== wantH) : [];
     if (wrong.length) problems.push({ file: gifFiles(wrong), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
     // A GIF background blends every pixel onto one colour, so GIFs can miss a request the frames meet. (Opaque frames
     // always make an opaque GIF, so only the transparent side needs a GIF check.)
-    const opaque = expect.transparent === true && clear.length === frames.length ? gifs.filter(gif => !gif.transparent) : [];
+    const opaque = expect.transparent === true && clear.length === frames.length ? scoped.filter(gif => !gif.transparent) : [];
     if (opaque.length) problems.push({ file: gifFiles(opaque), asked: 'a transparent background', got: 'an opaque GIF', fix: 'render again without a "background" in "gif" (GIFs keep 1-bit transparency by default)' });
-    const many = expect.colors !== undefined && colors.size <= expect.colors ? gifs.filter(gif => gif.colors > expect.colors) : [];
+    const many = expect.colors !== undefined && colors.size <= expect.colors ? scoped.filter(gif => gif.colors > expect.colors) : [];
     if (many.length) problems.push({ file: gifFiles(many), asked: `at most ${expect.colors} colours`, got: many[0].colors, fix: 'a GIF background adds its colour and blends soft edges into new ones: render again without it, or with a background from the palette' });
   }
   if (expect.frames !== undefined) for (const key of names) {
