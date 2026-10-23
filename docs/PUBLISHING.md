@@ -2,7 +2,7 @@
 
 Registry description: Pixel art and sprite animation for agents: JSON recipes to PNG, APNG, GIF and sprite sheets.
 
-Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its isolated smoke test, MCPB CLI validation, provenance attestation and a GitHub release. The bundle and checksum are attached immediately; `server.registry.json` is also saved in the `pixelbolt-mcpb` workflow artifact. Existing assets are never replaced: a rerun skips identical bytes and fails on different bytes. Only the highest stable tag is marked Latest.
+Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its isolated smoke test, MCPB CLI validation, provenance attestation and a GitHub release, then publishes the version to npm ([npm](#npm)). The bundle and checksum are attached immediately; `server.registry.json` is also saved in the `pixelbolt-mcpb` workflow artifact. Existing assets are never replaced: a rerun skips identical bytes and fails on different bytes. Only the highest stable tag is marked Latest.
 
 **Registry versions are immutable. A published version cannot be changed. Publishing metadata-only permanently prevents that version from ever getting its bundle.** Nothing publishes to the registry automatically. **Publish to MCP Registry** runs only when dispatched after testing; it uses GitHub OIDC, with no registry account or stored secret. It skips versions already listed.
 
@@ -23,6 +23,12 @@ Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its is
    ```
 
    A release left as a draft (by an interrupted run, or made by hand) is published by the rerun once every asset matches. Never reuse a tag for changed bytes.
+
+## npm
+
+After the GitHub release, Release's `npm` job publishes the tagged version with npm's trusted publishing: npm accepts the job's GitHub OIDC token in place of an npm token, so no token is stored, no one-time password is asked for, and the package gets provenance. The job uses npm 11.5.1 or later, checks the package contents (only `package.json`'s `files`: no tests, scripts, evals, showcase art or builds), skips a version npm already has, publishes with `npm publish --access public`, then runs `npx -y pixelbolt@X.Y.Z --help`. It runs on its own after the release job, so a failure never touches the GitHub release; fix the cause and rerun Release from the tag as above.
+
+It needs one setting on npmjs.com, made by the package owner: the `pixelbolt` package, **Settings**, **Trusted Publisher**, **GitHub Actions**, with organization or user `skulitom`, repository `Pixelbolt`, workflow filename `release.yml`, no environment, and direct `npm publish` allowed. npm drops a new entry that has no successful publish within two days, so add it shortly before a release. Without it the job fails at `npm publish`, and the owner publishes from an untouched archive of the tag (`git archive vX.Y.Z`) with `npm publish` and their two-factor code.
 
 ## Test the release, then list it
 
