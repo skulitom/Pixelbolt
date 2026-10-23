@@ -240,13 +240,13 @@ export function framesGIF(frames, { fps, loops = 0, background = null } = {}) {
   return { data: gif.data, width, height, frames: count, fps: { label, numerator, denominator }, frameMs: round(frameMs), duration, delays: Object.fromEntries(used), loops, colors: gif.colors, colorsPerFrame: { fewest, most }, tables: gif.shared ? 'shared' : 'per frame', transparent: gif.transparent, partialAlpha, notes };
 }
 
-// One animation of a rendered project as a GIF. The default scale is the largest whole number that keeps the longer
-// side within 256 pixels. `notes` says, in words, what GIF could not keep.
+// One animation of a rendered project as a GIF, at the frames' own size unless `scale` enlarges it by a whole number.
+// `notes` says, in words, what GIF could not keep.
 export function animationGIF(project, animation, options = {}) {
   const names = Object.keys(project.animations), name = animation ?? names[0];
   for (const key of Object.keys(options)) if (!['scale', 'background'].includes(key)) throw new PixelError(`gif.${key}`, 'unknown option; use scale or background');
   if (!Object.hasOwn(project.animations, name)) throw new PixelError('gif.animation', `no animation named "${name}"; choose one of: ${names.join(', ')}`);
-  const sequence = project.animations[name], scale = options.scale ?? Math.max(1, Math.min(16, Math.floor(256 / Math.max(project.width, project.height))));
+  const sequence = project.animations[name], scale = options.scale ?? 1;
   let background = null;
   if (options.background !== undefined && options.background !== 'transparent') {
     background = parseColor(options.background, project.palette, 'gif.background');

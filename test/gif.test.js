@@ -236,11 +236,14 @@ test('GIF keeps unchanged pixels only where a table has room, and stays exact wh
   const doubled = decodeGIF(encodeGIF(even, 16, 16).data);
   for (const [position, frame] of even.entries()) assert.deepEqual(doubled.frames[position].pixels, hexPixels(frame));
 });
-test('an animation exports as a GIF with a default scale, notes about what GIF cannot keep, and named errors', async () => {
+test('an animation exports as a GIF at its own size unless a scale enlarges it, with notes about what GIF cannot keep, and named errors', async () => {
   const project = renderProject(JSON.parse(await readFile(path.join(root, 'examples', 'forest-spirit.json'), 'utf8')));
   const gif = animationGIF(project), decoded = decodeGIF(gif.data);
-  // 24 pixels scale to 240, the largest whole multiple within 256. The soft shadow is below 50% alpha.
-  assert.deepEqual([gif.animation, gif.scale, gif.width, gif.height, gif.frames, gif.duration, gif.loop, gif.transparent], ['idle', 10, 240, 240, 7, 1220, true, true]);
+  // A 24-pixel sprite stays 24 pixels: a GIF asked for at a size is that size (P-012). The soft shadow is below 50% alpha.
+  assert.deepEqual([gif.animation, gif.scale, gif.width, gif.height, gif.frames, gif.duration, gif.loop, gif.transparent], ['idle', 1, 24, 24, 7, 1220, true, true]);
+  assert.deepEqual([decoded.width, decoded.height], [24, 24]);
+  const large = animationGIF(project, 'idle', { scale: 10 });
+  assert.deepEqual([large.scale, large.width, large.height, decodeGIF(large.data).width], [10, 240, 240, 240]);
   assert.equal(decoded.frames.length, 7); assert.ok(gif.partialAlpha > 0); assert.match(gif.notes[0], /partly transparent pixels across the frames became fully transparent/);
   const matte = animationGIF(project, 'blink', { scale: 3, background: 'k' });
   assert.deepEqual([matte.width, matte.loop, matte.transparent, matte.partialAlpha, matte.notes], [72, false, false, 0, []]);
@@ -256,6 +259,10 @@ test('CLI gif writes only the requested file and refuses to replace it', async t
   const written = run('--out', out, '--animation', 'bob', '--scale', '4', '--background', '#17191d');
   assert.equal(written.status, 0, written.stderr);
   const report = JSON.parse(written.stdout);
+  // Without --scale the GIF keeps the recipe's 24x24 frames (P-012).
+  const native = run('--out', path.join(dir, 'native.gif')), nativeReport = JSON.parse(native.stdout);
+  assert.deepEqual([native.status, nativeReport.scale, nativeReport.width, decodeGIF(await readFile(path.join(dir, 'native.gif'))).width], [0, 1, 24, 24]);
+  await rm(path.join(dir, 'native.gif'));
   assert.deepEqual([report.ok, report.name, report.animation, report.width, report.frames, report.file, report.notes, report.data], [true, 'forest-spirit', 'bob', 96, 4, out, [], undefined]);
   assert.deepEqual(await readdir(dir), ['spirit.gif']);
   assert.equal(decodeGIF(await readFile(out)).frames.length, 4);
@@ -279,7 +286,11 @@ test('MCP pixel_render writes GIFs on request and leaves nothing behind when one
     return replies.slice(1).map(reply => reply.result);
   };
   const call = (directory, args) => calls(directory, [args])[0];
-  const rendered = call(path.join(dir, 'with'), { project, gif: { scale: 2 } });
+  const [rendered, native] = calls(path.join(dir, 'with'), [{ project, gif: { scale: 2 } }, { project, gif: {} }]);
+  // Without a scale the GIFs keep the recipe's 24x24 frames (P-012).
+  const nativeInfo = JSON.parse(native.content[0].text);
+  assert.deepEqual([nativeInfo.gifs.scale, nativeInfo.gifs.width, nativeInfo.gifs.height], [1, 24, 24]);
+  assert.equal(decodeGIF(await readFile(path.join(nativeInfo.directory, nativeInfo.gifs.files[0]))).width, 24);
   assert.ok(!rendered.isError, JSON.stringify(rendered));
   const info = JSON.parse(rendered.content[0].text);
   assert.deepEqual([info.gifs.directory, info.gifs.count, info.gifs.scale, info.gifs.width, info.gifs.files], ['gifs', 3, 2, 48, ['gifs/idle.gif', 'gifs/bob.gif', 'gifs/blink.gif']]);

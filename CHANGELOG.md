@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### GIFs at the size you drew
+
+- GIFs now keep the frames' own size unless you ask for more: `pixelbolt gif`, MCP `pixel_render`'s `gif` and `animationGIF` default to scale 1. They used to enlarge to the largest whole multiple within 256 pixels, so a 32x32 animation came out 256x256 and agents handed that on when 32x32 was asked for. Pass `scale` (`--scale` on the CLI) to enlarge one for posting; the studio's **GIF** button still uses the current zoom.
+
 ### Older art out of sight
 
 - The Emberfall and Tidewatch demos and the Listening Hollow study (with its lantern skink) no longer represent what Pixelbolt makes, so they are gone from the README, llms.txt, the guides, the skill and the portable build's START HERE. Their folders stay, marked as archived, because tests use them as fixtures.

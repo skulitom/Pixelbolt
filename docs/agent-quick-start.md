@@ -50,7 +50,7 @@ Coordinates are whole pixels from the top-left, and y points down. Shapes are ne
    - `{"grid": "frames[rest]", "value": {"x": 3, "y": 4, "rows": ["kk.", ".k."]}}` paints a small region; dots keep pixels.
    - `{"set": "frames[up].duration", "value": 250}`, `{"insert": "frames[-]", "value": {...}}` and `{"remove": "animations.blink"}` edit the source by path.
    - `recolor`, `move` and `cleanup` (proposed fixes for doubled corners and stray pixels) work on regions.
-4. **`pixel_render`** `{revision}` exports a new folder: sprite sheet, atlas, frames, APNG animations, CSS and a preview page. Add `gif: {}` for GIFs to share, or `sequence: {fps: 30, size: "1080p"}` for PNG frames for a video editor.
+4. **`pixel_render`** `{revision}` exports a new folder: sprite sheet, atlas, frames, APNG animations, CSS and a preview page. Add `gif: {}` for GIFs at the frames' own size (`gif: {scale: 8}` only to enlarge one for posting), or `sequence: {fps: 30, size: "1080p"}` for PNG frames for a video editor.
 5. **`pixel_compile`** `{source}` builds an ordinary recipe from a source format: `pixelforge-fluid` (simulated fire, smoke, explosions, steam, magic, water, honey, slime), `pixelforge-fx` (particles: sparks, debris, shockwaves), `pixelforge-poses` (characters from parts and bones, with walk, run and attack templates), `pixelforge-autotile` (47- or 16-tile terrain sets) or `pixelforge-normals` (a lighting normal pass). The matching topic has the format.
 6. **`pixel_scene`** composes assets into a room with tilemaps, cues and lighting; **`pixel_import`** turns a native PNG into an editable recipe.
 
