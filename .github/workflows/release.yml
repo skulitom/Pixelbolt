@@ -125,6 +125,10 @@ jobs:
   npm:
     needs: release
     runs-on: ubuntu-latest
+    # One npm publish at a time across tags, so two releases can't both read the same latest version.
+    concurrency:
+      group: npm-pixelbolt
+      cancel-in-progress: false
     timeout-minutes: 15
     permissions:
       contents: read
@@ -176,9 +180,11 @@ jobs:
             exit 0
           fi
           # A version below npm's latest (a backport) can't take the latest tag; it goes out under "backport".
-          latest=$(npm view pixelbolt dist-tags.latest 2> /dev/null || true)
+          # The package is already on npm, so a failed lookup stops the job rather than risk moving latest backwards.
+          latest=$(npm view pixelbolt dist-tags.latest)
+          [[ -n "$latest" ]] || { echo "::error::Could not read npm's latest version of pixelbolt."; exit 1; }
           tag=latest
-          if [[ -n "$latest" ]] && node -e 'const [a, b] = process.argv.slice(1).map(v => v.split(".").map(Number)); process.exit((a[0] - b[0] || a[1] - b[1] || a[2] - b[2]) < 0 ? 0 : 1)' "$version" "$latest"; then
+          if node -e 'const [a, b] = process.argv.slice(1).map(v => v.split(".").map(Number)); process.exit((a[0] - b[0] || a[1] - b[1] || a[2] - b[2]) < 0 ? 0 : 1)' "$version" "$latest"; then
             tag=backport
           fi
           npm publish --access public --tag "$tag"
