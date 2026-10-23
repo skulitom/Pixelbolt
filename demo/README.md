@@ -1,5 +1,7 @@
 # Emberfall
 
+> **Archived, 23 October 2026.** Emberfall was the first stress test of Pixelbolt, and its art was judged too primitive to represent the toolkit, so it has been taken out of the README. The game, generator and recipes stay because `test/emberfall.test.js` and `npm run stress:emberfall` use them as a large deterministic workload. For current work, see the [diorama study](../showcase/diorama/README.md), the [fluid effects](../showcase/fluid/) and the [gallery](../showcase/gallery/README.md).
+
 An original, playable fantasy action-platformer and Pixelbolt stress-test project. Everything stays local for now. All game code and original artwork are covered by the repository's MIT license.
 
 ## Launch

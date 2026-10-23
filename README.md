@@ -109,34 +109,6 @@ node bin/pixelbolt.js render hero.pixel.json --out output/hero
 
 `inspect` saves a contact sheet of every frame and lists each frame's timing. Add `--grid` to read frames back as palette-key text; `--animation`, `--frames` (names or patterns such as `'flash-*'`) and `--region` narrow the view, and `--step 2 --offset 1` keeps every second cell from the second, so a strobe's A and B frames can be read apart. `validate hero.pixel.json --fps 30` also lists the durations that are not whole video frames at that rate and what a video sequence would do to each animation. `patch hero.pixel.json --changes fix.json` previews targeted edits and reports every pixel they change; add `--out` to save the new recipe. `gif hero.pixel.json --out hero.gif` saves one animation as a GIF for sharing. Command results except help and the preview server are JSON. Errors go to stderr and exit with code 1. Use `-` instead of a filename to read JSON from stdin. Existing output files are protected; add `--force` to replace them. You can optionally run `npm link` for the `pixelbolt` command. No `npm install` is needed.
 
-## Play the local Emberfall demo
-
-**Emberfall** is an original fantasy action platformer built to exercise Pixelbolt: 220 frames, 44 named animations, nine editable recipes, three elemental spells, reactive scenery, enemies and a boss. Its animation workshop exposes the recipes, contact sheets and complete export bundles.
-
-```sh
-npm run play
-```
-
-Open **http://127.0.0.1:4173** and choose **Begin adventure** or **Watch it play**. The game runs entirely in the browser with no runtime dependencies. It is currently a local preview; hosting is intentionally deferred.
-
-![Emberfall's moonlit forest and spell effects](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/demo/preview.png)
-
-[Demo details and controls](https://github.com/skulitom/Pixelbolt/blob/main/demo/README.md) · [Stress-test findings and bug reports](docs/bugreports/emberfall-stress-test.md) · [Pixelbolt art-quality roadmap](docs/reports/pixelforge-art-quality-roadmap.md)
-
-## Tidewatch: a top-down showcase
-
-**Tidewatch** is a second, independent demo: a small top-down adventure in which a lighthouse keeper relights the lamp before night falls. It exercises parts of Pixelbolt that Emberfall did not: 47-tile blob autotiles composed from quarter symbols, palette-cycled surf, a four-facing character compiled from pose parts with sword markers driving the hitbox, a pixel font, and night lighting composited from aligned normal/emissive passes. 29 recipes, 527 frames.
-
-```sh
-npm run play:tidewatch
-```
-
-Open **http://127.0.0.1:4180**.
-
-![Tidewatch at night: the relit lighthouse sweeps its beam over the sea](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/tidewatch/screens/night.png)
-
-[Showcase details](https://github.com/skulitom/Pixelbolt/blob/main/showcase/tidewatch/README.md) · [Findings report: bugs and missing features](docs/reports/tidewatch-showcase-report.md)
-
 ## Diorama: a 3/4 dungeon room
 
 An original 3/4 top-down dungeon room in the style of procedurally generated "floating diorama" games: 8-pixel tiles, wall caps with front faces, a sunken pool fed by a waterfall, moss, props, torches and a hero whose strike breaks a pot. The room is one recipe whose `tilemap` operation places walls, faces, cliffs, water and worn bricks by neighbour rules; moss is seeded value noise on the floor colour; shadows and torchlight move colours along palette ramps, so the scene keeps its 31 colours lit or re-themed.
@@ -153,12 +125,11 @@ By night, each torch and candle light follows its placement and flickers on its 
 
 ## Art quality workflow
 
-The [original Listening Hollow study](docs/art-quality-lab.md) demonstrates silhouette/value/native-size review, animation-aware onion skins, masked regional corrections, authored parts and attachments, guarded rebuild overlays, a small scene, PNG interchange and aligned normal/emissive passes. See the [format and workflow guide](docs/art-workflow.md) for the supported boundaries. This is a self-reviewed improvement study; it does not claim Animal Well parity.
+The [art workflow](docs/art-workflow.md) covers silhouette, value and native-size review, animation-aware onion skins, masked regional corrections, authored parts and attachments, guarded rebuild overlays, scenes, PNG interchange and aligned normal/emissive passes. Passing checks are not a verdict on the art: look at every frame, at native size and in playback.
 
 ```sh
-npm run review:quality
-node bin/pixelbolt.js preview examples/quality/skink.json
-node bin/pixelbolt.js inspect examples/quality/skink.json --animation run --view onion --native --diagnostics
+node bin/pixelbolt.js inspect examples/forest-spirit.json --animation idle --view onion --native --diagnostics
+node bin/pixelbolt.js preview examples/forest-spirit-lit.scene.json
 ```
 
 ## For agents

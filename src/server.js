@@ -2,6 +2,8 @@ import http from 'node:http';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { resolveReferences } from './resolve.js';
 import { createBundle, createZip } from './export.js';
 import { renderProject, MAX_REQUEST_BYTES, PixelError } from './core.js';
 import { createSequence } from './sequence.js';
@@ -30,7 +32,6 @@ const routes = new Map([
   ['/fluid.css', ['../studio/fluid.css', 'text/css; charset=utf-8']],
   ['/fluid-lab.js', ['../studio/fluid-lab.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
-  ['/examples/quality/skink.json', ['../examples/quality/skink.json', 'application/json']],
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),
   // The fluid lab compiles these sources in the browser.
@@ -92,7 +93,11 @@ export async function startStudio({ port = STUDIO_PORT, fallback = false, projec
       if (req.method !== 'GET') { reply(405, 'text/plain', 'Method not allowed'); return; }
       if (scene && url.pathname === '/') { reply(200, 'text/html; charset=utf-8', await readFile(new URL('../studio/scene.html', import.meta.url))); return; }
       if (scene && url.pathname === '/scene.json') { reply(200, 'application/json', JSON.stringify(project)); return; }
-      if (url.pathname === '/scene.json') { reply(200, 'application/json', await readFile(new URL('../examples/quality/hollow.scene.json', import.meta.url))); return; }
+      // Without a scene of its own, the scene page shows the lit forest spirit, its recipe files resolved here.
+      if (url.pathname === '/scene.json') {
+        const file = fileURLToPath(new URL('../examples/forest-spirit-lit.scene.json', import.meta.url)), { document } = await resolveReferences(JSON.parse(await readFile(file, 'utf8')), { baseDir: path.dirname(file) });
+        reply(200, 'application/json', JSON.stringify(document)); return;
+      }
       if (url.pathname === '/project.json') { reply(200, 'application/json', JSON.stringify(project ?? null)); return; }
       if (!routes.has(url.pathname)) { reply(404, 'text/plain', 'Not found'); return; }
       const [file, type] = routes.get(url.pathname);

@@ -156,8 +156,7 @@ In the "app" folder:
 Pixelbolt is for small sprites, tiles and effects: up to 256 x 256 pixels and
 256 frames per recipe.
 
-The Emberfall and Tidewatch demos are in the GitHub repository, not this
-download. Source code and issues: https://github.com/skulitom/Pixelbolt
+Source code and issues: https://github.com/skulitom/Pixelbolt
 
 Pixelbolt is MIT licensed (LICENSE in the "app" folder). The Node.js runtime
 in the "runtime" folder has its own license, NODE-LICENSE.txt beside it; see

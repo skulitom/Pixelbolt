@@ -15,7 +15,7 @@ In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixel
 
 Read `docs/agent-guide.md` before creating the first recipe. Use `schema.json` for exact field names. Begin with one of the files in `examples/` if helpful.
 
-For finished artwork, also read `docs/art-workflow.md` and the worked before/after study in `docs/art-quality-lab.md`. Establish a small art brief outside the recipe: native/display size, three silhouette landmarks, palette roles, light direction, material rules, outline treatment, action intent, contact/origin and scene role. Record the actual strengths and failures of each review. A rendered file, frame count or passing test is not evidence of artistic quality. These checkpoints do not require user permission.
+For finished artwork, also read `docs/art-workflow.md`. Establish a small art brief outside the recipe: native/display size, three silhouette landmarks, palette roles, light direction, material rules, outline treatment, action intent, contact/origin and scene role. Record the actual strengths and failures of each review. A rendered file, frame count or passing test is not evidence of artistic quality. These checkpoints do not require user permission.
 
 Work in this order: **silhouette → large connected color shapes → material accents → authored action poses → timing → scene integration**. Do not mass-generate variants before the resting silhouette and one action read well. Use primitive geometry as a blockout; revise contours and connected color groups deliberately. Noise and extra glow cannot fix weak structure. Design different behaviors for water, fire and crystal rather than recoloring identical geometry.
 

@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Older art out of sight
+
+- The Emberfall and Tidewatch demos and the Listening Hollow study (with its lantern skink) no longer represent what Pixelbolt makes, so they are gone from the README, llms.txt, the guides, the skill and the portable build's START HERE. Their folders stay, marked as archived, because tests use them as fixtures.
+- The studio no longer opens on the skink: the forest spirit is its first sample, and the "Light a scene" page shows the lit forest-spirit example (`examples/forest-spirit-lit.scene.json`) instead of the Hollow.
+- The diorama's night scene takes their place in the README: torches and candles that flicker and a flash on the strike.
+
 ### Scene lights that move
 
 - **`follow`:** a light rides a uniquely named placement, or with `point` a named point of its current frame (a torch flame, a blade tip), with `at` as the offset. It moves with trajectories, animations and attachments, and is off while the placement is hidden or its frame lacks the point.

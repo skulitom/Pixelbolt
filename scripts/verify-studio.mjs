@@ -131,8 +131,7 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
       assert.ok(/^[\x09\x0d\x0a\x20-\x7e]*$/.test(text) && !/[^\r]\n/.test(text) && text.includes('\r\n'), file);
     }
   });
-  await check('START HERE is written for this system and says in one line where the Emberfall and Tidewatch demos are', () => {
-    assert.ok(start.split(/\r?\n/).some(line => /Emberfall/.test(line) && /Tidewatch/.test(line) && /GitHub/.test(line)));
+  await check('START HERE is written for this system and links the source', () => {
     assert.match(start, /https:\/\/github\.com\/skulitom\/Pixelbolt/); assert.doesNotMatch(start, /^#/m);
     for (const name of names.named) assert.ok(start.includes(name), `START HERE does not mention ${name}`);
     for (const other of Object.values(SYSTEMS).flatMap(system => [system.studio, system.helper, ...system.scripts]).filter(name => !names.named.includes(name))) assert.ok(!start.includes(`"${other}"`), `START HERE mentions ${other}, which is not in this build`);

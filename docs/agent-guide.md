@@ -2,7 +2,7 @@
 
 Create a small, editable JSON recipe; validate it; render it; inspect the PNG preview; revise the source. Use compact palette grids for silhouettes, symbols for repeated objects and inherited frames for small pose changes. The renderer is deterministic. It does not use an image model.
 
-For visual quality decisions, regional corrections, pose compilation, scenes, material passes and PNG interchange, follow the [art workflow](art-workflow.md) and [original quality lab](art-quality-lab.md). These are supported extensions around version-1 recipes, not permission prompts or aesthetic guarantees.
+For visual quality decisions, regional corrections, pose compilation, scenes, material passes and PNG interchange, follow the [art workflow](art-workflow.md). These are supported extensions around version-1 recipes, not permission prompts or aesthetic guarantees.
 
 For a moving character, use `bone` limbs with length/width profiles, a `mass` torso with squash, and `rows` for detailed heads and props. Declare dark-to-light `ramps` and world `light` (default 225°). Relative `angle` follows the parent; legacy `rotate` stays absolute. Attachments resolve in any order while parts paint in listed order. A two-bone `reach` targets a canvas point; grid `views` preserve authored detail at key angles.
 
