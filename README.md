@@ -190,14 +190,14 @@ Several of these ideas come from [Pixel Composer](https://github.com/Ttanasart-p
 
 ### GIF for sharing
 
-APNG keeps full alpha and exact timing, but many chat, forum and store pages only animate GIFs and cannot scale pixels crisply. `pixelbolt gif` writes one animation as a GIF, enlarged by a whole number (by default the largest that keeps the longer side within 256 pixels):
+APNG keeps full alpha and exact timing, but many chat, forum and store pages only animate GIFs and cannot scale pixels crisply. `pixelbolt gif` writes one animation as a GIF at the frames' own size; `--scale` (1-16) enlarges it by a whole number for pages that would show a small sprite tiny:
 
 ```sh
 node bin/pixelbolt.js gif hero.pixel.json --out hero.gif
 node bin/pixelbolt.js gif hero.pixel.json --animation blink --scale 8 --background "#17191d" --out hero-blink.gif
 ```
 
-Colours are exact: nothing is quantized or dithered, and a frame that needs more than 256 colours is refused with an error instead of being approximated. GIF has no partial transparency, so pixels below 50% alpha become transparent and the rest opaque; `--background` (a palette name or opaque hex colour) blends every pixel onto one colour instead, which keeps soft shadows. Frame times are rounded to GIF's 10 ms steps with the remainder carried to the next frame, and raised to 20 ms where shorter. Transparent pixels stay clear in every viewer, including ffmpeg and Pillow, which fill a cleared frame with the background colour unless it names a transparent index (the notes report the rare frame with 256 colours of its own that has none to name). The JSON result's `notes` say which of these happened. The studio's **GIF** button downloads the current animation at the current zoom, and MCP `pixel_render` takes `"gif": {}`. The export bundle itself is unchanged.
+Colours are exact: nothing is quantized or dithered, and a frame that needs more than 256 colours is refused with an error instead of being approximated. GIF has no partial transparency, so pixels below 50% alpha become transparent and the rest opaque; `--background` (a palette name or opaque hex colour) blends every pixel onto one colour instead, which keeps soft shadows. Frame times are rounded to GIF's 10 ms steps with the remainder carried to the next frame, and raised to 20 ms where shorter. Transparent pixels stay clear in every viewer, including ffmpeg and Pillow, which fill a cleared frame with the background colour unless it names a transparent index (the notes report the rare frame with 256 colours of its own that has none to name). The JSON result's `notes` say which of these happened. The studio's **GIF** button downloads the current animation at the current zoom, and MCP `pixel_render` takes `"gif": {}` (the frames' own size) or `"gif": { "scale": 8 }`. The export bundle itself is unchanged.
 
 `pixelbolt gif-frames` makes a GIF from a folder of numbered PNG frames, such as a `sequence` folder or frames a video or effects tool wrote, by the same rules:
 
