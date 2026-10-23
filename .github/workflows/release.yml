@@ -175,12 +175,21 @@ jobs:
             echo "pixelbolt@$version is already on npm; skipped." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          npm publish --access public
-          # The registry can take a moment to serve a new version.
+          # A version below npm's latest (a backport) can't take the latest tag; it goes out under "backport".
+          latest=$(npm view pixelbolt dist-tags.latest 2> /dev/null || true)
+          tag=latest
+          if [[ -n "$latest" ]] && node -e 'const [a, b] = process.argv.slice(1).map(v => v.split(".").map(Number)); process.exit((a[0] - b[0] || a[1] - b[1] || a[2] - b[2]) < 0 ? 0 : 1)' "$version" "$latest"; then
+            tag=backport
+          fi
+          npm publish --access public --tag "$tag"
+          # From an empty folder, so npx installs the published package rather than finding this checkout. The
+          # registry can take a moment to serve a new version.
+          check="$RUNNER_TEMP/npx-check"
+          mkdir -p "$check"
           for _ in 1 2 3 4 5 6; do
-            if npx --yes "pixelbolt@$version" --help > "$RUNNER_TEMP/help.txt"; then
+            if (cd "$check" && npx --yes "pixelbolt@$version" --help) > "$RUNNER_TEMP/help.txt"; then
               grep -q 'pixelbolt render' "$RUNNER_TEMP/help.txt"
-              echo "Published pixelbolt@$version to npm; \`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "Published pixelbolt@$version to npm (tag $tag); \`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 20
