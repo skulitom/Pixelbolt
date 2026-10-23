@@ -133,10 +133,10 @@ export function compilePoses(source, mode) {
         if (Object.hasOwn(source.parts, symbol) || symbol.length > 64) fail(where, `an authored view needs symbol ${symbol}; rename or shorten its part`);
         symbols[symbol] = view.rows;
         const map = ([x, y]) => [flipX ? viewWidth - 1 - x : x, y];
-        return { symbol, width: viewWidth, flipX, anchor: map(view.anchor), view: nearest, point: (p, key) => map(view.points[key]) };
+        return { symbol, flipX, anchor: map(view.anchor), view: nearest, point: (p, key) => map(view.points[key]) };
       }
     }
-    if (!angle) return { symbol: name, width, flipX, anchor: local(anchor), point: local };
+    if (!angle) return { symbol: name, flipX, anchor: local(anchor), point: local };
     const tidy = cleanup && angle % 90 !== 0, key = `${name}\n${flipX}\n${angle}\n${tidy}`;
     if (!shapes.has(key)) {
       const symbol = `${name}-${flipX ? 'f' : ''}r${angle}${tidy || angle % 90 === 0 ? '' : '-raw'}`;
@@ -145,7 +145,7 @@ export function compilePoses(source, mode) {
       const turned = rotateRows(rows, angle, local(anchor), { cleanup: tidy });
       if (turned.rows.length > 256 || turned.rows[0].length > 256) fail(where, `rotating ${name} by ${angle}° exceeds 256×256 pixels`);
       symbols[symbol] = turned.rows;
-      shapes.set(key, { symbol, width: turned.rows[0].length, flipX: false, anchor: turned.pivot, point: p => turned.map(local(p)) });
+      shapes.set(key, { symbol, flipX: false, anchor: turned.pivot, point: p => turned.map(local(p)) });
     }
     return shapes.get(key);
   };
@@ -245,7 +245,7 @@ export function compilePoses(source, mode) {
         instances.set(instance.name, i);
       });
       // Resolve the whole attachment graph independently of paint order. A cycle reports every source path.
-      const checkGraph = (i, done = new Set(), stack = []) => {
+      const checkGraph = (i, done, stack = []) => {
         if (done.has(i)) return;
         const instance = spec.parts[i], ip = instancePath(instance, i), cycle = stack.indexOf(i);
         if (cycle >= 0) fail(`${ip}.attach`, `attachment cycle: ${[...stack.slice(cycle), i].map(j => instancePath(spec.parts[j], j)).join(' -> ')}`);
@@ -295,9 +295,9 @@ export function compilePoses(source, mode) {
         const at = point(instance.at ?? [0, 0], `${ip}.at`), anchor = [parent[0] + at[0], parent[1] + at[1]];
         let rotate = instance.angle !== undefined ? turn(parentAngle + instance.angle) : instance.rotate ?? 0;
         if (owners.has(instance.name)) {
-          const child = owners.get(instance.name), childRest = child.angle !== undefined ? rotate + child.angle : child.rotate ?? 0;
+          const child = owners.get(instance.name);
           const solution = solveReach(definition.bone, source.parts[child.part].bone, child.reach.map((v, axis) => v - anchor[axis]),
-            { rest: [rotate, childRest], flip: [flipX, child.flipX === true], bend: child.bend ?? 'forward' });
+            { rest: [rotate, 0], flip: [flipX, child.flipX === true], bend: child.bend ?? 'forward' });
           rotate = solution.angles[0]; solved.set(child.name, solution);
           if (solution.unreachable) warnings.push({ path: `${instancePath(child, instances.get(child.name))}.reach`, message: `Target is out of reach by ${Math.round(solution.error * 1000) / 1000} px; the chain uses its closest ${solution.straightened ? 'straight' : 'folded'} pose.`, error: solution.error });
         }
