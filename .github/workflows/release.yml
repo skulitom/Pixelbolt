@@ -117,3 +117,88 @@ jobs:
               --notes-file mcpb/RELEASE_NOTES.md --generate-notes "--latest=$latest"
           fi
           printf 'Release %s: MCPB and checksum attached. Test the downloaded bundle before dispatching Publish to MCP Registry.\n' "$RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
+
+  # npm trusted publishing (LEDGER C-081): npm exchanges this job's GitHub OIDC token for a one-off publish credential,
+  # so no npm token or OTP is stored anywhere, and the package gets provenance. It runs after the release job and on
+  # its own, so an npm failure never touches the GitHub release; a rerun skips a version npm already has. npmjs.com
+  # must list this repository and release.yml as the package's trusted publisher (docs/PUBLISHING.md).
+  npm:
+    needs: release
+    runs-on: ubuntu-latest
+    # One npm publish at a time across tags, so two releases can't both read the same latest version.
+    concurrency:
+      group: npm-pixelbolt
+      cancel-in-progress: false
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Use npm 11.5.1 or later (trusted publishing)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node -e 'const [a, b, c] = process.argv[1].split(".").map(Number); process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1)' "$(npm --version)"; then
+            npm install -g npm@11.19.1
+          fi
+          npm --version
+      - name: Check the package contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "v$(node -p 'require("./package.json").version')" = "$RELEASE_TAG"
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          node --input-type=module - "$RUNNER_TEMP/pack.json" <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const [{ files, entryCount }] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+          const paths = files.map(file => file.path);
+          const needed = ['package.json', 'README.md', 'LICENSE', 'bin/pixelbolt.js', 'src/index.js', 'src/mcp.js', 'skills/pixel-art/SKILL.md', 'schema.json', 'studio/index.html'];
+          const missing = needed.filter(file => !paths.includes(file));
+          // Only package.json's `files` list ships: never tests, scripts, evals, showcase art, builds or local output.
+          const stray = paths.filter(file => /^(test|scripts|evals|showcase|dist|output|packaging|mcpb|\.github)\//.test(file));
+          if (missing.length || stray.length) throw new Error(`npm package: missing ${missing.join(', ') || 'none'}; unexpected ${stray.slice(0, 8).join(', ') || 'none'}`);
+          console.log(`npm package: ${entryCount} files, contents checked.`);
+          NODE
+      - name: Publish to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          if npm view "pixelbolt@$version" version > /dev/null 2>&1; then
+            echo "pixelbolt@$version is already on npm; skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # A version below npm's latest (a backport) can't take the latest tag; it goes out under "backport".
+          # The package is already on npm, so a failed lookup stops the job rather than risk moving latest backwards.
+          latest=$(npm view pixelbolt dist-tags.latest)
+          [[ -n "$latest" ]] || { echo "::error::Could not read npm's latest version of pixelbolt."; exit 1; }
+          tag=latest
+          if node -e 'const [a, b] = process.argv.slice(1).map(v => v.split(".").map(Number)); process.exit((a[0] - b[0] || a[1] - b[1] || a[2] - b[2]) < 0 ? 0 : 1)' "$version" "$latest"; then
+            tag=backport
+          fi
+          npm publish --access public --tag "$tag"
+          # From an empty folder, so npx installs the published package rather than finding this checkout. The
+          # registry can take a moment to serve a new version.
+          check="$RUNNER_TEMP/npx-check"
+          mkdir -p "$check"
+          for _ in 1 2 3 4 5 6; do
+            if (cd "$check" && npx --yes "pixelbolt@$version" --help) > "$RUNNER_TEMP/help.txt"; then
+              grep -q 'pixelbolt render' "$RUNNER_TEMP/help.txt"
+              echo "Published pixelbolt@$version to npm (tag $tag); \`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "::error::pixelbolt@$version was published but npx could not run it within two minutes."
+          exit 1
