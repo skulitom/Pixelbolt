@@ -301,7 +301,7 @@ args = ["/absolute/path/to/Pixelbolt/bin/pixelbolt.js", "mcp", "--out", "/absolu
 
 The eight tools are:
 
-- **`pixel_help`**: authoring guide, full schema and a complete sample; `topic` returns the poses, scenes, autotile, fx, fluid or normals schemas.
+- **`pixel_help`**: a short quick start (the recipe format, operations, tools and workflow, about 2,000 tokens); `topic` returns the full authoring guide (`guide`), the art workflow (`workflow`), the recipe schema (`schema`), a complete sample (`example`), or the poses, scenes, autotile, fx, fluid or normals schemas.
 - **`pixel_validate`**: validate `{ "project": ... }` and save its recipe revision without exporting assets. Reports every clipped location; `"fps": 30` adds `frameGrid`, the durations off that video frame grid and what a sequence would do to each animation.
 - **`pixel_inspect`**: contact sheets, exact regional grids, silhouette/grayscale/onion views, 3×3 tile repeats with seam evidence, native size, named layer isolation, saved-reference comparisons, advisory diagnostics and motion review with contacts and explicit pose metadata. `frames` takes `*`/`?` patterns, `step`/`offset` keep every nth cell, and optional bounded samples expose omissions. Saves its recipe revision.
 - **`pixel_patch`**: apply targeted `set`, `insert`, `remove` and `paint` edits. For example, `{ "paint": "frames[blink]", "value": [{ "x": 9, "y": 7, "color": "k" }] }` corrects a pixel in final canvas coordinates after all layers; `transparent` erases it. Returns every frame whose pixels changed (exact pixels for small edits) and a before/after PNG. The source stays unchanged and successful edits get a new revision.

@@ -28,6 +28,37 @@ function session(options) {
 }
 const strip = { version: 1, name: 'strip', width: 4, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 3, y: 1, color: 'k' }] }, { name: 'b', duration: 90 }] };
 
+test('MCP keeps what an agent reads small: brief tool schemas, a quick start, and the long documents as topics', async t => {
+  const dir = await temp(t, 'help'), mcp = session({ directory: dir }); await mcp.init();
+  try {
+    // With the recipe schema embedded in four tools the listing was 133 KB, about 36,000 tokens on every connect.
+    const listed = (await mcp.request('tools/list', {})).result.tools, bytes = Buffer.byteLength(JSON.stringify(listed));
+    assert.ok(bytes < 24576, `${bytes} bytes of tool listings`);
+    assert.ok(listed.every(tool => !JSON.stringify(tool.inputSchema).includes('$defs')));
+    const help = async topic => (await mcp.request('tools/call', { name: 'pixel_help', arguments: topic ? { topic } : {} })).result.content.map(block => block.text);
+    const [quick, ...more] = await help();
+    assert.equal(more.length, 0);
+    assert.match(quick, /^# Pixelbolt quick start/);
+    assert.ok(Buffer.byteLength(quick) < 12288, `${Buffer.byteLength(quick)} bytes of quick start`);
+    // Every topic the tool offers is named in the quick start and serves its document.
+    const topics = listed.find(tool => tool.name === 'pixel_help').inputSchema.properties.topic.enum;
+    assert.deepEqual(topics, ['guide', 'workflow', 'schema', 'example', 'poses', 'scenes', 'autotile', 'fx', 'fluid', 'normals']);
+    for (const topic of topics) assert.ok(quick.includes(`\`${topic}\``), `the quick start names topic ${topic}`);
+    assert.match((await help('guide'))[0], /^# Pixelbolt agent authoring guide/);
+    assert.match((await help('workflow'))[0], /^# Deliberate pixel art/);
+    assert.equal(JSON.parse((await help('schema'))[0]).title, 'Pixelbolt project');
+    // The quick start's recipe and the example topic are valid recipes that draw without warnings.
+    const recipe = JSON.parse(quick.match(/```json\n([\s\S]*?)\n```/)[1]), example = JSON.parse((await help('example'))[0]);
+    for (const project of [recipe, example]) {
+      const checked = await mcp.call('pixel_validate', { project });
+      assert.equal(checked.info.ok, true, JSON.stringify(checked.info)); assert.deepEqual(checked.info.warnings, []);
+    }
+    // The tool schemas no longer describe the recipe in detail; the server still rejects a mistake with its path.
+    const wrong = await mcp.call('pixel_validate', { project: { ...recipe, animations: undefined, frames: [{ name: 'a', ops: [{ op: 'circle' }] }] } });
+    assert.equal(wrong.result.isError, true); assert.equal(wrong.info.path, 'project.frames[0].ops[0].op');
+  } finally { mcp.input.end(); await mcp.running; }
+});
+
 test('MCP compiles the full 40-frame hero with metadata and images below one MiB', async t => {
   const dir = await temp(t, 'hero-response'), mcp = session({ directory: dir }); await mcp.init();
   try {

@@ -28,88 +28,22 @@
       "duration": 60,
       "seed": 4,
       "substeps": 4,
-      "walls": [
-        "left",
-        "right",
-        "bottom"
-      ],
-      "gravity": [
-        0,
-        0.5
-      ],
+      "walls": ["left", "right", "bottom"],
+      "gravity": [0, 0.5],
       "yield": 16,
       "apic": true,
       "tension": 2,
-      "obstacles": [
-        {
-          "symbol": "ground",
-          "x": 0,
-          "y": 28
-        }
-      ],
-      "fill": [
-        {
-          "at": [
-            15.5,
-            9.5
-          ],
-          "radius": 6.5,
-          "velocity": [
-            0,
-            0.5
-          ]
-        }
-      ],
+      "obstacles": [{ "symbol": "ground", "x": 0, "y": 28 }],
+      "fill": [{ "at": [15.5, 9.5], "radius": 6.5, "velocity": [0, 0.5] }],
       "emitters": [],
       "look": [
-        {
-          "field": "density",
-          "colors": [
-            "g"
-          ],
-          "thresholds": [
-            0.5
-          ],
-          "dither": 0
-        },
-        {
-          "field": "depth",
-          "colors": [
-            "l",
-            "g"
-          ],
-          "thresholds": [
-            1,
-            2
-          ],
-          "dither": 0
-        },
-        {
-          "field": "shadow",
-          "colors": [
-            "G"
-          ],
-          "thresholds": [
-            0.5
-          ],
-          "dither": 0
-        },
-        {
-          "field": "light",
-          "colors": [
-            "w"
-          ],
-          "thresholds": [
-            0.7
-          ],
-          "dither": 0
-        }
+        { "field": "density", "colors": ["g"], "thresholds": [0.5], "dither": 0 },
+        { "field": "depth", "colors": ["l", "g"], "thresholds": [1, 2], "dither": 0 },
+        { "field": "shadow", "colors": ["G"], "thresholds": [0.5], "dither": 0 },
+        { "field": "light", "colors": ["w"], "thresholds": [0.7], "dither": 0 }
       ],
       "outline": "k",
-      "cleanup": {
-        "strays": true,
-        "corners": true
-      }
+      "cleanup": { "strays": true, "corners": true }
     }
   }
 }

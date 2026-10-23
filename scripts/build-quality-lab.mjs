@@ -2,14 +2,14 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { compilePoses, renderProject, inspectProject, createOverlay, applyOverlay, prepareScene, renderScene, encodePNG, scalePixels } from '../src/index.js';
+import { compilePoses, renderProject, inspectProject, createOverlay, applyOverlay, prepareScene, renderScene, encodePNG, scalePixels, formatJSON } from '../src/index.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), files = new Map();
 const palette = { k:'#0b1020', v:'#182239', b:'#26354c', s:'#3d5364', t:'#477975', g:'#72967d', h:'#afc4a0', y:'#e7ce89', w:'#f7edc4', a:'#cc8762', r:'#8d5260', p:'#573b57', c:'#75bfbc', d:'#3a8eaa' };
 const rows = lines => { const width = Math.max(...lines.map(line => line.length)); return lines.map(line => line.padEnd(width, '.')); };
 const grid = (lines, x=0, y=0) => ({ op:'grid', x, y, rows:rows(lines) });
 const project = (name,width,height,frames,animations) => ({ version:1,name,width,height,palette,frames,...(animations && {animations}) });
-const json = (file,value) => files.set(file, Buffer.from(JSON.stringify(value,null,2)+'\n'));
+const json = (file,value) => files.set(file, Buffer.from(formatJSON(value)));
 const png = (file,image,scale=1) => files.set(file, encodePNG(scalePixels(image.data,image.width,image.height,scale),image.width*scale,image.height*scale));
 const stroke = (points,color) => points.slice(1).map((p,i)=>({op:'line',x:points[i][0],y:points[i][1],x2:p[0],y2:p[1],color}));
 // Authored polygon contours lowered to horizontal runs, each still editable in the saved recipe.

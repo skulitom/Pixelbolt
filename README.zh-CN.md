@@ -73,7 +73,7 @@ Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pi
 
 八个 MCP 工具：
 
-- **`pixel_help`**：创作指南、完整 JSON Schema 和一个可编辑的完整示例。从这里开始。
+- **`pixel_help`**：简短的快速入门（配方格式、操作、工具和工作流程）。从这里开始。传入 `topic` 可获取完整创作指南（`guide`）、美术工作流程（`workflow`）、配方的 JSON Schema（`schema`）、一个可编辑的完整示例（`example`），或 poses、scenes、autotile、fx、fluid、normals 各自的 Schema。
 - **`pixel_validate`**：检查配方，报告尺寸、帧时长、动画和超出画布的位置；保存一个不可变的配方版本（revision），不导出素材。
 - **`pixel_inspect`**：不导出素材，直接以帧总览图（contact sheet）查看每一帧；可选调色板键文本网格、剪影、灰度、洋葱皮视图和诊断信息。
 - **`pixel_patch`**：用有针对性的编辑修改配方，例如改一个像素、一种颜色或某一帧，并返回改动了哪些像素和前后对比图。

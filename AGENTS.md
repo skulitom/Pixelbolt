@@ -1,6 +1,6 @@
 # Pixelbolt
 
-To **use** Pixelbolt for artwork, start with [the pixel art skill](skills/pixel-art/SKILL.md), [the authoring guide](docs/agent-guide.md) and [schema.json](schema.json). [llms.txt](llms.txt) indexes the public documentation; [README.md](README.md) includes CLI and MCP setup. The instructions below apply when **contributing to the toolkit**.
+To **use** Pixelbolt for artwork, start with [the pixel art skill](skills/pixel-art/SKILL.md) and [the quick start](docs/agent-quick-start.md), then [the authoring guide](docs/agent-guide.md) and [schema.json](schema.json) as needed. [llms.txt](llms.txt) indexes the public documentation; [README.md](README.md) includes CLI and MCP setup. The instructions below apply when **contributing to the toolkit**.
 
 This is an agent-first pixel art toolkit. Keep the core and runtime free of dependencies. Use standard Node.js APIs for the CLI, PNG/APNG encoding, ZIP and the local server. No build step is required.
 
@@ -27,7 +27,7 @@ This is an agent-first pixel art toolkit. Keep the core and runtime free of depe
 - `schema.json`, `poses.schema.json`, `scene.schema.json`, `autotile.schema.json`, `fx.schema.json`, `fluid.schema.json`, `normals.schema.json`: generated with `node scripts/generate-schema.js`.
 - `examples/`: generated with `node scripts/generate-examples.js`.
 
-Run `npm test` after functional changes. Keep the schema, authoring reference and runtime validation aligned. Binary export changes should also be checked with an independent image decoder. Do not replace the text-first workflow with a UI-only drawing tool.
+Run `npm test` after functional changes. Keep the schema, authoring reference and runtime validation aligned. Keep what an agent reads on connect small: MCP tool schemas describe a recipe briefly (the server validates it), `pixel_help` returns the short quick start, and longer references are its topics; a test caps both. Binary export changes should also be checked with an independent image decoder. Do not replace the text-first workflow with a UI-only drawing tool.
 
 Never silently overwrite source recipes or generated assets. MCP renders create unique folders. The preview server must stay on loopback with an explicit asset allowlist and no arbitrary file-writing endpoints.
 

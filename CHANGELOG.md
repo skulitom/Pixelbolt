@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Less for agents to read
+
+- The MCP tool listing is about 20 KB instead of 133 KB (roughly 5,000 tokens instead of 36,000 on every connect): `pixel_validate`, `pixel_inspect`, `pixel_patch` and `pixel_render` describe `project` briefly instead of embedding the recipe's 30 KB JSON Schema four times. The server still checks every recipe and names the path of any mistake.
+- `pixel_help` without a topic returns a 7 KB quick start ([docs/agent-quick-start.md](docs/agent-quick-start.md)): the recipe format with a complete example, the operations, the tools and working habits. It used to return the whole authoring guide, art workflow, schema and example, 142 KB or about 38,000 tokens. Those are now topics: `guide`, `workflow`, `schema` and `example`, beside the source format schemas.
+- The examples use the same compact formatting as compiled files (anything that fits in 120 columns on one line, grids one row per line): 362 KB instead of 664 KB for the same data.
+
 ### Particle effects with structure
 
 - **Spawn shapes:** a `ring` (radius or `[min, max]`, an optional `arc`) or a `line` instead of the `area` box, with `even: true` to space the particles spawned together evenly. On an `outward` ring, `angle` is measured from each particle's outward direction, so an even ring makes a shockwave and an arc a fan of sparks.

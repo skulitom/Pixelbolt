@@ -47,15 +47,25 @@ function leadingId(prefix) {
   const head = prefix.split('"params"')[0], match = /"id"\s*:\s*("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)/.exec(head);
   try { return match ? JSON.parse(match[1]) : null; } catch { return null; }
 }
-const HELP_TOPICS = { poses: '../poses.schema.json', scenes: '../scene.schema.json', autotile: '../autotile.schema.json', fx: '../fx.schema.json', fluid: '../fluid.schema.json', normals: '../normals.schema.json' };
+// pixel_help returns the short quick start by default; each topic is one longer document, read only when needed: the
+// full guides, the recipe schema, a complete example, then the schema of each source format.
+const QUICK_START = '../docs/agent-quick-start.md';
+const HELP_TOPICS = {
+  guide: '../docs/agent-guide.md', workflow: '../docs/art-workflow.md', schema: '../schema.json', example: '../examples/forest-spirit.json',
+  poses: '../poses.schema.json', scenes: '../scene.schema.json', autotile: '../autotile.schema.json', fx: '../fx.schema.json', fluid: '../fluid.schema.json', normals: '../normals.schema.json'
+};
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-normals': compileNormals };
 
 export async function startMCP({ directory = 'output', root = process.cwd(), input = process.stdin, output = process.stdout } = {}) {
-  const schema = JSON.parse(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
   const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
-  const { $schema, $defs, ...projectSchema } = schema;
-  const source = { project: projectSchema, revision: { type: 'string', pattern: '^[a-f0-9]{12}$', description: 'Revision id from an earlier Pixelbolt response. Send it instead of project to reuse that recipe, including after restarting with the same MCP --out directory.' } };
-  const projectInput = { type: 'object', properties: source, additionalProperties: false, $defs };
+  // The recipe's full JSON Schema is about 30 KB; repeated in four tool listings it cost every client about 30,000
+  // tokens before the first call. The server checks recipes itself and names the path of any mistake, so the tools
+  // describe the recipe briefly and pixel_help's schema topic carries the full schema.
+  const source = {
+    project: { type: 'object', description: 'A version-1 Pixelbolt recipe: {"version": 1, "name", "width", "height", "palette", "symbols"?, "frames": [{"name", "duration"?, "from"?, "ops"?, "layers"?}], "animations"?}. pixel_help explains it; its topic schema is the full JSON Schema. Mistakes come back with their exact path.' },
+    revision: { type: 'string', pattern: '^[a-f0-9]{12}$', description: 'Revision id from an earlier Pixelbolt response. Send it instead of project to reuse that recipe, including after restarting with the same MCP --out directory.' }
+  };
+  const projectInput = { type: 'object', properties: source, additionalProperties: false };
   const sequenceOptions = animated => ({ type: 'object', required: ['fps'], additionalProperties: false, description: `Also write a numbered PNG sequence for a video editor into sequence/: one PNG per video frame with alpha, plus sequence.json and a README with the ffmpeg command for a .mov. The result reports timing changes and whether a loop closes on the frame grid.`, properties: {
     fps: { type: ['number', 'string'], description: 'Frame rate: 24, 25, 30, 60, or "23.976", "29.97", "59.94" (exact n000/1001), or a fraction such as "30000/1001".' },
     ...(animated && { animation: { type: 'string', description: 'Default: the previewed animation, or the first.' }, step: { type: 'integer', minimum: 1, maximum: 60, description: 'Hold each sampled frame for this many video frames; 2 animates on twos.' } }),
@@ -109,7 +119,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     overlay: { type: 'object', description: 'Apply a saved pixelforge-overlay instead of changes. Canvas-only overlays reapply when the frames they touch are unchanged (reported as rebased).' }
   } };
   const tools = [
-    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Get the Pixelbolt authoring guide, JSON Schema, and a complete editable example. Pass topic poses, scenes, autotile, fx, fluid or normals for those sidecar schemas.', inputSchema: { type: 'object', properties: { topic: { enum: Object.keys(HELP_TOPICS) } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: guide (the full authoring reference), workflow (art workflow: poses, scenes, particles, fluids, lighting), schema (the recipe JSON Schema), example (a complete recipe), or poses, scenes, autotile, fx, fluid or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: Object.keys(HELP_TOPICS) } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Validate a pixel project and return its revision id, dimensions, frame timing, animations, and clipping locations. Pass fps to check the timing against a video frame grid. Saves an immutable recipe revision; no asset export.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks. See a project without exporting assets. Returns one PNG contact sheet of every frame (or the chosen frames, or one animation in playback order), read left to right and top to bottom, with each cell\'s frame name and duration. With grid: true it also returns palette-key text grids with x/y rulers for exact pixel checks. view: tile repeats frames 3x3 for seam review. view: motion accepts a pose source or explicit compile metadata with animation, optional speed and ground; reports foot slide, ground error, pose spread and loop joins with trajectory strips. Use region to zoom in. Saves an immutable recipe revision. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Change a recipe with targeted edits instead of resending it. Pass revision or project, plus changes applied in order: {"set": path, "value": v}, {"insert": path, "value": v}, {"remove": path}, or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}. Paint replaces exact RGBA in canvas coordinates after all layers; transparent erases. {"cleanup": "frames[run-2]", "value": {"corners": true}} proposes fixes for doubled corners and stray pixels. Other paths look like frames[blink].layers[body].ops[2].x2, palette.k or animations.idle.frames[-]. Or pass overlay to apply a saved correction overlay. The patch is atomic and the result must validate. Returns the new revision, edit details, every frame whose pixels changed (exact pixels for small changes), timing and animation changes, and a before/after PNG with one row per frame. Saves immutable base and result revisions; render the revision to export assets.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
@@ -156,11 +166,9 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     try {
       const { project: spec, revision, changes, ...options } = args;
       if (params.name === 'pixel_help') {
-        if (args.topic !== undefined) { result({ content: [textContent(JSON.parse(await readFile(new URL(HELP_TOPICS[args.topic], import.meta.url), 'utf8')))] }); return; }
-        const guide = await readFile(new URL('../docs/agent-guide.md', import.meta.url), 'utf8');
-        const workflow = await readFile(new URL('../docs/art-workflow.md', import.meta.url), 'utf8');
-        const example = JSON.parse(await readFile(new URL('../examples/forest-spirit.json', import.meta.url), 'utf8'));
-        result({ content: [textContent(guide), textContent(workflow), textContent({ schema, example, topics: Object.keys(HELP_TOPICS) })] });
+        // Markdown topics come back as written; JSON ones without the files' indentation.
+        const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
+        result({ content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] });
       } else if (params.name === 'pixel_validate') {
         const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe);
         result({ content: [textContent(withResolved({ ok: true, revision: await remember(recipe), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] });
