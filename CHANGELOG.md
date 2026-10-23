@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Renders check themselves
+
+- `pixel_render` and `pixelbolt render` report a `check` of what they wrote: each frame's pixel size, every animation's frames and loop, the colours used, transparency and the GIF size. Give them what the user asked for (`expect` over MCP, `--expect` on the CLI: `width`, `height`, `frames`, `colors`, `transparent`, `loop`, `gifScale`) and `check.problems` names every file that misses it, with the patch or render call that fixes it; fully transparent frames are noted either way. Agents mostly exported their first try; this puts the check in the path. The tool descriptions, quick start and skill now say to work in that loop.
+
 ### GIFs at the size you drew
 
 - GIFs now keep the frames' own size unless you ask for more: `pixelbolt gif`, MCP `pixel_render`'s `gif` and `animationGIF` default to scale 1. They used to enlarge to the largest whole multiple within 256 pixels, so a 32x32 animation came out 256x256 and agents handed that on when 32x32 was asked for. Pass `scale` (`--scale` on the CLI) to enlarge one for posting; the studio's **GIF** button still uses the current zoom.
