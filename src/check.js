@@ -16,6 +16,7 @@ export function readExpect(expect) {
   return expect;
 }
 
+const gifFiles = gifs => gifs.map(gif => `gifs/${gif.animation}.gif`).slice(0, 8).join(', ');
 const list = (names, limit = 8) => names.slice(0, limit).map(name => JSON.stringify(name)).join(', ') + (names.length > limit ? ` and ${names.length - limit} more` : '');
 // The whole number k with canvas * k = asked on every given side, if there is one.
 const wholeScale = (pairs, max) => {
@@ -73,7 +74,13 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
         : `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}`;
     if (expect.gifScale !== undefined && !gifs.length) problems.push({ file: 'gifs/', asked: { width: wantW, height: wantH }, got: 'no GIF', fix: gifFix });
     const wrong = sized ? gifs.filter(gif => gif.width !== wantW || gif.height !== wantH) : [];
-    if (wrong.length) problems.push({ file: wrong.map(gif => `gifs/${gif.animation}.gif`).slice(0, 8).join(', '), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
+    if (wrong.length) problems.push({ file: gifFiles(wrong), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
+    // A GIF background blends every pixel onto one colour, so GIFs can miss a request the frames meet. (Opaque frames
+    // always make an opaque GIF, so only the transparent side needs a GIF check.)
+    const opaque = expect.transparent === true && clear.length === frames.length ? gifs.filter(gif => !gif.transparent) : [];
+    if (opaque.length) problems.push({ file: gifFiles(opaque), asked: 'a transparent background', got: 'an opaque GIF', fix: 'render again without a "background" in "gif" (GIFs keep 1-bit transparency by default)' });
+    const many = expect.colors !== undefined && colors.size <= expect.colors ? gifs.filter(gif => gif.colors > expect.colors) : [];
+    if (many.length) problems.push({ file: gifFiles(many), asked: `at most ${expect.colors} colours`, got: many[0].colors, fix: 'a GIF background adds its colour and blends soft edges into new ones: render again without it, or with a background from the palette' });
   }
   if (expect.frames !== undefined) for (const key of names) {
     const count = animations[key].frames.length, pingpong = recipe?.animations?.[key]?.direction === 'pingpong';

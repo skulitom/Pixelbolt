@@ -59,6 +59,13 @@ test('the render check passes a delivery that matches the request and names each
   assert.equal(check(spirit, { gifs: [animationGIF(project, 'idle', { scale: 4 })], expect: { gifScale: 4 } }).ok, true);
   assert.deepEqual(check(spirit, { gifs: [], expect: { gifScale: 4 } }).problems.map(problem => [problem.got, problem.fix]), [['no GIF', 'render again with "gif": { "scale": 4 }']]);
   assert.equal(check(spirit, { expect: { gifScale: 4 } }).ok, true);
+  // A GIF background makes an opaque GIF with one more colour, though the frames meet the request.
+  const dot = { version: 1, name: 'dot', width: 2, height: 2, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] }, dotProject = renderProject(dot);
+  const matte = check(dot, { gifs: [animationGIF(dotProject, undefined, { background: '#ffffff' })], expect: { transparent: true, colors: 1 } });
+  assert.deepEqual(matte.problems.map(problem => [problem.file, problem.asked, problem.got]), [['gifs/default.gif', 'a transparent background', 'an opaque GIF'], ['gifs/default.gif', 'at most 1 colours', 2]]);
+  assert.equal(check(dot, { gifs: [animationGIF(dotProject, undefined, {})], expect: { transparent: true, colors: 1 } }).ok, true);
+  const solid = { ...dot, background: 'r' }, solidProject = renderProject(solid);
+  assert.equal(check(solid, { gifs: [animationGIF(solidProject, undefined, {})], expect: { transparent: false } }).ok, true);
 });
 
 test('the render check fixes sheet.scale with whole multiples, from either side alone', () => {
