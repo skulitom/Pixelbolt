@@ -72,6 +72,12 @@ test('the render check fixes sheet.scale with whole multiples, from either side 
   assert.equal(check(twice, { gifs: [animationGIF(project, 'idle', { scale: 2 })], expect: { width: 48, height: 48 }, animation: 'idle' }).ok, true);
   const tiny = check(twice, { gifs: [animationGIF(project, 'idle', {})], expect: { width: 48, height: 48 }, animation: 'idle' });
   assert.deepEqual(tiny.problems.map(problem => [problem.got, problem.fix]), [[{ width: 24, height: 24 }, 'render again with "gif": { "scale": 2 }']]);
+  // A GIF scale above 16 can't be made: say so rather than blame the frame size.
+  assert.match(check(scaled, { gifs: [animationGIF(renderProject(scaled), 'idle', {})], expect: { gifScale: 8 }, animation: 'idle' }).problems[0].fix, /needs scale 32, above the limit of 16/);
+  // A recipe with no sheet field gets a change that creates it, which patchRecipe accepts.
+  const fix = check(small, { expect: { width: 8, height: 4 } }).problems[0].fix;
+  assert.deepEqual(quoted(fix), { set: 'sheet', value: { scale: 2 } });
+  assert.equal(check(patchRecipe(small, [quoted(fix)]).recipe, { expect: { width: 8, height: 4 } }).ok, true);
 });
 
 test('the render check sees frame counts, pingpong, loops, recipes without animations and backgrounds', () => {

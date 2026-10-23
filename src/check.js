@@ -60,15 +60,17 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   if ((expect.width !== undefined && expect.width !== width * scale) || (expect.height !== undefined && expect.height !== height * scale)) {
     const k = wholeScale([[expect.width, width], [expect.height, height]], 16);
     const fix = k !== null
-      ? `${k === 1 ? `sheet.scale ${scale} enlarges every export: ` : ''}pixel_patch { "set": "sheet.scale", "value": ${k} }, then render again`
+      ? `${k === 1 ? `sheet.scale ${scale} enlarges every export: ` : ''}pixel_patch ${recipe !== undefined && recipe.sheet === undefined ? `{ "set": "sheet", "value": { "scale": ${k} } }` : `{ "set": "sheet.scale", "value": ${k} }`}, then render again`
       : `the canvas is ${width}x${height}${scale !== 1 ? ` at sheet.scale ${scale}` : ''}: change the recipe's ${Object.keys(asked).join(' and ')} (pixel_patch { "set": "${Object.keys(asked)[0]}", "value": ${Object.values(asked)[0]} }${scale !== 1 ? ' and sheet.scale 1' : ''}), fit the drawing to it, pixel_inspect, then render again`;
     problems.push({ file: frameFiles, asked, got: { width: width * scale, height: height * scale }, fix });
   }
   if (gifs !== undefined) {
     // A GIF should be the asked frame size, times gifScale when one was asked for.
     const gifScale = expect.gifScale ?? 1, sized = expect.width !== undefined || expect.height !== undefined || expect.gifScale !== undefined;
-    const wantW = (expect.width ?? width * scale) * gifScale, wantH = (expect.height ?? height * scale) * gifScale, k = wholeScale([[wantW, width], [wantH, height]], 16);
-    const gifFix = k !== null ? `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}` : 'fix the frame size first (see the problem above), then render the GIFs again';
+    const wantW = (expect.width ?? width * scale) * gifScale, wantH = (expect.height ?? height * scale) * gifScale, k = wholeScale([[wantW, width], [wantH, height]], Infinity);
+    const gifFix = k === null ? 'fix the frame size first (see the problem above), then render the GIFs again'
+      : k > 16 ? `a GIF that size needs scale ${k}, above the limit of 16: ask for a smaller gifScale, or lower sheet.scale`
+        : `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}`;
     if (expect.gifScale !== undefined && !gifs.length) problems.push({ file: 'gifs/', asked: { width: wantW, height: wantH }, got: 'no GIF', fix: gifFix });
     const wrong = sized ? gifs.filter(gif => gif.width !== wantW || gif.height !== wantH) : [];
     if (wrong.length) problems.push({ file: wrong.map(gif => `gifs/${gif.animation}.gif`).slice(0, 8).join(', '), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
