@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Scene lights that move
+
+- **`follow`:** a light rides a uniquely named placement, or with `point` a named point of its current frame (a torch flame, a blade tip), with `at` as the offset. It moves with trajectories, animations and attachments, and is off while the placement is hidden or its frame lacks the point.
+- **`flicker`:** `{ amount, every, seed }` swings a light's strength by up to `amount` either way and its reach by up to half as much, along seeded noise that repeats once per scene duration, so looping scenes have no seam. On average it is as bright as a steady light.
+- **`keys` and `strength`:** strength (0–8) and radius over time, at milliseconds or cue times such as `"strike+90"`, eased between keys. Above 1, ramp lighting lifts colours past their authored shade, so a flash on a hit reads.
+- **`lit: false`** on a placement keeps its authored colours under lighting, for fires, lamps and glows.
+- Renders, `pixel_scene` and the studio's scene viewer report where each light is at the current time; the viewer's markers follow moving lights, and dragging a following light moves its offset. Scenes without the new fields render exactly as before.
+
 ### Less for agents to read
 
 - The MCP tool listing is about 20 KB instead of 133 KB (roughly 5,000 tokens instead of 36,000 on every connect): `pixel_validate`, `pixel_inspect`, `pixel_patch` and `pixel_render` describe `project` briefly instead of embedding the recipe's 30 KB JSON Schema four times. The server still checks every recipe and names the path of any mistake.

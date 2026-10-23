@@ -57,6 +57,8 @@ test('scene fields in the schema match what prepareScene accepts', async () => {
   for (const key of Object.keys(schema.properties)) assert.equal(unknown(() => prepareScene({ ...scene(), [key]: scene()[key] ?? 0 }), `scene.${key}`), false, `scene.${key}`);
   for (const key of Object.keys(instance.properties)) assert.equal(unknown(() => prepareScene(scene({ instances: [{ asset: 't', at: [0, 0], [key]: 0 }] })), `scene.instances[0].${key}`), false, `instance.${key}`);
   for (const key of Object.keys(lighting.properties)) assert.equal(unknown(() => prepareScene(scene({ lighting: { [key]: 0 } })), `scene.lighting.${key}`), false, `lighting.${key}`);
+  const light = lighting.properties.lights.items;
+  for (const key of [...Object.keys(light.properties), 'notAField']) assert.equal(unknown(() => prepareScene(scene({ lighting: { lights: [{ at: [0, 0], [key]: 0 }] } })), `scene.lighting.lights[0].${key}`), key === 'notAField', `light.${key}`);
   for (const key of Object.keys(tilemap.properties)) assert.equal(unknown(() => prepareScene(scene({ instances: [{ asset: 't', at: [0, 0], tilemap: { rows: ['k'], legend: { k: 'f' }, [key]: 0 } }] })), `scene.instances[0].tilemap.${key}`), false, `tilemap.${key}`);
   for (const key of Object.keys(cue.properties)) assert.equal(unknown(() => prepareScene(scene({ instances: [{ asset: 't', at: [0, 0], sequence: [{ time: 0, [key]: 0 }] }] })), `scene.instances[0].sequence[0].${key}`), false, `cue.${key}`);
   assert.equal(unknown(() => prepareScene(scene({ instances: [{ asset: 't', at: [0, 0], notAField: 0 }] })), 'scene.instances[0].notAField'), true);
