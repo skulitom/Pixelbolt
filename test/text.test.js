@@ -98,6 +98,7 @@ test('every module the browser imports is served by the studio and packed with s
   served['/pose-geometry.js'] = 'src/pose-geometry.js';
   served['/motions.js'] = 'src/motions.js';
   served['/motion.js'] = 'src/motion.js';
+  served['/fluid-controls.js'] = 'studio/fluid-controls.js';
   for (const [route, file] of Object.entries(served)) {
     assert.ok(STUDIO_PATHS.includes(route), `${route} is not served`);
     for (const specifier of await imports(file)) assert.ok(STUDIO_PATHS.includes(`/${specifier.replace(/^\.?\//, '')}`), `${file} imports ${specifier}, which the studio does not serve`);
