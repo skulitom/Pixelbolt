@@ -94,7 +94,7 @@ test('heat rises and curls, smoke thins, obstacles stay clear and a still pool s
   const project = renderProject(recipe), height = frame => { let sum = 0, n = 0; for (let i = 3; i < frame.data.length; i += 4) if (frame.data[i]) { sum += Math.floor((i - 3) / 4 / 16); n++; } return n ? sum / n : NaN; };
   const heights = project.frames.map(height);
   assert.ok(heights[6] < heights[0] - 2, `rose from ${heights[0]} to ${heights[6]}`);
-  assert.deepEqual(Object.keys(metadata.effects.plume), ['kind', 'frames', 'loop', 'seed', 'steps', 'peak', 'sparks', 'pixels', 'residue']);
+  assert.deepEqual(Object.keys(metadata.effects.plume), ['kind', 'frames', 'loop', 'seed', 'steps', 'peak', 'sparks', 'pixels', 'residue', 'figures']);
   // Without buoyancy and with dissipation the smoke thins until nothing is drawn.
   const fading = compileFluid(gas({ frames: 30, emitters: [{ at: [8, 8], radius: 2, burst: 1, density: 1 }], buoyancy: 0, dissipation: 0.3, look: smoke }));
   assert.equal(fading.metadata.effects.plume.residue, 0);
@@ -455,6 +455,25 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
     live.render().keys.forEach((row, y) => [...row].forEach((char, x) => { if (char !== '.') seen.add(y * 48 + x); }));
     assert.deepEqual(seen, cells, `frame ${f}`);
   }
+});
+
+test('per-frame figures measure where the fluid is, how much there is and in how many pieces', async () => {
+  // A ball dropped in a closed box: its middle falls, it stays one piece with every particle, and it lands.
+  const drop = compileFluid(goo({ frames: 30, walls: FLUID_WALLS }, [{ at: [24, 6], radius: 4 }]));
+  const { figures } = drop.metadata.effects.goo;
+  assert.deepEqual(Object.keys(figures), ['box', 'middle', 'amount', 'pieces', 'speed', 'particles']);
+  assert.ok(figures.box.every(Boolean) && figures.box.length === 30);
+  assert.ok(figures.middle[10][1] > figures.middle[0][1] + 5 && figures.box[29][3] === 31, `middle ${figures.middle[0]} → ${figures.middle[10]}, bottom ${figures.box[29][3]}`);
+  assert.ok(figures.pieces.slice(0, 8).every(n => n === 1) && new Set(figures.particles).size === 1);
+  assert.ok(Math.max(...figures.speed.slice(0, 12)) > 2, 'it falls fast before it lands');
+  // A burst shows its pieces; smoke thins as it dissipates.
+  const burst = compileFluid(goo({ frames: 9, gravity: [0, 0], walls: [] }, [{ at: [24, 16], radius: 6, burst: { speed: 2 } }])).metadata.effects.goo.figures;
+  assert.ok(burst.pieces[8] >= 4, `${burst.pieces[8]} pieces`);
+  const puff = compileFluid(gas({ frames: 12, buoyancy: 0, dissipation: 0.2, emitters: [{ at: [8, 8], radius: 3, burst: 1, density: 1 }], look: smoke })).metadata.effects.plume.figures;
+  assert.ok(puff.amount[11] < puff.amount[0] / 2 && puff.particles === undefined, `${puff.amount[0]} → ${puff.amount[11]}`);
+  // A live runner measures the same, frame for frame.
+  const source = goo({ frames: 12, walls: FLUID_WALLS }, [{ at: [24, 6], radius: 4 }]), live = createLiveFluid(source, { warmup: 0 }), compiled = compileFluid(source).metadata.effects.goo.figures;
+  for (let f = 0; f < 12; f++) { live.step(); assert.deepEqual(live.measure(), Object.fromEntries(Object.keys(compiled).map(key => [key, compiled[key][f]])), `frame ${f}`); }
 });
 
 test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () => {

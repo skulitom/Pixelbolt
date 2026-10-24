@@ -1824,6 +1824,35 @@ function drawSparks(run, put) {
     if (++b.age > 1) pops.splice(k, 1);
   }
 }
+// Figures for one frame, so an agent can tune by numbers: the box round the fluid's drawn pixels ([left, top, right,
+// bottom], sparks left out), the middle of its density, its amount (smoke, or cells' worth of water), how many separate
+// pieces it is drawn in (pixels touching side to side), its top speed where it is drawn (pixels per frame), and for a
+// liquid its particles. An empty frame has no box or middle.
+const tenth = value => Math.floor(value * 10 + 0.5) / 10, hundredth = value => Math.floor(value * 100 + 0.5) / 100;
+function measureFrame(chars, base, solid, width, height, particles) {
+  const [density, , speed] = base, N = width * height, seen = new Uint8Array(N), stack = [];
+  let left = width, top = height, right = -1, bottom = -1, amount = 0, sx = 0, sy = 0, fastest = 0, pieces = 0;
+  for (let c = 0; c < N; c++) {
+    const x = c % width, y = (c - x) / width;
+    if (!solid[c] && density[c] > 0) { amount += density[c]; sx += density[c] * (x + 0.5); sy += density[c] * (y + 0.5); }
+    if (!chars[c]) continue;
+    if (x < left) left = x; if (x > right) right = x; if (y < top) top = y; if (y > bottom) bottom = y;
+    if (speed[c] > fastest) fastest = speed[c];
+    if (seen[c]) continue;
+    pieces++; seen[c] = 1; stack.push(c);
+    while (stack.length) {
+      const d = stack.pop(), dx = d % width;
+      for (const e of [dx > 0 ? d - 1 : -1, dx < width - 1 ? d + 1 : -1, d - width, d + width]) if (e >= 0 && e < N && chars[e] && !seen[e]) { seen[e] = 1; stack.push(e); }
+    }
+  }
+  return {
+    box: right < 0 ? null : [left, top, right, bottom], middle: amount > 0 ? [tenth(sx / amount), tenth(sy / amount)] : null,
+    amount: hundredth(amount), pieces, speed: hundredth(fastest), ...(particles !== null && { particles })
+  };
+}
+// The per-frame figures as one list per figure, which keeps the metadata compact.
+const columns = list => Object.fromEntries(Object.keys(list[0]).map(key => [key, list.map(figure => figure[key])]));
+
 // Runs one effect and returns its frames' operations plus figures for the metadata.
 function simulate(effect, context) {
   const { width, height, path } = context, { frames, loop, liquid } = effect, N = width * height;
@@ -1833,7 +1862,7 @@ function simulate(effect, context) {
   const begin = effect.warmup * frames, total = simulatedFrames(effect), blend = effect.blend;
   const tail = loop ? Array.from({ length: blend }, () => base.map(() => new Float64Array(N))) : [];
   const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []);
-  const peak = { density: 0, temperature: 0, speed: 0 };
+  const peak = { density: 0, temperature: 0, speed: 0 }, figures = Array.from({ length: frames }, () => null);
   for (let t = 0; t < total; t++) {
     const cycle = loop ? t % frames : t, out = t - begin, recording = !loop || (out >= 0 && out < frames);
     const here = emitFrame(run, t, cycle);
@@ -1860,6 +1889,7 @@ function simulate(effect, context) {
       if (base[2][c] > peak.speed) peak.speed = base[2][c];
     }
     chars[frame] = renderFields(effect, base, width, height);
+    figures[frame] = measureFrame(chars[frame], base, effect.solid, width, height, liquid ? state.n : null);
   }
   // Sparks draw over the fluid; obstacles drawn over it sit in front of both.
   const output = chars.map((grid, i) => {
@@ -1881,7 +1911,7 @@ function simulate(effect, context) {
   const { totals } = run;
   return {
     output, steps: total * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed) },
-    ...(liquid && { particles: run.maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }
+    ...(liquid && { particles: run.maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }, figures: columns(figures)
   };
 }
 
@@ -1937,7 +1967,7 @@ export function compileFluid(source) {
     metadata.effects[name] = {
       kind: effect.kind, frames: effect.frames, loop: effect.loop, seed: effect.seed, steps: run.steps, ...(effect.loop && { warmup: effect.warmup, blend: effect.blend }),
       peak: run.peak, ...(run.particles !== undefined && { particles: run.particles }), sparks: run.sparks,
-      pixels: run.output.map(frame => frame.pixels), ...(!effect.loop && { residue: run.output.at(-1).pixels }), ...(effect.warnings.length && { warnings: effect.warnings })
+      pixels: run.output.map(frame => frame.pixels), ...(!effect.loop && { residue: run.output.at(-1).pixels }), figures: run.figures, ...(effect.warnings.length && { warnings: effect.warnings })
     };
     return run.output.map(frame => frame.ops);
   });
@@ -2095,6 +2125,10 @@ export function createLiveFluid(source, options = {}) {
       const factor = number(strength, 'boost.strength', 0, 16), count = integer(frames, 'boost.frames', 0, 65536);
       emitters.forEach((e, index) => { if (e.name === name) boosts[index] = { factor, frames: count }; });
       return live;
+    },
+    // Figures for the current frame, as the metadata's per-frame figures give them for a compiled effect.
+    measure() {
+      return measureFrame(renderFields(effect, run.base, width, height), run.base, effect.solid, width, height, liquid ? state.n : null);
     },
     // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
     // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
