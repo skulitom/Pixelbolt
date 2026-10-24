@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluid lab sliders that hold every preset
+
+- The Fluid lab's Firmness slider now reaches 16, the compiler's limit for `yield`, so it shows and restores the slime preset's own firmness instead of stopping at 8. The Fade slider moves in steps of 0.0025, so the explosion's 0.1375 shows exactly instead of snapping to 0.14. No preset changed.
+- The lab's presets and sliders live in `studio/fluid-controls.js`, and a test checks that every shipped fluid preset fits its sliders exactly and comes back unchanged.
+
 ### GIFs at the size you drew
 
 - GIFs now keep the frames' own size unless you ask for more: `pixelbolt gif`, MCP `pixel_render`'s `gif` and `animationGIF` default to scale 1. They used to enlarge to the largest whole multiple within 256 pixels, so a 32x32 animation came out 256x256 and agents handed that on when 32x32 was asked for. Pass `scale` (`--scale` on the CLI) to enlarge one for posting; the studio's **GIF** button still uses the current zoom.
