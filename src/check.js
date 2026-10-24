@@ -62,8 +62,10 @@ function largeSizeFix(expect, project, recipe) {
   if (!fits.length && refused) return tooBig(`at every whole scale that makes ${asked}, ${refused}`, sheet);
   if (!fits.length) {
     const k = Math.min(SCALE, Math.ceil(Math.max(expect.width ?? 0, expect.height ?? 0) / CANVAS)), side = (value, canvas) => value === undefined ? canvas : Math.min(CANVAS, Math.max(1, Math.round(value / k)));
-    const w = side(expect.width, width), h = side(expect.height, height);
-    return `canvases stop at ${CANVAS} px a side and sheet.scale at ${SCALE}, and no whole scale exports ${asked} exactly from ${frames.length} frame${frames.length === 1 ? '' : 's'}: tell the user, and offer ${w * k}x${h * k} (a ${w}x${h} canvas at sheet.scale ${k}) instead`;
+    const w = side(expect.width, width), h = side(expect.height, height), over = exportBudget(project, w, h, k, recipe);
+    const head = `canvases stop at ${CANVAS} px a side and sheet.scale at ${SCALE}, and no whole scale exports ${asked} exactly from ${frames.length} frame${frames.length === 1 ? '' : 's'}`;
+    return over ? `${head}, and the nearest size, ${w * k}x${h * k}, is refused too (${over}): tell the user, and ask for fewer frames or a smaller size`
+      : `${head}: tell the user, and offer ${w * k}x${h * k} (a ${w}x${h} canvas at sheet.scale ${k}) instead`;
   }
   const changes = fit => JSON.stringify([...(expect.width !== undefined ? [{ set: 'width', value: fit.w }] : []), ...(expect.height !== undefined ? [{ set: 'height', value: fit.h }] : []), recipe !== undefined && recipe.sheet === undefined ? { set: 'sheet', value: { scale: fit.k } } : { set: 'sheet.scale', value: fit.k }]);
   const nearest = fits.reduce((best, fit) => fit.distance < best.distance ? fit : best), detailed = fits[0];
@@ -71,8 +73,9 @@ function largeSizeFix(expect, project, recipe) {
 }
 
 // What leaves see-through pixels after the background is drawn, in the named frames or the earlier frames they copy
-// (`from`): frame-level clear and erasing dither, translate without wrap, and "transparent" pixel corrections. Layer
-// clears erase only their own layer, so they don't count. Returns frame name -> kinds.
+// (`from`): frame-level clear and erasing dither, translate without wrap, and pixel corrections in a colour that is
+// not opaque (corrections replace the RGBA after everything else). Layer clears erase only their own layer, so they
+// don't count. Returns frame name -> kinds.
 function erasers(recipe, names) {
   const frames = Array.isArray(recipe?.frames) ? recipe.frames : [], byName = new Map(frames.map(frame => [frame?.name, frame])), found = new Map();
   for (const start of names) for (let frame = byName.get(start), hops = 0; frame && hops <= frames.length; frame = byName.get(frame.from), hops++) {
@@ -82,19 +85,24 @@ function erasers(recipe, names) {
       else if (op?.op === 'dither' && op.erase === true) kinds.push('dither with erase');
     }
     if (Array.isArray(frame.translate) && frame.translate.some(Boolean) && frame.wrap !== true) kinds.push('translate');
-    if (Array.isArray(frame.pixels) && frame.pixels.some(pixel => pixel?.color === 'transparent')) kinds.push('"transparent" pixels');
+    const alphas = Array.isArray(frame.pixels) ? frame.pixels.map(pixel => colorAlpha(recipe, pixel?.color, frame)) : [];
+    if (alphas.includes(0)) kinds.push('"transparent" pixels');
+    if (alphas.some(alpha => alpha > 0 && alpha < 255)) kinds.push('partly transparent pixels');
     if (kinds.length) found.set(frame.name, [...new Set([...(found.get(frame.name) ?? []), ...kinds])]);
   }
   return found;
 }
 
-// The background's alpha from the recipe: 0 when unset or transparent, 255 when it can't tell.
-function backgroundAlpha(recipe) {
-  const key = recipe?.background ?? 'transparent', value = typeof recipe?.palette?.[key] === 'string' ? recipe.palette[key] : key;
+// A colour's alpha as the recipe gives it (a frame palette, then the project palette, then hex): 0 for transparent,
+// 255 when it can't tell.
+function colorAlpha(recipe, color, frame) {
+  const fromPalette = value => typeof recipe?.palette?.[value] === 'string' ? recipe.palette[value] : value;
+  const value = typeof frame?.palette?.[color] === 'string' ? fromPalette(frame.palette[color]) : fromPalette(color);
   if (value === 'transparent') return 0;
-  const hex = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(value)?.[1];
+  const hex = typeof value === 'string' ? /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(value)?.[1] : undefined;
   return hex?.length === 4 ? parseInt(hex[3] + hex[3], 16) : hex?.length === 8 ? parseInt(hex.slice(6), 16) : 255;
 }
+const backgroundAlpha = recipe => colorAlpha(recipe, recipe?.background ?? 'transparent');
 
 function opaqueFix(recipe, holes) {
   const found = erasers(recipe, holes), culprits = [...found.keys()];
@@ -107,11 +115,11 @@ function opaqueFix(recipe, holes) {
 
 // How to make one animation play `want` frames within the limits: source frames, names per list, pingpong's 2n - 2,
 // and the export's budgets (the animations' pixels; for new source frames, their area and the atlas too).
-function framesFix(key, want, named, direction, project, recipe) {
+function framesFix(key, want, named, direction, project, recipe, total) {
   const { width, height, sheet, animations } = project, s = sheet.scale;
   const pingpong = want % 2 === 0 && want >= 4 ? want / 2 + 1 : null;
   if (want > NAMES && pingpong === null) return `no animation plays ${want} frames: one lists at most ${NAMES} names, and a pingpong of n names plays 2n-2, an even number up to ${PLAYED}; tell the user, or play ${want - 1} or ${want + 1}`;
-  const played = Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0) - animations[key].frames.length + want;
+  const played = total - animations[key].frames.length + want;
   if (played * width * height * s * s > EXPORT_PIXELS) return tooBig(`${want} frames in "${key}" make ${played} played frames at ${width * s}x${height * s}, past the 67,108,864 animation pixels an export holds`, { trim: true });
   if (!named) {
     const head = 'the recipe has no animations field, so every frame plays once in order';
@@ -180,7 +188,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   }
   if (gifs !== undefined) {
     // Only the GIFs of the animations being checked.
-    const scoped = gifs.filter(gif => names.includes(gif.animation));
+    const checked = new Set(names), scoped = gifs.filter(gif => checked.has(gif.animation));
     // A GIF should be the asked frame size, times gifScale when one was asked for.
     const gifScale = expect.gifScale ?? 1, sized = expect.width !== undefined || expect.height !== undefined || expect.gifScale !== undefined;
     const wantW = (expect.width ?? width * scale) * gifScale, wantH = (expect.height ?? height * scale) * gifScale, k = wholeScale([[wantW, width], [wantH, height]], Infinity);
@@ -200,10 +208,12 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     const many = expect.colors !== undefined && colors.size <= expect.colors ? scoped.filter(gif => gif.colors > expect.colors) : [];
     if (many.length) problems.push({ file: gifFiles(many), asked: `at most ${expect.colors} colours`, got: many[0].colors, fix: 'a GIF background adds its colour and blends soft edges into new ones: render again without it, or with a background from the palette' });
   }
+  // Every animation's played frames, counted once: framesFix weighs a change to one of them against the export.
+  const total = expect.frames === undefined ? 0 : Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0);
   if (expect.frames !== undefined) for (const key of names) {
     const count = animations[key].frames.length;
     if (count === expect.frames) continue;
-    problems.push({ file: `animations/${key}.png`, asked: expect.frames, got: count, fix: framesFix(key, expect.frames, named, recipe?.animations?.[key]?.direction, project, recipe) });
+    problems.push({ file: `animations/${key}.png`, asked: expect.frames, got: count, fix: framesFix(key, expect.frames, named, recipe?.animations?.[key]?.direction, project, recipe, total) });
   }
   if (expect.colors !== undefined && colors.size > expect.colors) problems.push({ file: frameFiles, asked: `at most ${expect.colors} colours`, got: colors.size, fix: 'merge similar colours with pixel_patch recolor (or fewer palette entries), check with pixel_inspect diagnostics, then render again' });
   if (expect.transparent === true && clear.length !== frames.length) {

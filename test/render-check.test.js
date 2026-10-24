@@ -144,6 +144,13 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   // Frame-count fixes are held to the animation pixels: 300 frames of 256x256 at sheet.scale 2 pass 67,108,864.
   const poster = { version: 1, name: 'poster', width: 256, height: 256, palette: { r: '#ff0000' }, sheet: { scale: 2 }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
   assert.equal(check(poster, { expect: { frames: 300 } }).problems[0].fix, '300 frames in "default" make 300 played frames at 512x512, past the 67,108,864 animation pixels an export holds: ask for fewer frames or a smaller size');
+  // The nearest size offered when no whole scale fits is held to the same budgets: 100 played frames at 4096x384.
+  const repeated = { ...spirit, animations: { idle: { frames: Array(100).fill('rest') } } };
+  assert.match(check(repeated, { expect: { width: 4093 } }).problems[0].fix, /and the nearest size, 4096x384, is refused too \(100 played frames at 4096x384 pass the 67,108,864 animation pixels an export holds\): tell the user, and ask for fewer frames or a smaller size$/);
+  // Many animations: each frame-count fix is weighed against one count of the played frames, not a rescan.
+  const many = { version: 1, name: 'many', width: 1, height: 1, palette: { r: '#f00' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }], animations: Object.fromEntries(Array.from({ length: 3000 }, (_, i) => [`m${i}`, { frames: ['a'] }])) };
+  const crowd = check(many, { expect: { frames: 2 } });
+  assert.deepEqual([crowd.problems.length, crowd.problems[0].file], [16, 'animations/m0.png']);
   // A GIF scale is held to the 67,108,864 pixels one render's GIFs hold: 300 frames at 32x32, scale 16.
   const reel = { version: 1, name: 'reel', width: 32, height: 32, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }], animations: { default: { frames: Array(300).fill('a') } } }, reelProject = renderProject(reel);
   assert.match(check(reel, { gifs: [animationGIF(reelProject, 'default', {})], expect: { gifScale: 16 } }).problems[0].fix, /^the GIFs of every animation at scale 16 pass the 67,108,864 pixels/);
@@ -165,6 +172,10 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   assert.equal(check({ ...shifted, frames: [{ name: 'a', translate: [1, 0], wrap: true }] }, { expect: { transparent: false } }).ok, true);
   assert.equal(check(small, { expect: { transparent: false } }).problems[0].fix, 'pixel_patch { "set": "background", "value": "<palette key>" }, and remove or paint over what erases it (clear in "b"), then render again');
   assert.match(check({ ...cleared, background: '#ff000080', frames: [{ name: 'a' }] }, { expect: { transparent: false } }).problems[0].fix, /an opaque one: the current background is see-through/);
+  // Pixel corrections replace the RGBA last, so a half-transparent one stays see-through over any background.
+  const glazed = { ...cleared, palette: { r: '#ff0000', g: '#00ff0080' }, frames: [{ name: 'a', pixels: [{ x: 0, y: 0, color: 'g' }] }] };
+  assert.equal(check(glazed, { expect: { transparent: false } }).problems[0].fix, 'the background is already opaque, but frame drawing erases it (partly transparent pixels in "a"): remove those or paint over what they clear, then render again');
+  assert.match(check({ ...glazed, background: undefined }, { expect: { transparent: false } }).problems[0].fix, /, and remove or paint over what erases it \(partly transparent pixels in "a"\), then render again$/);
 
   // Frame counts: a recipe holds 256 frames and an animation lists 1,024 names, which may repeat.
   const bare = { version: 1, name: 'bare', width: 2, height: 2, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
