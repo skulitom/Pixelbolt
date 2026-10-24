@@ -8,6 +8,51 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - `pixel_render` and `pixelbolt render` report a `check` of what they wrote: each frame's pixel size, every animation's frames and loop, the colours used, transparency and the GIF size. Give them what the user asked for (`expect` over MCP, `--expect` on the CLI: `width`, `height`, `frames`, `colors`, `transparent`, `loop`, and over MCP `gifScale` for the GIFs) and `check.problems` names every file that misses it, with the patch or render call that fixes it; fully transparent frames are noted either way. Agents mostly exported their first try; this puts the check in the path. The tool descriptions, quick start and skill now say to work in that loop.
 
+### The caption example spells Pixelbolt
+
+- `examples/caption.json`, the studio's Caption sample, types PIXELBOLT (PIX, PIXELB, PIXELBOLT) instead of the old name.
+
+### Liquids that hold, then let go, on cue
+
+- `keys` on a liquid change its `yield`, `viscosity`, `adhesion` or `gravity` from a chosen frame, at once or in a straight line `over` some frames, so the decisive moment lands where you want it. A heap held up by `yield: 4` stands 21 pixels high until `{ frame: 40, yield: 0.3 }`, then slumps to 12 pixels by frame 50; `{ frame: 30, adhesion: 0 }` drops a film that adhesion held under a ledge. Each setting follows the keys that name it, in frame order, and a key that starts during another's ramp carries on from where it had got to; a loop repeats them every cycle, a live runner follows them too, and whitewater without its own gravity follows the keyed gravity. Liquids without keys are unchanged.
+
+### Thrown dust: gas carried on heavy carriers
+
+- A gas emitter with `carry: { drag, release, gravity }` throws its smoke and heat on carriers, one per covered cell, launched with its velocity, vortex, outward expand and noise. Each carrier slows toward the air's velocity by `drag` a frame, hands `release` of what it holds to the air a frame, falls by its own `gravity`, and drops the rest where it meets an obstacle or a closed edge (so dust settles on a closed floor); what it holds is drawn with the smoke. A carrying emitter needs a positive density or temperature, and an orbiting one throws once a frame. A puff of gas can't be thrown through still air (the pressure solve halves its speed at once), but dust is grains: two bursts thrown sideways at 8 pixels a frame now roll out about 90 pixels across in six frames, against about 26 without `carry`. At most 8,192 carriers are in the air at once.
+
+### Liquid bursts in mid-air
+
+- A liquid fill with `burst: { speed, pieces }` breaks into seeded pieces with a one-pixel gap between them, each flying straight out from the fill's middle at its own speed (a number, or `[min, max]` picked per piece) plus the fill's `velocity`. An outward velocity on one connected blob is cancelled by the pressure solve, since a liquid can't expand; separate pieces moving as one each keep theirs. The gaps' water goes to the pieces (to the nearest kept piece when a piece is all gap), so every particle is kept, however small the fill. A ball of radius 8 bursting at 2.5 pixels a frame is in six or more pieces, three times as wide, eight frames later.
+
+### Fluid decorations the simulation ignores
+
+- A fluid obstacle with `solid: false` is a decoration: it is stamped over or under the fluid as `draw` says, but the fluid never meets it. A basketball net, a candle flame, a label or a background no longer has to be a solid the water slides along, or painted on after `render()`. A decoration can't use `draw: "none"` or `surface`.
+
+### Fluid warnings for setups that make nothing or start stuck
+
+- `compileFluid` returns `warnings` (and each effect's metadata lists its own) when an emitter lies inside obstacles or off the canvas on every frame it works, so it adds no fluid, and when a liquid fill starts against the underside of a pixel obstacle or a closed edge with open space below it, where the pressure holds it on. Each warning names the field and says what to change. `pixel_compile` adds them to its reply's `warnings`, `pixelbolt compile` prints them, and live runners list them in `live.warnings`. A fill resting on something, including another fill's water, or thrown away from what is above it, is not warned about; nor is an orbiting emitter that clears the obstacle between frames. No preset sets one off, and recipes are unchanged.
+
+### Smooth obstacles: liquids slide down drawn slopes
+
+- A fluid obstacle with `surface: "smooth"` meets the fluid along an outline traced through its pixel steps, so a drawn 45° roof acts as a straight slope instead of a staircase. Wet snow and slime with `slip` slide off a smooth roof where they stalled for good on the stepped one, and slime pressed against the underside of a smooth branch falls away instead of hanging from it. Faces along the outline are partly open to the pressure and viscosity solves, particles slide along the outline, and a smooth obstacle pushes on a liquid but never pulls it (`adhesion` still holds liquid on). Nothing passes through it, however fast, even where it is one pixel thick.
+- The obstacle is drawn exactly as before. Pixel obstacles stay the default and behave exactly as before: every preset compiles to the same recipe.
+
+### A playground in the browser
+
+- `playground/` is a page for the project site where anyone can try Pixelbolt with nothing installed: pick one of 20 examples (ten fluids, particle effects, poses, a normal pass and a lit scene) or paste a recipe, see it render live, and download a PNG, a GIF (its size shown first) or an atlas. Renders run in a worker with a 20-second limit and a Cancel button.
+- **Share links:** Copy link puts the compressed recipe in the link's fragment, which browsers never send to a server, with the engine version, so a link renders the same after later releases. Links are capped at 16,384 characters; larger recipes travel as files.
+- **PNGs that reopen:** every PNG the playground exports carries its recipe in a `pixelbolt-recipe` text chunk; drop it back in to reopen it. `src/share.js` reads and writes both formats.
+- The page isn't live yet: `playground/DEPLOY.md` and `node scripts/deploy-playground.mjs` prepare the site change.
+
+### Fluid lab sliders that hold every preset
+
+- The Fluid lab's Firmness slider now reaches 16, the compiler's limit for `yield`, so it shows and restores the slime preset's own firmness instead of stopping at 8. The Fade slider moves in steps of 0.0025, so the explosion's 0.1375 shows exactly instead of snapping to 0.14. No preset changed.
+- The lab's presets and sliders live in `studio/fluid-controls.js`, and a test checks that every shipped fluid preset fits its sliders exactly and comes back unchanged.
+
+### Recipes to reopen and share
+
+- Opt-in `pixelbolt share` prints a playground link, `render` and `scene` accept `--embed-recipe` to carry the resolved source inside PNGs, and `import --embedded` recovers it. MCP `pixel_render` accepts `share` and `embedRecipe`; a link over the limit reports an error without failing the render. Both formats carry the engine version; links keep the recipe in the URL fragment and open once the playground is live on the project site. With the options off, exports and replies are unchanged.
+
 ### GIFs at the size you drew
 
 - GIFs now keep the frames' own size unless you ask for more: `pixelbolt gif`, MCP `pixel_render`'s `gif` and `animationGIF` default to scale 1. They used to enlarge to the largest whole multiple within 256 pixels, so a 32x32 animation came out 256x256 and agents handed that on when 32x32 was asked for. Pass `scale` (`--scale` on the CLI) to enlarge one for posting; the studio's **GIF** button still uses the current zoom.

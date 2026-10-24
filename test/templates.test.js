@@ -29,14 +29,23 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
     assert.equal(f.project.clipping, undefined);
     if (make === heroRig) assert.ok(JSON.stringify(f.recipe).length < 150000);
     else assert.ok(f.project.work.pixels <= 6700000);
-    assert.ok(f.times.compile < (make === heroRig ? 400 : 2000), `compile CI budget: ${f.times.compile}`);
-    assert.ok(f.times.render < (make === heroRig ? 150 : 600), `render CI budget: ${f.times.render}`);
     if (make === heroRig) {
-      // Match the benchmark's warm-median contract, including on translated Intel runtimes.
+      // Match the benchmark's warm-median contract, including on translated Intel runtimes. The hero's first
+      // compile and render also warm the whole compiler and renderer, so a single cold sample is not the budget.
+      const median = run => {
+        const times = [];
+        for (let i = 0; i < 5; i++) { const start = performance.now(); run(); times.push(performance.now() - start); }
+        return times.sort((a, b) => a - b)[2];
+      };
       for (let i = 0; i < 3; i++) expandPoses(f.source);
-      const times = [];
-      for (let i = 0; i < 5; i++) { const start = performance.now(); expandPoses(f.source); times.push(performance.now() - start); }
-      assert.ok(times.sort((a, b) => a - b)[2] < 50, `expand CI budget, warmed median: ${times[2]}`);
+      const expand = median(() => expandPoses(f.source)), compile = median(() => compilePoses(f.source)), render = median(() => renderProject(f.recipe, { stats: true }));
+      assert.ok(expand < 50, `expand CI budget, warmed median: ${expand}`);
+      assert.ok(compile < 400, `compile CI budget, warmed median: ${compile}`);
+      assert.ok(render < 150, `render CI budget, warmed median: ${render}`);
+    } else {
+      // In a full run the hero's tests have already warmed the compiler, so this sample is mostly the boss's own work.
+      assert.ok(f.times.compile < 2000, `compile CI budget: ${f.times.compile}`);
+      assert.ok(f.times.render < 600, `render CI budget: ${f.times.render}`);
     }
     const colors = new Set(Object.values(f.source.palette).map(c => new Uint32Array(Uint8Array.from(parseColor(c)).buffer)[0]));
     for (const frame of f.project.frames) {

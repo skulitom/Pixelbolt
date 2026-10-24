@@ -31,6 +31,7 @@ const routes = new Map([
   ['/fluid.html', ['../studio/fluid.html', 'text/html; charset=utf-8']],
   ['/fluid.css', ['../studio/fluid.css', 'text/css; charset=utf-8']],
   ['/fluid-lab.js', ['../studio/fluid-lab.js', 'text/javascript; charset=utf-8']],
+  ['/fluid-controls.js', ['../studio/fluid-controls.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),

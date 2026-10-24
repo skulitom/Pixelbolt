@@ -5,7 +5,8 @@ import { patchRecipe } from './patch.js';
 import { createRevisionStore } from './revisions.js';
 import { inspectMotion } from './motion.js';
 import { encodePNG } from './png.js';
-import { createBundle, writeBundle } from './export.js';
+import { createBundle, writeBundle, embedBundleRecipe } from './export.js';
+import { shareLink } from './share.js';
 import { animationGIF } from './gif.js';
 import { readExpect, checkDelivery } from './check.js';
 import { createSequence, createSceneSequence, frameGrid } from './sequence.js';
@@ -79,7 +80,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Length of the clip instead of loops.' }
   } });
   const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern, first: info.first, frames: info.frames, fps: info.fps.label, seconds: info.seconds, width: info.width, height: info.height, alpha: info.alpha, placement: info.placement, loop: info.loop, notes: info.notes, ffmpeg: info.commands });
-  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' } } };
+  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' } } };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, 29.97, 30, 60 or a fraction): frameGrid lists frame durations that are not whole video frames, positions a sequence would lengthen, shorten or never show, and whether each loop closes on the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const inspectInput = { ...projectInput, properties: {
@@ -210,26 +211,34 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
         const summary = { ok: true, revision: await remember(recipe), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
         result({ content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] });
       } else if (params.name === 'pixel_render') {
-        const { animation, listFiles, gif, sequence } = options, expect = readExpect(options.expect);
+        const { animation, listFiles, gif, sequence, share, embedRecipe } = options, expect = readExpect(options.expect);
+        for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
         const { recipe, resolved } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
         // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
         if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
         const gifs = gif === undefined ? [] : Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif));
         if (gifs.reduce((sum, item) => sum + item.frames * item.width * item.height, 0) > 67108864) throw new PixelError('gif', 'all animations at this scale exceed 67,108,864 pixels; lower gif.scale');
         const frames = sequence === undefined ? null : createSequence(bundle.project, { ...(animation !== undefined && { animation }), ...(sequence !== null && typeof sequence === 'object' ? sequence : { fps: undefined }) });
+        let shared;
+        if (share === true) {
+          try { const link = await shareLink(recipe, version); shared = { link, characters: link.length }; }
+          catch (error) { shared = { error: error.message }; }
+        }
+        // Every PNG this call writes carries the recipe, video frames included.
+        if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
         const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
         const files = await writeBundle(bundle, out);
         if (frames) await writeBundle(frames, path.join(out, 'sequence'));
         if (gifs.length) await mkdir(path.join(out, 'gifs'));
         for (const item of gifs) await writeFile(path.join(out, 'gifs', `${item.animation}.gif`), item.data, { flag: 'wx' });
-        result({ content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings }, resolved)), imageContent(view.sheet)] });
+        result({ content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] });
       } else if (params.name === 'pixel_compile') {
         const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
         const format = document?.format;
         if (!Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals');
-        const { recipe, metadata } = COMPILERS[format](document);
+        const { recipe, metadata, warnings: compiled = [] } = COMPILERS[format](document);
         const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
-        result({ content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: project.warnings, ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] });
+        result({ content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] });
       } else if (params.name === 'pixel_scene') {
         const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
         const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false });

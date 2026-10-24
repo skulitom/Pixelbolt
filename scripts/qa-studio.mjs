@@ -224,10 +224,11 @@ try {
     return 'all 148 frames and complete recipe/metadata JSON';
   });
   await check('R2 live edits redraw within the 500 ms CI budget', async () => {
-    // Include debounce, compile, render, DOM work and a browser paint, not just the compiler call.
+    // Include debounce, compile, render, DOM work and a browser paint, not just the compiler call. Forty timed edits
+    // after three warm-ups, so the p95 is the 38th of 40 and one slow sample on a busy CI machine can't fail it alone.
     const times = await evaluate(`(async () => {
       const source = document.getElementById('source'), values = [];
-      for (let i=0; i<18; i++) {
+      for (let i=0; i<43; i++) {
         const value = JSON.parse(source.value); value.motions.run.lean = i%2 ? 8 : 7;
         const start = performance.now();
         await new Promise(resolve => {
@@ -238,10 +239,10 @@ try {
       }
       return values.sort((a,b)=>a-b);
     })()`);
-    const result = { medianMs: times[Math.floor(times.length / 2)], p95Ms: times[Math.ceil(times.length * .95) - 1], samples: times, browser: version.product };
+    const result = { medianMs: times[Math.floor(times.length / 2)], p95Ms: times[Math.ceil(times.length * .95) - 1], maxMs: times.at(-1), samples: times, browser: version.product };
     await writeFile(path.join(kept, 'figure-edit-latency.json'), JSON.stringify(result, null, 2));
     assert.ok(result.p95Ms <= 500, JSON.stringify(result));
-    return `${result.medianMs.toFixed(1)} ms median / ${result.p95Ms.toFixed(1)} ms p95; reference target 100 ms`;
+    return `${result.medianMs.toFixed(1)} ms median / ${result.p95Ms.toFixed(1)} ms p95 / ${result.maxMs.toFixed(1)} ms slowest of ${times.length}; reference target 100 ms`;
   });
 
   console.log('Preview controls');

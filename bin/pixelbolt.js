@@ -4,6 +4,8 @@ import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { readExpect, checkDelivery } from '../src/check.js';
+import { embedBundleRecipe } from '../src/export.js';
+import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference } from '../src/index.js';
 
 const HELP = `Pixelbolt — text to pixels, without dependencies
@@ -18,6 +20,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt render <file.json|-> --out dir Export a complete asset bundle
                                            --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it
                                            against the request; --animation <name> checks only that animation
+  pixelbolt share <file.json|->           Print a playground link for the resolved recipe
   pixelbolt gif <file.json|-> --out anim.gif [--animation name] [--scale 1-16] [--background color]
                                            Share one animation as a GIF; writes only --out
   pixelbolt gif-frames <folder> --fps 25 --out loop.gif [--loops 0] [--background color] [--prefix name_]
@@ -37,6 +40,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt scene <scene.json> --out dir   Export a bounded scene review and aligned material passes
   pixelbolt overlay <recipe.json> --changes edits.json --out fixes.json [--selections regions.json]
   pixelbolt import <image.png> --out recipe.json [--atlas atlas.json] [--name imported]
+                    [--embedded]         Recover the recipe carried inside the PNG instead of its pixels
   pixelbolt preview [file.json] [--port N] [--open]
                                            Studio for a recipe or scene; sources open as their compiled recipe.
                                            Port 4747, or a free one when it is in use; --open starts your browser
@@ -44,6 +48,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt schema                         Print the JSON Schema
 
 Options: --force allows overwriting exported files. '-' reads JSON from stdin.
+--embed-recipe on render or scene embeds the resolved recipe in exported PNGs (not scene asset passes).
 Palette references ({"$ref": "palette.json"}), scene asset files and a normals source's recipe resolve from the
 input file's folder.
 Inspect: --frames a,b or --animation name picks cells (* and ? in a name match frames: --frames 'flash-*');
@@ -58,7 +63,7 @@ Patch accepts correction overlays as --changes; a changed base fails with a fing
 A cleanup change ({"cleanup": "frames[run-2]", "value": {"corners": true, "strays": true}}) previews
 proposed fixes for doubled corners and stray pixels; --diagnostics counts both per frame.
 GIF keeps exact colours (at most 256 per frame, never quantized), 1-bit transparency unless --background blends
-onto a colour, and 10 ms timing steps; the result's notes list what changed. Default scale: up to 256 pixels.
+onto a colour, and 10 ms timing steps; the result's notes list what changed. Default scale: 1, the frames' own size.
 gif-frames reads the folder's numbered PNGs in number order, one GIF frame each, by the same rules; frames whose
 colours differ get colour tables of their own. --loops is the number of plays (0, the default, loops for ever).
 Sequence writes one PNG per video frame with alpha, plus sequence.json and a README with the ffmpeg command for a
@@ -73,7 +78,7 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
-    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand'].includes(args[i])) options[args[i].slice(2)] = true;
+    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded'].includes(args[i])) options[args[i].slice(2)] = true;
     else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
@@ -133,6 +138,7 @@ async function writeOutputs(targets, force) {
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-normals': compileNormals };
 const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
 const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files } : {};
+const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 try {
   const [command = 'help', ...rest] = process.argv.slice(2);
   if (['help', '--help', '-h'].includes(command)) process.stdout.write(HELP);
@@ -140,9 +146,11 @@ try {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
     const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
-    if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     allowed.compile.push('expand');
+    allowed.share = [];
+    allowed.render.push('embed-recipe'); allowed.scene.push('embed-recipe'); allowed.import.push('embedded');
+    if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     if (command === 'init') {
@@ -173,14 +181,25 @@ try {
       const input = await readResolved(positional[0]), expanded = expandPoses(input.document);
       if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force), ...referenced(input) }));
       else process.stdout.write(formatJSON(expanded));
+    } else if (command === 'share') {
+      const input = await readResolved(positional[0]), version = await engineVersion(), link = await shareLink(input.document, version);
+      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(input.document) }));
+    } else if (command === 'import' && options.embedded) {
+      if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
+      if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
+      for (const key of ['name', 'atlas', 'metadata']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --embedded`);
+      const embedded = await readEmbeddedRecipe(await readFile(positional[0]));
+      if (!embedded) throw new Error('This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.');
+      const { version, kind, recipe } = embedded;
+      console.log(JSON.stringify({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force), embedded: { version, kind } }));
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
-      let value, metadata, input;
+      let value, metadata, input, warnings;
       if (command === 'compile' || command === 'autotile') {
         input = await readResolved(positional[0]);
         const compile = command === 'autotile' ? compileAutotile : COMPILERS[input.document?.format] ?? compilePoses;
         const compiled = compile(input.document);
-        value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata;
+        value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata; warnings = compiled.warnings;
       } else if (command === 'overlay') {
         if (!options.changes) throw new Error('overlay requires --changes <edits.json>');
         if (positional[0] === '-' && options.changes === '-') throw new Error('Only one input can use stdin');
@@ -194,10 +213,11 @@ try {
       if (options.metadata && !/\.json$/i.test(options.metadata)) throw new Error('--metadata must name a .json file');
       // Generated files use compact formatting: one line per frame, operation or short grid when it fits.
       const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }) }, options.force);
-      console.log(JSON.stringify({ ok: true, ...written, ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
+      console.log(JSON.stringify({ ok: true, ...written, ...(warnings && { warnings }), ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
     } else if (command === 'scene') {
       if (!options.out) throw new Error('scene requires --out <directory>');
       const input = await readResolved(positional[0]), bundle = await createSceneBundle(input.document);
+      if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
       console.log(JSON.stringify({ ok: true, files: await writeBundle(bundle, options.out, options), warnings: bundle.warnings, ...referenced(input) }));
     } else if (command === 'inspect') {
       const layerOptions = options.layers === undefined ? {} : { layers: options.layers.split(',') };
@@ -267,6 +287,7 @@ try {
         const expect = options.expect === undefined ? undefined : readExpect(await readExpectOption(options.expect));
         // The check runs before anything is written, so an unknown --animation writes nothing. render writes no GIFs.
         const bundle = await createBundle(input.document), check = checkDelivery(bundle.project, { recipe: input.document, expect, animation: options.animation });
+        if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
         const files = await writeBundle(bundle, options.out, options);
         console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, check, ...referenced(input) }));
       }
