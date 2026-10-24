@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### The caption example spells Pixelbolt
+
+- `examples/caption.json`, the studio's Caption sample, types PIXELBOLT (PIX, PIXELB, PIXELBOLT) instead of the old name.
+
 ### Liquids that hold, then let go, on cue
 
 - `keys` on a liquid change its `yield`, `viscosity`, `adhesion` or `gravity` from a chosen frame, at once or in a straight line `over` some frames, so the decisive moment lands where you want it. A heap held up by `yield: 4` stands 21 pixels high until `{ frame: 40, yield: 0.3 }`, then slumps to 12 pixels by frame 50; `{ frame: 30, adhesion: 0 }` drops a film that adhesion held under a ledge. Each setting follows the keys that name it, in frame order; a loop repeats them every cycle, and a live runner follows them too. Liquids without keys are unchanged.
