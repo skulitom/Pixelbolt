@@ -172,6 +172,14 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   assert.equal(check({ ...shifted, frames: [{ name: 'a', translate: [1, 0], wrap: true }] }, { expect: { transparent: false } }).ok, true);
   assert.equal(check(small, { expect: { transparent: false } }).problems[0].fix, 'pixel_patch { "set": "background", "value": "<palette key>" }, and remove or paint over what erases it (clear in "b"), then render again');
   assert.match(check({ ...cleared, background: '#ff000080', frames: [{ name: 'a' }] }, { expect: { transparent: false } }).problems[0].fix, /an opaque one: the current background is see-through/);
+  // Whether a background is enough is measured by rendering with one: here only "b" stays see-through, by its clear.
+  const lit = { ...small, palette: { ...small.palette, k: 'transparent' }, frames: [...small.frames.slice(0, 2), { name: 'c', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 2, color: 'r' }, { op: 'fill', x: 0, y: 0, color: 'k' }] }] };
+  const filled = check(lit, { expect: { transparent: false } }).problems[0].fix;
+  assert.equal(filled, 'pixel_patch { "set": "background", "value": "<palette key>" }, and remove or paint over what erases it (clear, fill to a see-through colour in "b", "c"), then render again');
+  const unfilled = check({ ...lit, frames: lit.frames.slice(0, 1), animations: undefined }, { expect: { transparent: false } });
+  assert.equal(unfilled.ok, true);
+  const plainFix = check({ ...lit, frames: [{ name: 'a' }], animations: undefined }, { expect: { transparent: false } }).problems[0].fix;
+  assert.equal(plainFix, 'pixel_patch { "set": "background", "value": "<palette key>" }, then render again');
   // Pixel corrections replace the RGBA last, so a half-transparent one stays see-through over any background.
   const glazed = { ...cleared, palette: { r: '#ff0000', g: '#00ff0080' }, frames: [{ name: 'a', pixels: [{ x: 0, y: 0, color: 'g' }] }] };
   assert.equal(check(glazed, { expect: { transparent: false } }).problems[0].fix, 'the background is already opaque, but frame drawing erases it (partly transparent pixels in "a"): remove those or paint over what they clear, then render again');

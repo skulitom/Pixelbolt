@@ -83,6 +83,8 @@ function erasers(recipe, names) {
     for (const op of Array.isArray(frame.ops) ? frame.ops : []) {
       if (op?.op === 'clear') kinds.push('clear');
       else if (op?.op === 'dither' && op.erase === true) kinds.push('dither with erase');
+      else if ((op?.op === 'fill' && colorAlpha(recipe, op.color, frame) < 255) || (op?.op === 'replace' && colorAlpha(recipe, op.to, frame) < 255)) kinds.push(`${op.op} to a see-through colour`);
+      else if (op?.op === 'rewrite' && op.empty !== undefined) kinds.push('rewrite with empty');
     }
     if (Array.isArray(frame.translate) && frame.translate.some(Boolean) && frame.wrap !== true) kinds.push('translate');
     const alphas = Array.isArray(frame.pixels) ? frame.pixels.map(pixel => colorAlpha(recipe, pixel?.color, frame)) : [];
@@ -104,13 +106,23 @@ function colorAlpha(recipe, color, frame) {
 }
 const backgroundAlpha = recipe => colorAlpha(recipe, recipe?.background ?? 'transparent');
 
+// Which of the frames stay see-through over an opaque background: the recipe is rendered with one, so every op that
+// replaces alpha counts (clear, fill, replace, rewrite, dither, translate, pixel corrections). Null if it can't tell.
+function stillSeeThrough(recipe, holes) {
+  if (recipe === undefined || recipe === null || typeof recipe !== 'object') return null;
+  try {
+    const wanted = new Set(holes), seeThrough = data => { for (let i = 3; i < data.length; i += 4) if (data[i] !== 255) return true; return false; };
+    return renderProject({ ...recipe, background: '#000000' }).frames.filter(frame => wanted.has(frame.name) && seeThrough(frame.data)).map(frame => frame.name);
+  } catch { return null; }
+}
+
 function opaqueFix(recipe, holes) {
-  const found = erasers(recipe, holes), culprits = [...found.keys()];
-  const what = culprits.length ? `${[...new Set([...found.values()].flat())].join(', ')} in ${list(culprits)}` : '';
-  if (backgroundAlpha(recipe) === 255) return culprits.length
-    ? `the background is already opaque, but frame drawing erases it (${what}): remove those or paint over what they clear, then render again`
-    : 'the background is already opaque: paint over the see-through pixels (pixel_inspect with grid: true shows them as "."), then render again';
-  return `pixel_patch { "set": "background", "value": "<palette key>" }${backgroundAlpha(recipe) > 0 ? ' (an opaque one: the current background is see-through)' : ''}${culprits.length ? `, and remove or paint over what erases it (${what})` : ''}, then render again`;
+  const opaque = backgroundAlpha(recipe) === 255, still = opaque ? holes : stillSeeThrough(recipe, holes) ?? holes;
+  const found = erasers(recipe, still), culprits = [...found.keys()], kinds = [...new Set([...found.values()].flat())];
+  // Name what the scan found; otherwise the frames, and the ops that can do it.
+  const what = culprits.length ? `${kinds.join(', ')} in ${list(culprits)}` : `drawing in ${list(still)}: a clear, a fill, replace or rewrite to a see-through colour, a translate or a pixel correction; pixel_inspect with grid: true shows the cells as "."`;
+  if (opaque) return `the background is already opaque, but frame drawing erases it (${what}): remove those or paint over what they clear, then render again`;
+  return `pixel_patch { "set": "background", "value": "<palette key>" }${backgroundAlpha(recipe) > 0 ? ' (an opaque one: the current background is see-through)' : ''}${still.length ? `, and remove or paint over what erases it (${what})` : ''}, then render again`;
 }
 
 // How to make one animation play `want` frames within the limits: source frames, names per list, pingpong's 2n - 2,
