@@ -387,6 +387,27 @@ test('smooth obstacles let thick liquids slide down drawn slopes and fall away f
   }
 });
 
+test('setups that compile but make nothing, or start stuck, are warned about with the field to change', async () => {
+  // No preset sets off a warning.
+  for (const name of FLUID_SHOWCASE) assert.equal((await example(name)).warnings, undefined, name);
+  const warned = (effect, extra = {}) => { const result = compileFluid({ ...gas(null), width: 32, height: 32, symbols: { rock: Array(4).fill('kkkkkkkk'), bar: ['k'.repeat(20)] }, ...extra, effects: { e: { frames: 6, look: smoke, ...effect } } }); assert.deepEqual(result.metadata.effects.e.warnings, result.warnings); return result.warnings ?? []; };
+  // An emitter buried in an obstacle, or off the canvas, adds nothing; one partly clear is fine.
+  assert.match(warned({ obstacles: [{ symbol: 'rock', x: 10, y: 20 }], emitters: [{ at: [14, 21.5], radius: 1, rate: 1, density: 1, sparks: { count: 1, colors: ['s'] } }] })[0], /^fluid\.effects\.e\.emitters\[0\] lies inside obstacles\[0\] whenever it emits, so it adds no gas \(its sparks still show\)/);
+  assert.match(warned({ kind: 'liquid', obstacles: [{ symbol: 'rock', x: 10, y: 20 }], emitters: [{ at: [14, 22], radius: 1, rate: 1 }] })[0], /adds no water/);
+  assert.match(warned({ emitters: [{ at: [-20, 10], radius: 2, rate: 1, density: 1 }] })[0], /lies outside the canvas/);
+  assert.deepEqual(warned({ obstacles: [{ symbol: 'rock', x: 10, y: 20 }], emitters: [{ at: [14, 19.5], radius: 2, rate: 1, density: 1 }] }), []);
+  // An orbiting emitter that clears the obstacle on some frames is fine.
+  assert.deepEqual(warned({ obstacles: [{ symbol: 'rock', x: 10, y: 20 }], emitters: [{ at: [14, 22], radius: 1, rate: 1, density: 1, orbit: { radius: 6, period: 6 } }] }), []);
+  // A liquid fill hanging under a pixel obstacle is warned about; under a smooth one, or resting on a floor, it is not.
+  const hanging = surface => warned({ kind: 'liquid', obstacles: [{ symbol: 'bar', x: 6, y: 5, ...(surface && { surface }) }], fill: [{ at: [16, 12], radius: 6 }], emitters: [] });
+  assert.match(hanging()[0], /^fluid\.effects\.e\.fill\[0\] starts against the underside of obstacles\[0\] along 4 pixels.*surface: "smooth"/);
+  assert.deepEqual(hanging('smooth'), []);
+  assert.deepEqual(warned({ kind: 'liquid', walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'bar', x: 6, y: 20 }], fill: [{ x: 0, y: 21, w: 32, h: 11 }], emitters: [] }), []);
+  assert.match(warned({ kind: 'liquid', walls: ['top', 'bottom'], fill: [{ x: 4, y: 0, w: 8, h: 4 }], emitters: [] })[0], /closed top edge/);
+  // A live runner carries the same warnings.
+  assert.equal(createLiveFluid({ ...gas(null), width: 32, height: 32, effects: { e: { frames: 6, look: smoke, emitters: [{ at: [-20, 10], radius: 2, rate: 1, density: 1 }] } } }, { warmup: 0 }).warnings.length, 1);
+});
+
 test('fluid sources fail early with paths an agent can act on', async () => {
   const emitter = { at: [8, 8], rate: 1, density: 1 }, ok = { frames: 6, emitters: [emitter], look: smoke };
   const bad = (change, where, message) => {
@@ -515,6 +536,11 @@ test('fluid sources compile from the CLI with a shared palette, and preview and 
   assert.match(cli('compile', path.join(dir, 'puff.fluid.json'), '--out', path.join(dir, 'out/puff.json')).stderr, /already exists/);
   await writeFile(path.join(dir, 'bad.fluid.json'), JSON.stringify({ ...source, effects: { plume: { ...source.effects.plume, emitters: [{ at: [8, 8], rate: 99 }] } } }));
   assert.match(cli('compile', path.join(dir, 'bad.fluid.json'), '--out', path.join(dir, 'bad.json')).stderr, /fluid\.effects\.plume\.emitters\[0\]\.rate/);
+  // A setup that compiles but makes nothing says so.
+  await writeFile(path.join(dir, 'buried.fluid.json'), JSON.stringify({ ...source, symbols: { lid: ['kkkkk', 'kkkkk', 'kkkkk', 'kkkkk', 'kkkkk'] }, effects: { plume: { ...source.effects.plume, obstacles: [{ symbol: 'lid', x: 6, y: 10 }] } } }));
+  const buried = cli('compile', path.join(dir, 'buried.fluid.json'), '--out', path.join(dir, 'buried.json'));
+  assert.equal(buried.status, 0, buried.stderr);
+  assert.match(JSON.parse(buried.stdout).warnings[0], /emitters\[0\] lies inside obstacles\[0\]/);
   const frames = cli('sequence', path.join(dir, 'puff.fluid.json'), '--out', path.join(dir, 'frames'), '--fps', '25');
   assert.equal(frames.status, 0, frames.stderr);
   assert.equal(JSON.parse(frames.stdout).frames, 8);
@@ -539,6 +565,9 @@ test('MCP pixel_compile builds fluid sources and pixel_help serves their schema'
   assert.deepEqual([info.ok, info.frames, info.animations, info.metadata.format], [true, 16, ['torch'], 'pixelforge-fluid-metadata']);
   assert.match(info.revision, /^[a-f0-9]{12}$/);
   assert.equal(compiled.result.content[1].type, 'image');
+  assert.deepEqual(info.warnings, []);
+  const buried = await request('tools/call', { name: 'pixel_compile', arguments: { source: { ...source, effects: { torch: { ...source.effects.torch, emitters: [{ ...source.effects.torch.emitters[0], at: [-40, -40] }] } } } } });
+  assert.match(JSON.parse(buried.result.content[0].text).warnings[0], /emitters\[0\] lies outside the canvas/);
   const broken = await request('tools/call', { name: 'pixel_compile', arguments: { source: { ...source, effects: { torch: { ...source.effects.torch, emitters: [{ ...source.effects.torch.emitters[0], rate: 0 }] } } } } });
   assert.equal(broken.result.isError, true);
   assert.equal(JSON.parse(broken.result.content[0].text).path, 'fluid.effects.torch.emitters[0].rate');

@@ -235,9 +235,9 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
         const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
         const format = document?.format;
         if (!Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals');
-        const { recipe, metadata } = COMPILERS[format](document);
+        const { recipe, metadata, warnings: compiled = [] } = COMPILERS[format](document);
         const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
-        result({ content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: project.warnings, ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] });
+        result({ content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] });
       } else if (params.name === 'pixel_scene') {
         const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
         const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false });

@@ -186,12 +186,12 @@ try {
       console.log(JSON.stringify({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force), embedded: { version, kind } }));
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
-      let value, metadata, input;
+      let value, metadata, input, warnings;
       if (command === 'compile' || command === 'autotile') {
         input = await readResolved(positional[0]);
         const compile = command === 'autotile' ? compileAutotile : COMPILERS[input.document?.format] ?? compilePoses;
         const compiled = compile(input.document);
-        value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata;
+        value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata; warnings = compiled.warnings;
       } else if (command === 'overlay') {
         if (!options.changes) throw new Error('overlay requires --changes <edits.json>');
         if (positional[0] === '-' && options.changes === '-') throw new Error('Only one input can use stdin');
@@ -205,7 +205,7 @@ try {
       if (options.metadata && !/\.json$/i.test(options.metadata)) throw new Error('--metadata must name a .json file');
       // Generated files use compact formatting: one line per frame, operation or short grid when it fits.
       const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }) }, options.force);
-      console.log(JSON.stringify({ ok: true, ...written, ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
+      console.log(JSON.stringify({ ok: true, ...written, ...(warnings && { warnings }), ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
     } else if (command === 'scene') {
       if (!options.out) throw new Error('scene requires --out <directory>');
       const input = await readResolved(positional[0]), bundle = await createSceneBundle(input.document);

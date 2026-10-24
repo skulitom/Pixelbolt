@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluid warnings for setups that make nothing or start stuck
+
+- `compileFluid` returns `warnings` (and each effect's metadata lists its own) when an emitter lies inside obstacles or off the canvas on every frame it works, so it adds no fluid, and when a liquid fill starts against the underside of a pixel obstacle or a closed edge with open space below it, where the pressure holds it on. Each warning names the field and says what to change. `pixel_compile` adds them to its reply's `warnings`, `pixelbolt compile` prints them, and live runners list them in `live.warnings`. No preset sets one off, and recipes are unchanged.
+
 ### Smooth obstacles: liquids slide down drawn slopes
 
 - A fluid obstacle with `surface: "smooth"` meets the fluid along an outline traced through its pixel steps, so a drawn 45° roof acts as a straight slope instead of a staircase. Wet snow and slime with `slip` slide off a smooth roof where they stalled for good on the stepped one, and slime pressed against the underside of a smooth branch falls away instead of hanging from it. Faces along the outline are partly open to the pressure and viscosity solves, particles slide along the outline, and a smooth obstacle pushes on a liquid but never pulls it (`adhesion` still holds liquid on). Nothing passes through it, however fast, even where it is one pixel thick.

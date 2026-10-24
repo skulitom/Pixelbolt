@@ -211,8 +211,9 @@ function readEffect(effect, path, source) {
   const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647);
   const context = { frames, loop, liquid, palette, seed };
   const solid = new Uint8Array(width * height), front = new Uint8Array(width * height), obstacles = [];
-  // Cells of smooth obstacles, and of pixel ones; a cell both cover keeps its pixel steps.
-  const rounded = new Uint8Array(width * height), stepped = new Uint8Array(width * height);
+  // Cells of smooth obstacles, and of pixel ones; a cell both cover keeps its pixel steps. `owner` names the first
+  // obstacle covering each cell, for warnings.
+  const rounded = new Uint8Array(width * height), stepped = new Uint8Array(width * height), owner = new Int16Array(width * height).fill(-1);
   const listed = (value, key, max) => {
     if (value === undefined) return [];
     if (!Array.isArray(value) || value.length > max) fail(`${path}.${key}`, `expected a list of at most ${max} entries`);
@@ -229,7 +230,7 @@ function readEffect(effect, path, source) {
     const surface = obstacle.surface ?? 'pixels';
     if (!OBSTACLE_SURFACES.includes(surface)) fail(`${op}.surface`, 'expected pixels (the default: the fluid meets every pixel step) or smooth (the fluid meets a smooth outline through the steps, so it slides down a drawn slope)');
     const cells = surface === 'smooth' ? rounded : stepped;
-    rows.forEach((row, j) => { for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') { const c = (y + j) * width + x + k; solid[c] = 1; cells[c] = 1; if (draw === 'over') front[c] = 1; } });
+    rows.forEach((row, j) => { for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') { const c = (y + j) * width + x + k; solid[c] = 1; cells[c] = 1; if (owner[c] < 0) owner[c] = i; if (draw === 'over') front[c] = 1; } });
     obstacles.push({ symbol: obstacle.symbol, x, y, draw });
   });
   let smooth = null;
@@ -257,7 +258,9 @@ function readEffect(effect, path, source) {
   }
   const light = effect.light === undefined ? [-1, -1] : pair(effect.light, `${path}.light`, -1, 1), reachLight = Math.sqrt(light[0] * light[0] + light[1] * light[1]);
   if (!reachLight) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
+  const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])) });
   return {
+    warnings,
     kind, liquid, frames, durations, light: [light[0] / reachLight, light[1] / reachLight], loop, seed, emitters, look, whitewater, obstacles, solid, front, smooth, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), fills, cleanup,
     warmup: loop ? integer(effect.warmup ?? 2, `${path}.warmup`, 1, 8) : 0,
     blend: loop ? integer(effect.blend ?? Math.max(1, Math.min(8, Math.floor(frames / 3))), `${path}.blend`, 1, Math.floor(frames / 2)) : 0,
@@ -271,6 +274,56 @@ function readEffect(effect, path, source) {
     tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion: liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0,
     outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0)
   };
+}
+
+// Setups that compile but make nothing, or look stuck, said in words: an emitter whose disc or box lies inside
+// obstacles (or off the canvas) on every frame it works, and a liquid fill that starts against the underside of a pixel
+// obstacle (or a closed edge above it), where the pressure holds it on, with mostly open space below it to fall into.
+// A fill that rests on something, as water in a flask does, needs no warning, whatever it touches.
+function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls }) {
+  const warnings = [], W = width, H = height;
+  emitters.forEach((e, index) => {
+    if (!(e.density > 0 || (!liquid && (e.temperature > 0 || e.expand > 0)))) return;
+    let open = false, buried = -1, seen = false;
+    for (let cycle = 0; cycle < frames && !open; cycle++) {
+      if (!active(e, cycle)) continue;
+      const { x, y } = emitterState(e, index, cycle, seed), r = reach(e);
+      for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(H - 1, Math.ceil(y + r)) && !open; j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(W - 1, Math.ceil(x + r)); i++) {
+        if (!coverage(e, i + 0.5 - x, j + 0.5 - y)) continue;
+        seen = true;
+        if (!solid[j * W + i]) { open = true; break; }
+        if (buried < 0) buried = owner[j * W + i];
+      }
+    }
+    if (open) return;
+    const what = liquid ? 'water' : 'gas', sparks = e.sparks ? ' (its sparks still show)' : '';
+    if (seen) warnings.push(`${path}.emitters[${index}] lies inside obstacles[${buried}] whenever it emits, so it adds no ${what}${sparks}: move it just outside the obstacle's pixels`);
+    else warnings.push(`${path}.emitters[${index}] lies outside the canvas whenever it emits, so it adds no ${what}${sparks}: move its at inside the ${W} × ${H} canvas`);
+  });
+  if (!liquid) return warnings;
+  // "Above" is against gravity, along its stronger axis.
+  const [gx, gy] = gravity, vertical = Math.abs(gy) >= Math.abs(gx), di = vertical ? 0 : gx > 0 ? -1 : 1, dj = vertical ? (gy > 0 ? -1 : 1) : 0;
+  const edge = vertical ? (gy > 0 ? 'top' : 'bottom') : gx > 0 ? 'left' : 'right', pixel = c => solid[c] && !(smooth && smooth[c]);
+  fills.forEach((fill, f) => {
+    let under = 0, against = 0, which = -1, bottom = 0, resting = 0;
+    if (!gx && !gy) return;
+    const filled = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && fill.inside(i + 0.5, j + 0.5);
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const c = j * W + i;
+      if (!filled(i, j)) continue;
+      // Its lowest cells (along gravity), and how many of them rest on an obstacle or a closed edge.
+      const bi = i - di, bj = j - dj;
+      if (!filled(bi, bj)) { bottom++; if (bi < 0 || bj < 0 || bi >= W || bj >= H ? walls[{ top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[edge]] : solid[bj * W + bi]) resting++; }
+      const ni = i + di, nj = j + dj;
+      if (ni < 0 || nj < 0 || ni >= W || nj >= H) { if (walls[edge]) against++; continue; }
+      if (pixel(nj * W + ni)) { under++; if (which < 0) which = owner[nj * W + ni]; }
+    }
+    if (2 * resting >= bottom) return;
+    const fix = 'give that obstacle surface: "smooth" to let the liquid fall away (adhesion still holds it on), or move the fill a pixel away from it';
+    if (under) warnings.push(`${path}.fill[${f}] starts against the underside of obstacles[${which}] along ${under} pixel${under === 1 ? '' : 's'}, where the pressure holds it on: ${fix}`);
+    if (against) warnings.push(`${path}.fill[${f}] starts against the closed ${edge} edge along ${against} pixel${against === 1 ? '' : 's'}, where the pressure holds it on: move the fill a pixel away from the edge`);
+  });
+  return warnings;
 }
 
 // ---- The grid ---------------------------------------------------------------------------------------------------------
@@ -1664,18 +1717,21 @@ function buildRecipe(source, each) {
   return recipe;
 }
 
+// The recipe, figures for each effect, and `warnings` (only when there are any): setups that compile but make nothing or
+// look stuck, each naming the field to change.
 export function compileFluid(source) {
-  const metadata = { format: 'pixelforge-fluid-metadata', version: 1, effects: {} };
+  const metadata = { format: 'pixelforge-fluid-metadata', version: 1, effects: {} }, warnings = [];
   const recipe = buildRecipe(source, (name, effect, context) => {
     const run = simulate(effect, context);
+    warnings.push(...effect.warnings);
     metadata.effects[name] = {
       kind: effect.kind, frames: effect.frames, loop: effect.loop, seed: effect.seed, steps: run.steps, ...(effect.loop && { warmup: effect.warmup, blend: effect.blend }),
       peak: run.peak, ...(run.particles !== undefined && { particles: run.particles }), sparks: run.sparks,
-      pixels: run.output.map(frame => frame.pixels), ...(!effect.loop && { residue: run.output.at(-1).pixels })
+      pixels: run.output.map(frame => frame.pixels), ...(!effect.loop && { residue: run.output.at(-1).pixels }), ...(effect.warnings.length && { warnings: effect.warnings })
     };
     return run.output.map(frame => frame.ops);
   });
-  return JSON.parse(JSON.stringify({ recipe, metadata }));
+  return JSON.parse(JSON.stringify({ recipe, metadata, ...(warnings.length && { warnings }) }));
 }
 
 // ---- Live runner ------------------------------------------------------------------------------------------------------
@@ -1800,7 +1856,7 @@ export function createLiveFluid(source, options = {}) {
   };
 
   const live = {
-    width, height, kind: effect.kind, palette, frames: effect.frames,
+    width, height, kind: effect.kind, palette, frames: effect.frames, warnings: [...effect.warnings],
     // Frames simulated so far, warm-up included; the emitters are at frame `frame % frames` of their cycle.
     get frame() { return t; },
     get particles() { return liquid ? state.n : 0; },
