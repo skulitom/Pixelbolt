@@ -80,8 +80,10 @@ export async function handleRequest(request, onSource = () => {}) {
   if (['link', 'open', 'example'].includes(type)) onSource({ text, version });
   if (type === 'share') return { link: await shareLink(parse(text), version, { base: request.base }) };
   if (type === 'export' && request.export === 'recipe') {
-    const source = parse(text), kind = recipeKind(source);
-    return { files: [jsonFile(`${safeName(source.name ?? source.recipe?.name)}.${kind === 'project' ? 'pixel' : kind}.json`, source)], warnings: [] };
+    // Indented when that still fits the reopen limit, compact otherwise, so a downloaded recipe always reopens.
+    const source = parse(text), kind = recipeKind(source), body = sourceText(source), bytes = encoder.encode(body);
+    const data = bytes.length < RECIPE_LIMIT ? encoder.encode(`${body}\n`) : bytes;
+    return { files: [{ name: `${safeName(source.name ?? source.recipe?.name)}.${kind === 'project' ? 'pixel' : kind}.json`, type: 'application/json', data }], warnings: [] };
   }
   const item = await render(text, version, override), { result, source, engine } = item;
   if (type !== 'export') {

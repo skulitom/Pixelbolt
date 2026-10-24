@@ -11,7 +11,7 @@ import { resolveReferences } from '../src/resolve.js';
 import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
-import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit } from '../playground/lib.js';
+import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback } from '../playground/lib.js';
 import { handleRequest } from '../playground/worker.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -124,6 +124,37 @@ test('a JSON mistake reports its line once, without the parser\'s own position w
     assert.doesNotMatch(error.message, /position|JSON\.parse|of the JSON data/);
     return true;
   });
+});
+test('playback keeps overshoot, so 20 ms frames play at 50 a second on a 60 Hz screen', () => {
+  let state = { position: 0, nextAt: 0 }, steps = 0;
+  for (let frame = 0; frame <= 60; frame++) {
+    const next = advancePlayback({ ...state, now: frame * 1000 / 60, durations: [20, 20, 20, 20, 20], loop: true });
+    if (next.moved) steps += (next.position - state.position + 5) % 5 || 5;
+    state = next;
+  }
+  assert.ok(steps >= 49 && steps <= 50, `${steps} steps in one second`);
+});
+test('a one-shot animation holds its last step, then plays again; a stalled tab resyncs', () => {
+  const durations = [100, 100, 100];
+  let state = advancePlayback({ position: 0, nextAt: 0, now: 0, durations, loop: false });
+  assert.deepEqual(state, { position: 0, nextAt: 100, moved: false });
+  state = advancePlayback({ ...state, now: 200, durations, loop: false });
+  assert.equal(state.position, 2); assert.equal(state.nextAt, 900);
+  assert.equal(advancePlayback({ ...state, now: 899, durations, loop: false }).position, 2);
+  assert.equal(advancePlayback({ ...state, now: 900, durations, loop: false }).position, 0);
+  const stalled = advancePlayback({ position: 0, nextAt: 100, now: 10_000_000, durations: [1, 1], loop: true });
+  assert.ok(stalled.nextAt > 10_000_000);
+});
+test('a downloaded recipe always reopens, compact when indenting would pass the size limit', async () => {
+  const big = { ...tiny, notes: Array(3_000_000).fill(1) }, text = JSON.stringify(big);
+  assert.ok(text.length < RECIPE_LIMIT && JSON.stringify(big, null, 2).length > RECIPE_LIMIT);
+  const { files: [file] } = await handleRequest({ type: 'export', export: 'recipe', text, version: pin, override: engineURL.href });
+  assert.ok(file.data.length <= RECIPE_LIMIT);
+  const reopened = new TextDecoder().decode(file.data);
+  await handleRequest({ type: 'open', text: reopened, version: pin, override: engineURL.href }, () => {}).catch(error => assert.doesNotMatch(error.message, /larger than/));
+  assert.equal(JSON.stringify(JSON.parse(reopened)), text);
+  const small = await handleRequest({ type: 'export', export: 'recipe', text: JSON.stringify(tiny), version: pin, override: engineURL.href });
+  assert.equal(new TextDecoder().decode(small.files[0].data), JSON.stringify(tiny, null, 2) + '\n');
 });
 test('only a loopback page may lower the render time limit, and never raise it', () => {
   assert.equal(timeLimit('http://127.0.0.1:8000/playground/?limit=1000'), 1000);

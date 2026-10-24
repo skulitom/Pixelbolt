@@ -20,6 +20,21 @@ export function engineOverride(pageURL) {
   } catch { return refused; }
 }
 
+// Moves a playing animation on to time `now`. `nextAt` is when the shown step ends; overshoot carries over, so short
+// frames play at their real speed however often the screen repaints. A one-shot animation holds its last step for
+// `hold` ms before playing again. Returns the new position, the new end time and whether the step changed.
+export function advancePlayback({ position, nextAt, now, durations, loop, hold = 600 }) {
+  if (!nextAt) return { position, nextAt: now + durations[position], moved: false };
+  let moved = false;
+  for (let guard = 0; now >= nextAt && guard < 100000; guard++) {
+    position = (position + 1) % durations.length; moved = true;
+    nextAt += durations[position] + (!loop && position === durations.length - 1 ? hold : 0);
+  }
+  // A stalled tab picks up from now instead of racing through every step it missed.
+  if (now >= nextAt) nextAt = now + durations[position];
+  return { position, nextAt, moved };
+}
+
 // The render time limit. `?limit=<ms>` (100 to 20000) lowers it for tests, and only on a loopback page, so a shared
 // link can't change it for anyone else.
 export function timeLimit(pageURL, fallback = 20000) {

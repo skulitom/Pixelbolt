@@ -1,5 +1,5 @@
 import { RECIPE_LIMIT } from './share.js';
-import { engineOverride, filterExamples, formatSize, safeName, timeLimit } from './lib.js';
+import { advancePlayback, engineOverride, filterExamples, formatSize, safeName, timeLimit } from './lib.js';
 
 export const PINNED_VERSION = '0.9.0';
 const REQUEST_TIMEOUT = timeLimit(location.href);
@@ -292,12 +292,9 @@ canvas.addEventListener('keydown', event => {
 });
 function tick(now) {
   if (playing && rendered && !document.hidden) {
-    if (!nextAt) nextAt = now + rendered.frames[frameIndex()].duration;
-    if (now >= nextAt) {
-      position = (position + 1) % animation().frames.length; draw();
-      const last = position === animation().frames.length - 1;
-      nextAt = now + rendered.frames[frameIndex()].duration + (last && !animation().loop ? HOLD : 0);
-    }
+    const sequence = animation(), step = advancePlayback({ position, nextAt, now, durations: sequence.frames.map(index => rendered.frames[index].duration), loop: sequence.loop, hold: HOLD });
+    position = step.position; nextAt = step.nextAt;
+    if (step.moved) draw();
   }
   requestAnimationFrame(tick);
 }
