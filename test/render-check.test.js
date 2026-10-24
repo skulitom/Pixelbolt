@@ -24,7 +24,7 @@ const quoted = fix => JSON.parse(fix.slice(fix.indexOf('pixel_patch ') + 12, fix
 
 test('the render check reports what was delivered, and a hint, when nothing was asked for', () => {
   const plain = check(spirit, { gifs: [] });
-  assert.deepEqual(plain.delivered, { size: [24, 24], animations: { idle: { frames: 7, loop: true }, bob: { frames: 4, loop: true }, blink: { frames: 3, loop: false } }, colors: 7, transparent: true });
+  assert.deepEqual(plain.delivered, { size: [24, 24], animations: { idle: { frames: 7, loop: true }, bob: { frames: 4, loop: true }, blink: { frames: 3, loop: false } }, colors: 7, transparent: true, partlyTransparent: true });
   assert.equal(plain.ok, undefined); assert.equal(plain.problems, undefined); assert.match(plain.hint, /Pass expect .*gifScale/);
   // A command that writes no GIFs (the CLI's render) doesn't offer gifScale.
   assert.doesNotMatch(check(spirit).hint, /gifScale/);
@@ -46,7 +46,7 @@ test('the render check passes a delivery that matches the request and names each
     ['forest-spirit.png, frames/ and animations/', { width: 32, height: 32 }, { width: 24, height: 24 }],
     ['gifs/idle.gif', { width: 32, height: 32 }, { width: 192, height: 192 }],
     ['forest-spirit.png, frames/ and animations/', 'at most 4 colours', 7],
-    ['forest-spirit.png, frames/ and animations/', 'an opaque background', 'transparent pixels in "rest", "rise", "float", "blink", "fall", "settle"']
+    ['forest-spirit.png, frames/ and animations/', 'an opaque background', 'transparent or partly transparent pixels in "rest", "rise", "float", "blink", "fall", "settle"']
   ]);
   assert.match(miss.problems[0].fix, /pixel_patch \{ "set": "width", "value": 32 \}/);
   // 32 is no whole multiple of 24, so the GIF waits for the frame size; an asked 24 needs scale 1.
@@ -131,7 +131,17 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   assert.equal(check(patchRecipe(spirit, changesAfter(wide, 'pixel_patch [')).recipe, { expect: { width: 300 } }).ok, true);
   // An atlas the renderer refuses is never offered: 100 frames of 512x512 pass 16,777,216 pixels at any scale.
   const dots = { version: 1, name: 'dots', width: 2, height: 2, palette: { r: '#ff0000' }, frames: Array.from({ length: 100 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
-  assert.equal(check(dots, { expect: { width: 512, height: 512 } }).problems[0].fix, '100 frames at 512x512 make an atlas over 16,777,216 pixels at every scale: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
+  assert.equal(check(dots, { expect: { width: 512, height: 512 } }).problems[0].fix, 'at every whole scale that makes 512x512, an atlas of 100 frames at 512x512 passes 16,777,216 pixels: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
+  // The same budgets hold a whole-scale fix: 100 frames of 64x64 at sheet.scale 8 would make that atlas too.
+  const tiles = { ...dots, width: 64, height: 64 };
+  assert.equal(check(tiles, { expect: { width: 512, height: 512 } }).problems[0].fix, 'an atlas of 100 frames at 512x512 passes 16,777,216 pixels: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
+  // A GIF scale is held to the 67,108,864 pixels one render's GIFs hold: 300 frames at 32x32, scale 16.
+  const reel = { version: 1, name: 'reel', width: 32, height: 32, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }], animations: { default: { frames: Array(300).fill('a') } } }, reelProject = renderProject(reel);
+  assert.match(check(reel, { gifs: [animationGIF(reelProject, 'default', {})], expect: { gifScale: 16 } }).problems[0].fix, /^the GIFs of every animation at scale 16 pass the 67,108,864 pixels/);
+  // Partly transparent pixels are reported as such, and don't count as an opaque delivery.
+  const glass = { version: 1, name: 'glass', width: 2, height: 2, palette: { g: '#ff000080' }, frames: [{ name: 'a', ops: [{ op: 'rect', x: 0, y: 0, w: 2, h: 2, color: 'g' }] }] };
+  const glassy = check(glass, { expect: { transparent: false } });
+  assert.deepEqual([glassy.delivered.transparent, glassy.delivered.partlyTransparent, glassy.problems[0].got], [false, true, 'transparent or partly transparent pixels in "a"']);
   const forty = { ...dots, frames: dots.frames.slice(0, 40) }, roomy = check(forty, { expect: { width: 512, height: 512 } }).problems[0].fix;
   assert.equal(check(patchRecipe(forty, changesAfter(roomy, '(or [')).recipe, { expect: { width: 512, height: 512 } }).ok, true);
   // No whole scale: say so and offer the nearest size that exists.

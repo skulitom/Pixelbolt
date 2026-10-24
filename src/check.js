@@ -7,6 +7,8 @@ import { PixelError } from './core.js';
 // sheet.scale, source frames, their total area, and the names one animation lists. A pingpong of n names (n > 2)
 // plays 2n - 2 frames, so an animation plays at most 2,046.
 const CANVAS = 256, SCALE = 16, SOURCE_FRAMES = 256, FRAME_AREA = 4194304, ATLAS = 16777216, NAMES = 1024, PLAYED = 2 * NAMES - 2;
+// The pixels one export's APNG animations hold (export.js), and all of one render's GIFs (mcp.js, gif.js).
+const EXPORT_PIXELS = 67108864, GIF_PIXELS = 67108864;
 const LIMITS = { width: CANVAS * SCALE, height: CANVAS * SCALE, frames: PLAYED, colors: 65536, gifScale: SCALE };
 
 export function readExpect(expect) {
@@ -28,21 +30,32 @@ const wholeScale = (pairs, max) => {
   return scales.length && scales.every(k => k === scales[0] && Number.isInteger(k) && k >= 1 && k <= max) ? scales[0] : null;
 };
 
+// Why the exporter would refuse this project at canvas w x h and sheet.scale k, or null: the frames' total area, the
+// atlas (untrimmed; a trimmed one packs smaller, so it isn't held to this) and the animations' pixels.
+function exportBudget({ frames, animations, sheet }, w, h, k) {
+  if (w * h * frames.length > FRAME_AREA) return `${frames.length} frames of ${w}x${h} pass the limit of 4,194,304 pixels of frames`;
+  if (!sheet.trim && sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k > ATLAS) return `an atlas of ${frames.length} frames at ${w * k}x${h * k} passes 16,777,216 pixels`;
+  const played = Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0);
+  if (played * w * h * k * k > EXPORT_PIXELS) return `${played} played frames at ${w * k}x${h * k} pass the 67,108,864 animation pixels an export holds`;
+  return null;
+}
+const tooBig = (reason, sheet) => `${reason}: ask for fewer frames or a smaller size${reason.includes('an atlas') && !sheet.trim ? ', or set sheet.trim if the frames have empty margins' : ''}`;
+
 // A size with a side over 256 px is a smaller canvas exported at a whole sheet.scale. Offers the canvas nearest the
 // current one (the least redrawing) and, when it differs, the one with the most detail.
-function largeSizeFix(expect, { width, height, frames, sheet }, recipe) {
+function largeSizeFix(expect, project, recipe) {
+  const { width, height, frames, sheet } = project;
   const asked = expect.width !== undefined && expect.height !== undefined ? `${expect.width}x${expect.height}` : expect.width !== undefined ? `a width of ${expect.width}` : `a height of ${expect.height}`;
-  // The untrimmed atlas at that size (a trimmed one packs smaller, so it isn't held to this).
-  const atlas = (w, h, k) => sheet.trim ? 0 : sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k;
   const fits = [];
-  let crowded = false;
+  let refused = null;
   for (let k = 2; k <= SCALE; k++) {
     const w = expect.width === undefined ? width : expect.width / k, h = expect.height === undefined ? height : expect.height / k;
-    if (!Number.isInteger(w) || !Number.isInteger(h) || w > CANVAS || h > CANVAS || w * h * frames.length > FRAME_AREA) continue;
-    if (atlas(w, h, k) > ATLAS) crowded = true;
+    if (!Number.isInteger(w) || !Number.isInteger(h) || w > CANVAS || h > CANVAS) continue;
+    const over = exportBudget(project, w, h, k);
+    if (over) refused = over;
     else fits.push({ k, w, h, distance: Math.abs(w - width) + Math.abs(h - height) });
   }
-  if (!fits.length && crowded) return `${frames.length} frames at ${asked} make an atlas over 16,777,216 pixels at every scale: ask for fewer frames or a smaller size${sheet.trim ? '' : ', or set sheet.trim if the frames have empty margins'}`;
+  if (!fits.length && refused) return tooBig(`at every whole scale that makes ${asked}, ${refused}`, sheet);
   if (!fits.length) {
     const k = Math.min(SCALE, Math.ceil(Math.max(expect.width ?? 0, expect.height ?? 0) / CANVAS)), side = (value, canvas) => value === undefined ? canvas : Math.min(CANVAS, Math.max(1, Math.round(value / k)));
     const w = side(expect.width, width), h = side(expect.height, height);
@@ -117,7 +130,8 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   if (animation !== undefined && !Object.hasOwn(animations, animation)) throw new PixelError('animation', `no animation named "${animation}"; choose one of: ${Object.keys(animations).join(', ')}`);
   const names = animation === undefined ? Object.keys(animations) : [animation];
   const frames = animation === undefined ? project.frames : [...new Set(animations[animation].frames)].sort((a, b) => a - b).map(index => project.frames[index]);
-  const colors = new Set(), empty = [], clear = [], solid = [];
+  // clear: frames with a fully transparent pixel; seeThrough: with a partly transparent one; solid: fully opaque.
+  const colors = new Set(), empty = [], clear = [], seeThrough = [], solid = [];
   for (const frame of frames) {
     let transparent = 0, opaque = 0;
     const { data } = frame, pixels = data.length >> 2;
@@ -128,6 +142,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     }
     if (transparent === pixels) empty.push(frame.name);
     if (transparent) clear.push(frame.name);
+    if (transparent + opaque !== pixels) seeThrough.push(frame.name);
     if (opaque === pixels) solid.push(frame.name);
   }
   const played = Object.fromEntries(names.slice(0, 16).map(key => [key, { frames: animations[key].frames.length, loop: animations[key].loop }]));
@@ -135,6 +150,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     size: [width * scale, height * scale], ...(scale !== 1 && { canvas: [width, height], scale }),
     animations: played, ...(names.length > 16 && { animationsOmitted: names.length - 16 }),
     colors: colors.size, transparent: clear.length === frames.length ? true : clear.length ? 'some frames' : false,
+    ...(seeThrough.length && { partlyTransparent: seeThrough.length === frames.length ? true : 'some frames' }),
     ...(gifs?.length && { gifs: [gifs[0].width, gifs[0].height] })
   };
   const notes = empty.length ? [`Frame${empty.length === 1 ? '' : 's'} ${list(empty)} ${empty.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${empty.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${empty.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
@@ -145,7 +161,10 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   const asked = { ...(expect.width !== undefined && { width: expect.width }), ...(expect.height !== undefined && { height: expect.height }) };
   if ((expect.width !== undefined && expect.width !== width * scale) || (expect.height !== undefined && expect.height !== height * scale)) {
     const k = wholeScale([[expect.width, width], [expect.height, height]], 16);
-    const fix = k !== null
+    // Each fix is held to the exporter's budgets at the size it proposes.
+    const over = k !== null ? exportBudget(project, width, height, k) : (expect.width ?? 0) > CANVAS || (expect.height ?? 0) > CANVAS ? null : exportBudget(project, expect.width ?? width, expect.height ?? height, 1);
+    const fix = over ? tooBig(over, sheet)
+      : k !== null
       ? `${k === 1 ? `sheet.scale ${scale} enlarges every export: ` : ''}pixel_patch ${recipe !== undefined && recipe.sheet === undefined ? `{ "set": "sheet", "value": { "scale": ${k} } }` : `{ "set": "sheet.scale", "value": ${k} }`}, then render again`
       : (expect.width ?? 0) > CANVAS || (expect.height ?? 0) > CANVAS ? largeSizeFix(expect, project, recipe)
       : `the canvas is ${width}x${height}${scale !== 1 ? ` at sheet.scale ${scale}` : ''}: change the recipe's ${Object.keys(asked).join(' and ')} (pixel_patch { "set": "${Object.keys(asked)[0]}", "value": ${Object.values(asked)[0]} }${scale !== 1 ? ' and sheet.scale 1' : ''}), fit the drawing to it, pixel_inspect, then render again`;
@@ -157,9 +176,12 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     // A GIF should be the asked frame size, times gifScale when one was asked for.
     const gifScale = expect.gifScale ?? 1, sized = expect.width !== undefined || expect.height !== undefined || expect.gifScale !== undefined;
     const wantW = (expect.width ?? width * scale) * gifScale, wantH = (expect.height ?? height * scale) * gifScale, k = wholeScale([[wantW, width], [wantH, height]], Infinity);
+    // "gif" writes every animation, and one render's GIFs hold at most 67,108,864 pixels in all.
+    const gifPixels = k === null ? 0 : Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0) * width * height * k * k;
     const gifFix = k === null ? 'fix the frame size first (see the problem above), then render the GIFs again'
       : k > 16 ? `a GIF that size needs scale ${k}, above the limit of 16: ask for a smaller gifScale, or lower sheet.scale`
-        : `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}`;
+        : gifPixels > GIF_PIXELS ? `the GIFs of every animation at scale ${k} pass the 67,108,864 pixels a render's GIFs hold: ask for a smaller size or gifScale, or shorten the animations`
+          : `render again with "gif": { "scale": ${k} }${k === 1 ? ' or "gif": {}' : ''}`;
     if (expect.gifScale !== undefined && !scoped.length) problems.push({ file: 'gifs/', asked: { width: wantW, height: wantH }, got: 'no GIF', fix: gifFix });
     const wrong = sized ? scoped.filter(gif => gif.width !== wantW || gif.height !== wantH) : [];
     if (wrong.length) problems.push({ file: gifFiles(wrong), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
@@ -182,7 +204,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   }
   if (expect.transparent === false && solid.length !== frames.length) {
     const holes = frames.map(frame => frame.name).filter(frameName => !solid.includes(frameName));
-    problems.push({ file: frameFiles, asked: 'an opaque background', got: `transparent pixels in ${list(holes)}`, fix: opaqueFix(recipe, holes) });
+    problems.push({ file: frameFiles, asked: 'an opaque background', got: `${holes.some(frameName => seeThrough.includes(frameName)) ? 'transparent or partly transparent' : 'transparent'} pixels in ${list(holes)}`, fix: opaqueFix(recipe, holes) });
   }
   if (expect.loop !== undefined) for (const key of names) {
     if (animations[key].loop === expect.loop) continue;
