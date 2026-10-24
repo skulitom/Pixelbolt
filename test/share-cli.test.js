@@ -14,6 +14,7 @@ import { createSceneBundle } from '../src/scene-export.js';
 import { decodePNG, importPNG } from '../src/import.js';
 import { resolveReferences } from '../src/resolve.js';
 import { startMCP } from '../src/mcp.js';
+import { checkDelivery } from '../src/check.js';
 import { LINK_LIMIT, PLAYGROUND_URL, RECIPE_KEYWORD, embedRecipe, readEmbeddedRecipe, readShareLink, shareLink } from '../src/share.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -95,7 +96,7 @@ test('CLI render embeds source in every PNG only on request, preserving every ot
     const bundle = await createBundle(recipe), plain = path.join(dir, recipe.name), embedded = path.join(dir, recipe.name + '-embedded');
     const input = source === '-' ? JSON.stringify(recipe) : undefined;
     const old = cli(['render', source, '--out', plain], { input });
-    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project), files: [...bundle.files.keys()].map(name => path.join(plain, name)) }) + '\n');
+    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project), files: [...bundle.files.keys()].map(name => path.join(plain, name)), check: checkDelivery(bundle.project, { recipe }) }) + '\n');
     await checkBundle(plain, bundle);
     const carried = cli(['render', source, '--out', embedded, '--embed-recipe'], { input });
     assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);

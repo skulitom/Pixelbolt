@@ -115,9 +115,58 @@ test('the render check sees frame counts, pingpong, loops, recipes without anima
   assert.equal(check(patchRecipe(bare, [change]).recipe, { expect: { loop: false } }).ok, true);
 });
 
+// The changes a size fix quotes as a JSON array, after `pixel_patch ` or `(or `.
+const changesAfter = (fix, marker) => { const start = fix.indexOf(marker) + marker.length - 1; return JSON.parse(fix.slice(start, fix.indexOf(']', start) + 1)); };
+
+test('the render check\'s fixes stay inside the format\'s limits, and applying them passes the check', () => {
+  // Over 256 px a side: a smaller canvas at a whole sheet.scale, the one nearest the drawing and the most detailed.
+  const big = check(spirit, { expect: { width: 512, height: 512 } }).problems[0].fix;
+  assert.match(big, /^canvases stop at 256 px a side, so 512x512 is a 32x32 canvas at sheet\.scale 16, the nearest to the current 24x24: .*a 256x256 canvas at sheet\.scale 2, for the most detail\)/);
+  for (const changes of [changesAfter(big, 'pixel_patch ['), changesAfter(big, '(or [')]) {
+    assert.equal(check(patchRecipe(spirit, changes).recipe, { expect: { width: 512, height: 512 } }).ok, true, JSON.stringify(changes));
+  }
+  // One side asked: the other keeps its canvas size. 300 = 25 x 12 is nearest 24.
+  const wide = check(spirit, { expect: { width: 300 } }).problems[0].fix;
+  assert.deepEqual(changesAfter(wide, 'pixel_patch ['), [{ set: 'width', value: 25 }, { set: 'sheet.scale', value: 12 }]);
+  assert.equal(check(patchRecipe(spirit, changesAfter(wide, 'pixel_patch [')).recipe, { expect: { width: 300 } }).ok, true);
+  // An atlas the renderer refuses is never offered: 100 frames of 512x512 pass 16,777,216 pixels at any scale.
+  const dots = { version: 1, name: 'dots', width: 2, height: 2, palette: { r: '#ff0000' }, frames: Array.from({ length: 100 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
+  assert.equal(check(dots, { expect: { width: 512, height: 512 } }).problems[0].fix, '100 frames at 512x512 make an atlas over 16,777,216 pixels at every scale: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
+  const forty = { ...dots, frames: dots.frames.slice(0, 40) }, roomy = check(forty, { expect: { width: 512, height: 512 } }).problems[0].fix;
+  assert.equal(check(patchRecipe(forty, changesAfter(roomy, '(or [')).recipe, { expect: { width: 512, height: 512 } }).ok, true);
+  // No whole scale: say so and offer the nearest size that exists.
+  assert.match(check(spirit, { expect: { width: 4093 } }).problems[0].fix, /no whole scale exports a width of 4093 exactly from 6 frames: tell the user, and offer 4096x384 \(a 256x24 canvas at sheet\.scale 16\) instead$/);
+
+  // An opaque background asked for, with pixels erased after the background: name what erases them.
+  const cleared = { version: 1, name: 'cleared', width: 4, height: 2, background: 'r', palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'clear', x: 0, y: 0, w: 1, h: 1 }] }, { name: 'b', from: 'a' }] };
+  assert.equal(check(cleared, { expect: { transparent: false } }).problems[0].fix, 'the background is already opaque, but frame drawing erases it (clear in "a"): remove those or paint over what they clear, then render again');
+  assert.equal(check(patchRecipe(cleared, [{ remove: 'frames[a].ops[0]' }]).recipe, { expect: { transparent: false } }).ok, true);
+  const shifted = { ...cleared, frames: [{ name: 'a', translate: [1, 0], ops: [{ op: 'dither', erase: true, density: 0.5 }] }] };
+  assert.match(check(shifted, { expect: { transparent: false } }).problems[0].fix, /\(dither with erase, translate in "a"\)/);
+  assert.equal(check({ ...shifted, frames: [{ name: 'a', translate: [1, 0], wrap: true }] }, { expect: { transparent: false } }).ok, true);
+  assert.equal(check(small, { expect: { transparent: false } }).problems[0].fix, 'pixel_patch { "set": "background", "value": "<palette key>" }, and remove or paint over what erases it (clear in "b"), then render again');
+  assert.match(check({ ...cleared, background: '#ff000080', frames: [{ name: 'a' }] }, { expect: { transparent: false } }).problems[0].fix, /an opaque one: the current background is see-through/);
+
+  // Frame counts: a recipe holds 256 frames and an animation lists 1,024 names, which may repeat.
+  const bare = { version: 1, name: 'bare', width: 2, height: 2, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
+  assert.match(check(bare, { expect: { frames: 300 } }).problems[0].fix, /a recipe holds at most 256 frames: add an animation that lists 300 frame names/);
+  assert.equal(check({ ...bare, animations: { default: { frames: Array(300).fill('a') } } }, { expect: { frames: 300 } }).ok, true);
+  assert.match(check({ ...bare, width: 256, height: 256 }, { expect: { frames: 100 } }).problems[0].fix, /100 frames of 256x256 pass the limit of 4,194,304 pixels of frames: add an animation/);
+  // Above 1,024 only a pingpong plays it, 2n - 2 frames for n names, so an odd count can't be played.
+  assert.match(check(bare, { expect: { frames: 2046 } }).problems[0].fix, /a pingpong animation of 1024 frame names, which plays 2046/);
+  assert.equal(check({ ...bare, animations: { default: { frames: Array(1024).fill('a'), direction: 'pingpong' } } }, { expect: { frames: 2046 } }).ok, true);
+  assert.match(check(bare, { expect: { frames: 1025 } }).problems[0].fix, /^no animation plays 1025 frames: .*play 1024 or 1026$/);
+  assert.match(check(spirit, { expect: { frames: 1500 }, animation: 'idle' }).problems[0].fix, /set animations\.idle\.direction to "pingpong" and list 751 names, which play 1500$/);
+  assert.equal(check(spirit, { expect: { frames: 2046 }, animation: 'bob' }).problems[0].fix, '"bob" is pingpong, which plays 2n-2 frames for n names: list 1024 names in animations.bob.frames');
+  assert.match(check(spirit, { expect: { frames: 9 }, animation: 'idle' }).problems[0].fix, /^make "idle" play 9 frames: list 9 names in animations\.idle\.frames \(a name may repeat/);
+  // expect.frames reaches the longest pingpong: 514 names play 1,026 frames.
+  assert.equal(check({ ...bare, animations: { default: { frames: Array(514).fill('a'), direction: 'pingpong' } } }, { expect: { frames: 1026 } }).ok, true);
+  assert.deepEqual(readExpect({ frames: 2046 }), { frames: 2046 });
+});
+
 test('expect is refused by name when it is malformed', () => {
   assert.equal(readExpect(undefined), undefined);
-  for (const [expect, where] of [[null, 'expect'], [[], 'expect'], [{ size: 32 }, 'expect.size'], [{ width: 0 }, 'expect.width'], [{ frames: 1.5 }, 'expect.frames'], [{ gifScale: 17 }, 'expect.gifScale'], [{ loop: 'yes' }, 'expect.loop']]) {
+  for (const [expect, where] of [[null, 'expect'], [[], 'expect'], [{ size: 32 }, 'expect.size'], [{ width: 0 }, 'expect.width'], [{ frames: 1.5 }, 'expect.frames'], [{ frames: 2047 }, 'expect.frames'], [{ width: 4097 }, 'expect.width'], [{ gifScale: 17 }, 'expect.gifScale'], [{ loop: 'yes' }, 'expect.loop']]) {
     assert.throws(() => readExpect(expect), error => error instanceof PixelError && error.path === where, JSON.stringify(expect));
   }
 });
