@@ -414,6 +414,12 @@ test('carried gas is thrown like dust, drops at obstacles and runs live as compi
   const walled = wave({ drag: 0, release: 0.05 }, { obstacles: [{ symbol: 'ground', x: 0, y: 44 }, { symbol: 'wall', x: 84, y: 0 }] });
   assert.equal(walled.frames.reduce((n, _, f) => n + drawn(walled, f).filter(([x]) => x >= 86).length, 0), 0);
   assert.ok(drawn(walled, 6).some(([x]) => x === 83), 'smoke piles against the wall');
+  // Dust settles on a closed floor as it does on an obstacle; through an open edge it leaves.
+  const settle = walls => compileFluid({ ...gas(null), width: 32, height: 32, effects: { e: { frames: 24, buoyancy: 0, dissipation: 0, walls, emitters: [{ at: [16, 10], radius: 3, burst: 1, density: 1, carry: { gravity: [0, 0.3], release: 0.02 } }], look: [{ field: 'density', colors: ['s'], thresholds: [0.3], dither: 0 }] } } }).recipe;
+  const piled = walls => drawn(settle(walls), 23).filter(([, y]) => y >= 28).length;
+  assert.ok(piled(['bottom']) >= 8 && piled([]) === 0, `${piled(['bottom'])} dense pixels on a closed floor, ${piled([])} on an open one`);
+  // An orbiting carry emitter throws once a frame, so it stays well inside the carrier limit.
+  assert.doesNotThrow(() => compileFluid({ ...gas(null), width: 64, height: 32, effects: { e: { frames: 24, emitters: [{ at: [32, 16], radius: 4, rate: 1, density: 1, carry: {}, orbit: { radius: 8, period: 4 } }], look: smoke } } }));
   // The same source gives the same frames, compiled or live.
   const source = { ...gas(null), width: 64, height: 32, effects: { e: { frames: 10, emitters: [{ at: [10, 20], radius: 2, rate: 1, end: 4, density: 1, temperature: 0.5, velocity: [6, -1], noise: 0.5, carry: { gravity: [0, 0.05] } }], look: [{ field: 'density', colors: ['s'], thresholds: [0.1], dither: 0 }] } } };
   const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
@@ -437,6 +443,9 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
   const film = compileFluid(goo({ frames: 40, adhesion: 4, obstacles: [{ symbol: 'slab', x: 14, y: 6 }], keys: [{ frame: 20, adhesion: 0 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe;
   const under = f => drawn(film, f).filter(([, y]) => y === 7).length;
   assert.ok(under(19) >= 8 && under(39) === 0, `${under(19)} pixels under the ledge at frame 19, ${under(39)} at 39`);
+  // A key at frame 0 is the same as the setting itself, spray that falls by the effect's gravity included.
+  const sideways = extra => compileFluid(goo({ frames: 24, walls: FLUID_WALLS, whitewater: [{ impact: 0.5, chance: 0.5, colors: ['w'], life: 10 }], ...extra }, [{ at: [24, 8], radius: 4, velocity: [0, 3] }])).recipe;
+  assert.deepEqual(sideways({ gravity: [0, 0.3], keys: [{ frame: 0, gravity: [0.3, 0.1] }] }), sideways({ gravity: [0.3, 0.1] }));
   // A thick liquid may get its viscosity from a key alone, and slip with it; a live runner follows the keys.
   const source = goo({ frames: 30, slip: true, keys: [{ frame: 10, viscosity: 16 }, { frame: 20, gravity: [0.3, 0] }] }, [{ x: 18, y: 14, w: 12, h: 12 }]);
   const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
@@ -457,6 +466,9 @@ test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () 
   assert.equal(blobs(drawn(still, 8)), 1);
   assert.ok(blobs(drawn(burst, 8)) >= 6 && width(drawn(burst, 8)) >= 3 * width(drawn(still, 8)), `${blobs(drawn(burst, 8))} pieces, ${width(drawn(burst, 8))} pixels wide`);
   assert.ok(drawn(burst, 1).length >= 0.85 * drawn(still, 1).length, `${drawn(burst, 1).length} pixels against ${drawn(still, 1).length}`);
+  // Every particle is kept, even when a small fill breaks into more pieces than it has room for.
+  const particles = (radius, burst) => compileFluid({ ...gas(null), width: 32, height: 32, effects: { e: { kind: 'liquid', frames: 1, gravity: [0, 0], fill: [{ at: [16, 16], radius, ...(burst && { burst }) }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5] }] } } }).metadata.effects.e.particles;
+  for (const [radius, pieces] of [[1, 8], [2, 8], [3, 8], [8, 64]]) assert.equal(particles(radius, { speed: 2, pieces }), particles(radius, null), `radius ${radius}, ${pieces} pieces`);
   // Speeds picked per piece spread the pieces unevenly; the same source bursts the same way every time.
   assert.deepEqual(ball({ speed: [1.5, 3.5], pieces: 12 }), ball({ speed: [1.5, 3.5], pieces: 12 }));
   assert.notDeepEqual(ball({ speed: [1.5, 3.5], pieces: 12 }), ball({ speed: 2.5, pieces: 12 }));
@@ -479,6 +491,16 @@ test('setups that compile but make nothing, or start stuck, are warned about wit
   assert.deepEqual(hanging('smooth'), []);
   assert.deepEqual(warned({ kind: 'liquid', walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'bar', x: 6, y: 20 }], fill: [{ x: 0, y: 21, w: 32, h: 11 }], emitters: [] }), []);
   assert.match(warned({ kind: 'liquid', walls: ['top', 'bottom'], fill: [{ x: 4, y: 0, w: 8, h: 4 }], emitters: [] })[0], /closed top edge/);
+  // Water resting on other water, a round fill standing on a floor, and fills thrown down or bursting are not stuck.
+  assert.deepEqual(warned({ kind: 'liquid', walls: FLUID_WALLS, fill: [{ x: 4, y: 26, w: 8, h: 6 }, { x: 4, y: 0, w: 8, h: 26 }], emitters: [] }), []);
+  assert.deepEqual(warned({ kind: 'liquid', walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'bar', x: 6, y: 15 }], fill: [{ at: [16, 24], radius: 8 }], emitters: [] }), []);
+  assert.deepEqual(warned({ kind: 'liquid', obstacles: [{ symbol: 'bar', x: 6, y: 5 }], fill: [{ at: [16, 12], radius: 6, velocity: [0, 4] }], emitters: [] }), []);
+  assert.deepEqual(warned({ kind: 'liquid', obstacles: [{ symbol: 'bar', x: 6, y: 5 }], fill: [{ at: [16, 12], radius: 6, burst: { speed: 2 } }], emitters: [] }), []);
+  // Gravity a key turns on counts.
+  assert.match(warned({ kind: 'liquid', gravity: [0, 0], keys: [{ frame: 2, gravity: [0, 0.3] }], obstacles: [{ symbol: 'bar', x: 6, y: 5 }], fill: [{ at: [16, 12], radius: 6 }], emitters: [] })[0], /underside of obstacles\[0\]/);
+  // An orbiting emitter buried on every whole frame but clear on the path between them still makes gas.
+  const rocks = { symbols: { rock: ['kkk', 'kkk', 'kkk'] } }, spots = [[22, 16], [16, 22], [10, 16], [16, 10]].map(([x, y]) => ({ symbol: 'rock', x: x - 1, y: y - 1 }));
+  assert.deepEqual(warned({ frames: 8, obstacles: spots, emitters: [{ at: [16, 16], radius: 0.5, rate: 1, density: 1, orbit: { radius: 6, period: 4 } }] }, rocks), []);
   // A live runner carries the same warnings.
   assert.equal(createLiveFluid({ ...gas(null), width: 32, height: 32, effects: { e: { frames: 6, look: smoke, emitters: [{ at: [-20, 10], radius: 2, rate: 1, density: 1 }] } } }, { warmup: 0 }).warnings.length, 1);
 });
@@ -524,6 +546,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', surface: 'round' }]; }, 'fluid.effects.plume.obstacles[0].surface', /pixels .* smooth/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, draw: 'none' }]; }, 'fluid.effects.plume.obstacles[0].draw', /decoration .* over or under/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, surface: 'smooth' }]; }, 'fluid.effects.plume.obstacles[0].surface', /never meets a decoration/);
+  assert.doesNotThrow(() => compileFluid(gas({ ...ok, obstacles: [{ symbol: 'slab', solid: false, surface: 'pixels' }] }, { symbols: { slab: ['kkkk'] } })));
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: 'no' }]; }, 'fluid.effects.plume.obstacles[0].solid', /true or false/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { pieces: 4 } }] }); }, 'fluid.effects.plume.fill[0].burst.speed', /pixels per frame/);
   bad(e => { Object.assign(e, { kind: 'liquid', emitters: [{ at: [8, 8], rate: 1, carry: {} }] }); }, 'fluid.effects.plume.emitters[0].carry', /liquid particles/);
@@ -533,6 +556,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
   bad(e => { e.emitters = [{ ...emitter, density: -1, carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /draining emitter/);
   bad(e => { e.emitters = [{ ...emitter, carry: { drag: 2 } }]; }, 'fluid.effects.plume.emitters[0].carry.drag', /0 to 1/);
+  bad(e => { e.emitters = [{ at: [8, 8], burst: 1, velocity: [8, 0], carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /positive density or temperature/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { speed: 2, pieces: 1 } }] }); }, 'fluid.effects.plume.fill[0].burst.pieces', /2 to 64/);
   bad(e => { e.light = [0, 0]; }, 'fluid.effects.plume.light', /toward the light/);
   bad(e => { e.outline = 'z'; }, 'fluid.effects.plume.outline', /palette key/);
@@ -597,7 +621,10 @@ test('the fluid schema lists exactly the fields the compiler reads', async () =>
     [effect.properties.fill.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2, [key]: 0 }] }); }, 'fluid.effects.plume.fill[0]'],
     [effect.properties.obstacles.items.properties, (s, key) => { s.effects.plume.obstacles = [{ symbol: 'lid', [key]: 0 }]; }, 'fluid.effects.plume.obstacles[0]'],
     [effect.properties.cleanup.properties, (s, key) => { s.effects.plume.cleanup = { [key]: 0 }; }, 'fluid.effects.plume.cleanup'],
-    [effect.properties.whitewater.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', whitewater: [{ impact: 1, colors: ['s'], [key]: 0 }] }); }, 'fluid.effects.plume.whitewater[0]']
+    [effect.properties.whitewater.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', whitewater: [{ impact: 1, colors: ['s'], [key]: 0 }] }); }, 'fluid.effects.plume.whitewater[0]'],
+    [emitter.properties.carry.properties, (s, key) => { s.effects.plume.emitters[0].carry = { [key]: 0 }; }, 'fluid.effects.plume.emitters[0].carry'],
+    [effect.properties.keys.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', keys: [{ frame: 0, yield: 1, [key]: 0 }] }); }, 'fluid.effects.plume.keys[0]'],
+    [effect.properties.fill.items.properties.burst.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2, burst: { speed: 1, [key]: 0 } }] }); }, 'fluid.effects.plume.fill[0].burst']
   ];
   for (const [properties, put, where] of levels) {
     for (const key of Object.keys(properties)) { const source = base(); put(source, key); assert.equal(unknown(source, `${where}.${key}`), false, `${where}.${key} is in the schema but the compiler rejects it`); }

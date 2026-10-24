@@ -120,7 +120,7 @@ function readWhitewater(layer, path, context, gravity) {
     chance: number(layer.chance ?? 0.1, `${path}.chance`, 0.001, 1), throw: number(layer.throw ?? 1, `${path}.throw`, 0, 4), spread: number(layer.spread ?? 20, `${path}.spread`, 0, 180),
     life: range(layer.life ?? [6, 12], `${path}.life`, 1, 256, true), colors: layer.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette)),
     size: integer(layer.size ?? 1, `${path}.size`, 1, 3), trail: layer.trail === undefined ? false : boolean(layer.trail, `${path}.trail`),
-    gravity: layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
+    gravity: layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), inherit: layer.gravity === undefined, drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
     follow: number(layer.follow ?? 0, `${path}.follow`, 0, 2), pop: false
   };
 }
@@ -142,6 +142,7 @@ function readEmitter(emitter, path, context) {
     if (liquid) fail(`${path}.carry`, 'carry throws gas on heavy carriers; liquid particles already carry their own speed');
     fields(emitter.carry, ['drag', 'release', 'gravity'], `${path}.carry`);
     if ((emitter.density ?? 0) < 0 || (emitter.temperature ?? 0) < 0) fail(`${path}.carry`, 'carry throws smoke and heat; a draining emitter (a negative density or temperature) has nothing to throw');
+    if (!((emitter.density ?? 0) > 0) && !((emitter.temperature ?? 0) > 0)) fail(`${path}.carry`, 'carry throws this emitter\'s density and temperature, and a carrying emitter does not push the air; give it a positive density or temperature');
     carry = { drag: number(emitter.carry.drag ?? 0.1, `${path}.carry.drag`, 0, 1), release: number(emitter.carry.release ?? 0.2, `${path}.carry.release`, 0.01, 1), gravity: emitter.carry.gravity === undefined ? [0, 0] : pair(emitter.carry.gravity, `${path}.carry.gravity`, -2, 2) };
   }
   return {
@@ -216,19 +217,19 @@ function readKeys(value, path, frames, base) {
     };
   });
   const blend = (from, to, t) => (Array.isArray(from) ? [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t] : from + (to - from) * t);
-  return Array.from({ length: frames }, (_, f) => {
-    const now = {};
-    for (const name of KEYED) {
-      let from = base[name], value = base[name];
-      for (const key of keys) {
-        if (key[name] === undefined || key.frame > f) continue;
-        value = key.over && f < key.frame + key.over ? blend(from, key[name], (f - key.frame) / key.over) : key[name];
-        from = key[name];
-      }
-      now[name] = value;
+  const schedule = Array.from({ length: frames }, () => ({}));
+  for (const name of KEYED) {
+    // Each key rewrites its setting from its frame on, starting from the value it finds there, so a key that starts
+    // during another's ramp carries on from where that ramp had got to.
+    const values = Array(frames).fill(base[name]);
+    for (const key of keys) {
+      if (key[name] === undefined) continue;
+      const from = values[key.frame];
+      for (let f = key.frame; f < frames; f++) values[f] = key.over && f < key.frame + key.over ? blend(from, key[name], (f - key.frame) / key.over) : key[name];
     }
-    return now;
-  });
+    values.forEach((value, f) => { schedule[f][name] = value; });
+  }
+  return schedule;
 }
 
 function readEffect(effect, path, source) {
@@ -275,7 +276,7 @@ function readEffect(effect, path, source) {
     // A decoration (solid: false) is drawn like an obstacle, but the fluid never meets it: a net, a flame, a label.
     const blocks = obstacle.solid === undefined ? true : boolean(obstacle.solid, `${op}.solid`);
     if (!blocks && draw === 'none') fail(`${op}.draw`, 'a decoration (solid: false) is only drawn; draw it over or under the fluid');
-    if (!blocks && obstacle.surface !== undefined) fail(`${op}.surface`, 'surface shapes how the fluid meets an obstacle; the fluid never meets a decoration (solid: false)');
+    if (!blocks && surface === 'smooth') fail(`${op}.surface`, 'surface shapes how the fluid meets an obstacle; the fluid never meets a decoration (solid: false)');
     const cells = surface === 'smooth' ? rounded : stepped;
     rows.forEach((row, j) => {
       for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') {
@@ -322,7 +323,8 @@ function readEffect(effect, path, source) {
   }
   const light = effect.light === undefined ? [-1, -1] : pair(effect.light, `${path}.light`, -1, 1), reachLight = Math.sqrt(light[0] * light[0] + light[1] * light[1]);
   if (!reachLight) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
-  const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])) });
+  const pull = schedule ? (schedule.find(now => now.gravity[0] || now.gravity[1])?.gravity ?? gravity) : gravity;
+  const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity: pull, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])) });
   return {
     warnings,
     kind, liquid, frames, durations, light: [light[0] / reachLight, light[1] / reachLight], loop, seed, emitters, look, whitewater, obstacles, solid, front, smooth, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), fills, cleanup,
@@ -342,21 +344,27 @@ function readEffect(effect, path, source) {
 
 // Setups that compile but make nothing, or look stuck, said in words: an emitter whose disc or box lies inside
 // obstacles (or off the canvas) on every frame it works, and a liquid fill that starts against the underside of a pixel
-// obstacle (or a closed edge above it), where the pressure holds it on, with mostly open space below it to fall into.
-// A fill that rests on something, as water in a flask does, needs no warning, whatever it touches.
+// obstacle (or a closed edge above it), where the pressure holds it on, with open space below it to fall into. A fill
+// that rests on something (along a quarter or more of its lowest cells), as water in a flask does, or on other water,
+// needs no warning, whatever it touches; nor does one thrown away from what is above it, or bursting apart. Gravity is
+// the first the effect has, its keys included.
 function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls }) {
   const warnings = [], W = width, H = height;
   emitters.forEach((e, index) => {
     if (!(e.density > 0 || (!liquid && (e.temperature > 0 || e.expand > 0)))) return;
     let open = false, buried = -1, seen = false;
+    // An orbiting rate emitter also works along the path between frames, as emitFrame lays it.
+    const steps = e.orbit && !e.burst && !e.carry ? Math.max(1, Math.ceil(2 * Math.PI * Math.max(e.orbit.radius[0], e.orbit.radius[1]) / Math.abs(e.orbit.period))) : 1;
     for (let cycle = 0; cycle < frames && !open; cycle++) {
       if (!active(e, cycle)) continue;
-      const { x, y } = emitterState(e, index, cycle, seed), r = reach(e);
-      for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(H - 1, Math.ceil(y + r)) && !open; j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(W - 1, Math.ceil(x + r)); i++) {
-        if (!coverage(e, i + 0.5 - x, j + 0.5 - y)) continue;
-        seen = true;
-        if (!solid[j * W + i]) { open = true; break; }
-        if (buried < 0) buried = owner[j * W + i];
+      for (let k = 1; k <= steps && !open; k++) {
+        const { x, y } = emitterState(e, index, cycle, seed, cycle - 1 + k / steps), r = reach(e);
+        for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(H - 1, Math.ceil(y + r)) && !open; j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(W - 1, Math.ceil(x + r)); i++) {
+          if (!coverage(e, i + 0.5 - x, j + 0.5 - y)) continue;
+          seen = true;
+          if (!solid[j * W + i]) { open = true; break; }
+          if (buried < 0) buried = owner[j * W + i];
+        }
       }
     }
     if (open) return;
@@ -368,21 +376,27 @@ function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, f
   // "Above" is against gravity, along its stronger axis.
   const [gx, gy] = gravity, vertical = Math.abs(gy) >= Math.abs(gx), di = vertical ? 0 : gx > 0 ? -1 : 1, dj = vertical ? (gy > 0 ? -1 : 1) : 0;
   const edge = vertical ? (gy > 0 ? 'top' : 'bottom') : gx > 0 ? 'left' : 'right', pixel = c => solid[c] && !(smooth && smooth[c]);
+  // Water from every fill, since a fill may rest on another's.
+  const water = new Uint8Array(W * H);
+  for (const fill of fills) for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!solid[j * W + i] && fill.inside(i + 0.5, j + 0.5)) water[j * W + i] = 1;
+  const wet = (i, j) => i >= 0 && j >= 0 && i < W && j < H && water[j * W + i];
   fills.forEach((fill, f) => {
     let under = 0, against = 0, which = -1, bottom = 0, resting = 0;
     if (!gx && !gy) return;
+    // A fill thrown away from what is above it, or bursting apart, does not start stuck.
+    if (fill.burst || -(fill.velocity[0] * di + fill.velocity[1] * dj) > 0.25) return;
     const filled = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && fill.inside(i + 0.5, j + 0.5);
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const c = j * W + i;
       if (!filled(i, j)) continue;
-      // Its lowest cells (along gravity), and how many of them rest on an obstacle or a closed edge.
+      // Its lowest cells (along gravity, under no water), and how many of them rest on an obstacle or a closed edge.
       const bi = i - di, bj = j - dj;
-      if (!filled(bi, bj)) { bottom++; if (bi < 0 || bj < 0 || bi >= W || bj >= H ? walls[{ top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[edge]] : solid[bj * W + bi]) resting++; }
+      if (!wet(bi, bj)) { bottom++; if (bi < 0 || bj < 0 || bi >= W || bj >= H ? walls[{ top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[edge]] : solid[bj * W + bi]) resting++; }
       const ni = i + di, nj = j + dj;
       if (ni < 0 || nj < 0 || ni >= W || nj >= H) { if (walls[edge]) against++; continue; }
       if (pixel(nj * W + ni)) { under++; if (which < 0) which = owner[nj * W + ni]; }
     }
-    if (2 * resting >= bottom) return;
+    if (4 * resting >= bottom) return;
     const fix = 'give that obstacle surface: "smooth" to let the liquid fall away (adhesion still holds it on), or move the fill a pixel away from it';
     if (under) warnings.push(`${path}.fill[${f}] starts against the underside of obstacles[${which}] along ${under} pixel${under === 1 ? '' : 's'}, where the pressure holds it on: ${fix}`);
     if (against) warnings.push(`${path}.fill[${f}] starts against the closed ${edge} edge along ${against} pixel${against === 1 ? '' : 's'}, where the pressure holds it on: move the fill a pixel away from the edge`);
@@ -1115,11 +1129,17 @@ function throwCarriers(g, state, e, index, cycle, seed, here, share) {
   }
   return here;
 }
-// Adds `value` to the cell centres around (x, y) with bilinear weights, leaving out obstacles' pixels.
+// Adds `value` to the cell centres around (x, y) with bilinear weights over the open ones, so nothing is lost where
+// some of them are obstacles' pixels (or beyond the canvas).
 function deposit(a, solid, W, H, x, y, value) {
   const fx = x - 0.5, fy = y - 0.5, i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
-  const add = (ci, cj, w) => { if (w && ci >= 0 && cj >= 0 && ci < W && cj < H && !solid[cj * W + ci]) a[cj * W + ci] += w * value; };
-  add(i, j, (1 - s) * (1 - t)); add(i + 1, j, s * (1 - t)); add(i, j + 1, (1 - s) * t); add(i + 1, j + 1, s * t);
+  const open = (ci, cj) => ci >= 0 && cj >= 0 && ci < W && cj < H && !solid[cj * W + ci];
+  const w00 = open(i, j) ? (1 - s) * (1 - t) : 0, w10 = open(i + 1, j) ? s * (1 - t) : 0, w01 = open(i, j + 1) ? (1 - s) * t : 0, w11 = open(i + 1, j + 1) ? s * t : 0, sum = w00 + w10 + w01 + w11;
+  if (!(sum > 0)) { const ci = Math.floor(x), cj = Math.floor(y); if (open(ci, cj)) a[cj * W + ci] += value; return; }
+  if (w00) a[j * W + i] += w00 / sum * value;
+  if (w10) a[j * W + i + 1] += w10 / sum * value;
+  if (w01) a[(j + 1) * W + i] += w01 / sum * value;
+  if (w11) a[(j + 1) * W + i + 1] += w11 / sum * value;
 }
 function moveCarriers(state, dt) {
   const { g, d, T, carriers: list } = state, { W, H, u, v, pixels: solid } = g;
@@ -1130,10 +1150,12 @@ function moveCarriers(state, dt) {
     p.vy += (sampleV(g, v, p.x, p.y) - p.vy) * drag * dt + gravity[1] * dt;
     if (p.vx > MAX_SPEED) p.vx = MAX_SPEED; else if (p.vx < -MAX_SPEED) p.vx = -MAX_SPEED;
     if (p.vy > MAX_SPEED) p.vy = MAX_SPEED; else if (p.vy < -MAX_SPEED) p.vy = -MAX_SPEED;
-    const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
-    // Carriers that leave the canvas take their smoke with them; one that meets an obstacle drops it all there.
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
-    const hit = crossesSolid(solid, W, H, p.x, p.y, nx, ny) || solid[Math.floor(ny) * W + Math.floor(nx)];
+    const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt, { walls } = g;
+    // Carriers that leave through an open edge take their smoke with them; one that meets an obstacle or a closed edge
+    // drops it all there.
+    const closed = (nx < 0 && walls.left) || (nx >= W && walls.right) || (ny < 0 && walls.top) || (ny >= H && walls.bottom);
+    if (!closed && (nx < 0 || ny < 0 || nx >= W || ny >= H)) continue;
+    const hit = closed || crossesSolid(solid, W, H, p.x, p.y, nx, ny) || solid[Math.floor(ny) * W + Math.floor(nx)];
     if (!hit) { p.x = nx; p.y = ny; }
     const part = hit ? 1 : release * dt, dd = p.d * part, tt = p.T * part;
     if (dd) deposit(d, solid, W, H, p.x, p.y, dd);
@@ -1287,9 +1309,10 @@ function burstFill(state, effect, fill, f) {
   }
   // A cell beside a piece numbered lower becomes the gap between them.
   const kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
-  let cx = 0, cy = 0;
-  for (const c of cells) { cx += c % W + 0.5; cy += Math.floor(c / W) + 0.5; }
-  cx /= cells.length; cy /= cells.length;
+  // The middle of the whole shape on the canvas, obstacles' pixels included.
+  let cx = 0, cy = 0, area = 0;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (fill.inside(i + 0.5, j + 0.5)) { cx += i + 0.5; cy += j + 0.5; area++; }
+  cx /= area; cy /= area;
   const sums = seeds.map(() => [0, 0, 0]);
   for (const c of kept) { const s = sums[piece[c]]; s[0] += c % W + 0.5; s[1] += Math.floor(c / W) + 0.5; s[2]++; }
   const velocities = sums.map(([sx, sy, n], k) => {
@@ -1299,10 +1322,20 @@ function burstFill(state, effect, fill, f) {
   });
   for (const c of kept) { const i = c % W, j = (c - i) / W; seedCell(state, i, j, PER_CELL, 0, velocities[piece[c]], [effect.seed, 1000 + f, i, j]); }
   // The gaps' water goes to their own pieces, a cell's worth to each of its cells in turn, so a burst keeps its volume;
-  // the crowded pieces swell a little as they fly.
+  // the crowded pieces swell a little as they fly. A piece that is all gap (a small fill in many pieces) hands its
+  // water to the piece of the nearest kept cell.
   const own = seeds.map(() => []), extra = seeds.map(() => 0), keep = new Set(kept);
   for (const c of kept) own[piece[c]].push(c);
-  for (const c of cells) if (!keep.has(c)) extra[piece[c]]++;
+  for (const c of cells) {
+    if (keep.has(c)) continue;
+    let to = piece[c];
+    if (!own[to].length) {
+      const x = c % W, y = (c - x) / W;
+      let near = Infinity;
+      for (const k of kept) { const dx = k % W - x, dy = (k - (k % W)) / W - y, d = dx * dx + dy * dy; if (d < near) { near = d; to = piece[k]; } }
+    }
+    extra[to]++;
+  }
   own.forEach((list, n) => {
     for (let k = 0; k < extra[n] && list.length; k++) {
       const c = list[k % list.length], i = c % W, j = (c - i) / W, have = PER_CELL * (1 + Math.floor(k / list.length));
@@ -1576,13 +1609,14 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
 // In a liquid, spray (sparks that ignore the flow) that has left the water ends where it falls back in, and a bubble
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
-function moveSparks(list, g, density, total, liquid, pops) {
+// `gravity`, when given, is the effect's gravity this frame (keys), which whitewater without its own gravity follows.
+function moveSparks(list, g, density, total, liquid, pops, gravity = null) {
   const { W, H, u, v, pixels: solid } = g;
   for (let k = list.length - 1; k >= 0; k--) {
-    const p = list[k], s = p.s;
+    const p = list[k], s = p.s, fall = gravity && s.inherit ? gravity : s.gravity;
     p.age++;
     const fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
-    p.vx = (p.vx + s.gravity[0]) * (1 - s.drag); p.vy = (p.vy + s.gravity[1]) * (1 - s.drag);
+    p.vx = (p.vx + fall[0]) * (1 - s.drag); p.vy = (p.vy + fall[1]) * (1 - s.drag);
     p.px = p.x; p.py = p.y; p.x += fx + p.vx; p.y += fy + p.vy;
     const i = Math.floor(p.x), j = Math.floor(p.y), inside = i >= 0 && j >= 0 && i < W && j < H, wet = liquid && inside && density[j * W + i] >= LEVEL;
     // A spark that meets an obstacle anywhere along this frame's path ends there, not only one that lands inside it.
@@ -1739,7 +1773,9 @@ function emitFrame(run, t, cycle, factors = null) {
     const emit = (along, share) => (liquid ? emitLiquid(state, e, index, cycle, seed, along, factor) : emitGas(state.g, state, e, index, cycle, seed, along, share, factor));
     // An orbiting rate emitter is laid along the path it covered since the last frame, about a pixel apart, so a fast
     // orbit leaves a smooth trail instead of a string of beads; its expansion is shared out along the way.
-    if (!e.orbit || e.burst || !t || !active(e, loop ? (cycle + frames - 1) % frames : cycle - 1)) return emit(cycle, 1);
+    // A carrying emitter throws once a frame: carriers already fly, and laying it along its path would throw one per
+    // covered cell at every point.
+    if (!e.orbit || e.burst || e.carry || !t || !active(e, loop ? (cycle + frames - 1) % frames : cycle - 1)) return emit(cycle, 1);
     const steps = Math.max(1, Math.ceil(2 * Math.PI * Math.max(e.orbit.radius[0], e.orbit.radius[1]) / Math.abs(e.orbit.period)));
     for (let k = 1; k < steps; k++) emit(cycle - 1 + k / steps, 1 / steps);
     return emit(cycle, 1 / steps);
@@ -1758,7 +1794,7 @@ const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) :
 // whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
 function sparkFrame(run, here, cycle, spawning) {
   const { effect, state, base, sparks, totals } = run;
-  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops);
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.schedule ? effect.schedule[cycle].gravity : null);
   let full = null;
   if (spawning) {
     effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
