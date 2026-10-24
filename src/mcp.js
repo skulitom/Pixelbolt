@@ -1,4 +1,5 @@
-import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import { PixelError, MAX_REQUEST_BYTES, renderProject, inspectProject, compareProjects, scalePixels, reviewPixels } from './core.js';
@@ -83,6 +84,82 @@ export function createToolRunner({ directory, root, version }) {
     return { recipe: document, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) };
   };
   const newFolder = async name => { await mkdir(path.resolve(directory), { recursive: true }); return mkdtemp(path.join(path.resolve(directory), `${name}-`)); };
+  // saveAs: copies of chosen export files at the paths the user named, inside the server root. Everything is checked
+  // before anything is written, on real paths (symbolic links and junctions resolved): a file this export lacks, a
+  // changed file type, a path outside the root or inside the revision store, the recipe's own files, one file named
+  // twice, one path inside another, or an existing file without overwrite.
+  // Windows and macOS file systems ignore case by default, so `hero.png` and `HERO.png` are one file there.
+  const fold = name => (process.platform === 'win32' || process.platform === 'darwin' ? name.toLowerCase() : name);
+  const inside = (parent, child) => { const relative = path.relative(fold(parent), fold(child)); return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative)); };
+  const nearest = async target => { let folder = target; while (!(await lstat(folder).catch(() => null))) folder = path.dirname(folder); return folder; };
+  const canonical = async target => { const folder = await nearest(target); return path.join(await realpath(folder), path.relative(folder, target)); };
+  // A saved atlas names its sheet in meta.image, which loadSpriteSheet() and browsers read as a URL: there #, ? and %
+  // would cut the name short or decode it into another one.
+  const imagePath = (atlasPath, sheetPath) => path.relative(path.dirname(atlasPath), sheetPath).split(path.sep).join('/');
+  const planSaves = async (saveAs, overwrite, bundle, gifs, animation, sequence, inputs) => {
+    if (saveAs === undefined) return [];
+    if (saveAs === null || typeof saveAs !== 'object' || Array.isArray(saveAs) || !Object.keys(saveAs).length) throw new PixelError('saveAs', 'expected an object such as { "sheet": "assets/hero.png", "gif": "assets/hero.gif" }');
+    if (overwrite !== undefined && typeof overwrite !== 'boolean') throw new PixelError('overwrite', 'expected a boolean');
+    const { project } = bundle, base = path.resolve(root), realBase = await realpath(base), store = await canonical(path.join(path.resolve(directory), '.revisions'));
+    const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file))));
+    const names = Object.keys(project.animations), only = animation ?? (names.length === 1 ? names[0] : undefined);
+    const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
+    const plan = [], seen = new Set();
+    for (const [key, target] of Object.entries(saveAs)) {
+      const where = `saveAs.${key}`;
+      if ((key === 'gif' || key === 'apng') && only === undefined) throw new PixelError(where, `the project has ${names.length} animations: pass animation, or name the file, such as ${key === 'gif' ? `gifs/${names[0]}.gif` : `animations/${names[0]}.png`}`);
+      const file = Object.hasOwn(aliases, key) ? aliases[key] : key;
+      const bytes = file.startsWith('gifs/') ? gifs.find(item => `gifs/${item.animation}.gif` === file)?.data : file.startsWith('sequence/') ? sequence?.files.get(file.slice(9)) : bundle.files.get(file);
+      if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
+      if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
+      const type = path.extname(file).toLowerCase();
+      if (path.extname(target).toLowerCase() !== type) throw new PixelError(where, `${file} is a ${type} file: give a path ending in ${type}`);
+      const destination = path.resolve(base, target);
+      if (!inside(base, destination) || destination === base) throw new PixelError(where, `must stay inside ${base}`);
+      // The nearest folder that exists must be a folder, and the real path inside the root and outside the store.
+      const folder = await nearest(path.dirname(destination)), real = await canonical(destination);
+      if (!(await stat(await realpath(folder))).isDirectory()) throw new PixelError(where, `${folder} is a file, not a folder`);
+      if (!inside(realBase, real) || fold(real) === fold(realBase)) throw new PixelError(where, `must stay inside ${base}`);
+      if (inside(store, real)) throw new PixelError(where, 'must not be inside the revision store');
+      // Like the CLI's exports, never over the files this render was made from, even with overwrite.
+      if (own.some(input => fold(input) === fold(real))) throw new PixelError(where, `${target} is a file this recipe was made from; choose another name`);
+      const existing = await lstat(destination).catch(() => null);
+      if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
+      if (existing && overwrite !== true) throw new PixelError(where, `${destination} already exists: choose a new name, or pass "overwrite": true to replace it`);
+      const id = fold(real);
+      if (seen.has(id)) throw new PixelError(where, `${target} is named twice`);
+      const clash = [...seen].find(other => inside(other, id) || inside(id, other));
+      if (clash !== undefined) throw new PixelError(where, `${target} and another saveAs path would need one to be a folder of the other`);
+      seen.add(id);
+      plan.push({ key, file, destination, bytes, replaced: Boolean(existing) });
+    }
+    // Every saved atlas names the sheet it describes: a saved sheet (the one in its own folder first), or else the
+    // export folder's, whose name is only known once that folder exists (null here).
+    const sheets = plan.filter(item => item.file === `${project.name}.png`);
+    for (const atlas of plan.filter(item => item.file === `${project.name}.atlas.json`)) {
+      const sheet = sheets.find(item => fold(path.dirname(item.destination)) === fold(path.dirname(atlas.destination))) ?? sheets[0];
+      atlas.rebase = sheet ? sheet.destination : null;
+      // The export folder is <directory>/<name>-<6 letters or digits>, so its own name can't add these characters.
+      const image = imagePath(atlas.destination, sheet ? sheet.destination : path.join(path.resolve(directory), `${project.name}-x`, `${project.name}.png`));
+      if (/[#?%]/.test(image)) throw new PixelError(`saveAs.${atlas.key}`, `the atlas would name its sheet as ${image}, and #, ? and % break that name when it is read as a URL: choose a sheet path${sheet ? '' : ' in saveAs, or an export directory,'} without them`);
+    }
+    return plan;
+  };
+  // The bytes a saved atlas gets: its meta.image pointing at the given sheet, relative to the atlas, with / separators.
+  const rebasedAtlas = (bytes, atlasPath, sheetPath) => {
+    const atlas = JSON.parse(Buffer.from(bytes).toString('utf8'));
+    atlas.meta = { ...atlas.meta, image: imagePath(atlasPath, sheetPath) };
+    return Buffer.from(JSON.stringify(atlas, null, 2) + '\n');
+  };
+  // A new file is created only if nothing is there; a replaced one is written beside it and renamed over it, so a
+  // hard link to the old file keeps the old bytes and a failed write leaves the old file whole.
+  const writeSaved = async (destination, bytes, replace) => {
+    await mkdir(path.dirname(destination), { recursive: true });
+    if (!replace) { await writeFile(destination, bytes, { flag: 'wx' }); return; }
+    const temporary = path.join(path.dirname(destination), `.${path.basename(destination)}.${randomUUID()}.tmp`);
+    try { await writeFile(temporary, bytes, { flag: 'wx' }); await rename(temporary, destination); }
+    catch (error) { await rm(temporary, { force: true }); throw error; }
+  };
   return async function runTool(name, args) {
     try {
       const { project: spec, revision, changes, ...options } = args;
@@ -131,8 +208,10 @@ export function createToolRunner({ directory, root, version }) {
         const summary = { ok: true, revision: await remember(recipe), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
         return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] };
       } else if (name === 'pixel_render') {
-        const { animation, listFiles, gif, sequence, share, embedRecipe } = options, expect = readExpect(options.expect);
+        const { animation, listFiles, sequence, share, embedRecipe, saveAs, overwrite } = options, expect = readExpect(options.expect);
         for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
+        // A GIF named in saveAs needs GIFs: the frames' own size unless gif says otherwise.
+        const gif = options.gif === undefined && saveAs !== null && typeof saveAs === 'object' && Object.keys(saveAs).some(key => key === 'gif' || key.startsWith('gifs/')) ? {} : options.gif;
         const { recipe, resolved } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
         // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
         if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
@@ -146,12 +225,14 @@ export function createToolRunner({ directory, root, version }) {
         }
         // Every PNG this call writes carries the recipe, video frames included.
         if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
+        const saves = await planSaves(saveAs, overwrite, bundle, gifs, animation, frames, resolved);
         const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
         const files = await writeBundle(bundle, out);
         if (frames) await writeBundle(frames, path.join(out, 'sequence'));
         if (gifs.length) await mkdir(path.join(out, 'gifs'));
         for (const item of gifs) await writeFile(path.join(out, 'gifs', `${item.animation}.gif`), item.data, { flag: 'wx' });
-        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
+        for (const item of saves) await writeSaved(item.destination, item.rebase === undefined ? item.bytes : rebasedAtlas(item.bytes, item.destination, item.rebase ?? path.join(out, `${bundle.project.name}.png`)), overwrite === true);
+        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }) })) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
       } else if (name === 'pixel_compile') {
         const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
         const format = document?.format;
@@ -252,7 +333,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     background: { type: 'string', description: 'Palette name or opaque hex colour. Default: transparent.' },
     loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Length of the clip instead of loops.' }
   } });
-  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' } } };
+  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: keys sheet, atlas, recipe, gif or apng (one animation), or a listed file such as gifs/walk.gif; values such as "assets/hero.png". A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, 29.97, 30, 60 or a fraction): frameGrid lists frame durations that are not whole video frames, positions a sequence would lengthen, shorten or never show, and whether each loop closes on the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const inspectInput = { ...projectInput, properties: {
@@ -297,7 +378,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Validate a pixel project and return its revision id, dimensions, frame timing, animations, and clipping locations. Pass fps to check the timing against a video frame grid. Saves an immutable recipe revision; no asset export.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks. See a project without exporting assets. Returns one PNG contact sheet of every frame (or the chosen frames, or one animation in playback order), read left to right and top to bottom, with each cell\'s frame name and duration. With grid: true it also returns palette-key text grids with x/y rulers for exact pixel checks. view: tile repeats frames 3x3 for seam review. view: motion accepts a pose source or explicit compile metadata with animation, optional speed and ground; reports foot slide, ground error, pose spread and loop joins with trajectory strips. Use region to zoom in. Saves an immutable recipe revision. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Change a recipe with targeted edits instead of resending it. Pass revision or project, plus changes applied in order: {"set": path, "value": v}, {"insert": path, "value": v}, {"remove": path}, or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}. Paint replaces exact RGBA in canvas coordinates after all layers; transparent erases. {"cleanup": "frames[run-2]", "value": {"corners": true}} proposes fixes for doubled corners and stray pixels. Other paths look like frames[blink].layers[body].ops[2].x2, palette.k or animations.idle.frames[-]. Or pass overlay to apply a saved correction overlay. The patch is atomic and the result must validate. Returns the new revision, edit details, every frame whose pixels changed (exact pixels for small changes), timing and animation changes, and a before/after PNG with one row per frame. Saves immutable base and result revisions; render the revision to export assets.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Render a project into PNG sprite sheet, atlas JSON, individual PNGs, APNG animations, CSS, and Canvas player. Writes a new unique folder inside the configured export directory and saves an immutable recipe revision. Returns the folder, key files (relative), frame/animation counts, actual playback, a check of what was delivered and a bounded contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Large previews report sample positions and omissions; all frames still export. Optionally select an animation.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
+    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Render a project into PNG sprite sheet, atlas JSON, individual PNGs, APNG animations, CSS, and Canvas player. Writes a new unique folder inside the configured export directory and saves an immutable recipe revision. Returns the folder, key files (relative), frame/animation counts, actual playback, a check of what was delivered and a bounded contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files at the names and folders the user asked for. Large previews report sample positions and omissions; all frames still export. Optionally select an animation.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_compile', description: 'Build a character animation from parts, a terrain tileset, particle effects such as sparks, embers or dust, simulated smoke, fire, explosions, steam, magic swirls, water (splashes, waterfalls, drips, bubbling potions) and thick liquids (honey, slime, mud), or a lighting normal map. Compile a pixelforge-poses source (grid, bone and mass parts; relative joints, two-bone reach, authored views, tweens, relit mirrors, contacts, and idle/walk/run/jump/attack/hurt motion templates), a pixelforge-autotile template (47-tile blob or 16-tile cardinal sets), a pixelforge-fx source (seeded particle emitters baked into frames), a pixelforge-fluid source (a deterministic fluid simulation mapped onto palette ramps; loops seamlessly) or a pixelforge-normals source (a lighting normal pass derived from a colour recipe, aligned for scene lighting and editable like any recipe) into an ordinary recipe. Saves the recipe as a revision and returns a contact sheet; pass metadata: true for pose joints, contacts, markers and motion timing, the autotile mask table, particle counts, fluid peaks and per-frame figures (pixels, box, middle, amount, pieces, speed), or the normal directions.', inputSchema: { type: 'object', properties: { source: { type: 'object', description: 'A pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals document (see pixel_help topics). A normals source\'s recipe may be inline, a file under the server root or {"revision": id}.' }, metadata: { type: 'boolean' } }, required: ['source'], additionalProperties: false }, annotations: { title: 'Compile poses, tilesets, effects or fluids', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Render a pixelforge-scene manifest (placements, tilemaps with autotile legends and neighbour rules, named cues, sequences, trajectories, attachments, ground sorting, shade placements, palette themes and optional multiplied or ramp lighting, whose lights can follow placements, flicker and flash on cues) at a time in milliseconds and return the image plus placements, the lights at that time and warnings. Assets may be inline recipes, files under the server root, or {"revision": id}. Pass export: true to write a replayable scene bundle to a new folder, and sequence: { fps, size } to write the scene as numbered PNG frames for a video editor.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale'] }, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, sequence: sequenceOptions(false) }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution 8-bit RGB/RGBA PNG (optionally sliced by an unscaled atlas) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Saves the recipe as a revision.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }
