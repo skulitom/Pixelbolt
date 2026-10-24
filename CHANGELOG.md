@@ -4,6 +4,18 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### A playground in the browser
+
+- `playground/` is a page for the project site where anyone can try Pixelbolt with nothing installed: pick one of 20 examples (ten fluids, particle effects, poses, a normal pass and a lit scene) or paste a recipe, see it render live, and download a PNG, a GIF (its size shown first) or an atlas. Renders run in a worker with a 20-second limit and a Cancel button.
+- **Share links:** Copy link puts the compressed recipe in the link's fragment, which browsers never send to a server, with the engine version, so a link renders the same after later releases. Links are capped at 16,384 characters; larger recipes travel as files.
+- **PNGs that reopen:** every PNG the playground exports carries its recipe in a `pixelbolt-recipe` text chunk; drop it back in to reopen it. `src/share.js` reads and writes both formats.
+- The page isn't live yet: `playground/DEPLOY.md` and `node scripts/deploy-playground.mjs` prepare the site change.
+
+### Fluid lab sliders that hold every preset
+
+- The Fluid lab's Firmness slider now reaches 16, the compiler's limit for `yield`, so it shows and restores the slime preset's own firmness instead of stopping at 8. The Fade slider moves in steps of 0.0025, so the explosion's 0.1375 shows exactly instead of snapping to 0.14. No preset changed.
+- The lab's presets and sliders live in `studio/fluid-controls.js`, and a test checks that every shipped fluid preset fits its sliders exactly and comes back unchanged.
+
 ### Recipes to reopen and share
 
 - Opt-in `pixelbolt share` prints a playground link, `render` and `scene` accept `--embed-recipe` to carry the resolved source inside PNGs, and `import --embedded` recovers it. MCP `pixel_render` accepts `share` and `embedRecipe`; a link over the limit reports an error without failing the render. Both formats carry the engine version; links keep the recipe in the URL fragment. With the options off, exports and replies are unchanged.

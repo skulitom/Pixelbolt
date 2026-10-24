@@ -1,6 +1,6 @@
 // Share links and recipes inside PNGs, for the browser playground, the CLI and the MCP server. Browser-compatible and
-// without imports: the playground serves a byte-identical copy as playground/share.js (test/share.test.js keeps the two
-// equal), so it can read and write these formats whatever engine version it loads.
+// without static imports: the playground serves a byte-identical copy as playground/share.js (test/share.test.js keeps
+// the two equal), so it can read and write these formats whatever engine version it loads.
 //
 // A share link keeps the recipe in the URL fragment, which browsers never send to a server:
 //   https://skulitom.github.io/Pixelbolt/playground/#v=<engine version>&r=<base64url of deflate-raw(JSON)>
@@ -62,8 +62,24 @@ async function transform(bytes, stream, limit, damaged) {
   for (const part of parts) { out.set(part, offset); offset += part.length; }
   return out;
 }
-const compress = (bytes, format) => transform(bytes, new CompressionStream(format), Infinity, 'Compression failed.');
-const decompress = (bytes, format, damaged) => transform(bytes, new DecompressionStream(format), RECIPE_LIMIT, damaged);
+// Node.js 20.0 to 20.11 have no 'deflate-raw' compression stream; there links fall back to node:zlib, loaded only then.
+// Every browser that runs the playground has the stream.
+const stream = (Kind, format) => { try { return new Kind(format); } catch (error) { if (format === 'deflate-raw') return null; throw error; } };
+async function zlib() {
+  try { return await import('node:zlib'); } catch { return fail('This browser or runtime cannot pack share links (it has no deflate-raw).'); }
+}
+async function compress(bytes, format) {
+  const compressor = stream(CompressionStream, format);
+  return compressor ? transform(bytes, compressor, Infinity, 'Compression failed.') : new Uint8Array((await zlib()).deflateRawSync(bytes));
+}
+async function decompress(bytes, format, damaged) {
+  const decompressor = stream(DecompressionStream, format);
+  if (decompressor) return transform(bytes, decompressor, RECIPE_LIMIT, damaged);
+  const { inflateRawSync } = await zlib();
+  try { return new Uint8Array(inflateRawSync(bytes, { maxOutputLength: RECIPE_LIMIT })); } catch (error) {
+    return fail(error?.code === 'ERR_BUFFER_TOO_LARGE' ? `The recipe unpacks to more than ${RECIPE_LIMIT.toLocaleString('en')} bytes.` : damaged);
+  }
+}
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
 function toBase64url(bytes) {
@@ -94,9 +110,9 @@ function parseRecipe(bytes, where) {
 // The link for a recipe on an engine version. Refuses a link longer than `limit` characters.
 export async function shareLink(recipe, version, { base = PLAYGROUND_URL, limit = LINK_LIMIT } = {}) {
   recipeKind(recipe); checkVersion(version);
-  const text = JSON.stringify(recipe);
+  const text = encoder.encode(JSON.stringify(recipe));
   if (text.length > RECIPE_LIMIT) fail(`The recipe is larger than ${RECIPE_LIMIT.toLocaleString('en')} bytes.`);
-  const link = `${base}#v=${version}&r=${toBase64url(await compress(encoder.encode(text), 'deflate-raw'))}`;
+  const link = `${base}#v=${version}&r=${toBase64url(await compress(text, 'deflate-raw'))}`;
   if (link.length > limit) fail(`This recipe makes a ${link.length.toLocaleString('en')}-character link, over the ${limit.toLocaleString('en')}-character limit. Download the recipe or a PNG and share the file instead.`);
   return link;
 }
@@ -145,7 +161,10 @@ const isRecipeChunk = chunk => chunk.type === 'iTXt' && chunk.data.length > RECI
 // The PNG with its recipe embedded: any earlier recipe chunk is replaced, and the new one goes just before IEND.
 export async function embedRecipe(png, recipe, version) {
   const kind = recipeKind(recipe); checkVersion(version);
-  const text = await compress(encoder.encode(JSON.stringify({ v: version, kind, recipe })), 'deflate');
+  // The reader refuses more than RECIPE_LIMIT bytes, so never write a PNG it couldn't reopen.
+  const envelope = encoder.encode(JSON.stringify({ v: version, kind, recipe }));
+  if (envelope.length > RECIPE_LIMIT) fail(`The recipe is too large to carry in a PNG (over ${RECIPE_LIMIT.toLocaleString('en')} bytes).`);
+  const text = await compress(envelope, 'deflate');
   const data = new Uint8Array(RECIPE_KEYWORD.length + 5 + text.length);
   data.set(encoder.encode(RECIPE_KEYWORD)); data.set([0, 1, 0, 0, 0], RECIPE_KEYWORD.length); data.set(text, RECIPE_KEYWORD.length + 5);
   const chunk = new Uint8Array(data.length + 12), type = encoder.encode('iTXt');
