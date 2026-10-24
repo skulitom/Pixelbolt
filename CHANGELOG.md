@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluid decorations the simulation ignores
+
+- A fluid obstacle with `solid: false` is a decoration: it is stamped over or under the fluid as `draw` says, but the fluid never meets it. A basketball net, a candle flame, a label or a background no longer has to be a solid the water slides along, or painted on after `render()`. A decoration can't use `draw: "none"` or `surface`.
+
 ### Fluid warnings for setups that make nothing or start stuck
 
 - `compileFluid` returns `warnings` (and each effect's metadata lists its own) when an emitter lies inside obstacles or off the canvas on every frame it works, so it adds no fluid, and when a liquid fill starts against the underside of a pixel obstacle or a closed edge with open space below it, where the pressure holds it on. Each warning names the field and says what to change. `pixel_compile` adds them to its reply's `warnings`, `pixelbolt compile` prints them, and live runners list them in `live.warnings`. No preset sets one off, and recipes are unchanged.

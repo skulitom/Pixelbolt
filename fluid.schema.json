@@ -349,6 +349,10 @@
                     "smooth"
                   ],
                   "description": "pixels (default): the fluid meets every pixel step. smooth: it meets an outline traced through the steps, so a liquid slides down a drawn slope, roof or chute (a 1:1 staircase acts as a straight 45° slope; draw lines at least 2 pixels thick to smooth both sides), and a liquid can fall away from it instead of hanging on by suction (adhesion still holds it on). The obstacle is drawn as it is either way."
+                },
+                "solid": {
+                  "type": "boolean",
+                  "description": "false: a decoration, drawn over or under the fluid as draw says but never met by it (a net, a candle flame, a label, a background). Default true."
                 }
               },
               "required": [
@@ -357,7 +361,7 @@
               "additionalProperties": false
             },
             "maxItems": 32,
-            "description": "Solid shapes from symbols: their visible pixels block the flow. They must fit the canvas."
+            "description": "Solid shapes from symbols: their visible pixels block the flow (decorations with solid: false only draw). They must fit the canvas."
           },
           "emitters": {
             "type": "array",

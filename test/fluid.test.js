@@ -387,6 +387,22 @@ test('smooth obstacles let thick liquids slide down drawn slopes and fall away f
   }
 });
 
+test('decorations are drawn over or under the fluid but never met by it', () => {
+  // Water falls through a net drawn over it; the same net as an obstacle catches it.
+  const net = ['k.k.k.k.k.k.k.k', '.k.k.k.k.k.k.k.', 'k.k.k.k.k.k.k.k'];
+  const drop = obstacle => compileFluid(goo({ walls: FLUID_WALLS, obstacles: [obstacle] }, [{ at: [24, 5], radius: 3 }], { symbols: { net } })).recipe;
+  const below = recipe => drawn(recipe, 39).filter(([, y]) => y > 14).length, held = drop({ symbol: 'net', x: 17, y: 12 }), through = drop({ symbol: 'net', x: 17, y: 12, solid: false });
+  assert.ok(below(through) > 12 && below(held) < below(through) / 3, `${below(through)} pixels fell through the decoration, ${below(held)} past the obstacle`);
+  // It is still stamped in front of the water, and a decoration drawn under shows through wherever the water is not.
+  assert.ok(through.frames.every(frame => frame.ops.at(-1).op === 'stamp' && frame.ops.at(-1).symbol === 'net'));
+  const under = drop({ symbol: 'net', x: 17, y: 12, solid: false, draw: 'under' });
+  assert.ok(under.frames.every(frame => frame.ops[0].op === 'stamp'));
+  // Gas rises through a decoration too.
+  const plume = solidity => compileFluid(gas({ frames: 12, emitters: [{ at: [8, 13], radius: 2, rate: 1, density: 1, temperature: 1 }], obstacles: [{ symbol: 'lid', x: 2, y: 8, solid: solidity }], look: smoke }, { symbols: { lid: ['kkkkkkkkkkkk'] } })).recipe;
+  const above = recipe => drawn(recipe, 11).filter(([, y]) => y < 8).length;
+  assert.ok(above(plume(false)) >= 3 && above(plume(true)) === 0, `${above(plume(false))} pixels of smoke rose past the decoration, ${above(plume(true))} past the lid`);
+});
+
 test('setups that compile but make nothing, or start stuck, are warned about with the field to change', async () => {
   // No preset sets off a warning.
   for (const name of FLUID_SHOWCASE) assert.equal((await example(name)).warnings, undefined, name);
@@ -447,6 +463,9 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.obstacles = [{ symbol: 'nope' }]; }, 'fluid.effects.plume.obstacles[0].symbol', /unknown symbol/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', x: 14 }]; }, 'fluid.effects.plume.obstacles[0]', /must fit inside the 16 × 16 canvas/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', surface: 'round' }]; }, 'fluid.effects.plume.obstacles[0].surface', /pixels .* smooth/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, draw: 'none' }]; }, 'fluid.effects.plume.obstacles[0].draw', /decoration .* over or under/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, surface: 'smooth' }]; }, 'fluid.effects.plume.obstacles[0].surface', /never meets a decoration/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: 'no' }]; }, 'fluid.effects.plume.obstacles[0].solid', /true or false/);
   bad(e => { e.light = [0, 0]; }, 'fluid.effects.plume.light', /toward the light/);
   bad(e => { e.outline = 'z'; }, 'fluid.effects.plume.outline', /palette key/);
   bad(e => { e.kind = 'liquid'; e.emitters = []; e.fill = [{ x: 0, y: 0 }]; }, 'fluid.effects.plume.fill[0].w', /integer from 1 to 16/);

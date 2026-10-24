@@ -221,7 +221,7 @@ function readEffect(effect, path, source) {
   };
   listed(effect.obstacles, 'obstacles', LIMITS.obstacles).forEach((obstacle, i) => {
     const op = `${path}.obstacles[${i}]`;
-    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface'], op);
+    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid'], op);
     if (typeof obstacle.symbol !== 'string' || !Object.hasOwn(symbols, obstacle.symbol)) fail(`${op}.symbol`, `unknown symbol ${JSON.stringify(obstacle.symbol)}`);
     const rows = symbols[obstacle.symbol], x = integer(obstacle.x ?? 0, `${op}.x`, 0, width - 1), y = integer(obstacle.y ?? 0, `${op}.y`, 0, height - 1);
     if (x + rows[0].length > width || y + rows.length > height) fail(op, `the ${rows[0].length} × ${rows.length} symbol must fit inside the ${width} × ${height} canvas`);
@@ -229,8 +229,18 @@ function readEffect(effect, path, source) {
     if (!['over', 'under', 'none'].includes(draw)) fail(`${op}.draw`, 'expected over (drawn in front of the fluid), under or none (an invisible wall)');
     const surface = obstacle.surface ?? 'pixels';
     if (!OBSTACLE_SURFACES.includes(surface)) fail(`${op}.surface`, 'expected pixels (the default: the fluid meets every pixel step) or smooth (the fluid meets a smooth outline through the steps, so it slides down a drawn slope)');
+    // A decoration (solid: false) is drawn like an obstacle, but the fluid never meets it: a net, a flame, a label.
+    const blocks = obstacle.solid === undefined ? true : boolean(obstacle.solid, `${op}.solid`);
+    if (!blocks && draw === 'none') fail(`${op}.draw`, 'a decoration (solid: false) is only drawn; draw it over or under the fluid');
+    if (!blocks && obstacle.surface !== undefined) fail(`${op}.surface`, 'surface shapes how the fluid meets an obstacle; the fluid never meets a decoration (solid: false)');
     const cells = surface === 'smooth' ? rounded : stepped;
-    rows.forEach((row, j) => { for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') { const c = (y + j) * width + x + k; solid[c] = 1; cells[c] = 1; if (owner[c] < 0) owner[c] = i; if (draw === 'over') front[c] = 1; } });
+    rows.forEach((row, j) => {
+      for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') {
+        const c = (y + j) * width + x + k;
+        if (blocks) { solid[c] = 1; cells[c] = 1; if (owner[c] < 0) owner[c] = i; }
+        if (draw === 'over') front[c] = 1;
+      }
+    });
     obstacles.push({ symbol: obstacle.symbol, x, y, draw });
   });
   let smooth = null;
