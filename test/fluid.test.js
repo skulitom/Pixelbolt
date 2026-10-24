@@ -457,6 +457,50 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
   }
 });
 
+test('obstacles move and vanish on cue, pushing the fluid ahead of them', () => {
+  const wall = Array(20).fill('kk'), tank = (obstacle, extra = {}) => compileFluid({ ...gas(null), width: 64, height: 32, symbols: { wall }, effects: { e: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 0, y: 12, w: 20, h: 20 }], obstacles: [{ symbol: 'wall', x: 20, y: 12, ...obstacle }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], ...extra } } });
+  const right = (figures, f) => figures.box[f][2];
+  // A dam holds the water until it vanishes at frame 15, then the water floods out; it is stamped only while it stands.
+  const held = tank({}), dam = tank({ keys: [{ frame: 15, show: false }] }), damFigures = dam.metadata.effects.e.figures;
+  assert.deepEqual(dam.recipe.frames.slice(0, 15), held.recipe.frames.slice(0, 15), 'nothing changes before the first key');
+  assert.ok(right(damFigures, 14) === 19 && right(damFigures, 30) >= 50, `right edge ${right(damFigures, 14)} → ${right(damFigures, 30)}`);
+  assert.ok(dam.recipe.frames[14].ops.some(op => op.op === 'stamp') && !dam.recipe.frames[16].ops.some(op => op.op === 'stamp'));
+  // A gate lifts in whole pixels over ten frames, stamped where it is, and the water runs out under it.
+  const gate = tank({ keys: [{ frame: 15, y: 0, over: 10 }] });
+  assert.deepEqual([15, 20, 25].map(f => gate.recipe.frames[f].ops.find(op => op.op === 'stamp').y), [12, 6, 0]);
+  assert.ok(right(gate.metadata.effects.e.figures, 30) > 40);
+  // A plunger carries the water with it and keeps almost all of it.
+  const plunger = compileFluid({ ...gas(null), width: 64, height: 32, symbols: { wall }, effects: { e: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 8, y: 16, w: 20, h: 16 }], obstacles: [{ symbol: 'wall', x: 4, y: 12, keys: [{ frame: 5, x: 40, over: 30 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } }).metadata.effects.e.figures;
+  assert.ok(plunger.middle[35][0] > plunger.middle[0][0] + 25 && plunger.particles[39] >= 0.98 * plunger.particles[0], `middle ${plunger.middle[0][0]} → ${plunger.middle[35][0]}, particles ${plunger.particles[0]} → ${plunger.particles[39]}`);
+  // A paddle sweeps smoke along.
+  const paddle = compileFluid(gas({ frames: 30, buoyancy: 0, dissipation: 0.01, emitters: [{ at: [20, 20], radius: 6, burst: 1, density: 1 }], obstacles: [{ symbol: 'paddle', x: 6, y: 12, keys: [{ frame: 4, x: 50, over: 22 }] }], look: smoke }, { width: 64, height: 32, symbols: { paddle: Array(14).fill('kk') } })).metadata.effects.plume.figures;
+  assert.ok(paddle.middle[24][0] > paddle.middle[0][0] + 15, `smoke middle ${paddle.middle[0][0]} → ${paddle.middle[24][0]}`);
+  // A loop repeats the keys every cycle; a live runner moves obstacles as a compile does.
+  assert.doesNotThrow(() => tank({ draw: 'under', keys: [{ frame: 4, y: 4, over: 6 }, { frame: 12, y: 12, over: 6 }] }, { frames: 20, loop: true, fill: [{ x: 0, y: 24, w: 64, h: 8 }] }));
+  const source = { ...gas(null), width: 64, height: 32, symbols: { wall }, effects: { e: { kind: 'liquid', frames: 24, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 8, y: 16, w: 20, h: 16 }], obstacles: [{ symbol: 'wall', x: 4, y: 12, draw: 'none', keys: [{ frame: 3, x: 40, over: 18 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } };
+  const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
+  for (let f = 0; f < 24; f++) {
+    live.step();
+    const cells = new Set(drawn(recipe, f).map(([x, y]) => y * 64 + x)), seen = new Set();
+    live.render().keys.forEach((row, y) => [...row].forEach((char, x) => { if (char !== '.') seen.add(y * 64 + x); }));
+    assert.deepEqual(seen, cells, `frame ${f}`);
+  }
+  // A piston never shoves water or smoke through a thin wall in its way (before the fix, water showed at x 22 to 27).
+  const thin = { piston16: Array(16).fill('kk'), piston24: Array(24).fill('kk'), wall: Array(24).fill('k') };
+  const past = effect => { const { recipe } = compileFluid({ ...gas(null), width: 40, height: 24, symbols: thin, effects: { e: { frames: 30, ...effect } } }); return recipe.frames.reduce((n, _, f) => n + drawn(recipe, f).filter(([x]) => x > 20).length, 0); };
+  assert.equal(past({ kind: 'liquid', walls: ['left', 'bottom', 'top'], emitters: [], fill: [{ x: 12, y: 8, w: 8, h: 16 }], obstacles: [{ symbol: 'wall', x: 20, y: 0 }, { symbol: 'piston16', x: 10, y: 8, keys: [{ frame: 4, x: 18, over: 16 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.25], dither: 0 }] }), 0, 'water past the wall');
+  assert.equal(past({ buoyancy: 0, dissipation: 0, walls: ['left', 'top', 'bottom'], emitters: [{ at: [16, 12], area: [8, 24], burst: 1, density: 1 }], obstacles: [{ symbol: 'wall', x: 20, y: 0 }, { symbol: 'piston24', x: 10, y: 0, keys: [{ frame: 4, x: 18, over: 16 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.05], dither: 0 }] }), 0, 'smoke past the wall');
+  // A jump is a cut: a block jumping 40 pixels through still smoke blasts nothing (before the fix, 39.6 pixels a frame).
+  const cut = compileFluid({ ...gas(null), width: 64, height: 24, symbols: { block: Array(8).fill('kk') }, effects: { e: { frames: 12, buoyancy: 0, vorticity: 0, dissipation: 0, walls: FLUID_WALLS, emitters: [{ at: [32, 12], area: [64, 24], burst: 1, density: 1 }], obstacles: [{ symbol: 'block', x: 4, y: 8, keys: [{ frame: 3, x: 44 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.05], dither: 0 }] } } }).metadata.effects.e.figures;
+  assert.ok(Math.max(...cut.speed) < 1, `top speed ${Math.max(...cut.speed)} after a jump`);
+  // A thick liquid on a smooth ramp falls once the ramp vanishes, without the ramp's drag.
+  const ramp = compileFluid({ ...gas(null), width: 32, height: 32, symbols: { ramp: ['kk..............', 'kkkk............', '..kkkk..........', '....kkkk........', '......kkkk......', '........kkkk....', '..........kkkk..', '............kkkk'] }, effects: { e: { kind: 'liquid', frames: 26, viscosity: 8, apic: true, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 2, y: 2, w: 10, h: 8 }], obstacles: [{ symbol: 'ramp', x: 0, y: 10, surface: 'smooth', keys: [{ frame: 12, show: false }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } }).metadata.effects.e.figures;
+  assert.ok(ramp.middle[25][1] > 28, `middle at y ${ramp.middle[25][1]} on frame 25`);
+  // An emitter under an obstacle that moves off it is not buried.
+  const lid = compileFluid(gas({ frames: 8, obstacles: [{ symbol: 'lid', x: 6, y: 10, keys: [{ frame: 3, x: 0 }] }], emitters: [{ at: [8, 11], radius: 1, rate: 1, density: 1 }], look: smoke }, { symbols: { lid: ['kkkkk', 'kkkkk', 'kkkkk'] } }));
+  assert.equal(lid.warnings, undefined);
+});
+
 test('per-frame figures measure where the fluid is, how much there is and in how many pieces', async () => {
   // A ball dropped in a closed box: its middle falls, it stays one piece with every particle, and it lands.
   const drop = compileFluid(goo({ frames: 30, walls: FLUID_WALLS }, [{ at: [24, 6], radius: 4 }]));
@@ -573,6 +617,10 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 6, yield: 1 }] }); }, 'fluid.effects.plume.keys[0].frame', /0 to 5/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3, yield: 1 }, { frame: 2, yield: 0 }] }); }, 'fluid.effects.plume.keys[1].frame', /frame order/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /moves the obstacle/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 3, x: 2 }, { frame: 1, x: 4 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[1].frame', /frame order/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2, x: 14 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /must fit inside the 16 × 16 canvas/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 1, x: 14, over: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /on every frame it shows/);
   bad(e => { e.emitters = [{ ...emitter, density: -1, carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /draining emitter/);
   bad(e => { e.emitters = [{ ...emitter, carry: { drag: 2 } }]; }, 'fluid.effects.plume.emitters[0].carry.drag', /0 to 1/);
   bad(e => { e.emitters = [{ at: [8, 8], burst: 1, velocity: [8, 0], carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /positive density or temperature/);
@@ -643,6 +691,7 @@ test('the fluid schema lists exactly the fields the compiler reads', async () =>
     [effect.properties.whitewater.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', whitewater: [{ impact: 1, colors: ['s'], [key]: 0 }] }); }, 'fluid.effects.plume.whitewater[0]'],
     [emitter.properties.carry.properties, (s, key) => { s.effects.plume.emitters[0].carry = { [key]: 0 }; }, 'fluid.effects.plume.emitters[0].carry'],
     [effect.properties.keys.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', keys: [{ frame: 0, yield: 1, [key]: 0 }] }); }, 'fluid.effects.plume.keys[0]'],
+    [effect.properties.obstacles.items.properties.keys.items.properties, (s, key) => { s.effects.plume.obstacles = [{ symbol: 'lid', keys: [{ frame: 0, x: 0, [key]: 0 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]'],
     [effect.properties.fill.items.properties.burst.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2, burst: { speed: 1, [key]: 0 } }] }); }, 'fluid.effects.plume.fill[0].burst']
   ];
   for (const [properties, put, where] of levels) {

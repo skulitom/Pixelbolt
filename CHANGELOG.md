@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluid obstacles that move on cue
+
+- `keys` on a fluid obstacle move it (`x`, `y`, in a straight line `over` some frames) or take it away and bring it back (`show`) from a chosen frame: a dam that vanishes, a gate that lifts, a plunger, a paddle through smoke. While a key's `over` runs, the obstacle pushes the fluid ahead of it, since its faces carry its speed along the ramp, and fluid in the cells it now covers is shoved along to the first open cell, never through another solid. A key with no `over` is a cut: the obstacle is simply elsewhere and pushes nothing. Water held by a wall that vanishes at frame 15 stays put until then and floods after; a plunger moving 36 pixels carries the water's middle from x 18 to x 55 and keeps 1,277 of its 1,280 particles. Each frame stamps the obstacle at its place, and live runners move it too. Obstacles without keys are unchanged.
+
 ### Renders check themselves
 
 - `pixel_render` and `pixelbolt render` report a `check` of what they wrote: each frame's pixel size, every animation's frames and loop, the colours used, transparency and the GIF size. Give them what the user asked for (`expect` over MCP, `--expect` on the CLI: `width`, `height`, `frames`, `colors`, `transparent`, `loop`, and over MCP `gifScale` for the GIFs) and `check.problems` names every file that misses it, with the patch or render call that fixes it; fully transparent frames are noted either way. Agents mostly exported their first try; this puts the check in the path. The tool descriptions, quick start and skill now say to work in that loop.
