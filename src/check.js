@@ -31,16 +31,16 @@ const wholeScale = (pairs, max) => {
 };
 
 // Why the exporter would refuse this project at canvas w x h and sheet.scale k, or null: the frames' total area, the
-// atlas and the animations' pixels. A trimmed atlas packs each frame's visible bounds, so at the same canvas the
-// change is rendered to measure it; at a new canvas (where the drawing changes too) it is held to the untrimmed grid.
-function exportBudget({ width, height, frames, animations, sheet }, w, h, k, recipe) {
+// animations' pixels and the atlas. A trimmed atlas packs each frame's visible bounds, so the change is rendered
+// (with the current drawing) to measure it; an untrimmed one is a grid.
+function exportBudget({ frames, animations, sheet }, w, h, k, recipe) {
   if (w * h * frames.length > FRAME_AREA) return `${frames.length} frames of ${w}x${h} pass the limit of 4,194,304 pixels of frames`;
-  if (sheet.trim && recipe !== undefined && w === width && h === height) {
-    try { renderProject({ ...recipe, sheet: { ...recipe.sheet, scale: k } }); }
-    catch (error) { return error.path === 'project.sheet' ? `an atlas of ${frames.length} trimmed frames at sheet.scale ${k} passes 16,777,216 pixels` : `sheet.scale ${k} is refused (${error.message})`; }
-  } else if (sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k > ATLAS) return `an atlas of ${frames.length} frames at ${w * k}x${h * k} passes 16,777,216 pixels`;
   const played = Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0);
   if (played * w * h * k * k > EXPORT_PIXELS) return `${played} played frames at ${w * k}x${h * k} pass the 67,108,864 animation pixels an export holds`;
+  if (sheet.trim && recipe !== undefined) {
+    try { renderProject({ ...recipe, width: w, height: h, sheet: { ...recipe.sheet, scale: k } }); }
+    catch (error) { return error.path === 'project.sheet' ? `an atlas of ${frames.length} trimmed frames at sheet.scale ${k} passes 16,777,216 pixels` : `sheet.scale ${k} is refused (${error.message})`; }
+  } else if (sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k > ATLAS) return `an atlas of ${frames.length} frames at ${w * k}x${h * k} passes 16,777,216 pixels`;
   return null;
 }
 const tooBig = (reason, sheet) => `${reason}: ask for fewer frames or a smaller size${reason.includes('an atlas') && !sheet.trim ? ', or set sheet.trim if the frames have empty margins' : ''}`;
@@ -50,17 +50,20 @@ const tooBig = (reason, sheet) => `${reason}: ask for fewer frames or a smaller 
 function largeSizeFix(expect, project, recipe) {
   const { width, height, frames, sheet } = project;
   const asked = expect.width !== undefined && expect.height !== undefined ? `${expect.width}x${expect.height}` : expect.width !== undefined ? `a width of ${expect.width}` : `a height of ${expect.height}`;
-  const fits = [];
-  let refused = null;
+  const candidates = [];
   for (let k = 2; k <= SCALE; k++) {
     const w = expect.width === undefined ? width : expect.width / k, h = expect.height === undefined ? height : expect.height / k;
-    if (!Number.isInteger(w) || !Number.isInteger(h) || w > CANVAS || h > CANVAS) continue;
-    const over = exportBudget(project, w, h, k, recipe);
-    if (over) refused = over;
-    else fits.push({ k, w, h, distance: Math.abs(w - width) + Math.abs(h - height) });
+    if (Number.isInteger(w) && Number.isInteger(h) && w <= CANVAS && h <= CANVAS) candidates.push({ k, w, h, distance: Math.abs(w - width) + Math.abs(h - height) });
   }
-  if (!fits.length && refused) return tooBig(`at every whole scale that makes ${asked}, ${refused}`, sheet);
-  if (!fits.length) {
+  // Budgets are checked only for the candidates offered (a trimmed sheet is rendered to measure), nearest first.
+  let refused = null;
+  const verdicts = new Map(), passes = fit => {
+    if (!verdicts.has(fit)) { const over = exportBudget(project, fit.w, fit.h, fit.k, recipe); if (over && refused === null) refused = over; verdicts.set(fit, !over); }
+    return verdicts.get(fit);
+  };
+  const nearest = [...candidates].sort((a, b) => a.distance - b.distance || a.k - b.k).find(passes), detailed = nearest && candidates.find(passes);
+  if (!nearest && refused) return tooBig(`at every whole scale that makes ${asked}, ${refused}`, sheet);
+  if (!nearest) {
     const k = Math.min(SCALE, Math.ceil(Math.max(expect.width ?? 0, expect.height ?? 0) / CANVAS)), side = (value, canvas) => value === undefined ? canvas : Math.min(CANVAS, Math.max(1, Math.round(value / k)));
     const w = side(expect.width, width), h = side(expect.height, height), over = exportBudget(project, w, h, k, recipe);
     const head = `canvases stop at ${CANVAS} px a side and sheet.scale at ${SCALE}, and no whole scale exports ${asked} exactly from ${frames.length} frame${frames.length === 1 ? '' : 's'}`;
@@ -68,7 +71,6 @@ function largeSizeFix(expect, project, recipe) {
       : `${head}: tell the user, and offer ${w * k}x${h * k} (a ${w}x${h} canvas at sheet.scale ${k}) instead`;
   }
   const changes = fit => JSON.stringify([...(expect.width !== undefined ? [{ set: 'width', value: fit.w }] : []), ...(expect.height !== undefined ? [{ set: 'height', value: fit.h }] : []), recipe !== undefined && recipe.sheet === undefined ? { set: 'sheet', value: { scale: fit.k } } : { set: 'sheet.scale', value: fit.k }]);
-  const nearest = fits.reduce((best, fit) => fit.distance < best.distance ? fit : best), detailed = fits[0];
   return `canvases stop at ${CANVAS} px a side, so ${asked} is a ${nearest.w}x${nearest.h} canvas at sheet.scale ${nearest.k}, the nearest to the current ${width}x${height}: pixel_patch ${changes(nearest)}${nearest === detailed ? '' : ` (or ${changes(detailed)}, a ${detailed.w}x${detailed.h} canvas at sheet.scale ${detailed.k}, for the most detail)`}, fit the drawing to the new canvas, pixel_inspect, then render again`;
 }
 

@@ -141,6 +141,11 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   assert.equal(check(full, { expect: { width: 2048, height: 2048 } }).problems[0].fix, 'an atlas of 5 trimmed frames at sheet.scale 8 passes 16,777,216 pixels: ask for fewer frames or a smaller size');
   const specks = { ...full, frames: full.frames.map(frame => ({ ...frame, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
   assert.deepEqual(quoted(check(specks, { expect: { width: 2048, height: 2048 } }).problems[0].fix), { set: 'sheet.scale', value: 8 });
+  // At a new canvas too: 100 one-pixel trimmed frames on 16x16 asked 512x512 pack into a small atlas at 32x32, scale 16.
+  const dust = { version: 1, name: 'dust', width: 16, height: 16, palette: { r: '#ff0000' }, sheet: { trim: true }, frames: Array.from({ length: 100 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
+  const dusty = check(dust, { expect: { width: 512, height: 512 } }).problems[0].fix;
+  assert.deepEqual(changesAfter(dusty, 'pixel_patch ['), [{ set: 'width', value: 32 }, { set: 'height', value: 32 }, { set: 'sheet.scale', value: 16 }]);
+  assert.equal(check(patchRecipe(dust, changesAfter(dusty, 'pixel_patch [')).recipe, { expect: { width: 512, height: 512 } }).ok, true);
   // Frame-count fixes are held to the animation pixels: 300 frames of 256x256 at sheet.scale 2 pass 67,108,864.
   const poster = { version: 1, name: 'poster', width: 256, height: 256, palette: { r: '#ff0000' }, sheet: { scale: 2 }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
   assert.equal(check(poster, { expect: { frames: 300 } }).problems[0].fix, '300 frames in "default" make 300 played frames at 512x512, past the 67,108,864 animation pixels an export holds: ask for fewer frames or a smaller size');
