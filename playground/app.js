@@ -8,7 +8,9 @@ const editor = $('recipe'), canvas = $('preview'), context = canvas.getContext('
 const override = engineOverride(location.href), reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let version = PINNED_VERSION, worker, pending, requestId = 0, debounce, editGeneration = 0;
 let manifest = [], rendered = null, valid = false, position = 0, playing = false, nextAt = 0;
-let downloadURLs = [], downloadTimer;
+let downloadURLs = [], downloadTimer, zoomChosen = false, unsavedEdits = false, shownExample = '';
+// One-shot animations hold their last frame this long before playing again, as the studio's Fluid lab does.
+const HOLD = 600;
 const aborted = () => Object.assign(new Error('Superseded'), { name: 'AbortError' });
 const setStatus = message => { $('status').textContent = message; };
 
@@ -34,7 +36,12 @@ function errorMessage(message, invalidate = true) {
   setStatus(rendered ? 'The last good render is still shown.' : 'No render yet.');
   controls();
 }
-function clearError() { $('error').hidden = true; $('error').textContent = ''; editor.setAttribute('aria-invalid', 'false'); }
+function clearError() { $('error').hidden = true; $('error').textContent = ''; $('show-error').hidden = true; editor.setAttribute('aria-invalid', 'false'); }
+// A JSON error names its line; the button selects that line in the editor without moving the caret while you type.
+function offerLine(line) {
+  $('show-error').hidden = !line;
+  if (line) { $('show-error').textContent = `Go to line ${line}`; $('show-error').dataset.line = String(line); }
+}
 function examplesList() {
   const selected = $('examples').value, groups = new Map();
   const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose an example…';
@@ -56,7 +63,7 @@ function versionLabel() {
   examplesList();
 }
 function sourceChanged(text, nextVersion) {
-  editor.value = text; version = nextVersion; valid = false; versionLabel();
+  editor.value = text; version = nextVersion; valid = false; unsavedEdits = false; versionLabel();
   $('recipe-size').textContent = formatSize(new TextEncoder().encode(text).length);
 }
 function stopWorker(reason = aborted()) {
@@ -72,7 +79,7 @@ function ensureWorker() {
     if (!pending || data.id !== pending.id) return;
     if (data.source) { sourceChanged(data.source.text, data.source.version); return; }
     const item = pending; pending = null; clearTimeout(item.timer);
-    if (data.error) item.reject(Object.assign(new Error(data.error.message), { name: data.error.name, path: data.error.path }));
+    if (data.error) item.reject(Object.assign(new Error(data.error.message), { name: data.error.name, path: data.error.path, line: data.error.line }));
     else item.resolve(data.result);
   };
   worker.onerror = event => { event.preventDefault(); if (worker === started) stopWorker(new Error(event.message || 'The render worker could not start. Use a static HTTP server and a browser with module worker support.')); };
@@ -102,6 +109,15 @@ function gifSize() {
   const scale = Number($('gif-scale').value);
   $('gif-size').textContent = `GIF: ${rendered.width * scale}×${rendered.height * scale} px, ${animation().frames.length} frames, scale ${scale}`;
 }
+// Until someone picks a zoom, the art gets the largest whole zoom (1 to 16) that fits the preview box.
+function fitZoom() {
+  if (zoomChosen || !rendered || typeof getComputedStyle !== 'function') return;
+  const box = $('artboard'), style = getComputedStyle(box);
+  const width = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const height = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  if (!(width > 0 && height > 0)) return;
+  $('zoom').value = String(Math.max(1, Math.min(16, Math.floor(Math.min(width / rendered.width, height / rendered.height)))));
+}
 function draw() {
   if (!rendered) return;
   const frame = rendered.frames[frameIndex()], zoom = Number($('zoom').value);
@@ -128,13 +144,14 @@ function acceptRender(result) {
   $('dimensions').textContent = `${result.width}×${result.height} px`;
   $('frame-count').textContent = String(result.frames.length);
   $('warnings').textContent = result.warnings.length ? result.warnings.join('\n') : 'None';
-  clearError(); draw(); controls();
-  setStatus(`Rendered ${result.name} · ${result.frames.length} frames${result.warnings.length ? ' · see warnings below' : ''}.`);
+  clearError(); fitZoom(); draw(); controls();
+  const animations = Object.keys(result.animations).length;
+  setStatus(`Rendered ${result.name} · ${result.frames.length} frames${animations > 1 ? ` in ${animations} animations` : ''}${result.warnings.length ? ' · see warnings in About this render' : ''}.`);
 }
 async function runRender(type = 'render', extra = {}) {
   clearTimeout(debounce);
   try { acceptRender(await request(type, extra)); }
-  catch (error) { if (error.name !== 'AbortError') errorMessage(error.message); }
+  catch (error) { if (error.name !== 'AbortError') { errorMessage(error.message); offerLine(error.line); } }
 }
 function renderEdit() {
   if (editor.value.length > RECIPE_LIMIT || new TextEncoder().encode(editor.value).length > RECIPE_LIMIT) {
@@ -146,17 +163,26 @@ function invalidate() {
   editGeneration++; clearTimeout(debounce);
   if (pending) stopWorker();
   valid = false; playing = false; clearError();
-  $('share-link').value = '';
+  $('share-link').value = ''; $('share-error').hidden = true;
   document.body.dataset.state = 'rendering'; controls();
 }
 editor.addEventListener('input', () => {
-  invalidate(); $('examples').value = '';
+  invalidate(); unsavedEdits = true; $('examples').value = ''; shownExample = '';
   $('recipe-size').textContent = formatSize(new TextEncoder().encode(editor.value).length);
   setStatus('Waiting for edits…'); debounce = setTimeout(renderEdit, 300);
 });
 $('examples').addEventListener('change', () => {
   if (!$('examples').value) return;
-  invalidate(); runRender('example', { file: $('examples').value });
+  // A keyboard arrow on the closed menu also changes it, so edits are never dropped silently.
+  if (unsavedEdits && !confirm('Replace your edited recipe? Download it or copy its link first if you want to keep it.')) { $('examples').value = shownExample; return; }
+  shownExample = $('examples').value;
+  invalidate(); runRender('example', { file: shownExample });
+});
+$('show-error').addEventListener('click', () => {
+  const line = Number($('show-error').dataset.line), lines = editor.value.split('\n');
+  const start = lines.slice(0, line - 1).reduce((sum, text) => sum + text.length + 1, 0);
+  editor.focus(); editor.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+  editor.scrollTop = Math.max(0, (line - 4) * (parseFloat(getComputedStyle(editor).lineHeight) || 20));
 });
 $('use-pin').addEventListener('click', () => { invalidate(); version = PINNED_VERSION; versionLabel(); renderEdit(); });
 $('cancel').addEventListener('click', () => { editGeneration++; clearTimeout(debounce); stopWorker(); errorMessage('Stopped: rendering cancelled.'); });
@@ -200,9 +226,16 @@ $('copy-link').addEventListener('click', async () => {
     $('share-link').value = result.link;
     history.replaceState(null, '', result.link);
     document.body.dataset.state = 'ready'; controls();
+    $('share-error').hidden = true;
     try { await navigator.clipboard.writeText(result.link); if (generation === editGeneration) setStatus('Share link copied.'); }
     catch { if (generation === editGeneration) { $('share-link').focus(); $('share-link').select(); setStatus('The link is selected. Press Ctrl+C or Command+C to copy it.'); } }
-  } catch (error) { if (error.name !== 'AbortError') errorMessage(error.message, false); }
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    // A link that is too long is about sharing, not the recipe: the render stays valid and on screen.
+    $('share-error').textContent = error.message; $('share-error').hidden = false;
+    document.body.dataset.state = valid ? 'ready' : 'error'; controls();
+    setStatus('No link made; see the note under Share link.');
+  }
 });
 function clearDownloads() {
   clearTimeout(downloadTimer);
@@ -227,8 +260,7 @@ function download(files) {
 }
 for (const kind of ['frame', 'sheet', 'gif', 'atlas', 'recipe']) $(`export-${kind}`).addEventListener('click', async () => {
   try {
-    const result = await request('export', { export: kind, frame: frameIndex(), animation: $('animation').value,
-      scale: Number($(kind === 'gif' ? 'gif-scale' : 'zoom').value) });
+    const result = await request('export', { export: kind, frame: frameIndex(), animation: $('animation').value, scale: Number($('gif-scale').value) });
     download(result.files); document.body.dataset.state = valid ? 'ready' : 'error'; controls();
     setStatus(`Download ready.${kind === 'atlas' ? ' If only one file downloaded, use the file links below (available for two minutes).' : ''}${result.warnings.length ? ` ${result.warnings.join(' ')}` : ''}`);
     if (result.warnings.length) $('warnings').textContent = [...(rendered?.warnings ?? []), ...result.warnings].join('\n');
@@ -249,7 +281,8 @@ $('play').addEventListener('click', togglePlay);
 $('step-back').addEventListener('click', () => step(-1));
 $('step-forward').addEventListener('click', () => step(1));
 $('animation').addEventListener('change', () => { position = 0; nextAt = 0; draw(); });
-$('zoom').addEventListener('change', draw);
+$('zoom').addEventListener('change', () => { zoomChosen = true; draw(); });
+addEventListener('resize', () => { if (!zoomChosen && rendered) { fitZoom(); draw(); } });
 $('gif-scale').addEventListener('change', gifSize);
 canvas.addEventListener('keydown', event => {
   if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
@@ -261,9 +294,9 @@ function tick(now) {
   if (playing && rendered && !document.hidden) {
     if (!nextAt) nextAt = now + rendered.frames[frameIndex()].duration;
     if (now >= nextAt) {
-      if (position + 1 === animation().frames.length && !animation().loop) { playing = false; controls(); }
-      else { position = (position + 1) % animation().frames.length; draw(); }
-      nextAt = now + rendered.frames[frameIndex()].duration;
+      position = (position + 1) % animation().frames.length; draw();
+      const last = position === animation().frames.length - 1;
+      nextAt = now + rendered.frames[frameIndex()].duration + (last && !animation().loop ? HOLD : 0);
     }
   }
   requestAnimationFrame(tick);

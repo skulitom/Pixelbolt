@@ -16,8 +16,8 @@
 [hidden] { display: none !important; }
 body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; margin: 0; }
 main { max-width: 86rem; margin: 0 auto; padding: 2rem 16px 4rem; }
-header { max-width: 52rem; margin-bottom: 1.7rem; }
-h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.15; letter-spacing: -.04em; margin: .35rem 0 .9rem; }
+header { max-width: 52rem; margin-bottom: 1rem; }
+h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.15; letter-spacing: -.03em; margin: .25rem 0 .6rem; }
 h2 { font-size: 1rem; margin: 0; }
 p { margin: .5rem 0; }
 a { color: var(--link); text-underline-offset: .2em; }
@@ -32,11 +32,14 @@ button:disabled, select:disabled { opacity: .5; cursor: default; }
 :focus-visible { outline: 3px solid var(--link); outline-offset: 3px; }
 label, .control-label { font-size: .85rem; }
 select { max-width: 100%; min-width: 0; }
-.toolbar { border-block: 1px solid var(--rule); padding: 1rem 0; margin-bottom: 1.5rem; }
+.toolbar { border-block: 1px solid var(--rule); padding: .8rem 0; margin-bottom: .5rem; }
 .control-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .share-row { display: flex; align-items: center; gap: .6rem; margin-top: .8rem; }
 .share-row input { min-width: 0; flex: 1; padding: .4rem .6rem; font-size: .8rem; }
-.downloads { margin-top: 1rem; }
+.downloads { margin-top: .8rem; }
+.pair { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.share-error { color: var(--error); font-size: .85rem; overflow-wrap: anywhere; }
+#show-error { margin-top: .4rem; }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; }
 .editor-panel, .preview-panel { min-width: 0; }
 .panel-heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; min-height: 3rem; font-size: .8rem; }
@@ -49,7 +52,7 @@ body[data-state='error'] canvas, body[data-state='rendering'] canvas, body[data-
 .playback { margin-top: .8rem; }
 #frame-counter { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
 #error { color: var(--error); border-left: 3px solid var(--error); padding: .5rem .75rem; font-size: .85rem; overflow-wrap: anywhere; }
-.status-row { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: 1.2rem 0; font-size: .85rem; }
+.status-row { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: .5rem 0 1rem; font-size: .85rem; min-height: 2.4rem; }
 .status-row p { flex: 1; min-width: 12rem; overflow-wrap: anywhere; }
 .notice { padding: .7rem 1rem; border: 1px solid var(--rule); background: var(--surface); font-size: .85rem; overflow-wrap: anywhere; }
 details { border-block: 1px solid var(--rule); padding: .8rem 0; }
@@ -64,9 +67,12 @@ body.dragging main { outline: 3px dashed var(--link); outline-offset: -6px; }
 @media (max-width: 760px) {
   main { padding-top: 1.25rem; }
   .workspace { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  /* On a phone the art comes first, then the recipe that makes it. */
+  .preview-panel { order: -1; }
   textarea { height: 22rem; min-height: 14rem; }
   .artboard { height: 22rem; min-height: 16rem; }
-  #examples { flex: 1; }
+  #examples { flex: 1 1 100%; }
+  .pair { white-space: normal; flex-wrap: wrap; }
   dl { grid-template-columns: 5.5rem minmax(0, 1fr); gap: .5rem; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto; } }

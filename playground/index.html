@@ -17,7 +17,7 @@
     <header>
       <p class="eyebrow">Pixelbolt <span id="active-engine" class="muted"></span></p>
       <h1>Pixelbolt playground</h1>
-      <p>Pixelbolt turns JSON recipes into pixel art, animations and effects. Pick an example, edit its recipe and watch the pixels change, then download a PNG, GIF or atlas, or copy a link that reopens it. Drop a recipe or a playground PNG anywhere here to open it.</p>
+      <p>Pixelbolt turns JSON recipes into pixel art, animations and effects. Pick an example, edit its recipe and watch the pixels change, then download a PNG, GIF or atlas, or copy a link that reopens it. Open a recipe or a playground PNG (or drop it on the page) to pick up where it left off.</p>
       <p class="muted">For the CLI, MCP server and Studio, <a href="https://github.com/skulitom/Pixelbolt">get Pixelbolt on GitHub</a>.</p>
     </header>
     <p id="notice" class="notice" role="status" hidden></p>
@@ -35,6 +35,7 @@
         <input id="share-link" type="text" readonly placeholder="Your last copied link" aria-describedby="link-help">
       </div>
       <p id="link-help" class="hint">Links allow 16,384 characters. For larger recipes, share a recipe file or a playground PNG.</p>
+      <p id="share-error" class="share-error" role="alert" hidden></p>
       <div class="control-row downloads" aria-label="Download files">
         <span class="control-label">Download</span>
         <button id="export-frame" type="button" disabled>Frame PNG</button>
@@ -42,18 +43,21 @@
         <button id="export-gif" type="button" disabled>GIF</button>
         <button id="export-atlas" type="button" aria-describedby="atlas-help" disabled>Atlas PNG + JSON</button>
         <button id="export-recipe" type="button" disabled>Recipe JSON</button>
-        <label for="gif-scale">GIF scale</label>
-        <select id="gif-scale" aria-describedby="gif-size"></select>
+        <span class="pair"><label for="gif-scale">Scale for Frame PNG and GIF</label>
+        <select id="gif-scale" aria-describedby="gif-size"></select></span>
       </div>
       <p id="gif-size" class="hint">GIF: waiting for a render. Scale starts at 1.</p>
       <p id="atlas-help" class="hint" hidden>Scenes have no sprite atlas metadata. Download their frame sheet instead.</p>
     </section>
+    <div class="status-row"><p id="status" role="status" aria-live="polite">Loading the playground…</p><button id="cancel" type="button" hidden>Cancel</button><button id="retry" type="button" hidden>Render again</button></div>
+    <div id="download-links" class="control-row" aria-label="Last download files" hidden></div>
     <div class="workspace">
       <section class="editor-panel" aria-labelledby="recipe-label">
         <div class="panel-heading"><label id="recipe-label" for="recipe">Recipe JSON</label><span id="recipe-size" class="muted"></span></div>
         <textarea id="recipe" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-describedby="editor-help error"></textarea>
         <p id="editor-help" class="hint">Edits render automatically. Tab moves to the next control.</p>
         <p id="error" role="alert" hidden></p>
+        <button id="show-error" type="button" hidden>Go to the line</button>
       </section>
       <section class="preview-panel" aria-labelledby="preview-title">
         <div class="panel-heading"><h2 id="preview-title">Preview</h2><label for="zoom">Zoom <select id="zoom"></select></label></div>
@@ -68,11 +72,9 @@
           <button id="step-forward" type="button" aria-label="Next frame" disabled>→</button>
           <span id="frame-counter">0 / 0</span>
         </div>
-        <p id="preview-help" class="hint">Focus the preview: Space plays or pauses; arrow keys step. Zoom also sets the frame PNG size.</p>
+        <p id="preview-help" class="hint">Zoom fits the art until you choose one. Focus the preview: Space plays or pauses; arrow keys step.</p>
       </section>
     </div>
-    <div class="status-row"><p id="status" role="status" aria-live="polite">Loading the playground…</p><button id="cancel" type="button" hidden>Cancel</button><button id="retry" type="button" hidden>Render again</button></div>
-    <div id="download-links" class="control-row" aria-label="Last download files" hidden></div>
     <details>
       <summary>About this render</summary>
       <dl>

@@ -116,6 +116,15 @@ test('engine overrides only accept HTTP own-origin or loopback-to-loopback URLs'
   assert.equal(engineOverride(page).notice, '');
   assert.equal(engineBase('0.9.0'), 'https://cdn.jsdelivr.net/npm/pixelbolt@0.9.0/src/');
 });
+test('a JSON mistake reports its line once, without the parser\'s own position wording', async () => {
+  const text = ['{', '  "version": 1,', '  "name": "broken"', '  "width": 8', '}'].join('\n');
+  await assert.rejects(handleRequest({ type: 'render', text, version: pin, override: engineURL.href }), error => {
+    assert.equal(error.line, 4);
+    assert.match(error.message, /^Line 4, column 3: [A-Z]/);
+    assert.doesNotMatch(error.message, /position|JSON\.parse|of the JSON data/);
+    return true;
+  });
+});
 test('only a loopback page may lower the render time limit, and never raise it', () => {
   assert.equal(timeLimit('http://127.0.0.1:8000/playground/?limit=1000'), 1000);
   assert.equal(timeLimit('http://localhost/playground/?limit=99999'), 20000);

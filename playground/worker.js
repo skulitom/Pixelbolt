@@ -22,7 +22,10 @@ function parse(text) {
   try { return JSON.parse(clean); }
   catch (error) {
     const location = jsonErrorLocation(clean, error);
-    throw new Error(`${location.line ? `Line ${location.line}${location.column ? `, column ${location.column}` : ''}: ` : ''}${location.message}`);
+    // The line and column lead the message, so drop the parser's own position wording (V8 and SpiderMonkey).
+    const detail = location.line ? location.message.replace(/^JSON\.parse:\s*/, '').replace(/\s*(?:in JSON\s+)?at position \d+(?:\s*\(line \d+ column \d+\))?/i, '').replace(/\s*at line \d+ column \d+ of the JSON data/i, '') : location.message;
+    const text = detail.charAt(0).toUpperCase() + detail.slice(1);
+    throw Object.assign(new Error(`${location.line ? `Line ${location.line}${location.column ? `, column ${location.column}` : ''}: ` : ''}${text}`), { line: location.line });
   }
 }
 async function engineFor(version, override) {
@@ -120,5 +123,5 @@ if (typeof self !== 'undefined') self.onmessage = async ({ data: request }) => {
     const result = await handleRequest(request, source => self.postMessage({ id: request.id, source }));
     const buffers = result.frames?.map(frame => frame.data.buffer) ?? result.files?.map(file => file.data.buffer) ?? [];
     self.postMessage({ id: request.id, result }, [...new Set(buffers)]);
-  } catch (error) { self.postMessage({ id: request.id, error: { message: error.message, name: error.name, path: error.path } }); }
+  } catch (error) { self.postMessage({ id: request.id, error: { message: error.message, name: error.name, path: error.path, line: error.line } }); }
 };
