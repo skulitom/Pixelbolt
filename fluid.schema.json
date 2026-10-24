@@ -342,6 +342,13 @@
                     "none"
                   ],
                   "description": "over (default): stamped in front of the fluid, its outline and sparks; under: behind its outline and sparks (the fluid itself never enters an obstacle); none: an invisible wall."
+                },
+                "surface": {
+                  "enum": [
+                    "pixels",
+                    "smooth"
+                  ],
+                  "description": "pixels (default): the fluid meets every pixel step. smooth: it meets an outline traced through the steps, so a liquid slides down a drawn slope, roof or chute (a 1:1 staircase acts as a straight 45° slope; draw lines at least 2 pixels thick to smooth both sides), and a liquid can fall away from it instead of hanging on by suction (adhesion still holds it on). The obstacle is drawn as it is either way."
                 }
               },
               "required": [

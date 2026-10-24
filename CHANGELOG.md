@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Smooth obstacles: liquids slide down drawn slopes
+
+- A fluid obstacle with `surface: "smooth"` meets the fluid along an outline traced through its pixel steps, so a drawn 45° roof acts as a straight slope instead of a staircase. Wet snow and slime with `slip` slide off a smooth roof where they stalled for good on the stepped one, and slime pressed against the underside of a smooth branch falls away instead of hanging from it. Faces along the outline are partly open to the pressure and viscosity solves, particles slide along the outline, and a smooth obstacle pushes on a liquid but never pulls it (`adhesion` still holds liquid on). Nothing passes through it, however fast, even where it is one pixel thick.
+- The obstacle is drawn exactly as before. Pixel obstacles stay the default and behave exactly as before: every preset compiles to the same recipe.
+
 ### A playground in the browser
 
 - `playground/` is a page for the project site where anyone can try Pixelbolt with nothing installed: pick one of 20 examples (ten fluids, particle effects, poses, a normal pass and a lit scene) or paste a recipe, see it render live, and download a PNG, a GIF (its size shown first) or an atlas. Renders run in a worker with a 20-second limit and a Cancel button.

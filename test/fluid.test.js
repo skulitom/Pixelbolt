@@ -342,6 +342,51 @@ test('nothing passes through a wall one pixel thick, however fast it moves', () 
   assert.equal(beyond(compileFluid(bubbles).recipe, (x, y) => x < 8 || x > 23 || y > 29), 0);
 });
 
+test('smooth obstacles let thick liquids slide down drawn slopes and fall away from them, and keep everything out', () => {
+  const W = 72, H = 56, art = f => Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (f(x, y) ? 'k' : '.')).join(''));
+  const scene = (symbol, rows, effect) => ({ ...gas(null), width: W, height: H, symbols: { [symbol]: rows }, effects: { e: { kind: 'liquid', frames: 60, seed: 3, look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], emitters: [], ...effect } } });
+  // Wet snow and slime dropped on a drawn 45° roof (a staircase of single pixels) and a 63° one (two down, one across):
+  // they catch on the steps and most of them stays; on a smooth roof they slide off the open right edge.
+  for (const [run, settings] of [[1, { yield: 3, slip: true, tension: 1 }], [0.5, { yield: 1, slip: true }]]) {
+    const roof = art((x, y) => y >= 14 + Math.floor(x / run));
+    const left = surface => drawn(compileFluid(scene('roof', roof, { walls: ['left'], apic: true, ...settings, obstacles: [{ symbol: 'roof', draw: 'none', surface }], fill: [{ at: [12, 6], radius: 5 }] })).recipe, 59).length;
+    const [stepped, smooth] = [left('pixels'), left('smooth')];
+    assert.ok(stepped >= 25 && smooth === 0, `roof ${run}, yield ${settings.yield}: ${stepped} pixels stay on the stepped roof, ${smooth} on the smooth one`);
+  }
+  // Slime pressed against the underside of a stepped branch two pixels thick hangs from it; from a smooth one it falls.
+  const branch = art((x, y) => { const top = 12 - Math.floor((x - 9) / 3.5); return x >= 9 && x < 39 && (y === top || y === top + 1); });
+  const below = art((x, y) => { const top = 12 - Math.floor((x - 9) / 3.5); return x >= 9 && x < 39 && (y === top + 2 || y === top + 3); });
+  const hanging = surface => drawn(compileFluid(scene('branch', branch, { frames: 31, yield: 3, slip: true, walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'branch', draw: 'none', surface }], fill: [{ at: [24, 12.6], radius: 6 }] })).recipe, 30).filter(([x, y]) => below[y][x] === 'k').length;
+  assert.ok(hanging('pixels') >= 10 && hanging('smooth') === 0, `${hanging('pixels')} pixels hang under the stepped branch, ${hanging('smooth')} under the smooth one`);
+  // Water poured into a smooth V-shaped bowl settles there, keeping its volume, as in a stepped one.
+  const bowl = art((x, y) => y >= 55 - Math.abs(x - 36));
+  const pool = compileFluid(scene('bowl', bowl, { frames: 90, walls: FLUID_WALLS, obstacles: [{ symbol: 'bowl', draw: 'none', surface: 'smooth' }], fill: [{ x: 24, y: 30, w: 24, h: 10 }] })).recipe;
+  const at = f => new Set(drawn(pool, f).map(([x, y]) => y * W + x)), [early, a, b] = [at(30), at(70), at(89)], moved = [...a].filter(c => !b.has(c)).length + [...b].filter(c => !a.has(c)).length;
+  assert.ok(moved <= 16 && Math.abs(a.size - b.size) <= 4 && b.size >= 0.95 * early.size, `the pool: ${early.size}, ${a.size} and ${b.size} pixels at frames 30, 70 and 89, ${moved} changed`);
+  // Nothing gets through a smooth diagonal wall one or two pixels thick, nor one that is smooth above and pixels below:
+  // not a jet at 16 pixels a frame, not the spray it throws, not gas, not even the faintest density a look draws.
+  for (const thick of [1, 2]) {
+    const on = (x, y) => x - y - 4 >= 0 && x - y - 4 < thick, wall = art(on), past = ([x, y]) => x - y - 4 >= thick;
+    const walls = { smooth: [{ wall }, [{ symbol: 'wall', draw: 'none', surface: 'smooth' }]], mixed: [{ upper: art((x, y) => on(x, y) && y < 26), lower: art((x, y) => on(x, y) && y >= 26) }, [{ symbol: 'upper', draw: 'none', surface: 'smooth' }, { symbol: 'lower', draw: 'none' }]] };
+    for (const [name, [symbols, obstacles]] of Object.entries(walls)) for (const substeps of [1, 2]) {
+      const jet = { ...scene('wall', wall, { frames: 14, substeps, gravity: [0, 0], walls: FLUID_WALLS, obstacles, fill: [{ x: 1, y: 18, w: 8, h: 14, velocity: [16, -4] }], whitewater: [{ impact: 0.3, chance: 1, throw: 1.5, spread: 60, colors: ['w'], life: 8 }], look: [{ field: 'density', colors: ['s'], thresholds: [0.02], dither: 0 }] }), symbols };
+      const { recipe } = compileFluid(jet);
+      assert.equal(recipe.frames.reduce((n, _, f) => n + drawn(recipe, f).filter(past).length, 0), 0, `${name} ${thick}-pixel wall, substeps ${substeps}`);
+    }
+    const smoke = compileFluid({ ...gas({ frames: 24, buoyancy: 0, wind: [0.3, 0], obstacles: [{ symbol: 'wall', draw: 'none', surface: 'smooth' }], emitters: [{ at: [6, 30], radius: 3, rate: 1, density: 1, velocity: [3, 0] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.05], dither: 0 }] }), width: W, height: H, symbols: { wall } }).recipe;
+    assert.equal(smoke.frames.reduce((n, _, f) => n + drawn(smoke, f).filter(([x, y]) => x - y - 4 >= thick + 1).length, 0), 0, `gas past a ${thick}-pixel wall`);
+  }
+  // A live runner steps the same simulation, frame for frame.
+  const roof = art((x, y) => y >= 14 + x), slide = scene('roof', roof, { frames: 30, walls: ['left'], yield: 1, slip: true, obstacles: [{ symbol: 'roof', draw: 'none', surface: 'smooth' }], fill: [{ at: [12, 6], radius: 5 }] });
+  const { recipe } = compileFluid(slide), live = createLiveFluid(slide, { warmup: 0 });
+  for (let f = 0; f < 30; f++) {
+    live.step();
+    const cells = new Set(drawn(recipe, f).map(([x, y]) => y * W + x)), keys = live.render().keys, seen = new Set();
+    keys.forEach((row, y) => [...row].forEach((char, x) => { if (char !== '.') seen.add(y * W + x); }));
+    assert.deepEqual(seen, cells, `frame ${f}`);
+  }
+});
+
 test('fluid sources fail early with paths an agent can act on', async () => {
   const emitter = { at: [8, 8], rate: 1, density: 1 }, ok = { frames: 6, emitters: [emitter], look: smoke };
   const bad = (change, where, message) => {
@@ -380,6 +425,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.walls = ['up']; }, 'fluid.effects.plume.walls[0]', /left, right, top, bottom/);
   bad(e => { e.obstacles = [{ symbol: 'nope' }]; }, 'fluid.effects.plume.obstacles[0].symbol', /unknown symbol/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', x: 14 }]; }, 'fluid.effects.plume.obstacles[0]', /must fit inside the 16 × 16 canvas/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', surface: 'round' }]; }, 'fluid.effects.plume.obstacles[0].surface', /pixels .* smooth/);
   bad(e => { e.light = [0, 0]; }, 'fluid.effects.plume.light', /toward the light/);
   bad(e => { e.outline = 'z'; }, 'fluid.effects.plume.outline', /palette key/);
   bad(e => { e.kind = 'liquid'; e.emitters = []; e.fill = [{ x: 0, y: 0 }]; }, 'fluid.effects.plume.fill[0].w', /integer from 1 to 16/);
