@@ -18,7 +18,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Recipes to reopen and share
 
-- Opt-in `pixelbolt share` prints a playground link, `render` and `scene` accept `--embed-recipe` to carry the resolved source inside PNGs, and `import --embedded` recovers it. MCP `pixel_render` accepts `share` and `embedRecipe`; a link over the limit reports an error without failing the render. Both formats carry the engine version; links keep the recipe in the URL fragment. With the options off, exports and replies are unchanged.
+- Opt-in `pixelbolt share` prints a playground link, `render` and `scene` accept `--embed-recipe` to carry the resolved source inside PNGs, and `import --embedded` recovers it. MCP `pixel_render` accepts `share` and `embedRecipe`; a link over the limit reports an error without failing the render. Both formats carry the engine version; links keep the recipe in the URL fragment and open once the playground is live on the project site. With the options off, exports and replies are unchanged.
 
 ### GIFs at the size you drew
 
