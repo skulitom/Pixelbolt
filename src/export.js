@@ -2,6 +2,7 @@ import { renderProject, buildAtlas, scalePixels, PixelError } from './core.js';
 import { encodePNG, encodeAPNG, crc32 } from './png.js';
 import { readFile, mkdir, writeFile, access } from 'node:fs/promises';
 import path from 'node:path';
+import { embedRecipe, recipeKind } from './share.js';
 
 const json = value => JSON.stringify(value, null, 2) + '\n';
 // Compact, deterministic JSON for generated recipes: any object or array that fits within `width` columns stays on one
@@ -106,6 +107,13 @@ export function createZip(files) {
   const directory = Buffer.concat(central), end = Buffer.alloc(22);
   end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(files.size, 8); end.writeUInt16LE(files.size, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
   return Buffer.concat([...local, directory, end]);
+}
+// Opt-in post-pass: keep all existing chunks, and leave a scene's asset passes alone.
+export async function embedBundleRecipe(bundle, recipe, version) {
+  const scene = recipeKind(recipe) === 'scene';
+  for (const [name, bytes] of bundle.files) {
+    if (scene ? name === 'scene.png' || name === 'unlit.png' : name.endsWith('.png')) bundle.files.set(name, await embedRecipe(bytes, recipe, version));
+  }
 }
 export async function writeBundle(bundle, directory, { force = false } = {}) {
   const root = path.resolve(directory);

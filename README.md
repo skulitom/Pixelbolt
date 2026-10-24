@@ -109,6 +109,10 @@ node bin/pixelbolt.js render hero.pixel.json --out output/hero
 
 `inspect` saves a contact sheet of every frame and lists each frame's timing. Add `--grid` to read frames back as palette-key text; `--animation`, `--frames` (names or patterns such as `'flash-*'`) and `--region` narrow the view, and `--step 2 --offset 1` keeps every second cell from the second, so a strobe's A and B frames can be read apart. `validate hero.pixel.json --fps 30` also lists the durations that are not whole video frames at that rate and what a video sequence would do to each animation. `patch hero.pixel.json --changes fix.json` previews targeted edits and reports every pixel they change; add `--out` to save the new recipe. `gif hero.pixel.json --out hero.gif` saves one animation as a GIF for sharing. Command results except help and the preview server are JSON. Errors go to stderr and exit with code 1. Use `-` instead of a filename to read JSON from stdin. Existing output files are protected; add `--force` to replace them. You can optionally run `npm link` for the `pixelbolt` command. No `npm install` is needed.
 
+`pixelbolt share <recipe.json|->` prints a playground link; `render` and `scene` accept `--embed-recipe`, recovered with `import image.png --embedded --out recipe.json`.
+
+Both carry the resolved recipe text and engine version: the link in its URL fragment, which browsers do not send to a server, and the PNG in a compressed recipe chunk.
+
 ## Diorama: a 3/4 dungeon room
 
 An original 3/4 top-down dungeon room in the style of procedurally generated "floating diorama" games: 8-pixel tiles, wall caps with front faces, a sunken pool fed by a waterfall, moss, props, torches and a hero whose strike breaks a pot. The room is one recipe whose `tilemap` operation places walls, faces, cliffs, water and worn bricks by neighbour rules; moss is seeded value noise on the floor colour; shadows and torchlight move colours along palette ramps, so the scene keeps its 31 colours lit or re-themed.
@@ -284,6 +288,8 @@ The eight tools are:
 - **`pixel_compile`**: compile a `pixelforge-poses` source (including bones, masses, relative joints, reach targets and editable motion templates), a `pixelforge-autotile` template, a `pixelforge-fx` particle source, a `pixelforge-fluid` source (simulated smoke, fire, explosions, magic and water) or a `pixelforge-normals` source (a normal pass derived from a recipe or revision) into a recipe revision, with a contact sheet and optional metadata.
 - **`pixel_scene`**: render a `pixelforge-scene` manifest (tilemaps with autotile legends and neighbour rules, named cues, sequences, trajectories, attachments, ground sorting, shade placements, ramp or multiplied lighting, palette themes) at any time, export it, or write it as a shot of numbered PNG frames with `sequence`; assets may be revisions.
 - **`pixel_import`**: import a native-resolution PNG, given as base64 or a file inside the server root, as a lossless recipe revision.
+
+`pixel_render` optionally accepts `"share": true` for a playground link (or a link-limit error without failing the render) and `"embedRecipe": true` for recipes inside exported PNGs.
 
 `pixel_patch` also supports compact `grid`, masked `move`, regional `recolor` and proposed `cleanup` of doubled corners and stray pixels, with explicit `frame` or `inherited` scope, and applies saved correction overlays (`overlay`). Large `pixel_render` previews are sampled with total/shown/omitted metadata instead of blocking a valid export; exported animations remain complete. Palette and scene file references resolve inside the server's `--root` (default: its working directory); requests may be up to 16 MiB, and an oversized request is answered with an error without stopping the server.
 

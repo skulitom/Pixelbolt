@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Recipes to reopen and share
+
+- Opt-in `pixelbolt share` prints a playground link, `render` and `scene` accept `--embed-recipe` to carry the resolved source inside PNGs, and `import --embedded` recovers it. MCP `pixel_render` accepts `share` and `embedRecipe`; a link over the limit reports an error without failing the render. Both formats carry the engine version; links keep the recipe in the URL fragment. With the options off, exports and replies are unchanged.
+
 ### GIFs at the size you drew
 
 - GIFs now keep the frames' own size unless you ask for more: `pixelbolt gif`, MCP `pixel_render`'s `gif` and `animationGIF` default to scale 1. They used to enlarge to the largest whole multiple within 256 pixels, so a 32x32 animation came out 256x256 and agents handed that on when 32x32 was asked for. Pass `scale` (`--scale` on the CLI) to enlarge one for posting; the studio's **GIF** button still uses the current zoom.
