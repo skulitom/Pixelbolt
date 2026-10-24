@@ -7,7 +7,9 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createBundle, formatJSON } from '../src/export.js';
+import { createBundle, formatJSON, embedBundleRecipe } from '../src/export.js';
+import { createSequence } from '../src/sequence.js';
+import { renderProject } from '../src/core.js';
 import { createSceneBundle } from '../src/scene-export.js';
 import { decodePNG, importPNG } from '../src/import.js';
 import { resolveReferences } from '../src/resolve.js';
@@ -204,4 +206,14 @@ test('MCP discovery adds only two opt-in booleans to pixel_render', async t => {
   for (const tool of listed.filter(tool => tool.name !== 'pixel_render')) {
     assert.ok(!('share' in tool.inputSchema.properties) && !('embedRecipe' in tool.inputSchema.properties), tool.name);
   }
+});
+
+test('embedding keeps the buffers a video sequence shares between held frames', async () => {
+  const coin = JSON.parse(await readFile(path.join(root, 'examples/coin.json'), 'utf8'));
+  const frames = createSequence(renderProject(coin), { fps: 30, seconds: 3 }), pngs = () => [...frames.files].filter(([name]) => name.endsWith('.png')).map(([, bytes]) => bytes);
+  const distinct = new Set(pngs()).size;
+  assert.ok(pngs().length > distinct * 2, 'held frames share buffers');
+  await embedBundleRecipe(frames, coin, version);
+  assert.equal(new Set(pngs()).size, distinct);
+  for (const bytes of new Set(pngs())) assert.equal(JSON.stringify((await readEmbeddedRecipe(bytes)).recipe), JSON.stringify(coin));
 });

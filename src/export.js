@@ -108,11 +108,14 @@ export function createZip(files) {
   end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(files.size, 8); end.writeUInt16LE(files.size, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
   return Buffer.concat([...local, directory, end]);
 }
-// Opt-in post-pass: keep all existing chunks, and leave a scene's asset passes alone.
+// Opt-in post-pass: keep all existing chunks, and leave a scene's asset passes alone. A video sequence shares one buffer
+// between the frames a pose is held for, so each distinct buffer is embedded once and stays shared.
 export async function embedBundleRecipe(bundle, recipe, version) {
-  const scene = recipeKind(recipe) === 'scene';
+  const scene = recipeKind(recipe) === 'scene', embedded = new Map();
   for (const [name, bytes] of bundle.files) {
-    if (scene ? name === 'scene.png' || name === 'unlit.png' : name.endsWith('.png')) bundle.files.set(name, await embedRecipe(bytes, recipe, version));
+    if (!(scene ? name === 'scene.png' || name === 'unlit.png' : name.endsWith('.png'))) continue;
+    if (!embedded.has(bytes)) embedded.set(bytes, await embedRecipe(bytes, recipe, version));
+    bundle.files.set(name, embedded.get(bytes));
   }
 }
 export async function writeBundle(bundle, directory, { force = false } = {}) {
