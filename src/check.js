@@ -1,7 +1,7 @@
 // What a render delivered, and how it differs from what the user asked for (`expect`). Each problem names the file
 // and the call that fixes it, so an agent can correct an export before handing it on. Read-only: it never changes
 // the bundle.
-import { PixelError } from './core.js';
+import { PixelError, renderProject } from './core.js';
 
 // The format's limits, as core.js enforces them, so no fix asks for a recipe the renderer refuses: canvas sides,
 // sheet.scale, source frames, their total area, and the names one animation lists. A pingpong of n names (n > 2)
@@ -31,10 +31,14 @@ const wholeScale = (pairs, max) => {
 };
 
 // Why the exporter would refuse this project at canvas w x h and sheet.scale k, or null: the frames' total area, the
-// atlas (untrimmed; a trimmed one packs smaller, so it isn't held to this) and the animations' pixels.
-function exportBudget({ frames, animations, sheet }, w, h, k) {
+// atlas and the animations' pixels. A trimmed atlas packs each frame's visible bounds, so at the same canvas the
+// change is rendered to measure it; at a new canvas (where the drawing changes too) it is held to the untrimmed grid.
+function exportBudget({ width, height, frames, animations, sheet }, w, h, k, recipe) {
   if (w * h * frames.length > FRAME_AREA) return `${frames.length} frames of ${w}x${h} pass the limit of 4,194,304 pixels of frames`;
-  if (!sheet.trim && sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k > ATLAS) return `an atlas of ${frames.length} frames at ${w * k}x${h * k} passes 16,777,216 pixels`;
+  if (sheet.trim && recipe !== undefined && w === width && h === height) {
+    try { renderProject({ ...recipe, sheet: { ...recipe.sheet, scale: k } }); }
+    catch (error) { return error.path === 'project.sheet' ? `an atlas of ${frames.length} trimmed frames at sheet.scale ${k} passes 16,777,216 pixels` : `sheet.scale ${k} is refused (${error.message})`; }
+  } else if (sheet.columns * (w + sheet.padding * 2) * k * Math.ceil(frames.length / sheet.columns) * (h + sheet.padding * 2) * k > ATLAS) return `an atlas of ${frames.length} frames at ${w * k}x${h * k} passes 16,777,216 pixels`;
   const played = Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0);
   if (played * w * h * k * k > EXPORT_PIXELS) return `${played} played frames at ${w * k}x${h * k} pass the 67,108,864 animation pixels an export holds`;
   return null;
@@ -51,7 +55,7 @@ function largeSizeFix(expect, project, recipe) {
   for (let k = 2; k <= SCALE; k++) {
     const w = expect.width === undefined ? width : expect.width / k, h = expect.height === undefined ? height : expect.height / k;
     if (!Number.isInteger(w) || !Number.isInteger(h) || w > CANVAS || h > CANVAS) continue;
-    const over = exportBudget(project, w, h, k);
+    const over = exportBudget(project, w, h, k, recipe);
     if (over) refused = over;
     else fits.push({ k, w, h, distance: Math.abs(w - width) + Math.abs(h - height) });
   }
@@ -101,14 +105,18 @@ function opaqueFix(recipe, holes) {
   return `pixel_patch { "set": "background", "value": "<palette key>" }${backgroundAlpha(recipe) > 0 ? ' (an opaque one: the current background is see-through)' : ''}${culprits.length ? `, and remove or paint over what erases it (${what})` : ''}, then render again`;
 }
 
-// How to make one animation play `want` frames within the limits: source frames, names per list, pingpong's 2n - 2.
-function framesFix(key, want, named, direction, { width, height }) {
+// How to make one animation play `want` frames within the limits: source frames, names per list, pingpong's 2n - 2,
+// and the export's budgets (the animations' pixels; for new source frames, their area and the atlas too).
+function framesFix(key, want, named, direction, project, recipe) {
+  const { width, height, sheet, animations } = project, s = sheet.scale;
   const pingpong = want % 2 === 0 && want >= 4 ? want / 2 + 1 : null;
   if (want > NAMES && pingpong === null) return `no animation plays ${want} frames: one lists at most ${NAMES} names, and a pingpong of n names plays 2n-2, an even number up to ${PLAYED}; tell the user, or play ${want - 1} or ${want + 1}`;
+  const played = Object.values(animations).reduce((sum, item) => sum + item.frames.length, 0) - animations[key].frames.length + want;
+  if (played * width * height * s * s > EXPORT_PIXELS) return tooBig(`${want} frames in "${key}" make ${played} played frames at ${width * s}x${height * s}, past the 67,108,864 animation pixels an export holds`, { trim: true });
   if (!named) {
     const head = 'the recipe has no animations field, so every frame plays once in order';
-    if (want <= SOURCE_FRAMES && want * width * height <= FRAME_AREA) return `${head}: add or remove frames (pixel_patch insert or remove under frames) until there are ${want}, or add an animation that lists ${want} frame names (a name may repeat)`;
-    const cap = want > SOURCE_FRAMES ? `a recipe holds at most ${SOURCE_FRAMES} frames` : `${want} frames of ${width}x${height} pass the limit of 4,194,304 pixels of frames`;
+    const cap = want > SOURCE_FRAMES ? `a recipe holds at most ${SOURCE_FRAMES} frames` : exportBudget({ ...project, frames: { length: want }, animations: {}, sheet: { ...sheet, trim: false, columns: recipe?.sheet?.columns ?? Math.min(want, 8) } }, width, height, s);
+    if (!cap) return `${head}: add or remove frames (pixel_patch insert or remove under frames) until there are ${want}, or add an animation that lists ${want} frame names (a name may repeat)`;
     return want <= NAMES
       ? `${head}, and ${cap}: add an animation that lists ${want} frame names in play order (a name may repeat), pixel_patch set "animations" to { "${key}": { "frames": [${want} names] } }, then render again`
       : `${head}, and ${cap}: add a pingpong animation of ${pingpong} frame names, which plays ${want}: pixel_patch set "animations" to { "${key}": { "frames": [${pingpong} names], "direction": "pingpong" } }, then render again`;
@@ -162,7 +170,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   if ((expect.width !== undefined && expect.width !== width * scale) || (expect.height !== undefined && expect.height !== height * scale)) {
     const k = wholeScale([[expect.width, width], [expect.height, height]], 16);
     // Each fix is held to the exporter's budgets at the size it proposes.
-    const over = k !== null ? exportBudget(project, width, height, k) : (expect.width ?? 0) > CANVAS || (expect.height ?? 0) > CANVAS ? null : exportBudget(project, expect.width ?? width, expect.height ?? height, 1);
+    const over = k !== null ? exportBudget(project, width, height, k, recipe) : (expect.width ?? 0) > CANVAS || (expect.height ?? 0) > CANVAS ? null : exportBudget(project, expect.width ?? width, expect.height ?? height, 1, recipe);
     const fix = over ? tooBig(over, sheet)
       : k !== null
       ? `${k === 1 ? `sheet.scale ${scale} enlarges every export: ` : ''}pixel_patch ${recipe !== undefined && recipe.sheet === undefined ? `{ "set": "sheet", "value": { "scale": ${k} } }` : `{ "set": "sheet.scale", "value": ${k} }`}, then render again`
@@ -195,7 +203,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   if (expect.frames !== undefined) for (const key of names) {
     const count = animations[key].frames.length;
     if (count === expect.frames) continue;
-    problems.push({ file: `animations/${key}.png`, asked: expect.frames, got: count, fix: framesFix(key, expect.frames, named, recipe?.animations?.[key]?.direction, project) });
+    problems.push({ file: `animations/${key}.png`, asked: expect.frames, got: count, fix: framesFix(key, expect.frames, named, recipe?.animations?.[key]?.direction, project, recipe) });
   }
   if (expect.colors !== undefined && colors.size > expect.colors) problems.push({ file: frameFiles, asked: `at most ${expect.colors} colours`, got: colors.size, fix: 'merge similar colours with pixel_patch recolor (or fewer palette entries), check with pixel_inspect diagnostics, then render again' });
   if (expect.transparent === true && clear.length !== frames.length) {

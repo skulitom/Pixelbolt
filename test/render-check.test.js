@@ -135,6 +135,15 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   // The same budgets hold a whole-scale fix: 100 frames of 64x64 at sheet.scale 8 would make that atlas too.
   const tiles = { ...dots, width: 64, height: 64 };
   assert.equal(check(tiles, { expect: { width: 512, height: 512 } }).problems[0].fix, 'an atlas of 100 frames at 512x512 passes 16,777,216 pixels: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
+  // A trimmed atlas is measured by rendering the change: five full 256x256 frames at sheet.scale 8 pack too large,
+  // while one-pixel frames pack small enough for the same scale.
+  const full = { version: 1, name: 'full', width: 256, height: 256, palette: { r: '#ff0000' }, sheet: { trim: true }, frames: Array.from({ length: 5 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'rect', x: 0, y: 0, w: 256, h: 256, color: 'r' }] })) };
+  assert.equal(check(full, { expect: { width: 2048, height: 2048 } }).problems[0].fix, 'an atlas of 5 trimmed frames at sheet.scale 8 passes 16,777,216 pixels: ask for fewer frames or a smaller size');
+  const specks = { ...full, frames: full.frames.map(frame => ({ ...frame, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
+  assert.deepEqual(quoted(check(specks, { expect: { width: 2048, height: 2048 } }).problems[0].fix), { set: 'sheet.scale', value: 8 });
+  // Frame-count fixes are held to the animation pixels: 300 frames of 256x256 at sheet.scale 2 pass 67,108,864.
+  const poster = { version: 1, name: 'poster', width: 256, height: 256, palette: { r: '#ff0000' }, sheet: { scale: 2 }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
+  assert.equal(check(poster, { expect: { frames: 300 } }).problems[0].fix, '300 frames in "default" make 300 played frames at 512x512, past the 67,108,864 animation pixels an export holds: ask for fewer frames or a smaller size');
   // A GIF scale is held to the 67,108,864 pixels one render's GIFs hold: 300 frames at 32x32, scale 16.
   const reel = { version: 1, name: 'reel', width: 32, height: 32, palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }], animations: { default: { frames: Array(300).fill('a') } } }, reelProject = renderProject(reel);
   assert.match(check(reel, { gifs: [animationGIF(reelProject, 'default', {})], expect: { gifScale: 16 } }).problems[0].fix, /^the GIFs of every animation at scale 16 pass the 67,108,864 pixels/);
