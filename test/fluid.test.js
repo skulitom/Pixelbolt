@@ -403,6 +403,28 @@ test('decorations are drawn over or under the fluid but never met by it', () => 
   assert.ok(above(plume(false)) >= 3 && above(plume(true)) === 0, `${above(plume(false))} pixels of smoke rose past the decoration, ${above(plume(true))} past the lid`);
 });
 
+test('carried gas is thrown like dust, drops at obstacles and runs live as compiled', () => {
+  const ground = Array(4).fill('k'.repeat(128));
+  const wave = (carry, extra = {}) => compileFluid({ ...gas(null), width: 128, height: 48, symbols: { ground, wall: Array(48).fill('kk') }, effects: { e: { frames: 12, buoyancy: 0.02, dissipation: 0.04, obstacles: [{ symbol: 'ground', x: 0, y: 44 }], emitters: [-1, 1].map(dir => ({ at: [64 + 4 * dir, 41], radius: 3, burst: 1, density: 0.8, velocity: [8 * dir, -0.3], ...(carry && { carry }) })), look: [{ field: 'density', colors: ['s'], thresholds: [0.1] }], ...extra } } }).recipe;
+  const span = (recipe, f) => { const xs = drawn(recipe, f).map(([x]) => x); return Math.max(...xs) - Math.min(...xs) + 1; };
+  // Thrown sideways at 8 pixels a frame, plain gas hardly travels; carried, it rolls out as a dust wave.
+  const [plain, thrown] = [wave(null), wave({ drag: 0.2, release: 0.3 })];
+  assert.ok(span(plain, 6) < 40 && span(thrown, 6) > 2 * span(plain, 6), `spans ${span(plain, 6)} and ${span(thrown, 6)} at frame 6`);
+  // Carriers thrown at a wall drop their smoke against it and none passes.
+  const walled = wave({ drag: 0, release: 0.05 }, { obstacles: [{ symbol: 'ground', x: 0, y: 44 }, { symbol: 'wall', x: 84, y: 0 }] });
+  assert.equal(walled.frames.reduce((n, _, f) => n + drawn(walled, f).filter(([x]) => x >= 86).length, 0), 0);
+  assert.ok(drawn(walled, 6).some(([x]) => x === 83), 'smoke piles against the wall');
+  // The same source gives the same frames, compiled or live.
+  const source = { ...gas(null), width: 64, height: 32, effects: { e: { frames: 10, emitters: [{ at: [10, 20], radius: 2, rate: 1, end: 4, density: 1, temperature: 0.5, velocity: [6, -1], noise: 0.5, carry: { gravity: [0, 0.05] } }], look: [{ field: 'density', colors: ['s'], thresholds: [0.1], dither: 0 }] } } };
+  const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
+  for (let f = 0; f < 10; f++) {
+    live.step();
+    const cells = new Set(drawn(recipe, f).map(([x, y]) => y * 64 + x)), seen = new Set();
+    live.render().keys.forEach((row, y) => [...row].forEach((char, x) => { if (char !== '.') seen.add(y * 64 + x); }));
+    assert.deepEqual(seen, cells, `frame ${f}`);
+  }
+});
+
 test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () => {
   const ball = burst => compileFluid({ ...gas(null), width: 64, height: 64, effects: { e: { kind: 'liquid', frames: 9, seed: 2, gravity: [0, 0.05], fill: [{ at: [32, 30], radius: 8, ...(burst && { burst }) }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } }).recipe;
   const blobs = cells => { const set = new Set(cells.map(([x, y]) => y * 64 + x)), seen = new Set(); let n = 0; for (const c of set) { if (seen.has(c)) continue; n++; const stack = [c]; seen.add(c); while (stack.length) { const d = stack.pop(); for (const e of [d - 1, d + 1, d - 64, d + 64]) if (set.has(e) && !seen.has(e) && Math.abs((e % 64) - (d % 64)) <= 1) { seen.add(e); stack.push(e); } } } return n; };
@@ -481,6 +503,9 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, surface: 'smooth' }]; }, 'fluid.effects.plume.obstacles[0].surface', /never meets a decoration/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: 'no' }]; }, 'fluid.effects.plume.obstacles[0].solid', /true or false/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { pieces: 4 } }] }); }, 'fluid.effects.plume.fill[0].burst.speed', /pixels per frame/);
+  bad(e => { Object.assign(e, { kind: 'liquid', emitters: [{ at: [8, 8], rate: 1, carry: {} }] }); }, 'fluid.effects.plume.emitters[0].carry', /liquid particles/);
+  bad(e => { e.emitters = [{ ...emitter, density: -1, carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /draining emitter/);
+  bad(e => { e.emitters = [{ ...emitter, carry: { drag: 2 } }]; }, 'fluid.effects.plume.emitters[0].carry.drag', /0 to 1/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { speed: 2, pieces: 1 } }] }); }, 'fluid.effects.plume.fill[0].burst.pieces', /2 to 64/);
   bad(e => { e.light = [0, 0]; }, 'fluid.effects.plume.light', /toward the light/);
   bad(e => { e.outline = 'z'; }, 'fluid.effects.plume.outline', /palette key/);

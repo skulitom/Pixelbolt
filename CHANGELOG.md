@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Thrown dust: gas carried on heavy carriers
+
+- A gas emitter with `carry: { drag, release, gravity }` throws its smoke and heat on carriers, one per covered cell, launched with its velocity, vortex, outward expand and noise. Each carrier slows toward the air's velocity by `drag` a frame, hands `release` of what it holds to the air a frame, falls by its own `gravity`, and drops the rest where it meets an obstacle; what it holds is drawn with the smoke. A puff of gas can't be thrown through still air (the pressure solve halves its speed at once), but dust is grains: two bursts thrown sideways at 8 pixels a frame now roll out about 90 pixels across in six frames, against about 26 without `carry`. At most 8,192 carriers are in the air at once.
+
 ### Liquid bursts in mid-air
 
 - A liquid fill with `burst: { speed, pieces }` breaks into seeded pieces with a one-pixel gap between them, each flying straight out from the fill's middle at its own speed (a number, or `[min, max]` picked per piece) plus the fill's `velocity`. An outward velocity on one connected blob is cancelled by the pressure solve, since a liquid can't expand; separate pieces moving as one each keep theirs. The gaps' water goes to the pieces, so the volume is kept. A ball of radius 8 bursting at 2.5 pixels a frame is in six or more pieces, three times as wide, eight frames later.

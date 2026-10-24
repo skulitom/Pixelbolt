@@ -272,6 +272,11 @@ const fluidEmitter = object({
   flicker: num(0, 1, 'Random variation of strength from cell to cell and frame to frame (seeded value noise), so a flame base breaks into tongues.'),
   pulse: cycle({ amplitude: num(0, 1, 'Share by which strength rises and falls; default 0.5. 1 switches the emitter off at the trough.') }, 1, 'Strength follows a sine wave: puffs, heaves, heartbeats.'),
   orbit: cycle({ radius: { oneOf: [num(0, 128), pairOf(num(0, 128))], description: 'Pixels from at, or [x, y] for an ellipse.' } }, -256, 'The emitter circles at (or follows an ellipse round it); a negative period turns anticlockwise. A rate emitter is laid along the path it covered since the last frame, so a fast orbit leaves a smooth trail.', ['radius']),
+  carry: { ...object({
+    drag: num(0, 1, 'Share of the difference between a carrier\'s velocity and the air\'s that it loses each frame; default 0.1. Low throws dust far, high lets the air take it at once.'),
+    release: num(0.01, 1, 'Share of what a carrier still holds that it hands to the air each frame; default 0.2. What it holds is drawn with the smoke.'),
+    gravity: vector(-2, 2, 'Each carrier\'s own acceleration [x, y]; a small positive y lets dust settle. Default [0, 0].')
+  }), description: 'Gas: throw this emitter\'s smoke and heat on heavy carriers, one per covered cell (each frame for a rate emitter, whose amounts are then thrown every frame), launched with its velocity, vortex, expand (outward) and noise. A puff of gas cannot be thrown through still air, but dust can: carriers keep their momentum, slow by drag, hand their smoke to the air as they go and drop the rest where they meet an obstacle. For dust waves, skid smoke, dash trails.' },
   sparks: { ...object({
     count: num(0.01, 256, 'Sparks per frame for a rate emitter (at most 16; fractions spawn on some frames), or in all for a burst; follows pulse and flicker.'),
     life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each spark lives; [min, max] picks per spark. Default [8, 16].' },

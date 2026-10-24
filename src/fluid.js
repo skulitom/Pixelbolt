@@ -19,7 +19,7 @@ export const FLUID_KINDS = ['gas', 'liquid'];
 export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow'];
 export const FLUID_WALLS = ['left', 'right', 'top', 'bottom'];
 export const OBSTACLE_SURFACES = ['pixels', 'smooth'];
-const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 16, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, work: 400000000 };
+const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 16, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, carriers: 8192, work: 400000000 };
 // No flow moves faster than this many pixels per frame; it keeps extreme settings finite without touching normal ones.
 const MAX_SPEED = 32;
 // Liquid particles per full cell, and the density at which a cell counts as liquid for depth and bubbles.
@@ -127,7 +127,7 @@ function readWhitewater(layer, path, context, gravity) {
 
 function readEmitter(emitter, path, context) {
   const { frames, loop, liquid } = context;
-  fields(emitter, ['name', 'at', 'radius', 'area', 'burst', 'rate', 'start', 'end', 'density', 'temperature', 'falloff', 'velocity', 'expand', 'vortex', 'noise', 'flicker', 'pulse', 'orbit', 'sparks'], path);
+  fields(emitter, ['name', 'at', 'radius', 'area', 'burst', 'rate', 'start', 'end', 'density', 'temperature', 'falloff', 'velocity', 'expand', 'vortex', 'noise', 'flicker', 'pulse', 'orbit', 'sparks', 'carry'], path);
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
   if ((emitter.burst === undefined) === (emitter.rate === undefined)) fail(path, 'use exactly one of burst (added once, at start) or rate (added every frame from start until end)');
   const start = integer(emitter.start ?? 0, `${path}.start`, 0, frames - 1);
@@ -136,8 +136,16 @@ function readEmitter(emitter, path, context) {
   if (emitter.radius !== undefined && emitter.area !== undefined) fail(path, 'use radius (a disc) or area (a box), not both');
   if (emitter.temperature !== undefined && liquid) fail(`${path}.temperature`, 'temperature drives gases; liquids fall by gravity');
   const burst = emitter.burst !== undefined;
+  // A gas emitter may throw its smoke on heavy carriers instead of putting it in the air (dust, a skid's smoke).
+  let carry = null;
+  if (emitter.carry !== undefined) {
+    if (liquid) fail(`${path}.carry`, 'carry throws gas on heavy carriers; liquid particles already carry their own speed');
+    fields(emitter.carry, ['drag', 'release', 'gravity'], `${path}.carry`);
+    if ((emitter.density ?? 0) < 0 || (emitter.temperature ?? 0) < 0) fail(`${path}.carry`, 'carry throws smoke and heat; a draining emitter (a negative density or temperature) has nothing to throw');
+    carry = { drag: number(emitter.carry.drag ?? 0.1, `${path}.carry.drag`, 0, 1), release: number(emitter.carry.release ?? 0.2, `${path}.carry.release`, 0.01, 1), gravity: emitter.carry.gravity === undefined ? [0, 0] : pair(emitter.carry.gravity, `${path}.carry.gravity`, -2, 2) };
+  }
   return {
-    name: emitter.name, at: pair(emitter.at, `${path}.at`, -256, 512), start, end, burst,
+    name: emitter.name, at: pair(emitter.at, `${path}.at`, -256, 512), start, end, burst, carry,
     strength: burst ? number(emitter.burst, `${path}.burst`, 0.01, 64) : number(emitter.rate, `${path}.rate`, 0.01, 64),
     radius: emitter.area === undefined ? number(emitter.radius ?? 2, `${path}.radius`, 0.5, 64) : null,
     area: emitter.area === undefined ? null : pair(emitter.area, `${path}.area`, 1, 128),
@@ -1018,6 +1026,7 @@ function emitGas(g, state, e, index, cycle, seed, along = cycle, share = 1, fact
   if (x0 > x1 || y0 > y1) return here;
   // A burst adds its amounts once; a rate emitter raises its cells toward them every frame (a negative amount drains),
   // so a steady source holds its level instead of piling up.
+  if (e.carry) return throwCarriers(g, state, e, index, cycle, seed, here, share);
   const feed = (a, c, amount, w, strength) => {
     if (e.burst) a[c] += amount * w * strength;
     else if (amount >= 0) { const target = amount * strength; if (a[c] < target) a[c] += (target - a[c]) * w; }
@@ -1044,10 +1053,63 @@ function emitGas(g, state, e, index, cycle, seed, along = cycle, share = 1, fact
   return here;
 }
 
+// Dust and thrown smoke: an emitter with `carry` puts its smoke and heat on carriers, one per covered cell (each frame,
+// for a rate emitter), launched with the emitter's push (velocity, vortex, expand outward and noise). A puff of gas can't
+// be thrown through still air (the air must get out of its way, so the pressure solve halves its speed at once and the
+// rest blurs away within a few pixels), but dust is grains, and grains keep their momentum. Each carrier loses about
+// `drag` of the difference between its velocity and the air's each frame, falls by its `gravity`, hands `release` of
+// what it still carries to the air each frame, and drops the rest where it meets an obstacle. What it carries is drawn
+// with the smoke, so the cloud travels with the carriers and the air keeps what they leave behind.
+function throwCarriers(g, state, e, index, cycle, seed, here, share) {
+  const { W, H, pixels: solid } = g, { x, y, flicker } = here, r = reach(e), list = state.carriers;
+  const x0 = Math.max(0, Math.floor(x - r)), x1 = Math.min(W - 1, Math.ceil(x + r)), y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H - 1, Math.ceil(y + r));
+  for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
+    const c = j * W + i, px = i + 0.5, py = j + 0.5, w = coverage(e, px - x, py - y);
+    if (!w || solid[c]) continue;
+    const amount = flicker(px, py) * profile(e, px - x, py - y) * w * share, d = e.density * amount, t = e.temperature * amount;
+    if (!(d > 0) && !(t > 0)) continue;
+    if (list.length >= LIMITS.carriers) { state.overflow = true; return here; }
+    let vx = push(e, px - x, py - y, 0, e.expand), vy = push(e, px - x, py - y, 1, e.expand);
+    if (e.noise) { vx += e.noise * (2 * valueNoise(seed, index, cycle, SALT.noiseX, px, py) - 1); vy += e.noise * (2 * valueNoise(seed, index, cycle, SALT.noiseY, px, py) - 1); }
+    list.push({ x: px, y: py, vx, vy, d: d > 0 ? d : 0, T: t > 0 ? t : 0, carry: e.carry });
+  }
+  return here;
+}
+// Adds `value` to the cell centres around (x, y) with bilinear weights, leaving out obstacles' pixels.
+function deposit(a, solid, W, H, x, y, value) {
+  const fx = x - 0.5, fy = y - 0.5, i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
+  const add = (ci, cj, w) => { if (w && ci >= 0 && cj >= 0 && ci < W && cj < H && !solid[cj * W + ci]) a[cj * W + ci] += w * value; };
+  add(i, j, (1 - s) * (1 - t)); add(i + 1, j, s * (1 - t)); add(i, j + 1, (1 - s) * t); add(i + 1, j + 1, s * t);
+}
+function moveCarriers(state, dt) {
+  const { g, d, T, carriers: list } = state, { W, H, u, v, pixels: solid } = g;
+  let kept = 0;
+  for (let k = 0; k < list.length; k++) {
+    const p = list[k], { drag, release, gravity } = p.carry;
+    p.vx += (sampleU(g, u, p.x, p.y) - p.vx) * drag * dt + gravity[0] * dt;
+    p.vy += (sampleV(g, v, p.x, p.y) - p.vy) * drag * dt + gravity[1] * dt;
+    if (p.vx > MAX_SPEED) p.vx = MAX_SPEED; else if (p.vx < -MAX_SPEED) p.vx = -MAX_SPEED;
+    if (p.vy > MAX_SPEED) p.vy = MAX_SPEED; else if (p.vy < -MAX_SPEED) p.vy = -MAX_SPEED;
+    const nx = p.x + p.vx * dt, ny = p.y + p.vy * dt;
+    // Carriers that leave the canvas take their smoke with them; one that meets an obstacle drops it all there.
+    if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+    const hit = crossesSolid(solid, W, H, p.x, p.y, nx, ny) || solid[Math.floor(ny) * W + Math.floor(nx)];
+    if (!hit) { p.x = nx; p.y = ny; }
+    const part = hit ? 1 : release * dt, dd = p.d * part, tt = p.T * part;
+    if (dd) deposit(d, solid, W, H, p.x, p.y, dd);
+    if (tt) deposit(T, solid, W, H, p.x, p.y, tt);
+    p.d -= dd; p.T -= tt;
+    if (hit || (p.d < 0.002 && p.T < 0.002)) continue;
+    list[kept++] = p;
+  }
+  list.length = kept;
+}
+
 // ---- Gas --------------------------------------------------------------------------------------------------------------
 function createGas(effect, width, height) {
   const g = gridFor(effect, width, height), N = g.N;
   const state = { g, d: new Float64Array(N), T: new Float64Array(N), source: new Float64Array(N), d1: new Float64Array(N), T1: new Float64Array(N), curl: new Float64Array(N), magnitude: new Float64Array(N), open: new Uint8Array(N) };
+  if (effect.emitters.some(e => e.carry)) { state.carriers = []; state.carriedD = new Float64Array(N); state.carriedT = new Float64Array(N); }
   for (let c = 0; c < N; c++) state.open[c] = g.solid[c] ? 0 : 1;
   return state;
 }
@@ -1071,12 +1133,20 @@ function stepGas(state, effect, dt) {
   advectScalars(g, dt, [[d, d1], [T, T1]], effect.sharp);
   const fade = 1 - effect.dissipation * dt, cool = 1 - effect.cooling * dt;
   for (let c = 0; c < g.N; c++) { d[c] = d1[c] * fade; T[c] = T1[c] * cool; }
+  if (state.carriers) moveCarriers(state, dt);
 }
 function gasFields(state, out) {
   const { g, d, T } = state, { W, H, u, v } = g, [density, temperature, speed] = out;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const c = j * W + i, x = (u[j * (W + 1) + i] + u[j * (W + 1) + i + 1]) * 0.5, y = (v[j * W + i] + v[(j + 1) * W + i]) * 0.5;
     density[c] = d[c]; temperature[c] = T[c]; speed[c] = Math.sqrt(x * x + y * y);
+  }
+  // What carriers still hold shows with the smoke.
+  if (state.carriers) {
+    const { carriedD, carriedT, carriers: list } = state, solid = g.pixels;
+    carriedD.fill(0); carriedT.fill(0);
+    for (const p of list) { if (p.d) deposit(carriedD, solid, W, H, p.x, p.y, p.d); if (p.T) deposit(carriedT, solid, W, H, p.x, p.y, p.T); }
+    for (let c = 0; c < g.N; c++) { density[c] += carriedD[c]; temperature[c] += carriedT[c]; }
   }
 }
 
@@ -1693,6 +1763,7 @@ function simulate(effect, context) {
     const here = emitFrame(run, t, cycle);
     solveFrame(run);
     if (liquid && state.full) crowded(path);
+    if (state.overflow) fail(path, `more than ${LIMITS.carriers} carriers are in the air at once; lower the carrying emitters' size or rate, or raise their release`);
     if (loop && out < -blend && !run.sparks.length) continue;
     fieldsOf(run);
     if (loop && out >= -blend && out < 0) { tail[out + blend].forEach((field, f) => field.set(base[f])); continue; }
