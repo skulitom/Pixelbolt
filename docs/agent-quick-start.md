@@ -50,7 +50,7 @@ Coordinates are whole pixels from the top-left, and y points down. Shapes are ne
    - `{"grid": "frames[rest]", "value": {"x": 3, "y": 4, "rows": ["kk.", ".k."]}}` paints a small region; dots keep pixels.
    - `{"set": "frames[up].duration", "value": 250}`, `{"insert": "frames[-]", "value": {...}}` and `{"remove": "animations.blink"}` edit the source by path.
    - `recolor`, `move` and `cleanup` (proposed fixes for doubled corners and stray pixels) work on regions.
-4. **`pixel_render`** `{revision}` exports a new folder: sprite sheet, atlas, frames, APNG animations, CSS and a preview page. Add `gif: {}` for GIFs at the frames' own size (`gif: {scale: 8}` only to enlarge one for posting), or `sequence: {fps: 30, size: "1080p"}` for PNG frames for a video editor.
+4. **`pixel_render`** `{revision}` exports a new folder: sprite sheet, atlas, frames, APNG animations, CSS and a preview page. Add `gif: {}` for GIFs at the frames' own size (`gif: {scale: 8}` only to enlarge one for posting), or `sequence: {fps: 30, size: "1080p"}` for PNG frames for a video editor. Pass `expect` with what the user asked for (`{width, height, frames, colors, transparent, loop, gifScale}`): the reply's `check` lists every file that misses it and the call that fixes it.
 5. **`pixel_compile`** `{source}` builds an ordinary recipe from a source format: `pixelforge-fluid` (simulated fire, smoke, explosions, steam, magic, water, honey, slime), `pixelforge-fx` (particles: sparks, debris, shockwaves), `pixelforge-poses` (characters from parts and bones, with walk, run and attack templates), `pixelforge-autotile` (47- or 16-tile terrain sets) or `pixelforge-normals` (a lighting normal pass). The matching topic has the format.
 6. **`pixel_scene`** composes assets into a room with tilemaps, cues and lighting; **`pixel_import`** turns a native PNG into an editable recipe.
 
@@ -63,6 +63,7 @@ From a shell, the same commands are `node bin/pixelbolt.js validate | inspect | 
 - Build one good resting frame, then make the others with `from` and small changes. Give holds and impacts their own durations; 80–200 ms per frame is a good start.
 - Inspect every frame, including at native size (`native: true`), and read a `grid` of a region before changing exact pixels. Check that each patch changed only what you meant.
 - A valid recipe can still look bad. Judge the image and the playback, not the absence of errors.
+- Work in a loop: inspect, patch, render with `expect`, then read the reply's `check` and fix every problem it lists before you hand the files on.
 - For a ready-made effect (campfire, torch, smoke, explosion, splash, waterfall, potion, honey, slime), start from a fluid preset in Pixelbolt's `examples/*.fluid.json` and compile it rather than drawing fire by hand.
 
 ## More help
