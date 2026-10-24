@@ -182,6 +182,10 @@ test('MCP render shares resolved recipes and revisions, embeds PNGs, survives lo
   assert.deepEqual(embedded.info.share, shared.info.share);
   await checkBundle(embedded.info.directory, bundle, blink);
   assert.equal(await readEmbeddedRecipe(Buffer.from(embedded.result.content[1].data, 'base64')), null);
+  const withFrames = await mcp.call({ project: blink, embedRecipe: true, sequence: { fps: 10 } }), sequence = path.join(withFrames.info.directory, 'sequence');
+  const framePNGs = (await readdir(sequence)).filter(name => name.endsWith('.png'));
+  assert.ok(framePNGs.length > 1);
+  for (const name of framePNGs) assert.equal(JSON.stringify((await readEmbeddedRecipe(await readFile(path.join(sequence, name))))?.recipe), JSON.stringify(blink), name);
   const long = await mcp.call({ project: oversized, share: true, embedRecipe: true });
   assert.equal(long.info.ok, true); assert.match(long.info.share.error, /over the 16,384-character limit/);
   assert.deepEqual(Object.keys(long.info.share), ['error']);

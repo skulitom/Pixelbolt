@@ -223,7 +223,8 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
           try { const link = await shareLink(recipe, version); shared = { link, characters: link.length }; }
           catch (error) { shared = { error: error.message }; }
         }
-        if (embedRecipe === true) await embedBundleRecipe(bundle, recipe, version);
+        // Every PNG this call writes carries the recipe, video frames included.
+        if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
         const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
         const files = await writeBundle(bundle, out);
         if (frames) await writeBundle(frames, path.join(out, 'sequence'));
