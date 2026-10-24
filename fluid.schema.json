@@ -243,6 +243,57 @@
             "maximum": 4,
             "description": "Liquid: how strongly it holds on to walls and obstacles. Liquid touching a solid stays on it unless pulled away faster than about adhesion ÷ 2 pixels per frame, so a film clings under a ledge, to a spoon or down a jar's side. Default 0."
           },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "frame": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 255,
+                  "description": "The frame (within the cycle, for a loop) the change starts on."
+                },
+                "over": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 256,
+                  "description": "Frames to move to the new values in a straight line; default 0, at once."
+                },
+                "yield": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 16
+                },
+                "viscosity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 64
+                },
+                "adhesion": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "gravity": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -2,
+                    "maximum": 2
+                  },
+                  "maxItems": 2,
+                  "minItems": 2
+                }
+              },
+              "required": [
+                "frame"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 16,
+            "description": "Liquid: change yield, viscosity, adhesion or gravity at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
+          },
           "fill": {
             "type": "array",
             "items": {

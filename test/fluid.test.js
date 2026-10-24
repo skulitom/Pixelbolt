@@ -425,6 +425,29 @@ test('carried gas is thrown like dust, drops at obstacles and runs live as compi
   }
 });
 
+test('keys change a liquid on cue: a held heap gives way, a clinging film drops', () => {
+  const heap = keys => compileFluid(goo({ frames: 60, yield: 4, apic: true, ...(keys && { keys }) }, [{ x: 18, y: 8, w: 12, h: 24 }])).recipe;
+  const height = (recipe, f) => 32 - highest(drawn(recipe, f));
+  // Held up by its yield, the heap stands until the key drops it, then slumps within ten frames.
+  const [held, cued, ramped] = [heap(null), heap([{ frame: 40, yield: 0.3 }]), heap([{ frame: 40, yield: 0.3, over: 15 }])];
+  assert.deepEqual(cued.frames.slice(0, 40), held.frames.slice(0, 40), 'nothing changes before the key');
+  assert.ok(height(held, 59) >= 19 && height(cued, 39) >= 19 && height(cued, 50) <= height(cued, 39) - 6, `held ${height(held, 59)}, cued ${height(cued, 39)} then ${height(cued, 50)}`);
+  assert.ok(height(ramped, 45) > height(cued, 45), 'a key with over eases in');
+  // A film that adhesion holds under a ledge drops once a key sets adhesion to 0.
+  const film = compileFluid(goo({ frames: 40, adhesion: 4, obstacles: [{ symbol: 'slab', x: 14, y: 6 }], keys: [{ frame: 20, adhesion: 0 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe;
+  const under = f => drawn(film, f).filter(([, y]) => y === 7).length;
+  assert.ok(under(19) >= 8 && under(39) === 0, `${under(19)} pixels under the ledge at frame 19, ${under(39)} at 39`);
+  // A thick liquid may get its viscosity from a key alone, and slip with it; a live runner follows the keys.
+  const source = goo({ frames: 30, slip: true, keys: [{ frame: 10, viscosity: 16 }, { frame: 20, gravity: [0.3, 0] }] }, [{ x: 18, y: 14, w: 12, h: 12 }]);
+  const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
+  for (let f = 0; f < 30; f++) {
+    live.step();
+    const cells = new Set(drawn(recipe, f).map(([x, y]) => y * 48 + x)), seen = new Set();
+    live.render().keys.forEach((row, y) => [...row].forEach((char, x) => { if (char !== '.') seen.add(y * 48 + x); }));
+    assert.deepEqual(seen, cells, `frame ${f}`);
+  }
+});
+
 test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () => {
   const ball = burst => compileFluid({ ...gas(null), width: 64, height: 64, effects: { e: { kind: 'liquid', frames: 9, seed: 2, gravity: [0, 0.05], fill: [{ at: [32, 30], radius: 8, ...(burst && { burst }) }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } }).recipe;
   const blobs = cells => { const set = new Set(cells.map(([x, y]) => y * 64 + x)), seen = new Set(); let n = 0; for (const c of set) { if (seen.has(c)) continue; n++; const stack = [c]; seen.add(c); while (stack.length) { const d = stack.pop(); for (const e of [d - 1, d + 1, d - 64, d + 64]) if (set.has(e) && !seen.has(e) && Math.abs((e % 64) - (d % 64)) <= 1) { seen.add(e); stack.push(e); } } } return n; };
@@ -504,6 +527,10 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: 'no' }]; }, 'fluid.effects.plume.obstacles[0].solid', /true or false/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { pieces: 4 } }] }); }, 'fluid.effects.plume.fill[0].burst.speed', /pixels per frame/);
   bad(e => { Object.assign(e, { kind: 'liquid', emitters: [{ at: [8, 8], rate: 1, carry: {} }] }); }, 'fluid.effects.plume.emitters[0].carry', /liquid particles/);
+  bad(e => { e.keys = [{ frame: 2, yield: 1 }]; }, 'fluid.effects.plume.keys', /applies to liquids/);
+  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 6, yield: 1 }] }); }, 'fluid.effects.plume.keys[0].frame', /0 to 5/);
+  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3, yield: 1 }, { frame: 2, yield: 0 }] }); }, 'fluid.effects.plume.keys[1].frame', /frame order/);
+  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
   bad(e => { e.emitters = [{ ...emitter, density: -1, carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /draining emitter/);
   bad(e => { e.emitters = [{ ...emitter, carry: { drag: 2 } }]; }, 'fluid.effects.plume.emitters[0].carry.drag', /0 to 1/);
   bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { speed: 2, pieces: 1 } }] }); }, 'fluid.effects.plume.fill[0].burst.pieces', /2 to 64/);

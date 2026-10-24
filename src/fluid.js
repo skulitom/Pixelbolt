@@ -195,20 +195,55 @@ function readShape(value, path, width, height) {
   return (x, y) => inDisc(x, y) && inBox(x, y);
 }
 
+// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion or gravity, moving
+// there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and follows
+// the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
+const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity'];
+function readKeys(value, path, frames, base) {
+  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity }');
+  let last = -1;
+  const keys = value.map((key, i) => {
+    const kp = `${path}[${i}]`;
+    fields(key, ['frame', 'over', ...KEYED], kp);
+    const frame = integer(key.frame, `${kp}.frame`, 0, frames - 1);
+    if (frame < last) fail(`${kp}.frame`, 'keys go in frame order');
+    last = frame;
+    if (!KEYED.some(name => key[name] !== undefined)) fail(kp, `a key changes at least one of ${KEYED.join(', ')}`);
+    return {
+      frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256),
+      ...(key.yield !== undefined && { yield: number(key.yield, `${kp}.yield`, 0, 16) }), ...(key.viscosity !== undefined && { viscosity: number(key.viscosity, `${kp}.viscosity`, 0, MAX_VISCOSITY) }),
+      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) })
+    };
+  });
+  const blend = (from, to, t) => (Array.isArray(from) ? [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t] : from + (to - from) * t);
+  return Array.from({ length: frames }, (_, f) => {
+    const now = {};
+    for (const name of KEYED) {
+      let from = base[name], value = base[name];
+      for (const key of keys) {
+        if (key[name] === undefined || key.frame > f) continue;
+        value = key.over && f < key.frame + key.over ? blend(from, key[name], (f - key.frame) / key.over) : key[name];
+        from = key[name];
+      }
+      now[name] = value;
+    }
+    return now;
+  });
+}
+
 function readEffect(effect, path, source) {
   const { width, height, palette, symbols } = source;
-  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'light', 'outline', 'cleanup'], path);
+  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'light', 'outline', 'cleanup', 'keys'], path);
   const kind = effect.kind ?? 'gas';
   if (!FLUID_KINDS.includes(kind)) fail(`${path}.kind`, 'expected gas (smoke, fire, steam, magic) or liquid (water, potions)');
   const liquid = kind === 'liquid';
   if (liquid && effect.advection !== undefined) fail(`${path}.advection`, 'advection applies to gases; a liquid\'s particles carry it');
-  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill']) {
+  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill', 'keys']) {
     if (effect[key] !== undefined) fail(`${path}.${key}`, liquid ? `${key} applies to gases; liquids fall by gravity and keep their volume` : `${key} applies to liquids; gases rise by buoyancy`);
   }
   const advection = effect.advection ?? 'smooth';
   if (!ADVECTION.includes(advection)) fail(`${path}.advection`, 'expected smooth (plain semi-Lagrangian, the default) or sharp (MacCormack with a limiter: crisper edges and swirls)');
   const viscosity = number(effect.viscosity ?? 0, `${path}.viscosity`, 0, MAX_VISCOSITY), yieldStress = liquid ? number(effect.yield ?? 0, `${path}.yield`, 0, 16) : 0;
-  if (effect.slip !== undefined && !viscosity && !yieldStress) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
   if (!liquid && effect.whitewater !== undefined) fail(`${path}.whitewater`, 'whitewater is spray and foam thrown off a liquid; it applies to liquids');
   const frames = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop === undefined ? false : boolean(effect.loop, `${path}.loop`);
   const durations = Array.isArray(effect.duration)
@@ -274,6 +309,11 @@ function readEffect(effect, path, source) {
   if (!Array.isArray(effect.look) || !effect.look.length || effect.look.length > LIMITS.looks) fail(`${path}.look`, `expected 1–${LIMITS.looks} layers that map a field to palette colours`);
   const look = effect.look.map((layer, i) => readLook(layer, `${path}.look[${i}]`, context));
   const gravity = effect.gravity === undefined ? [0, 0.3] : pair(effect.gravity, `${path}.gravity`, -2, 2);
+  const adhesion = liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0;
+  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity });
+  const most = { yield: yieldStress, viscosity, adhesion };
+  if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
+  if (effect.slip !== undefined && !most.viscosity && !most.yield) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
   const whitewater = listed(effect.whitewater, 'whitewater', LIMITS.whitewater).map((layer, i) => readWhitewater(layer, `${path}.whitewater[${i}]`, context, gravity));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
@@ -295,7 +335,7 @@ function readEffect(effect, path, source) {
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
-    tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion: liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0,
+    tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion, schedule, most,
     outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0)
   };
 }
@@ -1160,8 +1200,8 @@ function createLiquid(effect, width, height) {
     uw: new Float64Array(U), vw: new Float64Array(V), uOld: new Float64Array(U), vOld: new Float64Array(V), uValid: new Uint8Array(U), vValid: new Uint8Array(V),
     fluid: new Uint8Array(N), cells: new Uint16Array(N), target: new Float64Array(N), splat: new Float64Array(N), blur: new Float64Array(N), speedSum: new Float64Array(N),
     cux: new Float64Array(1024), cuy: new Float64Array(1024), cvx: new Float64Array(1024), cvy: new Float64Array(1024), ea: new Float64Array(1024), eb: new Float64Array(1024), apic: effect.apic,
-    cling: effect.adhesion ? clingField(g) : null, pressure: effect.viscosity || effect.yield ? new Float64Array(N) : null,
-    strain: effect.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N) } : null
+    cling: effect.most.adhesion ? clingField(g) : null, pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
+    strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N) } : null
   };
   return state;
 }
@@ -1674,7 +1714,7 @@ function renderFields(effect, base, width, height) {
 // Cell updates per cell per step, for the work budget: one per pressure sweep plus the transfers and advection. A thick
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, sharp advection about
 // thirty.
-const stepWork = effect => effect.iterations * (effect.viscosity || effect.yield ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
+const stepWork = effect => effect.iterations * (effect.most.viscosity || effect.most.yield ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
 const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
@@ -1705,9 +1745,9 @@ function emitFrame(run, t, cycle, factors = null) {
     return emit(cycle, 1 / steps);
   });
 }
-// The solver's substeps for one frame.
-function solveFrame(run) {
-  const { effect, state } = run, dt = 1 / effect.substeps;
+// The solver's substeps for one frame, with the settings its keys give frame `cycle` of the effect's cycle.
+function solveFrame(run, cycle = 0) {
+  const { state } = run, effect = run.effect.schedule ? { ...run.effect, ...run.effect.schedule[cycle] } : run.effect, dt = 1 / effect.substeps;
   // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
   if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
   for (let s = 0; s < effect.substeps; s++) effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
@@ -1761,7 +1801,7 @@ function simulate(effect, context) {
   for (let t = 0; t < total; t++) {
     const cycle = loop ? t % frames : t, out = t - begin, recording = !loop || (out >= 0 && out < frames);
     const here = emitFrame(run, t, cycle);
-    solveFrame(run);
+    solveFrame(run, cycle);
     if (liquid && state.full) crowded(path);
     if (state.overflow) fail(path, `more than ${LIMITS.carriers} carriers are in the air at once; lower the carrying emitters' size or rate, or raise their release`);
     if (loop && out < -blend && !run.sparks.length) continue;
@@ -1934,7 +1974,7 @@ export function createLiveFluid(source, options = {}) {
     const cycle = t % effect.frames, here = emitFrame(run, t, cycle, boosts.map(b => (b.frames ? b.factor : 1)));
     queue.forEach((input, n) => input(n));
     queue = [];
-    solveFrame(run);
+    solveFrame(run, cycle);
     fieldsOf(run);
     sparkFrame(run, here, cycle, true);
     overlay = [];

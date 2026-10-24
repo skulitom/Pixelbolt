@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Liquids that hold, then let go, on cue
+
+- `keys` on a liquid change its `yield`, `viscosity`, `adhesion` or `gravity` from a chosen frame, at once or in a straight line `over` some frames, so the decisive moment lands where you want it. A heap held up by `yield: 4` stands 21 pixels high until `{ frame: 40, yield: 0.3 }`, then slumps to 12 pixels by frame 50; `{ frame: 30, adhesion: 0 }` drops a film that adhesion held under a ledge. Each setting follows the keys that name it, in frame order; a loop repeats them every cycle, and a live runner follows them too. Liquids without keys are unchanged.
+
 ### Thrown dust: gas carried on heavy carriers
 
 - A gas emitter with `carry: { drag, release, gravity }` throws its smoke and heat on carriers, one per covered cell, launched with its velocity, vortex, outward expand and noise. Each carrier slows toward the air's velocity by `drag` a frame, hands `release` of what it holds to the air a frame, falls by its own `gravity`, and drops the rest where it meets an obstacle; what it holds is drawn with the smoke. A puff of gas can't be thrown through still air (the pressure solve halves its speed at once), but dust is grains: two bursts thrown sideways at 8 pixels a frame now roll out about 90 pixels across in six frames, against about 26 without `carry`. At most 8,192 carriers are in the air at once.
