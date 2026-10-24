@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluid figures per frame, to tune by numbers
+
+- Each fluid effect's metadata now has `figures`, one list per figure with an entry per frame: `box` (the fluid's drawn pixels, sparks left out), `middle` (the middle of its density), `amount` (smoke, or cells' worth of water), `pieces` (separate pieces drawn), `speed` (top speed where drawn) and, for liquids, `particles`. Agents had to write scripts to measure a heap's height, a cloud's spread or how many pieces a splash broke into; one compile now says. Live runners give the same figures for the current frame with `live.measure()`. Recipes are unchanged.
+
 ### The caption example spells Pixelbolt
 
 - `examples/caption.json`, the studio's Caption sample, types PIXELBOLT (PIX, PIXELB, PIXELBOLT) instead of the old name.
