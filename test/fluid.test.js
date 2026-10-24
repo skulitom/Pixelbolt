@@ -403,6 +403,20 @@ test('decorations are drawn over or under the fluid but never met by it', () => 
   assert.ok(above(plume(false)) >= 3 && above(plume(true)) === 0, `${above(plume(false))} pixels of smoke rose past the decoration, ${above(plume(true))} past the lid`);
 });
 
+test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () => {
+  const ball = burst => compileFluid({ ...gas(null), width: 64, height: 64, effects: { e: { kind: 'liquid', frames: 9, seed: 2, gravity: [0, 0.05], fill: [{ at: [32, 30], radius: 8, ...(burst && { burst }) }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } }).recipe;
+  const blobs = cells => { const set = new Set(cells.map(([x, y]) => y * 64 + x)), seen = new Set(); let n = 0; for (const c of set) { if (seen.has(c)) continue; n++; const stack = [c]; seen.add(c); while (stack.length) { const d = stack.pop(); for (const e of [d - 1, d + 1, d - 64, d + 64]) if (set.has(e) && !seen.has(e) && Math.abs((e % 64) - (d % 64)) <= 1) { seen.add(e); stack.push(e); } } } return n; };
+  const width = cells => Math.max(...cells.map(([x]) => x)) - Math.min(...cells.map(([x]) => x)) + 1;
+  const [still, burst] = [ball(null), ball({ speed: 2.5 })];
+  // A plain ball stays one ball; a burst one is in pieces three times as wide by frame 8, with about the same water.
+  assert.equal(blobs(drawn(still, 8)), 1);
+  assert.ok(blobs(drawn(burst, 8)) >= 6 && width(drawn(burst, 8)) >= 3 * width(drawn(still, 8)), `${blobs(drawn(burst, 8))} pieces, ${width(drawn(burst, 8))} pixels wide`);
+  assert.ok(drawn(burst, 1).length >= 0.85 * drawn(still, 1).length, `${drawn(burst, 1).length} pixels against ${drawn(still, 1).length}`);
+  // Speeds picked per piece spread the pieces unevenly; the same source bursts the same way every time.
+  assert.deepEqual(ball({ speed: [1.5, 3.5], pieces: 12 }), ball({ speed: [1.5, 3.5], pieces: 12 }));
+  assert.notDeepEqual(ball({ speed: [1.5, 3.5], pieces: 12 }), ball({ speed: 2.5, pieces: 12 }));
+});
+
 test('setups that compile but make nothing, or start stuck, are warned about with the field to change', async () => {
   // No preset sets off a warning.
   for (const name of FLUID_SHOWCASE) assert.equal((await example(name)).warnings, undefined, name);
@@ -466,6 +480,8 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, draw: 'none' }]; }, 'fluid.effects.plume.obstacles[0].draw', /decoration .* over or under/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, surface: 'smooth' }]; }, 'fluid.effects.plume.obstacles[0].surface', /never meets a decoration/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: 'no' }]; }, 'fluid.effects.plume.obstacles[0].solid', /true or false/);
+  bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { pieces: 4 } }] }); }, 'fluid.effects.plume.fill[0].burst.speed', /pixels per frame/);
+  bad(e => { Object.assign(e, { kind: 'liquid', fill: [{ at: [8, 8], radius: 3, burst: { speed: 2, pieces: 1 } }] }); }, 'fluid.effects.plume.fill[0].burst.pieces', /2 to 64/);
   bad(e => { e.light = [0, 0]; }, 'fluid.effects.plume.light', /toward the light/);
   bad(e => { e.outline = 'z'; }, 'fluid.effects.plume.outline', /palette key/);
   bad(e => { e.kind = 'liquid'; e.emitters = []; e.fill = [{ x: 0, y: 0 }]; }, 'fluid.effects.plume.fill[0].w', /integer from 1 to 16/);

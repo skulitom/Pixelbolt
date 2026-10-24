@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Liquid bursts in mid-air
+
+- A liquid fill with `burst: { speed, pieces }` breaks into seeded pieces with a one-pixel gap between them, each flying straight out from the fill's middle at its own speed (a number, or `[min, max]` picked per piece) plus the fill's `velocity`. An outward velocity on one connected blob is cancelled by the pressure solve, since a liquid can't expand; separate pieces moving as one each keep theirs. The gaps' water goes to the pieces, so the volume is kept. A ball of radius 8 bursting at 2.5 pixels a frame is in six or more pieces, three times as wide, eight frames later.
+
 ### Fluid decorations the simulation ignores
 
 - A fluid obstacle with `solid: false` is a decoration: it is stamped over or under the fluid as `draw` says, but the fluid never meets it. A basketball net, a candle flame, a label or a background no longer has to be a solid the water slides along, or painted on after `render()`. A decoration can't use `draw: "none"` or `surface`.

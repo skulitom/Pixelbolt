@@ -293,6 +293,42 @@
                   "maxItems": 2,
                   "minItems": 2,
                   "description": "Starting velocity [x, y] in pixels per frame."
+                },
+                "burst": {
+                  "type": "object",
+                  "properties": {
+                    "speed": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 16
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 16
+                          },
+                          "maxItems": 2,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "How fast each piece flies out from the middle of the fill, in pixels per frame; [min, max] picks per piece."
+                    },
+                    "pieces": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 64,
+                      "description": "How many pieces. Default 8."
+                    }
+                  },
+                  "required": [
+                    "speed"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Break the fill into seeded pieces with a one-pixel gap between them, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps goes to their pieces, so the volume is kept."
                 }
               },
               "required": [],

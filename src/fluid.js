@@ -252,8 +252,14 @@ function readEffect(effect, path, source) {
   if (new Set(walls).size !== walls.length) fail(`${path}.walls`, 'each edge is listed once');
   const fills = listed(effect.fill, 'fill', LIMITS.fills).map((entry, i) => {
     const fp = `${path}.fill[${i}]`;
-    fields(entry, ['x', 'y', 'w', 'h', 'at', 'radius', 'velocity'], fp);
-    return { inside: readShape(entry, fp, width, height), velocity: entry.velocity === undefined ? [0, 0] : pair(entry.velocity, `${fp}.velocity`, -16, 16) };
+    fields(entry, ['x', 'y', 'w', 'h', 'at', 'radius', 'velocity', 'burst'], fp);
+    let burst = null;
+    if (entry.burst !== undefined) {
+      fields(entry.burst, ['speed', 'pieces'], `${fp}.burst`);
+      if (entry.burst.speed === undefined) fail(`${fp}.burst.speed`, 'expected how fast the pieces fly apart, in pixels per frame: a number or [min, max]');
+      burst = { speed: range(entry.burst.speed, `${fp}.burst.speed`, 0, 16), pieces: integer(entry.burst.pieces ?? 8, `${fp}.burst.pieces`, 2, 64) };
+    }
+    return { inside: readShape(entry, fp, width, height), velocity: entry.velocity === undefined ? [0, 0] : pair(entry.velocity, `${fp}.velocity`, -16, 16), burst };
   });
   if (!Array.isArray(effect.emitters) || effect.emitters.length > LIMITS.emitters || (!effect.emitters.length && !fills.length)) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters${liquid ? ' (or none, with a fill)' : ''}`);
   const emitters = effect.emitters.map((emitter, i) => readEmitter(emitter, `${path}.emitters[${i}]`, context));
@@ -1144,7 +1150,54 @@ function seedCell(state, i, j, want, have, velocity, key) {
 function fillLiquid(state, effect) {
   const { g } = state, { W, H, pixels: solid } = g;
   effect.fills.forEach((fill, f) => {
+    if (fill.burst) { burstFill(state, effect, fill, f); return; }
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!solid[j * W + i] && fill.inside(i + 0.5, j + 0.5)) seedCell(state, i, j, PER_CELL, 0, fill.velocity, [effect.seed, 1000 + f, i, j]);
+  });
+}
+// A fill that bursts: an outward velocity inside one connected blob is something an incompressible liquid can't have,
+// so the pressure solve would cancel it. Instead the fill breaks into `pieces` seeded pieces (each cell joins the
+// nearest of that many seeded cells) with a one-pixel gap of air between neighbours, and each piece flies straight out
+// from the fill's middle at its own speed, plus the fill's velocity. A piece moving as one is divergence-free, so the
+// pressure solve keeps it.
+function burstFill(state, effect, fill, f) {
+  const { W, H, pixels: solid } = state.g, cells = [];
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (!solid[j * W + i] && fill.inside(i + 0.5, j + 0.5)) cells.push(j * W + i);
+  if (!cells.length) return;
+  const { pieces, speed } = fill.burst, seeds = [];
+  for (let k = 0; seeds.length < Math.min(pieces, cells.length) && k < 8 * pieces; k++) {
+    const c = cells[Math.min(cells.length - 1, Math.floor(random(effect.seed, 1000 + f, k, SALT.spawn) * cells.length))];
+    if (!seeds.includes(c)) seeds.push(c);
+  }
+  const piece = new Int16Array(W * H).fill(-1);
+  for (const c of cells) {
+    const x = c % W, y = (c - x) / W;
+    let best = 0, near = Infinity;
+    seeds.forEach((s, n) => { const dx = s % W - x, dy = (s - (s % W)) / W - y, d = dx * dx + dy * dy; if (d < near) { near = d; best = n; } });
+    piece[c] = best;
+  }
+  // A cell beside a piece numbered lower becomes the gap between them.
+  const kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
+  let cx = 0, cy = 0;
+  for (const c of cells) { cx += c % W + 0.5; cy += Math.floor(c / W) + 0.5; }
+  cx /= cells.length; cy /= cells.length;
+  const sums = seeds.map(() => [0, 0, 0]);
+  for (const c of kept) { const s = sums[piece[c]]; s[0] += c % W + 0.5; s[1] += Math.floor(c / W) + 0.5; s[2]++; }
+  const velocities = sums.map(([sx, sy, n], k) => {
+    if (!n) return fill.velocity;
+    const dx = sx / n - cx, dy = sy / n - cy, d = Math.sqrt(dx * dx + dy * dy), v = pick(speed, random(effect.seed, 1000 + f, k, SALT.speed));
+    return d < 0.5 ? fill.velocity : [fill.velocity[0] + v * dx / d, fill.velocity[1] + v * dy / d];
+  });
+  for (const c of kept) { const i = c % W, j = (c - i) / W; seedCell(state, i, j, PER_CELL, 0, velocities[piece[c]], [effect.seed, 1000 + f, i, j]); }
+  // The gaps' water goes to their own pieces, a cell's worth to each of its cells in turn, so a burst keeps its volume;
+  // the crowded pieces swell a little as they fly.
+  const own = seeds.map(() => []), extra = seeds.map(() => 0), keep = new Set(kept);
+  for (const c of kept) own[piece[c]].push(c);
+  for (const c of cells) if (!keep.has(c)) extra[piece[c]]++;
+  own.forEach((list, n) => {
+    for (let k = 0; k < extra[n] && list.length; k++) {
+      const c = list[k % list.length], i = c % W, j = (c - i) / W, have = PER_CELL * (1 + Math.floor(k / list.length));
+      seedCell(state, i, j, have + PER_CELL, have, velocities[n], [effect.seed, 1000 + f, i, j]);
+    }
   });
 }
 function emitLiquid(state, e, index, cycle, seed, along = cycle, factor = 1) {
