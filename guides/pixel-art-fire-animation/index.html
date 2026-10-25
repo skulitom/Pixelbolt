@@ -90,11 +90,11 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="lead">These fire animations are Pixelbolt recipes: short JSON files that render to the same pixels every time. The campfire and the torch come from a small simulation of heat and smoke; the flame after them is drawn by hand in four frames.</p>
 <p>Open one in the Pixelbolt playground, change a value or two, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
 <p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#campfire">Campfire</a> · <a href="#torch">Torch</a> · <a href="#ember">A hand-drawn flame</a></p>
-<p class="muted">Reading the field names below: an effect's settings sit under <code>effects</code> → its name. An emitter (a source of heat, smoke, liquid or particles) is one entry in its <code>emitters</code> list, found by its <code>"name"</code>. Frames count from 0 (the playground's frame counter starts at 1), and x and y are pixels from the top-left corner.</p>
+<p class="muted">Reading the field names below: an effect's settings sit under <code>effects</code> → its name. An emitter (a source of heat, smoke, liquid or particles) is one entry in its <code>emitters</code> list, found by its <code>"name"</code> where it has one. Frames count from 0 (the playground's frame counter starts at 1), and x and y are pixels from the top-left corner.</p>
 
 <section id="campfire">
 <h2>Campfire</h2>
-<figure class="stage"><picture><source srcset="campfire-still.png" media="(prefers-reduced-motion: reduce)"><img src="campfire.gif" width="128" height="192" alt="Animated pixel art campfire with rising embers and smoke" decoding="async"></picture></figure>
+<figure class="stage"><picture><source srcset="campfire-still.png" media="(prefers-reduced-motion: reduce)"><img src="campfire.gif" width="128" height="192" alt="Pixel art campfire with rising embers and smoke" decoding="async"></picture></figure>
 <p>Flames rise from crossed logs, embers drift up and grey smoke curls away.</p>
 <p class="size">32 × 48 pixels, 24 frames of 70 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=hVTLjqMwEPyX2msP4h3Wx_zCHuYQ5WDAJBYGR8bMTBTx76s2IcNIK62lSCmqqa7udvNAZ90gPQRu-kuZzrqLeuvMrFsQPpSbtB0hEsIoBwWBRg63TjsFwqdu_RUiSwlXpS9XD5FXhJs0ynsF8cAMgV95mxdFBcIfRqUqywMjx6iusjTtQLCMuvhwSGsQ7gF1TZOzi_cVdWWbgFAzKmRWpQUIR0aVLGRWgtAzSmXSJBUWwnQfamsmdnJxdh5biBP6_xyW-V_ImWDsZWK5KIqivo9-nBWDmOyPxz3dM97I_ljX3zRTdc3sStZ8Vnql6rruX7Lf9Ea9ZAPdr_TKrBk2MtD9k9m8fZNbwA7ivBBU16nGh26-LoF4oHNyUBNEmhPa2UkfLswh5hbZG4R3syJMSrUQGeFTGhMaV1vv7cCtrGd7l2Nzh4ijvCB8WOd1o_3rQaunSd-eynEUlwWhsdbo8cKYM9t68rIxbOT0eA4eYp0S4SukvkPk8UI7-nkrQkC8BpSE1slPCIx2VFjOBDVo75VbpZ9r8FwBXpxTUlKenglOtnqeIEr-ywuQELwabspJP3OzkightGqcttp4w4xdSz3F9JZErDNaPYXonNAZ3fTKcXTJ1p_p1VCzoW8DWb4zkO0MTDfp-nVodh49CxUEozsFcaoo4fcaa2woD-9h-daf5dl4J7XZhijHi-HX0iKm9Hd8ZvUw11McZRRHh3NoXhhKXC1LWBPbh751WpkW4lX-PuscPg6c7erUdLWmnYJmUlIcscFW--vahIK_LzyNEQIf0swK3JZNfd_ufQYX6lnrev9HJnafpxRHZUrJz4TLeVmWvw">Open the campfire in the playground</a></p>
@@ -111,7 +111,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="torch">
 <h2>Torch</h2>
-<figure class="stage"><picture><source srcset="torch-still.png" media="(prefers-reduced-motion: reduce)"><img src="torch.gif" width="64" height="128" alt="Animated pixel art torch with a flickering flame" loading="lazy" decoding="async"></picture></figure>
+<figure class="stage"><picture><source srcset="torch-still.png" media="(prefers-reduced-motion: reduce)"><img src="torch.gif" width="64" height="128" alt="Pixel art torch with a flickering flame" loading="lazy" decoding="async"></picture></figure>
 <p>A small flame flickers on a wooden handle with a metal cup and throws the odd ember.</p>
 <p class="size">16 × 32 pixels, 16 frames of 70 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=nZLBbqQwEET_pfbaQWBwhviYy3xCDiMOBmywMBgZk81oxL-vbLLR7HU5QBey_crV_YB2fpYBAqv5UlY7P6gXbXfTg_Cp_GbcAlEQFjkrCATnuxGE36YPI0TxShiVGcYAUTLCKq0KQUE84CHwq2NlyxQILirNL5pJEO5J6Z7xCwgfp9KX_hWENirelZJVILxHVXdclgyEISlZ67c3EK6JUHV1p0GYomKskEWHg7Dd59bZLTo5PYsbpmt8prh4uF6vQ6yyaRiGKUvVe9v-b5VN05RlaA6C0lp14Zn8gPZyVtuZV797GVKsl5xgnVshgt8VYVOqh6gI7e7ucunuEHlWccKn88F0Jvz86M22mfX7mDwrKkLnnDXLEGVZEXovU52XBNduQXY2Grg9vpN56uUXBE89YexoCGo2ISh_Lv5uu7bxS4iTcqszTqxoCF72Zt8gyoxHEfteEIKaV-Vl2H3UWRHnyLrT_S2nl7hzcWZT0V5N0NZ0k_LJOD_oh6nmNrp4ghb8CVr8A91W6aeUeef2JaRQOMEarSBunOomJmRduhY-0gzGqWwIwUtj_7ZALoONOxjnxOrI29bUlVuelZRnvDliRta5KeWjjbJ9zPLp0s8knygn7SPRRq-20dl-O89klGdVRXn2Gl9v0WdvwnjmwY_mOI4_">Open the torch in the playground</a></p>
@@ -128,7 +128,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="ember">
 <h2>A hand-drawn flame</h2>
-<figure class="stage"><picture><source srcset="ember-still.png" media="(prefers-reduced-motion: reduce)"><img src="ember.gif" width="96" height="96" alt="Four-frame pixel art flame flickering" loading="lazy" decoding="async"></picture></figure>
+<figure class="stage"><picture><source srcset="ember-still.png" media="(prefers-reduced-motion: reduce)"><img src="ember.gif" width="96" height="96" alt="Pixel art flame drawn by hand in four frames" loading="lazy" decoding="async"></picture></figure>
 <p>Not every fire needs a simulation. This flame is one shape written as rows of text, then stamped, edited and mirrored across four frames. The playground lists it as Embers.</p>
 <p class="size">24 × 24 pixels, 4 frames of 80 to 120 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=lVPLbqNAEPyXynXWCq-VPV8SKfKhgSFGGWjU4I2Rxb9HMwNrQ5xo1xfcpa6qfkxf8cdIX3MLHSm01BhomCY3AoWPuhxO0HGqcDL122kI_zuyZhgM9BUMjafflCRpCgVxUVFleZZAgVxUJYc8K6Ew-qgq833mlENURQVhUujHJmfbO8XK-hpesZt_zOELtUAsW4hlm8UitIYcsoYCMjM95BEiCgYeEqJxHO8hFho_bti3kGeutB7IO0xk0xDzUtVuh-OkUAk1pod-vS4rqmxdvBv5RVAoz0JDWGH0rMBdyOQOGv1ATYdlwp7oBBQu0KnfSjYdJ_VFN1_pHp5dDdxsjFdOhTUkQTiKgrLfs3s80Inz8Hm2bmf_KPZpqcIlnkkx9EGhYMvuLQn-srr6YuxMyzwtueWNeNhDsZ5N_P-zSZUT616gBzmbhyblymT_D4O6a2W_7YR-6jjadHxUoLZuvLW_nfwsrb-h5bmsirhf7f2Ibp0cJ3eLJ2MGp1KwPTdO2J98WdbtG3Q0TZ8">Open the hand-drawn flame in the playground</a></p>
