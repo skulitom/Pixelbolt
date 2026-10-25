@@ -4,6 +4,7 @@ import { mkdtemp, rm, writeFile, readFile, readdir, mkdir, symlink, link } from 
 import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import { existsSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startMCP } from '../src/mcp.js';
@@ -150,11 +151,11 @@ test('pixel_render saveAs rebases every saved atlas, and refuses a sheet name th
   assert.equal(both.isError, false, JSON.stringify(both.info));
   assert.equal(JSON.parse(await readFile(path.join(project, 'a', 'hero.json'), 'utf8')).meta.image, 'hero.png');
   assert.equal(JSON.parse(await readFile(path.join(project, 'b', 'hero.json'), 'utf8')).meta.image, '../a/hero.png');
-  // #, ? and % in the name an atlas gives its sheet would be cut short or decoded by new URL() (loadSpriteSheet).
-  for (const sheet of ['art/he#ro.png', 'art/100%.png']) {
+  // A name new URL() (loadSpriteSheet) reads as another one: #, ? and % cut it short or decode it, a leading space goes.
+  for (const sheet of ['art/he#ro.png', 'art/100%.png', 'art/ hero.png']) {
     const { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet, atlas: 'art/hero.json' } });
     assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
-    assert.match(info.error, /#, \? and % break that name/);
+    assert.match(info.error, /reads as another name when it is loaded as a URL/);
   }
   await assert.rejects(readdir(path.join(project, 'art')));
   // Without an atlas naming it, such a sheet name is fine.
@@ -168,7 +169,7 @@ test('pixel_render saveAs never writes over a file the recipe was made from, eve
   const linked = { ...spirit, palette: { $ref: 'palette.json' } };
   const { isError, info } = await mcp.render({ project: linked, saveAs: { recipe: 'palette.json' }, overwrite: true });
   assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
-  assert.match(info.error, /palette\.json is a file this recipe was made from/);
+  assert.match(info.error, /palette\.json is a palette or asset file this recipe references/);
   assert.deepEqual(JSON.parse(await readFile(path.join(project, 'palette.json'), 'utf8')), spirit.palette);
   await assert.rejects(readdir(path.join(project, 'output')));
 });
@@ -183,7 +184,7 @@ test('pixel_render saveAs protects the recipe\'s own files when it renders a rev
   for (const revision of [validated.info.revision, patched.info.revision]) {
     const { isError, info } = await mcp.render({ revision, saveAs: { atlas: 'palette.json' }, overwrite: true });
     assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
-    assert.match(info.error, /palette\.json is a file this recipe was made from/);
+    assert.match(info.error, /palette\.json is a palette or asset file this recipe references/);
   }
   assert.deepEqual(JSON.parse(await readFile(path.join(project, 'palette.json'), 'utf8')), spirit.palette);
 });
@@ -221,4 +222,33 @@ test('pixel_render saveAs on Windows: an export directory on a missing drive or 
     assert.equal(existsSync(path.join(other, `pixelbolt-test-${path.basename(project)}`)), false);
   }
   assert.deepEqual(await readdir(project), []);
+});
+
+test('pixel_render saveAs protects the files behind a revision a normals source compiles', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  await writeFile(path.join(project, 'palette.json'), JSON.stringify(spirit.palette));
+  const validated = await mcp.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'palette.json' } } });
+  const normals = await mcp.call('pixel_compile', { source: { format: 'pixelforge-normals', version: 1, recipe: { revision: validated.info.revision } } });
+  assert.equal(normals.isError, false, JSON.stringify(normals.info));
+  const { isError, info } = await mcp.render({ revision: normals.info.revision, saveAs: { recipe: 'palette.json' }, overwrite: true });
+  assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
+  assert.match(info.error, /palette\.json is a palette or asset file this recipe references/);
+});
+
+test('pixel_render saveAs puts replaced files back when a later one can\'t be replaced', { skip: process.platform !== 'win32' }, async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  await writeFile(path.join(project, 'a.png'), 'old a');
+  await writeFile(path.join(project, 'b.png'), 'old b');
+  // Another process holds b.png open with no sharing, so it can't be moved or replaced until that process ends.
+  const locked = path.join(project, 'b.png').replace(/'/g, "''");
+  const holder = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$f = [IO.File]::Open('${locked}', 'Open', 'ReadWrite', 'None'); 'locked'; [Console]::In.ReadLine() | Out-Null; $f.Close()`], { stdio: ['pipe', 'pipe', 'inherit'] });
+  t.after(() => { holder.stdin.end(); holder.kill(); });
+  await new Promise((resolve, reject) => { holder.stdout.on('data', chunk => { if (String(chunk).includes('locked')) resolve(); }); holder.on('exit', code => reject(new Error(`the lock holder exited with ${code}`))); });
+  const { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet: 'a.png', 'frames/blink.png': 'b.png' }, overwrite: true });
+  assert.equal(isError, true, JSON.stringify(info));
+  holder.stdin.end();
+  await new Promise(resolve => holder.on('exit', resolve));
+  assert.equal(await readFile(path.join(project, 'a.png'), 'utf8'), 'old a');
+  assert.equal(await readFile(path.join(project, 'b.png'), 'utf8'), 'old b');
+  assert.deepEqual((await readdir(project)).filter(name => name.endsWith('.tmp')), []);
 });
