@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pixel art effect guides: fire, explosions, smoke, water, slime and magic</title>
+<meta name="description" content="Short guides to pixel art effect animations made with Pixelbolt: each opens a ready recipe in the browser playground and shows how to change it and export a sprite sheet or GIF.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Pixel art effect guides: fire, explosions, smoke, water, slime and magic">
+<meta property="og:description" content="Short guides to pixel art effect animations made with Pixelbolt: each opens a ready recipe in the browser playground and shows how to change it and export a sprite sheet or GIF.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixelbolt fire previews: a campfire, a torch and a hand-drawn flame">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Pixel art effect guides: fire, explosions, smoke, water, slime and magic",
+  "description": "Short guides to pixel art effect animations made with Pixelbolt: each opens a ready recipe in the browser playground and shows how to change it and export a sprite sheet or GIF.",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/",
+  "inLanguage": "en",
+  "dateModified": "2026-10-25",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Pixelbolt",
+    "url": "https://skulitom.github.io/Pixelbolt/"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "Pixelbolt",
+    "url": "https://github.com/skulitom/Pixelbolt",
+    "applicationCategory": "MultimediaApplication",
+    "softwareVersion": "0.9.1",
+    "license": "https://opensource.org/licenses/MIT"
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/",
+        "name": "Pixel art fire animation: campfire and torch sprite sheets in your browser"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-explosion/",
+        "name": "Pixel art explosion animation: make an explosion sprite sheet in your browser"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-smoke-and-steam/",
+        "name": "Pixel art smoke and steam animation: smoke puff, steam vent and dust cloud"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/",
+        "name": "Pixel art water animation: waterfall, splash and drip sprite sheets in your browser"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-slime-and-honey/",
+        "name": "Pixel art slime and honey animation: squash, burst and drip sprite sheets in your browser"
+      },
+      {
+        "@type": "ListItem",
+        "position": 6,
+        "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-magic-effects/",
+        "name": "Pixel art magic effects: a spell swirl and a bubbling potion in your browser"
+      }
+    ]
+  }
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --button: #0b57d0; --button-fg: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --button: #8ab4f8; --button-fg: #10131a; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure.stage { background: var(--stage); border-radius: 6px; margin: 1rem 0; padding: 16px; display: flex; justify-content: center; }
+figure.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+.size { color: var(--muted); font-size: 0.92rem; }
+a.open { display: inline-block; background: var(--button); color: var(--button-fg); font-weight: 600; text-decoration: none; padding: 0.55rem 0.95rem; border-radius: 6px; }
+a.open:hover, a.open:focus-visible { text-decoration: underline; }
+.guides { list-style: none; padding: 0; }
+.guides li { margin: 0 0 1.6rem; }
+.guides img { display: block; width: 100%; max-width: 360px; height: auto; border-radius: 6px; image-rendering: pixelated; }
+.guides h2 { margin: 0.6rem 0 0.2rem; font-size: 1.15rem; }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../">Pixelbolt</a></nav>
+<h1>Pixel art effect guides</h1>
+<p class="lead">Each guide starts from a ready Pixelbolt recipe that opens in the browser playground with one click. Change a few named values, then download a sprite sheet, an atlas for your engine or a GIF. Pixelbolt is free and MIT-licensed, and the playground needs nothing installed.</p>
+<ul class="guides">
+<li><img src="pixel-art-fire-animation/preview.png" width="1200" height="630" alt="" decoding="async">
+<h2><a href="pixel-art-fire-animation/">Pixel art fire animation: campfire and torch sprite sheets in your browser</a></h2>
+<p>Fire: a campfire, a torch and a hand-drawn flame.</p></li>
+<li><img src="pixel-art-explosion/preview.png" width="1200" height="630" alt="" decoding="async">
+<h2><a href="pixel-art-explosion/">Pixel art explosion animation: make an explosion sprite sheet in your browser</a></h2>
+<p>Explosions: a fireball with smoke and sparks, and small particle bursts.</p></li>
+<li><img src="pixel-art-smoke-and-steam/preview.png" width="1200" height="630" alt="" loading="lazy" decoding="async">
+<h2><a href="pixel-art-smoke-and-steam/">Pixel art smoke and steam animation: smoke puff, steam vent and dust cloud</a></h2>
+<p>Smoke and steam: a cartoon smoke puff, a steam vent and a dust wave.</p></li>
+<li><img src="pixel-art-water-animation/preview.png" width="1200" height="630" alt="" loading="lazy" decoding="async">
+<h2><a href="pixel-art-water-animation/">Pixel art water animation: waterfall, splash and drip sprite sheets in your browser</a></h2>
+<p>Water: a waterfall, a splash, a drip and a dam break.</p></li>
+<li><img src="pixel-art-slime-and-honey/preview.png" width="1200" height="630" alt="" loading="lazy" decoding="async">
+<h2><a href="pixel-art-slime-and-honey/">Pixel art slime and honey animation: squash, burst and drip sprite sheets in your browser</a></h2>
+<p>Slime and honey: a squashing slime, a bursting slime, pouring honey and a honey drop.</p></li>
+<li><img src="pixel-art-magic-effects/preview.png" width="1200" height="630" alt="" loading="lazy" decoding="async">
+<h2><a href="pixel-art-magic-effects/">Pixel art magic effects: a spell swirl and a bubbling potion in your browser</a></h2>
+<p>Magic: a spell swirl and a bubbling potion.</p></li>
+</ul>
+<p><a href="../playground/">The playground</a> · <a href="../">Pixelbolt home</a> · <a href="../compare/">Comparisons</a></p>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</main>
+</body>
+</html>
