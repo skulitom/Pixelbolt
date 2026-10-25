@@ -17,15 +17,29 @@ concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
+# Rights are kept to the two jobs that need them, and those jobs run only this repository's own code and pinned
+# GitHub actions. Third-party tools (npx @anthropic-ai/mcpb and its dependencies) and the test suite run in jobs that
+# can only read. The release job rebuilds the bundle itself and attests its own build, after checking that it is
+# byte for byte the bundle the build job verified, so nothing a read-only job does can change what gets attested.
 jobs:
-  release:
+  # The whole matrix from test.yml on the tagged commit: Node 20, 22 and 24, Windows, macOS, the portable builds
+  # and the MCPB bundle. Nothing is published unless every one of them passes.
+  tests:
+    name: Full test matrix
+    if: github.repository == 'skulitom/Pixelbolt'
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
+  build:
+    name: Build and check the release
     if: github.repository == 'skulitom/Pixelbolt'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: read
+    outputs:
+      sha256: ${{ steps.bundle.outputs.sha256 }}
     env:
       RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
@@ -57,10 +71,65 @@ jobs:
           [[ "$GITHUB_REF" == "refs/tags/$RELEASE_TAG" ]] || { echo "::error::Start this run from the tag: gh workflow run release.yml --ref $RELEASE_TAG -f tag=$RELEASE_TAG"; exit 1; }
           git show-ref --verify "refs/tags/$RELEASE_TAG"
           test "$(git rev-parse HEAD)" = "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
-      - run: npm test
+      - name: Check the npm package contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          node --input-type=module - "$RUNNER_TEMP/pack.json" <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const [{ files, entryCount }] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
+          const paths = files.map(file => file.path);
+          const needed = ['package.json', 'README.md', 'LICENSE', 'bin/pixelbolt.js', 'src/index.js', 'src/mcp.js', 'skills/pixel-art/SKILL.md', 'schema.json', 'studio/index.html'];
+          const missing = needed.filter(file => !paths.includes(file));
+          // Only package.json's `files` list ships: never tests, scripts, evals, showcase art, builds or local output.
+          const stray = paths.filter(file => /^(test|scripts|evals|showcase|dist|output|packaging|mcpb|\.github)\//.test(file));
+          if (missing.length || stray.length) throw new Error(`npm package: missing ${missing.join(', ') || 'none'}; unexpected ${stray.slice(0, 8).join(', ') || 'none'}`);
+          console.log(`npm package: ${entryCount} files, contents checked.`);
+          NODE
       - run: node scripts/build-mcpb.mjs --check
+      # Recorded before any third-party tool runs, so none of them can change the hash the release job compares with.
+      - name: Record the bundle's SHA-256
+        id: bundle
+        shell: bash
+        run: echo "sha256=$(sha256sum dist/mcpb/pixelbolt.mcpb | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
       - run: node scripts/verify-mcpb.mjs dist/mcpb/pixelbolt.mcpb
       - run: npx --yes @anthropic-ai/mcpb@2.1.2 validate dist/mcpb/manifest.json
+
+  release:
+    name: Attest and publish the GitHub release
+    needs: [tests, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      VERIFIED_SHA256: ${{ needs.build.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: false
+      # The same Node.js as the build job: the bundle's ZIP is deflated with Node's zlib.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Rebuild the bundle and match the verified one
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-mcpb.mjs
+          actual=$(sha256sum dist/mcpb/pixelbolt.mcpb | cut -d ' ' -f 1)
+          if [[ ! "$VERIFIED_SHA256" =~ ^[0-9a-f]{64}$ || "$actual" != "$VERIFIED_SHA256" ]]; then
+            echo "::error::This build's SHA-256 $actual is not the verified bundle's ($VERIFIED_SHA256); nothing was attested or published."
+            exit 1
+          fi
+          echo "Rebuilt bundle matches the verified one: $actual"
       - name: Write installable registry entry
         run: node scripts/build-mcpb.mjs --registry-entry --tag "$RELEASE_TAG" --bundle dist/mcpb/pixelbolt.mcpb
       - name: Attest build provenance
@@ -121,7 +190,9 @@ jobs:
   # npm trusted publishing (LEDGER C-081): npm exchanges this job's GitHub OIDC token for a one-off publish credential,
   # so no npm token or OTP is stored anywhere, and the package gets provenance. It runs after the release job and on
   # its own, so an npm failure never touches the GitHub release; a rerun skips a version npm already has. npmjs.com
-  # must list this repository and release.yml as the package's trusted publisher (docs/PUBLISHING.md).
+  # must list this repository and release.yml as the package's trusted publisher (docs/PUBLISHING.md). The job holds
+  # the OIDC right, so it runs nothing but npm itself: the package contents were checked in the build job, and the
+  # published package is tried out in npm-check, which can only read.
   npm:
     needs: release
     runs-on: ubuntu-latest
@@ -153,27 +224,11 @@ jobs:
             npm install -g npm@11.19.1
           fi
           npm --version
-      - name: Check the package contents
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "v$(node -p 'require("./package.json").version')" = "$RELEASE_TAG"
-          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
-          node --input-type=module - "$RUNNER_TEMP/pack.json" <<'NODE'
-          import { readFileSync } from 'node:fs';
-          const [{ files, entryCount }] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-          const paths = files.map(file => file.path);
-          const needed = ['package.json', 'README.md', 'LICENSE', 'bin/pixelbolt.js', 'src/index.js', 'src/mcp.js', 'skills/pixel-art/SKILL.md', 'schema.json', 'studio/index.html'];
-          const missing = needed.filter(file => !paths.includes(file));
-          // Only package.json's `files` list ships: never tests, scripts, evals, showcase art, builds or local output.
-          const stray = paths.filter(file => /^(test|scripts|evals|showcase|dist|output|packaging|mcpb|\.github)\//.test(file));
-          if (missing.length || stray.length) throw new Error(`npm package: missing ${missing.join(', ') || 'none'}; unexpected ${stray.slice(0, 8).join(', ') || 'none'}`);
-          console.log(`npm package: ${entryCount} files, contents checked.`);
-          NODE
       - name: Publish to npm
         shell: bash
         run: |
           set -euo pipefail
+          test "v$(node -p 'require("./package.json").version')" = "$RELEASE_TAG"
           version="${RELEASE_TAG#v}"
           if npm view "pixelbolt@$version" version > /dev/null 2>&1; then
             echo "pixelbolt@$version is already on npm; skipped." | tee -a "$GITHUB_STEP_SUMMARY"
@@ -188,17 +243,38 @@ jobs:
             tag=backport
           fi
           npm publish --access public --tag "$tag"
-          # From an empty folder, so npx installs the published package rather than finding this checkout. The
-          # registry can take a moment to serve a new version.
+          echo "Published pixelbolt@$version to npm (tag $tag)." | tee -a "$GITHUB_STEP_SUMMARY"
+
+  npm-check:
+    name: Run the published npm package
+    needs: npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: npx runs the published version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          # From an empty folder, so npx installs the published package rather than finding a checkout. The registry
+          # can take a moment to serve a new version.
           check="$RUNNER_TEMP/npx-check"
           mkdir -p "$check"
           for _ in 1 2 3 4 5 6; do
             if (cd "$check" && npx --yes "pixelbolt@$version" --help) > "$RUNNER_TEMP/help.txt"; then
               grep -q 'pixelbolt render' "$RUNNER_TEMP/help.txt"
-              echo "Published pixelbolt@$version to npm (tag $tag); \`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "\`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 20
           done
-          echo "::error::pixelbolt@$version was published but npx could not run it within two minutes."
+          echo "::error::pixelbolt@$version is on npm but npx could not run it within two minutes."
           exit 1

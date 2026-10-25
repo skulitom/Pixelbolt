@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # release.yml runs the whole matrix on the tagged commit and publishes only if every job passes.
+  workflow_call:
 
 permissions:
   contents: read

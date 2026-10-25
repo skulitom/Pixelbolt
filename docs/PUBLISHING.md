@@ -2,7 +2,19 @@
 
 Registry description: Pixel art and sprite animation for agents: JSON recipes to PNG, APNG, GIF and sprite sheets.
 
-Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its isolated smoke test, MCPB CLI validation, provenance attestation and a GitHub release, then publishes the version to npm ([npm](#npm)). The bundle and checksum are attached immediately; `server.registry.json` is also saved in the `pixelbolt-mcpb` workflow artifact. Existing assets are never replaced: a rerun skips identical bytes and fails on different bytes. Only the highest stable tag is marked Latest.
+Pushing a version tag runs **Release**: the full test matrix from the Tests workflow on the tagged commit (Node 20, 22 and 24, Windows, macOS, the portable builds and the MCPB bundle), a reproducible MCPB build, its isolated smoke test and MCPB CLI validation, then provenance attestation and a GitHub release, then npm ([npm](#npm)). Nothing is published unless every test job passes. The bundle and checksum are attached immediately; `server.registry.json` is also saved in the `pixelbolt-mcpb` workflow artifact. Existing assets are never replaced: a rerun skips identical bytes and fails on different bytes. Only the highest stable tag is marked Latest.
+
+Rights stay with the jobs that need them, and those jobs run only this repository's code, GitHub's own pinned actions and npm:
+
+| Job | Rights | Runs |
+|---|---|---|
+| `tests` | read | the Tests workflow, called on the tag |
+| `build` | read | tag and version checks, npm package contents, the MCPB build, its smoke test and `npx @anthropic-ai/mcpb validate` |
+| `release` | write contents, OIDC, attestations | rebuilds the bundle, refuses unless it is byte for byte the one `build` verified, then attests it and publishes the GitHub release |
+| `npm` | OIDC | `npm publish` |
+| `npm-check` | read | `npx -y pixelbolt@X.Y.Z --help` from an empty folder |
+
+`build` records the bundle's SHA-256 before any third-party tool runs, and `release` attests its own rebuild, not a file handed over from `build`. So a compromised validation tool or dependency can stop a release but cannot change what is attested or published.
 
 **Registry versions are immutable. A published version cannot be changed. Publishing metadata-only permanently prevents that version from ever getting its bundle.** Nothing publishes to the registry automatically. **Publish to MCP Registry** runs only when dispatched after testing; it uses GitHub OIDC, with no registry account or stored secret. It skips versions already listed.
 
@@ -26,7 +38,7 @@ Pushing a version tag runs **Release**: tests, a reproducible MCPB build, its is
 
 ## npm
 
-After the GitHub release, Release's `npm` job publishes the tagged version with npm's trusted publishing: npm accepts the job's GitHub OIDC token in place of an npm token, so no token is stored, no one-time password is asked for, and the package gets provenance. The job uses npm 11.5.1 or later, checks the package contents (only `package.json`'s `files`: no tests, scripts, evals, showcase art or builds), skips a version npm already has, publishes with `npm publish --access public` (a version below npm's `latest`, such as a backport, goes out under the `backport` dist-tag instead), then runs `npx -y pixelbolt@X.Y.Z --help` from an empty folder. It runs on its own after the release job, so a failure never touches the GitHub release; fix the cause and rerun Release from the tag as above. One npm job runs at a time; if several tags are pushed together, GitHub keeps only the newest waiting job, so check each version with `npm view pixelbolt@X.Y.Z` and rerun Release for any that is missing.
+After the GitHub release, Release's `npm` job publishes the tagged version with npm's trusted publishing: npm accepts the job's GitHub OIDC token in place of an npm token, so no token is stored, no one-time password is asked for, and the package gets provenance. The `build` job has already checked the package contents (only `package.json`'s `files`: no tests, scripts, evals, showcase art or builds). The `npm` job uses npm 11.5.1 or later, skips a version npm already has and publishes with `npm publish --access public` (a version below npm's `latest`, such as a backport, goes out under the `backport` dist-tag instead); then `npm-check`, which holds no rights, runs `npx -y pixelbolt@X.Y.Z --help` from an empty folder. It runs on its own after the release job, so a failure never touches the GitHub release; fix the cause and rerun Release from the tag as above. One npm job runs at a time; if several tags are pushed together, GitHub keeps only the newest waiting job, so check each version with `npm view pixelbolt@X.Y.Z` and rerun Release for any that is missing.
 
 It needs one setting on npmjs.com, made by the package owner: the `pixelbolt` package, **Settings**, **Trusted Publisher**, **GitHub Actions**, with organization or user `skulitom`, repository `Pixelbolt`, workflow filename `release.yml`, no environment, and direct `npm publish` allowed. npm drops a new entry that has no successful publish within two days, so add it shortly before a release. Without it the job fails at `npm publish`, and the owner publishes from an untouched archive of the tag (`git archive vX.Y.Z`) with `npm publish` and their two-factor code.
 

@@ -72,7 +72,28 @@ test('release workflow guards and assets use the renamed repository', async () =
     if (file === 'publish-registry.yml') assert.ok(text.includes('io.github.skulitom%2Fpixelbolt'));
     if (file === 'test.yml') assert.ok(text.includes('PixelboltStudio-*'));
   }
-  assert.equal(guards, 3);
+  assert.equal(guards, 4);
+});
+
+test('release rights stay in jobs that run only this repository\'s code, after the full test matrix passes', async () => {
+  const text = await readFile(path.join(root, '.github/workflows/release.yml'), 'utf8');
+  // Each job is the text from its two-space-indented name to the next one, without comment lines.
+  const code = text.split('\njobs:\n')[1].split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
+  const jobs = Object.fromEntries(code.split(/\n(?=  [a-z-]+:\n)/).map(block => [block.match(/^  ([a-z-]+):/)[1], block]));
+  assert.deepEqual(Object.keys(jobs), ['tests', 'build', 'release', 'npm', 'npm-check']);
+  const rights = Object.entries(jobs).filter(([, block]) => /:\s*write\b/.test(block)).map(([name]) => name);
+  assert.deepEqual(rights, ['release', 'npm']);
+  for (const name of rights) {
+    assert.doesNotMatch(jobs[name], /\bnpx\b|npm test|node --test|verify-mcpb/, name);
+    for (const [, action, ref] of jobs[name].matchAll(/uses: ([^@\s]+)@(\S+)/g)) assert.match(`${action}@${ref}`, /^actions\/[a-z-]+@[0-9a-f]{40}$/, name);
+  }
+  assert.match(jobs.tests, /uses: \.\/\.github\/workflows\/test\.yml/);
+  assert.match(await readFile(path.join(root, '.github/workflows/test.yml'), 'utf8'), /^  workflow_call:/m);
+  assert.match(jobs.release, /needs: \[tests, build\]/);
+  // The release job attests its own rebuild, and only when it matches the bundle the build job verified, whose hash
+  // is recorded before npx runs.
+  assert.match(jobs.release, /node scripts\/build-mcpb\.mjs\n[\s\S]*"\$actual" != "\$VERIFIED_SHA256"[\s\S]*attest-build-provenance/);
+  assert.ok(jobs.build.indexOf('id: bundle') < jobs.build.indexOf('npx --yes'));
 });
 
 test('MCPB builds are byte-identical, including across CRLF and LF checkouts', async () => {

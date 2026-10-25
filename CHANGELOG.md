@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Releases wait for every test and keep publish rights away from third-party tools
+
+- **Release** runs the whole Tests matrix on the tagged commit (Node 20, 22 and 24, Windows, macOS, the portable builds, the MCPB bundle) and publishes nothing unless all of it passes. It used to run the suite once, on Linux with Node 24.
+- `npx @anthropic-ai/mcpb validate` and the other checks now run in a job that can only read. The job that attests and publishes the GitHub release rebuilds the bundle itself and refuses unless it matches the verified one byte for byte, so a compromised validation tool can stop a release but not change what is attested. The npm job runs only `npm publish`; trying the published package with `npx` moved to a job without rights. See the table in [Publishing](docs/PUBLISHING.md).
+
 ### MCP calls have time and memory limits
 
 - Every MCP tool call runs in a worker thread. A call that takes longer than 50 seconds, or runs out of memory, is stopped and answered with an error naming the limit, and the server keeps serving; before, one call could hold the server for many minutes or crash it. `pixelbolt mcp --time-limit <seconds>` changes the time limit.
