@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pixel art water animation: waterfall, splash and drip sprite sheets in your browser</title>
+<meta name="description" content="Pixel art waterfall, splash, drip and dam-break animations simulated by Pixelbolt: open a free recipe in your browser, tweak it and download a sprite sheet, atlas or GIF.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Pixel art water animation: waterfall, splash and drip sprite sheets in your browser">
+<meta property="og:description" content="Pixel art waterfall, splash, drip and dam-break animations simulated by Pixelbolt: open a free recipe in your browser, tweak it and download a sprite sheet, atlas or GIF.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixelbolt previews: waterfall, splash, drip, dam break">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Pixel art water animation: waterfall, splash and drip sprite sheets in your browser",
+  "description": "Pixel art waterfall, splash, drip and dam-break animations simulated by Pixelbolt: open a free recipe in your browser, tweak it and download a sprite sheet, atlas or GIF.",
+  "image": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/preview.png",
+  "datePublished": "2026-10-25",
+  "dateModified": "2026-10-25",
+  "inLanguage": "en",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/",
+  "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/",
+  "author": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Pixelbolt",
+    "url": "https://skulitom.github.io/Pixelbolt/"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "Pixelbolt",
+    "url": "https://github.com/skulitom/Pixelbolt",
+    "applicationCategory": "MultimediaApplication",
+    "softwareVersion": "0.9.1",
+    "license": "https://opensource.org/licenses/MIT"
+  }
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --button: #0b57d0; --button-fg: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --button: #8ab4f8; --button-fg: #10131a; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure.stage { background: var(--stage); border-radius: 6px; margin: 1rem 0; padding: 16px; display: flex; justify-content: center; }
+figure.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+.size { color: var(--muted); font-size: 0.92rem; }
+a.open { display: inline-block; background: var(--button); color: var(--button-fg); font-weight: 600; text-decoration: none; padding: 0.55rem 0.95rem; border-radius: 6px; }
+a.open:hover, a.open:focus-visible { text-decoration: underline; }
+.guides { list-style: none; padding: 0; }
+.guides li { margin: 0 0 1.6rem; }
+.guides img { display: block; width: 100%; max-width: 360px; height: auto; border-radius: 6px; image-rendering: pixelated; }
+.guides h2 { margin: 0.6rem 0 0.2rem; font-size: 1.15rem; }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Pixelbolt</a> › <a href="../">Guides</a></nav>
+<h1>Pixel art water animation: waterfall, splash and drip sprite sheets in your browser</h1>
+<p class="lead">Each effect here is a Pixelbolt recipe: a short JSON file that simulates the water as particles on a grid and bakes it into palette pixels, the same pixels every time.</p>
+<p>Open one in the Pixelbolt playground, change the flow, the drop or the spray, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
+<p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#waterfall">Waterfall</a> · <a href="#splash">Splash</a> · <a href="#drip">Drip</a> · <a href="#dam-break">Dam break</a></p>
+
+<section id="waterfall">
+<h2>Waterfall</h2>
+<figure class="stage"><img src="waterfall.gif" width="192" height="256" alt="Pixel art waterfall: water pours off a mossy stone ledge in a foaming arc, splashes into a basin and spills over its lip" decoding="async"></figure>
+<p>Water pours off a mossy ledge in a foaming arc, splashes into a basin and spills over its lip.</p>
+<p class="size">48 × 64 pixels, 24 frames of 60 ms, looping. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=7VfLjts6DP0X3i1r-B2Pll3PKtsgC9mWYiHy40py0yDwv19QjjPJzUyboJ2uKiCwRVGHPCRlMSeQvWm5AwaD-i607M1OfJF6VDUgfBPGqr4DFiF0vBXA4MCdMJJrDQgHVbsGWFogNELtGgcsTxEGroVzAtgJvgKDf6I6kSsOCCXNYpnLKgSEimaZLFNREBbNailzKQHB-LUyy3JaW9MsTRKR0b69RynjVZIBwivNVuUqe6G1dsZ84SmHCcEe27LXljyptJIS2Aba-0EmzHksL6_7B6Wv-yAIPpbejEV6C-qVf4t0fW9u1r127l3plWcPS9_n9lR0rqVe-APpnbG7OPy69Od5-8WYPRLJJW__q77fJ_2oSv7W5Cec7lm6RSi5VR19gYInBuDD6q_GmGfU18-pP4n-tPr6M9HXn-n7nwjk-olxLsH1TR1-_Hir7ocesJ0QhJSicv5ifWsI2An2qquBgVb_zg2ENLwVFlicItSj4c53E3mIoPt-AObMKBCsEDWwDOHATTsOwFIEO5bWicECS0iu6RbfgBbS0VmSWg3AwiBHqA3f0WuYI_SldbzSZHFzOt_-wM53P8J3YCHCEVgUT3i1Pp_Mq_X0ZSIjikhtTiSPivOC71TiGKHxMFsE0SrnhJltnrsk24-mEoBAndVmFWQYhVsEbgQHtokyTLcIhlOTFFGbpftKuSMtBRGS5jBq6zso3g5aubEWxDFDGIRRfQ0sn4jCYm4w_LhYiwtMcw9fq5Fif2WpFp31hkIEO3Czn3ujfuwc4RcIWkkBbJPhyxah6nXvicHBN2xEodtpUojjEJOYXLWDT9-GtkcBWd4Z_m2mE2IYxBnFste6PwALb9wWYrh4vcK0CLKrIBWYbN9z_UsYhNkVyk6rztkFJ8rnUC_sIwraY_yjC_uowDi_47_8fByc4UovBbywiy7RCC-FOVGNHBrlhD8pc2XOSglC1fCu8rkNMwTXGA8TxARkBK-BRdnFrQKj9L2s-GKeIaMgvQFNL5sTvGfkmVycJ0d13--9i1IJTUd5idj11tIHoDHCNr2urc89Za5WriGGITn0BjC4Bu4t098BhK93UBHGmGLxEdzM89abJSU3MEGOSZDewBB_LXhHn5gTWGf40c4pnKZp-g8">Open the waterfall in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>waterfall</code> in the recipe.</p>
+<ul>
+<li><code>velocity</code> on the <code>source</code> emitter ([1.1, 0]): how fast the water leaves the ledge, so how far out the arc reaches.</li>
+<li><code>pulse</code> on <code>source</code> (<code>amplitude</code> 0.5, <code>period</code> 6): makes the flow surge four times a loop. In a loop, <code>period</code> must divide the number of frames (24).</li>
+<li><code>whitewater</code>: two layers of spray and foam thrown off fast water (<code>speed</code> 3 and 1.4). <code>chance</code> sets how much.</li>
+<li><code>flip</code> (0.6): nearer 1 the water is livelier and noisier, nearer 0 calmer.</li>
+<li>The <code>depth</code> layer in <code>look</code> (<code>w</code>, <code>c</code>, <code>b</code> and <code>B</code> at 1, 2, 4 and 8 pixels): the water's colours from the surface down.</li>
+</ul>
+</section>
+
+<section id="splash">
+<h2>Splash</h2>
+<figure class="stage"><img src="splash.gif" width="192" height="160" alt="Pixel art splash: a drop falls into a pool, throws up a crown and spray, and the waves settle" loading="lazy" decoding="async"></figure>
+<p>A drop falls into a pool, throws up a crown and spray, and the waves settle.</p>
+<p class="size">48 × 40 pixels, 40 frames of 60 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=jZPNctowFIXf5XR7YWSBiaNlXoPxQthXWBNhu5KAUIZ371yFNCTtojtfa_SdH0lXuCkebIbB7N84uCnueeHC0fcgnDgmP40wFWG0B4ZBmoNNAwhn3-cBZt0QBvb7IcOsFWG2gXNmmCteYPCj6lfuyYKwk0m7jesUCJ1MtdutuRGWTL1zG-dwI7Bz3OUkjLucueLVjz0Mgv_57s1Fe-D0Ltofo83F6EYREnMPsyKcbQgJZovALoMQi03Cbsp5OqAl7KM9-XyB2SpSy01LcMHPMGqpCX20e_lUDSHzeG9CVpwPAWZ7xRuMIlxgdFNSlDZgKn2jK6TVrV5T3RKi7f0xFVcnDlP3KVq3t5bAB58zx1SoH1VzzoFBf0CrpiXYyBZmu25IF650XRFStjGLMoGlKP1M6MW0CC3UUlVP4umOjrybjmP_yK4e2LT6F7q-o6unB7T6FmihS57z4DOfbeZYEvnDbDthLGtCN9ixY2l2XRPyEKezrDSENEe2cnaKELxjmG2lSauW0E1hKvXgXC6MXKGWkKP1ASbHI0u8Dx39VWf1ILP5lNH_LZP8L4bRkixM02vJ5DwHuZEfVTxu3hVvQ-Q0TKGXX3LQhN7nQSpRYvYTMOcB37W78mYIL3-hKtJU0_MXnFgPbMfjXF5NjvaS7rXcbrff">Open the splash in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>splash</code> in the recipe.</p>
+<ul>
+<li>The second <code>fill</code> entry (<code>at</code> [24, 5], <code>radius</code> 3, <code>velocity</code> [0, 0.5]): the drop's starting place, size and speed.</li>
+<li><code>gravity</code> ([0, 0.6]): how fast the drop falls.</li>
+<li><code>tension</code> (1.2): cohesion that holds drops and the crown together.</li>
+<li><code>whitewater</code> (<code>impact</code> 1.5 and 2.5): spray thrown where water hits water hard. <code>chance</code> sets how much and <code>throw</code> how fast it flies.</li>
+</ul>
+</section>
+
+<section id="drip">
+<h2>Drip</h2>
+<figure class="stage"><img src="drip.gif" width="64" height="128" alt="Pixel art drip: a drop gathers under a stalactite, falls and splashes into a small pool" loading="lazy" decoding="async"></figure>
+<p>A drop gathers under a stalactite, falls and splashes into a small pool.</p>
+<p class="size">16 × 32 pixels, 24 frames of 70 ms, looping. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=xVTBbqMwEP2Xt9epBQTS1Mf9hF4jDgbsgOLEWWOaRhH_vhpDA233sNIelgPCY_vNmzdvuMM4f1IBEpfuXVvj_EE_GTt0DQhv2vedO0OmhLM6aUg0vruAcO2a0EKmW0Kru0MbIDcZ4aKsDkFD3vETEj_SZmOeFQgVrzKzNXUCQs2rwlS53jEWrxpjtsaA4ONeVRRb3nvlVb7Z6ILvHSNKlT1vCoyE_naqnO05m3f1EXKPV--9X70Y8FPAexCEEEtACDGFxMcJsYTEdEysQ3x3iiwh4V_nD5SEg3fDuYl8xKeH-fwp9OVBORK0MboOsboourzj2DEqbPdr6o_x6qR7yCwnNINXITbrOSFY5y6QwQ-a0GvdQGaEq_Kn4QK54U_Lwu1htQksUuwhoXIhuNNUg3rrwg1yn1Ai8pJgLLNICI1XB8hEJDkh6PNkkYzgqj6o2jKj_X3uDuTUG8J7vHuDTEZa7c5arfazl5GzddZGnPdoP44X0StpTmghcz6kT10I2k8JZ4dWWjEce3q_o2dRlASvmm7oIVOR84IdmhI0q7ljm1tXP2otmd6M1V-1tQvY7hNUsYLqg_IBMv8r0ItXt6dZ-Ii8FQVlRWSqvFaQ-4zSklANvg9r_HRHaFhxxk0I_UX5Y7RI7YZziF2wndGRbcpNq511UR9c46jx8HGa88HyqSxLKCuSkqGiTfap2FD2rf9M7dH2jGCcte7KvVwX5tRxESvbLuWkecR8yPWo4SkR6TdpPswYgV7-nzYvCW2yf9KmjJN4jPY0nbY8vR8c1_krzhtar_vW2YZDM2wXWu3nkVkALqHFV_r1N4g0cl0guGKr1XmI_5I-eHXrp3_EOI7jbw">Open the drip in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>drip</code> in the recipe.</p>
+<ul>
+<li><code>end</code> on the <code>bead</code> and <code>swell</code> emitters (8): they grow the drop at the rock's tip until frame 8, and then it falls.</li>
+<li><code>tension</code> (2): how strongly the drop holds together.</li>
+<li><code>gravity</code> ([0, 0.4]): how fast it falls.</li>
+<li><code>sparks</code> on <code>spray-left</code> and <code>spray-right</code> (<code>start</code> 18): the splash droplets, timed for when the drop lands.</li>
+</ul>
+</section>
+
+<section id="dam-break">
+<h2>Dam break</h2>
+<figure class="stage"><img src="dam-break.gif" width="256" height="144" alt="Pixel art dam break: a plank dam vanishes and the water behind it floods out as a wave, rolls over a rock and splashes off the far wall" loading="lazy" decoding="async"></figure>
+<p>A plank dam vanishes and the water behind it floods out as a wave, rolls over a rock and splashes off the far wall.</p>
+<p class="size">64 × 36 pixels, 70 frames of 60 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=7VQ9b9swEP0vr-tFkPUVl2OWrtkNDZR0tAhTH6XoOIah_14clTYOAnQJupUDxad7fHc83vEGM_lBByjM9pWdmfyRH4w72w6EF_aLnUaoHWHUA0Oh08ND41mfQLjYLvRQVUHo2R77AJVXhFk7DoGhbniCwrddl5tHDUIjKDOVaVMQWkGlaQrei5agzpjKGBBmQXtd6rwC4Tkydb7PShBGQe3jd102IBwFFbrQJYPwQ1Ce53mhsRKW69BMbpFIZqfHE9QBz-OzSM5_nf8ppyY0erGjRHP84pAzf3H8l7iTqAl-amOhJL8HCEkSs72t37jJvb8P63olsDHchlh67y2jbjjZsYOCsz-3FjNeD7xAPaaE7ux1iP1WpYSFuYMqCRftpIYPcGwCCD62GqGZQpgGCfno9YsNV6hDSmmS1wQ92xYq-DMTpmYJunXi5XB76wmotxokvEKlhCtUnq50Z495iOZis2flB_vWUZGQbYQ94cTXzU08F9SuICz9dIEy2i281mtNMNa5SPrjepfGF0B0evkIiwcbAnuRqwmX3ga-6MA-7rTDrNsAtUsyQtvrsWWoNMlLQui9-EuTirDMnnUnRyO0k5uiGi7x9akJzhqGOlS0y2JgbppOW_SWnVxTx-Miib3f3cjO0Hte-sl18itNyprQ2dBLdDGL7wJz6PHZuTyGhKdPUjvKqKTvH-RqQutYj-dZCmgJXkuO5W7XdV1_AQ">Open the dam break in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>dam-break</code> in the recipe.</p>
+<ul>
+<li><code>keys</code> on the <code>plank</code> obstacle (<code>{ "frame": 14, "show": false }</code>): the frame the dam disappears.</li>
+<li><code>fill</code> (<code>x</code> 0, <code>y</code> 10, <code>w</code> 20, <code>h</code> 20): the box of water held back. Keep it behind the plank, which stands at x = 20.</li>
+<li>The <code>rock</code> obstacle (<code>x</code> 40, <code>y</code> 25): move it to change where the wave breaks.</li>
+<li><code>whitewater</code> (<code>impact</code> 1.2, <code>chance</code> 0.35): spray where the wave hits.</li>
+<li><code>apic</code> (true): keeps the swirls and folds of the wave instead of smearing them.</li>
+</ul>
+</section>
+
+<h2>Make your sprite sheet in four steps</h2>
+<ol>
+<li>Open an effect above with its <strong>Open … in the playground</strong> button. The link carries the whole recipe and names Pixelbolt 0.9.1, and the playground renders it in your browser. There is nothing to install and no account.</li>
+<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit, and a JSON mistake is reported with its line number.</li>
+<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×.</li>
+<li>Download the files you need (listed below). <strong>Copy link</strong> makes a link to your edited version.</li>
+</ol>
+
+<h2>Export for your game engine</h2>
+<ul>
+<li><strong>Sheet PNG</strong>: every frame on one transparent sprite sheet.</li>
+<li><strong>Atlas PNG + JSON</strong>: the same sheet plus a TexturePacker-style JSON hash with each frame's rectangle, its duration in milliseconds and the named animations. Phaser loads it with <code>load.atlas</code>. In Godot, Unity or another engine, slice the sheet as a grid of equal cells; the <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.1/docs/game-integration.md">game integration notes</a> explain how.</li>
+<li><strong>GIF</strong>: the animation for a devlog, a store page or a chat, at the scale you chose. Before you download it, the playground shows its size in pixels and its number of frames.</li>
+<li><strong>Frame PNG</strong>: the frame on screen, at the scale you chose.</li>
+<li><strong>Recipe JSON</strong>: the recipe itself, to keep, edit or share.</li>
+</ul>
+<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, add <code>"sheet": { "scale": 4 }</code> at the top level of the recipe (whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
+
+<h2>The same from the command line</h2>
+<p>With Node.js 20 or newer, save the recipe (the playground's <strong>Recipe JSON</strong> button saves it as <code>waterfall.fluid.json</code>, or <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/waterfall.fluid.json">open it from the 0.9.1 package</a> and save it), then run:</p>
+<pre><code>npx -y pixelbolt@0.9.1 compile waterfall.fluid.json --out waterfall.json
+npx -y pixelbolt@0.9.1 gif waterfall.json --scale 4 --out waterfall.gif
+npx -y pixelbolt@0.9.1 render waterfall.json --out waterfall</code></pre>
+<p><code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/splash.fluid.json"><code>splash.fluid.json</code></a>, <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/drip.fluid.json"><code>drip.fluid.json</code></a> and <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/dam-break.fluid.json"><code>dam-break.fluid.json</code></a>.</p>
+<p>For AI agents: Pixelbolt also runs as a local MCP server, whose <code>pixel_compile</code> tool compiles these recipes. See <a href="https://github.com/skulitom/Pixelbolt#connect-an-agent-through-mcp">Connect an agent through MCP</a> in the README.</p>
+
+<h2>Licence</h2>
+<p>Pixelbolt is free and open source under the MIT licence. The example recipes on this page ship in its MIT-licensed npm package, and its README says the included artwork is original and covered by the same licence.</p>
+
+<h2>More pixel art effect guides</h2>
+<ul>
+<li><a href="../pixel-art-fire-animation/">Fire: a campfire, a torch and a hand-drawn flame</a></li>
+<li><a href="../pixel-art-explosion/">Explosions: a fireball with smoke and sparks, and small particle bursts</a></li>
+<li><a href="../pixel-art-smoke-and-steam/">Smoke and steam: a cartoon smoke puff, a steam vent and a dust wave</a></li>
+<li><a href="../pixel-art-slime-and-honey/">Slime and honey: a squashing slime, a bursting slime, pouring honey and a honey drop</a></li>
+<li><a href="../pixel-art-magic-effects/">Magic: a spell swirl and a bubbling potion</a></li>
+</ul>
+<p><a href="../">All guides</a> · <a href="../../playground/">The playground</a> · <a href="../../">Pixelbolt home</a></p>
+<p class="muted">Comparing effect tools? See <a href="../../compare/pixel-fx-designer-alternatives/">Pixel FX Designer alternatives: 7 pixel-art effect tools compared</a>. For agents: <a href="../../compare/pixel-art-mcp-servers-for-ai-agents/">pixel art MCP servers compared</a>.</p>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</main>
+</body>
+</html>

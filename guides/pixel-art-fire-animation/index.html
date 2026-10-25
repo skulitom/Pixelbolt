@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pixel art fire animation: campfire and torch sprite sheets in your browser</title>
+<meta name="description" content="Make a pixel art campfire, torch or flame animation in your browser: open a free Pixelbolt recipe, change a few values and download a sprite sheet, atlas or GIF.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Pixel art fire animation: campfire and torch sprite sheets in your browser">
+<meta property="og:description" content="Make a pixel art campfire, torch or flame animation in your browser: open a free Pixelbolt recipe, change a few values and download a sprite sheet, atlas or GIF.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixelbolt previews: campfire, torch, a hand-drawn flame">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Pixel art fire animation: campfire and torch sprite sheets in your browser",
+  "description": "Make a pixel art campfire, torch or flame animation in your browser: open a free Pixelbolt recipe, change a few values and download a sprite sheet, atlas or GIF.",
+  "image": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/preview.png",
+  "datePublished": "2026-10-25",
+  "dateModified": "2026-10-25",
+  "inLanguage": "en",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/",
+  "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/",
+  "author": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Pixelbolt",
+    "url": "https://skulitom.github.io/Pixelbolt/"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "Pixelbolt",
+    "url": "https://github.com/skulitom/Pixelbolt",
+    "applicationCategory": "MultimediaApplication",
+    "softwareVersion": "0.9.1",
+    "license": "https://opensource.org/licenses/MIT"
+  }
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --button: #0b57d0; --button-fg: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --button: #8ab4f8; --button-fg: #10131a; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure.stage { background: var(--stage); border-radius: 6px; margin: 1rem 0; padding: 16px; display: flex; justify-content: center; }
+figure.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+.size { color: var(--muted); font-size: 0.92rem; }
+a.open { display: inline-block; background: var(--button); color: var(--button-fg); font-weight: 600; text-decoration: none; padding: 0.55rem 0.95rem; border-radius: 6px; }
+a.open:hover, a.open:focus-visible { text-decoration: underline; }
+.guides { list-style: none; padding: 0; }
+.guides li { margin: 0 0 1.6rem; }
+.guides img { display: block; width: 100%; max-width: 360px; height: auto; border-radius: 6px; image-rendering: pixelated; }
+.guides h2 { margin: 0.6rem 0 0.2rem; font-size: 1.15rem; }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Pixelbolt</a> › <a href="../">Guides</a></nav>
+<h1>Pixel art fire animation: campfire and torch sprite sheets in your browser</h1>
+<p class="lead">These fire animations are Pixelbolt recipes: short JSON files that render to the same pixels every time. The campfire and the torch come from a small simulation of heat and smoke; the flame after them is drawn by hand in four frames.</p>
+<p>Open one in the Pixelbolt playground, change a value or two, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
+<p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#campfire">Campfire</a> · <a href="#torch">Torch</a> · <a href="#ember">A hand-drawn flame</a></p>
+
+<section id="campfire">
+<h2>Campfire</h2>
+<figure class="stage"><img src="campfire.gif" width="128" height="192" alt="Pixel art campfire: flames rise from crossed logs, embers drift up and grey smoke curls away" decoding="async"></figure>
+<p>Flames rise from crossed logs, embers drift up and grey smoke curls away.</p>
+<p class="size">32 × 48 pixels, 24 frames of 70 ms, looping. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=hVTLjqMwEPyX2msP4h3Wx_zCHuYQ5WDAJBYGR8bMTBTx76s2IcNIK62lSCmqqa7udvNAZ90gPQRu-kuZzrqLeuvMrFsQPpSbtB0hEsIoBwWBRg63TjsFwqdu_RUiSwlXpS9XD5FXhJs0ynsF8cAMgV95mxdFBcIfRqUqywMjx6iusjTtQLCMuvhwSGsQ7gF1TZOzi_cVdWWbgFAzKmRWpQUIR0aVLGRWgtAzSmXSJBUWwnQfamsmdnJxdh5biBP6_xyW-V_ImWDsZWK5KIqivo9-nBWDmOyPxz3dM97I_ljX3zRTdc3sStZ8Vnql6rruX7Lf9Ea9ZAPdr_TKrBk2MtD9k9m8fZNbwA7ivBBU16nGh26-LoF4oHNyUBNEmhPa2UkfLswh5hbZG4R3syJMSrUQGeFTGhMaV1vv7cCtrGd7l2Nzh4ijvCB8WOd1o_3rQaunSd-eynEUlwWhsdbo8cKYM9t68rIxbOT0eA4eYp0S4SukvkPk8UI7-nkrQkC8BpSE1slPCIx2VFjOBDVo75VbpZ9r8FwBXpxTUlKenglOtnqeIEr-ywuQELwabspJP3OzkightGqcttp4w4xdSz3F9JZErDNaPYXonNAZ3fTKcXTJ1p_p1VCzoW8DWb4zkO0MTDfp-nVodh49CxUEozsFcaoo4fcaa2woD-9h-daf5dl4J7XZhijHi-HX0iKm9Hd8ZvUw11McZRRHh3NoXhhKXC1LWBPbh751WpkW4lX-PuscPg6c7erUdLWmnYJmUlIcscFW--vahIK_LzyNEQIf0swK3JZNfd_ufQYX6lnrev9HJnafpxRHZUrJz4TLeVmWvw">Open the campfire in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>campfire</code> in the recipe.</p>
+<ul>
+<li><code>buoyancy</code> (now 0.45): how hard the heat rises. A higher value lifts the flames higher and faster.</li>
+<li><code>cooling</code> (0.24): the share of heat lost each frame. Raise it for a lower fire; lower it for taller flames.</li>
+<li><code>vorticity</code> (0.45): keeps small swirls alive, so the flames and smoke curl.</li>
+<li><code>flicker</code> on the <code>fire</code> emitter (0.6): random variation from cell to cell and frame to frame, which breaks the base of the flame into tongues.</li>
+<li><code>count</code> in the <code>embers</code> emitter's <code>sparks</code> (0.5): embers per frame. Fractions mean some frames get one and some don't.</li>
+</ul>
+</section>
+
+<section id="torch">
+<h2>Torch</h2>
+<figure class="stage"><img src="torch.gif" width="64" height="128" alt="Pixel art torch: a small flame flickers on a wooden handle with a metal cup" loading="lazy" decoding="async"></figure>
+<p>A small flame flickers on a wooden handle with a metal cup and throws the odd ember.</p>
+<p class="size">16 × 32 pixels, 16 frames of 70 ms, looping. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=nZLBbqQwEET_pfbaQWBwhviYy3xCDiMOBmywMBgZk81oxL-vbLLR7HU5QBey_crV_YB2fpYBAqv5UlY7P6gXbXfTg_Cp_GbcAlEQFjkrCATnuxGE36YPI0TxShiVGcYAUTLCKq0KQUE84CHwq2NlyxQILirNL5pJEO5J6Z7xCwgfp9KX_hWENirelZJVILxHVXdclgyEISlZ67c3EK6JUHV1p0GYomKskEWHg7Dd59bZLTo5PYsbpmt8prh4uF6vQ6yyaRiGKUvVe9v-b5VN05RlaA6C0lp14Zn8gPZyVtuZV797GVKsl5xgnVshgt8VYVOqh6gI7e7ucunuEHlWccKn88F0Jvz86M22mfX7mDwrKkLnnDXLEGVZEXovU52XBNduQXY2Grg9vpN56uUXBE89YexoCGo2ISh_Lv5uu7bxS4iTcqszTqxoCF72Zt8gyoxHEfteEIKaV-Vl2H3UWRHnyLrT_S2nl7hzcWZT0V5N0NZ0k_LJOD_oh6nmNrp4ghb8CVr8A91W6aeUeef2JaRQOMEarSBunOomJmRduhY-0gzGqWwIwUtj_7ZALoONOxjnxOrI29bUlVuelZRnvDliRta5KeWjjbJ9zPLp0s8knygn7SPRRq-20dl-O89klGdVRXn2Gl9v0WdvwnjmwY_mOI4_">Open the torch in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">These sit under <code>effects</code> → <code>torch</code>, except <code>palette</code>, which is at the top of the recipe.</p>
+<ul>
+<li><code>radius</code> on the <code>flame</code> emitter (3.5): the size of the hot disc the flame grows from. A bigger disc gives a bigger flame.</li>
+<li><code>noise</code> on the <code>flame</code> emitter (0.8): a random push every frame, the turbulence that makes the flame dance.</li>
+<li><code>flicker</code> on the <code>flame</code> emitter (0.35): how much the flame's strength varies from cell to cell and frame to frame.</li>
+<li><code>count</code> in the <code>embers</code> emitter's <code>sparks</code> (0.15): embers per frame.</li>
+<li><code>palette</code>: the flame uses <code>r</code>, <code>o</code>, <code>y</code> and <code>W</code>, from the coolest colour to the hottest. Change their hex values for a blue or green flame.</li>
+</ul>
+</section>
+
+<section id="ember">
+<h2>A hand-drawn flame</h2>
+<figure class="stage"><img src="ember.gif" width="96" height="96" alt="Pixel art flame drawn by hand in four frames, flickering" loading="lazy" decoding="async"></figure>
+<p>Not every fire needs a simulation. This flame is one shape written as rows of text, then stamped, edited and mirrored across four frames. The playground lists it as Embers.</p>
+<p class="size">24 × 24 pixels, 4 frames of 80 to 120 ms, looping. Shown at 4×.</p>
+<p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=lVPLbqNAEPyXynXWCq-VPV8SKfKhgSFGGWjU4I2Rxb9HMwNrQ5xo1xfcpa6qfkxf8cdIX3MLHSm01BhomCY3AoWPuhxO0HGqcDL122kI_zuyZhgM9BUMjafflCRpCgVxUVFleZZAgVxUJYc8K6Ew-qgq833mlENURQVhUujHJmfbO8XK-hpesZt_zOELtUAsW4hlm8UitIYcsoYCMjM95BEiCgYeEqJxHO8hFho_bti3kGeutB7IO0xk0xDzUtVuh-OkUAk1pod-vS4rqmxdvBv5RVAoz0JDWGH0rMBdyOQOGv1ATYdlwp7oBBQu0KnfSjYdJ_VFN1_pHp5dDdxsjFdOhTUkQTiKgrLfs3s80Inz8Hm2bmf_KPZpqcIlnkkx9EGhYMvuLQn-srr6YuxMyzwtueWNeNhDsZ5N_P-zSZUT616gBzmbhyblymT_D4O6a2W_7YR-6jjadHxUoLZuvLW_nfwsrb-h5bmsirhf7f2Ibp0cJ3eLJ2MGp1KwPTdO2J98WdbtG3Q0TZ8">Open the hand-drawn flame in the playground</a></p>
+<h3>Make it yours</h3>
+<p class="muted">This is a plain recipe: <code>frames</code>, <code>palette</code>, <code>animations</code> and <code>sheet</code> are at the top level.</p>
+<ul>
+<li><code>duration</code> on each frame (110, 90, 120 and 80): how long that frame stays on screen, in milliseconds.</li>
+<li><code>flipX</code> on the stamp in <code>flicker-c</code> (true): mirrors the flame for that frame.</li>
+<li><code>palette</code> (<code>o</code>, <code>r</code>, <code>a</code>, <code>y</code> and <code>w</code>): the five colours, from the dark outline to the white-hot core.</li>
+<li><code>frames</code> in <code>animations</code> → <code>burn</code>: the order the four frames play in.</li>
+<li><code>sheet</code> (<code>columns</code> 4, <code>padding</code> 1): the layout of the exported sprite sheet. Set <code>padding</code> to 0 for a plain grid of touching cells.</li>
+</ul>
+</section>
+
+<h2>Make your sprite sheet in four steps</h2>
+<ol>
+<li>Open an effect above with its <strong>Open … in the playground</strong> button. The link carries the whole recipe and names Pixelbolt 0.9.1, and the playground renders it in your browser. There is nothing to install and no account.</li>
+<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit, and a JSON mistake is reported with its line number.</li>
+<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×.</li>
+<li>Download the files you need (listed below). <strong>Copy link</strong> makes a link to your edited version.</li>
+</ol>
+
+<h2>Export for your game engine</h2>
+<ul>
+<li><strong>Sheet PNG</strong>: every frame on one transparent sprite sheet.</li>
+<li><strong>Atlas PNG + JSON</strong>: the same sheet plus a TexturePacker-style JSON hash with each frame's rectangle, its duration in milliseconds and the named animations. Phaser loads it with <code>load.atlas</code>. In Godot, Unity or another engine, slice the sheet as a grid of equal cells; the <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.1/docs/game-integration.md">game integration notes</a> explain how.</li>
+<li><strong>GIF</strong>: the animation for a devlog, a store page or a chat, at the scale you chose. Before you download it, the playground shows its size in pixels and its number of frames.</li>
+<li><strong>Frame PNG</strong>: the frame on screen, at the scale you chose.</li>
+<li><strong>Recipe JSON</strong>: the recipe itself, to keep, edit or share.</li>
+</ul>
+<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, add <code>"sheet": { "scale": 4 }</code> at the top level of the recipe (whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
+
+<h2>The same from the command line</h2>
+<p>With Node.js 20 or newer, save the recipe (the playground's <strong>Recipe JSON</strong> button saves it as <code>campfire.fluid.json</code>, or <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/campfire.fluid.json">open it from the 0.9.1 package</a> and save it), then run:</p>
+<pre><code>npx -y pixelbolt@0.9.1 compile campfire.fluid.json --out campfire.json
+npx -y pixelbolt@0.9.1 gif campfire.json --scale 4 --out campfire.gif
+npx -y pixelbolt@0.9.1 render campfire.json --out campfire</code></pre>
+<p><code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/torch.fluid.json"><code>torch.fluid.json</code></a>. The hand-drawn flame is already a plain recipe, so it skips <code>compile</code>: <code>npx -y pixelbolt@0.9.1 gif ember.json --scale 4 --out ember.gif</code> (use <code>ember.pixel.json</code> if you saved it from the playground).</p>
+<p>For AI agents: Pixelbolt also runs as a local MCP server, whose <code>pixel_compile</code> tool compiles these recipes. See <a href="https://github.com/skulitom/Pixelbolt#connect-an-agent-through-mcp">Connect an agent through MCP</a> in the README.</p>
+
+<h2>Licence</h2>
+<p>Pixelbolt is free and open source under the MIT licence. The example recipes on this page ship in its MIT-licensed npm package, and its README says the included artwork is original and covered by the same licence.</p>
+
+<h2>More pixel art effect guides</h2>
+<ul>
+<li><a href="../pixel-art-explosion/">Explosions: a fireball with smoke and sparks, and small particle bursts</a></li>
+<li><a href="../pixel-art-smoke-and-steam/">Smoke and steam: a cartoon smoke puff, a steam vent and a dust wave</a></li>
+<li><a href="../pixel-art-water-animation/">Water: a waterfall, a splash, a drip and a dam break</a></li>
+<li><a href="../pixel-art-slime-and-honey/">Slime and honey: a squashing slime, a bursting slime, pouring honey and a honey drop</a></li>
+<li><a href="../pixel-art-magic-effects/">Magic: a spell swirl and a bubbling potion</a></li>
+</ul>
+<p><a href="../">All guides</a> · <a href="../../playground/">The playground</a> · <a href="../../">Pixelbolt home</a></p>
+<p class="muted">Comparing effect tools? See <a href="../../compare/pixel-fx-designer-alternatives/">Pixel FX Designer alternatives: 7 pixel-art effect tools compared</a>. For agents: <a href="../../compare/pixel-art-mcp-servers-for-ai-agents/">pixel art MCP servers compared</a>.</p>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</main>
+</body>
+</html>
