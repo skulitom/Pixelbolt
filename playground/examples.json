@@ -25,5 +25,6 @@
   { "title": "Dam break", "file": "dam-break.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
   { "title": "Dust wave", "file": "dust-wave.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
   { "title": "Bursting slime", "file": "slime-burst.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
-  { "title": "Honey let-go", "file": "honey-drop.fluid.json", "kind": "fluid", "minVersion": "0.9.1" }
+  { "title": "Honey let-go", "file": "honey-drop.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Typed caption", "file": "caption.json", "kind": "project", "minVersion": "0.9.1" }
 ]
