@@ -36,7 +36,8 @@ test('manifest has valid unique files, matching kinds and version-gated presets'
   const available = filterExamples(manifest, pin);
   assert.ok(available.length >= 20); assert.ok(available.filter(entry => entry.kind === 'fluid').length >= 10);
   for (const entry of manifest) assert.equal(available.includes(entry), compareVersions(entry.minVersion, pin) <= 0, entry.file);
-  for (const file of ['honey.fluid.json', 'slime.fluid.json']) {
+  // The caption typed the old name until 0.9.1 (P-020), so the playground offers it only from there.
+  for (const file of ['honey.fluid.json', 'slime.fluid.json', 'caption.json']) {
     const entry = manifest.find(item => item.file === file);
     assert.equal(entry.minVersion, '0.9.1');
     assert.ok(!filterExamples(manifest, '0.9.0').includes(entry)); assert.ok(filterExamples(manifest, '0.9.1').includes(entry));
