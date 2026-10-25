@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm, copyFile, constants } from 'node:fs/promises';
+import { readFile, writeFile, appendFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm, copyFile, link, constants } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
@@ -77,19 +77,18 @@ const withResolved = (summary, resolved) => resolved.length ? { ...summary, reso
 export function createToolRunner({ directory, root, version }) {
   const { remember, read } = createRevisionStore(directory);
   // The files a revision's recipe references (palettes and assets, relative to the root) are kept beside it, so
-  // saveAs never writes over them, even when the recipe comes back as a revision.
-  const sourcesFile = id => path.join(path.resolve(directory), '.revisions', `${id}.sources.json`);
+  // saveAs never writes over them, even when the recipe comes back as a revision. One JSON string per line, only ever
+  // appended to, so servers sharing an export directory never drop each other's entries; a damaged line is skipped.
+  const sourcesFile = id => path.join(path.resolve(directory), '.revisions', `${id}.sources`);
   const sourcesOf = async id => {
-    try { const list = JSON.parse(await readFile(sourcesFile(id), 'utf8')); return Array.isArray(list) ? list.filter(item => typeof item === 'string') : []; }
-    catch (error) { if (error.code === 'ENOENT' || error instanceof SyntaxError) return []; throw error; }
+    let text;
+    try { text = await readFile(sourcesFile(id), 'utf8'); } catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+    return [...new Set(text.split('\n').flatMap(line => { try { const item = JSON.parse(line); return typeof item === 'string' ? [item] : []; } catch { return []; } }))];
   };
   const keep = async (recipe, sources = []) => {
-    const id = await remember(recipe), known = await sourcesOf(id), all = [...new Set([...known, ...sources])];
-    if (all.length > known.length) {
-      const temporary = path.join(path.dirname(sourcesFile(id)), `.${randomUUID()}.tmp`);
-      try { await writeFile(temporary, JSON.stringify(all), { flag: 'wx' }); await rename(temporary, sourcesFile(id)); }
-      finally { await rm(temporary, { force: true }); }
-    }
+    const id = await remember(recipe), known = new Set(await sourcesOf(id)), added = [...new Set(sources)].filter(item => !known.has(item));
+    // Each append starts on a new line, so one cut short by a crash spoils only itself.
+    if (added.length) await appendFile(sourcesFile(id), '\n' + added.map(item => JSON.stringify(item)).join('\n') + '\n');
     return id;
   };
   const relativeToRoot = files => files.map(file => path.relative(root, file).split(path.sep).join('/'));
@@ -135,7 +134,7 @@ export function createToolRunner({ directory, root, version }) {
     if (saveAs === undefined) return [];
     if (saveAs === null || typeof saveAs !== 'object' || Array.isArray(saveAs) || !Object.keys(saveAs).length) throw new PixelError('saveAs', 'expected an object such as { "sheet": "assets/hero.png", "gif": "assets/hero.gif" }');
     if (overwrite !== undefined && typeof overwrite !== 'boolean') throw new PixelError('overwrite', 'expected a boolean');
-    const { project } = bundle, base = path.resolve(root), realBase = await realpath(base), store = await canonical(path.join(path.resolve(directory), '.revisions'));
+    const { project } = bundle, base = path.resolve(root), realBase = await realpath(base), store = await canonical(path.join(path.resolve(directory), '.revisions')), exportDirectory = await canonical(path.resolve(directory));
     const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file))));
     const names = Object.keys(project.animations), only = animation ?? (names.length === 1 ? names[0] : undefined);
     const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
@@ -158,6 +157,7 @@ export function createToolRunner({ directory, root, version }) {
       if (!(await stat(await realpath(folder))).isDirectory()) throw new PixelError(where, `${folder} is a file, not a folder`);
       if (!inside(realBase, real) || fold(real) === fold(realBase)) throw new PixelError(where, `must stay inside ${base}`);
       if (inside(store, real)) throw new PixelError(where, 'must not be inside the revision store');
+      if (inside(real, exportDirectory)) throw new PixelError(where, `must not be the export directory ${path.resolve(directory)} or a folder above it`);
       // Like the CLI's exports, never over the files this render was made from, even with overwrite.
       if (own.some(input => fold(input) === fold(real))) throw new PixelError(where, `${target} is a palette or asset file this recipe references; choose another name`);
       const existing = await entry(destination);
@@ -191,12 +191,14 @@ export function createToolRunner({ directory, root, version }) {
     return Buffer.from(JSON.stringify(atlas, null, 2) + '\n');
   };
   // Every copy is first written to a temporary file beside its destination, so a write that fails leaves no copy and
-  // replaces nothing. Then each goes in place: a file being replaced is first moved aside and the new one renamed in
-  // (a hard link to the old file keeps the old bytes), and a new file is copied only if nothing is there yet. If any
-  // step fails, what was already put in place is undone: moved files come back and new copies are removed.
+  // replaces nothing. Then each goes in place. A file being replaced first gets a second name (a hard link, or a copy
+  // where links aren't supported) holding its old bytes, and the new file is renamed over it in one step, so the
+  // destination is never missing, even if the call is stopped; a hard link to the old file keeps the old bytes. A new
+  // file is copied only if nothing is there yet. If a step fails, what was already put in place is undone: replaced
+  // files get their old bytes back and new copies are removed.
   const temporaryIn = folder => path.join(folder, `.pixelbolt-${randomUUID()}.tmp`);
   const writeSaves = async (saves, replace, bytesOf) => {
-    const staged = [], undo = [], asides = [];
+    const staged = [], undo = [], backups = [];
     try {
       for (const item of saves) {
         await mkdir(path.dirname(item.destination), { recursive: true });
@@ -210,10 +212,10 @@ export function createToolRunner({ directory, root, version }) {
           continue;
         }
         if (await entry(item.destination)) {
-          const aside = temporaryIn(path.dirname(item.destination));
-          await rename(item.destination, aside);
-          asides.push(aside);
-          undo.push(() => rename(aside, item.destination));
+          const backup = temporaryIn(path.dirname(item.destination));
+          await link(item.destination, backup).catch(() => copyFile(item.destination, backup, constants.COPYFILE_EXCL));
+          backups.push(backup);
+          undo.push(() => rename(backup, item.destination));
         } else undo.push(() => rm(item.destination, { force: true }));
         await rename(staged[index], item.destination);
       }
@@ -221,7 +223,7 @@ export function createToolRunner({ directory, root, version }) {
       for (const step of undo.reverse()) await step().catch(() => {});
       throw error;
     } finally { await Promise.all(staged.map(file => rm(file, { force: true }))); }
-    await Promise.all(asides.map(file => rm(file, { force: true })));
+    await Promise.all(backups.map(file => rm(file, { force: true })));
   };
   return async function runTool(name, args) {
     try {

@@ -157,6 +157,10 @@ test('pixel_render saveAs rebases every saved atlas, and refuses a sheet name th
     assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
     assert.match(info.error, /reads as another name when it is loaded as a URL/);
   }
+  // A colon reads as a URL scheme (hero:idle.png); Windows refuses the name before that.
+  const colon = await mcp.render({ project: spirit, saveAs: { sheet: 'art/hero:idle.png', atlas: 'art/hero.json' } });
+  assert.equal(colon.isError, true, JSON.stringify(colon.info));
+  assert.match(colon.info.error, process.platform === 'win32' ? /not a name Windows can create/ : /reads as another name when it is loaded as a URL/);
   await assert.rejects(readdir(path.join(project, 'art')));
   // Without an atlas naming it, such a sheet name is fine.
   const alone = await mcp.render({ project: spirit, saveAs: { sheet: 'art/100%.png' } });
@@ -251,4 +255,27 @@ test('pixel_render saveAs puts replaced files back when a later one can\'t be re
   assert.equal(await readFile(path.join(project, 'a.png'), 'utf8'), 'old a');
   assert.equal(await readFile(path.join(project, 'b.png'), 'utf8'), 'old b');
   assert.deepEqual((await readdir(project)).filter(name => name.endsWith('.tmp')), []);
+});
+
+test('pixel_render saveAs refuses the export directory or a folder above it', async t => {
+  const project = await temp(t), mcp = await session(t, project, path.join(project, 'export.json'));
+  for (const [saveAs, where] of [[{ recipe: 'export.json' }, 'saveAs.recipe']]) {
+    const { isError, info } = await mcp.render({ project: spirit, saveAs, overwrite: true });
+    assert.deepEqual([isError, info.path], [true, where], JSON.stringify(info));
+    assert.match(info.error, /must not be the export directory/);
+  }
+  assert.deepEqual(await readdir(project), []);
+});
+
+test('pixel_render saveAs keeps every server\'s source files for a revision they share', async t => {
+  const project = await temp(t), first = await session(t, project), second = await session(t, project);
+  await writeFile(path.join(project, 'a.json'), JSON.stringify(spirit.palette));
+  await writeFile(path.join(project, 'b.json'), JSON.stringify(spirit.palette));
+  // The same resolved recipe from two palette files, through two servers sharing one export directory, at once.
+  const [one, two] = await Promise.all([first.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'a.json' } } }), second.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'b.json' } } })]);
+  assert.equal(one.info.revision, two.info.revision);
+  for (const file of ['a.json', 'b.json']) {
+    const { isError, info } = await first.render({ revision: one.info.revision, saveAs: { recipe: file }, overwrite: true });
+    assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], `${file}: ${JSON.stringify(info)}`);
+  }
 });
