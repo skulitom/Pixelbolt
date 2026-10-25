@@ -47,7 +47,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt mcp [--out directory] [--root directory]  Run the MCP server over stdio
   pixelbolt schema                         Print the JSON Schema
 
-Options: --force allows overwriting exported files. '-' reads JSON from stdin.
+Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. Exports never write over their own recipe. '-' reads JSON from stdin.
 --embed-recipe on render or scene embeds the resolved recipe in exported PNGs (not scene asset passes).
 Palette references ({"$ref": "palette.json"}), scene asset files and a normals source's recipe resolve from the
 input file's folder.
@@ -104,8 +104,11 @@ async function readProject(file) {
 async function readResolved(file) {
   const original = await readProject(file), baseDir = file === '-' ? process.cwd() : path.dirname(path.resolve(file));
   const resolution = await resolveReferences(original, { baseDir });
-  return { original, document: resolution.document, resolution, baseDir };
+  return { file, original, document: resolution.document, resolution, baseDir };
 }
+// Every file an export was made from: the recipe itself and the palette and asset files it references.
+const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.file)]), ...input.resolution.files];
+const removedBy = files => (files.removed ? { removed: files.removed } : {});
 // Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
 function linkPalette(recipe, input, outFile) {
   const link = input.resolution.palettes.find(entry => ['poses', 'autotile', 'fx', 'fluid', 'project'].includes(entry.where));
@@ -218,7 +221,8 @@ try {
       if (!options.out) throw new Error('scene requires --out <directory>');
       const input = await readResolved(positional[0]), bundle = await createSceneBundle(input.document);
       if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
-      console.log(JSON.stringify({ ok: true, files: await writeBundle(bundle, options.out, options), warnings: bundle.warnings, ...referenced(input) }));
+      const files = await writeBundle(bundle, options.out, { force: options.force, inputs: inputsOf(input) });
+      console.log(JSON.stringify({ ok: true, files, ...removedBy(files), warnings: bundle.warnings, ...referenced(input) }));
     } else if (command === 'inspect') {
       const layerOptions = options.layers === undefined ? {} : { layers: options.layers.split(',') };
       if ([positional[0], options.reference, options.metadata].filter(file => file === '-').length > 1) throw new Error('Only one inspection input can use stdin');
@@ -262,8 +266,8 @@ try {
       const numeric = key => options[key] === undefined ? {} : { [key]: Number(options[key]) }, text = key => options[key] === undefined ? {} : { [key]: options[key] };
       const settings = { ...text('fps'), ...text('animation'), ...text('size'), ...numeric('scale'), ...text('fit'), ...text('align'), ...(options.offset !== undefined && { offset: options.offset.split(',').map(Number) }), ...text('background'), ...numeric('loops'), ...numeric('seconds'), ...numeric('step') };
       const sequence = document?.format === 'pixelforge-scene' ? createSceneSequence(prepareScene(document), document.name, settings) : createSequence(renderProject(document), settings);
-      const files = await writeBundle(sequence, options.out, options), { timing, ...info } = sequence.info;
-      console.log(JSON.stringify({ ok: true, ...info, directory: path.resolve(options.out), files: files.length, ...referenced(input) }, null, 2));
+      const files = await writeBundle(sequence, options.out, { force: options.force, inputs: inputsOf(input) }), { timing, ...info } = sequence.info;
+      console.log(JSON.stringify({ ok: true, ...info, directory: path.resolve(options.out), files: files.length, ...removedBy(files), ...referenced(input) }, null, 2));
     } else if (command === 'gif') {
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
       const input = await readResolved(positional[0]), project = renderProject(input.document);
@@ -288,8 +292,8 @@ try {
         // The check runs before anything is written, so an unknown --animation writes nothing. render writes no GIFs.
         const bundle = await createBundle(input.document), check = checkDelivery(bundle.project, { recipe: input.document, expect, animation: options.animation });
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
-        const files = await writeBundle(bundle, options.out, options);
-        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, check, ...referenced(input) }));
+        const files = await writeBundle(bundle, options.out, { force: options.force, inputs: inputsOf(input) });
+        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, ...removedBy(files), check, ...referenced(input) }));
       }
     }
   }

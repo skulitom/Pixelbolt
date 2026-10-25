@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inflateSync } from 'node:zlib';
-import { readFile, mkdtemp, rm, access } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, mkdtemp, rm, access } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { encodePNG, encodeAPNG } from '../src/png.js';
@@ -48,6 +50,40 @@ test('export refuses overwrite before changing any existing files', async t => {
   const before = await readFile(path.join(dir, 'sample.png'));
   assert.deepEqual(before, bundle.files.get('sample.png'));
   await writeBundle(bundle, dir, { force: true }); await access(path.join(dir, 'preview.html'));
+});
+test('a forced export replaces an earlier export of the recipe without leaving its old frames, and touches nothing else', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  await writeBundle(await createBundle(tiny), dir);
+  await writeFile(path.join(dir, 'notes.txt'), 'mine'); await writeFile(path.join(dir, 'frames', 'notes.txt'), 'mine');
+  // Frame b becomes c and the animation is renamed: their old PNGs go, and the result says so.
+  const renamed = { ...tiny, frames: [tiny.frames[0], { ...tiny.frames[1], name: 'c' }], animations: { twice: { frames: ['a', 'c'] } } };
+  const written = await writeBundle(await createBundle(renamed), dir, { force: true });
+  assert.deepEqual(written.removed, [path.join(dir, 'animations', 'once.png'), path.join(dir, 'frames', 'b.png')]);
+  assert.deepEqual((await readdir(path.join(dir, 'frames'))).sort(), ['a.png', 'c.png', 'notes.txt']);
+  assert.deepEqual(await readdir(path.join(dir, 'animations')), ['twice.png']);
+  assert.equal(await readFile(path.join(dir, 'notes.txt'), 'utf8'), 'mine');
+  // Without the recipe's own atlas in the folder, nothing there is taken for an earlier export.
+  const other = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(() => rm(other, { recursive: true, force: true }));
+  await mkdir(path.join(other, 'frames')); await writeFile(path.join(other, 'frames', 'hand-drawn.png'), 'mine');
+  assert.equal((await writeBundle(await createBundle(tiny), other, { force: true })).removed, undefined);
+  await access(path.join(other, 'frames', 'hand-drawn.png'));
+});
+test('an export never writes over its own inputs, even with force', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const source = path.join(dir, 'sample.pixel.json'), text = JSON.stringify({ ...tiny, palette: { $ref: 'pal.json' } });
+  await writeFile(source, text);
+  await assert.rejects(writeBundle(await createBundle(tiny), dir, { force: true, inputs: [source] }), /would replace its own input .*sample\.pixel\.json/);
+  assert.equal(await readFile(source, 'utf8'), text);
+  assert.deepEqual(await readdir(dir), ['sample.pixel.json']);
+  // The CLI passes the recipe and the files it references, so rendering into the recipe's own folder is refused.
+  await writeFile(path.join(dir, 'pal.json'), JSON.stringify({ r: '#f00' }));
+  const cli = spawnSync(process.execPath, [fileURLToPath(new URL('../bin/pixelbolt.js', import.meta.url)), 'render', source, '--out', dir, '--force'], { encoding: 'utf8' });
+  assert.equal(cli.status, 1); assert.match(JSON.parse(cli.stderr).error, /would replace its own input/);
+  assert.equal(await readFile(source, 'utf8'), text);
+  assert.deepEqual((await readdir(dir)).sort(), ['pal.json', 'sample.pixel.json']);
 });
 test('all bundled examples validate and produce complete exports', async () => {
   for (const name of ['forest-spirit','ember','coin']) {

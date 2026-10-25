@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fixes: scene repeats, forced re-exports, exports over their own recipe
+
+- A scene placement's `repeat` draws every copy again. Since 2026-10-07 only placements with `sort: "ground"` did; the others drew one copy and dropped the rest (the Listening Hollow's stride scene lost five ground tiles).
+- `--force` over an earlier export of the same recipe or sequence no longer leaves its old files behind: a shorter `sequence` used to keep the longer one's later frames, which video editors and `gif-frames` then picked up, and a renamed frame or animation kept its old PNG. A forced export now removes them after writing and lists them as `removed`. It only does so when the folder holds that export's own `sequence.json` or `<name>.atlas.json`, and only for numbered frames of that name or PNGs in `frames/` and `animations/`; nothing else in the folder is touched.
+- `render`, `scene` and `sequence` refuse to write over their own recipe or a palette or asset file it references, even with `--force`. `render hero.json --out . --force` used to replace `hero.json` with its inlined copy, losing a palette `$ref`.
+
 ### Five fluid presets for the newer features
 
 - `examples/` gains five presets, each with a GIF in the README and a place in the Fluid lab: **snow off a roof** (wet snow slides off a smooth roof as one slab and settles in a drift), **dam break** (a plank dam that an obstacle key takes away at frame 14), **dust wave** (a falling stone throws carried dust both ways), **bursting slime** (a burst fill) and **honey let-go** (keys thin stiff honey so it drops off a smooth spoon, then thicken it so the bowl settles). The playground lists them from the next release.

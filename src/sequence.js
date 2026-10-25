@@ -214,7 +214,9 @@ function finish(sequence, notes) {
   sequence.info.notes = notes;
   sequence.files.set('sequence.json', Buffer.from(JSON.stringify(sequence.info, null, 2) + '\n'));
   sequence.files.set('README.txt', Buffer.from(readme(sequence.info)));
-  return { info: sequence.info, files: sequence.files };
+  // A forced export over an earlier sequence of the same name removes the frames this one no longer has.
+  const name = sequence.info.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return { info: sequence.info, files: sequence.files, owns: { marker: 'sequence.json', folders: ['.'], match: new RegExp(`^${name}_\\d{4,}\\.png$`) } };
 }
 const KEYS = ['fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step'];
 function common(options, allowed) {

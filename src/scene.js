@@ -361,12 +361,13 @@ export function renderScene(scene, { time = 0, lit = true, density = false } = {
   });
   // Drawing order is list order, except that placements with sort "ground" are drawn together, where the first of
   // them is listed, ordered by their ground line (the y of their placement point), as a game draws actors and props.
+  // Every placement draws each of its repeat copies, row by row; a tilemap draws once.
   const order = [], sorted = scene.instances.flatMap((instance, i) => instance.sort === 'ground' ? [i] : []);
+  const copies = j => { const [columns, rows] = scene.instances[j].repeat ?? [1, 1]; return Array.from({ length: columns * rows }, (_, k) => [j, k % columns, Math.floor(k / columns)]); };
   for (const [i, instance] of scene.instances.entries()) {
-    if (instance.sort !== 'ground') { order.push([i, 0, 0]); continue; }
+    if (instance.sort !== 'ground') { order.push(...copies(i)); continue; }
     if (i !== sorted[0]) continue;
-    const copies = sorted.flatMap(j => { const one = scene.instances[j]; return Array.from({ length: one.repeat[0] * one.repeat[1] }, (_, k) => [j, k % one.repeat[0], Math.floor(k / one.repeat[0])]); });
-    order.push(...copies.map(([j, rx, ry], n) => ({ n, entry: [j, rx, ry], ground: states[j].position[1] + ry * scene.instances[j].step[1] })).sort((a, b) => a.ground - b.ground || a.n - b.n).map(item => item.entry));
+    order.push(...sorted.flatMap(copies).map(([j, rx, ry], n) => ({ n, entry: [j, rx, ry], ground: states[j].position[1] + ry * scene.instances[j].step[1] })).sort((a, b) => a.ground - b.ground || a.n - b.n).map(item => item.entry));
   }
   for (const [i, rx, ry] of order) {
     const instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;

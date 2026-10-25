@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile, readdir, mkdtemp, rm, access } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdtemp, rm, access } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -184,6 +184,21 @@ test('CLI sequence writes a new folder for a recipe, an effects source and a sce
   // Refused requests write nothing.
   for (const [args, message] of [[['--out', path.join(dir, 'a')], /requires --fps/], [['--fps', '30'], /requires --out/], [['--fps', '30', '--size', '8k', '--out', path.join(dir, 'b')], /sequence\.size/], [['--fps', '30', '--fit', 'cover', '--out', path.join(dir, 'd')], /sequence\.fit: cover needs a size to cover/], [['--fps', '30', '--grid', '--out', path.join(dir, 'c')], /--grid is not supported by sequence/]]) assert.match(JSON.parse(run('examples/coin.json', ...args).stderr).error, message);
   assert.deepEqual((await readdir(dir)).sort(), ['coin', 'filled', 'shot', 'sparks']);
+});
+
+test('CLI sequence --force over a longer sequence removes the frames it no longer has, and only those', async t => {
+  const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-sequence-'));
+  t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const run = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', 'sequence', 'examples/coin.json', '--fps', '10', '--out', dir, ...args], { cwd: root, encoding: 'utf8' });
+  assert.equal(run('--seconds', '2').status, 0);
+  await writeFile(path.join(dir, 'other_0001.png'), 'not ours'); await writeFile(path.join(dir, 'notes.txt'), 'mine');
+  const shorter = run('--seconds', '1', '--force'), report = JSON.parse(shorter.stdout);
+  assert.equal(shorter.status, 0, shorter.stderr);
+  assert.equal(report.frames, 10);
+  assert.deepEqual(report.removed, Array.from({ length: 10 }, (_, i) => path.join(dir, `coin-spin_${String(i + 11).padStart(4, '0')}.png`)));
+  const left = (await readdir(dir)).sort();
+  assert.deepEqual(left.filter(name => name.startsWith('coin-spin_')).length, 10);
+  assert.ok(left.includes('other_0001.png') && left.includes('notes.txt'));
 });
 test('MCP render and scene tools write a sequence on request, beside what they already write', async t => {
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-sequence-mcp-'));

@@ -25,6 +25,20 @@ test('tilemap placements expand a character map into frames, variants and animat
   assert.throws(() => prepareScene(scene([{ asset: 'tiles', at: [0, 0], tilemap: { rows: ['r'], legend: { r: 'missing' } } }])), /frame "missing" does not exist/);
 });
 
+test('repeat draws every copy, whether or not the placement is ground-sorted', () => {
+  // Regression: from 2026-10-07 to 2026-10-25 only ground-sorted placements drew their repeats.
+  const placed = extra => renderScene(prepareScene(scene([{ name: 'row', asset: 'tiles', at: [0, 2], frame: 'red', repeat: [4, 2], ...extra }])), { time: 0 });
+  for (const view of [placed({}), placed({ sort: 'ground' })]) {
+    assert.equal(view.placements.length, 8);
+    assert.deepEqual(view.placements.map(p => [p.x, p.y]), [[0, 2], [2, 2], [4, 2], [6, 2], [0, 4], [2, 4], [4, 4], [6, 4]]);
+    for (const [x, y] of [[0, 2], [7, 3], [6, 4], [7, 5]]) assert.deepEqual(at(view, x, y), [255, 0, 0, 255]);
+    assert.deepEqual(at(view, 0, 0), [0, 0, 0, 255]);
+  }
+  assert.deepEqual(placed({}).data, placed({ sort: 'ground' }).data);
+  const stepped = renderScene(prepareScene(scene([{ asset: 'tiles', at: [1, 0], frame: 'green', repeat: [2, 1], step: [4, 0] }])), { time: 0 });
+  assert.deepEqual([at(stepped, 1, 0), at(stepped, 3, 0), at(stepped, 5, 0)], [[0, 255, 0, 255], [0, 0, 0, 255], [0, 255, 0, 255]]);
+});
+
 test('autotile legends pick compiled blob tiles from each cell\'s neighbours', () => {
   // A 2px template where every piece is solid, so any mask renders; the check is that names resolve per cell.
   const rows = Array.from({ length: 6 }, () => 's'.repeat(4));
