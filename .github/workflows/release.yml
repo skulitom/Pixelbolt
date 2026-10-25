@@ -66,6 +66,11 @@ jobs:
             throw new Error('Tag must be vX.Y.Z and match package.json and server.json.');
           }
           if (Object.hasOwn(server, 'packages')) throw new Error('server.json must remain metadata-only.');
+          // The Claude Code plugin carries the version too, and the release notes become the GitHub release's body.
+          const plugin = JSON.parse(readFileSync('.claude-plugin/plugin.json'));
+          if (plugin.version !== pkg.version) throw new Error(`.claude-plugin/plugin.json says ${plugin.version}; set it to ${pkg.version}.`);
+          const heading = readFileSync('mcpb/RELEASE_NOTES.md', 'utf8').split('\n')[0].trim();
+          if (heading !== `# ${pkg.version}`) throw new Error(`mcpb/RELEASE_NOTES.md starts with "${heading}"; write the notes for ${pkg.version} under "# ${pkg.version}".`);
           NODE
           # Provenance records this run's own ref and commit, so a manual run must start from the tag itself.
           [[ "$GITHUB_REF" == "refs/tags/$RELEASE_TAG" ]] || { echo "::error::Start this run from the tag: gh workflow run release.yml --ref $RELEASE_TAG -f tag=$RELEASE_TAG"; exit 1; }

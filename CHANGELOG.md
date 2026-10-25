@@ -2,7 +2,7 @@
 
 Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skulitom/Pixelbolt/releases).
 
-## Unreleased
+## 0.9.1 (2026-10-25)
 
 ### Releases wait for every test and keep publish rights away from third-party tools
 
@@ -75,7 +75,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - `playground/` is a page for the project site where anyone can try Pixelbolt with nothing installed: pick one of 20 examples (ten fluids, particle effects, poses, a normal pass and a lit scene) or paste a recipe, see it render live, and download a PNG, a GIF (its size shown first) or an atlas. Renders run in a worker with a 20-second limit and a Cancel button.
 - **Share links:** Copy link puts the compressed recipe in the link's fragment, which browsers never send to a server, with the engine version, so a link renders the same after later releases. Links are capped at 16,384 characters; larger recipes travel as files.
 - **PNGs that reopen:** every PNG the playground exports carries its recipe in a `pixelbolt-recipe` text chunk; drop it back in to reopen it. `src/share.js` reads and writes both formats.
-- The page isn't live yet: `playground/DEPLOY.md` and `node scripts/deploy-playground.mjs` prepare the site change.
+- The page is live at <https://skulitom.github.io/Pixelbolt/playground/>; `playground/DEPLOY.md` and `node scripts/deploy-playground.mjs` prepare each site change.
 
 ### Fluid lab sliders that hold every preset
 

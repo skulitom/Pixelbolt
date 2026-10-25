@@ -39,7 +39,10 @@ after(async () => {
 test('registry source is metadata-only with a short description', async () => {
   const server = JSON.parse(await readFile(path.join(root, 'server.json')));
   assert.equal(pkg.name, 'pixelbolt');
-  assert.equal(pkg.version, '0.9.0');
+  // Every file a release names its version in agrees, as the release workflow's tag check requires.
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  assert.equal(JSON.parse(await readFile(path.join(root, '.claude-plugin', 'plugin.json'))).version, pkg.version);
+  assert.equal((await readFile(path.join(root, 'mcpb', 'RELEASE_NOTES.md'), 'utf8')).split('\n')[0].trim(), `# ${pkg.version}`);
   assert.deepEqual(pkg.bin, { pixelbolt: './bin/pixelbolt.js', pixelforge: './bin/pixelforge.js' });
   assert.equal(pkg.homepage, 'https://github.com/skulitom/Pixelbolt#readme');
   assert.equal(pkg.repository.url, 'git+https://github.com/skulitom/Pixelbolt.git');
@@ -94,6 +97,7 @@ test('release rights stay in jobs that run only this repository\'s code, after t
   // is recorded before npx runs.
   assert.match(jobs.release, /node scripts\/build-mcpb\.mjs\n[\s\S]*"\$actual" != "\$VERIFIED_SHA256"[\s\S]*attest-build-provenance/);
   assert.ok(jobs.build.indexOf('id: bundle') < jobs.build.indexOf('npx --yes'));
+  for (const file of ['package.json', 'server.json', '.claude-plugin/plugin.json', 'mcpb/RELEASE_NOTES.md']) assert.ok(jobs.build.includes(`'${file}'`), `the tag check reads ${file}`);
 });
 
 test('MCPB builds are byte-identical, including across CRLF and LF checkouts', async () => {

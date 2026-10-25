@@ -3,7 +3,7 @@
   "name": "io.github.skulitom/pixelbolt",
   "title": "Pixelbolt pixel art toolkit",
   "description": "Pixel art and sprite animation for agents: JSON recipes to PNG, APNG, GIF and sprite sheets.",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "websiteUrl": "https://github.com/skulitom/Pixelbolt#readme",
   "repository": {
     "url": "https://github.com/skulitom/Pixelbolt",
