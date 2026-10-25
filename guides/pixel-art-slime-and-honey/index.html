@@ -16,7 +16,7 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pixelbolt previews: slime that squashes and wobbles, honey pouring into a jar, slime that bursts, honey that clings, stretches and lets go">
+<meta property="og:image:alt" content="Pixel art slime, honey pouring into a jar, slime chunks and a honey drop rendered by Pixelbolt">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {
@@ -90,12 +90,13 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="lead">Each effect here is a Pixelbolt recipe: a short JSON file that simulates a thick liquid and bakes it into palette pixels, the same pixels every time. Slime gets a yield stress, so it holds its shape and springs back; honey gets viscosity, so it pours as one unbroken rope.</p>
 <p>Open one in the Pixelbolt playground, make it firmer, runnier or stickier, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
 <p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#slime">Slime that squashes and wobbles</a> · <a href="#honey">Honey pouring into a jar</a> · <a href="#slime-burst">Slime that bursts</a> · <a href="#honey-drop">Honey that clings, stretches and lets go</a></p>
+<p class="muted">Reading the field names below: an effect's settings sit under <code>effects</code> → its name. An emitter (a source of heat, smoke, liquid or particles) is one entry in its <code>emitters</code> list, found by its <code>"name"</code>; an obstacle is one entry in <code>obstacles</code>, found by its <code>"symbol"</code>. Frames count from 0 (the playground's frame counter starts at 1), and x and y are pixels from the top-left corner.</p>
 
 <section id="slime">
 <h2>Slime that squashes and wobbles</h2>
-<figure class="stage"><img src="slime.gif" width="128" height="128" alt="Pixel art slime: a green blob drops, squashes flat, springs up, wobbles and settles into a dome that holds its shape" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="slime-still.png" media="(prefers-reduced-motion: reduce)"><img src="slime.gif" width="128" height="128" alt="Animated pixel art green slime squashing and wobbling" decoding="async"></picture></figure>
 <p>A blob of green slime drops, squashes flat, springs up, wobbles and settles into a dome that holds its shape.</p>
-<p class="size">32 × 32 pixels, 40 frames of 60 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p class="size">32 × 32 pixels, 40 frames of 60 ms. It is a one-shot: Pixelbolt's GIF export plays it once, and the atlas JSON marks it <code>"loop": false</code>. This preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=lVPRbptAEPyX6evWwsaQ5H4g7361_HDAnjn54MjdEQdZ_Hu1kKhx1aYtCIlBN7Ozs8sNxodOJygM9o2d8eHM340bbQPCK4dofQ-1JfS6YyhEZzsG4Wqb1ELlO0LL9tym9X3QjlNiqBueofBta0qdGxDOgnKj870IO0GPFeelFi1BXBpTP4FwEbSrdg95AUIQVFRFUT6CcBC0z3MuMsyEOHWVd1GqnYMf-wbqiEP4-hbRv1xy5BDCV8-_qJxmAhvDdVosrtGpGy5WnMLZlzVmE3THEWqfEZox6LRkXmaEyNxA7QlxrGLiIS7gqp00fYRjk8TIkj-h8in5DifCOehXmyaoY0bZpjgRJsuugdqWBD3YGiqFkQmJ-3XCO4KvYtK1EyfH23u2UB_JEt6gMsIEtXucTwRjnVtOyvYct8WmoKelVNCNHSNUuSlkhZyvP1sRKnc2JQ5S6ERw3l8WIbN6RCOm0gRC7Z1fjuEsbaU2cGy9a-TT2ldjU8sBKpvps8CQ2ju6W1bwV4kt7f4kEVvd-OudxvP_WHDvM_lJv_6G_nBHPxH8mJzt5Ue7CNmx7sdhWZ4U9BQ_xlb70C_5CZznef4B">Open the slime in the playground</a></p>
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>slime</code> in the recipe.</p>
@@ -110,7 +111,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="honey">
 <h2>Honey pouring into a jar</h2>
-<figure class="stage"><img src="honey.gif" width="160" height="192" alt="Pixel art honey: glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the surface" loading="lazy" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="honey-still.png" media="(prefers-reduced-motion: reduce)"><img src="honey.gif" width="160" height="192" alt="Animated pixel art honey pouring from a dipper into a jar" loading="lazy" decoding="async"></picture></figure>
 <p>Glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the surface.</p>
 <p class="size">40 × 48 pixels, 24 frames of 70 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=7VVNc9owEP0vr9eNxx9ggm7NKf-B4SBb61q1sIwtQgjj_95ZG6ZJQ9JDp7fs-MDq7bfYpzMq3-90gEJnn9lVvv_Bd5U7WAPCE_eD9S1UQmj1jqFQ-5ZPIBytCTXUIibUbH_UAWpxT-i04xAY6oxHKHyrqiorYhBOk7Yq14t7ELRoHK91UoHwXTR9v6xiBqEQLefFIs1BeBBtXeY6K0FoRStXa70sQNjPmslZLBvRkiLRaY6RMJx2hXeDVGJs13EPtUFUXCR6L5K6bS_fP8E3ROCHh_m7Ia_h4r28gW_n_hz-tO8t4aeextM0zQ2DqGkame-n4P4WFkX7L_ALfAV-KNiOBK4qLsO0szPPqDMa2xooOLufOanq9Y4HqHRBMIdeh4mgVjHBed9Bhf7AhKPud4cOKiMMzAYqJ9jAs_nF-6id8MMGjqsAQj_RGKHwIfidrMWTHUo_2HCCSmKC7mx5TaBNzRdujJaEwO2sxVFG8MUQdOmkzM35wkRQVx4iPEMl6cSJ6UivDGQNJ3Q1g_m4JVTWuSnOM9R6Os9WhCNUmhJqqUyseGdD4H7OeOFq09uXFyecKgS_SfJoSUm2JfTa2INMQX4KWyfC9c6XU6ubmOLofkvoDm6YqFzvOmfDwbD0lywJHffWG-lilAYu-Qbm7posjSnLo-WWoHvWcpBSsn2Vz8jEJN1dHKVLacF530zlV5ad3PnVhFB656feoOVeQt3zUHtn5CieshgbauH4WOq5Bhg6ufu_uWcfuRvuQv3G_XF6yeT9klfrz1AJpZTR6j9VM9Ta-OMb__clxFH-4TTc5f_9219aebwRY0FxtHobZ0soHetWluqMIfT6NMy7MI7j-As">Open the honey in the playground</a></p>
@@ -126,9 +127,9 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="slime-burst">
 <h2>Slime that bursts</h2>
-<figure class="stage"><img src="slime-burst.gif" width="224" height="160" alt="Pixel art slime burst: a ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds" loading="lazy" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="slime-burst-still.png" media="(prefers-reduced-motion: reduce)"><img src="slime-burst.gif" width="224" height="160" alt="Animated pixel art slime bursting into chunks" loading="lazy" decoding="async"></picture></figure>
 <p>A ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds: a defeated slime enemy, perhaps.</p>
-<p class="size">56 × 40 pixels, 40 frames of 60 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p class="size">56 × 40 pixels, 40 frames of 60 ms. It is a one-shot: Pixelbolt's GIF export plays it once, and the atlas JSON marks it <code>"loop": false</code>. This preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=xVNBbtswEPzL9LoRZMtSHH4g914NHShpaRGmRJWk4giG_l6snNQtemou5W2IndndGfIG48OgExQm-87O-HDmJ-Nm24HwxiFaP0LtCKMeGArR2YGfmjnEBMLVdqmHKitCz_bcJ6hDTpi045QY6oZXKHzbmUoXBoSzoMLo4iDyTtCx4aLSoiWIK2PaFxAud95e7w8gBEFlU5bVEYTvgg5FwWWOlRCXofEuSrdz8PPYQZ0QvnhE_ovnP1HrlcDGcJs2C34PSN1wseIHnP1xj9QEPXC8x9TNQact3yonROYO6oUQ5yYmnqSIcNVOrD3BsZHEw5YyofEp-QE14Rz0m00L1CmnPNuXNWGx7LqNrifbQqUwMyHxeH9NRbYn-CYm3TqZ5XT7yBDqM0HCO1ROWKCKaq0Jxjq3VcpbPe2PtHuuCUF3do5Qz1lJ-LVznLZVTrtsT7vsWBMmy610KlfR4sGmxEE61wTn_WVTNvep0cmcaQGh9c5vZTjLpqkPHHvvOrnKM9m0s6nnAJWv9BCIve789Q_-67_w3YfHD7rb_sffEoeS8m3Bh05N8HNydpTfehEVx3qcp82YFPQSP_NofRg3FwSu67r-BA">Open the slime burst in the playground</a></p>
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>slime-burst</code> in the recipe.</p>
@@ -142,9 +143,9 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="honey-drop">
 <h2>Honey that clings, stretches and lets go</h2>
-<figure class="stage"><img src="honey-drop.gif" width="160" height="192" alt="Pixel art honey drop: stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey" loading="lazy" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="honey-drop-still.png" media="(prefers-reduced-motion: reduce)"><img src="honey-drop.gif" width="160" height="192" alt="Animated pixel art honey dropping from a spoon into a bowl" loading="lazy" decoding="async"></picture></figure>
 <p>Stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey. The playground lists it as Honey let-go.</p>
-<p class="size">40 × 48 pixels, 44 frames of 70 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p class="size">40 × 48 pixels, 44 frames of 70 ms. It is a one-shot: Pixelbolt's GIF export plays it once, and the atlas JSON marks it <code>"loop": false</code>. This preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=fVTBkqIwEP2Xt9eeFAKi5rZzmqtni0OAMKSMRCDqWBb_vtXBcXVHt0-87tcvTafTF9Su3ykPib350rZ2_ad-q-3BVCAcdT8Y10LOCK3aaUg0rtXnt6p3exBOpvINZBoRGm0-Gw-ZLgl7ZbX3GvKCD0j8qus6KSIQzgEtylW6BEEx0tFKzWoQfjNSy3kdaRAKRplO0zgD4Z3RqsxUUoLQMioXKzUvQOgmVGWamWtGy1qlBde_ZTQrZirOMBKG865wduC6hr3j_9pA_LT2r_FpP-z9zri4H1bcfYKeHVFcKUUhnhOYwiaEQE4o3MlytV33lCuE6Druxf_D4nU4lPEqvZvCr9I7cQ0_jXff4afx4Lu2YL1ePwavjluHHgg3cNfA9Z19-5CPBF3XuvTh5u8GWF6wNW0FCWu6aeLrXu30AJmmhOrQKx_GfxERBq0ryIxgvJ78A2ScEk7K8kxtYHXtQejDQ-A7897t-PY-e3U0_gy5iSgSSU44mqF0Q_BlKUHtTQnp-4MmqKrR06NLCV6303ckEsJWn_mgy1Ql5Cx9UEoI7qh7yHikGyeJHjiz7JuUjTnBFYNXpdWT7PQ-IK-vg_AFGYdXmxGGQ1-rklfAsHPON-BDbhlhQENCFhKSIF8ba4MyL5hNPBdzmiUiywm9qsxhgExEyjpfkKspb0U4QcYxoYGcs4jeGe91zyXmBOvcduqB0ZavruIW-TMIpbMu0KC4677p9dA4W7ErEvOcUBnf8L9HoUE3gb1vHtI_wqriBcVr6V-pGcWU0OKV3NCoyp0e9H5qRCJ7WY-9zs_ffK7l44lGSpFYPOrkhNJq1R7CdA--VzwyPFnjOI5_AA">Open the honey drop in the playground</a></p>
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>honey-drop</code> in the recipe.</p>
@@ -159,8 +160,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <h2>Make your sprite sheet in four steps</h2>
 <ol>
 <li>Open an effect above with its <strong>Open … in the playground</strong> button. The link carries the whole recipe and names Pixelbolt 0.9.1, and the playground renders it in your browser. There is nothing to install and no account.</li>
-<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit, and a JSON mistake is reported with its line number.</li>
-<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×.</li>
+<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit. If the JSON breaks, it says what is wrong, usually with the line number.</li>
+<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×. The sheet and atlas stay at the art's own size (see below).</li>
 <li>Download the files you need (listed below). <strong>Copy link</strong> makes a link to your edited version.</li>
 </ol>
 
@@ -172,14 +173,14 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <li><strong>Frame PNG</strong>: the frame on screen, at the scale you chose.</li>
 <li><strong>Recipe JSON</strong>: the recipe itself, to keep, edit or share.</li>
 </ul>
-<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, add <code>"sheet": { "scale": 4 }</code> at the top level of the recipe (whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
+<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, set <code>"scale"</code> in the recipe's top-level <code>"sheet"</code> (add <code>"sheet": { "scale": 4 }</code> if it has none; whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
 
 <h2>The same from the command line</h2>
 <p>With Node.js 20 or newer, save the recipe (the playground's <strong>Recipe JSON</strong> button saves it as <code>slime.fluid.json</code>, or <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/slime.fluid.json">open it from the 0.9.1 package</a> and save it), then run:</p>
 <pre><code>npx -y pixelbolt@0.9.1 compile slime.fluid.json --out slime.json
 npx -y pixelbolt@0.9.1 gif slime.json --scale 4 --out slime.gif
 npx -y pixelbolt@0.9.1 render slime.json --out slime</code></pre>
-<p><code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/honey.fluid.json"><code>honey.fluid.json</code></a>, <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/slime-burst.fluid.json"><code>slime-burst.fluid.json</code></a> and <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/honey-drop.fluid.json"><code>honey-drop.fluid.json</code></a>.</p>
+<p>Run them in the folder where you saved the recipe; Pixelbolt won't overwrite existing files unless you add <code>--force</code>. <code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/honey.fluid.json"><code>honey.fluid.json</code></a>, <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/slime-burst.fluid.json"><code>slime-burst.fluid.json</code></a> and <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/honey-drop.fluid.json"><code>honey-drop.fluid.json</code></a>.</p>
 <p>For AI agents: Pixelbolt also runs as a local MCP server, whose <code>pixel_compile</code> tool compiles these recipes. See <a href="https://github.com/skulitom/Pixelbolt#connect-an-agent-through-mcp">Connect an agent through MCP</a> in the README.</p>
 
 <h2>Licence</h2>

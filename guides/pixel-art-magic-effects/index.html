@@ -16,7 +16,7 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pixelbolt previews: magic swirl, bubbling potion">
+<meta property="og:image:alt" content="Pixel art magic swirl and bubbling potion rendered by Pixelbolt">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {
@@ -90,18 +90,19 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="lead">Both effects here are Pixelbolt recipes: short JSON files that run a small fluid simulation and bake it into palette pixels, the same pixels every time.</p>
 <p>Open one in the Pixelbolt playground, recolour it for fire, frost or poison, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
 <p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#magic-swirl">Magic swirl</a> · <a href="#potion">Bubbling potion</a></p>
+<p class="muted">Reading the field names below: an effect's settings sit under <code>effects</code> → its name. An emitter (a source of heat, smoke, liquid or particles) is one entry in its <code>emitters</code> list, found by its <code>"name"</code>. Frames count from 0 (the playground's frame counter starts at 1), and x and y are pixels from the top-left corner.</p>
 
 <section id="magic-swirl">
 <h2>Magic swirl</h2>
-<figure class="stage"><img src="magic-swirl.gif" width="192" height="192" alt="Pixel art magic swirl: two glowing lights orbit a bright core and leave purple mana that spirals" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="magic-swirl-still.png" media="(prefers-reduced-motion: reduce)"><img src="magic-swirl.gif" width="192" height="192" alt="Animated pixel art magic swirl in purple and cyan" decoding="async"></picture></figure>
 <p>Two glowing lights orbit a bright core and leave purple mana that spirals: a portal, a charging spell or a summoning circle.</p>
 <p class="size">48 × 48 pixels, 24 frames of 60 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=zZXLbuMwDEX_hbNlDMmvpv6RLoIsFIuKhcqWIclpi8D_PpCSdFIkDgbzwiwMiIDEQ15eg0dQ1vUiQAOjfiejrNvTSplJS0A4kPPaDtBwhEH0BA30Yq_blX_TzgDCm5ahg6ZcI3Sk9104nUdhKASC5ggHaOBbIXNR7wBhjNGTKMv2GRD6GLWsbhUDhDZGtaJC5YDwEiNVKqYUzAikFLXBx4zXFTRHUE705KHJSwQ5ORFSwTVDMNaO0AQ3EYInktA8I_hp5wONPvW0m-yHGNoPaBjCwbqgWx1ilOUIUnuvx3M-lrE1Qmut0cM-hkWFIJ1IZ1YhUK9DIOeh2RwvWl1UivJu8hLzcovghNRTrJfHcxSJn9j0HnM9IdD7KAYJzYpnvEIYJ-OTlKIfjQ6TpHivRBjJaStj5_OMn9DW9hRWfBEbW_vkBupHciJMLsapEet2OkTc5cWG18iL7RJvb_TwgMezaplX_gKvE8Y-aq-8wkka_Hmg_BdQQWjzqLP8HopnfGlm1Q9QPf9kOQh-FO41Ob-10xDOJjFaUXyRY8620ZnGJvPBS_qVTl8PWwQx7E28yrCo41U_pn9hwzKOLIs4ZY2xb6c2LpZe33oq_6ueQhg7EUXja3brr0X2H_HXEjt57UHbv-m1JWzy3YOO_4HvvpT2X3hQOqGHJU2qe4qsWJZXX1zsaHGW9ydZ3FiKXyWkj8V8_H6-6iZfcWce_HpiPJ_nbVpmr2m3KE1GRj3OWa91P6QVe9Y8dI58Z430J6HzqDSyrK62cbmFjtzFHCKurgEaOAgzEcQWL5jrcq9RbdrRt5gKWfb8BZBX83ae5-8">Open the magic swirl in the playground</a></p>
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>magic-swirl</code>, except <code>palette</code>, which is at the top of the recipe.</p>
 <ul>
-<li><code>orbit</code> on the <code>comet-</code>, <code>glint-</code>, <code>halo-</code> and <code>tail-</code> emitters (<code>radius</code> [16, 13], <code>period</code> 24): the ellipse the two lights follow. A negative <code>period</code> turns them anticlockwise; in a loop it must divide the number of frames (24).</li>
-<li><code>vortex</code> and <code>expand</code> on the <code>swirl</code> emitter (0.7 and −1.15): how fast the mana swirls and how hard it is pulled inwards.</li>
+<li><code>orbit</code> on <code>comet-1</code>, <code>glint-1</code>, <code>halo-1</code> and <code>tail-1</code>, and the same four ending in <code>-2</code> (<code>radius</code> [16, 13], <code>period</code> 24): the ellipse the two lights follow. A negative <code>period</code> turns them anticlockwise; in a loop it must divide the number of frames (24).</li>
+<li><code>vortex</code> and <code>expand</code> on the <code>swirl</code> emitter (0.7 and -1.15): how fast the mana swirls and how hard it is pulled inwards.</li>
 <li><code>palette</code> (<code>v</code>, <code>p</code>, <code>m</code>, <code>c</code> and <code>W</code>): mana from dark violet to magenta, lights in cyan and white. Change them to make it fire, frost or poison.</li>
 <li><code>count</code> in the <code>tail-1</code> and <code>tail-2</code> emitters' <code>sparks</code> (0.7): sparkles shed per frame.</li>
 </ul>
@@ -109,7 +110,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="potion">
 <h2>Bubbling potion</h2>
-<figure class="stage"><img src="potion.gif" width="128" height="160" alt="Pixel art potion: a green potion bubbles in a round glass flask, its surface heaving as bubbles rise and pop" loading="lazy" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="potion-still.png" media="(prefers-reduced-motion: reduce)"><img src="potion.gif" width="128" height="160" alt="Animated pixel art bubbling green potion in a flask" loading="lazy" decoding="async"></picture></figure>
 <p>A green potion bubbles in a round flask: the surface heaves and bubbles rise and pop.</p>
 <p class="size">32 × 40 pixels, 24 frames of 70 ms, looping. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=7ZbRkqI4FIbf5d_bIwUBHScvMP0OlhdBEkkRDQNhenq7fPetE8VG0dqevZjai8kV4Mf_e_IfOLzD-O6gAiRa-1M747u9Xhg32AqEH7rrrT9CZoSjOmimfOArhFdbhRoyF4Ra230dIIuU0CqnQ9CQ7_gGib8ys1K5AWHPZ7lRecHKjs_Wpc5XirX4TK-M2X0FoYn3lZkSKxDqSBqVl2sQXiJZmNQYnAj926H0rmc341TfQG6Q_MsC_SLSXNdTpL6u50ZN_K2eivxBfiPSjMizGJvmZUSm0ARpmpeX8bieMB_IBLhA98gdMWFGpGnuiI8_fUVmxLX2CzKzmVhdkTkxyvx2pP4_IQ-Y2617KFPfZTRn7mOcW82aYcY8aKnoVU-AB415Zsb1uL0_9657uLA9EbQxehfi2_gyJuQ7GnusIOHs9_NMMZ066B5SFIRq6NSZ-5ISnPctZOgGTei1riDXhFfl-P2-QelD8AdsCftO_bDhDXKTUpqI5ZZgnG0h02RNqDq158O0IPiyD2rn2G7zfhkWkJdRQfgJmRLeINMTa1jnIsfTcJMtkyWJVcLqnars0ENmabKc3CVEnFxxAkJmaxbRBxuC7s6Gl5FZaxVAE9m82BJUpxXkZk0iOvDIzAiVPvaxtpSnr_O7sdAFY-3g-jha1aF1NgzV-aZWd9ZXkJk4nehqW3rrbmzFxDZbU_HM9-gtu6SJmKoNZckbeVNHHrdnlCwofybZt6prYmPs_HAMLJ4TnDUaciMKyrm6nXc-7hxeOebe_q0hBUEd946PvkSh2Bgx6WkfLNIk207CXxKMd86_xjoI7dha0x3q_K5ZZNeSUhKrj3JWtPpMMEnB3p8IRxQzazFai-w_WC9-xZvQ1oqRbJ2euFGd901sUmO14wd0dJnmsOccQt3pvvau6mO9nHhlQ607fm5oKtCGGrcx8ocef_oRvs2kMhJU0NcbOe4Cp9VxaLmYPnTqrR9zO53-AQ">Open the potion in the playground</a></p>
@@ -126,8 +127,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <h2>Make your sprite sheet in four steps</h2>
 <ol>
 <li>Open an effect above with its <strong>Open … in the playground</strong> button. The link carries the whole recipe and names Pixelbolt 0.9.1, and the playground renders it in your browser. There is nothing to install and no account.</li>
-<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit, and a JSON mistake is reported with its line number.</li>
-<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×.</li>
+<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit. If the JSON breaks, it says what is wrong, usually with the line number.</li>
+<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×. The sheet and atlas stay at the art's own size (see below).</li>
 <li>Download the files you need (listed below). <strong>Copy link</strong> makes a link to your edited version.</li>
 </ol>
 
@@ -139,14 +140,14 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <li><strong>Frame PNG</strong>: the frame on screen, at the scale you chose.</li>
 <li><strong>Recipe JSON</strong>: the recipe itself, to keep, edit or share.</li>
 </ul>
-<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, add <code>"sheet": { "scale": 4 }</code> at the top level of the recipe (whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
+<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, set <code>"scale"</code> in the recipe's top-level <code>"sheet"</code> (add <code>"sheet": { "scale": 4 }</code> if it has none; whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
 
 <h2>The same from the command line</h2>
 <p>With Node.js 20 or newer, save the recipe (the playground's <strong>Recipe JSON</strong> button saves it as <code>magic-swirl.fluid.json</code>, or <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/magic-swirl.fluid.json">open it from the 0.9.1 package</a> and save it), then run:</p>
 <pre><code>npx -y pixelbolt@0.9.1 compile magic-swirl.fluid.json --out magic-swirl.json
 npx -y pixelbolt@0.9.1 gif magic-swirl.json --scale 4 --out magic-swirl.gif
 npx -y pixelbolt@0.9.1 render magic-swirl.json --out magic-swirl</code></pre>
-<p><code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/potion.fluid.json"><code>potion.fluid.json</code></a>.</p>
+<p>Run them in the folder where you saved the recipe; Pixelbolt won't overwrite existing files unless you add <code>--force</code>. <code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. The same commands work for <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/potion.fluid.json"><code>potion.fluid.json</code></a>.</p>
 <p>For AI agents: Pixelbolt also runs as a local MCP server, whose <code>pixel_compile</code> tool compiles these recipes. See <a href="https://github.com/skulitom/Pixelbolt#connect-an-agent-through-mcp">Connect an agent through MCP</a> in the README.</p>
 
 <h2>Licence</h2>

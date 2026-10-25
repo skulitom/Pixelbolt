@@ -16,7 +16,7 @@
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Pixelbolt previews: explosion with fireball and smoke, small bursts: sparks, embers, dust, leaves and shatter">
+<meta property="og:image:alt" content="Pixel art explosion fireball with sparks, and a small spark burst, rendered by Pixelbolt">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
 {
@@ -90,12 +90,13 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="lead">The explosion below is a Pixelbolt recipe: a short JSON file that runs a small simulation of heat and smoke and bakes it into palette pixels, the same pixels every time. The smaller bursts after it use plain particles instead.</p>
 <p>Open either in the Pixelbolt playground, change the blast or the sparks, and download a sprite sheet, an atlas for your engine or a GIF. It is free and runs in your browser, with nothing to install.</p>
 <p class="muted">Pixelbolt 0.9.1 · 25 October 2026 · On this page: <a href="#explosion">Explosion with fireball and smoke</a> · <a href="#effects-sparks">Small bursts: sparks, embers, dust, leaves and shatter</a></p>
+<p class="muted">Reading the field names below: an effect's settings sit under <code>effects</code> → its name. An emitter (a source of heat, smoke, liquid or particles) is one entry in its <code>emitters</code> list, found by its <code>"name"</code>. Frames count from 0 (the playground's frame counter starts at 1), and x and y are pixels from the top-left corner.</p>
 
 <section id="explosion">
 <h2>Explosion with fireball and smoke</h2>
-<figure class="stage"><img src="explosion.gif" width="256" height="256" alt="Pixel art explosion: a white flash grows into an orange fireball that rises, cools to red and turns into grey smoke while sparks fly out" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="explosion-still.png" media="(prefers-reduced-motion: reduce)"><img src="explosion.gif" width="256" height="256" alt="Animated pixel art explosion: fireball, smoke and sparks" decoding="async"></picture></figure>
 <p>A white flash grows into an orange fireball that rises, cools to red and turns into grey smoke, while sparks streak outwards.</p>
-<p class="size">64 × 64 pixels, 32 frames of 60 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p class="size">64 × 64 pixels, 32 frames of 60 ms. It is a one-shot: Pixelbolt's GIF export plays it once, and the atlas JSON marks it <code>"loop": false</code>. This preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=xZbdbuMoFMff5eztKcKAP8pjzFz0IuoFiXGCQkwEuJ2oyruvwG1CNtluZ7ZSLixxsPnzOx8c8waD8zsVQcLe_NJ2cH6tHwY7mR4QXrQPxo0gK4RR7TRI0L_21uVJhFfTxw3IRiBstFlv4jzeK6tj1CDf4Akk_DUMw1I3gHCYrZ6LJO5mq1NsCQg-WX0jaLZ-JKsbmGIaEEKyllzVKq37md81bdcxQNgmq1ZC10s4Iuhh0KsY0t5nUvkGg1c7HUByhtBPXsU831CEoHUPskVYTu6gxtUBJCVVh_D67tIDJVQgvDgfzcrE_J4j9CYEs38XoqTibY2wcs6acZ0nGoTeq3mMoHcmRu0DyMXbRywHq8IGEFL4F5whb58RvOrNFEDWiciHmIMf9W6vvYqT1yAZaRAGa1Zb7ZO6OOJJcmlViA9VKdoVoiINU2oS0diDTI7oMWS32NU-HaYoqvwhYQijMyEt_gdAfQXAPgCYuPSKFwAhKh_PKKJEIeIKRpxhsvFlGP4BIyhy_jkMuwFzFf8_BRGntLQoRAHCSP3vcSlTVF3H5QxTpXx9GaY-wVDk1ddSVKLwGykqI_MbKM2pWloUZYLYNQp_R6kLFJocv0CpytLNAF-A6fXSm3A-PFWNnJO64KnIxak810zYK7_NXWflpjHNkRbBmkGDXDxilURWzrp8_uEp98L5cbn3PSNEr4wFGf2kEdS4tmlp1XTIKvacdsh9asGxzkhrr16y8wuKlORPProN5QiDs9a9gqTHawfPh5Mia-_q3mOHTHyze6fjzhpk1T3dY6xD1n6ze-cm0pAaGbtvgbKmQ_7dBXpqTYLfuUDZY4f8uwv01O5Ei1zc0z3OOuT_s0CfEaxz23yvGYy2fXZ07swl1TZTbLwOG2f7NEUJTXeT3sTN3IybdHdMt6Qx_RrUQXsBKXyfyf7M98NraYaUiPpSvi71X5Sd9IV82Kjevf4nNL8QFZ9r2nyHLCVvwTa_I1n-6ErhHznVc8pTjJ5uRaVDSmqssCItMiIu9r0VnlRYVqtx2qfqC9GrQ5ir6Hg8Hv8G">Open the explosion in the playground</a></p>
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>explosion</code> in the recipe.</p>
@@ -110,14 +111,14 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <section id="effects-sparks">
 <h2>Small bursts: sparks, embers, dust, leaves and shatter</h2>
-<figure class="stage"><img src="effects-sparks.gif" width="192" height="160" alt="Pixel art spark burst: a white flash, then sparks that fly up and fall, fading from white-hot to red" loading="lazy" decoding="async"></figure>
+<figure class="stage"><picture><source srcset="effects-sparks-still.png" media="(prefers-reduced-motion: reduce)"><img src="effects-sparks.gif" width="192" height="160" alt="Animated pixel art spark burst" loading="lazy" decoding="async"></picture></figure>
 <p>This recipe uses plain particles rather than a simulation, which suits small, sharp effects. It holds five animations: <code>sparks</code> (shown), <code>embers</code>, <code>dust</code>, <code>leaves</code> and <code>shatter</code>. Pick one from the playground's Animation menu. The playground lists it as Particle effects.</p>
-<p class="size">48 × 40 pixels, 9 frames of 55 ms. It plays once; this preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
+<p class="size">48 × 40 pixels, 9 frames of 55 ms. It is a one-shot: Pixelbolt's GIF export plays it once, and the atlas JSON marks it <code>"loop": false</code>. This preview repeats it after a 0.6 s pause, as the playground does. Shown at 4×.</p>
 <p><a class="open" href="https://skulitom.github.io/Pixelbolt/playground/#v=0.9.1&amp;r=xVXLkqM6DP0XzVZxYfMI4Qd6PZVFFikWDhhCXRNom3QPleLfp2Tec7vvLO8KH2HL0tGR_IKiMbXsIIG2-qV00ZhSHYpfgPChjK2aByQc4SFrBQmoolBZZwHhs8q7OyRBjHBXVXnvIAk8hFZq1XUKkhdcIIEfRVEEeQQI_YhyHhFqHAriwM8AwRDKRMB9CQiWUB5nRxkDwpmQ9OP8GADCk1BUhHkoAEETusV5dqRzJaHj6cZDQm-E_OIoA0LvzstJRhl5-em83KI4jmFAsH19a7SlmO9NB8kVLpAifEpTE-gJZE2jCTQEpL3T2tC60NLeDx5hxi6MAQK79Bf6XvpLf9ng8f9yhrubGGNuD-vHsz3r2QaP_1MEVd-UOdyq0oVER5p-sS9hjrvyql5iHS3qkS8Rt8-imB0xay1dY621Z2L7fD4_503jBjLb1XiwtdSOCnsmm1ayOEjCunSBl2-L-eY8aKrNaszIWJLxzZGR3at2dPD-k2qzGt3xd1ev2eQOM7K9r8Z83JcOCPKR3RuiQwToR5T-JNjkBbaV5h-3KoyslYXkhJA_jeycyMMQwSqVQ8I50VZ1nTIWkusLqDucRy9dOsHVEBBuT2M71yK6KhQkAsHeZUvur4s41pITi1pSMzSPTMGAX3sfvSJIo4gaH0W6XiUoz1IrOuaF6PthimBbF_uVsxh9FqQIpZEfVddDcvXQYz55yI0sIfGYF8zhXiM8OUU2RJsfIdyaJ0WWeMwPt7lQa0xNMbXD2AgpQmdkpYnYrNHkBgw1p3qUNCH4MFBlnA537PNoS__RQ9BN00LSmaeaSxF8VwlKeSKHC8eOkZ2LOtywE4Yo4i07HouQM54u6XOBPKYNn1SUF8i61VX3zN0_pIq0ylRNDslx2LKxtuPcgtvm27Yd0V5Z2-gPF54IHR35k0q5khH_ycWYf_Rl_mLMf9KKVsVGKgHyVSrBygU_xshP0U4pAgXbykKIvWoOpJSVq6OTysrBMkimcbEbEH-kHaxKj3bRG_d2_DV8P6CGFv9f-FQ0reSH2mtYfF230ze6dVqbdethsOYab5vaQz_wtrlOme5b2jmbk-drS3MPufhO0yzYqTraqvo6T_Nlfqd4nZfL-F5sGSzjP13nmmtiBKNq2brkqfL0Nms37ehdLqfXWsPwdXfYuyTuvmc6Wpj2v2FaRCvT0Zbo039NT4E-C_9FdBBuZ6eYiaaQ5sEZ7gbnjtPpgSPapmdtWWbrMoc0HdJhGH4D">Open the particle bursts in the playground</a></p>
 <h3>Make it yours</h3>
-<p class="muted">These sit under <code>effects</code> → <code>sparks</code>, on the emitter named <code>burst</code>.</p>
+<p class="muted">These sit under <code>effects</code> → <code>sparks</code>, on the emitter whose <code>"name"</code> is <code>"burst"</code>.</p>
 <ul>
-<li><code>burst</code> (12): how many particles it throws.</li>
+<li>Its <code>burst</code> field (12): how many particles it throws at once.</li>
 <li><code>angle</code> ([205, 335]) and <code>speed</code> ([1.8, 3.4]): the launch direction in degrees, clockwise from right (270 is straight up), and the speed in pixels per frame. Each particle picks a value between the two numbers.</li>
 <li><code>gravity</code> ([0, 0.32]): the pull added to each particle every frame.</li>
 <li><code>floor</code> (36) and <code>bounce</code> (0.35): particles never go below y = 36, and keep this share of their downward speed when they reach it.</li>
@@ -128,8 +129,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <h2>Make your sprite sheet in four steps</h2>
 <ol>
 <li>Open an effect above with its <strong>Open … in the playground</strong> button. The link carries the whole recipe and names Pixelbolt 0.9.1, and the playground renders it in your browser. There is nothing to install and no account.</li>
-<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit, and a JSON mistake is reported with its line number.</li>
-<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×.</li>
+<li>Change a value in the <strong>Recipe JSON</strong> box. The preview renders again after each edit. If the JSON breaks, it says what is wrong, usually with the line number.</li>
+<li>Choose a scale for the frame PNG and the GIF, from 1× to 16×. The sheet and atlas stay at the art's own size (see below).</li>
 <li>Download the files you need (listed below). <strong>Copy link</strong> makes a link to your edited version.</li>
 </ol>
 
@@ -141,14 +142,16 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <li><strong>Frame PNG</strong>: the frame on screen, at the scale you chose.</li>
 <li><strong>Recipe JSON</strong>: the recipe itself, to keep, edit or share.</li>
 </ul>
-<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, add <code>"sheet": { "scale": 4 }</code> at the top level of the recipe (whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
+<p>Sheets come at the art's own size, one pixel per pixel. For a bigger sheet, set <code>"scale"</code> in the recipe's top-level <code>"sheet"</code> (add <code>"sheet": { "scale": 4 }</code> if it has none; whole numbers from 1 to 16), or scale it in your engine with nearest-neighbour filtering. Every PNG the playground exports carries its recipe, so you can open it in the playground later (<strong>Open file</strong>, or drop it on the page) and carry on editing.</p>
 
 <h2>The same from the command line</h2>
 <p>With Node.js 20 or newer, save the recipe (the playground's <strong>Recipe JSON</strong> button saves it as <code>explosion.fluid.json</code>, or <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/explosion.fluid.json">open it from the 0.9.1 package</a> and save it), then run:</p>
 <pre><code>npx -y pixelbolt@0.9.1 compile explosion.fluid.json --out explosion.json
 npx -y pixelbolt@0.9.1 gif explosion.json --scale 4 --out explosion.gif
 npx -y pixelbolt@0.9.1 render explosion.json --out explosion</code></pre>
-<p><code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. For the particle bursts, compile <code>effects.fx.json</code> the same way, then pick an animation: <code>npx -y pixelbolt@0.9.1 gif effects.json --animation sparks --scale 4 --out sparks.gif</code>.</p>
+<p>Run them in the folder where you saved the recipe; Pixelbolt won't overwrite existing files unless you add <code>--force</code>. <code>compile</code> runs the simulation and writes the result as an ordinary recipe of frames. <code>gif</code> writes the animation as a GIF. <code>render</code> writes a folder with the sprite sheet, its atlas JSON, every frame as a PNG, an animated PNG, CSS classes, a small Canvas player, a preview page and the recipe. For the particle bursts, save <a href="https://cdn.jsdelivr.net/npm/pixelbolt@0.9.1/examples/effects.fx.json"><code>effects.fx.json</code></a>, compile it the same way and pick one of its five animations with <code>--animation</code>:</p>
+<pre><code>npx -y pixelbolt@0.9.1 compile effects.fx.json --out effects.json
+npx -y pixelbolt@0.9.1 gif effects.json --animation sparks --scale 4 --out sparks.gif</code></pre>
 <p>For AI agents: Pixelbolt also runs as a local MCP server, whose <code>pixel_compile</code> tool compiles these recipes. See <a href="https://github.com/skulitom/Pixelbolt#connect-an-agent-through-mcp">Connect an agent through MCP</a> in the README.</p>
 
 <h2>Licence</h2>
