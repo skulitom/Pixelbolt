@@ -19,10 +19,10 @@ const temp = async t => {
   return dir;
 };
 // An MCP session whose export directory is <project>/output, like the plugin's.
-async function session(t, project, directory = path.join(project, 'output')) {
+async function session(t, project, directory = path.join(project, 'output'), root = project) {
   const input = new PassThrough(), output = new PassThrough(), waiting = new Map(); let buffer = '', next = 0;
   output.on('data', chunk => { buffer += chunk; for (let end; (end = buffer.indexOf('\n')) !== -1; buffer = buffer.slice(end + 1)) { const message = JSON.parse(buffer.slice(0, end)); waiting.get(message.id)?.(message); } });
-  const running = startMCP({ input, output, directory, root: project });
+  const running = startMCP({ input, output, directory, root });
   t.after(async () => { input.end(); await running; });
   const request = (method, params) => new Promise(resolve => { waiting.set(++next, resolve); input.write(JSON.stringify({ jsonrpc: '2.0', id: next, method, params }) + '\n'); });
   await request('initialize', { protocolVersion: '2025-11-25' });
@@ -278,4 +278,17 @@ test('pixel_render saveAs keeps every server\'s source files for a revision they
     const { isError, info } = await first.render({ revision: one.info.revision, saveAs: { recipe: file }, overwrite: true });
     assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], `${file}: ${JSON.stringify(info)}`);
   }
+});
+
+test('pixel_render saveAs protects a revision\'s files through a server with another root', async t => {
+  const project = await temp(t), game = path.join(project, 'game');
+  await mkdir(path.join(game, 'assets'), { recursive: true });
+  await writeFile(path.join(game, 'assets', 'palette.json'), JSON.stringify(spirit.palette));
+  // Validated where the root is the game folder; rendered where the root is the folder above it.
+  const inner = await session(t, game, path.join(project, 'output')), outer = await session(t, project, path.join(project, 'output'));
+  const validated = await inner.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'assets/palette.json' } } });
+  assert.equal(validated.isError, false, JSON.stringify(validated.info));
+  const { isError, info } = await outer.render({ revision: validated.info.revision, saveAs: { recipe: 'game/assets/palette.json' }, overwrite: true });
+  assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
+  assert.deepEqual(JSON.parse(await readFile(path.join(game, 'assets', 'palette.json'), 'utf8')), spirit.palette);
 });

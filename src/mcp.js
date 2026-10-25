@@ -76,9 +76,10 @@ const withResolved = (summary, resolved) => resolved.length ? { ...summary, reso
 // the server. Nothing is kept between calls except the revisions and output folders on disk.
 export function createToolRunner({ directory, root, version }) {
   const { remember, read } = createRevisionStore(directory);
-  // The files a revision's recipe references (palettes and assets, relative to the root) are kept beside it, so
-  // saveAs never writes over them, even when the recipe comes back as a revision. One JSON string per line, only ever
-  // appended to, so servers sharing an export directory never drop each other's entries; a damaged line is skipped.
+  // The files a revision's recipe references (palettes and assets) are kept beside it as absolute paths, so saveAs
+  // never writes over them, even when the recipe comes back as a revision through a server with another root. One
+  // JSON string per line, only ever appended to, so servers sharing an export directory never drop each other's
+  // entries; a damaged line is skipped.
   const sourcesFile = id => path.join(path.resolve(directory), '.revisions', `${id}.sources`);
   const sourcesOf = async id => {
     let text;
@@ -86,7 +87,7 @@ export function createToolRunner({ directory, root, version }) {
     return [...new Set(text.split('\n').flatMap(line => { try { const item = JSON.parse(line); return typeof item === 'string' ? [item] : []; } catch { return []; } }))];
   };
   const keep = async (recipe, sources = []) => {
-    const id = await remember(recipe), known = new Set(await sourcesOf(id)), added = [...new Set(sources)].filter(item => !known.has(item));
+    const id = await remember(recipe), known = new Set(await sourcesOf(id)), added = [...new Set(sources.map(file => path.resolve(root, file)))].filter(item => !known.has(item));
     // Each append starts on a new line, so one cut short by a crash spoils only itself.
     if (added.length) await appendFile(sourcesFile(id), '\n' + added.map(item => JSON.stringify(item)).join('\n') + '\n');
     return id;
