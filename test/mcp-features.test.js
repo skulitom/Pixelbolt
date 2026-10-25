@@ -106,6 +106,45 @@ test('MCP answers an oversized request with an error, recovers its id and keeps 
   input.end(); await running;
 });
 
+test('MCP stops a tool call that runs past its time limit or out of memory, and keeps serving', async t => {
+  const dir = await temp(t, 'limits'), slow = session({ directory: dir, timeLimit: 300 }); await slow.init();
+  try {
+    // A thick liquid this size takes most of a minute to simulate, well inside the compiler's own work budget.
+    const goo = { kind: 'liquid', frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
+      fill: [{ x: 0, y: 0, w: 64, h: 52 }], emitters: [], look: [{ field: 'density', colors: ['a', 'b'], thresholds: [0.3, 0.6] }] };
+    const source = { format: 'pixelforge-fluid', version: 1, name: 'slow', width: 64, height: 52, palette: { a: '#123', b: '#456' }, effects: { goo } };
+    const started = performance.now(), stopped = await slow.call('pixel_compile', { source });
+    assert.equal(stopped.result.isError, true);
+    assert.match(stopped.info.error, /^pixel_compile took longer than 0\.3 s and was stopped\. Make the work smaller/);
+    assert.ok(performance.now() - started < 20000);
+    // The protocol kept answering, and the next call runs in a fresh worker.
+    assert.deepEqual((await slow.request('ping')).result, {});
+    assert.equal((await slow.call('pixel_validate', { project: strip })).info.ok, true);
+  } finally { slow.input.end(); await slow.running; }
+  // A call that needs more JavaScript objects than the memory limit allows is stopped the same way. The worker starts
+  // in about 11 MB; this recipe's 400,000 operations take about 24 MB more before any drawing.
+  const small = session({ directory: dir, memoryLimit: 24 }); await small.init();
+  try {
+    const ops = Array.from({ length: 400000 }, (_, i) => ({ op: 'pixel', x: i % 4, y: i % 2, color: 'k' }));
+    const stopped = await small.call('pixel_validate', { project: { ...strip, frames: [{ name: 'a', ops }] } });
+    assert.equal(stopped.result.isError, true);
+    assert.match(stopped.info.error, /^pixel_validate ran out of memory \(24 MB\) and was stopped/);
+    assert.equal((await small.call('pixel_validate', { project: strip })).info.ok, true);
+  } finally { small.input.end(); await small.running; }
+});
+
+test('MCP refuses a video sequence over 512 MB before writing anything', async t => {
+  const dir = await temp(t, 'sequence-cap'), mcp = session({ directory: dir }); await mcp.init();
+  try {
+    // Five minutes of 4K at 60 fps: 18,000 PNGs, about 660 MB, which one call used to write without a question.
+    const refused = await mcp.call('pixel_render', { project: strip, sequence: { fps: 60, seconds: 300, size: '4k' } });
+    assert.equal(refused.result.isError, true);
+    assert.equal(refused.info.path, 'sequence');
+    assert.match(refused.info.error, /these 18000 frames come to \d+ MB, more than one call writes \(512 MB\).*pixelbolt sequence/);
+    assert.deepEqual(await readdir(dir), []);
+  } finally { mcp.input.end(); await mcp.running; }
+});
+
 test('MCP compiles pose sources and autotile templates into revisions it can render and review in scenes', async t => {
   const dir = await temp(t, 'compile'), mcp = session({ directory: dir, root: dir });
   await mcp.init();

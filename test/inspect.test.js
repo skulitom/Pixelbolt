@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { renderProject, inspectProject } from '../src/core.js';
+import { renderProject, inspectProject, wildcard } from '../src/core.js';
 
 const pixel = (sheet, x, y) => [...sheet.data.slice((y * sheet.width + x) * 4, (y * sheet.width + x) * 4 + 4)];
 test('grids read pixels back as palette keys, transparency and one shared legend', () => {
@@ -74,6 +74,22 @@ test('a stride picks the A or B frames of a strobe that evenly spaced samples wo
   for (const [options, message] of [[{ offset: 192 }, /inspect\.offset: the selection has 192 positions, numbered from 0; choose an offset below 192/], [{ step: 0 }, /inspect\.step/], [{ step: 1.5 }, /inspect\.step/], [{ frames: ['c-*'] }, /inspect\.frames\[0\]: no frame matches "c-\*"/], [{ frames: ['a.*'] }, /inspect\.frames\[0\]: unknown frame/]]) assert.throws(() => inspectProject(project, options), message);
   assert.equal(inspectProject(project, { frames: Array(5).fill('*'), maxCells: 4 }).sampling.total, 960);
   assert.throws(() => inspectProject(project, { frames: Array(6).fill('*') }), /inspect\.frames: the names and patterns select 1152 frames; at most 1,024 cells/);
+});
+test('frame-name patterns match as * and ? always did, in time proportional to pattern × name', () => {
+  // Seeded random patterns and names over a small alphabet agree with the regular expression the matcher replaced.
+  let seed = 7;
+  const next = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  const word = (alphabet, length) => Array.from({ length }, () => alphabet[next(alphabet.length)]).join('');
+  for (let i = 0; i < 4000; i++) {
+    const pattern = word('ab*?', 1 + next(7)), name = word('ab', next(9));
+    assert.equal(wildcard(pattern, name), new RegExp(`^${pattern.replaceAll('*', '.*').replaceAll('?', '.')}$`).test(name), `${pattern} ${name}`);
+  }
+  // The regular expression backtracked through every *: against this name, six *a took about 4 s and eight ran for
+  // over a minute. This pattern has nine.
+  const project = renderProject({ version: 1, name: 'long', width: 1, height: 1, frames: [{ name: 'a'.repeat(64) }] });
+  const started = performance.now();
+  assert.throws(() => inspectProject(project, { frames: ['*a*a*a*a*a*a*a*a*a*b'] }), /no frame matches/);
+  assert.ok(performance.now() - started < 1000);
 });
 test('CLI inspect takes --step and --offset', () => {
   const run = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', 'inspect', 'examples/forest-spirit.json', ...args], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });

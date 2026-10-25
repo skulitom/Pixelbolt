@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### MCP calls have time and memory limits
+
+- Every MCP tool call runs in a worker thread. A call that takes longer than 50 seconds, or runs out of memory, is stopped and answered with an error naming the limit, and the server keeps serving; before, one call could hold the server for many minutes or crash it. `pixelbolt mcp --time-limit <seconds>` changes the time limit.
+- Child particle emitters that multiply within one frame fail at the 1,024-particle limit as soon as they reach it. A four-level `when: "life"` chain used to build millions of particles first and crash the process out of memory.
+- `*` and `?` frame patterns in `inspect` match in time proportional to the pattern and name. The regular expression they used could take minutes on a pattern of 18 characters.
+- An MCP `sequence` may come to at most 512 MB, the studio's limit; `pixelbolt sequence` writes longer shots. One call used to write 18,000 4K frames, about 660 MB, without a question.
+- `pixel_help` with an unknown topic names the topics instead of failing with a file path.
+
 ### Fixes: scene repeats, forced re-exports, exports over their own recipe
 
 - A scene placement's `repeat` draws every copy again. Since 2026-10-07 only placements with `sort: "ground"` did; the others drew one copy and dropped the rest (the Listening Hollow's stride scene lost five ground tiles).

@@ -904,6 +904,21 @@ export function tileReport(data, width, height) {
   };
 }
 
+// Frame-name patterns: `*` matches any run of characters and `?` exactly one. On a mismatch only the last `*` is
+// retried, one character further on, so a match takes at most pattern × name steps; the regular expression this
+// replaces backtracked through every `*` and a 14-character pattern could take seconds.
+export function wildcard(pattern, text) {
+  let p = 0, t = 0, star = -1, resume = 0;
+  while (t < text.length) {
+    if (p < pattern.length && (pattern[p] === '?' || pattern[p] === text[t])) { p++; t++; }
+    else if (p < pattern.length && pattern[p] === '*') { star = p++; resume = t; }
+    else if (star !== -1) { p = star + 1; t = ++resume; }
+    else return false;
+  }
+  while (pattern[p] === '*') p++;
+  return p === pattern.length;
+}
+
 export function inspectProject(project, options = {}) {
   object(options, 'inspect', ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'view', 'native', 'diagnostics', 'maxCells', 'step', 'offset']);
   const { width, height, frames } = project;
@@ -918,7 +933,7 @@ export function inspectProject(project, options = {}) {
     // A name with * (any run of characters) or ? (one character) selects every matching frame in project order.
     cells = options.frames.flatMap((ref, i) => {
       if (typeof ref === 'string' && /^[a-zA-Z0-9_*?-]+$/.test(ref) && /[*?]/.test(ref)) {
-        const pattern = new RegExp(`^${ref.replaceAll('*', '.*').replaceAll('?', '.')}$`), matches = frames.flatMap((f, index) => (pattern.test(f.name) ? [index] : []));
+        const matches = frames.flatMap((f, index) => (wildcard(ref, f.name) ? [index] : []));
         if (!matches.length) fail(`inspect.frames[${i}]`, `no frame matches ${JSON.stringify(ref)}`);
         return matches;
       }

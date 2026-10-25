@@ -44,7 +44,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt preview [file.json] [--port N] [--open]
                                            Studio for a recipe or scene; sources open as their compiled recipe.
                                            Port 4747, or a free one when it is in use; --open starts your browser
-  pixelbolt mcp [--out directory] [--root directory]  Run the MCP server over stdio
+  pixelbolt mcp [--out directory] [--root directory] [--time-limit seconds]  Run the MCP server over stdio
   pixelbolt schema                         Print the JSON Schema
 
 Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. Exports never write over their own recipe. '-' reads JSON from stdin.
@@ -79,7 +79,7 @@ function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
     if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded'].includes(args[i])) options[args[i].slice(2)] = true;
-    else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect'].includes(args[i])) {
+    else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
       options[key] = args[++i];
@@ -148,7 +148,7 @@ try {
   else {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
-    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
+    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root', 'time-limit'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     allowed.compile.push('expand');
     allowed.share = [];
@@ -167,7 +167,11 @@ try {
       console.log(JSON.stringify({ ok: true, file }));
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
     else if (command === 'mcp') {
-      const { startMCP } = await import('../src/mcp.js'); await startMCP({ directory: options.out, ...(options.root !== undefined && { root: path.resolve(options.root) }) });
+      const { startMCP } = await import('../src/mcp.js');
+      // A tool call that runs longer is stopped and answered with an error; the default is 50 seconds.
+      const limit = options['time-limit'] === undefined ? undefined : Number(options['time-limit']);
+      if (limit !== undefined && !(limit >= 1 && limit <= 3600)) throw new Error('--time-limit must be 1 to 3600 seconds');
+      await startMCP({ directory: options.out, ...(options.root !== undefined && { root: path.resolve(options.root) }), ...(limit !== undefined && { timeLimit: limit * 1000 }) });
     } else if (command === 'preview') {
       const { startStudio, openBrowser, STUDIO_PORT } = await import('../src/server.js');
       const port = options.port === undefined ? STUDIO_PORT : Number(options.port);

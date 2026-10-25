@@ -1,4 +1,5 @@
 import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
+import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import { PixelError, MAX_REQUEST_BYTES, renderProject, inspectProject, compareProjects, scalePixels, reviewPixels } from './core.js';
 import { patchRecipe } from './patch.js';
@@ -58,7 +59,179 @@ const HELP_TOPICS = {
 };
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-normals': compileNormals };
 
-export async function startMCP({ directory = 'output', root = process.cwd(), input = process.stdin, output = process.stdout } = {}) {
+const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern, first: info.first, frames: info.frames, fps: info.fps.label, seconds: info.seconds, width: info.width, height: info.height, alpha: info.alpha, placement: info.placement, loop: info.loop, notes: info.notes, ffmpeg: info.commands });
+// An MCP call writes at most this much sequence: the studio's download cap. Longer or larger shots go through
+// `pixelbolt sequence`, which a person runs on purpose.
+const SEQUENCE_BYTES = 512 * 1048576;
+function checkSequenceSize(frames) {
+  const total = [...frames.files.values()].reduce((sum, bytes) => sum + bytes.length, 0);
+  if (total > SEQUENCE_BYTES) throw new PixelError('sequence', `these ${frames.info.frames} frames come to ${Math.ceil(total / 1048576)} MB, more than one call writes (${SEQUENCE_BYTES / 1048576} MB); lower the size, fps or seconds, or use the pixelbolt sequence command for longer shots`);
+  return frames;
+}
+const withResolved = (summary, resolved) => resolved.length ? { ...summary, resolved } : summary;
+
+// Runs one tool call and returns its MCP result; every failure comes back as an isError result. startMCP runs it in a
+// worker thread (mcp-worker.js), so a call that takes too long or runs out of memory can be stopped without stopping
+// the server. Nothing is kept between calls except the revisions and output folders on disk.
+export function createToolRunner({ directory, root, version }) {
+  const { remember, read } = createRevisionStore(directory);
+  // Inline file references are resolved inside the root; revisions store the resolved recipe, so they stay immutable.
+  const recipeFrom = async (project, revision) => {
+    if ((project === undefined) === (revision === undefined)) throw new PixelError('arguments', 'send either project or revision');
+    if (project === undefined) return { recipe: await read(revision), resolved: [] };
+    const { document, files } = await resolveReferences(project, { baseDir: root, root });
+    return { recipe: document, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) };
+  };
+  const newFolder = async name => { await mkdir(path.resolve(directory), { recursive: true }); return mkdtemp(path.join(path.resolve(directory), `${name}-`)); };
+  return async function runTool(name, args) {
+    try {
+      const { project: spec, revision, changes, ...options } = args;
+      if (name === 'pixel_help') {
+        // Markdown topics come back as written; JSON ones without the files' indentation.
+        if (args.topic !== undefined && !Object.hasOwn(HELP_TOPICS, args.topic)) throw new PixelError('topic', `expected one of ${Object.keys(HELP_TOPICS).join(', ')}`);
+        const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
+        return { content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] };
+      } else if (name === 'pixel_validate') {
+        const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe);
+        return { content: [textContent(withResolved({ ok: true, revision: await remember(recipe), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
+      } else if (name === 'pixel_inspect') {
+        const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
+        let recipe, resolved, metadata = suppliedMetadata;
+        if (poseSource !== undefined) {
+          if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
+          const input = await resolveReferences(poseSource, { baseDir: root, root });
+          ({ recipe, metadata } = compilePoses(input.document)); resolved = input.files.map(file => path.relative(root, file).split(path.sep).join('/'));
+        } else ({ recipe, resolved } = await recipeFrom(spec, revision));
+        const project = renderProject(recipe, layers === undefined ? {} : { layers });
+        let view;
+        if (inspection.view === 'motion') {
+          if (layers !== undefined || reference !== undefined) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers and reference');
+          const { view: mode, ...motionOptions } = inspection;
+          view = inspectMotion(project, { ...motionOptions, metadata, ...(speed !== undefined && { speed }), ...(ground !== undefined && { ground }) });
+        } else {
+          if (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'speed, ground and metadata require view: motion');
+          view = inspectProject(project, inspection);
+        }
+        const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
+        const content = [textContent(withResolved({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
+        if (view.nativeSheet) content.push(imageContent(view.nativeSheet));
+        if (view.grids) content.push(textContent(gridText(view)));
+        if (reference !== undefined) {
+          const { image, ...report } = comparison;
+          content.push(textContent({ reference, comparison: report, ...(image && { comparisonImage: { region: image.region, frames: image.frames, omitted: image.omitted ?? 0 } }) }));
+          if (image) content.push(imageContent(image.sheet));
+        }
+        return { content };
+      } else if (name === 'pixel_patch') {
+        if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
+        const { recipe: base, resolved } = await recipeFrom(spec, revision), before = renderProject(base);
+        const applied = options.overlay === undefined ? patchRecipe(base, changes) : applyOverlay(base, options.overlay);
+        const { recipe, edits } = applied, after = renderProject(recipe);
+        const { image, ...report } = compareProjects(before, after), baseId = await remember(base);
+        const summary = { ok: true, revision: await remember(recipe), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
+        return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] };
+      } else if (name === 'pixel_render') {
+        const { animation, listFiles, gif, sequence, share, embedRecipe } = options, expect = readExpect(options.expect);
+        for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
+        const { recipe, resolved } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
+        // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
+        if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
+        const gifs = gif === undefined ? [] : Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif));
+        if (gifs.reduce((sum, item) => sum + item.frames * item.width * item.height, 0) > 67108864) throw new PixelError('gif', 'all animations at this scale exceed 67,108,864 pixels; lower gif.scale');
+        const frames = sequence === undefined ? null : checkSequenceSize(createSequence(bundle.project, { ...(animation !== undefined && { animation }), ...(sequence !== null && typeof sequence === 'object' ? sequence : { fps: undefined }) }));
+        let shared;
+        if (share === true) {
+          try { const link = await shareLink(recipe, version); shared = { link, characters: link.length }; }
+          catch (error) { shared = { error: error.message }; }
+        }
+        // Every PNG this call writes carries the recipe, video frames included.
+        if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
+        const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
+        const files = await writeBundle(bundle, out);
+        if (frames) await writeBundle(frames, path.join(out, 'sequence'));
+        if (gifs.length) await mkdir(path.join(out, 'gifs'));
+        for (const item of gifs) await writeFile(path.join(out, 'gifs', `${item.animation}.gif`), item.data, { flag: 'wx' });
+        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
+      } else if (name === 'pixel_compile') {
+        const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
+        const format = document?.format;
+        if (!Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals');
+        const { recipe, metadata, warnings: compiled = [] } = COMPILERS[format](document);
+        const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
+        return { content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] };
+      } else if (name === 'pixel_scene') {
+        const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
+        const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false });
+        const scale = args.scale ?? Math.max(1, Math.min(8, Math.floor(768 / Math.max(frame.width, frame.height))));
+        const pixels = args.view === 'grayscale' ? reviewPixels(frame.data, 'grayscale') : frame.data;
+        const summary = { ok: true, name: document.name, width: frame.width, height: frame.height, duration: scene.duration, time: args.time ?? 0, scale, placements: frame.placements.length, tilemaps: frame.placements.filter(p => p.tilemap).map(p => ({ name: p.name, tiles: p.tiles })), ...(frame.lights && { lights: frame.lights }), warnings: frame.warnings, ...(sources.length && { resolved: sources.map(file => path.relative(root, file).split(path.sep).join('/')) }) };
+        // The sequence is built before anything is written, so a refused one leaves no folder behind.
+        const frames = args.sequence === undefined ? null : checkSequenceSize(createSceneSequence(scene, document.name, args.sequence));
+        if (frames && args.export !== true) { const out = await newFolder(document.name); await writeBundle(frames, path.join(out, 'sequence')); Object.assign(summary, { directory: out, sequence: sequenceSummary(frames.info) }); }
+        if (args.export === true) {
+          const bundle = await createSceneBundle(document), out = await newFolder(document.name);
+          if (frames) { await writeBundle(frames, path.join(out, 'sequence')); summary.sequence = sequenceSummary(frames.info); }
+          Object.assign(summary, { directory: out, ...outputSummary(out, await writeBundle(bundle, out), false), playback: path.join(out, 'preview.html') });
+        }
+        return { content: [textContent(summary), imageContent({ data: scalePixels(pixels, frame.width, frame.height, scale), width: frame.width * scale, height: frame.height * scale })] };
+      } else if (name === 'pixel_import') {
+        if ((args.data === undefined) === (args.path === undefined)) throw new PixelError('arguments', 'send either data (base64 PNG) or path');
+        let bytes;
+        if (args.data !== undefined) bytes = Buffer.from(args.data, 'base64');
+        else {
+          const file = path.resolve(root, args.path), relative = path.relative(path.resolve(root), file);
+          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new PixelError('path', `must stay inside ${path.resolve(root)}`);
+          bytes = await readFile(file);
+        }
+        const imported = importPNG(bytes, { ...(args.name !== undefined && { name: args.name }), ...(args.atlas !== undefined && { atlas: args.atlas }) });
+        const project = renderProject(imported.recipe), view = inspectProject(project, { maxCells: 256 });
+        return { content: [textContent({ ok: true, revision: await remember(imported.recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, provenance: imported.provenance, preview: viewSummary(view) }), imageContent(view.sheet)] };
+      }
+    } catch (cause) { return { isError: true, content: [textContent({ error: cause.message, ...(cause.path ? { path: cause.path } : {}) })] }; }
+  };
+}
+
+// Limits on one tool call, in milliseconds and megabytes. A call past either is stopped and answered with an isError
+// result that names the limit; the server keeps serving. The memory limit bounds JavaScript objects (a runaway particle
+// or tile expansion), not pixel buffers.
+export const TOOL_TIME_LIMIT = 50_000, TOOL_MEMORY_LIMIT = 2048;
+const stopped = (name, why) => ({ isError: true, content: [textContent({ error: `${name} ${why} and was stopped. Make the work smaller (canvas or video size, frames, scale, particles, simulation steps) or split it across calls.` })] });
+
+// One worker thread runs the tool calls, one at a time. Stopping a call ends its worker, and the next call starts a
+// fresh one, so a stopped call leaves nothing behind but any files it had already written.
+function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
+  let worker = null;
+  const spawn = () => {
+    const thread = new Worker(new URL('./mcp-worker.js', import.meta.url), { workerData: { directory, root, version }, resourceLimits: { maxOldGenerationSizeMb: memoryLimit }, stdout: true });
+    // stdout is the protocol stream, so anything a tool prints goes to stderr instead.
+    thread.stdout.pipe(process.stderr, { end: false });
+    // Errors during a call are answered by run; one between calls only retires the worker.
+    thread.on('error', () => {}).on('exit', () => { if (worker?.thread === thread) worker = null; });
+    // The worker says when its modules are loaded, so the time limit counts a call's own work, not startup. `ready`
+    // resolves with null then, or with the reason the worker could not start.
+    const ready = new Promise(resolve => {
+      thread.once('message', () => resolve(null)).once('error', resolve).once('exit', code => resolve(new Error(`the tool worker exited with code ${code}`)));
+    });
+    return { thread, ready };
+  };
+  async function run(name, args) {
+    const current = worker ??= spawn(), { thread } = current, failure = await current.ready;
+    if (failure) { if (worker === current) worker = null; return { isError: true, content: [textContent({ error: failure.message })] }; }
+    return new Promise(resolve => {
+      let timer;
+      const finish = value => { clearTimeout(timer); thread.off('message', finish).off('error', failed).off('exit', ended); resolve(value); };
+      const stop = value => { if (worker === current) worker = null; thread.terminate(); finish(value); };
+      const failed = error => stop(error.code === 'ERR_WORKER_OUT_OF_MEMORY' ? stopped(name, `ran out of memory (${memoryLimit} MB)`) : { isError: true, content: [textContent({ error: error.message })] });
+      const ended = () => stop(stopped(name, 'ended unexpectedly'));
+      timer = setTimeout(() => stop(stopped(name, `took longer than ${timeLimit / 1000} s`)), timeLimit);
+      thread.on('message', finish).on('error', failed).on('exit', ended);
+      thread.postMessage({ name, args });
+    });
+  }
+  return { run, close: async () => { await worker?.thread.terminate(); } };
+}
+
+export async function startMCP({ directory = 'output', root = process.cwd(), input = process.stdin, output = process.stdout, timeLimit = TOOL_TIME_LIMIT, memoryLimit = TOOL_MEMORY_LIMIT } = {}) {
   const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   // The recipe's full JSON Schema is about 30 KB; repeated in four tool listings it cost every client about 30,000
   // tokens before the first call. The server checks recipes itself and names the path of any mistake, so the tools
@@ -79,7 +252,6 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     background: { type: 'string', description: 'Palette name or opaque hex colour. Default: transparent.' },
     loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Length of the clip instead of loops.' }
   } });
-  const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern, first: info.first, frames: info.frames, fps: info.fps.label, seconds: info.seconds, width: info.width, height: info.height, alpha: info.alpha, placement: info.placement, loop: info.loop, notes: info.notes, ffmpeg: info.commands });
   const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' } } };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, 29.97, 30, 60 or a fraction): frameGrid lists frame durations that are not whole video frames, positions a sequence would lengthen, shorten or never show, and whether each loop closes on the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
@@ -130,16 +302,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Render a pixelforge-scene manifest (placements, tilemaps with autotile legends and neighbour rules, named cues, sequences, trajectories, attachments, ground sorting, shade placements, palette themes and optional multiplied or ramp lighting, whose lights can follow placements, flicker and flash on cues) at a time in milliseconds and return the image plus placements, the lights at that time and warnings. Assets may be inline recipes, files under the server root, or {"revision": id}. Pass export: true to write a replayable scene bundle to a new folder, and sequence: { fps, size } to write the scene as numbered PNG frames for a video editor.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale'] }, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, sequence: sequenceOptions(false) }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution 8-bit RGB/RGBA PNG (optionally sliced by an unscaled atlas) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Saves the recipe as a revision.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }
   ];
-  const { remember, read } = createRevisionStore(directory);
-  // Inline file references are resolved inside the root; revisions store the resolved recipe, so they stay immutable.
-  const recipeFrom = async (project, revision) => {
-    if ((project === undefined) === (revision === undefined)) throw new PixelError('arguments', 'send either project or revision');
-    if (project === undefined) return { recipe: await read(revision), resolved: [] };
-    const { document, files } = await resolveReferences(project, { baseDir: root, root });
-    return { recipe: document, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) };
-  };
-  const withResolved = (summary, resolved) => resolved.length ? { ...summary, resolved } : summary;
-  const newFolder = async name => { await mkdir(path.resolve(directory), { recursive: true }); return mkdtemp(path.join(path.resolve(directory), `${name}-`)); };
+  const host = createToolHost({ directory: path.resolve(directory), root: path.resolve(root), version, timeLimit, memoryLimit });
   const send = value => output.write(JSON.stringify(value) + '\n');
   let initialized = false;
   async function handle(line) {
@@ -165,109 +328,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     if (!tool) { error(-32602, 'Unknown tool'); return; }
     const args = params.arguments ?? {};
     if (args === null || typeof args !== 'object' || Array.isArray(args) || Object.keys(args).some(k => !Object.hasOwn(tool.inputSchema.properties, k))) { error(-32602, 'Invalid tool arguments'); return; }
-    try {
-      const { project: spec, revision, changes, ...options } = args;
-      if (params.name === 'pixel_help') {
-        // Markdown topics come back as written; JSON ones without the files' indentation.
-        const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
-        result({ content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] });
-      } else if (params.name === 'pixel_validate') {
-        const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe);
-        result({ content: [textContent(withResolved({ ok: true, revision: await remember(recipe), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] });
-      } else if (params.name === 'pixel_inspect') {
-        const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
-        let recipe, resolved, metadata = suppliedMetadata;
-        if (poseSource !== undefined) {
-          if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
-          const input = await resolveReferences(poseSource, { baseDir: root, root });
-          ({ recipe, metadata } = compilePoses(input.document)); resolved = input.files.map(file => path.relative(root, file).split(path.sep).join('/'));
-        } else ({ recipe, resolved } = await recipeFrom(spec, revision));
-        const project = renderProject(recipe, layers === undefined ? {} : { layers });
-        let view;
-        if (inspection.view === 'motion') {
-          if (layers !== undefined || reference !== undefined) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers and reference');
-          const { view: mode, ...motionOptions } = inspection;
-          view = inspectMotion(project, { ...motionOptions, metadata, ...(speed !== undefined && { speed }), ...(ground !== undefined && { ground }) });
-        } else {
-          if (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'speed, ground and metadata require view: motion');
-          view = inspectProject(project, inspection);
-        }
-        const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
-        const content = [textContent(withResolved({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
-        if (view.nativeSheet) content.push(imageContent(view.nativeSheet));
-        if (view.grids) content.push(textContent(gridText(view)));
-        if (reference !== undefined) {
-          const { image, ...report } = comparison;
-          content.push(textContent({ reference, comparison: report, ...(image && { comparisonImage: { region: image.region, frames: image.frames, omitted: image.omitted ?? 0 } }) }));
-          if (image) content.push(imageContent(image.sheet));
-        }
-        result({ content });
-      } else if (params.name === 'pixel_patch') {
-        if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
-        const { recipe: base, resolved } = await recipeFrom(spec, revision), before = renderProject(base);
-        const applied = options.overlay === undefined ? patchRecipe(base, changes) : applyOverlay(base, options.overlay);
-        const { recipe, edits } = applied, after = renderProject(recipe);
-        const { image, ...report } = compareProjects(before, after), baseId = await remember(base);
-        const summary = { ok: true, revision: await remember(recipe), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
-        result({ content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] });
-      } else if (params.name === 'pixel_render') {
-        const { animation, listFiles, gif, sequence, share, embedRecipe } = options, expect = readExpect(options.expect);
-        for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
-        const { recipe, resolved } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
-        // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
-        if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
-        const gifs = gif === undefined ? [] : Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif));
-        if (gifs.reduce((sum, item) => sum + item.frames * item.width * item.height, 0) > 67108864) throw new PixelError('gif', 'all animations at this scale exceed 67,108,864 pixels; lower gif.scale');
-        const frames = sequence === undefined ? null : createSequence(bundle.project, { ...(animation !== undefined && { animation }), ...(sequence !== null && typeof sequence === 'object' ? sequence : { fps: undefined }) });
-        let shared;
-        if (share === true) {
-          try { const link = await shareLink(recipe, version); shared = { link, characters: link.length }; }
-          catch (error) { shared = { error: error.message }; }
-        }
-        // Every PNG this call writes carries the recipe, video frames included.
-        if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
-        const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
-        const files = await writeBundle(bundle, out);
-        if (frames) await writeBundle(frames, path.join(out, 'sequence'));
-        if (gifs.length) await mkdir(path.join(out, 'gifs'));
-        for (const item of gifs) await writeFile(path.join(out, 'gifs', `${item.animation}.gif`), item.data, { flag: 'wx' });
-        result({ content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] });
-      } else if (params.name === 'pixel_compile') {
-        const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
-        const format = document?.format;
-        if (!Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals');
-        const { recipe, metadata, warnings: compiled = [] } = COMPILERS[format](document);
-        const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
-        result({ content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] });
-      } else if (params.name === 'pixel_scene') {
-        const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
-        const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false });
-        const scale = args.scale ?? Math.max(1, Math.min(8, Math.floor(768 / Math.max(frame.width, frame.height))));
-        const pixels = args.view === 'grayscale' ? reviewPixels(frame.data, 'grayscale') : frame.data;
-        const summary = { ok: true, name: document.name, width: frame.width, height: frame.height, duration: scene.duration, time: args.time ?? 0, scale, placements: frame.placements.length, tilemaps: frame.placements.filter(p => p.tilemap).map(p => ({ name: p.name, tiles: p.tiles })), ...(frame.lights && { lights: frame.lights }), warnings: frame.warnings, ...(sources.length && { resolved: sources.map(file => path.relative(root, file).split(path.sep).join('/')) }) };
-        // The sequence is built before anything is written, so a refused one leaves no folder behind.
-        const frames = args.sequence === undefined ? null : createSceneSequence(scene, document.name, args.sequence);
-        if (frames && args.export !== true) { const out = await newFolder(document.name); await writeBundle(frames, path.join(out, 'sequence')); Object.assign(summary, { directory: out, sequence: sequenceSummary(frames.info) }); }
-        if (args.export === true) {
-          const bundle = await createSceneBundle(document), out = await newFolder(document.name);
-          if (frames) { await writeBundle(frames, path.join(out, 'sequence')); summary.sequence = sequenceSummary(frames.info); }
-          Object.assign(summary, { directory: out, ...outputSummary(out, await writeBundle(bundle, out), false), playback: path.join(out, 'preview.html') });
-        }
-        result({ content: [textContent(summary), imageContent({ data: scalePixels(pixels, frame.width, frame.height, scale), width: frame.width * scale, height: frame.height * scale })] });
-      } else if (params.name === 'pixel_import') {
-        if ((args.data === undefined) === (args.path === undefined)) throw new PixelError('arguments', 'send either data (base64 PNG) or path');
-        let bytes;
-        if (args.data !== undefined) bytes = Buffer.from(args.data, 'base64');
-        else {
-          const file = path.resolve(root, args.path), relative = path.relative(path.resolve(root), file);
-          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new PixelError('path', `must stay inside ${path.resolve(root)}`);
-          bytes = await readFile(file);
-        }
-        const imported = importPNG(bytes, { ...(args.name !== undefined && { name: args.name }), ...(args.atlas !== undefined && { atlas: args.atlas }) });
-        const project = renderProject(imported.recipe), view = inspectProject(project, { maxCells: 256 });
-        result({ content: [textContent({ ok: true, revision: await remember(imported.recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, provenance: imported.provenance, preview: viewSummary(view) }), imageContent(view.sheet)] });
-      }
-    } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, ...(cause.path ? { path: cause.path } : {}) })] }); }
+    result(await host.run(params.name, args));
   }
   const tooLarge = prefix => send({ jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
   input.setEncoding('utf8');
@@ -287,4 +348,5 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   }
   if (discarding !== null) tooLarge(discarding);
   else if (pending.trim()) await handle(pending);
+  await host.close();
 }

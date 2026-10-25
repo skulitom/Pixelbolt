@@ -228,13 +228,19 @@ function simulate(effect, context) {
       phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0
     };
   };
+  // Every new particle comes through here, so child emitters that multiply within one frame fail at the limit instead
+  // of piling up millions of particles first.
+  const add = particle => {
+    alive.push(particle);
+    if (alive.length > LIMITS.alive) fail(context.path, `more than ${LIMITS.alive} particles are alive at once; lower burst, rate or life`);
+  };
   // Children of particle q, born in frame `born`: keyed by the parent's tag and age, so a looping parent has the same
   // children every cycle.
   const spawnChildren = (index, q, count, born) => {
     const e = emitters[index];
     for (let k = 0; k < count; k++) {
       const r = salt => random(q.tag, index, q.age, k, salt);
-      alive.push(launch(e, index, q.x + e.at[0], q.y + e.at[1], k, count, r, hash(q.tag, index, q.age, k), born, q));
+      add(launch(e, index, q.x + e.at[0], q.y + e.at[1], k, count, r, hash(q.tag, index, q.age, k), born, q));
       if (born >= first) stats[index].spawned++;
     }
     if (count) mark(e, born, q.x + e.at[0], q.y + e.at[1]);
@@ -249,7 +255,7 @@ function simulate(effect, context) {
       else if (cycle >= e.start && cycle < e.end) { const c = cycle - e.start; count = Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9); }
       const key = loop ? cycle : t;
       for (let k = 0; k < count; k++) {
-        alive.push(launch(e, index, e.at[0], e.at[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
+        add(launch(e, index, e.at[0], e.at[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
         if (drawing) stats[index].spawned++;
       }
       if (count) mark(e, t, e.at[0], e.at[1]);
@@ -262,7 +268,6 @@ function simulate(effect, context) {
         if (q.index === e.parent) spawnChildren(index, q, Math.floor((q.age + 1) * e.rate + 1e-9) - Math.floor(q.age * e.rate + 1e-9), t);
       }
     });
-    if (alive.length > LIMITS.alive) fail(context.path, `more than ${LIMITS.alive} particles are alive at once; lower burst, rate or life`);
     if (drawing) emitters.forEach((e, index) => { stats[index].maxAlive = Math.max(stats[index].maxAlive, alive.filter(p => p.index === index).length); });
     // Every live particle's rounded (and swayed) position. Sway never carries a particle below its floor. A facing
     // particle turns with its velocity in every frame, warm-up included, so a loop's frame 0 continues its last frame.
