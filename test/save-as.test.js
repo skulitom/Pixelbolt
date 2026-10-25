@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm, writeFile, readFile, readdir, mkdir, symlink, link } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
 import os from 'node:os';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startMCP } from '../src/mcp.js';
@@ -17,15 +18,15 @@ const temp = async t => {
   return dir;
 };
 // An MCP session whose export directory is <project>/output, like the plugin's.
-async function session(t, project) {
+async function session(t, project, directory = path.join(project, 'output')) {
   const input = new PassThrough(), output = new PassThrough(), waiting = new Map(); let buffer = '', next = 0;
   output.on('data', chunk => { buffer += chunk; for (let end; (end = buffer.indexOf('\n')) !== -1; buffer = buffer.slice(end + 1)) { const message = JSON.parse(buffer.slice(0, end)); waiting.get(message.id)?.(message); } });
-  const running = startMCP({ input, output, directory: path.join(project, 'output'), root: project });
+  const running = startMCP({ input, output, directory, root: project });
   t.after(async () => { input.end(); await running; });
   const request = (method, params) => new Promise(resolve => { waiting.set(++next, resolve); input.write(JSON.stringify({ jsonrpc: '2.0', id: next, method, params }) + '\n'); });
   await request('initialize', { protocolVersion: '2025-11-25' });
-  const render = async args => { const { result } = await request('tools/call', { name: 'pixel_render', arguments: args }); return { isError: result.isError === true, info: JSON.parse(result.content[0].text) }; };
-  return { render };
+  const call = async (name, args) => { const { result } = await request('tools/call', { name, arguments: args }); return { isError: result.isError === true, info: JSON.parse(result.content[0].text) }; };
+  return { render: args => call('pixel_render', args), call };
 }
 // Windows and macOS file systems ignore case by default.
 const folded = process.platform === 'win32' || process.platform === 'darwin';
@@ -170,4 +171,54 @@ test('pixel_render saveAs never writes over a file the recipe was made from, eve
   assert.match(info.error, /palette\.json is a file this recipe was made from/);
   assert.deepEqual(JSON.parse(await readFile(path.join(project, 'palette.json'), 'utf8')), spirit.palette);
   await assert.rejects(readdir(path.join(project, 'output')));
+});
+
+test('pixel_render saveAs protects the recipe\'s own files when it renders a revision, patched ones included', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  await writeFile(path.join(project, 'palette.json'), JSON.stringify(spirit.palette));
+  const validated = await mcp.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'palette.json' } } });
+  assert.equal(validated.isError, false, JSON.stringify(validated.info));
+  const patched = await mcp.call('pixel_patch', { revision: validated.info.revision, changes: [{ set: 'palette.g', value: '#f2dc94' }] });
+  assert.equal(patched.isError, false, JSON.stringify(patched.info));
+  for (const revision of [validated.info.revision, patched.info.revision]) {
+    const { isError, info } = await mcp.render({ revision, saveAs: { atlas: 'palette.json' }, overwrite: true });
+    assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
+    assert.match(info.error, /palette\.json is a file this recipe was made from/);
+  }
+  assert.deepEqual(JSON.parse(await readFile(path.join(project, 'palette.json'), 'utf8')), spirit.palette);
+});
+
+test('pixel_render saveAs refuses names a file system can\'t take before writing anything', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  const cases = [[{ sheet: 'good.png', atlas: 'bad\u0000.json' }, 'saveAs.atlas', /control character/]];
+  if (process.platform === 'win32') cases.push([{ sheet: 'good.png', atlas: 'art/con.json' }, 'saveAs.atlas', /not a name Windows can create/], [{ sheet: 'good.png', 'frames/blink.png': 'art /blink.png' }, 'saveAs.frames/blink.png', /not a name Windows can create/]);
+  for (const [saveAs, where, message] of cases) {
+    const { isError, info } = await mcp.render({ project: spirit, saveAs });
+    assert.deepEqual([isError, info.path], [true, where], JSON.stringify(info));
+    assert.match(info.error, message);
+  }
+  assert.deepEqual(await readdir(project), []);
+});
+
+test('pixel_render saveAs on Windows: an export directory on a missing drive or another drive', { skip: process.platform !== 'win32' }, async t => {
+  const project = await temp(t), here = path.parse(project).root.toUpperCase();
+  const letters = 'DEFGHIJKLMNOPQRSTUVWXYZC'.split('').map(letter => `${letter}:\\`);
+  // No folder above the export directory exists: the walk stops at the drive instead of looping.
+  const missing = letters.find(drive => !existsSync(drive));
+  if (missing) {
+    const mcp = await session(t, project, path.join(missing, 'pixelbolt-test', 'output'));
+    const { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet: 'hero.png' } });
+    assert.equal(isError, true, JSON.stringify(info));
+    assert.match(info.error, /does not exist/);
+  }
+  // An atlas saved without its sheet can't name a sheet on another drive.
+  const other = letters.find(drive => drive !== here && existsSync(drive));
+  if (other) {
+    const mcp = await session(t, project, path.join(other, `pixelbolt-test-${path.basename(project)}`, 'output'));
+    const { isError, info } = await mcp.render({ project: spirit, saveAs: { atlas: 'hero.json' } });
+    assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
+    assert.match(info.error, /another drive .* save the sheet too/);
+    assert.equal(existsSync(path.join(other, `pixelbolt-test-${path.basename(project)}`)), false);
+  }
+  assert.deepEqual(await readdir(project), []);
 });

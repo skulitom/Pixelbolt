@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm, copyFile, constants } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
@@ -76,12 +76,29 @@ const withResolved = (summary, resolved) => resolved.length ? { ...summary, reso
 // the server. Nothing is kept between calls except the revisions and output folders on disk.
 export function createToolRunner({ directory, root, version }) {
   const { remember, read } = createRevisionStore(directory);
+  // The files a revision was made from (palette and asset references, relative to the root) are kept beside it, so
+  // saveAs never writes over them, even when the recipe comes back as a revision.
+  const sourcesFile = id => path.join(path.resolve(directory), '.revisions', `${id}.sources.json`);
+  const sourcesOf = async id => {
+    try { const list = JSON.parse(await readFile(sourcesFile(id), 'utf8')); return Array.isArray(list) ? list.filter(item => typeof item === 'string') : []; }
+    catch (error) { if (error.code === 'ENOENT' || error instanceof SyntaxError) return []; throw error; }
+  };
+  const keep = async (recipe, sources = []) => {
+    const id = await remember(recipe), known = await sourcesOf(id), all = [...new Set([...known, ...sources])];
+    if (all.length > known.length) {
+      const temporary = path.join(path.dirname(sourcesFile(id)), `.${randomUUID()}.tmp`);
+      try { await writeFile(temporary, JSON.stringify(all), { flag: 'wx' }); await rename(temporary, sourcesFile(id)); }
+      finally { await rm(temporary, { force: true }); }
+    }
+    return id;
+  };
+  const relativeToRoot = files => files.map(file => path.relative(root, file).split(path.sep).join('/'));
   // Inline file references are resolved inside the root; revisions store the resolved recipe, so they stay immutable.
   const recipeFrom = async (project, revision) => {
     if ((project === undefined) === (revision === undefined)) throw new PixelError('arguments', 'send either project or revision');
-    if (project === undefined) return { recipe: await read(revision), resolved: [] };
-    const { document, files } = await resolveReferences(project, { baseDir: root, root });
-    return { recipe: document, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) };
+    if (project === undefined) { const recipe = await read(revision); return { recipe, resolved: [], sources: await sourcesOf(revision) }; }
+    const { document, files } = await resolveReferences(project, { baseDir: root, root }), resolved = relativeToRoot(files);
+    return { recipe: document, resolved, sources: resolved };
   };
   const newFolder = async name => { await mkdir(path.resolve(directory), { recursive: true }); return mkdtemp(path.join(path.resolve(directory), `${name}-`)); };
   // saveAs: copies of chosen export files at the paths the user named, inside the server root. Everything is checked
@@ -91,7 +108,18 @@ export function createToolRunner({ directory, root, version }) {
   // Windows and macOS file systems ignore case by default, so `hero.png` and `HERO.png` are one file there.
   const fold = name => (process.platform === 'win32' || process.platform === 'darwin' ? name.toLowerCase() : name);
   const inside = (parent, child) => { const relative = path.relative(fold(parent), fold(child)); return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative)); };
-  const nearest = async target => { let folder = target; while (!(await lstat(folder).catch(() => null))) folder = path.dirname(folder); return folder; };
+  // Only a missing file counts as missing: any other error (a null byte, no permission) stops the call.
+  const entry = target => lstat(target).catch(error => { if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null; throw error; });
+  const nearest = async target => {
+    let folder = target;
+    while (!(await entry(folder))) {
+      if (path.dirname(folder) === folder) throw new PixelError('saveAs', `${folder} does not exist`);
+      folder = path.dirname(folder);
+    }
+    return folder;
+  };
+  // Names Windows can't create (or would quietly change): reserved characters, device names, a trailing dot or space.
+  const windowsName = part => /[<>:"|?*]/.test(part) || /^(con|prn|aux|nul|com[0-9\u00b9\u00b2\u00b3]|lpt[0-9\u00b9\u00b2\u00b3])(\..*)?$/i.test(part) || /[. ]$/.test(part);
   const canonical = async target => { const folder = await nearest(target); return path.join(await realpath(folder), path.relative(folder, target)); };
   // A saved atlas names its sheet in meta.image, which loadSpriteSheet() and browsers read as a URL: there #, ? and %
   // would cut the name short or decode it into another one.
@@ -114,8 +142,10 @@ export function createToolRunner({ directory, root, version }) {
       if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
       const type = path.extname(file).toLowerCase();
       if (path.extname(target).toLowerCase() !== type) throw new PixelError(where, `${file} is a ${type} file: give a path ending in ${type}`);
+      if (/[\u0000-\u001f]/.test(target)) throw new PixelError(where, 'contains a control character');
       const destination = path.resolve(base, target);
       if (!inside(base, destination) || destination === base) throw new PixelError(where, `must stay inside ${base}`);
+      if (process.platform === 'win32' && path.relative(base, destination).split(path.sep).some(windowsName)) throw new PixelError(where, `${target} is not a name Windows can create: no < > : " | ? *, no device names such as con or nul, and no dot or space at the end of a name`);
       // The nearest folder that exists must be a folder, and the real path inside the root and outside the store.
       const folder = await nearest(path.dirname(destination)), real = await canonical(destination);
       if (!(await stat(await realpath(folder))).isDirectory()) throw new PixelError(where, `${folder} is a file, not a folder`);
@@ -123,7 +153,7 @@ export function createToolRunner({ directory, root, version }) {
       if (inside(store, real)) throw new PixelError(where, 'must not be inside the revision store');
       // Like the CLI's exports, never over the files this render was made from, even with overwrite.
       if (own.some(input => fold(input) === fold(real))) throw new PixelError(where, `${target} is a file this recipe was made from; choose another name`);
-      const existing = await lstat(destination).catch(() => null);
+      const existing = await entry(destination);
       if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
       if (existing && overwrite !== true) throw new PixelError(where, `${destination} already exists: choose a new name, or pass "overwrite": true to replace it`);
       const id = fold(real);
@@ -140,7 +170,9 @@ export function createToolRunner({ directory, root, version }) {
       const sheet = sheets.find(item => fold(path.dirname(item.destination)) === fold(path.dirname(atlas.destination))) ?? sheets[0];
       atlas.rebase = sheet ? sheet.destination : null;
       // The export folder is <directory>/<name>-<6 letters or digits>, so its own name can't add these characters.
-      const image = imagePath(atlas.destination, sheet ? sheet.destination : path.join(path.resolve(directory), `${project.name}-x`, `${project.name}.png`));
+      const target = sheet ? sheet.destination : path.join(path.resolve(directory), `${project.name}-x`, `${project.name}.png`);
+      if (path.isAbsolute(path.relative(path.dirname(atlas.destination), target))) throw new PixelError(`saveAs.${atlas.key}`, 'the atlas is on another drive than the export folder, so it can\'t name the export\'s sheet: save the sheet too, such as saveAs.sheet');
+      const image = imagePath(atlas.destination, target);
       if (/[#?%]/.test(image)) throw new PixelError(`saveAs.${atlas.key}`, `the atlas would name its sheet as ${image}, and #, ? and % break that name when it is read as a URL: choose a sheet path${sheet ? '' : ' in saveAs, or an export directory,'} without them`);
     }
     return plan;
@@ -151,14 +183,23 @@ export function createToolRunner({ directory, root, version }) {
     atlas.meta = { ...atlas.meta, image: imagePath(atlasPath, sheetPath) };
     return Buffer.from(JSON.stringify(atlas, null, 2) + '\n');
   };
-  // A new file is created only if nothing is there; a replaced one is written beside it and renamed over it, so a
-  // hard link to the old file keeps the old bytes and a failed write leaves the old file whole.
-  const writeSaved = async (destination, bytes, replace) => {
-    await mkdir(path.dirname(destination), { recursive: true });
-    if (!replace) { await writeFile(destination, bytes, { flag: 'wx' }); return; }
-    const temporary = path.join(path.dirname(destination), `.${path.basename(destination)}.${randomUUID()}.tmp`);
-    try { await writeFile(temporary, bytes, { flag: 'wx' }); await rename(temporary, destination); }
-    catch (error) { await rm(temporary, { force: true }); throw error; }
+  // Every copy is first written to a temporary file beside its destination, so a write that fails leaves no copy and
+  // replaces nothing. Then each goes in place: a replaced file is renamed over (a hard link to the old file keeps the
+  // old bytes), and a new one is copied only if nothing is there yet.
+  const writeSaves = async (saves, replace, bytesOf) => {
+    const staged = [];
+    try {
+      for (const item of saves) {
+        await mkdir(path.dirname(item.destination), { recursive: true });
+        const temporary = path.join(path.dirname(item.destination), `.${path.basename(item.destination)}.${randomUUID()}.tmp`);
+        staged.push(temporary);
+        await writeFile(temporary, bytesOf(item), { flag: 'wx' });
+      }
+      for (const [index, item] of saves.entries()) {
+        if (replace) await rename(staged[index], item.destination);
+        else await copyFile(staged[index], item.destination, constants.COPYFILE_EXCL);
+      }
+    } finally { await Promise.all(staged.map(file => rm(file, { force: true }))); }
   };
   return async function runTool(name, args) {
     try {
@@ -169,16 +210,16 @@ export function createToolRunner({ directory, root, version }) {
         const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
         return { content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] };
       } else if (name === 'pixel_validate') {
-        const { recipe, resolved } = await recipeFrom(spec, revision), project = renderProject(recipe);
-        return { content: [textContent(withResolved({ ok: true, revision: await remember(recipe), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
+        const { recipe, resolved, sources } = await recipeFrom(spec, revision), project = renderProject(recipe);
+        return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
       } else if (name === 'pixel_inspect') {
         const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
-        let recipe, resolved, metadata = suppliedMetadata;
+        let recipe, resolved, sources, metadata = suppliedMetadata;
         if (poseSource !== undefined) {
           if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
           const input = await resolveReferences(poseSource, { baseDir: root, root });
-          ({ recipe, metadata } = compilePoses(input.document)); resolved = input.files.map(file => path.relative(root, file).split(path.sep).join('/'));
-        } else ({ recipe, resolved } = await recipeFrom(spec, revision));
+          ({ recipe, metadata } = compilePoses(input.document)); resolved = sources = relativeToRoot(input.files);
+        } else ({ recipe, resolved, sources } = await recipeFrom(spec, revision));
         const project = renderProject(recipe, layers === undefined ? {} : { layers });
         let view;
         if (inspection.view === 'motion') {
@@ -190,7 +231,7 @@ export function createToolRunner({ directory, root, version }) {
           view = inspectProject(project, inspection);
         }
         const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
-        const content = [textContent(withResolved({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
+        const content = [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
         if (view.nativeSheet) content.push(imageContent(view.nativeSheet));
         if (view.grids) content.push(textContent(gridText(view)));
         if (reference !== undefined) {
@@ -201,18 +242,18 @@ export function createToolRunner({ directory, root, version }) {
         return { content };
       } else if (name === 'pixel_patch') {
         if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
-        const { recipe: base, resolved } = await recipeFrom(spec, revision), before = renderProject(base);
+        const { recipe: base, resolved, sources } = await recipeFrom(spec, revision), before = renderProject(base);
         const applied = options.overlay === undefined ? patchRecipe(base, changes) : applyOverlay(base, options.overlay);
         const { recipe, edits } = applied, after = renderProject(recipe);
-        const { image, ...report } = compareProjects(before, after), baseId = await remember(base);
-        const summary = { ok: true, revision: await remember(recipe), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
+        const { image, ...report } = compareProjects(before, after), baseId = await keep(base, sources);
+        const summary = { ok: true, revision: await keep(recipe, sources), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
         return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] };
       } else if (name === 'pixel_render') {
         const { animation, listFiles, sequence, share, embedRecipe, saveAs, overwrite } = options, expect = readExpect(options.expect);
         for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
         // A GIF named in saveAs needs GIFs: the frames' own size unless gif says otherwise.
         const gif = options.gif === undefined && saveAs !== null && typeof saveAs === 'object' && Object.keys(saveAs).some(key => key === 'gif' || key.startsWith('gifs/')) ? {} : options.gif;
-        const { recipe, resolved } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
+        const { recipe, resolved, sources } = await recipeFrom(spec, revision), bundle = await createBundle(recipe), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
         // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
         if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
         const gifs = gif === undefined ? [] : Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif));
@@ -225,21 +266,21 @@ export function createToolRunner({ directory, root, version }) {
         }
         // Every PNG this call writes carries the recipe, video frames included.
         if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
-        const saves = await planSaves(saveAs, overwrite, bundle, gifs, animation, frames, resolved);
-        const savedRevision = await remember(recipe), out = await newFolder(bundle.project.name);
+        const saves = await planSaves(saveAs, overwrite, bundle, gifs, animation, frames, sources);
+        const savedRevision = await keep(recipe, sources), out = await newFolder(bundle.project.name);
         const files = await writeBundle(bundle, out);
         if (frames) await writeBundle(frames, path.join(out, 'sequence'));
         if (gifs.length) await mkdir(path.join(out, 'gifs'));
         for (const item of gifs) await writeFile(path.join(out, 'gifs', `${item.animation}.gif`), item.data, { flag: 'wx' });
-        for (const item of saves) await writeSaved(item.destination, item.rebase === undefined ? item.bytes : rebasedAtlas(item.bytes, item.destination, item.rebase ?? path.join(out, `${bundle.project.name}.png`)), overwrite === true);
+        await writeSaves(saves, overwrite === true, item => (item.rebase === undefined ? item.bytes : rebasedAtlas(item.bytes, item.destination, item.rebase ?? path.join(out, `${bundle.project.name}.png`))));
         return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }) })) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
       } else if (name === 'pixel_compile') {
-        const { document } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
+        const { document, files: sourceFiles } = await resolveReferences(args.source, { baseDir: root, root, revisions: read });
         const format = document?.format;
         if (!Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid or pixelforge-normals');
         const { recipe, metadata, warnings: compiled = [] } = COMPILERS[format](document);
         const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
-        return { content: [textContent({ ok: true, revision: await remember(recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] };
+        return { content: [textContent({ ok: true, revision: await keep(recipe, relativeToRoot(sourceFiles)), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), preview: viewSummary(view), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet)] };
       } else if (name === 'pixel_scene') {
         const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
         const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false });
