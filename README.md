@@ -2,6 +2,8 @@
 
 **Pixel art and sprite animation that your AI agent can make, check and fix.** Pixelbolt turns an editable JSON recipe into sprites, tiles, icons, effects and short animations, and exports them as PNG sprite sheets, texture atlases, animated PNGs, GIFs and frames for a video editor. Agents drive it through a local MCP server or the command line; you can open, play and edit the same recipe in a local browser studio.
 
+[Try it in your browser](https://skulitom.github.io/Pixelbolt/playground/): render, export and share recipes with nothing installed.
+
 English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README.zh-CN.md) · [日本語](https://github.com/skulitom/Pixelbolt/blob/main/README.ja.md)
 
 [![Tests](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml/badge.svg)](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml)

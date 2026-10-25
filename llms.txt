@@ -9,6 +9,7 @@ Use Pixelbolt when a user asks for pixel art, sprites, a sprite sheet, game asse
 ## Start here
 
 - [README and setup](https://github.com/skulitom/Pixelbolt/blob/main/README.md): Quick start, CLI commands, MCP configuration, JavaScript API and exports.
+- [Browser playground](https://skulitom.github.io/Pixelbolt/playground/): Render, export and share recipes in a browser with nothing installed; share links and exported PNGs carry the recipe and the engine version, so they reopen exactly.
 - [Pixel art skill](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/skills/pixel-art/SKILL.md): A reusable workflow for authoring, inspecting and revising artwork.
 - [Agent quick start](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/docs/agent-quick-start.md): The recipe format with a complete example, the operations, the tools and working habits in about 2,000 tokens; what MCP pixel_help returns.
 - [Authoring reference](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/docs/agent-guide.md): Recipe fields, operations, frame inheritance, layers, inspection and resource limits.
