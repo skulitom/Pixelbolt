@@ -79,12 +79,16 @@ A `pixelforge-fluid` source runs a small, deterministic fluid simulation and com
 
 ![Glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the calm surface](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/honey.gif) ![A blob of green slime drops, squashes flat, springs up tall, wobbles and settles into a dome that holds its shape](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/slime.gif)
 
+Obstacles can be smooth, so thick liquids slide down drawn slopes, or move and vanish on cue; dust can be thrown; a liquid can burst in mid-air or change on a frame you choose:
+
+![Wet snow slides off a house's roof as one slab, pours over the eave and settles in a drift against the wall](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/roof-snow.gif) ![A plank dam vanishes and the water behind it floods out as a wave, rolls over a rock and splashes off the far wall](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/dam-break.gif) ![A stone drops onto the ground and throws a wave of dust out both ways that billows, slows and thins away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/dust-wave.gif) ![A ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/slime-burst.gif) ![Stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/honey-drop.gif)
+
 ```sh
 node bin/pixelbolt.js compile examples/campfire.fluid.json --out output/campfire.json
 node bin/pixelbolt.js gif output/campfire.json --scale 4 --out output/campfire.gif
 ```
 
-The twelve presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops and thick fluids (viscosity, yield stress, adhesion). In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
+The seventeen presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops and thick fluids (viscosity, yield stress, adhesion). In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
 
 ## Start
 

@@ -64,7 +64,7 @@ From a shell, the same commands are `node bin/pixelbolt.js validate | inspect | 
 - Inspect every frame, including at native size (`native: true`), and read a `grid` of a region before changing exact pixels. Check that each patch changed only what you meant.
 - A valid recipe can still look bad. Judge the image and the playback, not the absence of errors.
 - Work in a loop: inspect, patch, render with `expect`, then read the reply's `check` and fix every problem it lists before you hand the files on.
-- For a ready-made effect (campfire, torch, smoke, explosion, splash, waterfall, potion, honey, slime), start from a fluid preset in Pixelbolt's `examples/*.fluid.json` and compile it rather than drawing fire by hand.
+- For a ready-made effect (campfire, torch, smoke, explosion, splash, waterfall, potion, honey, slime, dam break, dust wave), start from a fluid preset in Pixelbolt's `examples/*.fluid.json` and compile it rather than drawing fire by hand.
 
 ## More help
 

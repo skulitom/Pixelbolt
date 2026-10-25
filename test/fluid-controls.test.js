@@ -13,7 +13,7 @@ const presets = async () => {
 };
 
 test('the Fluid lab lists every shipped fluid preset', async () => {
-  const shipped = (await presets()).map(({ file }) => file.replace(/\.fluid\.json$/, ''));
+  const shipped = (await presets()).map(({ file }) => file.replace(/\.fluid\.json$/, '')).sort();
   assert.deepEqual(FLUID_PRESETS.map(entry => entry.file).sort(), shipped);
 });
 

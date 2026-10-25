@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readZip } from './build-studio.mjs';
+import { FLUID_PRESETS } from '../studio/fluid-controls.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const options = { app: root, 'browser-arg': [] };
@@ -461,7 +462,7 @@ try {
   const labPixels = `(() => { const c = document.getElementById('canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i++) h = (Math.imul(h, 31) + d[i]) >>> 0; return h; })()`;
   await check('the fluid lab lists its presets, simulates the first in the browser and plays it', async () => {
     await studio.size(1440, 900); await studio.goto(`${origin}/fluid.html`); await simulated();
-    assert.deepEqual([await evaluate('document.title'), await evaluate(`document.querySelectorAll('#presets .example').length`), await evaluate(`document.getElementById('error').hidden`)], ['Pixelbolt · Fluid lab', 12, true]);
+    assert.deepEqual([await evaluate('document.title'), await evaluate(`document.querySelectorAll('#presets .example').length`), await evaluate(`document.getElementById('error').hidden`)], ['Pixelbolt · Fluid lab', FLUID_PRESETS.length, true]);
     const first = await evaluate(labPixels);
     await until(`${labPixels} !== ${first}`, 'the preview to play');
     assert.match(await text('cli'), /^pixelbolt compile campfire\.fluid\.json --out campfire\.json\n/);

@@ -7,7 +7,10 @@ export const FLUID_PRESETS = [
   { file: 'magic-swirl', title: 'Magic swirl', note: 'Gas · loop' }, { file: 'torch', title: 'Torch', note: 'Gas · loop' },
   { file: 'splash', title: 'Splash', note: 'Liquid · one-shot' }, { file: 'waterfall', title: 'Waterfall', note: 'Liquid · loop' },
   { file: 'drip', title: 'Drip', note: 'Liquid · loop' }, { file: 'potion', title: 'Bubbling potion', note: 'Liquid · loop' },
-  { file: 'honey', title: 'Honey', note: 'Viscous liquid · loop' }, { file: 'slime', title: 'Slime', note: 'Yield-stress liquid · one-shot' }
+  { file: 'honey', title: 'Honey', note: 'Viscous liquid · loop' }, { file: 'slime', title: 'Slime', note: 'Yield-stress liquid · one-shot' },
+  { file: 'roof-snow', title: 'Snow off a roof', note: 'Smooth obstacle · one-shot' }, { file: 'dam-break', title: 'Dam break', note: 'Moving obstacle · one-shot' },
+  { file: 'dust-wave', title: 'Dust wave', note: 'Carried gas · one-shot' }, { file: 'slime-burst', title: 'Bursting slime', note: 'Burst fill · one-shot' },
+  { file: 'honey-drop', title: 'Honey let-go', note: 'Keyed liquid · one-shot' }
 ];
 // Each slider sets one setting of the preset's effect; Strength scales every emitter's rate or burst. A slider's range
 // and step must hold every preset's value exactly: a range input clamps to its range and snaps to its step.
@@ -22,7 +25,8 @@ export const FLUID_SLIDERS = {
     { key: 'flip', label: 'Liveliness (flip)', min: 0, max: 1, step: 0.01, initial: e => e.flip ?? 0.9 },
     // Thickness slows spreading and keeps streams whole without slowing a fall; resistance (drag) slows everything,
     // falling included, as if the liquid moved through something thick.
-    { key: 'viscosity', label: 'Thickness (viscosity)', min: 0, max: 32, step: 0.5, initial: e => e.viscosity ?? 0 },
+    // 64 is the compiler's own limit for viscosity, and the honey let-go starts there.
+    { key: 'viscosity', label: 'Thickness (viscosity)', min: 0, max: 64, step: 0.5, initial: e => e.viscosity ?? 0 },
     // 16 is the compiler's own limit for yield, and the slime preset uses all of it.
     { key: 'yield', label: 'Firmness (yield)', min: 0, max: 16, step: 0.1, initial: e => e.yield ?? 0 },
     { key: 'drag', label: 'Resistance (drag)', min: 0, max: 0.3, step: 0.005, initial: e => e.drag ?? 0 }]

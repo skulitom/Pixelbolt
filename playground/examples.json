@@ -20,5 +20,10 @@
   { "title": "Forest spirit normal map, generated from the sprite", "file": "forest-spirit.normals.json", "kind": "normals", "minVersion": "0.9.0" },
   { "title": "Forest spirit in light", "file": "forest-spirit-lit.scene.json", "kind": "scene", "minVersion": "0.9.0" },
   { "title": "Honey", "file": "honey.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
-  { "title": "Slime", "file": "slime.fluid.json", "kind": "fluid", "minVersion": "0.9.1" }
+  { "title": "Slime", "file": "slime.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Snow off a roof", "file": "roof-snow.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Dam break", "file": "dam-break.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Dust wave", "file": "dust-wave.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Bursting slime", "file": "slime-burst.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
+  { "title": "Honey let-go", "file": "honey-drop.fluid.json", "kind": "fluid", "minVersion": "0.9.1" }
 ]

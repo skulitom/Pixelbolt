@@ -28,7 +28,12 @@ const GOLDEN = {
   drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
   potion: 'b13996872f8758a39191c2745cac83b4196d0a23bb484f3d8c95e1ed171fb22c',
   honey: '2beb539dc3c98377a1c24af2ffe18fb0d74bc5aad56b1c70ec58d1613cf6ffa7',
-  slime: '3da5a16ae70f2f9b529c40447b9d65b1cd9bbe96c761b8f1380874e76c7db25c'
+  slime: '3da5a16ae70f2f9b529c40447b9d65b1cd9bbe96c761b8f1380874e76c7db25c',
+  'roof-snow': '30ef90f4002af118687760cc8b6cca97ad523b372a43da5e433eecb31e02203c',
+  'dam-break': 'bc4d60fd9460ac93e46cffd6737b2cbfd3d56f570309033bcd6a3ddaff3d9232',
+  'dust-wave': '1ce0f12a6aa17fee36e25c42b0a8fc15b9e60454144ecb87f90973fc205ce4a9',
+  'slime-burst': '997f5cb5941d55af91fcad2879166ba2ee440542a3a8e2bc21695a3305658854',
+  'honey-drop': '01a9bd8087e735b9ce1be4e8faf76b7f840f20d90ce7edfb3e50aeaccc4c6a22'
 };
 const examples = new Map();
 const example = async name => {
@@ -66,13 +71,16 @@ test('every fluid example compiles to its golden recipe, using only its palette 
 
 test('looping examples close their loop and one-shot examples end empty or at rest', async () => {
   for (const name of FLUID_SHOWCASE) {
-    const { project, metadata } = await example(name), [effect] = Object.values(metadata.effects), [animation] = Object.values(project.animations);
+    const { recipe, project, metadata } = await example(name), [effect] = Object.values(metadata.effects), [animation] = Object.values(project.animations);
     if (effect.loop) {
       assert.deepEqual(analyzeProject(project).findings.filter(finding => finding.code === 'loop-jump'), [], `${name}: the inspector's loop-boundary check`);
       assert.equal(animation.loop, true);
     } else if (effect.kind === 'gas') {
       assert.equal(effect.residue, 0, `${name} should end fully dissipated`);
-      assert.equal(pixelsOf(project.frames[animation.frames.at(-1)]), 0);
+      // Nothing is left but the obstacles: the last frame only stamps them, and is blank without any.
+      const last = project.frames[animation.frames.at(-1)], ops = recipe.frames.find(frame => frame.name === last.name).ops ?? [];
+      assert.deepEqual(ops.filter(op => op.op !== 'stamp'), [], `${name} should end with only its obstacles`);
+      if (!ops.length) assert.equal(pixelsOf(last), 0, name);
     } else {
       // A liquid one-shot settles: its last frames barely change.
       const [a, b] = animation.frames.slice(-2).map(index => project.frames[index]);
@@ -552,6 +560,8 @@ test('setups that compile but make nothing, or start stuck, are warned about wit
   const hanging = surface => warned({ kind: 'liquid', obstacles: [{ symbol: 'bar', x: 6, y: 5, ...(surface && { surface }) }], fill: [{ at: [16, 12], radius: 6 }], emitters: [] });
   assert.match(hanging()[0], /^fluid\.effects\.e\.fill\[0\] starts against the underside of obstacles\[0\] along 4 pixels.*surface: "smooth"/);
   assert.deepEqual(hanging('smooth'), []);
+  // A liquid with adhesion is meant to cling, so hanging is not a mistake.
+  assert.deepEqual(warned({ kind: 'liquid', adhesion: 2, obstacles: [{ symbol: 'bar', x: 6, y: 5 }], fill: [{ at: [16, 12], radius: 6 }], emitters: [] }), []);
   assert.deepEqual(warned({ kind: 'liquid', walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'bar', x: 6, y: 20 }], fill: [{ x: 0, y: 21, w: 32, h: 11 }], emitters: [] }), []);
   assert.match(warned({ kind: 'liquid', walls: ['top', 'bottom'], fill: [{ x: 4, y: 0, w: 8, h: 4 }], emitters: [] })[0], /closed top edge/);
   // Water resting on other water, a round fill standing on a floor, and fills thrown down or bursting are not stuck.

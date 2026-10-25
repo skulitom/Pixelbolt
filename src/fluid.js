@@ -383,7 +383,7 @@ function readEffect(effect, path, source) {
   if (!reachLight) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
   const pull = schedule ? (schedule.find(now => now.gravity[0] || now.gravity[1])?.gravity ?? gravity) : gravity;
   const layouts = new Map(), layoutAt = moving ? cycle => { const places = placementsAt(obstacles, cycle), key = layoutKey(places); if (!layouts.has(key)) layouts.set(key, buildLayout(obstacles, width, height, places)); return layouts.get(key); } : null;
-  const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity: pull, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), layoutAt });
+  const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity: pull, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), layoutAt, adhesive: most.adhesion > 0 });
   return {
     warnings,
     kind, liquid, frames, durations, light: [light[0] / reachLight, light[1] / reachLight], loop, seed, emitters, look, whitewater, obstacles, moving, layout, solid, front, smooth, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), fills, cleanup,
@@ -405,9 +405,9 @@ function readEffect(effect, path, source) {
 // obstacles (or off the canvas) on every frame it works, and a liquid fill that starts against the underside of a pixel
 // obstacle (or a closed edge above it), where the pressure holds it on, with open space below it to fall into. A fill
 // that rests on something (along a quarter or more of its lowest cells), as water in a flask does, or on other water,
-// needs no warning, whatever it touches; nor does one thrown away from what is above it, or bursting apart. Gravity is
-// the first the effect has, its keys included.
-function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls, layoutAt = null }) {
+// needs no warning, whatever it touches; nor does one thrown away from what is above it, or bursting apart, nor any in a
+// liquid with adhesion, which clings on purpose. Gravity is the first the effect has, its keys included.
+function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity, solid, smooth, owner, walls, layoutAt = null, adhesive = false }) {
   const warnings = [], W = width, H = height;
   const solidBase = solid, ownerBase = owner;
   emitters.forEach((e, index) => {
@@ -434,7 +434,8 @@ function sourceWarnings({ path, width, height, frames, liquid, seed, emitters, f
     if (seen) warnings.push(`${path}.emitters[${index}] lies inside obstacles[${buried}] whenever it emits, so it adds no ${what}${sparks}: move it just outside the obstacle's pixels`);
     else warnings.push(`${path}.emitters[${index}] lies outside the canvas whenever it emits, so it adds no ${what}${sparks}: move its at inside the ${W} × ${H} canvas`);
   });
-  if (!liquid) return warnings;
+  // A liquid with adhesion is meant to cling to what it starts against.
+  if (!liquid || adhesive) return warnings;
   // "Above" is against gravity, along its stronger axis.
   const [gx, gy] = gravity, vertical = Math.abs(gy) >= Math.abs(gx), di = vertical ? 0 : gx > 0 ? -1 : 1, dj = vertical ? (gy > 0 ? -1 : 1) : 0;
   const edge = vertical ? (gy > 0 ? 'top' : 'bottom') : gx > 0 ? 'left' : 'right', pixel = c => solid[c] && !(smooth && smooth[c]);

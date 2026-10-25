@@ -336,7 +336,76 @@ const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8b
   look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['l', 'g'], thresholds: [1, 2], dither: 0 },
     { field: 'shadow', colors: ['G'], thresholds: [0.5], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }], outline: 'k', cleanup: { strays: true, corners: true }
 }, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime };
+// Wet snow on a house's 45-degree roof slides off as one slab, pours over the eave and settles in a drift against the
+// wall. The roof is a smooth obstacle, so the snow (a soft yield-stress liquid with slip) slides down its pixel steps
+// instead of catching on them; a key firms the snow once it has landed, so the drift stays put rather than skidding on.
+const roofSlab = shapeRows(22, 24, (x, y) => (y === x ? 't' : y === x + 1 ? 'r' : y === x + 2 || (y > x + 2 && x < 2) ? 'R' : null));
+const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 12 && y >= 10 && y <= 14 ? (x === 10 || y === 12 ? 'M' : 'y') : y % 4 === 0 ? 'M' : 'm'));
+const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
+  kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
+  keys: [{ frame: 26, yield: 4, over: 4 }],
+  obstacles: [{ symbol: 'wall', x: 2, y: 18, draw: 'under' }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
+  fill: [{ x: 6, y: 2, w: 12, h: 7 }], emitters: [],
+  // White snow with a two-step blue shadow away from the light, outlined.
+  look: [{ field: 'density', colors: ['w'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['s', 'S'], thresholds: [0.4, 0.8], dither: 0 }],
+  light: [-1, -1], outline: 'o', cleanup: { strays: true, corners: true }
+}, { slab: roofSlab, wall: roofWall, ground: shapeRows(56, 4, (x, y) => (y === 0 ? 'g' : 'G')) });
+// A plank dam holds back a tank of water until frame 14, when an obstacle key takes it away: the water floods out as a
+// wave, rolls over a rock and splashes off the far wall, throwing whitewater where it lands. It runs on until the
+// water has settled, so the one-shot ends at rest.
+const damBreak = fluidSource('dam-break', 64, 36, { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff', p: '#8a5a36', P: '#5a3825', n: '#c79a5b', g: '#4a4a5e', G: '#33334a' }, {
+  kind: 'liquid', frames: 70, duration: 60, seed: 5, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], apic: true,
+  obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 14, show: false }] }],
+  fill: [{ x: 0, y: 10, w: 20, h: 20 }], emitters: [],
+  whitewater: [{ impact: 1.2, chance: 0.35, throw: 0.6, spread: 30, colors: ['w', 'c'], life: [6, 12] }],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, 5, 9], dither: 0 }], cleanup: { strays: true }
+}, {
+  plank: shapeRows(3, 22, (x, y) => (x === 1 ? (y % 6 === 0 ? 'n' : 'p') : 'P')), basin: shapeRows(64, 6, (x, y) => (y === 0 ? 'g' : 'G')),
+  rock: shapeRows(9, 5, (x, y) => ((x - 4) * (x - 4) / 20 + (y - 5) * (y - 5) / 25 < 1 ? (y < 2 ? 'g' : 'G') : null))
+});
+// A stone drops onto the ground (an obstacle key moves it down over five frames) and throws a wave of dust out both
+// ways. Gas can't be thrown through still air, but dust can: the dust rides on carriers that slow by drag and hand it to
+// the air as they go, so the clouds roll out, billow, slow and thin away, while two small warm puffs rise beside the
+// stone. It ends empty.
+const dustThrow = dir => ({ at: [32 + 6 * dir, 26], area: [5, 3], burst: 1, start: 6, density: 1.6, velocity: [3.4 * dir, -0.8], noise: 0.6, carry: { drag: 0.22, release: 0.24, gravity: [0, 0.04] } });
+const dustPuff = dir => ({ at: [32 + 7 * dir, 24], radius: 2, burst: 1, start: 6, density: 0.8, temperature: 0.6, velocity: [1.2 * dir, -0.8] });
+const dustWave = fluidSource('dust-wave', 64, 32, { d: '#6e5a48', l: '#9c8268', L: '#c9b08f', o: '#2b2230', s: '#8a8a9e', S: '#5e5e74', h: '#c4c4d4', g: '#4d3f36', G: '#352b26' }, {
+  frames: 26, duration: 60, seed: 7, walls: ['bottom'], buoyancy: 0.05, vorticity: 0.6, dissipation: 0.07, cooling: 0.08,
+  obstacles: [{ symbol: 'ground', x: 0, y: 28 }, { symbol: 'stone', x: 27, y: 0, keys: [{ frame: 1, y: 20, over: 5 }] }],
+  emitters: [dustThrow(-1), dustThrow(1), dustPuff(-1), dustPuff(1)],
+  look: [{ field: 'density', colors: ['d'], thresholds: [0.1], dither: 0.2 }, { field: 'density', colors: ['l'], thresholds: [0.32], dither: 0.2 }, { field: 'light', colors: ['L'], thresholds: [0.5], dither: 0 }], cleanup: { strays: true }
+}, {
+  stone: shapeRows(10, 8, (x, y) => { const d = (x - 4.5) * (x - 4.5) / 22 + (y - 3.5) * (y - 3.5) / 14; return d < 1 ? (x + y < 6 ? 'h' : d > 0.6 ? 'S' : 's') : null; }),
+  ground: shapeRows(64, 4, (x, y) => (y === 0 ? 'g' : 'G'))
+});
+// A ball of slime bursts in mid-air: its fill breaks into five chunks with a pixel of air between them, each flying out
+// at its own speed (an outward push on one blob would be cancelled by the pressure solve), and they land and wobble into
+// mounds. Cohesion rounds the chunks in flight; a moderate yield lets them squash and spring back.
+const slimeBurst = fluidSource('slime-burst', 56, 40, { G: '#1f6a3f', g: '#3fa34d', l: '#8be36a', w: '#e6ffc9', k: '#1f2a24', r: '#5b5568', R: '#433e50' }, {
+  kind: 'liquid', frames: 40, duration: 60, seed: 9, substeps: 4, walls: ['left', 'right', 'bottom'], gravity: [0, 0.25], yield: 4, apic: true, tension: 3.2,
+  obstacles: [{ symbol: 'ground', x: 0, y: 36 }],
+  fill: [{ at: [28, 17], radius: 7.5, burst: { speed: [1.2, 1.8], pieces: 5 } }], emitters: [],
+  look: [{ field: 'density', colors: ['g'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['G'], thresholds: [0.5], dither: 0 }, { field: 'light', colors: ['l', 'w'], thresholds: [0.45, 0.8], dither: 0 }],
+  outline: 'k', cleanup: { strays: true, corners: true }
+}, { ground: shapeRows(56, 4, (x, y) => (y === 0 ? 'r' : 'R')) });
+// Cold, stiff honey (viscosity 64) clings under a wooden spoon until a key thins it at frame 14, as if it warmed: it
+// stretches, lets go and drops into a bowl of honey, and a second key thickens it again so the bowl settles. The spoon
+// is smooth, so only adhesion holds the honey on; a pixel spoon's suction would hold the drop however runny it got.
+const spoon = shapeRows(30, 5, (x, y) => {
+  if (x < 18) return y === 1 ? 'n' : y === 2 ? 'B' : null;
+  const dx = (x - 23.5) / 6.5, under = 1 + Math.floor(3.4 * Math.sqrt(Math.max(0, 1 - dx * dx)));
+  return y === 0 && x > 18 ? 'n' : y >= 1 && y <= under ? (y === under ? 'b' : 'B') : null;
+});
+const bowl = shapeRows(28, 10, (x, y) => { const inner = (x - 13.5) * (x - 13.5) / 156 + (y + 1) * (y + 1) / 100, outer = (x - 13.5) * (x - 13.5) / 196 + (y + 1) * (y + 1) / 121; return outer < 1 && inner >= 1 ? (y > 6 ? 'Q' : 'q') : null; });
+const honeyDrop = fluidSource('honey-drop', 40, 48, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', Q: '#8fa4bd', k: '#1b1a26' }, {
+  kind: 'liquid', frames: 44, duration: 70, seed: 6, iterations: 24, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], viscosity: 64, apic: true, adhesion: 4, tension: 0.3,
+  keys: [{ frame: 14, viscosity: 3, over: 2 }, { frame: 30, viscosity: 16, over: 6 }],
+  obstacles: [{ symbol: 'spoon', x: 2, y: 6, surface: 'smooth' }, { symbol: 'bowl', x: 6, y: 36 }],
+  fill: [{ at: [25.5, 13.6], radius: 3.4 }, { x: 9, y: 39, w: 22, h: 5 }], emitters: [],
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 }],
+  cleanup: { strays: true }
+}, { spoon, bowl });
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

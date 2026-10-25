@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Five fluid presets for the newer features
+
+- `examples/` gains five presets, each with a GIF in the README and a place in the Fluid lab: **snow off a roof** (wet snow slides off a smooth roof as one slab and settles in a drift), **dam break** (a plank dam that an obstacle key takes away at frame 14), **dust wave** (a falling stone throws carried dust both ways), **bursting slime** (a burst fill) and **honey let-go** (keys thin stiff honey so it drops off a smooth spoon, then thicken it so the bowl settles). The playground lists them from the next release.
+- The Fluid lab's Thickness slider reaches 64, the compiler's limit for viscosity, so the honey let-go shows its own value.
+- The stuck-fill warning no longer fires for a liquid with `adhesion`, which is meant to cling.
+
 ### Fluid obstacles that move on cue
 
 - `keys` on a fluid obstacle move it (`x`, `y`, in a straight line `over` some frames) or take it away and bring it back (`show`) from a chosen frame: a dam that vanishes, a gate that lifts, a plunger, a paddle through smoke. While a key's `over` runs, the obstacle pushes the fluid ahead of it, since its faces carry its speed along the ramp, and fluid in the cells it now covers is shoved along to the first open cell, never through another solid. A key with no `over` is a cut: the obstacle is simply elsewhere and pushes nothing. Water held by a wall that vanishes at frame 15 stays put until then and floods after; a plunger moving 36 pixels carries the water's middle from x 18 to x 55 and keeps 1,277 of its 1,280 particles. Each frame stamps the obstacle at its place, and live runners move it too. Obstacles without keys are unchanged.
