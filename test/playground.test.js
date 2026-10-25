@@ -34,11 +34,12 @@ test('manifest has valid unique files, matching kinds and version-gated presets'
     assert.equal(entry.kind, recipeKind(await json(`examples/${entry.file}`)), entry.file);
   }
   const available = filterExamples(manifest, pin);
-  assert.ok(available.length >= 20); assert.equal(available.filter(entry => entry.kind === 'fluid').length, 10);
+  assert.ok(available.length >= 20); assert.ok(available.filter(entry => entry.kind === 'fluid').length >= 10);
+  for (const entry of manifest) assert.equal(available.includes(entry), compareVersions(entry.minVersion, pin) <= 0, entry.file);
   for (const file of ['honey.fluid.json', 'slime.fluid.json']) {
     const entry = manifest.find(item => item.file === file);
-    assert.ok(compareVersions(entry.minVersion, pin) > 0);
-    assert.ok(!available.includes(entry)); assert.ok(filterExamples(manifest, '0.9.1').includes(entry));
+    assert.equal(entry.minVersion, '0.9.1');
+    assert.ok(!filterExamples(manifest, '0.9.0').includes(entry)); assert.ok(filterExamples(manifest, '0.9.1').includes(entry));
   }
 });
 test('one engine pin is supported and no newer than the package; package excludes playground and scripts', async () => {
@@ -373,12 +374,14 @@ test('main-thread lifecycle handles reduced motion, stale results, errors, cance
     globalThis.location.hash = '#r=broken'; events.get('hashchange')();
     workers[3].reply({ error: { name: 'ShareError', message: 'The link needs both v= and r=.' } }); await flush();
     assert.equal(elements.get('recipe').value, before);
-    globalThis.location.hash = '#v=0.9.1&r=valid'; events.get('hashchange')();
-    workers[3].reply({ source: { text: before, version: '0.9.1' } });
-    assert.match(elements.get('engine-version').textContent, /Pixelbolt 0.9.0 \(last good render\)/);
-    workers[3].reply({ result: { ...preview, version: '0.9.1' } }); await flush();
-    assert.match(elements.get('version-message').textContent, /This recipe was made with Pixelbolt 0.9.1/);
-    assert.ok(elements.get('examples').options.some(option => option.value === 'honey.fluid.json'));
+    // A link that names another engine version than the pin keeps the last good render until that version replies.
+    const other = pin === '0.9.0' ? '0.9.1' : '0.9.0', escape = version => version.replaceAll('.', '\\.');
+    globalThis.location.hash = `#v=${other}&r=valid`; events.get('hashchange')();
+    workers[3].reply({ source: { text: before, version: other } });
+    assert.match(elements.get('engine-version').textContent, new RegExp(`Pixelbolt ${escape(pin)} \\(last good render\\)`));
+    workers[3].reply({ result: { ...preview, version: other } }); await flush();
+    assert.match(elements.get('version-message').textContent, new RegExp(`This recipe was made with Pixelbolt ${escape(other)}`));
+    assert.equal(elements.get('examples').options.some(option => option.value === 'honey.fluid.json'), compareVersions(other, '0.9.1') >= 0);
     elements.get('use-pin').click(); assert.equal(workers[3].requests.at(-1).version, pin);
     events.get('pagehide')(); await flush();
   } finally {

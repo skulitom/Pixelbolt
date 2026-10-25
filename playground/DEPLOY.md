@@ -28,7 +28,7 @@ After deployment, add this exact Markdown directly under the README's first para
 
 ## Versions and sharing
 
-`PINNED_VERSION` in `app.js` is `0.9.0`. Engines load from `https://cdn.jsdelivr.net/npm/pixelbolt@<version>/src/`; examples come from that version's `examples/`. Share links and PNGs select the version they name, with an explicit button to switch to the pin. A version must be plain x.y.z and at least 0.9.0. An unavailable release produces an error instead of silently using a different engine.
+`PINNED_VERSION` in `app.js` is `0.9.1`. Engines load from `https://cdn.jsdelivr.net/npm/pixelbolt@<version>/src/`; examples come from that version's `examples/`. Share links and PNGs select the version they name, with an explicit button to switch to the pin. A version must be plain x.y.z and at least 0.9.0. An unavailable release produces an error instead of silently using a different engine.
 
 To bump the default, publish the engine release first, update the one `PINNED_VERSION` constant, then run `node --test test/playground.test.js test/share.test.js` and the whole `node --test` suite. Test live rendering and exports with the published release before deploying again. Examples are filtered by `minVersion`; honey and slime appear once the pin reaches 0.9.1 (or when a shared recipe selects that version).
 
