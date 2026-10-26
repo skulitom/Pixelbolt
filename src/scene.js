@@ -268,6 +268,15 @@ export function prepareScene(source) {
   }
   return { source, width, height, duration, assets, shifts, instances, background, lighting, warnings: [...new Set(warnings)] };
 }
+// Sets a prepared light's radius as prepareScene reads it from a scene: keys that set no radius of their own take the
+// light's. The studio's slider uses this, so its preview is what the saved scene shows.
+export function setLightRadius(scene, index, radius) {
+  const light = scene.lighting.lights[index], keys = scene.source.lighting.lights[index].keys;
+  light.radius = radius;
+  light.keys?.forEach((key, j) => { if (keys[j].radius === undefined) key.radius = radius; });
+}
+// True when every key of the light sets its own radius, so the light's own radius changes nothing.
+export const keysSetRadius = (scene, index) => scene.source.lighting.lights[index].keys?.every(key => key.radius !== undefined) ?? false;
 // The scene as written with the light settings named in `edited` ("0.at", "0.height", "0.radius", "0.color" or
 // "ambient") taken from a prepared scene the studio changed. Everything else stays as written, file references included.
 export function withLightSettings(written, scene, edited) {

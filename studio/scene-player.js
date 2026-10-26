@@ -1,4 +1,4 @@
-import { prepareScene, renderScene, withLightSettings } from './scene.js';
+import { prepareScene, renderScene, withLightSettings, setLightRadius, keysSetRadius } from './scene.js';
 import { reviewPixels } from './core.js';
 const $ = id => document.getElementById(id);
 let scene, time = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, last, manualScale = false;
@@ -41,16 +41,18 @@ function lightControls() {
     $(id).min = String(Math.max(-4096, Math.min(-size, ...lights.map(light => light.at[axis])))); $(id).max = String(Math.min(4096, Math.max(size * 2, ...lights.map(light => light.at[axis]))));
   }
   const sync = () => {
-    const light = selected();
+    const light = selected(), keyed = keysSetRadius(scene, Number($('light-pick').value));
     $('light-x').value = light.at[0]; $('light-y').value = light.at[1]; $('light-height').value = light.height; $('light-radius').value = light.radius;
     $('light-color').value = hex(light.color); $('ambient').value = scene.lighting.ambient;
-    $('light-height-value').value = `${light.height} px`; $('light-radius-value').value = `${light.radius} px`; $('ambient-value').value = `${Math.round(scene.lighting.ambient * 100)}%`;
+    // When each of the light's keys sets its own radius, the light's radius changes nothing, so its slider is off.
+    $('light-radius').disabled = keyed; $('light-radius').title = keyed ? "Each of this light's keys sets its radius" : '';
+    $('light-height-value').value = `${light.height} px`; $('light-radius-value').value = keyed ? 'set by keys' : `${light.radius} px`; $('ambient-value').value = `${Math.round(scene.lighting.ambient * 100)}%`;
   };
   const change = (field, apply) => { apply(); edited.add(field === 'ambient' ? field : `${$('light-pick').value}.${field}`); sync(); draw(); };
   $('light-x').oninput = () => change('at', () => { selected().at[0] = Number($('light-x').value); });
   $('light-y').oninput = () => change('at', () => { selected().at[1] = Number($('light-y').value); });
   $('light-height').oninput = () => change('height', () => { selected().height = Number($('light-height').value); });
-  $('light-radius').oninput = () => change('radius', () => { selected().radius = Number($('light-radius').value); });
+  $('light-radius').oninput = () => change('radius', () => setLightRadius(scene, Number($('light-pick').value), Number($('light-radius').value)));
   $('light-color').oninput = () => change('color', () => { const value = $('light-color').value; selected().color = [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16)).concat(255); });
   $('ambient').oninput = () => change('ambient', () => { scene.lighting.ambient = Number($('ambient').value); });
   $('light-pick').onchange = () => { sync(); marks(); };

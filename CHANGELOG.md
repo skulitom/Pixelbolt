@@ -23,6 +23,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The playground shows a link's, PNG's or example's recipe indented only up to 50,000 lines, and compact beyond. A 6 KB link whose recipe unpacked to 2.4 million indented lines froze the page for 20 seconds and each key for about 6; it now opens in about a third of a second.
 - Each studio tab keeps its own draft. Loading a sample or choosing New, Open or Save JSON in one tab used to delete the draft of another tab's unsaved edits, and editing in a second tab replaced it. A reload finds the tab's draft again, and a new tab is offered the drafts of tabs that were closed or crashed, never those of tabs still open.
 - The scene page's **Save scene settings** writes the scene as written, with only the light fields you changed. It used to write the scene with every asset and palette file read in: `forest-spirit-lit.scene.json`, under 500 bytes naming `forest-spirit.json` and its normal pass, came back as 17 KB of inline recipes under the same name, and the links to those files were gone. The studio serves the scene as written beside the resolved one, read-only.
+- The scene page's Radius slider changes a keyed light's preview. Its keys had copied the light's radius when the scene loaded, so the slider changed nothing on screen while the saved scene, opened again, drew the new radius; now the keys that set no radius of their own follow the slider, and when every key sets one the slider is off.
 
 ## 0.9.1 (2026-10-25)
 

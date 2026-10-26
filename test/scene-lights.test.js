@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prepareScene, renderScene, withLightSettings } from '../src/scene.js';
+import { prepareScene, renderScene, withLightSettings, setLightRadius, keysSetRadius } from '../src/scene.js';
 import { resolveReferences } from '../src/resolve.js';
 import { startStudio } from '../src/server.js';
 
@@ -67,4 +67,28 @@ test('saving light settings writes only the settings that changed, into the scen
   // Colours keep a partial alpha.
   light.color = [1, 2, 3, 128];
   assert.equal(withLightSettings(original, scene, new Set(['0.color'])).lighting.lights[0].color, '#01020380');
+});
+test('the radius of a light with keys reaches the keys that set none, so the preview is what the saved scene shows', async () => {
+  const original = await written();
+  original.lighting.lights[0].keys = [{ time: 0, strength: 1 }, { time: 600, strength: 1.5, radius: 20 }];
+  const scene = prepareScene(await resolved(original)), before = renderScene(scene, { time: 0 });
+  assert.equal(keysSetRadius(scene, 0), false);
+  // The slider used to set only the light's radius, which its keys had already copied: the preview stayed as it was,
+  // while the saved scene, opened again, drew the new radius.
+  setLightRadius(scene, 0, 12);
+  const after = renderScene(scene, { time: 0 });
+  assert.notDeepEqual(after.data, before.data, 'the radius changes the preview');
+  assert.equal(after.lights[0].radius, 12);
+  const saved = withLightSettings(original, scene, new Set(['0.radius']));
+  assert.deepEqual(saved.lighting.lights[0], { ...original.lighting.lights[0], radius: 12 });
+  const reopened = prepareScene(await resolved(saved));
+  for (const time of [0, 300, 600, 1100]) assert.deepEqual(renderScene(scene, { time }).data, renderScene(reopened, { time }).data, `${time} ms`);
+  // A key with a radius of its own keeps it.
+  assert.equal(renderScene(scene, { time: 1100 }).lights[0].radius, 20);
+  // When every key sets its own radius, the light's changes nothing, and the scene page turns its slider off.
+  original.lighting.lights[0].keys[0].radius = 30;
+  assert.equal(keysSetRadius(prepareScene(await resolved(original)), 0), true);
+  const steady = prepareScene(await resolved(await written()));
+  assert.equal(keysSetRadius(steady, 0), false, 'a light without keys');
+  setLightRadius(steady, 0, 12); assert.equal(renderScene(steady, { time: 0 }).lights[0].radius, 12);
 });
