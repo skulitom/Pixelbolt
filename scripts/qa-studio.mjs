@@ -48,6 +48,8 @@ const { startStudio } = await import(pathToFileURL(path.join(path.resolve(option
 const { renderProject, MAX_REQUEST_BYTES } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'core.js')));
 const { compilePoses } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'authoring.js')));
 const server = await startStudio({ port: 0, quiet: true }), origin = `http://127.0.0.1:${server.address().port}`;
+// Every studio the walk opens; a linked recipe gets one of its own from `pixelbolt preview`.
+const origins = [origin];
 const browser = spawn(program, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-background-networking', '--disable-component-update', '--disable-sync', '--mute-audio', '--window-size=1440,900', ...options['browser-arg'], 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
 let exitCode = 1, closeBrowser = null;
 try {
@@ -434,6 +436,63 @@ try {
     await studio.reload(); await ready(); assert.equal(await offered(studio), 'nothing');
   });
 
+  console.log('Shared palettes');
+  await check('a recipe that links a shared palette file opens as written, draws with that file, and Save JSON keeps the link', async () => {
+    // Opened as people open their own, with `pixelbolt preview` from the package being walked. It has its own address,
+    // so its drafts stay apart from the walk's.
+    const folder = path.join(kept, 'linked'), app = path.resolve(options.app);
+    const shared = { palette: { g: '#72b58d', d: '#1d2b33' }, ramps: [['d', 'g']] };
+    const recipe = { version: 1, name: 'linked-hero', width: 4, height: 2, palette: { $ref: 'shared.json', s: '#ff0000' }, frames: [{ name: 'idle', ops: [{ op: 'grid', rows: ['gdsg', 'ddgg'] }] }] };
+    const written = JSON.stringify(recipe, null, 2);
+    await mkdir(folder); await writeFile(path.join(folder, 'shared.json'), JSON.stringify(shared)); await writeFile(path.join(folder, 'linked-hero.json'), written);
+    const { resolveReferences } = await import(pathToFileURL(path.join(app, 'src', 'resolve.js')));
+    const preview = spawn(process.execPath, [path.join(app, 'bin', 'pixelbolt.js'), 'preview', path.join(folder, 'linked-hero.json'), '--port', '0'], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let linked = null;
+    try {
+      const address = await new Promise((resolve, reject) => {
+        let output = '';
+        const timer = setTimeout(() => reject(new Error(`pixelbolt preview did not start within 15 seconds:\n${output}`)), 15000);
+        for (const stream of [preview.stdout, preview.stderr]) stream.on('data', chunk => { output += chunk; const found = /Pixelbolt studio: (http:\/\/127\.0\.0\.1:\d+)/.exec(output); if (found) { clearTimeout(timer); resolve(found[1]); } });
+        preview.once('error', reject); preview.once('exit', code => { clearTimeout(timer); reject(new Error(`pixelbolt preview exited with ${code}:\n${output}`)); });
+      });
+      origins.push(address);
+      linked = await openPage();
+      const pixels = `(() => { const c = document.getElementById('canvas'); return Array.from(c.getContext('2d').getImageData(0, 0, c.width, c.height).data).join(); })()`;
+      const node = async value => Array.from(renderProject((await resolveReferences(value, { baseDir: folder })).document).frames[0].data).join();
+      const replace = async value => { await linked.evaluate(`(() => { const source = document.getElementById('source'); source.focus(); source.select(); })()`); await linked.page('Input.insertText', { text: value }); };
+      await linked.size(1440, 900); await linked.goto(`${address}/`); await ready(linked);
+      await linked.until(`document.getElementById('project-name').textContent === 'Linked hero'`, 'the linked recipe');
+      // The editor holds the recipe as written; the swatches and the drawing have the shared file's colours, as in Node.
+      assert.equal(await linked.evaluate(`document.getElementById('source').value`), written);
+      assert.deepEqual([await linked.evaluate(`document.getElementById('error').hidden`), await linked.evaluate(`document.getElementById('color-count').textContent`)], [true, '3 colors · shared.json']);
+      assert.equal(await linked.evaluate(pixels), await node(recipe));
+      // An edit to the recipe's own entries redraws, and Save JSON writes it with the link.
+      const edit = JSON.stringify({ ...recipe, palette: { $ref: 'shared.json', s: '#3050ff', w: '#ffffff' }, frames: [{ name: 'idle', ops: [{ op: 'grid', rows: ['gdsw', 'ddgg'] }] }] }, null, 2);
+      await replace(edit);
+      await linked.until(`document.getElementById('color-count').textContent === '4 colors · shared.json'`, 'the edit to redraw');
+      const drawn = await linked.evaluate(pixels);
+      assert.equal(drawn, await node(JSON.parse(edit)));
+      const saved = await download(() => linked.click('#save'));
+      assert.equal(path.basename(saved), 'linked-hero.pixel.json'); assert.equal(await readFile(saved, 'utf8'), edit);
+      assert.deepEqual(JSON.parse(await readFile(saved, 'utf8')).palette, { $ref: 'shared.json', s: '#3050ff', w: '#ffffff' });
+      // Open project brings the saved file back, drawn the same.
+      await linked.click('#new'); await linked.until(`document.getElementById('project-name').textContent === 'New sprite'`, 'the blank canvas');
+      const { root: { nodeId } } = await linked.page('DOM.getDocument'), input = await linked.page('DOM.querySelector', { nodeId, selector: '#file' });
+      await linked.page('DOM.setFileInputFiles', { files: [saved], nodeId: input.nodeId });
+      await linked.until(`document.getElementById('project-name').textContent === 'Linked hero'`, 'the saved recipe to reopen');
+      assert.equal(await linked.evaluate(`document.getElementById('source').value`), edit); assert.equal(await linked.evaluate(pixels), drawn);
+      // The page reads no other file: a recipe that links one is not drawn, and says why.
+      await replace(edit.replace('"$ref": "shared.json"', '"$ref": "other.json"'));
+      await linked.until(`!document.getElementById('error').hidden`, 'the other file to be refused');
+      assert.match(await linked.evaluate(`document.getElementById('error').textContent`), /^project\.palette\.\$ref: the studio has only "shared\.json", the palette file of the recipe pixelbolt preview opened, so it cannot draw "other\.json"\./);
+      await replace(edit); await linked.until(`document.getElementById('error').hidden`, 'the link to be drawn again');
+      await linked.size(390, 844);
+      assert.ok(await linked.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'the linked palette heading causes horizontal overflow');
+      await linked.shot('linked-palette-narrow', true);
+      return `saved ${path.basename(saved)} with "$ref": "shared.json"`;
+    } finally { await linked?.close(); preview.kill(); }
+  });
+
   console.log('Keyboard and window sizes');
   await check('Tab reaches every main control, and the recipe editor does not trap the keyboard', async () => {
     await evaluate(`document.activeElement.blur()`);
@@ -559,9 +618,9 @@ try {
 
   console.log('Afterwards');
   await check('no page reported an error, and no request left this computer', () => {
-    const foreign = requests.filter(url => !url.startsWith(`${origin}/`) && !/^(data|blob|about|file):/.test(url));
+    const foreign = requests.filter(url => !origins.some(studioOrigin => url.startsWith(`${studioOrigin}/`)) && !/^(data|blob|about|file):/.test(url));
     assert.deepEqual(problems, []); assert.deepEqual(foreign, []);
-    return `${requests.length} requests, all to ${origin} or local files`;
+    return `${requests.length} requests, all to ${origins.join(' or ')} or local files`;
   });
   if (dialogs.length) note(`Confirmations the studio asked for and the walk accepted: ${[...new Set(dialogs)].join(' | ')}`);
   const failed = results.filter(result => !result.ok);

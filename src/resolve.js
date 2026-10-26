@@ -3,7 +3,7 @@
 // paths resolve from `baseDir`; when `root` is set (the MCP server), every referenced file must stay inside it.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { PixelError } from './core.js';
+import { PixelError, inlineSharedPalette } from './core.js';
 
 const fail = (where, message) => { throw new PixelError(where, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -33,12 +33,13 @@ async function sharedPalette(reference, baseDir, context, where) {
 }
 async function resolvePalette(document, baseDir, context, where) {
   if (!isObject(document) || !isObject(document.palette) || !Object.hasOwn(document.palette, '$ref')) return document;
-  const { $ref, ...local } = document.palette;
-  const { palette: shared, ramps } = await sharedPalette($ref, baseDir, context, `${where}.palette.$ref`);
+  const reference = document.palette.$ref, file = await sharedPalette(reference, baseDir, context, `${where}.palette.$ref`);
   // A recipe without ramps of its own takes the shared file's; sidecar sources compile to recipes without them.
-  const inherit = ramps && document.format === undefined && document.ramps === undefined;
-  context.palettes.push({ where, reference: $ref, shared, ...(inherit && { ramps }) });
-  return { ...document, palette: { ...shared, ...local }, ...(inherit && { ramps }) };
+  const resolved = inlineSharedPalette(document, file), inherited = resolved.ramps !== document.ramps;
+  // `ramps` are set when the document took the file's; `sharedRamps` are the file's own, for the studio, which draws the
+  // recipe as written with the file and so inlines it again after every edit.
+  context.palettes.push({ where, reference, shared: file.palette, ...(inherited && { ramps: file.ramps }), ...(file.ramps && { sharedRamps: file.ramps }) });
+  return resolved;
 }
 // A pixelforge-normals source names the colour recipe it derives from: a file, a saved revision or an inline recipe.
 async function loadRecipe(entry, baseDir, context, where) {

@@ -39,7 +39,7 @@ const routes = new Map([
   ...['campfire', 'explosion', 'smoke-puff', 'steam-vent', 'magic-swirl', 'torch', 'splash', 'waterfall', 'drip', 'potion', 'honey', 'slime', 'roof-snow', 'dam-break', 'dust-wave', 'slime-burst', 'honey-drop'].map(name => [`/examples/${name}.fluid.json`, [`../examples/${name}.fluid.json`, 'application/json']])
 ]);
 // Every path the studio answers with GET, for checks that walk the whole allowlist.
-export const STUDIO_PATHS = [...routes.keys(), '/scene.json', '/scene-source.json', '/project.json'];
+export const STUDIO_PATHS = [...routes.keys(), '/scene.json', '/scene-source.json', '/project.json', '/shared-palette.json'];
 export const STUDIO_PORT = 4747;
 // The most the studio sends back as one ZIP of frames; longer or larger clips belong on the command line.
 const SEQUENCE_ZIP_BYTES = 512 * 1048576;
@@ -57,9 +57,11 @@ export function openBrowser(url) {
 }
 // `fallback` takes any free port when `port` is in use, so a second studio still starts. The studio's unsaved-draft
 // recovery lives in browser storage, which browsers keep per address: a draft is only found again on the same port.
-// For a scene, `project` has its file references resolved and `source` is the scene as written, which the scene page
-// saves its light settings into.
-export async function startStudio({ port = STUDIO_PORT, fallback = false, project, source = project, quiet = false } = {}) {
+// `project` has its file references resolved and `source` is the document as written. The scene page saves a scene's
+// light settings into its source; the studio's editor shows a recipe's source, which Save JSON writes, so a palette
+// that links a shared file keeps `{ "$ref": … }`. The page draws that recipe with `sharedPalette`, the one file it links
+// as read here (`{ $ref, palette, ramps }`).
+export async function startStudio({ port = STUDIO_PORT, fallback = false, project, source = project, sharedPalette = null, quiet = false } = {}) {
   const scene = project?.format === 'pixelforge-scene';
   if (project) {
     if (scene) prepareScene(project);
@@ -109,7 +111,10 @@ export async function startStudio({ port = STUDIO_PORT, fallback = false, projec
         if (drawn) res.setHeader('X-Pixelbolt-Scene-Source', 'scene-source.json');
         reply(200, 'application/json', JSON.stringify(body)); return;
       }
-      if (url.pathname === '/project.json') { reply(200, 'application/json', JSON.stringify(project ?? null)); return; }
+      // The recipe as written, and the shared palette file it links (null for none). Both are only read, and the page
+      // asks for no other file: a recipe that links another is not drawn.
+      if (url.pathname === '/project.json') { reply(200, 'application/json', JSON.stringify(source ?? null)); return; }
+      if (url.pathname === '/shared-palette.json') { reply(200, 'application/json', JSON.stringify(sharedPalette)); return; }
       if (!routes.has(url.pathname)) { reply(404, 'text/plain', 'Not found'); return; }
       const [file, type] = routes.get(url.pathname);
       reply(200, type, await readFile(new URL(file, import.meta.url)));

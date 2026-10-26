@@ -109,9 +109,12 @@ async function readResolved(file) {
 // Every file an export was made from: the recipe itself and the palette and asset files it references.
 const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.file)]), ...input.resolution.files];
 const removedBy = files => (files.removed ? { removed: files.removed } : {});
+// The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
+// and a scene's assets do not).
+const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'project'];
 // Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
 function linkPalette(recipe, input, outFile) {
-  const link = input.resolution.palettes.find(entry => ['poses', 'autotile', 'fx', 'fluid', 'project'].includes(entry.where));
+  const link = input.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where));
   if (!link) return recipe;
   const shared = path.resolve(input.baseDir, link.reference), reference = path.relative(path.dirname(path.resolve(outFile)), shared).split(path.sep).join('/');
   return restorePaletteReference({ palette: { $ref: reference } }, recipe, { palettes: [{ ...link, where: 'project' }] });
@@ -183,12 +186,19 @@ try {
       const port = options.port === undefined ? STUDIO_PORT : Number(options.port);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Port must be an integer from 0 to 65535');
       const input = positional[0] ? await readResolved(positional[0]) : undefined;
-      let project = input?.document;
-      // Preserve editable poses and their contact metadata; other authoring formats open as compiled recipes.
-      if (project && project.format !== 'pixelforge-poses' && Object.hasOwn(COMPILERS, project.format ?? '')) project = COMPILERS[project.format](project).recipe;
+      // The studio shows and saves documents as written, so the files they name stay named: a scene's light settings are
+      // saved into the scene, and Save JSON writes a recipe or pose source with its link to a shared palette file.
+      let project = input?.document, source = input?.original;
+      // Preserve editable poses and their contact metadata; other authoring formats open as compiled recipes, which keep
+      // the link as `pixelbolt compile` writes it beside the source.
+      if (project && project.format !== 'pixelforge-poses' && Object.hasOwn(COMPILERS, project.format ?? '')) {
+        project = COMPILERS[project.format](project).recipe; source = linkPalette(project, input, input.file);
+      }
+      // The page draws a linked recipe with the palette file as read here; it reads no file itself.
+      const link = input?.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where)), reference = source?.palette?.$ref;
+      const sharedPalette = link && reference !== undefined ? { $ref: reference, palette: link.shared, ramps: link.sharedRamps ?? null } : null;
       // A port you name is used or refused; the usual one gives way to any free port when something else has it.
-      // A scene's light settings are saved into the scene as written, so the files it names stay named.
-      const server = await startStudio({ port, project, ...(project?.format === 'pixelforge-scene' && { source: input.original }), fallback: options.port === undefined });
+      const server = await startStudio({ port, project, source, sharedPalette, fallback: options.port === undefined });
       if (options.open && !await openBrowser(`http://127.0.0.1:${server.address().port}/`)) console.log('No browser was opened. Copy the address above into your browser.');
     } else if (command === 'compile' && options.expand) {
       if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');

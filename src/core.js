@@ -131,6 +131,20 @@ function readProject(spec) {
   return { projectName, width, height, palette, ramps, background, projectAnchor, symbols };
 }
 
+/**
+ * Puts a shared palette file's colours into a document whose palette links it (`"palette": { "$ref": "shared.json",
+ * ...local entries }`). `shared` is the file as read, `{ palette, ramps }`: entries the document sets itself win, and a
+ * recipe without ramps of its own takes the file's (pose, autotile, effect and fluid sources do not). A document without
+ * a link comes back as it is. The renderer never reads files: the CLI and MCP read the file (src/resolve.js), and the
+ * studio is sent the one its recipe links, so both draw a linked recipe alike.
+ */
+export function inlineSharedPalette(document, { palette, ramps = null }) {
+  if (!isObject(document) || !isObject(document.palette) || !own(document.palette, '$ref')) return document;
+  const { $ref, ...local } = document.palette;
+  const inherit = ramps && document.format === undefined && document.ramps === undefined;
+  return { ...document, palette: { ...palette, ...local }, ...(inherit && { ramps }) };
+}
+
 export function renderProject(spec, options = {}) {
   object(options, 'render', ['layers', 'stats']);
   if (options.stats !== undefined) boolean(options.stats, 'render.stats');

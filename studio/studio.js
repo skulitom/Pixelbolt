@@ -1,4 +1,4 @@
-import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, animationPosition, animationNeighbors, MAX_REQUEST_BYTES } from '/core.js';
+import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, animationPosition, animationNeighbors, inlineSharedPalette, MAX_REQUEST_BYTES } from '/core.js';
 import { animationGIF } from '/gif.js';
 import { createDraftStore, claimTab, openTabs } from '/draft.js';
 import { compilePoses } from '/authoring.js';
@@ -10,7 +10,19 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let project, spec, atlas, frameImages = [], selected = 0, playing = !reducedMotion, mode = 'animation';
 let position = 0;
 let poseMetadata = null, motionReview = null;
-const compileSource = value => value.format === 'pixelforge-poses' ? compilePoses(value) : { recipe: value, metadata: null };
+// The editor holds the recipe as written, and Save JSON writes it, so a palette that links a shared file keeps its
+// `$ref`. Only the drawing puts the file's colours in. The page reads no file: `pixelbolt preview` sends the one file
+// the recipe it opened links, and a recipe that names another file, or any file when there is none, is not drawn.
+let sharedPalette = null;
+const isLinked = value => value?.palette !== null && typeof value?.palette === 'object' && Object.hasOwn(value.palette, '$ref');
+function withSharedPalette(value) {
+  if (!isLinked(value)) return value;
+  const where = `${value.format === 'pixelforge-poses' ? 'poses' : 'project'}.palette.$ref`, reference = JSON.stringify(value.palette.$ref);
+  if (!sharedPalette) throw new Error(`${where}: the studio reads a shared palette file only for the recipe pixelbolt preview opened, so it cannot draw ${reference}. Open this recipe with pixelbolt preview <file>, or put its colours in the palette.`);
+  if (sharedPalette.$ref !== value.palette.$ref) throw new Error(`${where}: the studio has only ${JSON.stringify(sharedPalette.$ref)}, the palette file of the recipe pixelbolt preview opened, so it cannot draw ${reference}. Open this recipe with pixelbolt preview <file>.`);
+  return inlineSharedPalette(value, sharedPalette);
+}
+const compileSource = value => { const drawn = withSharedPalette(value); return drawn?.format === 'pixelforge-poses' ? compilePoses(drawn) : { recipe: drawn, metadata: null }; };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
 // The recipe text last sent to Save JSON. The page cannot tell whether the browser kept that file or the save was
 // cancelled, so it stays `dirty`: the draft is kept and leaving or replacing the recipe still asks.
@@ -133,7 +145,10 @@ function compile() {
     const oldAnimation = $('animation').value;
     $('animation').replaceChildren(...Object.keys(project.animations).map(key => { const option = document.createElement('option'); option.value = key; option.textContent = title(key); return option; }));
     if (project.animations[oldAnimation]) $('animation').value = oldAnimation;
-    $('color-count').textContent = `${Object.keys(project.palette).length} colors`;
+    // A linked palette names its file here; the swatches show its colours, which the editor only links.
+    const linked = isLinked(nextSpec) ? nextSpec.palette.$ref : null;
+    $('color-count').textContent = `${Object.keys(project.palette).length} colors${linked ? ` · ${linked.split(/[\\/]/).pop()}` : ''}`;
+    $('color-count').title = linked ? `The palette links ${linked}, drawn with that file as pixelbolt preview read it; entries in the recipe win.` : '';
     $('palette').replaceChildren(...Object.entries(project.palette).map(([key, value]) => {
       const button = document.createElement('button'); button.className = 'swatch'; button.style.background = value;
       button.title = `${key}: ${value}`; button.setAttribute('aria-label', `Color ${key}: ${value}`);
@@ -319,11 +334,14 @@ async function boot() {
     // This tab's own draft comes first (a reload); then those of tabs that are closed now, newest first. Drafts of
     // tabs that are still open stay theirs.
     const id = await claimed, open = await openTabs(locks);
+    // The recipe as written, and the palette file it links, before any draft is offered: a restored draft that links
+    // the file is drawn with it.
+    const [initial, linked] = await Promise.all([fetch('/project.json'), fetch('/shared-palette.json')].map(async response => (await response).json()));
+    sharedPalette = linked;
     drafts = createDraftStore(browserStorage('localStorage'), { id });
     const own = drafts.load();
     offers = [...(own ? [{ ...own, id }] : []), ...drafts.others(open)];
     offerDraft(offers.shift());
-    const initial = await (await fetch('/project.json')).json();
     if (initial) setSource(initial); else await loadExample(examples[0]);
     playState(); requestAnimationFrame(tick);
   } catch (error) { $('error').hidden = false; $('error').textContent = error.message; $('export').disabled = true; }
