@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inflateSync } from 'node:zlib';
-import { readFile, writeFile, readdir, mkdir, mkdtemp, rm, access } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, mkdtemp, rm, access, symlink, link } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -139,6 +139,57 @@ test('an export never writes over its own inputs, even with force', async t => {
   assert.equal(cli.status, 1); assert.match(JSON.parse(cli.stderr).error, /would replace its own input/);
   assert.equal(await readFile(source, 'utf8'), text);
   assert.deepEqual((await readdir(dir)).sort(), ['pal.json', 'sample.pixel.json']);
+});
+test('an export never writes over its own inputs under another spelling: a linked folder or a hard link', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  await mkdir(path.join(dir, 'art'));
+  const source = path.join(dir, 'art', 'sample.pixel.json'), text = JSON.stringify(tiny);
+  await writeFile(source, text);
+  // The paths used to be compared as written, so a folder link (or a short 8.3 name) to the recipe's folder got past.
+  await symlink(path.join(dir, 'art'), path.join(dir, 'alias'), 'junction');
+  await assert.rejects(writeBundle(await createBundle(tiny), path.join(dir, 'alias'), { force: true, inputs: [source] }), /would replace its own input .*sample\.pixel\.json/);
+  // A hard link to the recipe in the export folder is the recipe too.
+  await mkdir(path.join(dir, 'out')); await link(source, path.join(dir, 'out', 'sample.pixel.json'));
+  await assert.rejects(writeBundle(await createBundle(tiny), path.join(dir, 'out'), { force: true, inputs: [source] }), /would replace its own input .*sample\.pixel\.json/);
+  assert.equal(await readFile(source, 'utf8'), text);
+  assert.deepEqual(await readdir(path.join(dir, 'art')), ['sample.pixel.json']);
+  assert.deepEqual(await readdir(path.join(dir, 'out')), ['sample.pixel.json']);
+});
+test('CLI commands that write one file never write over a file they read, even with force; patch may save over its recipe', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const cli = (...args) => spawnSync(process.execPath, [fileURLToPath(new URL('../bin/pixelbolt.js', import.meta.url)), ...args], { cwd: dir, encoding: 'utf8' });
+  const poses = JSON.parse(await readFile(new URL('../examples/swing.poses.json', import.meta.url), 'utf8'));
+  await writeFile(path.join(dir, 'palette.json'), JSON.stringify(poses.palette));
+  const files = { 'swing.poses.json': JSON.stringify({ ...poses, palette: { $ref: 'palette.json' } }), 'recipe.json': JSON.stringify(tiny), 'changes.json': JSON.stringify([{ set: 'frames[a].duration', value: 90 }]) };
+  for (const [name, text] of Object.entries(files)) await writeFile(path.join(dir, name), text);
+  const before = Object.fromEntries(await Promise.all(['palette.json', ...Object.keys(files)].map(async name => [name, await readFile(path.join(dir, name), 'utf8')])));
+  for (const args of [
+    // The editable source replaced by the compiled recipe, or the shared palette by a recipe whose $ref is itself.
+    ['compile', 'swing.poses.json', '--out', 'swing.poses.json', '--force'],
+    ['compile', 'swing.poses.json', '--out', 'palette.json', '--force'],
+    ['overlay', 'recipe.json', '--changes', 'changes.json', '--out', 'recipe.json', '--force'],
+    ['overlay', 'recipe.json', '--changes', 'changes.json', '--out', 'changes.json', '--force'],
+    ['patch', 'recipe.json', '--changes', 'changes.json', '--out', 'changes.json', '--force'],
+    // Where letter case is ignored, SWING.poses.json is the source.
+    ...(await ignoresCase(dir) ? [['compile', 'swing.poses.json', '--out', 'compiled.json', '--metadata', 'SWING.poses.json', '--force']] : [])
+  ]) {
+    const run = cli(...args);
+    assert.equal(run.status, 1, args.join(' '));
+    assert.match(JSON.parse(run.stderr).error, /is a file this command reads; even --force never writes over it/, args.join(' '));
+  }
+  for (const [name, text] of Object.entries(before)) assert.equal(await readFile(path.join(dir, name), 'utf8'), text, name);
+  assert.deepEqual((await readdir(dir)).sort(), Object.keys(before).sort());
+  // Saving a patch over the recipe it edits is an edit in place, which --force allows.
+  const patched = cli('patch', 'recipe.json', '--changes', 'changes.json', '--out', 'recipe.json', '--force');
+  assert.equal(patched.status, 0, patched.stderr);
+  assert.equal(JSON.parse(await readFile(path.join(dir, 'recipe.json'), 'utf8')).frames[0].duration, 90);
+  // render reads an --expect file too: one in the export folder under the name of a file the export writes stays.
+  await mkdir(path.join(dir, 'out')); await writeFile(path.join(dir, 'out', 'sample.atlas.json'), '{"width": 2}');
+  const rendered = cli('render', 'recipe.json', '--out', 'out', '--expect', path.join('out', 'sample.atlas.json'), '--force');
+  assert.equal(rendered.status, 1); assert.match(JSON.parse(rendered.stderr).error, /would replace its own input .*sample\.atlas\.json/);
+  assert.equal(await readFile(path.join(dir, 'out', 'sample.atlas.json'), 'utf8'), '{"width": 2}');
 });
 test('all bundled examples validate and produce complete exports', async () => {
   for (const name of ['forest-spirit','ember','coin']) {

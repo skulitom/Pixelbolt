@@ -4,7 +4,7 @@ import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { readExpect, checkDelivery } from '../src/check.js';
-import { embedBundleRecipe } from '../src/export.js';
+import { embedBundleRecipe, sameFiles } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference } from '../src/index.js';
 
@@ -47,7 +47,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt mcp [--out directory] [--root directory] [--time-limit seconds]  Run the MCP server over stdio
   pixelbolt schema                         Print the JSON Schema
 
-Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. Exports never write over their own recipe. '-' reads JSON from stdin.
+Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. No command writes over a file it reads, however the path is spelled (patch may save over the recipe it edits). '-' reads JSON from stdin.
 --embed-recipe on render or scene embeds the resolved recipe in exported PNGs (not scene asset passes).
 Palette references ({"$ref": "palette.json"}), scene asset files and a normals source's recipe resolve from the
 input file's folder.
@@ -122,11 +122,17 @@ function inspectOptions({ frames, animation, region, grid, scale, background, vi
   const [x, y, w, h] = region?.split(',').map(Number) ?? [];
   return { ...(frames !== undefined && { frames: frames.split(',') }), ...(animation !== undefined && { animation }), ...(region !== undefined && { region: { x, y, w, h } }), ...(grid && { grid }), ...(scale !== undefined && { scale: Number(scale) }), ...(background !== undefined && { background }), ...(view !== undefined && { view }), ...(native && { native }), ...(diagnostics && { diagnostics }), ...(maxCells !== undefined && { maxCells: Number(maxCells) }), ...(step !== undefined && { step: Number(step) }), ...(offset !== undefined && { offset: Number(offset) }) };
 }
-// Checks every target before writing any, so a refused overwrite leaves nothing half-written.
-async function writeOutputs(targets, force) {
+// The named files a command reads (stdin aside), so its outputs can be kept off them.
+const filesRead = (...files) => files.filter(file => file !== undefined && file !== '-').map(file => path.resolve(file));
+// Checks every target before writing any, so a refused overwrite leaves nothing half-written. `inputs` are the files the
+// command read: even --force never writes over one, however the path is spelled (links, short names, letter case).
+async function writeOutputs(targets, force, inputs = []) {
   const entries = Object.entries(targets).map(([label, [file, data]]) => [label, path.resolve(file), data]);
-  const unique = new Set(entries.map(([, target]) => process.platform === 'win32' ? target.toLowerCase() : target));
+  // Windows and macOS file systems ignore case by default, so Hero.json and hero.json are one file there.
+  const unique = new Set(entries.map(([, target]) => process.platform === 'win32' || process.platform === 'darwin' ? target.toLowerCase() : target));
   if (unique.size !== entries.length) throw new Error('Output paths must be distinct; no files were written.');
+  const [read] = await sameFiles(entries.map(([, target]) => target), inputs);
+  if (read) throw new Error(`${read} is a file this command reads; even --force never writes over it. Choose another file; no files were written.`);
   if (!force) for (const [, target] of entries) {
     try { await access(target); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
     throw new Error(`Output already exists: ${target}. Choose a new file or pass --force.`);
@@ -186,7 +192,7 @@ try {
       if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');
       if (options.out && !/\.json$/i.test(options.out)) throw new Error('--out must name a .json file');
       const input = await readResolved(positional[0]), expanded = expandPoses(input.document);
-      if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force), ...referenced(input) }));
+      if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force, inputsOf(input)), ...referenced(input) }));
       else process.stdout.write(formatJSON(expanded));
     } else if (command === 'share') {
       const input = await readResolved(positional[0]), version = await engineVersion(), link = await shareLink(input.document, version);
@@ -198,7 +204,7 @@ try {
       const embedded = await readEmbeddedRecipe(await readFile(positional[0]));
       if (!embedded) throw new Error('This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.');
       const { version, kind, recipe } = embedded;
-      console.log(JSON.stringify({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force), embedded: { version, kind } }));
+      console.log(JSON.stringify({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force, filesRead(positional[0])), embedded: { version, kind } }));
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
       let value, metadata, input, warnings;
@@ -219,7 +225,8 @@ try {
       }
       if (options.metadata && !/\.json$/i.test(options.metadata)) throw new Error('--metadata must name a .json file');
       // Generated files use compact formatting: one line per frame, operation or short grid when it fits.
-      const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }) }, options.force);
+      const reads = command === 'import' ? filesRead(positional[0], options.atlas) : [...inputsOf(input), ...filesRead(options.changes, options.selections)];
+      const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }) }, options.force, reads);
       console.log(JSON.stringify({ ok: true, ...written, ...(warnings && { warnings }), ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
     } else if (command === 'scene') {
       if (!options.out) throw new Error('scene requires --out <directory>');
@@ -241,7 +248,7 @@ try {
         ...Object.fromEntries(['speed', 'ground', 'scale'].filter(key => options[key] !== undefined).map(key => [key, Number(options[key])])),
         ...(options.background !== undefined && { background: options.background }) }) : inspectProject(project, inspectOptions(options)), { data, ...sheet } = view.sheet;
       if (options.out && !/\.png$/i.test(options.out)) throw new Error('inspect --out must name a .png file');
-      const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height)], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height)] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height)] }) } : {}, options.force);
+      const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height)], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height)] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height)] }) } : {}, options.force, [...inputsOf(input), ...filesRead(options.reference, options.metadata)]);
       // Pretty-printed so grid rows line up for reading.
       console.log(JSON.stringify({ ok: true, ...summary(project), ...view, sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(comparison && { comparison: comparisonReport }), ...written, ...referenced(input) }, null, 2));
     } else if (command === 'patch') {
@@ -258,7 +265,7 @@ try {
       const written = await writeOutputs({
         ...(options.out && { recipe: [options.out, Buffer.from(JSON.stringify(saved, null, 2) + '\n')] }),
         ...(options.image && image && { image: [options.image, encodePNG(image.sheet.data, image.sheet.width, image.sheet.height)] })
-      }, options.force);
+      }, options.force, [...input.resolution.files, ...filesRead(options.changes)]);
       const { sheet, ...drawn } = image ?? {};
       console.log(JSON.stringify({ ok: true, name: after.name, edits, ...(applied.rebased && { rebased: true }), ...report, ...(written.image && { image: { ...drawn, scale: sheet.scale, file: written.image } }), ...(written.recipe && { recipe: written.recipe }), warnings: after.warnings, ...(after.clipping && { clipping: after.clipping }) }, null, 2));
     } else if (command === 'sequence') {
@@ -276,7 +283,7 @@ try {
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
       const input = await readResolved(positional[0]), project = renderProject(input.document);
       const { data, ...gif } = animationGIF(project, options.animation, { ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.background !== undefined && { background: options.background }) });
-      const written = await writeOutputs({ file: [options.out, data] }, options.force);
+      const written = await writeOutputs({ file: [options.out, data] }, options.force, inputsOf(input));
       console.log(JSON.stringify({ ok: true, name: project.name, ...gif, ...written, warnings: project.warnings, ...referenced(input) }, null, 2));
     } else if (command === 'gif-frames') {
       if (!positional[0] || positional[0] === '-') throw new Error('gif-frames requires a folder of numbered PNG frames');
@@ -296,7 +303,8 @@ try {
         // The check runs before anything is written, so an unknown --animation writes nothing. render writes no GIFs.
         const bundle = await createBundle(input.document), check = checkDelivery(bundle.project, { recipe: input.document, expect, animation: options.animation });
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
-        const files = await writeBundle(bundle, options.out, { force: options.force, inputs: inputsOf(input) });
+        const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
+        const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile] });
         console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, ...removedBy(files), check, ...referenced(input) }));
       }
     }

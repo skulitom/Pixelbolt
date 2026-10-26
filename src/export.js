@@ -133,6 +133,30 @@ function inputCollisions(bundle, root, inputs) {
     return name === undefined ? [] : [name];
   });
 }
+// The `targets` (absolute paths) that are one of `inputs` on disk, however they are spelled: the same file under a
+// short 8.3 name, through a symbolic link or junction, in other letter case, or as another hard link. A target that
+// doesn't exist can't be an input. File identity decides where the file system reports one; real paths elsewhere.
+export async function sameFiles(targets, inputs) {
+  const identityOf = info => (info.ino ? `${info.dev}:${info.ino}` : null), realOf = async file => fileKey(await realpath(file).catch(() => path.resolve(file)));
+  const sources = (await Promise.all(inputs.map(async file => {
+    const info = await stat(file, { bigint: true }).catch(() => null);
+    return info && { id: identityOf(info), real: await realOf(file) };
+  }))).filter(Boolean);
+  if (!sources.length) return [];
+  const ids = new Set(sources.map(source => source.id)), reals = new Set(sources.map(source => source.real)), found = [];
+  const same = async target => {
+    const info = await stat(target, { bigint: true }).catch(() => null);
+    if (!info) return false;
+    const id = identityOf(info);
+    return id !== null && !ids.has(null) ? ids.has(id) : reals.has(await realOf(target));
+  };
+  // A few hundred at a time: a long sequence has thousands of frames to check.
+  for (let start = 0; start < targets.length; start += 256) {
+    const batch = targets.slice(start, start + 256), results = await Promise.all(batch.map(same));
+    found.push(...batch.filter((_, index) => results[index]));
+  }
+  return found;
+}
 // What an earlier export of the same thing left in this folder that this one does not write: a longer sequence's
 // later frames, or a renamed frame's or animation's PNG. Only a bundle that declares `owns` has any, and only when the
 // folder holds that bundle's own index file (`owns.marker`), which shows the earlier export was this kind. Nothing
@@ -191,6 +215,8 @@ export async function writeBundle(bundle, directory, { force = false, inputs = [
   const root = path.resolve(directory);
   const collisions = inputCollisions(bundle, root, inputs);
   if (collisions.length) throw new Error(`The export would replace its own input ${path.join(root, collisions[0])}. Choose another folder.`);
+  const same = await sameFiles([...bundle.files.keys()].map(filename => path.join(root, filename)), inputs);
+  if (same.length) throw new Error(`The export would replace its own input ${same[0]}. Choose another folder.`);
   // Preflight all output collisions before writing any artifact.
   if (!force) for (const filename of bundle.files.keys()) {
     try { await access(path.join(root, filename)); } catch (error) { if (error.code === 'ENOENT') continue; throw error; }
