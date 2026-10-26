@@ -33,6 +33,7 @@
     "build:studio": "node scripts/build-studio.mjs",
     "check:studio": "node scripts/build-studio.mjs --check",
     "verify:studio": "node scripts/verify-studio.mjs",
-    "qa:studio": "node scripts/qa-studio.mjs"
+    "qa:studio": "node scripts/qa-studio.mjs",
+    "bench": "node scripts/bench.mjs"
   }
 }
