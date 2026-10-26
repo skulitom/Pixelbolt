@@ -1,5 +1,6 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { compileEffects, compilePoses, compileNormals, formatJSON } from '../src/index.js';
+import { wavePresets } from './wave-presets.mjs';
 const rows = source => source.map(row => row.padEnd(16, '.'));
 const spirit = rows([
   '........dd',
@@ -409,7 +410,7 @@ const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': ste
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'swing.poses': swing, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])) };
+const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'swing.poses': swing, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])) };
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.
