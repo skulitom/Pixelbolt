@@ -4,6 +4,8 @@
 
 [Try it in your browser](https://skulitom.github.io/Pixelbolt/playground/): render, export and share recipes with nothing installed.
 
+[Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground.
+
 English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README.zh-CN.md) · [日本語](https://github.com/skulitom/Pixelbolt/blob/main/README.ja.md)
 
 [![Tests](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml/badge.svg)](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml)
