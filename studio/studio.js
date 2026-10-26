@@ -1,6 +1,6 @@
 import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, animationPosition, animationNeighbors, MAX_REQUEST_BYTES } from '/core.js';
 import { animationGIF } from '/gif.js';
-import { createDraftStore } from '/draft.js';
+import { createDraftStore, claimTab, openTabs } from '/draft.js';
 import { compilePoses } from '/authoring.js';
 import { inspectMotion } from '/motion.js';
 
@@ -12,10 +12,14 @@ let position = 0;
 let poseMetadata = null, motionReview = null;
 const compileSource = value => value.format === 'pixelforge-poses' ? compilePoses(value) : { recipe: value, metadata: null };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
-// An unsaved recipe is kept as a draft in this browser. `offer` is a draft found at start-up that the user has not
-// yet restored or discarded; until then new edits do not replace it.
-const drafts = createDraftStore((() => { try { return localStorage; } catch { return null; } })());
-let offer = null, draftTimer, draftWarned = false;
+// An unsaved recipe is kept as a draft in this browser, under this tab's own id, which is known once the tab has
+// claimed it (`drafts` is null until then). `offer` is a draft found at start-up that the user has not yet restored or
+// discarded: this tab's own from before a reload, whose place new edits do not take until the user chooses, or one a
+// closed tab left. `offers` are the closed tabs' drafts still to show after it.
+const browserStorage = name => { try { return globalThis[name]; } catch { return null; } };
+const locks = navigator.locks ?? null, claimed = claimTab(browserStorage('sessionStorage'), locks);
+let drafts = null, offer = null, offers = [], draftTimer, draftWarned = false;
+const ownOffer = () => offer !== null && offer.id === drafts.id;
 const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character · 6 frames' }, { file: 'ember', title: 'Campfire', type: 'Effect · 4 frames' }, { file: 'coin', title: 'Golden coin', type: 'Collectible · 6 frames' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light · 2 frames' }, { file: 'caption', title: 'Caption', type: 'Text, for video · 8 frames' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses · 5 frames' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx · 57 frames' }];
 const title = name => name.replace(/[-_]/g, ' ').replace(/^./, c => c.toUpperCase());
 function imageCanvas(data, width, height) {
@@ -146,11 +150,21 @@ function compile() {
 }
 function keepDraft() {
   clearTimeout(draftTimer);
-  if (!dirty || offer) return;
+  if (!drafts || !dirty || ownOffer()) return;
   if (!drafts.save(source.value, $('source-filename').textContent) && !draftWarned) { draftWarned = true; toast('This browser is not keeping drafts (storage is off or full). Use Save JSON.'); }
 }
-// The recipe on screen is saved or was replaced on purpose, so its draft is no longer needed.
-function settle() { dirty = false; clearTimeout(draftTimer); if (!offer) drafts.clear(); }
+// The recipe on screen is saved or was replaced on purpose, so this tab's draft is no longer needed. Other tabs'
+// drafts are never touched here.
+function settle() { dirty = false; clearTimeout(draftTimer); if (drafts && !ownOffer()) drafts.clear(); }
+// Shows the next draft to offer, or hides the offer when there is none.
+function offerDraft(next) {
+  offer = next ?? null; $('draft').hidden = !offer;
+  if (!offer) return;
+  const when = new Date(offer.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }), more = offers.length;
+  $('draft-text').textContent = ownOffer()
+    ? `An unsaved draft of ${offer.name}, last edited ${when}, is kept in this browser. Until you choose, new edits are not kept as a draft.`
+    : `An unsaved draft of ${offer.name} from another tab, last edited ${when}, is kept in this browser.${more ? ` ${more} more from other tabs ${more === 1 ? 'is' : 'are'} offered after it.` : ''}`;
+}
 function setSource(value, exampleFile) {
   loadVersion++;
   source.value = JSON.stringify(value, null, 2); settle();
@@ -243,11 +257,18 @@ $('frames-export').addEventListener('click', async () => {
 });
 $('draft-restore').addEventListener('click', () => {
   if (dirty && !confirm('Replace your edited recipe with the draft? Save JSON first if you want to keep it.')) return;
-  loadVersion++; source.value = offer.text; offer = null; $('draft').hidden = true; dirty = true;
+  loadVersion++; source.value = offer.text; dirty = true;
+  // A closed tab's draft becomes this tab's: it is kept under this tab's id before the closed tab's copy goes.
+  if (!ownOffer() && drafts.save(offer.text, offer.name)) drafts.forget(offer.id);
+  // Other closed tabs' drafts stay kept and are offered on the next visit.
+  offers = []; offerDraft(null);
   document.querySelectorAll('.example').forEach(button => button.classList.remove('active'));
   compile(); playState(); toast('Draft restored. Save JSON to keep it.');
 });
-$('draft-discard').addEventListener('click', () => { offer = null; $('draft').hidden = true; drafts.clear(); keepDraft(); });
+$('draft-discard').addEventListener('click', () => {
+  if (ownOffer()) drafts.clear(); else drafts.forget(offer.id);
+  offerDraft(offers.shift()); keepDraft();
+});
 $('export').addEventListener('click', async () => {
   compile(); if (!valid) return;
   const button = $('export'), original = button.textContent; button.disabled = true; button.textContent = 'Packing assets…';
@@ -283,11 +304,13 @@ async function boot() {
       button.addEventListener('click', () => loadExample(example)); $('examples').append(button);
     }
     $('example-count').textContent = String($('examples').children.length).padStart(2, '0');
-    offer = drafts.load();
-    if (offer) {
-      $('draft-text').textContent = `An unsaved draft of ${offer.name}, last edited ${new Date(offer.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}, is kept in this browser. Until you choose, new edits are not kept as a draft.`;
-      $('draft').hidden = false;
-    }
+    // This tab's own draft comes first (a reload); then those of tabs that are closed now, newest first. Drafts of
+    // tabs that are still open stay theirs.
+    const id = await claimed, open = await openTabs(locks);
+    drafts = createDraftStore(browserStorage('localStorage'), { id });
+    const own = drafts.load();
+    offers = [...(own ? [{ ...own, id }] : []), ...drafts.others(open)];
+    offerDraft(offers.shift());
     const initial = await (await fetch('/project.json')).json();
     if (initial) setSource(initial); else await loadExample(examples[0]);
     playState(); requestAnimationFrame(tick);

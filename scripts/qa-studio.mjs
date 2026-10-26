@@ -121,7 +121,8 @@ try {
     const choose = (id, value) => evaluate(`(() => { const select = document.getElementById(${JSON.stringify(id)}); select.value = ${JSON.stringify(value)}; select.dispatchEvent(new Event('change', { bubbles: true })); return select.value; })()`);
     const size = (width, height) => page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
     const shot = async (name, whole = false) => { await writeFile(path.join(kept, `${name}.png`), Buffer.from((await page('Page.captureScreenshot', { format: 'png', captureBeyondViewport: whole })).data, 'base64')); };
-    return { page, evaluate, until, goto, reload, click, key, choose, size, shot, motion };
+    const close = () => send('Target.closeTarget', { targetId });
+    return { page, evaluate, until, goto, reload, click, key, choose, size, shot, motion, close };
   }
   let downloads = 0;
   // Runs `action` and returns the file the browser saved because of it.
@@ -147,7 +148,8 @@ try {
   // What the preview canvas shows: its size, how many pixels are drawn, the colours and a hash of every pixel.
   const canvas = () => evaluate(`(() => { const c = document.getElementById('canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, colors = new Set(); let drawn = 0, hash = 0; for (let i = 0; i < d.length; i += 4) { if (d[i + 3]) { drawn++; colors.add((d[i] << 16 | d[i + 1] << 8 | d[i + 2]).toString(16).padStart(6, '0')); } hash = (hash * 31 + d[i] + d[i + 1] * 3 + d[i + 2] * 7 + d[i + 3] * 11) >>> 0; } return { width: c.width, height: c.height, shown: c.style.width, drawn, hash, colors: [...colors] }; })()`);
   const pressed = id => evaluate(`document.getElementById(${JSON.stringify(id)}).getAttribute('aria-pressed')`);
-  const ready = () => until(`document.querySelectorAll('#examples .example').length > 0 && document.getElementById('example-count').textContent !== '' && document.getElementById('source').value.length > 0 && document.getElementById('timeline').children.length > 0`, 'the studio to finish loading');
+  const loaded = `document.querySelectorAll('#examples .example').length > 0 && document.getElementById('example-count').textContent !== '' && document.getElementById('source').value.length > 0 && document.getElementById('timeline').children.length > 0`;
+  const ready = (page = studio) => page.until(loaded, 'the studio to finish loading');
   // Replaces the whole recipe the way typing does, then pauses; each caller waits for what the recompile shows.
   const type = async recipe => {
     await evaluate(`(() => { const source = document.getElementById('source'); source.focus(); source.select(); })()`);
@@ -381,6 +383,43 @@ try {
     await download(() => click('#save'));
     await studio.reload(); await ready();
     assert.deepEqual([await evaluate(`document.getElementById('draft').hidden`), await evaluate(`localStorage.length`)], [true, 0]);
+  });
+  await check('each tab keeps its own draft: another tab loading a sample or editing leaves it alone, and a closed tab\'s draft is offered to the next', async () => {
+    // The names of the drafts this browser keeps, from any tab.
+    const kept = page => page.evaluate(`Object.keys(localStorage).filter(key => key.startsWith('pixelforge.studio.draft')).map(key => JSON.parse(localStorage.getItem(key)).name).sort().join(', ')`);
+    const offered = page => page.evaluate(`document.getElementById('draft').hidden ? 'nothing' : document.getElementById('draft-text').textContent`);
+    await type(edited.replace('"name": "forest-spirit"', '"name": "tab-a"'));
+    await until(`Object.values(localStorage).some(value => value.includes('tab-a.json'))`, "the first tab's draft");
+    // A second tab loads a sample (which replaces its own recipe on purpose), then edits it.
+    const second = await openPage();
+    await second.size(1440, 900); await second.goto(`${origin}/`); await ready(second);
+    assert.equal(await offered(second), 'nothing', 'a tab that is still open had its draft offered to another');
+    await second.click('#examples .example[data-file="coin"]');
+    await second.until(`document.querySelector('#examples .example[data-file="coin"]').classList.contains('active')`, 'the coin sample in the second tab');
+    assert.equal(await kept(second), 'tab-a.json', 'loading a sample in one tab removed the other\'s draft');
+    const coin = await second.evaluate(`document.getElementById('source').value`);
+    await second.evaluate(`(() => { const source = document.getElementById('source'); source.focus(); source.select(); })()`);
+    await second.page('Input.insertText', { text: coin.replace('"name": "coin"', '"name": "tab-b"') });
+    await second.until(`Object.values(localStorage).some(value => value.includes('tab-b.json'))`, "the second tab's draft");
+    assert.equal(await kept(studio), 'tab-a.json, tab-b.json', 'one tab\'s edits replaced the other\'s draft');
+    assert.equal(await evaluate(`document.getElementById('source').value.includes('"name": "tab-a"')`), true);
+    // The second tab closes. A new tab is offered its draft, never that of the first tab, which is still open. A tab
+    // counts as open until the browser lets go of the lock on its id, a moment after it closes.
+    const secondId = await second.evaluate(`sessionStorage.getItem('pixelforge.studio.tab')`);
+    await second.close();
+    await until(`navigator.locks.query().then(state => !state.held.some(lock => lock.name === 'pixelforge.studio.tab.' + ${JSON.stringify(secondId)}))`, 'the second tab to close');
+    const third = await openPage();
+    await third.size(1440, 900); await third.goto(`${origin}/`); await ready(third);
+    assert.match(await offered(third), /^An unsaved draft of tab-b\.json from another tab, /);
+    await third.click('#draft-restore'); await third.until(`document.getElementById('project-name').textContent === 'Tab b'`, 'the closed tab\'s draft to be restored');
+    // Restored, it is this tab's draft now: still one copy, and no longer offered to anyone else.
+    assert.equal(await kept(third), 'tab-a.json, tab-b.json');
+    await third.click('#examples .example:nth-child(1)'); await third.until(`document.querySelector('#examples .example:nth-child(1)').classList.contains('active')`, 'a sample in the third tab');
+    assert.equal(await kept(third), 'tab-a.json');
+    await third.close();
+    await click('#examples .example:nth-child(1)'); await until(`!document.getElementById('source').value.includes('"name": "tab-a"')`, 'a sample to replace the first tab\'s edit');
+    assert.equal(await evaluate(`localStorage.length`), 0);
+    await studio.reload(); await ready(); assert.equal(await offered(studio), 'nothing');
   });
 
   console.log('Keyboard and window sizes');

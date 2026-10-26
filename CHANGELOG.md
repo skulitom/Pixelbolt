@@ -21,6 +21,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Tilemap variants without a `seed` are picked by a seeded hash of the cell, like the rest. Two variants used to come out as a checkerboard and four as a 4×4 repeat, the very tiling variants exist to hide. Maps with variants and no `seed` render differently from 0.9.1; maps with a `seed`, and legend entries that name one frame, are unchanged.
 - The browser playground asks before a link opened in the same tab (pasted into the address bar, or reached with Back or Forward) or an opened file replaces edits nobody has kept, and declining puts the address back. While there are such edits, leaving or reloading the page asks too. A link used to replace them silently, and reloading reopened the link over them.
 - The playground shows a link's, PNG's or example's recipe indented only up to 50,000 lines, and compact beyond. A 6 KB link whose recipe unpacked to 2.4 million indented lines froze the page for 20 seconds and each key for about 6; it now opens in about a third of a second.
+- Each studio tab keeps its own draft. Loading a sample or choosing New, Open or Save JSON in one tab used to delete the draft of another tab's unsaved edits, and editing in a second tab replaced it. A reload finds the tab's draft again, and a new tab is offered the drafts of tabs that were closed or crashed, never those of tabs still open.
 
 ## 0.9.1 (2026-10-25)
 
