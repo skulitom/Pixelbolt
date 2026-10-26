@@ -10,6 +10,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
+- An accent on the first line of rotated or vertically flipped `text` no longer moves the letters. The accent rows always moved the block up, even where the transform put them below or beside the letters, so CAFE and CAFÉ landed 2 × scale pixels apart; centred and right-aligned rotated text also measured the accents. Unrotated, unflipped text is unchanged.
 - A GIF whose first frame is fully opaque keeps its later transparent pixels clear in Pillow too. Pillow decodes every later frame with or without alpha by whether the first frame names a transparent colour, so those pixels came out opaque black there (browsers and ffmpeg showed them clear); the first frame now names one whenever the animation has transparency.
 - The MCP server answers a tool call whose arguments nest more than 128 levels deep with an error and keeps serving. A request of about 12 KB nested thousands deep used to overflow the stack while it was handed to the tool worker, and the server exited.
 - Where letter case is ignored (by default on Windows and macOS), a `--force` export after renaming a frame, animation or recipe only in letter case (`Run` to `run`) writes the files under their new names. It used to write into the old `Run.png`, then delete it as a leftover, and report success with the frame missing; a shorter sequence also left the old spelling's extra frames behind.

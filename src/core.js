@@ -209,14 +209,15 @@ export function renderProject(spec, options = {}) {
         };
       };
       // Draws a w x h source through flip, rotation and integer scale; flips happen before rotation. `shift` moves
-      // the drawing by [dx, dy], given its drawn width and scale (text alignment, and accents above the first line).
+      // the drawing by [dx, dy], given the scale, rotation and vertical flip (text alignment, and accents above the
+      // first line).
       const drawCells = (w, h, sample, shift = () => [0, 0]) => {
         const scale = integer(op.scale ?? 1, `${p}.scale`, 1, 16);
         const flipX = boolean(op.flipX ?? false, `${p}.flipX`), flipY = boolean(op.flipY ?? false, `${p}.flipY`);
         const rotate = integer(op.rotate ?? 0, `${p}.rotate`, 0, 270);
         if (rotate % 90) fail(`${p}.rotate`, 'expected 0, 90, 180 or 270 degrees clockwise');
         spend(w * h * scale * scale);
-        const [dx, dy] = shift((rotate % 180 ? h : w) * scale, scale), left = x + dx, top = y + dy;
+        const [dx, dy] = shift({ scale, rotate, flipY }), left = x + dx, top = y + dy;
         for (let gy = 0; gy < h; gy++) for (let gx = 0; gx < w; gx++) {
           const c = sample(gx, gy);
           if (!c) continue;
@@ -306,7 +307,15 @@ export function renderProject(spec, options = {}) {
         const spacing = integer(op.spacing ?? 1, `${p}.spacing`, 0, 16), lineHeight = integer(op.lineHeight ?? 10, `${p}.lineHeight`, 1, 64);
         const block = layoutText(op.text, { spacing, lineHeight, align }, message => fail(`${p}.text`, message)), c = color(op.color, `${p}.color`);
         if (block.width > 4096) fail(`${p}.text`, `a line is ${block.width} pixels wide; break it into lines`);
-        drawCells(block.width, block.height, (gx, gy) => block.rows[gy][gx] === '#' ? c : null, (drawn, scale) => [align === 'center' ? -Math.floor(drawn / 2) : align === 'right' ? -drawn : 0, block.top * scale]);
+        // The accent rows above the first line (-block.top of them) end up on one side of the drawn block, by the
+        // rotation and vertical flip. Only where that side is the top or the left does the block move back by them,
+        // and alignment measures the letters without them, so the letters stay put whether or not a line has accents.
+        drawCells(block.width, block.height, (gx, gy) => block.rows[gy][gx] === '#' ? c : null, ({ scale, rotate, flipY }) => {
+          const accents = -block.top, across = rotate % 180 !== 0, first = !flipY !== (rotate === 90 || rotate === 180);
+          const drawn = (across ? block.height - accents : block.width) * scale, back = first ? -accents * scale : 0;
+          const aligned = align === 'center' ? -Math.floor(drawn / 2) : align === 'right' ? -drawn : 0;
+          return across ? [aligned + back, 0] : [aligned, back];
+        });
       } else if (op.op === 'copy') {
         // Copies a rectangle of a symbol (palette characters) or of an earlier frame (exact RGBA).
         if ((op.from === undefined) === (op.symbol === undefined)) fail(p, 'copy needs exactly one of from (an earlier frame) or symbol');

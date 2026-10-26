@@ -75,6 +75,20 @@ test('the text operation draws exact glyph pixels, placed by align and changed b
   // Text that runs off the canvas is clipped and reported at its operation, like every other overhang.
   assert.deepEqual(draw(6, 8, [{ op: 'text', x: 0, y: 0, text: 'WW', color: 'w' }]).project.clipping.map(entry => entry.path), ['project.frames[0].ops[0]']);
 });
+test('an accent on the first line never moves the letters, however the text is rotated, flipped or aligned', () => {
+  // The accent rows used to move the whole block up even when rotation or a vertical flip put them below or beside the
+  // letters, so turning CAFE into CAFÉ moved a rotated sign by 2 × scale pixels.
+  const pixels = ops => new Set(draw(160, 160, ops).rows.flatMap((row, y) => [...row].flatMap((cell, x) => (cell === '#' ? [`${x},${y}`] : []))));
+  for (const rotate of [0, 90, 180, 270]) for (const flipY of [false, true]) for (const flipX of [false, true]) for (const align of ['left', 'center', 'right']) for (const scale of [1, 2]) {
+    const op = text => ({ op: 'text', x: 80, y: 80, color: 'k', text, rotate, flipX, flipY, align, scale });
+    const label = JSON.stringify({ rotate, flipY, flipX, align, scale });
+    for (const [plain, accented] of [['CAFE', 'CAFÉ'], ['E\nE', 'É\nE']]) {
+      const before = pixels([op(plain)]), after = pixels([op(accented)]);
+      assert.ok([...before].every(at => after.has(at)), `${label} ${plain}: the letters moved`);
+      assert.ok(after.size > before.size, `${label} ${plain}: no accent drawn`);
+    }
+  }
+});
 test('text errors name the field and the character', () => {
   for (const [op, where, message] of [
     [{ text: 'tofu 豆腐', color: 'w' }, 'text', /no glyph for "豆"; the built-in font draws printable ASCII, western European accented letters/], [{ text: '', color: 'w' }, 'text', /1–512 characters/], [{ text: 'x'.repeat(513), color: 'w' }, 'text', /1–512 characters/],
