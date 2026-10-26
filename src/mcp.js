@@ -194,16 +194,17 @@ export function createToolRunner({ directory, root, version }) {
     return Buffer.from(JSON.stringify(atlas, null, 2) + '\n');
   };
   // Every copy is first written to a temporary file beside its destination, so a write that fails leaves no copy and
-  // replaces nothing. Then each goes in place. A file being replaced first gets a second name (a hard link, or a copy
-  // where links aren't supported) holding its old bytes, and the new file is renamed over it in one step, so the
-  // destination is never missing, even if the call is stopped; a hard link to the old file keeps the old bytes. A new
-  // file is copied only if nothing is there yet. If a step fails, what this call put in place is undone (replaced
-  // files get their old bytes back, new copies are removed), but only where the file is still the one it placed, so
-  // another server's later write is never undone.
+  // replaces nothing. Then each goes in place under the staged file's own identity: a new file is linked in (copied
+  // where links aren't supported) only if nothing is there yet; a file being replaced first gets a second name (a hard
+  // link, or a copy) holding its old bytes, and the new file is renamed over it in one step, so the destination is
+  // never missing, even if the call is stopped, and a hard link to the old file keeps the old bytes. If a step fails,
+  // what this call put in place is undone (replaced files get their old bytes back, new copies are removed), but only
+  // where the file is still the one it placed, so another server's later write is never undone; a backup that can't
+  // be put back is kept, and the error names it.
   const temporaryIn = folder => path.join(folder, `.pixelbolt-${randomUUID()}.tmp`);
   const identity = async file => { const info = await stat(file, { bigint: true }).catch(() => null); return info && `${info.dev}:${info.ino}`; };
   const writeSaves = async (saves, replace, bytesOf) => {
-    const staged = [], undo = [], backups = [];
+    const staged = [], placed = [], backups = new Set(), kept = [];
     try {
       for (const item of saves) {
         await mkdir(path.dirname(item.destination), { recursive: true });
@@ -211,26 +212,37 @@ export function createToolRunner({ directory, root, version }) {
         await writeFile(staged.at(-1), bytesOf(item), { flag: 'wx' });
       }
       for (const [index, item] of saves.entries()) {
-        let backup = null;
-        if (!replace) await copyFile(staged[index], item.destination, constants.COPYFILE_EXCL);
-        else {
+        // A rename or link keeps the file's identity, so it is known before anyone else can touch the destination.
+        let mine = await identity(staged[index]), backup = null;
+        if (!replace) {
+          try { await link(staged[index], item.destination); }
+          catch (error) {
+            if (error.code === 'EEXIST') throw error;
+            await copyFile(staged[index], item.destination, constants.COPYFILE_EXCL);
+            mine = await identity(item.destination);
+          }
+        } else {
           if (await entry(item.destination)) {
             backup = temporaryIn(path.dirname(item.destination));
             await link(item.destination, backup).catch(() => copyFile(item.destination, backup, constants.COPYFILE_EXCL));
-            backups.push(backup);
+            backups.add(backup);
           }
           await rename(staged[index], item.destination);
         }
-        const placed = await identity(item.destination);
-        undo.push(async () => {
-          if (placed === null || await identity(item.destination) !== placed) return;
-          if (backup) await rename(backup, item.destination); else await rm(item.destination, { force: true });
-        });
+        placed.push({ destination: item.destination, backup, mine });
       }
     } catch (error) {
-      for (const step of undo.reverse()) await step().catch(() => {});
+      for (const step of placed.reverse()) {
+        if (step.mine === null || await identity(step.destination) !== step.mine) continue;
+        try { if (step.backup) await rename(step.backup, step.destination); else await rm(step.destination, { force: true }); }
+        catch { if (step.backup) kept.push(step); }
+      }
+      if (kept.length) throw new PixelError('saveAs', `${error.message}; ${kept.map(step => `${step.destination} could not be put back: its old bytes are kept at ${step.backup}`).join('; ')}`);
       throw error;
-    } finally { await Promise.all([...staged, ...backups].map(file => rm(file, { force: true }))); }
+    } finally {
+      const keep = new Set(kept.map(step => step.backup));
+      await Promise.all([...staged, ...[...backups].filter(file => !keep.has(file))].map(file => rm(file, { force: true })));
+    }
   };
   return async function runTool(name, args) {
     try {
