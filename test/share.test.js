@@ -4,7 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { deflateRawSync, inflateSync } from 'node:zlib';
 import { randomBytes } from 'node:crypto';
-import { PLAYGROUND_URL, LINK_LIMIT, RECIPE_LIMIT, ShareError, recipeKind, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from '../src/share.js';
+import { PLAYGROUND_URL, LINK_LIMIT, RECIPE_LIMIT, EMBED_LIMIT, ShareError, recipeKind, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from '../src/share.js';
 import { resolveReferences } from '../src/resolve.js';
 import { encodePNG } from '../src/png.js';
 import { decodePNG } from '../src/import.js';
@@ -110,10 +110,16 @@ test('share links fall back to node:zlib where deflate-raw streams are missing',
   assert.deepEqual((await readShareLink(fallback)).recipe, recipe);
 });
 
-test('a recipe too large to reopen is refused before anything is written', async () => {
+test('a recipe too large to carry in a PNG that every reader opens is refused before anything is written', async () => {
+  // Pillow refuses a PNG whose text chunk unpacks to more than 1 MiB, so the recipe's envelope may be EMBED_LIMIT
+  // bytes and no more. It used to be allowed up to 16 MiB, which made PNGs that Pillow could not open.
+  const envelope = notes => Buffer.byteLength(JSON.stringify({ v: '0.9.0', kind: 'project', recipe: { ...recipe, notes } }));
+  const fits = 'x'.repeat(EMBED_LIMIT - envelope(''));
+  assert.equal((await readEmbeddedRecipe(await embedRecipe(png, { ...recipe, notes: fits }, '0.9.0'))).recipe.notes, fits);
+  await assert.rejects(embedRecipe(png, { ...recipe, notes: `${fits}x` }, '0.9.0'), error => error instanceof ShareError && error.code === 'too-large'
+    && /^The recipe is too large to carry in a PNG: 1,048,577 bytes, over the 1,048,576 a PNG can carry and still open in Pillow\./.test(error.message));
   const huge = { ...recipe, notes: 'x'.repeat(RECIPE_LIMIT) };
-  await rejectsShare(embedRecipe(png, huge, '0.9.0'), /too large to carry in a PNG/);
   await rejectsShare(shareLink(huge, '0.9.0'), /larger than 16,777,216 bytes/);
   // Multi-byte characters count as the bytes they take.
-  await rejectsShare(embedRecipe(png, { ...recipe, notes: 'é'.repeat(RECIPE_LIMIT / 2) }, '0.9.0'), /too large/);
+  await rejectsShare(embedRecipe(png, { ...recipe, notes: 'é'.repeat(EMBED_LIMIT / 2) }, '0.9.0'), /too large/);
 });

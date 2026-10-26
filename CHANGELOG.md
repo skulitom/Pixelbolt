@@ -10,6 +10,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
+- A PNG carries an embedded recipe only up to 1 MiB, the most Pillow opens: `--embed-recipe` and `embedRecipe` refuse a larger one with an error naming the size, and the playground writes such a PNG without its recipe and says so. Up to 16 MiB used to be embedded, which made PNGs Pillow (and the Python tools built on it) could not open.
 - An accent on the first line of rotated or vertically flipped `text` no longer moves the letters. The accent rows always moved the block up, even where the transform put them below or beside the letters, so CAFE and CAFÉ landed 2 × scale pixels apart; centred and right-aligned rotated text also measured the accents. Unrotated, unflipped text is unchanged.
 - A GIF whose first frame is fully opaque keeps its later transparent pixels clear in Pillow too. Pillow decodes every later frame with or without alpha by whether the first frame names a transparent colour, so those pixels came out opaque black there (browsers and ffmpeg showed them clear); the first frame now names one whenever the animation has transparency.
 - The MCP server answers a tool call whose arguments nest more than 128 levels deep with an error and keeps serving. A request of about 12 KB nested thousands deep used to overflow the stack while it was handed to the tool worker, and the server exited.

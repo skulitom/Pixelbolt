@@ -135,6 +135,13 @@ test('CLI share resolves file and stdin references, uses the playground URL and 
   const out = path.join(dir, 'resolved');
   cli(['render', source, '--embed-recipe', '--out', out]);
   await checkBundle(out, await createBundle(blink), blink);
+  // A recipe too large to carry and still open in Pillow is refused before anything is written.
+  // 18,000 operations naming a 60-character palette key: about 1.7 MB, within the 20,000-operation limit.
+  const key = 'k'.repeat(60), ops = Array.from({ length: 2000 }, () => ({ op: 'pixel', x: 0, y: 0, color: key }));
+  const bulky = { ...blink, palette: { ...blink.palette, [key]: '#00f' }, frames: [...blink.frames, ...Array.from({ length: 9 }, (_, i) => ({ name: `bulk-${i}`, ops }))] }, heavy = path.join(dir, 'heavy.json');
+  await writeFile(heavy, JSON.stringify(bulky));
+  assert.match(JSON.parse(cli(['render', heavy, '--embed-recipe', '--out', path.join(dir, 'heavy')], { status: 1 }).stderr).error, /^The recipe is too large to carry in a PNG: [\d,]+ bytes, over the 1,048,576 a PNG can carry and still open in Pillow/);
+  await assert.rejects(readdir(path.join(dir, 'heavy')));
 });
 
 test('CLI import --embedded recovers source, protects output and reports missing/damaged chunks; plain import is unchanged', async t => {

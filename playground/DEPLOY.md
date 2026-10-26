@@ -32,7 +32,7 @@ After deployment, add this exact Markdown directly under the README's first para
 
 To bump the default, publish the engine release first, update the one `PINNED_VERSION` constant, then run `node --test test/playground.test.js test/share.test.js` and the whole `node --test` suite. Test live rendering and exports with the published release before deploying again. Examples are filtered by `minVersion`; honey and slime appear once the pin reaches 0.9.1 (or when a shared recipe selects that version).
 
-`LINK_LIMIT` is **16,384 characters**, including the base URL and fragment. Larger recipes should travel as a JSON file or a playground PNG. Recipe text and unpacked shares have a 16 MiB limit. Each worker request has a 20-second deadline; Cancel terminates the worker immediately. A new edit supersedes pending work. Scenes use 100 ms steps and stop at 240 frames, with a warning if truncated.
+`LINK_LIMIT` is **16,384 characters**, including the base URL and fragment. Larger recipes should travel as a JSON file or a playground PNG. A PNG carries its recipe up to `EMBED_LIMIT` (1 MiB, the most Pillow opens); a larger one is left out of the PNG with a warning. Recipe text and unpacked shares have a 16 MiB limit. Each worker request has a 20-second deadline; Cancel terminates the worker immediately. A new edit supersedes pending work. Scenes use 100 ms steps and stop at 240 frames, with a warning if truncated.
 
 `playground/share.js` must stay byte-identical to `src/share.js` until the pin reaches a release that ships `src/share.js`; then the page may load it from the engine instead. Keep the independent PNG chunk and link compatibility tests when changing the deployment.
 

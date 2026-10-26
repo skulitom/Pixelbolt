@@ -8,7 +8,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { decodePNG } from '../src/import.js';
 import { resolveReferences } from '../src/resolve.js';
-import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT } from '../src/share.js';
+import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT, EMBED_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
 import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
@@ -272,6 +272,16 @@ test('a link or PNG whose recipe would indent past the editor line limit opens c
   let small;
   await handleRequest({ ...request, type: 'link', hash: (await handleRequest({ ...request, type: 'share', base: 'https://skulitom.github.io/Pixelbolt/playground/' })).link }, source => { small = source; });
   assert.equal(small.text, JSON.stringify(tiny, null, 2));
+});
+test('a playground PNG leaves out a recipe too large to open in Pillow, and says so', async () => {
+  // 18,000 operations naming a 60-character palette key: about 1.7 MB, within the 20,000-operation limit.
+  const key = 'k'.repeat(60), ops = Array.from({ length: 2000 }, () => ({ op: 'pixel', x: 0, y: 0, color: key }));
+  const bulky = { ...tiny, palette: { ...tiny.palette, [key]: '#00f' }, frames: [...tiny.frames, ...Array.from({ length: 9 }, (_, i) => ({ name: `bulk-${i}`, duration: 100, ops }))] };
+  assert.ok(JSON.stringify(bulky).length > EMBED_LIMIT);
+  const result = await handleRequest({ type: 'export', export: 'frame', version: pin, override: engineURL.href, text: JSON.stringify(bulky), frame: 0, scale: 1 });
+  assert.equal(result.files.length, 1); assert.equal(await readEmbeddedRecipe(result.files[0].data), null);
+  assert.equal(decodePNG(result.files[0].data).width, 2);
+  assert.deepEqual(result.warnings, ['This PNG does not carry its recipe: at over 1,048,576 bytes, a PNG with it would not open in Pillow. Download the recipe to keep it.']);
 });
 test('scene exports carry their source but atlas metadata is unavailable', async () => {
   const source = { format: 'pixelforge-scene', version: 1, name: 'scene', width: 2, height: 1, duration: 100, assets: { sprite: tiny }, instances: [{ asset: 'sprite', at: [0, 0] }] };
