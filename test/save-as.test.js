@@ -94,6 +94,56 @@ test('pixel_render saveAs refuses, before writing anything, what would leave the
   assert.equal(await readFile(path.join(project, 'taken.png'), 'utf8'), 'mine');
 });
 
+test('pixel_render saveAs writes only art: no scripts or text, no hidden names, and overwrite replaces no settings file', async t => {
+  // The desktop bundle's root is the whole home folder by default, so these were writable: a player script anywhere,
+  // a recipe in .config, and with overwrite any JSON file, such as an app's settings.
+  const project = await temp(t), mcp = await session(t, project);
+  await mkdir(path.join(project, 'cfg')); await mkdir(path.join(project, '.secret'));
+  await writeFile(path.join(project, 'cfg', 'settings.json'), '{"theme": "dark"}');
+  await writeFile(path.join(project, 'cfg', 'broken.json'), '{"frames": ');
+  await symlink(path.join(project, '.secret'), path.join(project, 'art'), 'junction');
+  for (const [saveAs, where, message] of [
+    [{ 'player.js': 'scripts/run.js' }, 'saveAs.player.js', /saveAs copies PNG, GIF and JSON files .*keep player\.js in the export folder/],
+    [{ 'README.txt': 'notes/readme.txt' }, 'saveAs.README.txt', /keep README\.txt in the export folder/],
+    [{ recipe: '.config/app/settings.json' }, 'saveAs.recipe', /hidden file or folder/],
+    [{ sheet: 'cfg/.hero.png' }, 'saveAs.sheet', /hidden file or folder/],
+    [{ sheet: 'art/hero.png' }, 'saveAs.sheet', /hidden file or folder/],
+    [{ recipe: 'cfg/settings.json' }, 'saveAs.recipe', /is not a recipe, atlas or sequence \(a JSON object with frames\), so overwrite won't replace it/],
+    [{ atlas: 'cfg/broken.json' }, 'saveAs.atlas', /is not a recipe, atlas or sequence/]
+  ]) {
+    const { isError, info } = await mcp.render({ project: spirit, saveAs, overwrite: true });
+    assert.deepEqual([isError, info.path], [true, where], JSON.stringify(info));
+    assert.match(info.error, message);
+  }
+  assert.deepEqual((await readdir(project)).sort(), ['.secret', 'art', 'cfg']);
+  assert.deepEqual((await readdir(path.join(project, 'cfg'))).sort(), ['broken.json', 'settings.json']);
+  assert.deepEqual(await readdir(path.join(project, '.secret')), []);
+  assert.equal(await readFile(path.join(project, 'cfg', 'settings.json'), 'utf8'), '{"theme": "dark"}');
+  // A recipe, atlas or sequence made elsewhere (an object with frames) is still replaced, as is any image.
+  await writeFile(path.join(project, 'cfg', 'hero.json'), JSON.stringify({ frames: {}, meta: { app: 'another editor' } }));
+  await writeFile(path.join(project, 'cfg', 'hero.png'), 'not even a PNG');
+  const { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet: 'cfg/hero.png', atlas: 'cfg/hero.json' }, overwrite: true });
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.replaced), [true, true]);
+  assert.equal(JSON.parse(await readFile(path.join(project, 'cfg', 'hero.json'), 'utf8')).meta.image, 'hero.png');
+});
+
+test('pixel_render saveAs keeps out of the home folder\'s settings (AppData, Library) unless the root is inside them', { skip: !['win32', 'darwin'].includes(process.platform) }, async t => {
+  // Windows and macOS keep app settings in folders without a leading dot, under the home folder the bundle's root is.
+  const home = await temp(t), settings = process.platform === 'win32' ? 'AppData' : 'Library', variable = process.platform === 'win32' ? 'USERPROFILE' : 'HOME', kept = process.env[variable];
+  process.env[variable] = home;
+  t.after(() => { if (kept === undefined) delete process.env[variable]; else process.env[variable] = kept; });
+  const mcp = await session(t, home);
+  const { isError, info } = await mcp.render({ project: spirit, saveAs: { atlas: `${settings}/Roaming/app/hero.json` } });
+  assert.deepEqual([isError, info.path], [true, 'saveAs.atlas'], JSON.stringify(info));
+  assert.match(info.error, /where apps keep their settings: saveAs writes only art/);
+  assert.deepEqual(await readdir(home), []);
+  // A workspace the user chose inside it is theirs to write to.
+  const chosen = path.join(home, settings, 'Art'); await mkdir(chosen, { recursive: true });
+  const inside = await session(t, chosen), saved = await inside.render({ project: spirit, saveAs: { sheet: 'hero.png' } });
+  assert.equal(saved.isError, false, JSON.stringify(saved.info));
+});
+
 test('pixel_render saveAs checks real paths: no link into the revision store, no file named twice or inside another', async t => {
   const project = await temp(t), mcp = await session(t, project);
   // A first render makes the revision store; a link inside the root then leads into it.

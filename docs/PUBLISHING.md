@@ -75,7 +75,7 @@ node scripts/build-mcpb.mjs --registry-entry --tag v0.9.1 --bundle dist/mcpb/pix
 
 The dependency-free builder reads an explicit set of runtime inputs from disk, normalizes UTF-8 text from CRLF to LF, sorts ZIP entries and uses a fixed date. Use a clean checkout and the same Node/zlib version to reproduce bytes. `--check` builds twice and compares; differing existing artifacts require a fresh `--out` folder. No version agreement with `server.json` is required for ordinary tests or builds; release and registry entry creation enforce it.
 
-The workspace defaults to `${HOME}`, which already exists. The manifest passes both `--root` for file references and `--out` for exports: `--root` alone does not relocate exports. Renders and revisions go in the workspace's `Pixelbolt` folder, which Pixelbolt creates on first use, so the default writes to `~/Pixelbolt` rather than a generic folder in the home directory.
+The workspace defaults to `${HOME}`, which already exists. The manifest passes both `--root` for file references and `--out` for exports: `--root` alone does not relocate exports. Renders and revisions go in the workspace's `Pixelbolt` folder, which Pixelbolt creates on first use, so the default writes to `~/Pixelbolt` rather than a generic folder in the home directory. The one exception is `pixel_render`'s `saveAs`, which writes where the user names inside the workspace: PNG, GIF and JSON files only, never under a hidden name (one starting with ".") or in the home folder's `AppData` or `Library`, and with `overwrite` it replaces a JSON file only if it is a recipe, atlas or sequence, so a home-folder workspace can't have its settings files replaced.
 
 awesome-mcp-servers: submit and maintain the directory entry manually.
 

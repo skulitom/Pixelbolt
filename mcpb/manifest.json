@@ -28,7 +28,7 @@
     { "name": "pixel_validate", "description": "Check a pixel art recipe for mistakes, report dimensions and timing, and save an immutable revision." },
     { "name": "pixel_inspect", "description": "Look at a sprite or animation frame by frame: contact sheets, palette-key grids and optional diagnostics." },
     { "name": "pixel_patch", "description": "Fix one pixel, a colour or a frame with targeted edits, corrections or overlays, and compare the result." },
-    { "name": "pixel_render", "description": "Export sprite sheets, atlases, animations, GIFs, video frames and a Canvas player into a new unique folder." },
+    { "name": "pixel_render", "description": "Export sprite sheets, atlases, animations, GIFs, video frames and a Canvas player into a new unique folder, and images, atlases and recipes at paths you name." },
     { "name": "pixel_compile", "description": "Build character animations from poses, terrain tilesets, particle effects, simulated smoke, fire and water, or lighting normal passes as editable recipes." },
     { "name": "pixel_scene", "description": "Compose and render a scene or room from sprites and tilemaps, with optional scene or frame exports." },
     { "name": "pixel_import", "description": "Turn existing pixel art (an 8-bit RGB/RGBA PNG) into an editable recipe without changing its pixels." }
@@ -41,7 +41,7 @@
     "workspace": {
       "type": "directory",
       "title": "Workspace",
-      "description": "Folder Pixelbolt may read recipe and PNG references from. Renders and revisions go in its Pixelbolt subfolder, created on first use. Choose a project folder to keep its files together.",
+      "description": "Folder Pixelbolt reads recipe and PNG references from. When you ask for a file by name, Pixelbolt saves that image, atlas or recipe here too (never under a hidden name or in AppData or Library, and replacing a file only when you say so). Renders and revisions go in its Pixelbolt subfolder, created on first use. Choose a project folder to keep its files together.",
       "required": true,
       "default": "${HOME}"
     }

@@ -2,6 +2,7 @@ import { readFile, writeFile, appendFile, mkdir, mkdtemp, lstat, realpath, stat,
 import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
+import os from 'node:os';
 import { PixelError, MAX_REQUEST_BYTES, renderProject, inspectProject, compareProjects, scalePixels, reviewPixels } from './core.js';
 import { patchRecipe } from './patch.js';
 import { createRevisionStore } from './revisions.js';
@@ -136,6 +137,18 @@ export function createToolRunner({ directory, root, version }) {
   // Names Windows can't create (or would quietly change): reserved characters, device names, a trailing dot or space.
   const windowsName = part => /[<>:"|?*]/.test(part) || /^(con|prn|aux|nul|com[0-9\u00b9\u00b2\u00b3]|lpt[0-9\u00b9\u00b2\u00b3])(\..*)?$/i.test(part) || /[. ]$/.test(part);
   const canonical = async target => { const folder = await nearest(target); return path.join(await realpath(folder), path.relative(folder, target)); };
+  // The root can be a whole home folder (the desktop bundle's default), so saveAs writes only art: PNG, GIF and the JSON
+  // that describes it, never to a hidden name (settings live in .config, .vscode, .claude.json), and overwrite replaces
+  // a JSON file only if it is a recipe, atlas or sequence (an object with frames), never a settings file.
+  const SAVED_TYPES = ['.png', '.gif', '.json'];
+  const hidden = relative => relative.split(path.sep).some(part => part.startsWith('.'));
+  // Where a home folder keeps app settings without a leading dot.
+  const SETTINGS = { win32: 'AppData', darwin: 'Library' }[process.platform];
+  const spriteJSON = async (file, size) => {
+    if (size > MAX_REQUEST_BYTES) return false;
+    try { const value = JSON.parse(await readFile(file, 'utf8')); return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.hasOwn(value, 'frames'); }
+    catch { return false; }
+  };
   // A saved atlas names its sheet in meta.image, which loadSpriteSheet() and browsers read as a URL relative to the
   // atlas. A name reads back as itself only if every part of it survives that: #, ? and % cut it short or decode it,
   // a backslash becomes a separator, and spaces at either end are dropped.
@@ -154,6 +167,10 @@ export function createToolRunner({ directory, root, version }) {
     const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file)).catch(() => path.resolve(root, file))));
     const names = Object.keys(project.animations), only = animation ?? (names.length === 1 ? names[0] : undefined);
     const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
+    // The home folder's settings folder is off limits, unless the root itself is inside it.
+    const settings = SETTINGS ? [path.join(os.homedir(), SETTINGS)] : [];
+    if (settings.length) settings.push(await realpath(settings[0]).catch(() => settings[0]));
+    const guarded = settings.filter(folder => !inside(folder, base) && !inside(folder, realBase));
     const plan = [], seen = new Set();
     for (const [key, target] of Object.entries(saveAs)) {
       const where = `saveAs.${key}`;
@@ -162,8 +179,9 @@ export function createToolRunner({ directory, root, version }) {
       const bytes = file.startsWith('gifs/') ? gifs.find(item => `gifs/${item.animation}.gif` === file)?.data : file.startsWith('sequence/') ? sequence?.files.get(file.slice(9)) : bundle.files.get(file);
       if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
       if (/\.(css|html)$/i.test(file)) throw new PixelError(where, `${file} loads other export files by relative path, so a copy elsewhere would show nothing: save the files it uses (sheet, atlas, animations) instead, and keep ${file} in the export folder`);
-      if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
       const type = path.extname(file).toLowerCase();
+      if (!SAVED_TYPES.includes(type)) throw new PixelError(where, `saveAs copies PNG, GIF and JSON files (sheet, atlas, recipe, GIFs, animations, frames, sequence frames): keep ${file} in the export folder`);
+      if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
       if (path.extname(target).toLowerCase() !== type) throw new PixelError(where, `${file} is a ${type} file: give a path ending in ${type}`);
       if (/[\u0000-\u001f]/.test(target)) throw new PixelError(where, 'contains a control character');
       const destination = path.resolve(base, target);
@@ -175,11 +193,14 @@ export function createToolRunner({ directory, root, version }) {
       if (!inside(realBase, real) || fold(real) === fold(realBase)) throw new PixelError(where, `must stay inside ${base}`);
       if (inside(store, real)) throw new PixelError(where, 'must not be inside the revision store');
       if (inside(real, exportDirectory)) throw new PixelError(where, `must not be the export directory ${path.resolve(directory)} or a folder above it`);
+      if (hidden(path.relative(base, destination)) || hidden(path.relative(realBase, real))) throw new PixelError(where, `${target} is or is inside a hidden file or folder (a name starting with "."): saveAs writes only visible files`);
+      if (guarded.some(folder => inside(folder, destination) || inside(folder, real))) throw new PixelError(where, `${target} is inside ${guarded[0]}, where apps keep their settings: saveAs writes only art`);
       // Like the CLI's exports, never over the files this render was made from, even with overwrite.
       if (own.some(input => fold(input) === fold(real))) throw new PixelError(where, `${target} is a palette or asset file this recipe references; choose another name`);
       const existing = await entry(destination);
       if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
       if (existing && overwrite !== true) throw new PixelError(where, `${destination} already exists: choose a new name, or pass "overwrite": true to replace it`);
+      if (existing && type === '.json' && !(await spriteJSON(destination, existing.size))) throw new PixelError(where, `${destination} is not a recipe, atlas or sequence (a JSON object with frames), so overwrite won't replace it: choose a new name`);
       const id = fold(real);
       if (seen.has(id)) throw new PixelError(where, `${target} is named twice`);
       const clash = [...seen].find(other => inside(other, id) || inside(id, other));
@@ -432,7 +453,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     background: { type: 'string', description: 'Palette name or opaque hex colour. Default: transparent.' },
     loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Length of the clip instead of loops.' }
   } });
-  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: keys sheet, atlas, recipe, gif or apng (one animation), or a listed file such as gifs/walk.gif; values such as "assets/hero.png". A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
+  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: keys sheet, atlas, recipe, gif or apng (one animation), or a listed PNG, GIF or JSON file such as gifs/walk.gif; values such as "assets/hero.png", never hidden names. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing images, recipes, atlases and sequences. Default: refuse.' } } };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, 29.97, 30, 60 or a fraction): frameGrid lists frame durations that are not whole video frames, positions a sequence would lengthen, shorten or never show, and whether each loop closes on the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const inspectInput = { ...projectInput, properties: {
