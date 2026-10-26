@@ -195,6 +195,23 @@ test('a frame that clears names a transparent index, so the holes after it are c
   assert.ok(framesGIF(frames, { fps: { numerator: 10, denominator: 1 } }).notes.some(note => /^1 frame with 256 colours of its own is followed by transparent pixels .* Pillow shows a colour of the frame's table there/.test(note)));
   assert.equal(encodeGIF(own, 20, 10).backgroundClears, 0);
 });
+test('an opaque first frame names a transparent index when a later frame has transparency, as Pillow needs', () => {
+  // Pillow decodes every frame after the first as RGB or RGBA by whether the first names a transparent index. Without
+  // one, the third frame's holes here came out opaque black in Pillow (browsers and ffmpeg showed them clear).
+  const opaque = { data: rgba(...Array(16).fill(RED)), duration: 100 }, other = { data: rgba(...Array(16).fill(BLUE)), duration: 100 };
+  const holes = { data: rgba(...Array.from({ length: 16 }, (_, i) => (i === 5 ? BLUE : CLEAR))), duration: 100 };
+  const decoded = decodeGIF(encodeGIF([opaque, other, holes], 4, 4).data);
+  assert.deepEqual(decoded.frames.map(frame => frame.transparent), [0, 0, 0]);
+  assert.deepEqual(decoded.frames.map(frame => frame.pixels), [opaque, other, holes].map(hexPixels));
+  // With a table per frame (600 colours in all), the first frame names a spare entry of its own that no pixel uses.
+  const own = [7, 100, 200].map(blue => ({ data: rgba(...Array.from({ length: 200 }, (_, i) => (blue === 200 && i % 3 === 0 ? CLEAR : [i % 20 * 12, Math.floor(i / 20) * 20, blue, 255]))), duration: 100 }));
+  const split = decodeGIF(encodeGIF(own, 20, 10).data);
+  assert.deepEqual([split.shared, split.frames[0].local, split.frames[0].transparent], [false, true, 200]);
+  assert.ok(split.frames[0].colors > 200);
+  assert.deepEqual(split.frames.map(frame => frame.pixels), own.map(hexPixels));
+  // An animation without transparency names none on its first frame.
+  assert.equal(decodeGIF(encodeGIF([opaque, other], 4, 4).data).frames[0].transparent, null);
+});
 test('a sprite with transparency is cleared only where a pixel turns transparent, also when the loop restarts', () => {
   // A sprite appears, steps right, grows, holds a frame and jumps; the green block never changes. Frame 1 is clear where
   // the last frame's sprite is, so the last frame must be cleared too.
