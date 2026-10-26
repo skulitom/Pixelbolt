@@ -20,7 +20,7 @@ Fire, smoke, steam, explosions, magic, water, honey and slime come from a real f
 
 - **Who it's for:** game developers, game-jam teams and web or video makers who want an agent such as Claude, Codex or Cursor to draw and revise their pixel art, and people building agents that need exact, repeatable images.
 - **Use it when** you want small 2D game assets that stay editable as text: the agent reads every pixel back, fixes one pixel or one frame without redrawing the rest, and the same recipe renders the same image every time.
-- **Don't use it for** painted, photographic or large images (a frame is at most 256 × 256 pixels, and a project at most 256 frames and 4,194,304 pixels in all), generating art with an image model, or editing GIFs and Aseprite files (it imports 8-bit RGB/RGBA PNG only).
+- **Don't use it for** painted or photographic images, large animations (an animation frame is at most 256 × 256 pixels, and a project at most 256 frames and 4,194,304 pixels in all; a single still, such as a 1920 × 1080 backdrop or mural, may be up to 4096 pixels a side within that total), generating art with an image model, or editing GIFs and Aseprite files (it imports 8-bit RGB/RGBA PNG only).
 - **Compared with** aseprite-mcp, pixel-mcp, pixscii, pixelart-mcp, pixelforge-mcp and SpriteCook, with Pixelbolt's measured runs, the others read from their code and docs, and when to choose each one instead: [Pixel art and sprite MCP servers for AI agents: 7 compared](https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/) (checked 17 October 2026). For fire, smoke, explosion and water effects, with Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR and BlastFX: [Pixel FX Designer alternatives: 7 tools compared](https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/) (checked 19 October 2026).
 
 **Try it.** You need Node.js 20 or newer; there is nothing else to install, no API key and no network service:
@@ -263,6 +263,12 @@ node bin/pixelbolt.js sequence room.scene.json --fps 24 --size 1080p --fit cover
 In the editor, import the files as an image sequence and set the clip's frame rate (the files carry none), then leave the clip at 100% scale: scaling there would blur the pixels. A sequence holds at most 18,000 frames and a canvas at most 4096 pixels on a side. MCP `pixel_render` and `pixel_scene` take `"sequence": { "fps": 30, "size": "1080p" }` with the same options.
 
 The studio's **Frames** button downloads the same files for the animation on screen as one ZIP. Its dialog also shows the `pixelbolt sequence` command and the MCP `sequence` argument for the chosen frame rate and size, so an agent can repeat the export without the browser.
+
+### Large stills
+
+A recipe with a single frame may be larger than 256 × 256: up to 4096 pixels a side and 4,194,304 pixels in all. A 1920 × 1080 or 2560 × 1440 backdrop, wallpaper or mural is then one canvas, drawn at one screen pixel per art pixel, and every drawing operation sees all of it. On such a canvas, rectangles, ellipses and dither or shade regions may be up to twice its side instead of 512.
+
+Everything else keeps its limits. A recipe with two or more frames, a scene and its assets, pose, effect, wave and fluid sources, and `import` stay at 256 pixels a side, and the 67-million-pixel drawing budget is unchanged: `fill`, `replace` and `outline` each pass over the whole canvas, about 2 million of that budget at 1920 × 1080. To show bigger pixels instead, enlarge a small canvas with `sheet.scale` or `sequence --size`, as before. The studio opens a large still fitted to its window, scaled down smoothly so dither reads as the tone it makes; choose 1× or more to see its pixels.
 
 ## Connect an agent through MCP
 

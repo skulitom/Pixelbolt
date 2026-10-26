@@ -298,12 +298,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas width on a still wider than 256."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas height on a still taller than 256."
             },
             "color": {
               "type": "string",
@@ -340,12 +342,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas width on a still wider than 256."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas height on a still taller than 256."
             },
             "color": {
               "type": "string",
@@ -421,12 +425,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas width on a still wider than 256."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas height on a still taller than 256."
             }
           },
           "required": [
@@ -891,12 +897,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas width on a still wider than 256."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas height on a still taller than 256."
             },
             "color": {
               "type": "string",
@@ -1045,12 +1053,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas width on a still wider than 256."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 8192,
+              "description": "At most 512, or twice the canvas height on a still taller than 256."
             },
             "steps": {
               "type": "integer",
@@ -1454,12 +1464,14 @@
             "w": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 4096,
+              "description": "Default: to the canvas edge. The region stays inside the canvas."
             },
             "h": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 512
+              "maximum": 4096,
+              "description": "Default: to the canvas edge. The region stays inside the canvas."
             },
             "rules": {
               "type": "array",
@@ -1562,12 +1574,14 @@
         "width": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 256
+          "maximum": 4096,
+          "description": "1–256 pixels; a still (a recipe with exactly one frame) may be up to 4096, within 4,194,304 pixels in all."
         },
         "height": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 256
+          "maximum": 4096,
+          "description": "1–256 pixels; a still (a recipe with exactly one frame) may be up to 4096, within 4,194,304 pixels in all."
         },
         "palette": {
           "type": "object",
@@ -1706,7 +1720,27 @@
         "height",
         "frames"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "frames": {
+            "minItems": 2
+          }
+        },
+        "required": [
+          "frames"
+        ]
+      },
+      "then": {
+        "properties": {
+          "width": {
+            "maximum": 256
+          },
+          "height": {
+            "maximum": 256
+          }
+        }
+      }
     }
   }
 }

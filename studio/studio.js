@@ -25,6 +25,20 @@ function withSharedPalette(value) {
 }
 const compileSource = value => { const drawn = withSharedPalette(value); return drawn?.format === 'pixelforge-poses' ? compilePoses(drawn) : drawn?.format === 'pixelforge-wave' ? compileWaves(drawn) : { recipe: drawn, metadata: null }; };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
+// A still larger than 256 px a side opens fitted to the artboard ("fit", offered only for such stills): whole, and
+// scaled down smoothly when it is larger than the artboard, so a dither reads as the tone it makes rather than as
+// noise. 1× and up show its pixels. The zoom chosen for sprites comes back when a sprite is shown again.
+let spriteZoom = zoom;
+const isLarge = p => p.width > 256 || p.height > 256;
+// The whole number or `fit` zoom as the GIF and frame exports take it: a fitted view exports at 1×.
+const exportScale = () => (zoom === 'fit' ? 1 : zoom);
+function fitZoom(next) {
+  const wasLarge = project ? isLarge(project) : false, large = isLarge(next);
+  if (large === wasLarge) return;
+  if (large) { spriteZoom = zoom; zoom = 'fit'; } else zoom = spriteZoom;
+  $('zoom-fit').hidden = !large;
+  $('zoom').value = String(zoom);
+}
 // The recipe text last sent to Save JSON. The page cannot tell whether the browser kept that file or the save was
 // cancelled, so it stays `dirty`: the draft is kept and leaving or replacing the recipe still asks.
 let sent = null;
@@ -86,13 +100,17 @@ function render() {
     context.fillStyle = '#ffce53';
     for (const marker of pose.markers) if (pose.contacts?.includes(marker.name)) context.fillRect(marker.at[0] - 1, marker.at[1] + 1, 3, 1);
   }
-  const native = $('native-canvas'); native.width = project.width; native.height = project.height;
-  native.getContext('2d').drawImage(frameImages[selected], 0, 0);
+  // The native-size preview shows a sprite at 1× beside the zoomed view; a large still is its own 1× view.
+  const native = $('native-canvas');
+  native.parentElement.hidden = isLarge(project);
+  if (!isLarge(project)) { native.width = project.width; native.height = project.height; native.getContext('2d').drawImage(frameImages[selected], 0, 0); }
   const fit = Math.max(1, Math.floor(($('artboard').clientWidth - 48) / width));
-  const displayScale = isSheet || isMotion ? Math.min(zoom, fit) : zoom;
+  const whole = Math.max(1 / 64, Math.min(($('artboard').clientWidth - 72) / width, ($('artboard').clientHeight - 72) / height));
+  const displayScale = zoom === 'fit' ? (whole >= 1 ? Math.floor(whole) : whole) : isSheet || isMotion ? Math.min(zoom, fit) : zoom;
   canvas.style.width = `${width * displayScale}px`; canvas.style.height = `${height * displayScale}px`;
+  canvas.classList.toggle('smooth', displayScale < 1);
   $('canvas-wrap').style.setProperty('--pixel-size', `${displayScale}px`);
-  $('canvas-wrap').classList.toggle('grid', $('grid').getAttribute('aria-pressed') === 'true');
+  $('canvas-wrap').classList.toggle('grid', $('grid').getAttribute('aria-pressed') === 'true' && displayScale >= 1);
   $('frame-counter').textContent = `${String(position + 1).padStart(2, '0')} / ${String(animation.frames.length).padStart(2, '0')}`;
   const neighbors = animationNeighbors(animation, position);
   $('onion').title = `Previous (pink): ${neighbors.previous === null ? 'none' : project.frames[animation.frames[neighbors.previous]].name}; next (cyan): ${neighbors.next === null ? 'none' : project.frames[animation.frames[neighbors.next]].name}`;
@@ -112,7 +130,8 @@ function animationChanged() {
     const button = document.createElement('button'); button.className = 'frame'; button.title = `${frame.name} · ${frame.duration}ms`; button.setAttribute('aria-label', `Select position ${sequencePosition + 1}: ${frame.name}`);
     const block = document.createElement('div'); block.className = 'frame-image';
     const number = document.createElement('span'); number.className = 'number'; number.textContent = String(sequencePosition + 1).padStart(2, '0');
-    block.append(thumbnail(frameImages[index]), number);
+    const image = thumbnail(frameImages[index]); image.classList.toggle('smooth', isLarge(project));
+    block.append(image, number);
     const caption = document.createElement('small');
     const label = document.createElement('span'); label.textContent = frame.name;
     const time = document.createElement('span'); time.textContent = `${frame.duration}ms`; caption.append(label, time);
@@ -132,6 +151,7 @@ function compile() {
   try {
     const nextSpec = JSON.parse(source.value.replace(/^\uFEFF/, ''));
     const compiled = compileSource(nextSpec), nextProject = renderProject(compiled.recipe), nextAtlas = buildAtlas(nextProject);
+    fitZoom(nextProject);
     spec = compiled.recipe; poseMetadata = compiled.metadata?.format === 'pixelforge-pose-metadata' ? compiled.metadata : null; project = nextProject; atlas = nextAtlas;
     motionReview = null;
     $('motion-view').disabled = !poseMetadata; $('contacts').disabled = !poseMetadata;
@@ -223,7 +243,7 @@ source.addEventListener('keydown', event => {
 source.addEventListener('blur', () => { leavingEditor = false; });
 $('play').addEventListener('click', () => { if (!project) return; playing = !playing; if (playing) { if (elapsed >= project.animations[$('animation').value].duration) elapsed = 0; setMode('animation'); } playState(); });
 $('animation').addEventListener('change', animationChanged);
-$('zoom').addEventListener('change', () => { zoom = Number($('zoom').value); render(); });
+$('zoom').addEventListener('change', () => { zoom = $('zoom').value === 'fit' ? 'fit' : Number($('zoom').value); render(); });
 $('review-view').addEventListener('change', render);
 for (const id of ['grid', 'onion', 'contacts']) $(id).addEventListener('click', () => { $(id).setAttribute('aria-pressed', String($(id).getAttribute('aria-pressed') !== 'true')); render(); });
 $('animation-view').addEventListener('click', () => setMode('animation'));
@@ -259,14 +279,14 @@ $('save').addEventListener('click', () => {
 $('gif').addEventListener('click', () => {
   compile(); if (!valid) { toast('Fix the recipe to export a GIF.'); return; }
   try {
-    const gif = animationGIF(project, $('animation').value, { scale: zoom });
+    const gif = animationGIF(project, $('animation').value, { scale: exportScale() });
     download(gif.data, `${project.name}-${gif.animation}.gif`, 'image/gif');
     toast(`GIF saved: ${gif.width} × ${gif.height} px.${gif.partialAlpha ? ` ${gif.partialAlpha} partly transparent pixels became fully transparent or opaque; the gif command can blend them onto a background.` : ''}`);
   } catch (error) { toast(error.message); }
 });
 // Frames for a video editor: the server builds them exactly as `pixelbolt sequence` does. The dialog also shows that
 // call, and the MCP one, because agents are who usually make these.
-const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: zoom }) });
+const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: exportScale() }) });
 function showFramesCall() {
   const settings = framesSettings(), sizing = settings.size ? `--size ${settings.size}` : `--scale ${settings.scale}`;
   $('frames-call').textContent = `pixelbolt sequence ${project.name}.pixel.json --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;

@@ -4,7 +4,7 @@
 
 Requires Node.js 20 or newer. No build step, dependency installation, API key or hosted service is needed. Clone https://github.com/skulitom/Pixelbolt.git and run commands from the checkout. The package name is pixelbolt; the CLI command is pixelbolt (pixelforge still works as an alias). Installation instructions use the GitHub checkout. Claude Desktop users can instead open pixelbolt.mcpb from the latest release (https://github.com/skulitom/Pixelbolt/releases/latest/download/pixelbolt.mcpb). The MCP Registry name is io.github.skulitom/pixelbolt.
 
-Use Pixelbolt when a user asks for pixel art, sprites, a sprite sheet, game assets, tiles or a tileset, icons, particle effects, a pixel font caption or a short looping animation or GIF, and wants files they or an agent can revise later. Do not use it for painted, photographic or large images (a frame is at most 256 x 256 pixels, and a project at most 256 frames and 4,194,304 pixels in all), for image-model generation, or to edit GIF or Aseprite files (it imports 8-bit RGB/RGBA PNG only).
+Use Pixelbolt when a user asks for pixel art, sprites, a sprite sheet, game assets, tiles or a tileset, icons, particle effects, a pixel font caption or a short looping animation or GIF, and wants files they or an agent can revise later. Do not use it for painted or photographic images or large animations (an animation frame is at most 256 x 256 pixels, and a project at most 256 frames and 4,194,304 pixels in all; a single still, such as a 1920 x 1080 backdrop or mural, may be up to 4096 pixels a side within that total), for image-model generation, or to edit GIF or Aseprite files (it imports 8-bit RGB/RGBA PNG only).
 
 ## Start here
 

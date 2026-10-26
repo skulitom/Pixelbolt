@@ -89,11 +89,23 @@ export function readRows(rows, path, palette) {
 }
 const round6 = value => Math.round(value * 1e6) / 1e6;
 
-function readProject(spec) {
+// Canvas sides. A recipe with several frames is at most 256 pixels a side. A recipe with a single frame (a still: a
+// backdrop, mural or wallpaper drawn at one pixel per screen pixel) may be up to 4096 a side, within the same
+// 4,194,304 pixels that bound every recipe's frames.
+export const CANVAS_SIDE = 256, STILL_SIDE = 4096, FRAME_AREA = 4194304;
+
+// `stills: false` keeps a document to the animation limit even with one frame (pose sources compile to animations).
+function readProject(spec, { stills = true } = {}) {
   object(spec, 'project', ['$schema', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'background', 'symbols', 'frames', 'animations', 'sheet', 'anchor']);
   if (spec.version !== 1) fail('project.version', 'expected 1');
   const projectName = name(spec.name, 'project.name');
-  const width = integer(spec.width, 'project.width', 1, 256), height = integer(spec.height, 'project.height', 1, 256);
+  const frameCount = Array.isArray(spec.frames) ? spec.frames.length : 0, still = stills && frameCount === 1;
+  const side = (value, path) => {
+    if (stills && frameCount > 1 && Number.isInteger(value) && value > CANVAS_SIDE && value <= STILL_SIDE) fail(path, `expected an integer from 1 to ${CANVAS_SIDE}; only a single-frame still may be larger (up to ${STILL_SIDE}), and this recipe has ${frameCount} frames`);
+    return integer(value, path, 1, still ? STILL_SIDE : CANVAS_SIDE);
+  };
+  const width = side(spec.width, 'project.width'), height = side(spec.height, 'project.height');
+  if (still && width * height > FRAME_AREA) fail('project', `a ${width}×${height} still is ${String(width * height).replace(/\B(?=(\d{3})+$)/g, ',')} pixels; a still holds at most 4,194,304 (1920×1080, 2560×1440 and 2048×2048 fit), so draw it smaller or enlarge a smaller canvas with sheet.scale`);
   const palette = spec.palette ?? {};
   object(palette, 'project.palette');
   if (own(palette, '$ref')) fail('project.palette.$ref', 'palette files are resolved by the CLI, MCP or resolveRecipe(); inline the palette to render here');
@@ -159,6 +171,9 @@ export function renderProject(spec, options = {}) {
     return renderProject(isolated, { ...(options.stats && { stats: true }) });
   }
   const { projectName, width, height, palette, ramps, background, projectAnchor, symbols } = readProject(spec);
+  // Rectangles, ellipses and dither or shade regions may overhang the canvas: up to 512 pixels, or twice the side of a
+  // larger still.
+  const boxWidth = Math.max(512, 2 * width), boxHeight = Math.max(512, 2 * height);
   let activePalette = palette;
   const color = (value, path) => parseColor(value, activePalette, path);
   let work = 0, operationCount = 0, layerPixels = 0;
@@ -246,7 +261,7 @@ export function renderProject(spec, options = {}) {
       // say otherwise), a density or [from, to] ramp along a direction, and a pattern. The returned function visits
       // every pixel of the region, optionally limited by `inside(i, j, w, h)`, whose threshold is below the density.
       const densityField = (fallback, inside = null) => {
-        const w = integer(op.w ?? Math.max(1, width - x), `${p}.w`, 1, 512), h = integer(op.h ?? Math.max(1, height - y), `${p}.h`, 1, 512);
+        const w = integer(op.w ?? Math.max(1, width - x), `${p}.w`, 1, boxWidth), h = integer(op.h ?? Math.max(1, height - y), `${p}.h`, 1, boxHeight);
         const ramp = Array.isArray(op.density);
         if (ramp && op.density.length !== 2) fail(`${p}.density`, 'expected a number from 0 to 1, or [from, to]');
         const [from, to] = ramp ? op.density : [op.density ?? fallback, op.density ?? fallback];
@@ -290,7 +305,7 @@ export function renderProject(spec, options = {}) {
       };
       if (op.op === 'pixel') { spend(1); put(x, y, color(op.color, `${p}.color`)); }
       else if (['rect', 'ellipse', 'clear'].includes(op.op)) {
-        const w = integer(op.w, `${p}.w`, 1, 512), h = integer(op.h, `${p}.h`, 1, 512);
+        const w = integer(op.w, `${p}.w`, 1, boxWidth), h = integer(op.h, `${p}.h`, 1, boxHeight);
         const c = op.op === 'clear' ? [0, 0, 0, 0] : color(op.color, `${p}.color`);
         const filled = op.filled === undefined ? true : boolean(op.filled, `${p}.filled`);
         spend(w * h);
@@ -627,7 +642,7 @@ export function renderProject(spec, options = {}) {
 // atlas validation with the renderer, but never allocates or composites a canvas. A stamp cannot erase, so visible
 // symbol bounds suffice to compute the exact trimmed atlas, including flips and canvas clipping.
 export function describeStampRecipe(spec) {
-  const { width, height, palette, symbols } = readProject(spec);
+  const { width, height, palette, symbols } = readProject(spec, { stills: false });
   if (spec.background !== undefined) fail('project.background', 'compiler stamp recipes omit the background');
   const frameNames = new Set(), boundsBySymbol = new Map(), boxes = [];
   let work = 0, operations = 0;

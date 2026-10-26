@@ -9,7 +9,13 @@ const id = { type: 'string', pattern: '^[a-zA-Z][a-zA-Z0-9_-]{0,63}$', descripti
 const object = (properties, required = []) => ({ type: 'object', properties, required, additionalProperties: false });
 const ref = name => ({ $ref: `#/$defs/${name}` });
 const array = (items, maxItems = 2048) => ({ type: 'array', items, maxItems });
-const xy = { x: int(-4096, 4096), y: int(-4096, 4096) }, wh = { w: int(1, 512), h: int(1, 512) };
+const xy = { x: int(-4096, 4096), y: int(-4096, 4096) };
+// Shapes and dither or shade regions may overhang the canvas: up to 512 pixels, or twice the side of a larger still.
+const wh = { w: int(1, 8192, 'At most 512, or twice the canvas width on a still wider than 256.'), h: int(1, 8192, 'At most 512, or twice the canvas height on a still taller than 256.') };
+// A rewrite region stays inside the canvas; it runs to the canvas edge by default.
+const region = { w: int(1, 4096, 'Default: to the canvas edge. The region stays inside the canvas.'), h: int(1, 4096, 'Default: to the canvas edge. The region stays inside the canvas.') };
+// One frame may be a still larger than 256 pixels a side; a recipe with several frames may not.
+const side = int(1, 4096, '1–256 pixels; a still (a recipe with exactly one frame) may be up to 4096, within 4,194,304 pixels in all.');
 const point = { ...array(int(-4096, 4096), 2), minItems: 2, description: '[x, y] in unscaled canvas pixels; the top-left corner of that pixel.' };
 const transform = { scale: int(1, 16), flipX: bool, flipY: bool, rotate: { enum: [0, 90, 180, 270] } };
 const remap = { type: 'object', propertyNames: { minLength: 1, maxLength: 1 }, additionalProperties: color, description: 'Recolor grid characters for this operation only: character → palette name or colour.' };
@@ -56,7 +62,7 @@ const schema = {
   title: 'Pixelbolt project',
   ...object({
     $schema: { type: 'string' }, version: { const: 1 }, name: id,
-    width: int(1, 256), height: int(1, 256),
+    width: side, height: side,
     palette: { type: 'object', maxProperties: 257, properties: { $ref: { type: 'string', description: 'Shared palette file, resolved by the CLI and MCP relative to this recipe. Local entries add to or override it.' } }, additionalProperties: { type: 'string', pattern: hex } },
     ramps: { ...array({ ...array({ type: 'string', minLength: 1, maxLength: 64 }, 32), minItems: 2 }, 64), description: 'Palette keys from dark to light, one list per material. shade and scene ramp lighting move a colour along its ramp instead of inventing one. A key belongs to one ramp. A shared palette file ({"palette": {...}, "ramps": [...]}) can supply them.' },
     background: color, symbols: { type: 'object', propertyNames: id, additionalProperties: ref('rows') },
@@ -65,6 +71,8 @@ const schema = {
     animations: { type: 'object', minProperties: 1, maxProperties: 65527, description: 'ZIP32 bundle budget: animation count + frame count + 7 support files must not exceed 65,535.', propertyNames: id, additionalProperties: object({ frames: { ...array(id, 1024), minItems: 1 }, direction: { enum: ['forward', 'reverse', 'pingpong'] }, loop: bool }, ['frames']) },
     sheet: object({ columns: int(1, 256), padding: int(0, 16), scale: int(1, 16), trim: { type: 'boolean', description: 'Pack each frame by its visible bounds; the atlas reports trimmed rectangles with spriteSourceSize. Ignores columns.' } })
   }, ['version', 'name', 'width', 'height', 'frames']),
+  if: { properties: { frames: { minItems: 2 } }, required: ['frames'] },
+  then: { properties: { width: { maximum: 256 }, height: { maximum: 256 } } },
   $defs: {
     rows: { ...array({ type: 'string', minLength: 1, maxLength: 256 }, 256), minItems: 1, description: 'Equal-width text rows. Every character is a palette key; dot and space skip a pixel.' },
     frame: object({ name: id, duration: int(1, 60000, 'Frame duration in milliseconds; default 100.'), from: id, translate: { ...array(int(-4096, 4096), 2), minItems: 2 }, wrap: { type: 'boolean', description: 'Translation wraps around the canvas instead of clipping (scrolling tiles).' }, flipX: bool, flipY: bool,
@@ -98,7 +106,7 @@ const schema = {
       { ...operation('tilemap', { ...xy, tile: { ...pairOf(int(1, 256)), description: 'Cell size [width, height] in pixels.' }, ...tilemapFields,
         legend: legend(['symbol', 'template'], { symbol: 'A symbol drawn at the cell\'s top-left; with autotile, {mask} in its name becomes the neighbour mask.', template: 'An autotile template symbol (two tiles wide, three tall) drawn with the cell\'s neighbour mask; needs autotile.' }) }, ['tile', 'rows', 'legend']),
         description: 'Draw a character map from this recipe\'s symbols and autotile templates, with variants, weights and neighbour rules, so later operations see the composed result (dither over its floor, rewrite rules at its corners).' },
-      { ...operation('rewrite', { ...xy, ...wh, rules: { ...array(object({ match: ruleRows, replace: ruleRows }, ['match', 'replace']), 16), minItems: 1 },
+      { ...operation('rewrite', { ...xy, ...region, rules: { ...array(object({ match: ruleRows, replace: ruleRows }, ['match', 'replace']), 16), minItems: 1 },
         empty: { type: 'string', minLength: 1, maxLength: 1, description: 'A non-palette character meaning a transparent pixel in match and erasure in replace.' },
         steps: int(1, 64, 'Passes over every rule; stops early when a pass changes nothing.'), chance: num(0, 1, 'Seeded probability that each match is applied.'), limit: int(1, 65536, 'Most replacements per rule per step.'),
         seed: int(0, 2147483647), rotate: { type: 'boolean', description: 'Also match the rules turned 90°, 180° and 270°.' }, mirror: { type: 'boolean', description: 'Also match the rules mirrored horizontally.' } }, ['rules']),
@@ -165,6 +173,9 @@ const poses = {
   }, ['format', 'version', 'name', 'width', 'height', 'parts', 'poses']), $defs: { rows: schema.$defs.rows }
 };
 const recipeSchema = { ...schema }; delete recipeSchema.$schema; delete recipeSchema.$defs; delete recipeSchema.title;
+// Scene assets keep to the animation canvas: a still larger than 256 pixels a side renders on its own.
+const assetSide = int(1, 256, 'A scene asset is at most 256 pixels a side.');
+const sceneRecipe = { ...recipeSchema, properties: { ...recipeSchema.properties, width: assetSide, height: assetSide } }; delete sceneRecipe.if; delete sceneRecipe.then;
 const themePalette = description => ({ oneOf: [{ type: 'string', description: 'Palette file, resolved by the CLI relative to the scene or inside the MCP root.' }, { type: 'object', additionalProperties: { type: 'string', pattern: hex } }], description });
 const cueTime = (maximum, description) => ({ oneOf: [int(0, maximum), { type: 'string', pattern: '^[a-zA-Z][a-zA-Z0-9_-]{0,63}([+-][0-9]{1,5})?$' }], description });
 const assetRef = { oneOf: [ref('recipe'), { type: 'string', description: 'Recipe file, resolved by the CLI relative to the scene or inside the MCP root.' }, object({ revision: { type: 'string', pattern: '^[a-f0-9]{12}$' } }, ['revision'])] };
@@ -196,7 +207,7 @@ const scene = {
         keys: { ...array(object({ time: cueTime(60000, 'Milliseconds or a named cue such as "strike+70".'), strength: num(0, 8, 'Default: the light\'s strength.'), radius: int(1, 512, 'Default: the light\'s radius.'), ease: { ...ease, description: `Shape of the change from this key to the next: ${ease.description}` } }, ['time']), 64), minItems: 1,
           description: 'Strength and radius over time, held before the first key and after the last: a flash on a hit, a lamp that lights later. Times increase strictly.' }
       }), anyOf: [{ required: ['at'] }, { required: ['follow'] }] }, 8) })
-  }, ['format', 'version', 'name', 'width', 'height', 'assets', 'instances']), $defs: { ...schema.$defs, recipe: recipeSchema }
+  }, ['format', 'version', 'name', 'width', 'height', 'assets', 'instances']), $defs: { ...schema.$defs, recipe: sceneRecipe }
 };
 const autotile = {
   $schema: schema.$schema, title: 'Pixelbolt autotile template',

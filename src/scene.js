@@ -1,5 +1,5 @@
 // Bounded scene review, not a game engine. In-memory recipes only; no filesystem or network access.
-import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter } from './core.js';
+import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, CANVAS_SIDE } from './core.js';
 import { EASINGS, ease, pixelId, random } from './craft.js';
 import { fields, point } from './authoring.js';
 import { expandTilemap } from './autotile.js';
@@ -103,6 +103,8 @@ export function prepareScene(source) {
     const passes = {};
     for (const key of ['recipe', 'normal', 'emissive']) if (entry[key] !== undefined) {
       const spec = key === 'recipe' ? themed(entry[key], scenePalette, assetPalette) : entry[key];
+      // A still larger than 256 pixels a side renders on its own; scenes keep their assets to the animation canvas.
+      if (spec?.width > CANVAS_SIDE || spec?.height > CANVAS_SIDE) fail(`scene.assets.${id}`, `a scene asset is at most ${CANVAS_SIDE}×${CANVAS_SIDE} pixels; a larger still renders on its own, not in a scene`);
       const area = spec?.width * spec?.height * spec?.frames?.length;
       if (!Number.isFinite(area) || (sourceArea += area) > 4194304) fail(`scene.assets.${id}`, 'combined scene source passes exceed 4,194,304 pixels or have invalid dimensions');
       passes[key] = renderProject(spec);

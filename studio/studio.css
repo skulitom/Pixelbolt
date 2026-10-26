@@ -376,6 +376,10 @@ select{
   image-rendering:pixelated;
   display:block
 }
+/* A large still fitted below 1×: scaled down smoothly so dither reads as a tone, not as noise. */
+#canvas.smooth,.frame img.smooth{
+  image-rendering:auto
+}
 .artboard-caption{
   position:absolute;
   bottom:14px;

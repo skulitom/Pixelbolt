@@ -82,7 +82,7 @@ test('clipping warns once, and invalid fill seeds are rejected', () => {
   assert.throws(() => renderProject(make([{ op: 'fill', x: -1, color: 'r' }])), /fill seed/);
 });
 test('invalid references, duplicate names, typos and resource limits fail early', () => {
-  for (const spec of [make([], { width: 257 }), make([], { frames: [{ name: 'a', from: 'later' }] }), make([], { frames: [{ name: 'a' }, { name: 'a' }] }), make([{ op: 'rect', w: 2, h: 2, color: 'r', widht: 3 }]), make([], { animations: { bad: { frames: ['absent'] } } }), make([], { sheet: { scale: 1.5 } }), make([], { sheet: { columns: 256, scale: 16 }, width: 256, height: 256 })]) assert.throws(() => renderProject(spec));
+  for (const spec of [make([], { width: 257, frames: [{ name: 'a' }, { name: 'b' }] }), make([], { width: 4097 }), make([], { width: 2049, height: 2049 }), make([], { frames: [{ name: 'a', from: 'later' }] }), make([], { frames: [{ name: 'a' }, { name: 'a' }] }), make([{ op: 'rect', w: 2, h: 2, color: 'r', widht: 3 }]), make([], { animations: { bad: { frames: ['absent'] } } }), make([], { sheet: { scale: 1.5 } }), make([], { sheet: { columns: 256, scale: 16 }, width: 256, height: 256 })]) assert.throws(() => renderProject(spec));
 });
 test('prototype-like palette keys are safe and are not inherited', () => {
   assert.throws(() => renderProject(make([{ op: 'pixel', color: 'toString' }])), /unknown color/);
