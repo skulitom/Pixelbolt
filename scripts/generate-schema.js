@@ -40,7 +40,7 @@ const tilemapFields = {
   outside: { enum: ['empty', 'match'], description: 'Cells beyond the map: empty (default), or matching every mask and rule pattern.' },
   empty: { type: 'string', minLength: 1, maxLength: 1, description: 'A character, not a legend key, that stands for empty cells in rule patterns.' },
   classes: { type: 'object', propertyNames: { minLength: 1, maxLength: 1 }, additionalProperties: { type: 'string', minLength: 1, maxLength: 64 }, description: 'Characters that stand for several map characters in rule patterns, e.g. {"#": "WV"}; include the empty character to match empty cells too.' },
-  seed: int(0, 2147483647, 'Reorders seeded variant picks and rule chances; default 0 keeps position-based picks.')
+  seed: int(0, 2147483647, 'Reshuffles variant picks and rule chances, which are seeded by cell position; default 0.')
 };
 const densityFields = {
   density: { oneOf: [num(0, 1), pairOf(num(0, 1))], description: 'Share of pixels changed, 0–1, or [from, to] ramping along direction.' },

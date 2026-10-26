@@ -34,12 +34,29 @@ test('rule tiles choose by the characters around a cell and may draw into a neig
   assert.deepEqual(map(['F.', 'FW'], { F: { rules: [{ where: ['...', '..#', '...'], frame: 'b', stop: true }, { frame: 'f' }] }, W: 'w' }, { empty: '~', classes: { '#': '~W' } }), ['b.', 'bw']);
 });
 
-test('rule chances and variant weights are seeded by position, and unweighted variants keep their old picks', () => {
+test('variants without a seed show no pattern: no checkerboard, no short period, no fixed diagonal', () => {
+  const rows = Array.from({ length: 32 }, () => 'F'.repeat(32));
+  // Two variants used to come out as a perfect checkerboard, four as a 4×4 repeat, and every diagonal cell as the first.
+  const two = map(rows, { F: { frames: ['x', 'y'] } }), four = map(rows, { F: { frames: ['x', 'y', 'b', 'c'] } });
+  const checker = rows.map((row, y) => [...row].map((_, x) => ((x ^ y) & 1 ? 'y' : 'x')).join(''));
+  assert.notDeepEqual(two, checker);
+  const share = (text, letter) => (text.split(letter).length - 1) / text.length;
+  assert.ok(Math.abs(share(two.join(''), 'x') - 0.5) < 0.1, String(share(two.join(''), 'x')));
+  for (const period of [2, 4, 8]) {
+    assert.ok(four.some(row => [...row].some((c, x) => x + period < row.length && c !== row[x + period])), `rows repeat every ${period}`);
+    assert.ok(four.some((row, y) => y + period < four.length && row !== four[y + period]), `columns repeat every ${period}`);
+  }
+  assert.ok(new Set(four.map((row, i) => row[i])).size > 1, 'every diagonal cell is the same variant');
+  // Variants stay a pure function of the position and the seed.
+  assert.deepEqual(map(rows, { F: { frames: ['x', 'y'] } }), two);
+  assert.notDeepEqual(map(rows, { F: { frames: ['x', 'y'] } }, { seed: 9 }), two);
+});
+
+test('rule chances and variant weights are seeded by position, and equal weights pick as no weights do', () => {
   const rows = Array.from({ length: 16 }, () => 'F'.repeat(16));
   const weighted = map(rows, { F: { frames: ['x', 'y'], weights: [3, 1] } }).join('');
   const ratio = (weighted.split('x').length - 1) / 256;
   assert.ok(ratio > 0.65 && ratio < 0.85, String(ratio));
-  // Equal weights give exactly the old position-based choice, so existing maps render unchanged.
   assert.deepEqual(map(rows, { F: { frames: ['x', 'y'], weights: [1, 1] } }), map(rows, { F: { frames: ['x', 'y'] } }));
   const chancy = map(rows, { F: { rules: [{ frame: 'f' }, { frame: 'b', chance: 0.25 }] } }).join('');
   const share = (chancy.split('b').length - 1) / 256;

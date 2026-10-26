@@ -1343,7 +1343,7 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 2147483647,
-              "description": "Reorders seeded variant picks and rule chances; default 0 keeps position-based picks."
+              "description": "Reshuffles variant picks and rule chances, which are seeded by cell position; default 0."
             },
             "legend": {
               "type": "object",

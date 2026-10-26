@@ -147,10 +147,11 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
     if (members !== undefined) return blank ? empty !== undefined && members.includes(empty) : members.includes(char);
     return !blank && char === want;
   };
-  // Position-based variants, so repeated terrain does not tile visibly; with a seed or inside rules a seeded hash.
+  // Variants picked by a seeded hash of the cell's position, so repeated terrain does not tile visibly. (A product of
+  // x and y with two odd numbers, used without a seed before, kept only their low bits: two variants made a checkerboard.)
   const pick = (rule, x, y) => {
     if (rule.names.length === 1) return rule.names[0];
-    const value = rule.salt || seed ? hash(seed, x, y, rule.salt) : (((x * 73856093) ^ (y * 19349663)) >>> 0);
+    const value = hash(seed, x, y, rule.salt);
     if (!rule.weights) return rule.names[value % rule.names.length];
     let left = value % rule.weights.reduce((sum, w) => sum + w, 0);
     for (let i = 0; i < rule.names.length; i++) { left -= rule.weights[i]; if (left < 0) return rule.names[i]; }
