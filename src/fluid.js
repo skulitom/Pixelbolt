@@ -1863,15 +1863,33 @@ function moveObstacles(run, cycle) {
   if (!changed) return;
   const shift = effect.obstacles.map((o, i) => { const at = places[i], was = before.places[i]; return o.blocks && at.show && was.show && !at.jump && cycle > 0 && (at.x !== was.x || at.y !== was.y) ? [at.x - was.x, at.y - was.y] : null; });
   const covered = c => layout.solid[c] && !before.solid[c];
-  // The first open cell along a move from (x, y), passing only through cells the same obstacle has just covered; -1
-  // where another solid or the canvas edge comes first.
+  // The cells each moving obstacle passed over on its way, from every cell it held to where that cell is now. An
+  // obstacle that moves more pixels than it is thick leaves some of them open behind it: the fluid there was in its
+  // path, so it goes ahead of it too, as from the cells it covers, instead of being passed through.
+  const swept = new Int16Array(g.N).fill(-1);
+  effect.obstacles.forEach((o, i) => {
+    const s = shift[i];
+    if (!s) return;
+    const was = before.places[i], steps = Math.ceil(2 * Math.sqrt(s[0] * s[0] + s[1] * s[1]));
+    o.rows.forEach((row, j) => {
+      for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') {
+        for (let step = 1; step < steps; step++) {
+          const c = Math.floor(was.y + j + 0.5 + s[1] * step / steps) * W + Math.floor(was.x + k + 0.5 + s[0] * step / steps);
+          if (swept[c] < 0) swept[c] = i;
+        }
+      }
+    });
+  });
+  const passed = c => swept[c] >= 0 && !layout.solid[c] && !before.solid[c];
+  // The first open cell along a move from (x, y), passing only through cells the same obstacle has just covered or
+  // passed over; -1 where another solid or the canvas edge comes first.
   const landing = (x, y, o, s) => {
     const length = Math.sqrt(s[0] * s[0] + s[1] * s[1]), ux = s[0] / length, uy = s[1] / length;
     for (let step = 1; step <= 2 * length + 4; step++) {
       const px = x + 0.5 * step * ux, py = y + 0.5 * step * uy;
       if (px < 0 || py < 0 || px >= W || py >= H) return -1;
       const c = Math.floor(py) * W + Math.floor(px);
-      if (!layout.solid[c]) return c;
+      if (!layout.solid[c]) { if (passed(c) && swept[c] === o) continue; return c; }
       if (!covered(c) || owner[c] !== o) return -1;
     }
     return -1;
@@ -1879,8 +1897,8 @@ function moveObstacles(run, cycle) {
   if (effect.liquid) {
     for (let k = state.n - 1; k >= 0; k--) {
       const x = state.x[k], y = state.y[k], c = Math.floor(y) * W + Math.floor(x);
-      if (!covered(c)) continue;
-      const o = owner[c], s = shift[o], to = s ? landing(x, y, o, s) : -1;
+      if (!covered(c) && !passed(c)) continue;
+      const o = covered(c) ? owner[c] : swept[c], s = shift[o], to = s ? landing(x, y, o, s) : -1;
       if (to < 0) { removeParticle(state, k); continue; }
       // Into the open cell the walk reached, just past the obstacle, moving at least as fast as it does.
       const length = Math.sqrt(s[0] * s[0] + s[1] * s[1]), ux = s[0] / length, uy = s[1] / length, tx = to % W, ty = (to - tx) / W;
@@ -1893,8 +1911,8 @@ function moveObstacles(run, cycle) {
   } else {
     const { d, T } = state;
     for (let c = 0; c < g.N; c++) {
-      if (!covered(c) || (!d[c] && !T[c])) continue;
-      const o = owner[c], s = shift[o], to = s ? landing(c % W + 0.5, Math.floor(c / W) + 0.5, o, s) : -1;
+      if ((!covered(c) && !passed(c)) || (!d[c] && !T[c])) continue;
+      const o = covered(c) ? owner[c] : swept[c], s = shift[o], to = s ? landing(c % W + 0.5, Math.floor(c / W) + 0.5, o, s) : -1;
       if (to >= 0) { d[to] += d[c]; T[to] += T[c]; }
       d[c] = 0; T[c] = 0;
     }

@@ -10,6 +10,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
+- A keyed fluid obstacle that moves more pixels a frame than it is thick pushes water and smoke ahead of it instead of passing through. Only the cells it landed on were cleared, not those it passed over, so a 1-pixel plunger at 5 pixels a frame left about a fifth of the water behind it. Obstacles that move no faster than they are thick behave as before; every example and preset renders unchanged.
 - Animated PNGs give frames of 10 ms or less 11 ms, and the render warns which. Browsers play such short animation frames at 100 ms, so a 5 ms flash flickered ten times too slowly; the atlas, CSS and Canvas player keep the exact durations.
 - A PNG carries an embedded recipe only up to 1 MiB, the most Pillow opens: `--embed-recipe` and `embedRecipe` refuse a larger one with an error naming the size, and the playground writes such a PNG without its recipe and says so. Up to 16 MiB used to be embedded, which made PNGs Pillow (and the Python tools built on it) could not open.
 - An accent on the first line of rotated or vertically flipped `text` no longer moves the letters. The accent rows always moved the block up, even where the transform put them below or beside the letters, so CAFE and CAFÉ landed 2 × scale pixels apart; centred and right-aligned rotated text also measured the accents. Unrotated, unflipped text is unchanged.

@@ -465,6 +465,28 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
   }
 });
 
+test('an obstacle moving more pixels a frame than it is thick pushes the fluid ahead, never passing through it', () => {
+  // A full-height plunger one pixel thick crosses a closed tank. Only the cells it landed on used to be cleared, not
+  // those it passed over, so at 5 pixels a frame about a fifth of the water ended up behind it.
+  const behind = (over, effect) => {
+    const { recipe, metadata } = compileFluid({ ...gas(null), width: 64, height: 32, symbols: { wall: Array(32).fill('k') }, effects: { e: { frames: 60, walls: ['left', 'right', 'top', 'bottom'], emitters: [], ...effect, obstacles: [{ symbol: 'wall', x: 4, y: 0, keys: [{ frame: 5, x: 44, over }] }] } } });
+    const last = recipe.frames.length - 1, plunger = recipe.frames[last].ops.find(op => op.op === 'stamp').x;
+    return { behind: drawn(recipe, last).filter(([x]) => x < plunger).length, figures: metadata?.effects?.e?.figures };
+  };
+  const water = { kind: 'liquid', fill: [{ x: 8, y: 16, w: 20, h: 16 }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] };
+  for (const over of [30, 15, 8]) {
+    const { behind: left, figures } = behind(over, water);
+    assert.equal(left, 0, `water behind the plunger at ${(40 / over).toFixed(2)} px a frame`);
+    if (figures) assert.equal(figures.particles.at(-1), figures.particles[0], 'every drop kept');
+  }
+  // Smoke against a 1-pixel wall in a closed 16 × 16 box, pushed 4 pixels a frame: 64 pixels of it used to show behind.
+  const { recipe } = compileFluid(gas({ frames: 12, walls: ['left', 'right', 'top', 'bottom'], buoyancy: 0, dissipation: 0, vorticity: 0, emitters: [{ at: [3, 8], area: [4, 16], burst: 1, density: 1 }], obstacles: [{ symbol: 'w', x: 0, y: 0, keys: [{ frame: 2, over: 2, x: 8 }] }], look: [{ field: 'density', colors: ['s'], thresholds: [0.05], dither: 0 }] }, { symbols: { w: Array(16).fill('k') } }));
+  recipe.frames.forEach((frame, f) => {
+    const wall = frame.ops.find(op => op.op === 'stamp').x;
+    assert.equal(drawn(recipe, f).filter(([x]) => x < wall).length, 0, `smoke behind the wall on frame ${f}`);
+  });
+});
+
 test('obstacles move and vanish on cue, pushing the fluid ahead of them', () => {
   const wall = Array(20).fill('kk'), tank = (obstacle, extra = {}) => compileFluid({ ...gas(null), width: 64, height: 32, symbols: { wall }, effects: { e: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 0, y: 12, w: 20, h: 20 }], obstacles: [{ symbol: 'wall', x: 20, y: 12, ...obstacle }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], ...extra } } });
   const right = (figures, f) => figures.box[f][2];
