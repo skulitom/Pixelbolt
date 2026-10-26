@@ -347,6 +347,36 @@ const fluid = {
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'width', 'height', 'effects']), $defs: { rows: schema.$defs.rows }
 };
+const waveCommon = {
+  at: vector(-4096, 4096, 'Source centre or phase origin [x, y] in pixel coordinates.'),
+  wavelength: num(2, 256, 'Pixels per cycle before radial stretch. Wider bands read better at small sizes.'),
+  amplitude: num(0, 4, 'Signed sources are summed before colouring. Default 1.'),
+  cycles: int(-16, 16, 'Whole cycles per animation; negative reverses travel, zero is static. Default 1.'),
+  phase: num(-3600, 3600, 'Relative phase in degrees. 180 opposes an otherwise identical source. Default 0.')
+};
+const waveColors = { ...array({ type: 'string', minLength: 1, maxLength: 1 }, 8), minItems: 1, description: 'Single-character palette keys; dot and space are reserved.' };
+const waveRows = { ...array({ type: 'string', minLength: 1, maxLength: 128 }, 128), minItems: 1, description: 'A full-canvas palette grid. Dot or space leaves the pixel transparent.' };
+const wave = {
+  $schema: schema.$schema, title: 'Pixelbolt wave effects',
+  description: 'Looping coherent procedural waves compiled to editable palette grids. Direct radial/directional synthesis, not a physical water or obstacle solver. All sources combine before palette thresholds. No runtime physics or dependencies.',
+  ...object({ format: { const: 'pixelforge-wave' }, version: { const: 1 }, name: id,
+    width: int(1, 128), height: int(1, 128), palette: schema.properties.palette, anchor: point, sheet: schema.properties.sheet,
+    effects: { type: 'object', minProperties: 1, maxProperties: 16,
+      propertyNames: { ...id, maxLength: 60 }, description: 'Names become animations; unique ignoring case. At most 256 frames and 4,194,304 pixels in total.',
+      additionalProperties: object({ frames: int(4, 128), duration: int(20, 1000, 'Milliseconds per frame. Default 80. Every effect loops.'),
+        sources: { ...array({ oneOf: [
+          object({ kind: { const: 'radial' }, ...waveCommon, stretch: vector(0.125, 8, 'Radial shape scale [x, y]; default [1, 1]. A smaller y flattens the rings onto the ground.') }, ['kind', 'at', 'wavelength']),
+          object({ kind: { const: 'directional' }, ...waveCommon, angle: num(-3600, 3600, 'Degrees clockwise, 0 right and 90 down. Default 0.') }, ['kind', 'at', 'wavelength'])
+        ] }, 4), minItems: 1 },
+        mask: object({ at: vector(-4096, 4096), radius: vector(0.5, 256, 'Ellipse radii [x, y]. Clipping only, never a reflecting obstacle.'), feather: num(0, 1, 'Fraction of the ellipse radius faded inward; 0 is a hard edge. Default 0.2.') }, ['at', 'radius']),
+        look: object({ colors: waveColors,
+          thresholds: { ...array(num(0.000001, 16), 8), minItems: 1, description: 'Strictly increasing positive values, one per colour. Values below the first remain transparent.' },
+          negative: { ...waveColors, description: 'Optional colours for negative amplitudes at the same absolute thresholds; otherwise negative amplitudes are transparent.' }
+        }, ['colors', 'thresholds']),
+        underlay: waveRows, overlay: waveRows
+      }, ['frames', 'sources', 'look']) }
+  }, ['format', 'version', 'name', 'width', 'height', 'palette', 'effects'])
+};
 const normals = {
   $schema: schema.$schema, title: 'Pixelbolt normal pass',
   description: 'Derives a lighting normal pass from a colour recipe and compiles it to an ordinary recipe aligned with it (same size, frame names and durations, animations and atlas layout), ready for a scene asset\'s normal and editable like any recipe. Each separate shape is rounded from its silhouette, lighter colours can be raised by detail, and every pixel takes the nearest of 17 directions: palette key 5 faces the viewer, the keypad digits 1–4 and 6–9 lean 30° the way they sit around 5, and q w e a d z x c lean 60° the same way.',
@@ -356,4 +386,4 @@ const normals = {
     detail: num(0, 1, 'How far lighter colours stand out of the surface, up to 2 pixels: 0 (default) keeps only the silhouette\'s shape; 0.5–1 embosses textured surfaces such as brick, bark or rock. A colour on a ramp counts its step along the ramp, any other its brightness.')
   }, ['format', 'version', 'recipe']), $defs: { ...schema.$defs, recipe: recipeSchema }
 };
-for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');
+for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');

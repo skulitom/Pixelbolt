@@ -9,6 +9,7 @@ import { renderProject, MAX_REQUEST_BYTES, PixelError } from './core.js';
 import { createSequence } from './sequence.js';
 import { prepareScene } from './scene.js';
 import { compilePoses } from './authoring.js';
+import { compileWaves } from './wave.js';
 
 const routes = new Map([
   ['/', ['../studio/index.html', 'text/html; charset=utf-8']],
@@ -33,6 +34,8 @@ const routes = new Map([
   ['/fluid-lab.js', ['../studio/fluid-lab.js', 'text/javascript; charset=utf-8']],
   ['/fluid-controls.js', ['../studio/fluid-controls.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
+  ['/wave.js', ['./wave.js', 'text/javascript; charset=utf-8']],
+  ...['interference', 'portal'].map(name => [`/examples/${name}.wave.json`, [`../examples/${name}.wave.json`, 'application/json']]),
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),
   // The fluid lab compiles these sources in the browser.
@@ -65,7 +68,7 @@ export async function startStudio({ port = STUDIO_PORT, fallback = false, projec
   const scene = project?.format === 'pixelforge-scene';
   if (project) {
     if (scene) prepareScene(project);
-    else renderProject(project.format === 'pixelforge-poses' ? compilePoses(project).recipe : project);
+    else renderProject(project.format === 'pixelforge-poses' ? compilePoses(project).recipe : project.format === 'pixelforge-wave' ? compileWaves(project).recipe : project);
   }
   const server = http.createServer(async (req, res) => {
     const address = server.address(), hosts = [`127.0.0.1:${address.port}`, `localhost:${address.port}`];
