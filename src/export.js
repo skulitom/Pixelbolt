@@ -1,6 +1,6 @@
 import { renderProject, buildAtlas, scalePixels, PixelError } from './core.js';
 import { encodePNG, encodeAPNG, crc32 } from './png.js';
-import { readFile, readdir, mkdir, writeFile, access, rm } from 'node:fs/promises';
+import { readFile, readdir, mkdir, writeFile, access, rm, stat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { embedRecipe, recipeKind } from './share.js';
 
@@ -120,7 +120,8 @@ export async function embedBundleRecipe(bundle, recipe, version) {
   }
 }
 // Windows and macOS file systems ignore case by default, so `Hero.pixel.json` and `hero.pixel.json` are one file there.
-const fileKey = name => (process.platform === 'win32' || process.platform === 'darwin' ? name.toLowerCase() : name);
+const folded = process.platform === 'win32' || process.platform === 'darwin';
+const fileKey = name => (folded ? name.toLowerCase() : name);
 // The bundle files that would land on one of `inputs` (the recipe and the files it references). Even --force never
 // writes over them: `render hero.json --out .` would otherwise replace hero.json with its own inlined copy.
 function inputCollisions(bundle, root, inputs) {
@@ -140,16 +141,48 @@ async function leftovers(bundle, root) {
   const { owns } = bundle;
   if (!owns) return [];
   try { await access(path.join(root, owns.marker)); } catch { return []; }
-  const found = [];
+  // Pixelbolt writes these extensions exactly, so a photo.PNG of someone else's beside them is never taken for one.
+  const extensions = new Set([...bundle.files.keys()].map(name => path.posix.extname(name))), found = [];
   for (const folder of owns.folders) {
     let entries;
-    try { entries = await readdir(path.join(root, folder), { withFileTypes: true }); } catch { continue; }
+    try { entries = (await readdir(path.join(root, folder), { withFileTypes: true })).filter(entry => entry.isFile()); } catch { continue; }
+    // Where this folder ignores letter case, an earlier export's frames/Run.png is this export's frames/run.png, not a
+    // leftover, and an earlier Coin-Spin sequence's frames are this coin-spin's to remove.
+    const sample = entries.find(entry => entry.name !== swapCase(entry.name));
+    const caseless = folded && sample !== undefined && await oneFile(path.join(root, folder), sample.name, swapCase(sample.name));
+    const key = caseless ? name => name.toLowerCase() : name => name, keys = new Set([...bundle.files.keys()].map(key));
+    const match = caseless && !owns.match.flags.includes('i') ? new RegExp(owns.match.source, `${owns.match.flags}i`) : owns.match;
     for (const entry of entries) {
       const name = folder === '.' ? entry.name : `${folder}/${entry.name}`;
-      if (entry.isFile() && owns.match.test(name) && !bundle.files.has(name)) found.push(name);
+      if (extensions.has(path.posix.extname(name)) && match.test(name) && !keys.has(key(name))) found.push(name);
     }
   }
   return found.sort();
+}
+const swapCase = name => [...name].map(char => (char === char.toLowerCase() ? char.toUpperCase() : char.toLowerCase())).join('');
+// Whether two names in `folder` are one file, as they are where the folder ignores letter case. Windows and macOS
+// ignore it by default, but a folder can be case-sensitive (Windows' per-folder setting, a case-sensitive APFS
+// volume), and there Run.png and run.png are two files. File identity decides; where a file system reports none,
+// the name the real path ends in.
+async function oneFile(folder, name, other) {
+  const [a, b] = await Promise.all([name, other].map(entry => stat(path.join(folder, entry), { bigint: true }).catch(() => null)));
+  if (!a || !b) return false;
+  if (a.ino && b.ino) return a.dev === b.dev && a.ino === b.ino;
+  return path.basename(await realpath(path.join(folder, other)).catch(() => other)) === name;
+}
+// Existing files that are this export's under another letter case. Writing to one would keep the old spelling, so a
+// frame renamed from Run to run would stay frames/Run.png: these are removed first. Only where the two names are one
+// file: in a case-sensitive folder Hero.png is someone else's.
+async function respelled(bundle, root) {
+  if (!folded) return [];
+  const listings = new Map(), found = [];
+  for (const name of bundle.files.keys()) {
+    const folder = path.posix.dirname(name), base = path.posix.basename(name), directory = path.join(root, folder);
+    if (!listings.has(folder)) listings.set(folder, new Map((await readdir(directory).catch(() => [])).map(entry => [entry.toLowerCase(), entry])));
+    const existing = listings.get(folder).get(base.toLowerCase());
+    if (existing !== undefined && existing !== base && await oneFile(directory, existing, base)) found.push(folder === '.' ? existing : `${folder}/${existing}`);
+  }
+  return found;
 }
 // Writes a bundle into `directory`. Without `force`, any existing file stops the export before anything is written.
 // With `force`, existing files are replaced and the earlier export's leftovers are removed after the new files are in
@@ -164,6 +197,7 @@ export async function writeBundle(bundle, directory, { force = false, inputs = [
     throw new Error(`Output already exists: ${path.join(root, filename)}. Choose a new folder or pass --force.`);
   }
   const stale = force ? await leftovers(bundle, root) : [];
+  if (force) for (const filename of await respelled(bundle, root)) await rm(path.join(root, filename), { force: true });
   await mkdir(root, { recursive: true });
   for (const [filename, data] of bundle.files) {
     const target = path.join(root, filename);

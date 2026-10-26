@@ -8,6 +8,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { encodePNG, encodeAPNG } from '../src/png.js';
 import { createBundle, writeBundle, createZip, formatJSON } from '../src/export.js';
+import { renderProject } from '../src/core.js';
+import { createSequence } from '../src/sequence.js';
 
 export function pngChunks(buffer) {
   const result = []; let at = 8;
@@ -16,6 +18,13 @@ export function pngChunks(buffer) {
   return result;
 }
 const tiny = { version: 1, name: 'sample', width: 2, height: 1, frames: [{ name: 'a', duration: 80, ops: [{ op: 'pixel', color: '#f00' }] }, { name: 'b', duration: 120, ops: [{ op: 'pixel', x: 1, color: '#00f8' }] }], animations: { once: { frames: ['a','b'], loop: false } }, sheet: { columns: 1, padding: 1 } };
+// Whether this folder ignores letter case, asked of the file system: Windows and macOS do by default, but a folder or
+// volume can be case-sensitive.
+const ignoresCase = async dir => {
+  const probe = path.join(dir, 'case-probe');
+  await writeFile(probe, '');
+  try { await access(path.join(dir, 'CASE-PROBE')); return true; } catch { return false; } finally { await rm(probe); }
+};
 test('PNG encodes exact RGBA scanlines including transparency', () => {
   const bytes = new Uint8Array([255,0,0,255,0,0,0,0]), chunks = pngChunks(encodePNG(bytes, 2, 1));
   assert.equal(chunks[0].data.readUInt32BE(0), 2); assert.equal(chunks[0].data[9], 6);
@@ -69,6 +78,52 @@ test('a forced export replaces an earlier export of the recipe without leaving i
   await mkdir(path.join(other, 'frames')); await writeFile(path.join(other, 'frames', 'hand-drawn.png'), 'mine');
   assert.equal((await writeBundle(await createBundle(tiny), other, { force: true })).removed, undefined);
   await access(path.join(other, 'frames', 'hand-drawn.png'));
+});
+test('a forced export after a rename that only changes letter case writes the new names and keeps every file', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const spelled = (name, frame, animation) => ({ ...tiny, name, frames: [{ ...tiny.frames[0], name: frame }, tiny.frames[1]], animations: { [animation]: { frames: [frame, 'b'], loop: false } } });
+  await writeBundle(await createBundle(spelled('Sample', 'A', 'Once')), dir);
+  // Where letter case is ignored, writing frames/a.png kept the old name A.png, and the cleanup then deleted that file
+  // as the old frame's, so the export reported success with the frame and animation missing.
+  const written = await writeBundle(await createBundle(spelled('sample', 'a', 'once')), dir, { force: true });
+  for (const file of written) await access(file);
+  const frames = (await readdir(path.join(dir, 'frames'))).sort(), animations = await readdir(path.join(dir, 'animations')), top = await readdir(dir);
+  assert.ok(['a.png', 'b.png'].every(name => frames.includes(name)) && animations.includes('once.png'), [...frames, ...animations].join());
+  assert.ok(['sample.png', 'sample.atlas.json', 'sample.pixel.json'].every(name => top.includes(name)), top.join());
+  // Where case matters, Sample is another recipe, and its export stays as any other renamed recipe's does.
+  if (await ignoresCase(dir)) {
+    assert.deepEqual(frames, ['a.png', 'b.png']); assert.deepEqual(animations, ['once.png']);
+    assert.ok(!top.includes('Sample.png'), top.join()); assert.equal(written.removed, undefined);
+  }
+});
+test('a forced export never removes files Pixelbolt does not write: another extension spelling, or another name where case matters', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  await writeBundle(await createBundle(tiny), dir);
+  // Exports write .png; a photo.PNG put among the frames is someone else's, even where case is ignored.
+  await writeFile(path.join(dir, 'frames', 'photo.PNG'), 'mine');
+  assert.equal((await writeBundle(await createBundle(tiny), dir, { force: true })).removed, undefined);
+  assert.equal(await readFile(path.join(dir, 'frames', 'photo.PNG'), 'utf8'), 'mine');
+  // A case-sensitive folder on Windows (as a case-sensitive APFS volume on macOS): Sample.png beside sample.png is
+  // another file, and so are another sequence's Coin-Spin frames beside coin-spin's.
+  if (process.platform !== 'win32') return;
+  const sensitive = path.join(dir, 'sensitive'); await mkdir(sensitive);
+  if (spawnSync('fsutil.exe', ['file', 'setCaseSensitiveInfo', sensitive, 'enable'], { encoding: 'utf8' }).status !== 0) { t.diagnostic('this machine cannot make a case-sensitive folder'); return; }
+  assert.equal(await ignoresCase(sensitive), false);
+  await writeFile(path.join(sensitive, 'Sample.png'), 'mine');
+  await writeBundle(await createBundle(tiny), sensitive);
+  await writeBundle(await createBundle(tiny), sensitive, { force: true });
+  assert.equal(await readFile(path.join(sensitive, 'Sample.png'), 'utf8'), 'mine');
+  const coin = JSON.parse(await readFile(new URL('../examples/coin.json', import.meta.url), 'utf8'));
+  const named = (name, animation, seconds) => createSequence(renderProject({ ...coin, name, animations: { [animation]: coin.animations.spin } }), { fps: 10, seconds });
+  // A folder made inside a case-sensitive one is case-sensitive too.
+  const video = path.join(sensitive, 'video'); await mkdir(video);
+  assert.equal(await ignoresCase(video), false);
+  await writeBundle(named('Coin', 'Spin', 2), video);
+  await writeBundle(named('coin', 'spin', 1), video, { force: true });
+  assert.equal((await readdir(video)).filter(name => name.startsWith('Coin-Spin_')).length, 20);
+  assert.equal((await readdir(video)).filter(name => name.startsWith('coin-spin_')).length, 10);
 });
 test('an export never writes over its own inputs, even with force', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));

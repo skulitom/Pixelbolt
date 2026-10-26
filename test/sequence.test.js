@@ -9,8 +9,16 @@ import { renderProject, PixelError } from '../src/core.js';
 import { prepareScene, renderScene } from '../src/scene.js';
 import { decodePNG } from '../src/import.js';
 import { parseFrameRate, planSequence, placeSprite, createSequence, createSceneSequence, frameGrid, VIDEO_SIZES } from '../src/sequence.js';
+import { writeBundle } from '../src/export.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// Whether this folder ignores letter case, asked of the file system: Windows and macOS do by default, but a folder or
+// volume can be case-sensitive.
+const ignoresCase = async dir => {
+  const probe = path.join(dir, 'case-probe');
+  await writeFile(probe, '');
+  try { await access(path.join(dir, 'CASE-PROBE')); return true; } catch { return false; } finally { await rm(probe); }
+};
 const fps = value => parseFrameRate(value);
 // Three poses on a 2 × 1 canvas: opaque red, half-transparent green, and one pixel of blue.
 const recipe = { version: 1, name: 'probe', width: 2, height: 1, palette: { k: '#102030' }, frames: [
@@ -200,6 +208,21 @@ test('CLI sequence --force over a longer sequence removes the frames it no longe
   assert.deepEqual(left.filter(name => name.startsWith('coin-spin_')).length, 10);
   assert.ok(left.includes('other_0001.png') && left.includes('notes.txt'));
 });
+test('a forced sequence after a rename that only changes letter case keeps the new frames and removes the old extra ones', async t => {
+  const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-sequence-'));
+  t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const coin = JSON.parse(await readFile(path.join(root, 'examples', 'coin.json'), 'utf8'));
+  const named = (name, animation, seconds) => createSequence(renderProject({ ...coin, name, animations: { [animation]: coin.animations.spin } }), { fps: 10, seconds });
+  await writeBundle(named('Coin', 'Spin', 2), dir);
+  // Where letter case is ignored, Coin-Spin_0011.png and later were left behind for a 10-frame sequence.json.
+  await writeBundle(named('coin', 'spin', 1), dir, { force: true });
+  const frames = (await readdir(dir)).filter(name => name.endsWith('.png')).sort(), wanted = Array.from({ length: 10 }, (_, i) => `coin-spin_${String(i + 1).padStart(4, '0')}.png`);
+  assert.deepEqual(frames.filter(name => name.startsWith('coin-spin_')), wanted);
+  // Where case matters, Coin-Spin_*.png are another name's frames and stay, like any other renamed sequence's.
+  if (await ignoresCase(dir)) assert.deepEqual(frames, wanted);
+  assert.equal(JSON.parse(await readFile(path.join(dir, 'sequence.json'), 'utf8')).frames, 10);
+});
+
 test('MCP render and scene tools write a sequence on request, beside what they already write', async t => {
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt-sequence-mcp-'));
   t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
