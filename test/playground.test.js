@@ -11,7 +11,7 @@ import { resolveReferences } from '../src/resolve.js';
 import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
-import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback } from '../playground/lib.js';
+import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
 import { handleRequest } from '../playground/worker.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -158,6 +158,26 @@ test('a downloaded recipe always reopens, compact when indenting would pass the 
   const small = await handleRequest({ type: 'export', export: 'recipe', text: JSON.stringify(tiny), version: pin, override: engineURL.href });
   assert.equal(new TextDecoder().decode(small.files[0].data), JSON.stringify(tiny, null, 2) + '\n');
 });
+test('edits are never replaced without asking, and leaving the page asks only while there are edits', () => {
+  const listeners = new Map(), target = { addEventListener: (type, listener) => listeners.set(type, listener), removeEventListener: (type, listener) => { if (listeners.get(type) === listener) listeners.delete(type); } };
+  const questions = []; let answer = false;
+  const edits = editGuard({ ask: message => { questions.push(message); return answer; }, target });
+  // Nothing to keep: nothing is asked, and the page can leave freely (and stay in the back/forward cache).
+  assert.equal(edits.keep(), false); assert.deepEqual(questions, []); assert.equal(listeners.has('beforeunload'), false);
+  edits.set(true);
+  assert.equal(edits.keep(), true); assert.deepEqual(questions, [REPLACE_EDITS]);
+  const leaving = { prevented: false, preventDefault() { this.prevented = true; } };
+  listeners.get('beforeunload')(leaving);
+  assert.equal(leaving.prevented, true); assert.equal(leaving.returnValue, '');
+  answer = true; assert.equal(edits.keep(), false);
+  edits.set(false); assert.equal(listeners.has('beforeunload'), false); assert.equal(edits.unsaved, false);
+  // Every way a recipe replaces the editor asks first: the examples menu, opening or dropping a file, and a new link in
+  // the address bar (which used to replace the edits silently, then reopen the link over them on reload).
+  const body = name => { const start = app.indexOf(name), open = app.indexOf('{', start); let depth = 0, at = open; do { depth += app[at] === '{' ? 1 : app[at] === '}' ? -1 : 0; at++; } while (depth); return app.slice(open, at); };
+  for (const replacing of ["$('examples').addEventListener('change'", 'async function openFile(', 'function openHash(']) assert.match(body(replacing), /edits\.keep\(\)/, replacing);
+  assert.match(app, /addEventListener\('hashchange', openHash\)/);
+  assert.doesNotMatch(app, /confirm\('Replace/);
+});
 test('only a loopback page may lower the render time limit, and never raise it', () => {
   assert.equal(timeLimit('http://127.0.0.1:8000/playground/?limit=1000'), 1000);
   assert.equal(timeLimit('http://localhost/playground/?limit=99999'), 20000);
@@ -302,8 +322,8 @@ test('deploy copies only page files, inserts once, keeps second-run bytes and mt
 
 test('main-thread lifecycle handles reduced motion, stale results, errors, cancellation and the 20-second deadline', async () => {
   // This exercises the real controller without a browser or network. Pixels and workers have their own tests above.
-  const elements = new Map(), timers = new Map(), workers = [], events = new Map();
-  let timerId = 0;
+  const elements = new Map(), timers = new Map(), workers = [], events = new Map(), questions = [], addresses = [];
+  let timerId = 0, answer = true;
   class Element {
     constructor(tag) { this.tag = tag; this.value = ''; this.textContent = ''; this.children = []; this.events = new Map(); this.style = {}; this.dataset = {}; this.attributes = {}; this.classList = { add() {}, remove() {} }; }
     get options() { return this.children.flatMap(child => child.tag === 'optgroup' ? child.children : [child]); }
@@ -325,11 +345,13 @@ test('main-thread lifecycle handles reduced motion, stale results, errors, cance
   }
   const replacements = {
     document: { body, hidden: false, getElementById: id => { assert.ok(elements.has(id), id); return elements.get(id); }, createElement: tag => new Element(tag), addEventListener() {} },
-    location: { href: 'http://localhost/playground/?engine=../src/', origin: 'http://localhost', pathname: '/playground/', hash: '' },
-    history: { replaceState() {} }, Worker,
+    location: { href: 'http://localhost/playground/?engine=../src/', origin: 'http://localhost', pathname: '/playground/', search: '?engine=../src/', hash: '' },
+    history: { replaceState: (state, title, url) => addresses.push(url) }, Worker,
     matchMedia: () => ({ matches: true, addEventListener() {} }),
     requestAnimationFrame: () => {},
     addEventListener: (name, callback) => events.set(name, callback),
+    removeEventListener: (name, callback) => { if (events.get(name) === callback) events.delete(name); },
+    confirm: message => { questions.push(message); return answer; },
     fetch: async () => ({ ok: true, json: async () => manifest }),
     ImageData: class { constructor(data, width, height) { this.data = data; this.width = width; this.height = height; } },
     setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
@@ -372,13 +394,22 @@ test('main-thread lifecycle handles reduced motion, stale results, errors, cance
     assert.equal(workers[2].terminated, true); assert.equal(elements.get('error').textContent, 'Stopped: rendering cancelled.');
     assert.equal(elements.get('cancel').hidden, true);
     const before = elements.get('recipe').value;
-    globalThis.location.hash = '#r=broken'; events.get('hashchange')();
+    // The typed edits are kept by nobody yet: leaving the page asks, and so does a new link in the address bar.
+    // Declining keeps the edits and puts the address back, without loading anything.
+    assert.equal(typeof events.get('beforeunload'), 'function');
+    answer = false; globalThis.location.hash = '#r=broken'; events.get('hashchange')();
+    assert.deepEqual(questions, [REPLACE_EDITS]); assert.deepEqual(addresses, ['/playground/?engine=../src/']);
+    assert.equal(workers.length, 3); assert.equal(elements.get('recipe').value, before);
+    answer = true; events.get('hashchange')();
     workers[3].reply({ error: { name: 'ShareError', message: 'The link needs both v= and r=.' } }); await flush();
     assert.equal(elements.get('recipe').value, before);
+    assert.equal(questions.length, 2); assert.equal(typeof events.get('beforeunload'), 'function');
     // A link that names another engine version than the pin keeps the last good render until that version replies.
     const other = pin === '0.9.0' ? '0.9.1' : '0.9.0', escape = version => version.replaceAll('.', '\\.');
     globalThis.location.hash = `#v=${other}&r=valid`; events.get('hashchange')();
     workers[3].reply({ source: { text: before, version: other } });
+    // The link's recipe replaced the edits (after asking once more), so leaving no longer asks.
+    assert.equal(questions.length, 3); assert.equal(events.has('beforeunload'), false);
     assert.match(elements.get('engine-version').textContent, new RegExp(`Pixelbolt ${escape(pin)} \\(last good render\\)`));
     workers[3].reply({ result: { ...preview, version: other } }); await flush();
     assert.match(elements.get('version-message').textContent, new RegExp(`This recipe was made with Pixelbolt ${escape(other)}`));

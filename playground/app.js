@@ -1,5 +1,5 @@
 import { RECIPE_LIMIT } from './share.js';
-import { advancePlayback, engineOverride, filterExamples, formatSize, safeName, timeLimit } from './lib.js';
+import { advancePlayback, editGuard, engineOverride, filterExamples, formatSize, safeName, timeLimit } from './lib.js';
 
 export const PINNED_VERSION = '0.9.1';
 const REQUEST_TIMEOUT = timeLimit(location.href);
@@ -8,7 +8,8 @@ const editor = $('recipe'), canvas = $('preview'), context = canvas.getContext('
 const override = engineOverride(location.href), reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 let version = PINNED_VERSION, worker, pending, requestId = 0, debounce, editGeneration = 0;
 let manifest = [], rendered = null, valid = false, position = 0, playing = false, nextAt = 0;
-let downloadURLs = [], downloadTimer, zoomChosen = false, unsavedEdits = false, shownExample = '';
+let downloadURLs = [], downloadTimer, zoomChosen = false, shownExample = '', shownHash = '';
+const edits = editGuard({ ask: message => confirm(message), target: globalThis });
 // One-shot animations hold their last frame this long before playing again, as the studio's Fluid lab does.
 const HOLD = 600;
 const aborted = () => Object.assign(new Error('Superseded'), { name: 'AbortError' });
@@ -63,7 +64,7 @@ function versionLabel() {
   examplesList();
 }
 function sourceChanged(text, nextVersion) {
-  editor.value = text; version = nextVersion; valid = false; unsavedEdits = false; versionLabel();
+  editor.value = text; version = nextVersion; valid = false; edits.set(false); versionLabel();
   $('recipe-size').textContent = formatSize(new TextEncoder().encode(text).length);
 }
 function stopWorker(reason = aborted()) {
@@ -167,14 +168,14 @@ function invalidate() {
   document.body.dataset.state = 'rendering'; controls();
 }
 editor.addEventListener('input', () => {
-  invalidate(); unsavedEdits = true; $('examples').value = ''; shownExample = '';
+  invalidate(); edits.set(true); $('examples').value = ''; shownExample = '';
   $('recipe-size').textContent = formatSize(new TextEncoder().encode(editor.value).length);
   setStatus('Waiting for edits…'); debounce = setTimeout(renderEdit, 300);
 });
 $('examples').addEventListener('change', () => {
   if (!$('examples').value) return;
   // A keyboard arrow on the closed menu also changes it, so edits are never dropped silently.
-  if (unsavedEdits && !confirm('Replace your edited recipe? Download it or copy its link first if you want to keep it.')) { $('examples').value = shownExample; return; }
+  if (edits.keep()) { $('examples').value = shownExample; return; }
   shownExample = $('examples').value;
   invalidate(); runRender('example', { file: shownExample });
 });
@@ -189,7 +190,7 @@ $('cancel').addEventListener('click', () => { editGeneration++; clearTimeout(deb
 $('retry').addEventListener('click', renderEdit);
 
 async function openFile(file) {
-  if (!file) return;
+  if (!file || edits.keep()) return;
   invalidate(); const generation = editGeneration;
   try {
     if (/\.png$/i.test(file.name) || file.type === 'image/png') {
@@ -224,7 +225,8 @@ $('copy-link').addEventListener('click', async () => {
     const result = await request('share', { base: location.origin + location.pathname });
     if (generation !== editGeneration) return;
     $('share-link').value = result.link;
-    history.replaceState(null, '', result.link);
+    // The link holds the edits, so they are kept, and the address now names them.
+    history.replaceState(null, '', result.link); shownHash = location.hash; edits.set(false);
     document.body.dataset.state = 'ready'; controls();
     $('share-error').hidden = true;
     try { await navigator.clipboard.writeText(result.link); if (generation === editGeneration) setStatus('Share link copied.'); }
@@ -262,6 +264,7 @@ for (const kind of ['frame', 'sheet', 'gif', 'atlas', 'recipe']) $(`export-${kin
   try {
     const result = await request('export', { export: kind, frame: frameIndex(), animation: $('animation').value, scale: Number($('gif-scale').value) });
     download(result.files); document.body.dataset.state = valid ? 'ready' : 'error'; controls();
+    if (kind === 'recipe') edits.set(false);
     setStatus(`Download ready.${kind === 'atlas' ? ' If only one file downloaded, use the file links below (available for two minutes).' : ''}${result.warnings.length ? ` ${result.warnings.join(' ')}` : ''}`);
     if (result.warnings.length) $('warnings').textContent = [...(rendered?.warnings ?? []), ...result.warnings].join('\n');
   } catch (error) { if (error.name !== 'AbortError') errorMessage(error.message, false); }
@@ -301,8 +304,12 @@ function tick(now) {
 document.addEventListener('visibilitychange', () => { nextAt = 0; });
 reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) { playing = false; controls(); } });
 addEventListener('pagehide', () => { clearDownloads(); stopWorker(); });
+// A link pasted into this tab, or Back and Forward between links, opens that recipe, but never over edits without
+// asking: keeping them puts the address back as it was, which opens nothing.
 function openHash() {
   if (!location.hash) return false;
+  if (edits.keep()) { history.replaceState(null, '', shownHash || location.pathname + location.search); return false; }
+  shownHash = location.hash;
   invalidate(); runRender('link', { hash: location.hash }); return true;
 }
 addEventListener('hashchange', openHash);

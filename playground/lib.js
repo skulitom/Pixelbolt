@@ -35,6 +35,25 @@ export function advancePlayback({ position, nextAt, now, durations, loop, hold =
   return { position, nextAt, moved };
 }
 
+// Edits nobody has kept yet (by downloading the recipe or copying its link). Whatever would replace the recipe asks
+// first through `keep()`, which is true when the person chose to keep their edits; and while there are edits, leaving
+// or reloading the page asks too. That listener is only on `target` while needed: a page with one can't be kept in the
+// browser's back/forward cache.
+export const REPLACE_EDITS = 'Replace your edited recipe? Download it or copy its link first if you want to keep it.';
+export function editGuard({ ask, target }) {
+  let unsaved = false;
+  const warn = event => { event.preventDefault(); event.returnValue = ''; };
+  return {
+    get unsaved() { return unsaved; },
+    set(value) {
+      if (value === unsaved) return;
+      unsaved = value;
+      if (value) target.addEventListener('beforeunload', warn); else target.removeEventListener('beforeunload', warn);
+    },
+    keep: () => unsaved && !ask(REPLACE_EDITS)
+  };
+}
+
 // The render time limit. `?limit=<ms>` (100 to 20000) lowers it for tests, and only on a loopback page, so a shared
 // link can't change it for anyone else.
 export function timeLimit(pageURL, fallback = 20000) {
