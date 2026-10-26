@@ -570,8 +570,59 @@ try {
     return `light moved to ${to.join(', ')}`;
   });
 
-  console.log('Fluid lab');
+  console.log('Baked wave effects');
+  await studio.goto(`${origin}/`); await ready();
+  await check('both wave presets match Node recipes and every RGBA frame in the browser', async () => {
+    const { compileWaves } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'wave.js')));
+    const sha = data => createHash('sha256').update(data).digest('hex'), hashes = [];
+    for (const name of ['interference', 'portal']) {
+      const source = JSON.parse(await readFile(path.join(path.resolve(options.app), 'examples', `${name}.wave.json`), 'utf8'));
+      const compiled = compileWaves(source), project = renderProject(compiled.recipe);
+      const expected = { compiled: sha(JSON.stringify(compiled)), rgba: project.frames.map(f => sha(f.data)) };
+      const actual = await evaluate(`(async () => {
+        const { compileWaves } = await import('/wave.js'), { renderProject } = await import('/core.js');
+        const source = await (await fetch('/examples/${name}.wave.json')).json(), compiled = compileWaves(source), project = renderProject(compiled.recipe);
+        const sha = async data => [...new Uint8Array(await crypto.subtle.digest('SHA-256', data))].map(n => n.toString(16).padStart(2, '0')).join('');
+        return { compiled: await sha(new TextEncoder().encode(JSON.stringify(compiled))), rgba: await Promise.all(project.frames.map(f => sha(f.data))) };
+      })()`);
+      assert.deepEqual(actual, expected, name); hashes.push({ name, ...actual });
+    }
+    await writeFile(path.join(kept, 'wave-browser-hashes.json'), JSON.stringify(hashes, null, 2));
+    return '80 RGBA frames plus recipes, metadata and warnings';
+  });
+  await check('wave source edits play, save as source and export as ordinary assets; pose controls stay disabled', async () => {
+    const source = JSON.parse(await readFile(path.join(path.resolve(options.app), 'examples', 'portal.wave.json'), 'utf8'));
+    await type(JSON.stringify(source));
+    await until(`document.getElementById('source-filename').textContent === 'portal.wave.json' && document.getElementById('timeline').children.length === 40`, 'the portal wave source');
+    assert.equal(await evaluate(`document.getElementById('error').hidden`), true);
+    assert.equal(await evaluate(`document.getElementById('motion-view').disabled`), true);
+    assert.equal(await evaluate(`document.getElementById('contacts').disabled`), true);
+    await click('#timeline .frame:nth-child(1)'); const before = await canvas();
+    source.effects.open.sources[0].phase = 90;
+    await type(JSON.stringify(source)); await click('#timeline .frame:nth-child(1)');
+    assert.notEqual((await canvas()).hash, before.hash);
+    if (await evaluate(`document.getElementById('play').getAttribute('aria-label') === 'Play animation'`)) await click('#play');
+    const counter = await text('frame-counter'); await until(`document.getElementById('frame-counter').textContent !== ${JSON.stringify(counter)}`, 'the portal animation to advance');
+    await click('#timeline .frame:nth-child(1)');
+    const saved = await download(() => click('#save'));
+    assert.match(saved, /portal\.wave\.json$/); assert.deepEqual(JSON.parse(await readFile(saved, 'utf8')), source);
+    const zip = readZip(await readFile(await download(() => click('#export'))));
+    const recipeFile = [...zip.keys()].find(name => name.endsWith('.pixel.json'));
+    const exported = JSON.parse(zip.get(recipeFile).read().toString());
+    assert.equal(exported.format, undefined); assert.equal(exported.frames.length, 40);
+    assert.ok(exported.frames.every(frame => frame.layers.some(layer => layer.name === 'wave')));
+    await choose('zoom', '4'); await studio.shot('wave-portal');
+    await studio.size(390, 844);
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'wave source overflows the narrow studio');
+    await studio.shot('wave-narrow'); await studio.size(1440, 900);
+    source.effects.open.sources[0].cycles = 1.5; await type(JSON.stringify(source));
+    await until(`!document.getElementById('error').hidden`, 'the invalid wave cycle error');
+    assert.match(await text('error'), /wave\.effects\.open\.sources\[0\]\.cycles/);
+    assert.equal(await evaluate(`document.getElementById('export').disabled`), true);
+  });
+
   // The lab compiles fluid sources in the page with src/fluid.js; its status line names the time the simulation took.
+  console.log('Fluid lab');
   const simulated = () => until(`document.getElementById('status').textContent.includes('simulated in')`, 'the fluid lab to finish simulating');
   const labPixels = `(() => { const c = document.getElementById('canvas'), d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let h = 0; for (let i = 0; i < d.length; i++) h = (Math.imul(h, 31) + d[i]) >>> 0; return h; })()`;
   await check('the fluid lab lists its presets, simulates the first in the browser and plays it', async () => {

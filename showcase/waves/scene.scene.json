@@ -1,0 +1,148 @@
+{
+  "format": "pixelforge-scene",
+  "version": 1,
+  "name": "wave-headland",
+  "width": 240,
+  "height": 160,
+  "duration": 2400,
+  "background": "#213f7a",
+  "assets": {
+    "water": "../tidewatch/art/recipes/water.json",
+    "shore": "../tidewatch/art/recipes/shore.json",
+    "grass": "../tidewatch/art/recipes/grass.json",
+    "props": "../tidewatch/art/recipes/props.json",
+    "flora": "../tidewatch/art/recipes/flora.json",
+    "rocks": "../tidewatch/art/recipes/rocks.json",
+    "keeper": "../tidewatch/art/recipes/keeper.json",
+    "lighthouse": {
+      "recipe": "../tidewatch/art/recipes/lighthouse.json",
+      "normal": "../tidewatch/art/recipes/lighthouse-normal.json",
+      "emissive": "../tidewatch/art/recipes/lighthouse-emissive.json"
+    },
+    "lamp": {
+      "recipe": "../tidewatch/art/recipes/lamp.json",
+      "normal": "../tidewatch/art/recipes/lamp-normal.json",
+      "emissive": "../tidewatch/art/recipes/lamp-emissive.json"
+    },
+    "interference": "interference.json",
+    "portal": "portal.json"
+  },
+  "instances": [
+    {
+      "name": "sea",
+      "asset": "water",
+      "at": [0, 0],
+      "tilemap": {
+        "rows": [
+          "abcabcabcabcabc",
+          "acbbacbaacbaccb",
+          "abbcccaabbbccaa",
+          "bcbababacacacbc",
+          "bbbbaaaaacccccb",
+          "cabcabcabcabcab",
+          "cbaacbaccbacbba",
+          "caabbbccaaabbcc",
+          "abacacacbcbcbab",
+          "aaaacccccbbbbba"
+        ],
+        "legend": {
+          "a": { "animation": "shimmer-a" },
+          "b": { "animation": "shimmer-b" },
+          "c": { "animation": "shimmer-c" }
+        }
+      }
+    },
+    {
+      "name": "sand",
+      "asset": "shore",
+      "at": [-16, -16],
+      "tilemap": {
+        "rows": [
+          ".................",
+          ".................",
+          ".................",
+          "......ssssss.....",
+          "....ssssssssss...",
+          "...ssssssssssss..",
+          "..ssssssssssssss.",
+          "..ssssssssssssss.",
+          "..ssssssssssssss.",
+          "..ssssssssssssss.",
+          "...ssssssssssss..",
+          "....SSSSSSSSSS..."
+        ],
+        "legend": { "s": { "animation": "surf-{mask}", "autotile": "blob", "match": "sS" }, "S": null }
+      }
+    },
+    {
+      "name": "turf",
+      "asset": "grass",
+      "at": [-16, -16],
+      "tilemap": {
+        "rows": [
+          ".................",
+          ".................",
+          ".................",
+          ".................",
+          ".................",
+          "......gggggg.....",
+          "....gggggggggg...",
+          "....gggggggggg...",
+          "....gggggggggg...",
+          "....gggg..gggg...",
+          ".....ggg..ggg....",
+          "......GG..GG....."
+        ],
+        "legend": { "g": { "frame": "grass-{mask}", "autotile": "blob", "match": "gG" }, "G": null }
+      }
+    },
+    { "name": "lamp", "asset": "lamp", "at": [168, 64], "anchor": "frame", "animation": "on" },
+    { "name": "rock", "asset": "props", "at": [56, 64], "anchor": "frame", "frame": "rock" },
+    { "name": "rock", "asset": "props", "at": [200, 64], "anchor": "frame", "frame": "rock" },
+    { "name": "bush", "asset": "props", "at": [72, 96], "anchor": "frame", "frame": "bush" },
+    { "name": "flower-red", "asset": "props", "at": [120, 96], "anchor": "frame", "frame": "flower-red" },
+    { "name": "boulder-b", "asset": "rocks", "at": [36, 96], "anchor": "frame", "frame": "boulder-b" },
+    { "name": "flower-red", "asset": "props", "at": [88, 112], "anchor": "frame", "frame": "flower-red" },
+    { "name": "boulder-a", "asset": "rocks", "at": [232, 112], "anchor": "frame", "frame": "boulder-a" },
+    { "name": "grass", "asset": "props", "at": [72, 128], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [88, 128], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "lighthouse", "asset": "lighthouse", "at": [128, 144], "anchor": "frame", "animation": "night" },
+    { "name": "rock", "asset": "props", "at": [40, 160], "anchor": "frame", "frame": "rock" },
+    { "name": "lamp", "asset": "lamp", "at": [168, 208], "anchor": "frame", "animation": "on" },
+    { "name": "pot", "asset": "props", "at": [72, 208], "anchor": "frame", "frame": "pot" },
+    { "name": "oak", "asset": "flora", "at": [-8, 224], "anchor": "frame", "frame": "oak-0" },
+    { "name": "bush", "asset": "props", "at": [264, 224], "anchor": "frame", "frame": "bush" },
+    { "name": "bush", "asset": "props", "at": [88, 224], "anchor": "frame", "frame": "bush" },
+    { "name": "bush", "asset": "props", "at": [200, 224], "anchor": "frame", "frame": "bush" },
+    { "name": "bush", "asset": "props", "at": [248, 240], "anchor": "frame", "frame": "bush" },
+    { "name": "lamp", "asset": "lamp", "at": [24, 256], "anchor": "frame", "animation": "on" },
+    { "name": "oak", "asset": "flora", "at": [232, 256], "anchor": "frame", "frame": "oak-0" },
+    { "name": "flower-violet", "asset": "props", "at": [104, 256], "anchor": "frame", "frame": "flower-violet" },
+    { "name": "grass", "asset": "props", "at": [184, 272], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [200, 272], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [216, 272], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "pot", "asset": "props", "at": [8, 272], "anchor": "frame", "frame": "pot" },
+    { "name": "pot", "asset": "props", "at": [24, 272], "anchor": "frame", "frame": "pot" },
+    { "name": "grass", "asset": "props", "at": [24, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [40, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [56, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [200, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [216, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "grass", "asset": "props", "at": [232, 288], "anchor": "frame", "animation": "grass-sway" },
+    { "name": "flower-red", "asset": "props", "at": [-24, 288], "anchor": "frame", "frame": "flower-red" },
+    { "name": "keeper", "asset": "keeper", "animation": "idle-u", "at": [152, 134], "anchor": "frame" },
+    { "asset": "interference", "at": [69, 113], "anchor": "frame", "animation": "resonate", "lit": false },
+    { "asset": "portal", "at": [186, 121], "anchor": "frame", "animation": "open", "lit": false }
+  ],
+  "lighting": {
+    "ambient": 0.46,
+    "bands": 4,
+    "scope": "all",
+    "lights": [
+      { "at": [128, 46], "height": 40, "radius": 130, "color": "#ffe8a0" },
+      { "at": [168, 40], "height": 14, "radius": 64, "color": "#ffb866" },
+      { "at": [168, 184], "height": 14, "radius": 64, "color": "#ffb866" },
+      { "at": [24, 232], "height": 14, "radius": 64, "color": "#ffb866" }
+    ]
+  }
+}

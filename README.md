@@ -55,6 +55,20 @@ node bin/pixelbolt.js inspect character.poses.json --motion run --speed 48
 
 [Pose and motion reference](docs/art-workflow.md#structural-limbs-and-bodies)
 
+## Baked wave effects
+
+Looping interference and portal interiors combine waves before colouring them, leaving cancellation gaps between bright bands. Two editable presets bake to ordinary sprite frames and appear in the studio's sample list. The game only plays the exported animation.
+
+![Paired cyan waves and a violet portal in a Tidewatch game scene](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/waves/scene.gif)
+
+```sh
+node bin/pixelbolt.js preview examples/portal.wave.json --open
+node bin/pixelbolt.js compile examples/portal.wave.json --out output/portal.json
+node bin/pixelbolt.js render output/portal.json --out output/portal-assets
+```
+
+[Wave controls and limits](docs/wave-effects.md) · [Scene comparison and review](https://github.com/skulitom/Pixelbolt/blob/main/showcase/waves/README.md). Loops only; masks shape the artwork without simulating reflection or collision.
+
 ## Gallery
 
 An AI agent drew these with Pixelbolt. Its scripts write the recipes, particle sources and scenes; Pixelbolt renders every sprite to a transparent sheet with an atlas, plays each 240×135 room as a scene and writes the GIFs. They are shown at 3×.
