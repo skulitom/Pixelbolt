@@ -38,6 +38,15 @@ test('APNG contains exact durations, loop flag and source replacement', () => {
   assert.deepEqual(controls.map(c => c.data[25]), [0,0]);
   assert.deepEqual([...inflateSync(chunks.find(c => c.type === 'fdAT').data.subarray(4))], [0,0,0,0,0]);
 });
+test('animated PNGs give frames of 10 ms or less 11 ms, which browsers play as written, and say so', async () => {
+  // Browsers play an animation frame of 10 ms or less at 100 ms, so a 5 ms spark flickered ten times too slowly.
+  const quick = { ...tiny, frames: [{ ...tiny.frames[0], duration: 5 }, { ...tiny.frames[1], duration: 11 }], animations: { once: { frames: ['a', 'b', 'a'], loop: false } } };
+  const bundle = await createBundle(quick), delays = pngChunks(bundle.files.get('animations/once.png')).filter(c => c.type === 'fcTL').map(c => c.data.readUInt16BE(20));
+  assert.deepEqual(delays, [11, 11, 11]);
+  assert.deepEqual(Object.values(JSON.parse(bundle.files.get('sample.atlas.json')).frames).map(frame => frame.duration), [5, 11]);
+  assert.deepEqual(bundle.project.warnings, ['1 frame of 10 ms or less (a) last 11 ms in the animated PNGs: browsers play such short frames at 100 ms. The atlas, CSS and player keep the exact durations.']);
+  assert.deepEqual((await createBundle(tiny)).project.warnings, []);
+});
 test('bundle emits CSS for variable duration and multi-row atlas', async () => {
   const bundle = await createBundle(tiny), css = bundle.files.get('sample.css').toString();
   assert.match(css, /200ms steps\(1, end\) 1 forwards/);

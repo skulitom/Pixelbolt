@@ -67,7 +67,16 @@ export async function createBundle(spec) {
   files.set(`${name}.css`, Buffer.from(generateCSS(project, atlas)));
   const scaledFrames = frames.map(f => ({ ...f, data: scalePixels(f.data, width, height, sheet.scale) }));
   for (const frame of scaledFrames) files.set(`frames/${frame.name}.png`, encodePNG(frame.data, width * sheet.scale, height * sheet.scale));
-  for (const [key, anim] of Object.entries(project.animations)) files.set(`animations/${key}.png`, encodeAPNG(anim.frames.map(i => scaledFrames[i]), width * sheet.scale, height * sheet.scale, anim.loop));
+  // Browsers play an animation frame of 10 ms or less at 100 ms, ten times too slow, so the APNGs give such frames
+  // 11 ms, the shortest that plays as written. The atlas, CSS and Canvas player keep the exact durations.
+  const raised = new Set();
+  for (const [key, anim] of Object.entries(project.animations)) files.set(`animations/${key}.png`, encodeAPNG(anim.frames.map(i => {
+    const frame = scaledFrames[i];
+    if (frame.duration > 10) return frame;
+    raised.add(frame.name);
+    return { ...frame, duration: 11 };
+  }), width * sheet.scale, height * sheet.scale, anim.loop));
+  if (raised.size) project.warnings.push(`${raised.size} frame${raised.size === 1 ? '' : 's'} of 10 ms or less (${[...raised].slice(0, 8).join(', ')}${raised.size > 8 ? ', …' : ''}) last 11 ms in the animated PNGs: browsers play such short frames at 100 ms. The atlas, CSS and player keep the exact durations.`);
   files.set('player.js', await readFile(new URL('./runtime.js', import.meta.url)));
   files.set('preview.html', Buffer.from(previewHTML(project)));
   files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames and named animation sequences\n${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
