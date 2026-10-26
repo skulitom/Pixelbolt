@@ -136,7 +136,8 @@ export function createToolRunner({ directory, root, version }) {
     if (saveAs === null || typeof saveAs !== 'object' || Array.isArray(saveAs) || !Object.keys(saveAs).length) throw new PixelError('saveAs', 'expected an object such as { "sheet": "assets/hero.png", "gif": "assets/hero.gif" }');
     if (overwrite !== undefined && typeof overwrite !== 'boolean') throw new PixelError('overwrite', 'expected a boolean');
     const { project } = bundle, base = path.resolve(root), realBase = await realpath(base), store = await canonical(path.join(path.resolve(directory), '.revisions')), exportDirectory = await canonical(path.resolve(directory));
-    const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file))));
+    // A source that can't be resolved any more (a disconnected drive, a dangling link) is compared as written.
+    const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file)).catch(() => path.resolve(root, file))));
     const names = Object.keys(project.animations), only = animation ?? (names.length === 1 ? names[0] : undefined);
     const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
     const plan = [], seen = new Set();
@@ -146,6 +147,7 @@ export function createToolRunner({ directory, root, version }) {
       const file = Object.hasOwn(aliases, key) ? aliases[key] : key;
       const bytes = file.startsWith('gifs/') ? gifs.find(item => `gifs/${item.animation}.gif` === file)?.data : file.startsWith('sequence/') ? sequence?.files.get(file.slice(9)) : bundle.files.get(file);
       if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
+      if (/\.(css|html)$/i.test(file)) throw new PixelError(where, `${file} loads other export files by relative path, so a copy elsewhere would show nothing: save the files it uses (sheet, atlas, animations) instead, and keep ${file} in the export folder`);
       if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
       const type = path.extname(file).toLowerCase();
       if (path.extname(target).toLowerCase() !== type) throw new PixelError(where, `${file} is a ${type} file: give a path ending in ${type}`);
@@ -195,9 +197,11 @@ export function createToolRunner({ directory, root, version }) {
   // replaces nothing. Then each goes in place. A file being replaced first gets a second name (a hard link, or a copy
   // where links aren't supported) holding its old bytes, and the new file is renamed over it in one step, so the
   // destination is never missing, even if the call is stopped; a hard link to the old file keeps the old bytes. A new
-  // file is copied only if nothing is there yet. If a step fails, what was already put in place is undone: replaced
-  // files get their old bytes back and new copies are removed.
+  // file is copied only if nothing is there yet. If a step fails, what this call put in place is undone (replaced
+  // files get their old bytes back, new copies are removed), but only where the file is still the one it placed, so
+  // another server's later write is never undone.
   const temporaryIn = folder => path.join(folder, `.pixelbolt-${randomUUID()}.tmp`);
+  const identity = async file => { const info = await stat(file, { bigint: true }).catch(() => null); return info && `${info.dev}:${info.ino}`; };
   const writeSaves = async (saves, replace, bytesOf) => {
     const staged = [], undo = [], backups = [];
     try {
@@ -207,24 +211,26 @@ export function createToolRunner({ directory, root, version }) {
         await writeFile(staged.at(-1), bytesOf(item), { flag: 'wx' });
       }
       for (const [index, item] of saves.entries()) {
-        if (!replace) {
-          await copyFile(staged[index], item.destination, constants.COPYFILE_EXCL);
-          undo.push(() => rm(item.destination, { force: true }));
-          continue;
+        let backup = null;
+        if (!replace) await copyFile(staged[index], item.destination, constants.COPYFILE_EXCL);
+        else {
+          if (await entry(item.destination)) {
+            backup = temporaryIn(path.dirname(item.destination));
+            await link(item.destination, backup).catch(() => copyFile(item.destination, backup, constants.COPYFILE_EXCL));
+            backups.push(backup);
+          }
+          await rename(staged[index], item.destination);
         }
-        if (await entry(item.destination)) {
-          const backup = temporaryIn(path.dirname(item.destination));
-          await link(item.destination, backup).catch(() => copyFile(item.destination, backup, constants.COPYFILE_EXCL));
-          backups.push(backup);
-          undo.push(() => rename(backup, item.destination));
-        } else undo.push(() => rm(item.destination, { force: true }));
-        await rename(staged[index], item.destination);
+        const placed = await identity(item.destination);
+        undo.push(async () => {
+          if (placed === null || await identity(item.destination) !== placed) return;
+          if (backup) await rename(backup, item.destination); else await rm(item.destination, { force: true });
+        });
       }
     } catch (error) {
       for (const step of undo.reverse()) await step().catch(() => {});
       throw error;
-    } finally { await Promise.all(staged.map(file => rm(file, { force: true }))); }
-    await Promise.all(backups.map(file => rm(file, { force: true })));
+    } finally { await Promise.all([...staged, ...backups].map(file => rm(file, { force: true }))); }
   };
   return async function runTool(name, args) {
     try {

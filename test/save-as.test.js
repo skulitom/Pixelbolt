@@ -292,3 +292,29 @@ test('pixel_render saveAs protects a revision\'s files through a server with ano
   assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
   assert.deepEqual(JSON.parse(await readFile(path.join(game, 'assets', 'palette.json'), 'utf8')), spirit.palette);
 });
+
+test('pixel_render saveAs keeps the CSS and preview page, which load other files, in the export folder', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  for (const file of ['forest-spirit.css', 'preview.html']) {
+    const { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet: 'assets/custom.png', [file]: `assets/${file}` } });
+    assert.deepEqual([isError, info.path], [true, `saveAs.${file}`], JSON.stringify(info));
+    assert.match(info.error, /loads other export files by relative path/);
+  }
+  assert.deepEqual(await readdir(project), []);
+});
+
+test('pixel_render saveAs still saves a revision whose recorded source can\'t be reached any more', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  await writeFile(path.join(project, 'palette.json'), JSON.stringify(spirit.palette));
+  const validated = await mcp.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'palette.json' } } });
+  // A recorded source behind a link whose target is gone, as on a disconnected drive.
+  await mkdir(path.join(project, 'gone'));
+  await symlink(path.join(project, 'gone'), path.join(project, 'link'), 'junction');
+  await rm(path.join(project, 'gone'), { recursive: true });
+  await writeFile(path.join(project, 'output', '.revisions', `${validated.info.revision}.sources`), JSON.stringify(path.join(project, 'link', 'palette.json')) + '\n', { flag: 'a' });
+  const { isError, info } = await mcp.render({ revision: validated.info.revision, saveAs: { sheet: 'hero.png' } });
+  assert.equal(isError, false, JSON.stringify(info));
+  // The reachable source is still protected.
+  const refused = await mcp.render({ revision: validated.info.revision, saveAs: { recipe: 'palette.json' }, overwrite: true });
+  assert.deepEqual([refused.isError, refused.info.path], [true, 'saveAs.recipe'], JSON.stringify(refused.info));
+});
