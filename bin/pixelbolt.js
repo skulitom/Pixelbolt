@@ -3,6 +3,7 @@ import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
+import { compileWaves } from '../src/wave.js';
 import { readExpect, checkDelivery } from '../src/check.js';
 import { embedBundleRecipe, sameFiles } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
@@ -31,7 +32,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            Numbered PNG frames for a video editor, at a constant frame rate
   pixelbolt compile <source.json> --out recipe.json [--metadata meta.json]
                                            Build a recipe from authored poses, an autotile template, particle effects,
-                                           a fluid source (simulated smoke, fire, explosions, magic and water) or a
+                                           a wave source (looping interference and portals), a fluid source (smoke, fire,
+                                           explosions, magic and water) or a
                                            normals source (a lighting normal pass derived from a colour recipe)
   pixelbolt compile <source.json> --expand [--out expanded.poses.json]
                                            Print editable poses with motion templates expanded
@@ -111,7 +113,7 @@ const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.fil
 const removedBy = files => (files.removed ? { removed: files.removed } : {});
 // The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
 // and a scene's assets do not).
-const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'project'];
+const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'wave', 'project'];
 // Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
 function linkPalette(recipe, input, outFile) {
   const link = input.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where));
@@ -147,7 +149,7 @@ async function writeOutputs(targets, force, inputs = []) {
   return Object.fromEntries(entries.map(([label, target]) => [label, target]));
 }
 // Sidecar sources compile by their format; `autotile` remains a dedicated command for templates.
-const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-normals': compileNormals };
+const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-normals': compileNormals };
 const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
 const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files } : {};
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -189,9 +191,9 @@ try {
       // The studio shows and saves documents as written, so the files they name stay named: a scene's light settings are
       // saved into the scene, and Save JSON writes a recipe or pose source with its link to a shared palette file.
       let project = input?.document, source = input?.original;
-      // Preserve editable poses and their contact metadata; other authoring formats open as compiled recipes, which keep
+      // Preserve editable pose and wave sources; other authoring formats open as compiled recipes, which keep
       // the link as `pixelbolt compile` writes it beside the source.
-      if (project && project.format !== 'pixelforge-poses' && Object.hasOwn(COMPILERS, project.format ?? '')) {
+      if (project && !['pixelforge-poses', 'pixelforge-wave'].includes(project.format) && Object.hasOwn(COMPILERS, project.format ?? '')) {
         project = COMPILERS[project.format](project).recipe; source = linkPalette(project, input, input.file);
       }
       // The page draws a linked recipe with the palette file as read here; it reads no file itself.
@@ -207,8 +209,11 @@ try {
       if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force, inputsOf(input)), ...referenced(input) }));
       else process.stdout.write(formatJSON(expanded));
     } else if (command === 'share') {
-      const input = await readResolved(positional[0]), version = await engineVersion(), link = await shareLink(input.document, version);
-      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(input.document) }));
+      const input = await readResolved(positional[0]), version = await engineVersion();
+      // The hosted playground can play these ordinary grids even before its engine gains wave sources.
+      const document = input.document?.format === 'pixelforge-wave' ? compileWaves(input.document).recipe : input.document;
+      const link = await shareLink(document, version);
+      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(document !== input.document && { compiledFrom: 'pixelforge-wave' }) }));
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
@@ -251,7 +256,8 @@ try {
       if ([positional[0], options.reference, options.metadata].filter(file => file === '-').length > 1) throw new Error('Only one inspection input can use stdin');
       if (!options.motion && ['speed', 'ground', 'metadata'].some(key => options[key] !== undefined)) throw new Error('--speed, --ground and --metadata require --motion');
       if (options.motion) for (const key of ['frames', 'animation', 'region', 'grid', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --motion`);
-      const input = await readResolved(positional[0]), compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : null;
+      const input = await readResolved(positional[0]), compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : input.document.format === 'pixelforge-wave' ? compileWaves(input.document) : null;
+      if (input.document.format === 'pixelforge-wave' && options.motion) throw new Error('--motion reviews character poses; inspect a wave without --motion');
       if (compiled && options.metadata) throw new Error('A pose source supplies its own metadata; omit --metadata');
       const project = renderProject(compiled?.recipe ?? input.document, layerOptions);
       const comparison = options.reference ? compareProjects(renderProject((await readResolved(options.reference)).document, layerOptions), project) : undefined;
@@ -262,7 +268,7 @@ try {
       if (options.out && !/\.png$/i.test(options.out)) throw new Error('inspect --out must name a .png file');
       const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height)], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height)] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height)] }) } : {}, options.force, [...inputsOf(input), ...filesRead(options.reference, options.metadata)]);
       // Pretty-printed so grid rows line up for reading.
-      console.log(JSON.stringify({ ok: true, ...summary(project), ...view, sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(comparison && { comparison: comparisonReport }), ...written, ...referenced(input) }, null, 2));
+      console.log(JSON.stringify({ ok: true, ...summary(project), ...view, warnings: [...(compiled?.warnings ?? []), ...project.warnings], sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(comparison && { comparison: comparisonReport }), ...written, ...referenced(input) }, null, 2));
     } else if (command === 'patch') {
       if (!options.changes) throw new Error('patch requires --changes <file.json|->');
       if (positional[0] === '-' && options.changes === '-') throw new Error('Only one of the project and --changes can be read from stdin');

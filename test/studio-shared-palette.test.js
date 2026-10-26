@@ -63,7 +63,7 @@ test('the studio is given a linked recipe as written, so Save JSON keeps its $re
   const script = await readFile(path.join(root, 'studio', 'studio.js'), 'utf8');
   assert.match(script, /\[initial, linked\] = await Promise\.all\(\[fetch\('\/project\.json'\), fetch\('\/shared-palette\.json'\)\]/);
   assert.match(script, /if \(initial\) setSource\(initial\);/);
-  assert.match(script, /\$\('save'\)\.addEventListener\('click', \(\) => \{\s*const filename = [^\n]+\s*download\(source\.value, filename/);
+  assert.match(script, /\$\('save'\)\.addEventListener\('click', \(\) => \{[\s\S]*?download\(source\.value, filename/);
 });
 test('a pose source that links a shared palette keeps the link as written, and draws as the CLI compiles it', async t => {
   const dir = await folder(t), rig = heroRig(), source = { ...rig, palette: { $ref: './colours.json', w: '#ffffff' } };

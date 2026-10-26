@@ -2,6 +2,7 @@ import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, anima
 import { animationGIF } from '/gif.js';
 import { createDraftStore, claimTab, openTabs } from '/draft.js';
 import { compilePoses } from '/authoring.js';
+import { compileWaves } from '/wave.js';
 import { inspectMotion } from '/motion.js';
 
 const $ = id => document.getElementById(id);
@@ -17,12 +18,12 @@ let sharedPalette = null;
 const isLinked = value => value?.palette !== null && typeof value?.palette === 'object' && Object.hasOwn(value.palette, '$ref');
 function withSharedPalette(value) {
   if (!isLinked(value)) return value;
-  const where = `${value.format === 'pixelforge-poses' ? 'poses' : 'project'}.palette.$ref`, reference = JSON.stringify(value.palette.$ref);
+  const where = `${value.format === 'pixelforge-poses' ? 'poses' : value.format === 'pixelforge-wave' ? 'wave' : 'project'}.palette.$ref`, reference = JSON.stringify(value.palette.$ref);
   if (!sharedPalette) throw new Error(`${where}: the studio reads a shared palette file only for the recipe pixelbolt preview opened, so it cannot draw ${reference}. Open this recipe with pixelbolt preview <file>, or put its colours in the palette.`);
   if (sharedPalette.$ref !== value.palette.$ref) throw new Error(`${where}: the studio has only ${JSON.stringify(sharedPalette.$ref)}, the palette file of the recipe pixelbolt preview opened, so it cannot draw ${reference}. Open this recipe with pixelbolt preview <file>.`);
   return inlineSharedPalette(value, sharedPalette);
 }
-const compileSource = value => { const drawn = withSharedPalette(value); return drawn?.format === 'pixelforge-poses' ? compilePoses(drawn) : { recipe: drawn, metadata: null }; };
+const compileSource = value => { const drawn = withSharedPalette(value); return drawn?.format === 'pixelforge-poses' ? compilePoses(drawn) : drawn?.format === 'pixelforge-wave' ? compileWaves(drawn) : { recipe: drawn, metadata: null }; };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
 // The recipe text last sent to Save JSON. The page cannot tell whether the browser kept that file or the save was
 // cancelled, so it stays `dirty`: the draft is kept and leaving or replacing the recipe still asks.
@@ -35,7 +36,7 @@ const browserStorage = name => { try { return globalThis[name]; } catch { return
 const locks = navigator.locks ?? null, claimed = claimTab(browserStorage('sessionStorage'), locks);
 let drafts = null, offer = null, offers = [], draftTimer, draftWarned = false;
 const ownOffer = () => offer !== null && offer.id === drafts.id;
-const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character · 6 frames' }, { file: 'ember', title: 'Campfire', type: 'Effect · 4 frames' }, { file: 'coin', title: 'Golden coin', type: 'Collectible · 6 frames' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light · 2 frames' }, { file: 'caption', title: 'Caption', type: 'Text, for video · 8 frames' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses · 5 frames' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx · 57 frames' }];
+const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character · 6 frames' }, { file: 'ember', title: 'Campfire', type: 'Effect · 4 frames' }, { file: 'coin', title: 'Golden coin', type: 'Collectible · 6 frames' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light · 2 frames' }, { file: 'caption', title: 'Caption', type: 'Text, for video · 8 frames' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses · 5 frames' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx · 57 frames' }, { file: 'interference.wave', title: 'Interference', type: 'Paired ripples · 40 frames' }, { file: 'portal.wave', title: 'Portal', type: 'Moving waves, steady rim · 40 frames' }];
 const title = name => name.replace(/[-_]/g, ' ').replace(/^./, c => c.toUpperCase());
 function imageCanvas(data, width, height) {
   const c = document.createElement('canvas'); c.width = width; c.height = height;
@@ -105,7 +106,7 @@ function animationChanged() {
   const animation = project.animations[$('animation').value];
   position = 0;
   selected = animation.frames[0];
-  $('frame-count').textContent = `${animation.frames.length} playback entries · ${project.frames.length} source poses`;
+  $('frame-count').textContent = `${animation.frames.length} playback entries · ${project.frames.length} source ${poseMetadata ? 'poses' : 'frames'}`;
   $('timeline').replaceChildren(...animation.frames.map((index, sequencePosition) => {
     const frame = project.frames[index];
     const button = document.createElement('button'); button.className = 'frame'; button.title = `${frame.name} · ${frame.duration}ms`; button.setAttribute('aria-label', `Select position ${sequencePosition + 1}: ${frame.name}`);
@@ -131,7 +132,7 @@ function compile() {
   try {
     const nextSpec = JSON.parse(source.value.replace(/^\uFEFF/, ''));
     const compiled = compileSource(nextSpec), nextProject = renderProject(compiled.recipe), nextAtlas = buildAtlas(nextProject);
-    spec = compiled.recipe; poseMetadata = compiled.metadata; project = nextProject; atlas = nextAtlas;
+    spec = compiled.recipe; poseMetadata = compiled.metadata?.format === 'pixelforge-pose-metadata' ? compiled.metadata : null; project = nextProject; atlas = nextAtlas;
     motionReview = null;
     $('motion-view').disabled = !poseMetadata; $('contacts').disabled = !poseMetadata;
     $('motion-tools').hidden = !poseMetadata;
@@ -140,7 +141,7 @@ function compile() {
     frameImages = project.frames.map(f => imageCanvas(f.data, project.width, project.height));
     $('project-name').textContent = title(project.name);
     $('dimensions').textContent = `${project.width} × ${project.height} px`;
-    $('source-filename').textContent = `${project.name}${poseMetadata ? '.poses' : ''}.json`;
+    $('source-filename').textContent = `${project.name}${poseMetadata ? '.poses' : nextSpec.format === 'pixelforge-wave' ? '.wave' : ''}.json`;
     $('frame-count').textContent = `${project.frames.length} frames`;
     const oldAnimation = $('animation').value;
     $('animation').replaceChildren(...Object.keys(project.animations).map(key => { const option = document.createElement('option'); option.value = key; option.textContent = title(key); return option; }));
@@ -158,7 +159,8 @@ function compile() {
       return button;
     }));
     $('error').hidden = true;
-    $('compile-status').textContent = project.warnings.length ? project.warnings.join(' ') : '● All pixels accounted for';
+    const warnings = [...(compiled.warnings ?? []), ...project.warnings];
+    $('compile-status').textContent = warnings.length ? warnings.join(' ') : '● All pixels accounted for';
     $('export').disabled = false; valid = true; animationChanged(); setMode(mode);
     source.dispatchEvent(new CustomEvent('pixelbolt:rendered'));
   } catch (error) {
@@ -248,7 +250,9 @@ $('new').addEventListener('click', () => {
 // The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
 // the draft stays until the user edits again (the draft then follows) or confirms replacing or leaving the recipe.
 $('save').addEventListener('click', () => {
-  const filename = `${project?.name ?? 'sprite'}.pixel.json`;
+  let extension = 'pixel';
+  try { if (JSON.parse(source.value).format === 'pixelforge-wave') extension = 'wave'; } catch { /* Broken drafts can still be saved. */ }
+  const filename = `${project?.name ?? 'sprite'}.${extension}.json`;
   download(source.value, filename, 'application/json'); sent = source.value;
   toast(`Sent ${filename} to your browser to save.${dirty ? ' Until you load another recipe, its draft is kept here too.' : ''}`); keepDraft();
 });

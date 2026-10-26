@@ -9,6 +9,7 @@ export { createBundle, writeBundle, createZip, generateCSS, formatJSON } from '.
 export { compilePoses, expandPoses, compileAutotile, compileNormals, NORMAL_DIRECTIONS } from './authoring.js';
 export { inspectMotion } from './motion.js';
 export { compileEffects } from './fx.js';
+export { compileWaves, WAVE_KINDS } from './wave.js';
 export { compileFluid, createLiveFluid, FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from './fluid.js';
 export { DITHER_PATTERNS, EASINGS, ease, ditherThreshold, cleanupIds, rotateRows, ruleVariants, rewriteIds } from './craft.js';
 export { BLOB_MASKS, CARDINAL_MASKS, neighbourMask, quadrantPieces, templatePiece } from './autotile.js';
