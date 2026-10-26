@@ -65,6 +65,23 @@ function deeperThan(value, limit) {
   }
   return false;
 }
+// Some clients send an object or list argument as JSON text: agents that call a tool without loading its schema often
+// pass the recipe as a string (P-041). Text that parses to the type the tool's schema declares is used as that value,
+// and `parsed` names it so the reply can say so; other text in such an argument is an error that says what to send.
+export function parseTextArguments(args, properties) {
+  const parsed = [];
+  for (const [key, value] of Object.entries(args)) {
+    const type = properties[key]?.type;
+    if (typeof value !== 'string' || (type !== 'object' && type !== 'array')) continue;
+    const kind = type === 'array' ? 'a list' : 'an object';
+    let json;
+    try { json = JSON.parse(value); } catch (cause) { throw new PixelError(key, `expected ${kind}, got text that is not JSON (${cause.message}). Send ${key} as ${kind} itself, not inside a string${key === 'project' && /^\s*[a-f0-9]{12}\s*$/.test(value) ? '; to reuse a saved recipe, send its id as revision' : ''}`); }
+    if (type === 'array' ? !Array.isArray(json) : json === null || typeof json !== 'object' || Array.isArray(json)) throw new PixelError(key, `expected ${kind}, got text holding ${Array.isArray(json) ? 'a list' : json === null ? 'null' : typeof json === 'object' ? 'an object' : `a ${typeof json}`}. Send ${key} as ${kind} itself, not inside a string`);
+    args = { ...args, [key]: json };
+    parsed.push(`${key} arrived as JSON text and was read as ${kind}`);
+  }
+  return { args, parsed };
+}
 // pixel_help returns the short quick start by default; each topic is one longer document, read only when needed: the
 // full guides, the recipe schema, a complete example, then the schema of each source format.
 const QUICK_START = '../docs/agent-quick-start.md';
@@ -528,12 +545,13 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     if (method !== 'tools/call') { error(-32601, `Unknown method: ${method}`); return; }
     const tool = tools.find(t => t.name === params?.name);
     if (!tool) { error(-32602, 'Unknown tool'); return; }
-    const args = params.arguments ?? {};
+    let args = params.arguments ?? {}, parsed;
     if (args === null || typeof args !== 'object' || Array.isArray(args) || Object.keys(args).some(k => !Object.hasOwn(tool.inputSchema.properties, k))) { error(-32602, 'Invalid tool arguments'); return; }
+    try { ({ args, parsed } = parseTextArguments(args, tool.inputSchema.properties)); } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, path: cause.path })] }); return; }
     if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
     let reply;
     try { reply = await host.run(params.name, args); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
-    result(reply);
+    result(parsed.length ? { ...reply, content: [...reply.content, textContent({ note: `${parsed.join('; ')}. Send JSON values as they are, not inside strings.` })] } : reply);
   }
   // No request may end the server: anything handle() didn't answer is answered here, and the next line is read.
   const serve = line => handle(line).catch(cause => send({ jsonrpc: '2.0', id: leadingId(line.slice(0, 4096)), error: { code: -32603, message: `Internal error: ${cause.message}` } }));
