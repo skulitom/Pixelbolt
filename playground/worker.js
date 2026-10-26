@@ -1,6 +1,6 @@
 import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
 import { encodePNG } from './png.js';
-import { checkVersion, recipeKind, RECIPE_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
+import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
 import { engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
 
 let loadedBase, loadedEngine, cached;
@@ -99,8 +99,17 @@ export async function handleRequest(request, onSource = () => {}) {
     return { ...preview, version, digest: item.digest, frames: result.frames.map(frame => ({ ...frame, data: frame.data.slice() })) };
   }
   const name = safeName(result.name), files = [], warnings = [];
-  // embedRecipe refuses a recipe too large for its reader, so every PNG written here reopens.
-  const pngFile = async (pixels, filename) => ({ name: filename, type: 'image/png', data: await embedRecipe(await encodePNG(pixels.data, pixels.width, pixels.height), source, version) });
+  // Every PNG carries its recipe, except one too large to carry and still open in Pillow (embedRecipe refuses it):
+  // that PNG is written without it, and a warning says so.
+  const pngFile = async (pixels, filename) => {
+    const png = await encodePNG(pixels.data, pixels.width, pixels.height);
+    try { return { name: filename, type: 'image/png', data: await embedRecipe(png, source, version) }; }
+    catch (error) {
+      if (error.code !== 'too-large') throw error;
+      warnings.push(`This PNG does not carry its recipe: at over ${EMBED_LIMIT.toLocaleString('en')} bytes, a PNG with it would not open in Pillow. Download the recipe to keep it.`);
+      return { name: filename, type: 'image/png', data: png };
+    }
+  };
   if (request.export === 'frame') {
     const frame = result.frames[request.frame];
     if (!frame) throw new Error('Choose an available frame.');
