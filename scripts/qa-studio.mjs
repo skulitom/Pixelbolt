@@ -298,7 +298,8 @@ try {
   await check('Save JSON puts the recipe on disk exactly as it is in the editor', async () => {
     savedRecipe = await download(() => click('#save'));
     assert.equal(path.basename(savedRecipe), 'forest-spirit.pixel.json'); assert.equal(await readFile(savedRecipe, 'utf8'), edited);
-    assert.equal(await text('toast'), 'Project JSON saved'); return path.basename(savedRecipe);
+    // The page cannot see whether the browser kept the file, so it does not say it did.
+    assert.equal(await text('toast'), 'Sent forest-spirit.pixel.json to your browser to save. Until you load another recipe, its draft is kept here too.'); return path.basename(savedRecipe);
   });
   await check('Open project brings the saved recipe back', async () => {
     await click('#new'); await until(`document.getElementById('project-name').textContent === 'New sprite'`, 'the blank canvas');
@@ -370,7 +371,7 @@ try {
   });
 
   console.log('Draft recovery');
-  await check('an unsaved edit is offered back after the page is reloaded, restored on request, and gone once saved', async () => {
+  await check('an unsaved edit is offered back after the page is reloaded and restored on request; Save JSON keeps it, and replacing the recipe removes it', async () => {
     await type(edited.replace('"name": "forest-spirit"', '"name": "draft-walk"'));
     // The draft keeps the file name the editor shows, which changes only when the studio recompiles (350 ms after the
     // last keystroke, later on a busy machine). Reloading before that would keep the draft under the old name.
@@ -380,7 +381,18 @@ try {
     await studio.shot('draft-offered');
     await click('#draft-restore'); await until(`document.getElementById('project-name').textContent === 'Draft walk'`, 'the draft to be restored');
     assert.equal(await evaluate(`document.getElementById('draft').hidden`), true);
+    // Save JSON cannot tell a kept file from a cancelled save dialog, so the draft stays and leaving still asks.
     await download(() => click('#save'));
+    const asked = dialogs.length;
+    await studio.reload(); await ready();
+    assert.ok(dialogs.slice(asked).some(dialog => dialog.startsWith('beforeunload')), 'reloading after Save JSON did not ask first');
+    assert.equal(await evaluate(`document.getElementById('draft').hidden`), false, 'Save JSON removed the draft'); assert.match(await text('draft-text'), /^A draft of draft-walk\.json, /);
+    // Replacing the recipe on purpose is what removes it, and the question says the file may not have been saved.
+    await click('#draft-restore'); await until(`document.getElementById('project-name').textContent === 'Draft walk'`, 'the draft to be restored again');
+    await download(() => click('#save'));
+    const replacing = dialogs.length;
+    await click('#examples .example:nth-child(1)'); await until(`!document.getElementById('source').value.includes('"name": "draft-walk"')`, 'a sample to replace the saved recipe');
+    assert.deepEqual(dialogs.slice(replacing), ['confirm: Replace this recipe? Save JSON sent it to your browser; if that save was cancelled, choose Cancel and save again.']);
     await studio.reload(); await ready();
     assert.deepEqual([await evaluate(`document.getElementById('draft').hidden`), await evaluate(`localStorage.length`)], [true, 0]);
   });
@@ -410,7 +422,7 @@ try {
     await until(`navigator.locks.query().then(state => !state.held.some(lock => lock.name === 'pixelforge.studio.tab.' + ${JSON.stringify(secondId)}))`, 'the second tab to close');
     const third = await openPage();
     await third.size(1440, 900); await third.goto(`${origin}/`); await ready(third);
-    assert.match(await offered(third), /^An unsaved draft of tab-b\.json from another tab, /);
+    assert.match(await offered(third), /^A draft of tab-b\.json from another tab, /);
     await third.click('#draft-restore'); await third.until(`document.getElementById('project-name').textContent === 'Tab b'`, 'the closed tab\'s draft to be restored');
     // Restored, it is this tab's draft now: still one copy, and no longer offered to anyone else.
     assert.equal(await kept(third), 'tab-a.json, tab-b.json');

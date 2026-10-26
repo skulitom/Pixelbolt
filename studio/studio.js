@@ -12,6 +12,9 @@ let position = 0;
 let poseMetadata = null, motionReview = null;
 const compileSource = value => value.format === 'pixelforge-poses' ? compilePoses(value) : { recipe: value, metadata: null };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
+// The recipe text last sent to Save JSON. The page cannot tell whether the browser kept that file or the save was
+// cancelled, so it stays `dirty`: the draft is kept and leaving or replacing the recipe still asks.
+let sent = null;
 // An unsaved recipe is kept as a draft in this browser, under this tab's own id, which is known once the tab has
 // claimed it (`drafts` is null until then). `offer` is a draft found at start-up that the user has not yet restored or
 // discarded: this tab's own from before a reload, whose place new edits do not take until the user chooses, or one a
@@ -153,17 +156,20 @@ function keepDraft() {
   if (!drafts || !dirty || ownOffer()) return;
   if (!drafts.save(source.value, $('source-filename').textContent) && !draftWarned) { draftWarned = true; toast('This browser is not keeping drafts (storage is off or full). Use Save JSON.'); }
 }
-// The recipe on screen is saved or was replaced on purpose, so this tab's draft is no longer needed. Other tabs'
-// drafts are never touched here.
-function settle() { dirty = false; clearTimeout(draftTimer); if (drafts && !ownOffer()) drafts.clear(); }
+// The recipe on screen was replaced on purpose, so this tab's draft is no longer needed. Other tabs' drafts are never
+// touched here.
+function settle() { dirty = false; sent = null; clearTimeout(draftTimer); if (drafts && !ownOffer()) drafts.clear(); }
+// Whether the recipe on screen may be replaced: always when it has no edits; otherwise the user is asked.
+const mayReplace = (question = 'Replace your edited recipe? Save JSON first if you want to keep it.') => !dirty
+  || confirm(source.value === sent ? 'Replace this recipe? Save JSON sent it to your browser; if that save was cancelled, choose Cancel and save again.' : question);
 // Shows the next draft to offer, or hides the offer when there is none.
 function offerDraft(next) {
   offer = next ?? null; $('draft').hidden = !offer;
   if (!offer) return;
   const when = new Date(offer.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }), more = offers.length;
   $('draft-text').textContent = ownOffer()
-    ? `An unsaved draft of ${offer.name}, last edited ${when}, is kept in this browser. Until you choose, new edits are not kept as a draft.`
-    : `An unsaved draft of ${offer.name} from another tab, last edited ${when}, is kept in this browser.${more ? ` ${more} more from other tabs ${more === 1 ? 'is' : 'are'} offered after it.` : ''}`;
+    ? `A draft of ${offer.name}, last edited ${when}, is kept in this browser. Until you choose, new edits are not kept as a draft.`
+    : `A draft of ${offer.name} from another tab, last edited ${when}, is kept in this browser.${more ? ` ${more} more from other tabs ${more === 1 ? 'is' : 'are'} offered after it.` : ''}`;
 }
 function setSource(value, exampleFile) {
   loadVersion++;
@@ -172,7 +178,7 @@ function setSource(value, exampleFile) {
   compile(); playState();
 }
 async function loadExample(example) {
-  if (dirty && !confirm('Replace your edited recipe? Save JSON first if you want to keep it.')) return;
+  if (!mayReplace()) return;
   const version = ++loadVersion;
   try {
     const response = await fetch(`/examples/${example.file}.json`);
@@ -215,16 +221,22 @@ $('file').addEventListener('change', async () => {
   try {
     if (file.size > MAX_REQUEST_BYTES) throw new Error(`Choose a project no larger than ${MAX_REQUEST_BYTES / (1024 * 1024)} MiB.`);
     const value = JSON.parse((await file.text()).replace(/^\uFEFF/, '')); renderProject(compileSource(value).recipe);
-    if (dirty && !confirm('Replace your edited recipe? Save JSON first if you want to keep it.')) return;
+    if (!mayReplace()) return;
     setSource(value); toast(`Opened ${file.name}`);
   } catch (error) { toast(error.message); } finally { $('file').value = ''; }
 });
 $('new').addEventListener('click', () => {
-  if (dirty && !confirm('Replace your edited recipe? Save JSON first if you want to keep it.')) return;
+  if (!mayReplace()) return;
   setSource({ version: 1, name: 'new-sprite', width: 16, height: 16, palette: { g: '#72b58d' }, frames: [{ name: 'idle', duration: 150, ops: [] }] });
   source.focus();
 });
-$('save').addEventListener('click', () => { download(source.value, `${project?.name ?? 'sprite'}.pixel.json`, 'application/json'); settle(); toast('Project JSON saved'); });
+// The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
+// the draft stays until the user edits again (the draft then follows) or confirms replacing or leaving the recipe.
+$('save').addEventListener('click', () => {
+  const filename = `${project?.name ?? 'sprite'}.pixel.json`;
+  download(source.value, filename, 'application/json'); sent = source.value;
+  toast(`Sent ${filename} to your browser to save.${dirty ? ' Until you load another recipe, its draft is kept here too.' : ''}`); keepDraft();
+});
 $('gif').addEventListener('click', () => {
   compile(); if (!valid) { toast('Fix the recipe to export a GIF.'); return; }
   try {
@@ -256,7 +268,7 @@ $('frames-export').addEventListener('click', async () => {
   finally { button.disabled = false; button.textContent = 'Export frames'; }
 });
 $('draft-restore').addEventListener('click', () => {
-  if (dirty && !confirm('Replace your edited recipe with the draft? Save JSON first if you want to keep it.')) return;
+  if (!mayReplace('Replace your edited recipe with the draft? Save JSON first if you want to keep it.')) return;
   loadVersion++; source.value = offer.text; dirty = true;
   // A closed tab's draft becomes this tab's: it is kept under this tab's id before the closed tab's copy goes.
   if (!ownOffer() && drafts.save(offer.text, offer.name)) drafts.forget(offer.id);
