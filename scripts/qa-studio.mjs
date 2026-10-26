@@ -472,7 +472,7 @@ try {
     assert.ok(drawn > 0); assert.equal(await text('error'), ''); await studio.shot('scene');
     return await text('name');
   });
-  await check('dragging on the scene moves a light, its controls relight the scene live, and saving keeps what changed', async () => {
+  await check('dragging on the scene moves a light, its controls relight the scene live, and saving keeps what changed and the files the scene names', async () => {
     const pixels = `(() => { const c = document.getElementById('scene'); return Array.from(c.getContext('2d').getImageData(0, 0, c.width, c.height).data).join(); })()`;
     if (await text('play') === 'Pause') await click('#play');
     const before = await evaluate(pixels), source = await evaluate(`fetch('./scene.json').then(r => r.json())`);
@@ -492,6 +492,10 @@ try {
     await studio.shot('scene-light');
     const saved = JSON.parse(await readFile(await download(() => click('#save')), 'utf8')), light = saved.lighting.lights[0], original = source.lighting.lights[0];
     assert.deepEqual([light.at, light.height, light.radius, light.color], [to, 6, original.radius, original.color]);
+    // The saved scene is the scene as written with those two changes: its assets are still the files it names.
+    const written = await evaluate(`fetch('./scene-source.json').then(r => r.json())`);
+    assert.equal(typeof written.assets.spirit.recipe, 'string');
+    assert.deepEqual(saved, { ...written, lighting: { ...written.lighting, lights: [{ ...written.lighting.lights[0], at: to, height: 6 }, ...written.lighting.lights.slice(1)] } });
     return `light moved to ${to.join(', ')}`;
   });
 

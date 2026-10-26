@@ -1,8 +1,8 @@
-import { prepareScene, renderScene } from './scene.js';
+import { prepareScene, renderScene, withLightSettings } from './scene.js';
 import { reviewPixels } from './core.js';
 const $ = id => document.getElementById(id);
 let scene, time = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, last, manualScale = false;
-// Light fields changed here ("0.height", "ambient"); saving writes them back into the scene source.
+// Light fields changed here ("0.height", "ambient"); saving writes only these into the scene as written.
 const edited = new Set();
 // The lights as the last frame drew them: where a following, flickering or keyed light is at this time.
 let shown = [];
@@ -80,6 +80,12 @@ function lightControls() {
 try {
   const response = await fetch('./scene.json'); if (!response.ok) throw new Error(`Scene could not load (${response.status})`);
   const source = await response.json(); scene = prepareScene(source);
+  // The studio also serves the scene as written, before its asset and palette files were read in, and light settings are
+  // saved into that, so the saved scene still names those files. An exported scene's folder has only the resolved one.
+  const written = response.headers.has('X-Pixelbolt-Scene-Source') ? await (async () => {
+    const kept = await fetch('./scene-source.json'); if (!kept.ok) throw new Error(`Scene source could not load (${kept.status})`);
+    return kept.json();
+  })() : source;
   const fit = () => { if (!manualScale) $('scale').value = String(Math.min(3, Math.max(1, Math.floor((document.querySelector('.stage').clientWidth - 40) / scene.width)))); };
   fit(); addEventListener('resize', () => { fit(); draw(); });
   $('name').textContent = source.name.replaceAll('-', ' '); $('time').max = scene.duration - 1;
@@ -89,15 +95,7 @@ try {
   $('scale').onchange = () => { manualScale = true; draw(); };
   if (scene.lighting?.lights.length) lightControls();
   $('save').onclick = () => {
-    const saved = structuredClone(source);
-    scene.lighting.lights.forEach((light, i) => {
-      const target = saved.lighting.lights[i];
-      target.at = [...light.at];
-      if (edited.has(`${i}.height`)) target.height = light.height;
-      if (edited.has(`${i}.radius`)) target.radius = light.radius;
-      if (edited.has(`${i}.color`)) target.color = hex(light.color);
-    });
-    if (edited.has('ambient')) saved.lighting.ambient = scene.lighting.ambient;
+    const saved = withLightSettings(written, scene, edited);
     const url = URL.createObjectURL(new Blob([JSON.stringify(saved, null, 2) + '\n'], { type: 'application/json' }));
     const link = document.createElement('a'); link.href = url; link.download = `${source.name}.scene.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };

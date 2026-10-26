@@ -268,6 +268,17 @@ export function prepareScene(source) {
   }
   return { source, width, height, duration, assets, shifts, instances, background, lighting, warnings: [...new Set(warnings)] };
 }
+// The scene as written with the light settings named in `edited` ("0.at", "0.height", "0.radius", "0.color" or
+// "ambient") taken from a prepared scene the studio changed. Everything else stays as written, file references included.
+export function withLightSettings(written, scene, edited) {
+  const saved = structuredClone(written);
+  for (const setting of edited) {
+    if (setting === 'ambient') { saved.lighting.ambient = scene.lighting.ambient; continue; }
+    const [index, field] = setting.split('.'), light = scene.lighting.lights[index];
+    saved.lighting.lights[index][field] = field === 'at' ? [...light.at] : field === 'color' ? `#${light.color.slice(0, light.color[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('')}` : light[field];
+  }
+  return saved;
+}
 export function renderScene(scene, { time = 0, lit = true, density = false } = {}) {
   if (!Number.isFinite(time) || time < 0) fail('scene.time', 'expected a nonnegative finite time in milliseconds');
   if (typeof lit !== 'boolean' || typeof density !== 'boolean') fail('scene.preview', 'lit and density must be booleans');

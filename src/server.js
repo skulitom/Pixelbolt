@@ -39,7 +39,7 @@ const routes = new Map([
   ...['campfire', 'explosion', 'smoke-puff', 'steam-vent', 'magic-swirl', 'torch', 'splash', 'waterfall', 'drip', 'potion', 'honey', 'slime', 'roof-snow', 'dam-break', 'dust-wave', 'slime-burst', 'honey-drop'].map(name => [`/examples/${name}.fluid.json`, [`../examples/${name}.fluid.json`, 'application/json']])
 ]);
 // Every path the studio answers with GET, for checks that walk the whole allowlist.
-export const STUDIO_PATHS = [...routes.keys(), '/scene.json', '/project.json'];
+export const STUDIO_PATHS = [...routes.keys(), '/scene.json', '/scene-source.json', '/project.json'];
 export const STUDIO_PORT = 4747;
 // The most the studio sends back as one ZIP of frames; longer or larger clips belong on the command line.
 const SEQUENCE_ZIP_BYTES = 512 * 1048576;
@@ -57,7 +57,9 @@ export function openBrowser(url) {
 }
 // `fallback` takes any free port when `port` is in use, so a second studio still starts. The studio's unsaved-draft
 // recovery lives in browser storage, which browsers keep per address: a draft is only found again on the same port.
-export async function startStudio({ port = STUDIO_PORT, fallback = false, project, quiet = false } = {}) {
+// For a scene, `project` has its file references resolved and `source` is the scene as written, which the scene page
+// saves its light settings into.
+export async function startStudio({ port = STUDIO_PORT, fallback = false, project, source = project, quiet = false } = {}) {
   const scene = project?.format === 'pixelforge-scene';
   if (project) {
     if (scene) prepareScene(project);
@@ -93,11 +95,19 @@ export async function startStudio({ port = STUDIO_PORT, fallback = false, projec
       }
       if (req.method !== 'GET') { reply(405, 'text/plain', 'Method not allowed'); return; }
       if (scene && url.pathname === '/') { reply(200, 'text/html; charset=utf-8', await readFile(new URL('../studio/scene.html', import.meta.url))); return; }
-      if (scene && url.pathname === '/scene.json') { reply(200, 'application/json', JSON.stringify(project)); return; }
-      // Without a scene of its own, the scene page shows the lit forest spirit, its recipe files resolved here.
-      if (url.pathname === '/scene.json') {
-        const file = fileURLToPath(new URL('../examples/forest-spirit-lit.scene.json', import.meta.url)), { document } = await resolveReferences(JSON.parse(await readFile(file, 'utf8')), { baseDir: path.dirname(file) });
-        reply(200, 'application/json', JSON.stringify(document)); return;
+      // The scene page draws the scene with its files resolved (/scene.json) and saves its light settings into the scene
+      // as written (/scene-source.json), so a saved scene keeps the file references it had. Without a scene of its own the
+      // page shows the lit forest spirit. Both are only read.
+      if (url.pathname === '/scene.json' || url.pathname === '/scene-source.json') {
+        const drawn = url.pathname === '/scene.json';
+        let body = drawn ? project : source;
+        if (!scene) {
+          const file = fileURLToPath(new URL('../examples/forest-spirit-lit.scene.json', import.meta.url)), written = JSON.parse(await readFile(file, 'utf8'));
+          body = drawn ? (await resolveReferences(written, { baseDir: path.dirname(file) })).document : written;
+        }
+        // An exported scene's folder has only its resolved scene.json; this header tells the page that a source is here too.
+        if (drawn) res.setHeader('X-Pixelbolt-Scene-Source', 'scene-source.json');
+        reply(200, 'application/json', JSON.stringify(body)); return;
       }
       if (url.pathname === '/project.json') { reply(200, 'application/json', JSON.stringify(project ?? null)); return; }
       if (!routes.has(url.pathname)) { reply(404, 'text/plain', 'Not found'); return; }

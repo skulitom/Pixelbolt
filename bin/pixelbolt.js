@@ -182,11 +182,13 @@ try {
       const { startStudio, openBrowser, STUDIO_PORT } = await import('../src/server.js');
       const port = options.port === undefined ? STUDIO_PORT : Number(options.port);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Port must be an integer from 0 to 65535');
-      let project = positional[0] ? (await readResolved(positional[0])).document : undefined;
+      const input = positional[0] ? await readResolved(positional[0]) : undefined;
+      let project = input?.document;
       // Preserve editable poses and their contact metadata; other authoring formats open as compiled recipes.
       if (project && project.format !== 'pixelforge-poses' && Object.hasOwn(COMPILERS, project.format ?? '')) project = COMPILERS[project.format](project).recipe;
       // A port you name is used or refused; the usual one gives way to any free port when something else has it.
-      const server = await startStudio({ port, project, fallback: options.port === undefined });
+      // A scene's light settings are saved into the scene as written, so the files it names stay named.
+      const server = await startStudio({ port, project, ...(project?.format === 'pixelforge-scene' && { source: input.original }), fallback: options.port === undefined });
       if (options.open && !await openBrowser(`http://127.0.0.1:${server.address().port}/`)) console.log('No browser was opened. Copy the address above into your browser.');
     } else if (command === 'compile' && options.expand) {
       if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');
