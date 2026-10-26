@@ -6,7 +6,7 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startMCP } from '../src/mcp.js';
+import { startMCP, MAX_ARGUMENT_DEPTH } from '../src/mcp.js';
 import { MAX_REQUEST_BYTES } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { createOverlay } from '../src/overlays.js';
@@ -104,6 +104,24 @@ test('MCP answers an oversized request with an error, recovers its id and keeps 
   assert.equal(reply.id, 7); assert.equal(reply.error.code, -32600); assert.match(reply.error.message, /exceeds/);
   assert.deepEqual((await request('ping')).result, {});
   input.end(); await running;
+});
+
+test('MCP answers a deeply nested request with an error and keeps serving', async t => {
+  const dir = await temp(t, 'deep'), { input, running, request, call, init, waiting } = session({ directory: dir });
+  await init();
+  try {
+    // About 12 KB nested 6,000 deep: copying it to the tool worker overflowed the stack, and the server exited.
+    const answered = new Promise(resolve => waiting.set(90, resolve)), nested = depth => '['.repeat(depth) + ']'.repeat(depth);
+    input.write(`{"jsonrpc":"2.0","id":90,"method":"tools/call","params":{"name":"pixel_validate","arguments":{"project":${nested(6000)}}}}\n`);
+    const reply = await answered;
+    assert.equal(reply.id, 90); assert.equal(reply.error.code, -32602);
+    assert.equal(reply.error.message, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`);
+    // One level inside the limit reaches the tool, which names the mistake as usual.
+    const inside = await call('pixel_validate', { project: JSON.parse(nested(MAX_ARGUMENT_DEPTH - 1)) });
+    assert.equal(inside.result.isError, true); assert.match(inside.info.error, /^project/);
+    assert.deepEqual((await request('ping')).result, {});
+    assert.equal((await call('pixel_validate', { project: strip })).info.ok, true);
+  } finally { input.end(); await running; }
 });
 
 test('MCP stops a tool call that runs past its time limit or out of memory, and keeps serving', async t => {

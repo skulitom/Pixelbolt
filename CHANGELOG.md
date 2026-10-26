@@ -8,6 +8,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - MCP `pixel_render` takes `saveAs`, a map from `sheet`, `atlas`, `recipe`, `gif`, `apng` or any exported file (but the CSS and preview page, which load other files) to a path inside the server root, and writes those files there as well as in the export folder; a GIF named there makes the GIFs. Every path is checked before anything is written (inside the root, links included; not in the revision store; not a palette or asset file the recipe references, also when it comes back as a revision; a name the file system can take; same file type; not named twice, letter case ignored on Windows and macOS). Each copy is staged in a temporary file first, and a call that fails puts back what it had replaced, so the destinations stay as they were; an existing file is replaced only with `"overwrite": true` (renamed over, so a hard link to it keeps the old bytes), a saved atlas names the saved sheet (and a sheet name that would read as another name in a URL is refused), and the reply's `saved` lists each copy. Agents left exports in `output/<name>-<id>/` and the user's named file never appeared (P-011).
 
+### Fixes
+
+- The MCP server answers a tool call whose arguments nest more than 128 levels deep with an error and keeps serving. A request of about 12 KB nested thousands deep used to overflow the stack while it was handed to the tool worker, and the server exited.
+
 ## 0.9.1 (2026-10-25)
 
 ### Releases wait for every test and keep publish rights away from third-party tools

@@ -51,6 +51,18 @@ function leadingId(prefix) {
   const head = prefix.split('"params"')[0], match = /"id"\s*:\s*("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)/.exec(head);
   try { return match ? JSON.parse(match[1]) : null; } catch { return null; }
 }
+// Tool arguments nest a few levels deep (a scene holding recipes, a patch value holding a recipe). Handing a value to
+// the worker copies it recursively, so a request of a few kilobytes nested thousands deep would overflow the stack.
+export const MAX_ARGUMENT_DEPTH = 128;
+function deeperThan(value, limit) {
+  const stack = [[value, 1]];
+  while (stack.length) {
+    const [item, depth] = stack.pop();
+    if (depth > limit) return true;
+    for (const child of Object.values(item)) if (child !== null && typeof child === 'object') stack.push([child, depth + 1]);
+  }
+  return false;
+}
 // pixel_help returns the short quick start by default; each topic is one longer document, read only when needed: the
 // full guides, the recipe schema, a complete example, then the schema of each source format.
 const QUICK_START = '../docs/agent-quick-start.md';
@@ -392,7 +404,8 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
       const ended = () => stop(stopped(name, 'ended unexpectedly'));
       timer = setTimeout(() => stop(stopped(name, `took longer than ${timeLimit / 1000} s`)), timeLimit);
       thread.on('message', finish).on('error', failed).on('exit', ended);
-      thread.postMessage({ name, args });
+      // A value the worker can't be sent is this call's error; the worker never saw it and keeps serving.
+      try { thread.postMessage({ name, args }); } catch (cause) { finish({ isError: true, content: [textContent({ error: `${name} could not be started: ${cause.message}` })] }); }
     });
   }
   return { run, close: async () => { await worker?.thread.terminate(); } };
@@ -495,8 +508,13 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     if (!tool) { error(-32602, 'Unknown tool'); return; }
     const args = params.arguments ?? {};
     if (args === null || typeof args !== 'object' || Array.isArray(args) || Object.keys(args).some(k => !Object.hasOwn(tool.inputSchema.properties, k))) { error(-32602, 'Invalid tool arguments'); return; }
-    result(await host.run(params.name, args));
+    if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
+    let reply;
+    try { reply = await host.run(params.name, args); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    result(reply);
   }
+  // No request may end the server: anything handle() didn't answer is answered here, and the next line is read.
+  const serve = line => handle(line).catch(cause => send({ jsonrpc: '2.0', id: leadingId(line.slice(0, 4096)), error: { code: -32603, message: `Internal error: ${cause.message}` } }));
   const tooLarge = prefix => send({ jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
   input.setEncoding('utf8');
   let pending = '', discarding = null;
@@ -509,11 +527,11 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       const line = pending.slice(0, newline).replace(/\r$/, ''); pending = pending.slice(newline + 1);
       if (discarding !== null) { tooLarge(discarding); discarding = null; continue; }
       if (Buffer.byteLength(line) > MAX_REQUEST_BYTES) { tooLarge(line.slice(0, 4096)); continue; }
-      if (line.trim()) await handle(line);
+      if (line.trim()) await serve(line);
     }
     if (Buffer.byteLength(pending) > MAX_REQUEST_BYTES) { if (discarding === null) discarding = pending.slice(0, 4096); pending = ''; }
   }
   if (discarding !== null) tooLarge(discarding);
-  else if (pending.trim()) await handle(pending);
+  else if (pending.trim()) await serve(pending);
   await host.close();
 }
