@@ -144,16 +144,16 @@ async function main() {
   const judged = rounds >= 5;
   const sides = base ? [{ label: 'A', ...describe(path.resolve(base)) }, { label: 'B', ...describe(here) }] : [{ label: 'B', ...describe(here) }];
   const needed = [...new Set(cases.flatMap(item => item.inputs ?? []))];
-  if (needed.length) {
-    inputs = mkdtempSync(path.join(os.tmpdir(), 'pixelbolt-bench-'));
-    for (const name of needed) writeFileSync(path.join(inputs, `${name}.json`), JSON.stringify(await PREPARED[name]()));
-  }
   const report = {
     node: process.version, platform: `${os.platform()} ${os.release()} ${os.arch()}`, cpu: os.cpus()[0]?.model.trim(), cpus: os.cpus().length,
     memoryGB: Math.round(os.totalmem() / 1024 ** 3), runs, warmup, rounds, sides, baseline: {}, cases: {}
   };
   let failed = false;
   try {
+    if (needed.length) {
+      inputs = mkdtempSync(path.join(os.tmpdir(), 'pixelbolt-bench-'));
+      for (const name of needed) writeFileSync(path.join(inputs, `${name}.json`), JSON.stringify(await PREPARED[name]()));
+    }
     for (const side of sides) report.baseline[side.label] = spawnCase('baseline', side.root, 1, 0).peakRssMB ?? null;
     console.log(`Node ${process.version}, ${report.cpu}; ${runs} timed runs after ${warmup} warm-up runs, ${rounds} process${rounds === 1 ? '' : 'es'} per case${base ? ' and side, A and B interleaved' : ''}.`);
     for (const side of sides) console.log(`${side.label}: ${side.root} at ${side.commit?.slice(0, 12) ?? 'unknown'}${side.dirty ? ' (uncommitted changes)' : ''}; baseline ${report.baseline[side.label]} MB`);
@@ -189,7 +189,13 @@ async function main() {
       summary.change = round(change, 4); summary.verdict = speed; summary.sameOutput = same;
       console.log(`${item.id.padEnd(26)} ${String(b.frames).padStart(6)} ${a.medianMs.toFixed(1).padStart(9)} ${b.medianMs.toFixed(1).padStart(9)} ${`${change >= 0 ? '+' : ''}${(change * 100).toFixed(1)}%`.padStart(7)}  ${a.peakRssMB.toFixed(1).padStart(6)} ${b.peakRssMB.toFixed(1).padStart(6)}  ${speed}${same ? '' : '; OUTPUT DIFFERS'}`);
     }
-    if (base && judged) console.log(`\nIdentical code reads faster or slower on about 1 case in 126, so a table of ${cases.length} shows one about ${cases.length >= 2 ? `1 time in ${Math.max(1, Math.round(1 / (1 - (125 / 126) ** cases.length)))}` : 'never'}; re-run a lone verdict with --only <case> before believing it.`);
+    if (base && judged) {
+      // Chance that identical code reads faster or slower: 2 / C(2n, n) per case at n processes a side.
+      let ways = 1;
+      for (let k = 1; k <= rounds; k++) ways = ways * (rounds + k) / k;
+      const each = 2 / ways, table = 1 - (1 - each) ** cases.length;
+      console.log(`\nIdentical code reads faster or slower on about 1 case in ${Math.round(1 / each)}${cases.length > 1 ? `, so a table of ${cases.length} shows one about 1 time in ${Math.round(1 / table)}` : ''}; re-run a lone verdict with --only <case> before believing it.`);
+    }
     if (out) { writeFileSync(out, JSON.stringify(report, null, 2) + '\n', { flag: 'wx' }); console.log(`\nSaved ${out}`); }
   } finally {
     if (inputs) rmSync(inputs, { recursive: true, force: true });
