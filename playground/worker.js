@@ -10,10 +10,17 @@ function checkText(text) {
   if (text.length > RECIPE_LIMIT || encoder.encode(text).length > RECIPE_LIMIT) throw new Error(`The recipe is larger than ${RECIPE_LIMIT.toLocaleString('en')} bytes.`);
   return text;
 }
-function sourceText(document) {
+// The most lines a recipe is indented to in the editor. A textarea takes about 4 ms per 1,000 lines to show its text
+// and over 1 ms per 1,000 to answer each key, so a 6 KB link that unpacked to 2.4 million indented lines froze the
+// page for 20 s. Examples, compiled fluids included, indent to a few thousand lines; a larger recipe is shown compact,
+// which costs about what opening the same file does.
+export const EDITOR_LINES = 50000;
+function sourceText(document, lines = Infinity) {
   const pretty = JSON.stringify(document, null, 2);
+  let count = 1;
+  for (let at = pretty.indexOf('\n'); at !== -1 && count <= lines; at = pretty.indexOf('\n', at + 1)) count++;
   // Whitespace must not stop a compact link or PNG recipe from reopening near the input limit.
-  if (pretty.length <= RECIPE_LIMIT && encoder.encode(pretty).length <= RECIPE_LIMIT) return pretty;
+  if (count <= lines && pretty.length <= RECIPE_LIMIT && encoder.encode(pretty).length <= RECIPE_LIMIT) return pretty;
   return checkText(JSON.stringify(document));
 }
 function parse(text) {
@@ -55,12 +62,12 @@ export async function handleRequest(request, onSource = () => {}) {
   checkVersion(version);
   if (type === 'link') {
     const opened = await readShareLink(request.hash);
-    text = sourceText(opened.recipe); version = opened.version;
+    text = sourceText(opened.recipe, EDITOR_LINES); version = opened.version;
   } else if (type === 'open') {
     if (request.png) {
       const opened = await readEmbeddedRecipe(new Uint8Array(request.png));
       if (!opened) throw new Error('This PNG carries no Pixelbolt recipe.');
-      text = sourceText(opened.recipe); version = opened.version;
+      text = sourceText(opened.recipe, EDITOR_LINES); version = opened.version;
     } else { parse(text); }
   } else if (type === 'example') {
     const base = new URL('../examples/', engineBase(version, override)), reads = new Map();
@@ -74,7 +81,7 @@ export async function handleRequest(request, onSource = () => {}) {
       return reads.get(file);
     };
     const file = examplePath(request.file), source = await inlineExample(await read(file), file, read);
-    text = sourceText(source);
+    text = sourceText(source, EDITOR_LINES);
   }
   checkText(text);
   if (['link', 'open', 'example'].includes(type)) onSource({ text, version });
@@ -109,13 +116,7 @@ export async function handleRequest(request, onSource = () => {}) {
     const project = result.project ?? { ...result, palette: {} };
     const gif = engine.gif.animationGIF(project, request.animation, { scale: request.scale, background: 'transparent' });
     files.push({ name: `${name}-${safeName(request.animation)}.gif`, type: 'image/gif', data: gif.data });
-    if (gif.notes?.length) warnings.push(...gif.notes);
-    else if (gif.partialAlpha) warnings.push(`${gif.partialAlpha} partly transparent pixels became fully transparent or opaque; GIF has no partial transparency.`);
-    // Older engines report delays but may not provide the newer prose notes.
-    if (!gif.notes) {
-      const frames = project.animations[request.animation].frames;
-      if (frames.some(i => project.frames[i].duration < 20 || project.frames[i].duration % 10)) warnings.push('GIF rounds frame durations to 10 ms steps, with a 20 ms minimum.');
-    }
+    warnings.push(...gif.notes);
   } else throw new Error('Unknown export.');
   return { files, warnings };
 }
