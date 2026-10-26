@@ -12,7 +12,7 @@ import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIM
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
 import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
-import { handleRequest } from '../playground/worker.js';
+import { handleRequest, EDITOR_LINES } from '../playground/worker.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = file => readFile(path.join(root, file), 'utf8');
@@ -253,6 +253,25 @@ test('worker restores source/version from PNG and links and leaves invalid impor
   const plain = await encodePNG(Uint8Array.of(0, 0, 0, 0), 1, 1);
   await assert.rejects(handleRequest({ ...request, type: 'open', png: plain.buffer }), /This PNG carries no Pixelbolt recipe/);
   await assert.rejects(handleRequest({ ...request, text: '{\n  bad' }), /Line 2, column/);
+});
+test('a link or PNG whose recipe would indent past the editor line limit opens compact; others open indented', async () => {
+  const request = { type: 'render', version: pin, override: engineURL.href, text: JSON.stringify(tiny) };
+  // 9,000 identical operations: a link and a PNG of a few KB, about 63,000 lines once indented. A link like this that
+  // unpacked to 2.4 million indented lines froze the page for 20 seconds while the editor took them in.
+  const ops = Array.from({ length: 1500 }, () => ({ op: 'pixel', x: 0, y: 0, color: 'a' }));
+  const wide = { ...tiny, frames: [...tiny.frames, ...['three', 'four', 'five', 'six'].map(name => ({ name, duration: 100 }))].map(frame => ({ ...frame, ops })) };
+  assert.ok(JSON.stringify(wide, null, 2).split('\n').length > EDITOR_LINES);
+  const link = (await handleRequest({ ...request, type: 'share', text: JSON.stringify(wide), base: 'https://skulitom.github.io/Pixelbolt/playground/' })).link;
+  const png = (await handleRequest({ ...request, type: 'export', export: 'frame', text: JSON.stringify(wide), frame: 0, scale: 1 })).files[0].data;
+  for (const opening of [{ type: 'link', hash: link }, { type: 'open', png: png.buffer }]) {
+    let opened;
+    const result = await handleRequest({ ...request, ...opening }, source => { opened = source; });
+    assert.equal(opened.text, JSON.stringify(wide), opening.type); assert.equal(result.name, 'tiny');
+  }
+  // A recipe of ordinary size still opens indented for editing.
+  let small;
+  await handleRequest({ ...request, type: 'link', hash: (await handleRequest({ ...request, type: 'share', base: 'https://skulitom.github.io/Pixelbolt/playground/' })).link }, source => { small = source; });
+  assert.equal(small.text, JSON.stringify(tiny, null, 2));
 });
 test('scene exports carry their source but atlas metadata is unavailable', async () => {
   const source = { format: 'pixelforge-scene', version: 1, name: 'scene', width: 2, height: 1, duration: 100, assets: { sprite: tiny }, instances: [{ asset: 'sprite', at: [0, 0] }] };
