@@ -318,3 +318,16 @@ test('pixel_render saveAs still saves a revision whose recorded source can\'t be
   const refused = await mcp.render({ revision: validated.info.revision, saveAs: { recipe: 'palette.json' }, overwrite: true });
   assert.deepEqual([refused.isError, refused.info.path], [true, 'saveAs.recipe'], JSON.stringify(refused.info));
 });
+
+test('pixel_render saveAs protects a palette read through a link that is later removed', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  await mkdir(path.join(project, 'shared'));
+  await writeFile(path.join(project, 'shared', 'palette.json'), JSON.stringify(spirit.palette));
+  await symlink(path.join(project, 'shared'), path.join(project, 'alias'), 'junction');
+  const validated = await mcp.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'alias/palette.json' } } });
+  assert.equal(validated.isError, false, JSON.stringify(validated.info));
+  await rm(path.join(project, 'alias'));
+  const { isError, info } = await mcp.render({ revision: validated.info.revision, saveAs: { recipe: 'shared/palette.json' }, overwrite: true });
+  assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
+  assert.deepEqual(JSON.parse(await readFile(path.join(project, 'shared', 'palette.json'), 'utf8')), spirit.palette);
+});
