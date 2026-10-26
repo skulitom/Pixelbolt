@@ -22,11 +22,11 @@ function imageCanvas(data, width, height) {
   const c = document.createElement('canvas'); c.width = width; c.height = height;
   c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(data), width, height), 0, 0); return c;
 }
-function thumbnail(c, description) {
-  const image = document.createElement('img'); image.src = c.toDataURL('image/png'); image.alt = description; return image;
+function thumbnail(c) {
+  const image = document.createElement('img'); image.src = c.toDataURL('image/png'); image.alt = ''; return image;
 }
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4000); }
-function download(data, filename, type = 'application/octet-stream') {
+function download(data, filename, type) {
   const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type }));
   const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
@@ -92,7 +92,7 @@ function animationChanged() {
     const button = document.createElement('button'); button.className = 'frame'; button.title = `${frame.name} · ${frame.duration}ms`; button.setAttribute('aria-label', `Select position ${sequencePosition + 1}: ${frame.name}`);
     const block = document.createElement('div'); block.className = 'frame-image';
     const number = document.createElement('span'); number.className = 'number'; number.textContent = String(sequencePosition + 1).padStart(2, '0');
-    block.append(thumbnail(frameImages[index], ''), number);
+    block.append(thumbnail(frameImages[index]), number);
     const caption = document.createElement('small');
     const label = document.createElement('span'); label.textContent = frame.name;
     const time = document.createElement('span'); time.textContent = `${frame.duration}ms`; caption.append(label, time);
@@ -118,7 +118,6 @@ function compile() {
     $('motion-tools').hidden = !poseMetadata;
     $('motion-ground').value = poseMetadata?.rig?.ground ?? '';
     if (!poseMetadata && mode === 'motion') mode = 'animation';
-    atlas.image = imageCanvas(atlas.data, atlas.width, atlas.height);
     frameImages = project.frames.map(f => imageCanvas(f.data, project.width, project.height));
     $('project-name').textContent = title(project.name);
     $('dimensions').textContent = `${project.width} × ${project.height} px`;
@@ -280,7 +279,7 @@ async function boot() {
       const button = document.createElement('button'); button.className = 'example'; button.dataset.file = example.file;
       const label = document.createElement('span'), strong = document.createElement('strong'), small = document.createElement('small');
       strong.textContent = example.title; small.textContent = example.type; label.append(strong, small);
-      button.append(thumbnail(imageCanvas(preview.frames[0].data, preview.width, preview.height), ''), label);
+      button.append(thumbnail(imageCanvas(preview.frames[0].data, preview.width, preview.height)), label);
       button.addEventListener('click', () => loadExample(example)); $('examples').append(button);
     }
     $('example-count').textContent = String($('examples').children.length).padStart(2, '0');
