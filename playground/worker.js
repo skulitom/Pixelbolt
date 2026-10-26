@@ -109,13 +109,7 @@ export async function handleRequest(request, onSource = () => {}) {
     const project = result.project ?? { ...result, palette: {} };
     const gif = engine.gif.animationGIF(project, request.animation, { scale: request.scale, background: 'transparent' });
     files.push({ name: `${name}-${safeName(request.animation)}.gif`, type: 'image/gif', data: gif.data });
-    if (gif.notes?.length) warnings.push(...gif.notes);
-    else if (gif.partialAlpha) warnings.push(`${gif.partialAlpha} partly transparent pixels became fully transparent or opaque; GIF has no partial transparency.`);
-    // Older engines report delays but may not provide the newer prose notes.
-    if (!gif.notes) {
-      const frames = project.animations[request.animation].frames;
-      if (frames.some(i => project.frames[i].duration < 20 || project.frames[i].duration % 10)) warnings.push('GIF rounds frame durations to 10 ms steps, with a 20 ms minimum.');
-    }
+    warnings.push(...gif.notes);
   } else throw new Error('Unknown export.');
   return { files, warnings };
 }

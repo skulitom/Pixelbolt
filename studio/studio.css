@@ -239,8 +239,7 @@ a{
 }
 .library-note h3{
   margin-top:10px;
-  font-size:14px;
-  color-scheme:dark
+  font-size:14px
 }
 .library-note p{
   margin:10px 0 14px;
@@ -842,9 +841,6 @@ dialog code{
   }
   .button.primary{
     gap:6px
-  }
-  .local{
-    display:none
   }
   .workspace{
     display:flex;

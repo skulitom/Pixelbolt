@@ -24,7 +24,6 @@ const isObject = value => value !== null && typeof value === 'object' && !Array.
 
 // Source formats and the kind each one is; a recipe without `format` is a plain project.
 const KINDS = { 'pixelforge-poses': 'poses', 'pixelforge-scene': 'scene', 'pixelforge-fx': 'fx', 'pixelforge-fluid': 'fluid', 'pixelforge-normals': 'normals', 'pixelforge-autotile': 'autotile' };
-export const RECIPE_KINDS = Object.freeze(['project', ...Object.values(KINDS)]);
 export function recipeKind(document) {
   if (!isObject(document)) fail('A recipe must be a JSON object.');
   if (document.format === undefined) return 'project';
