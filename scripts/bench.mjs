@@ -1,5 +1,5 @@
-// Speed and memory benchmark for what users wait on: fluid, fx and pose compiles, recipe renders, exports and the live
-// fluid runner, over the shipped examples. Kept out of `node --test`; run it on an otherwise idle machine.
+// Speed and memory benchmark for what users wait on: fluid, wave, fx and pose compiles, recipe renders, exports and the
+// live fluid runner, over the shipped examples. Kept out of `node --test`; run it on an otherwise idle machine.
 //
 //   node scripts/bench.mjs                     time every case in this checkout
 //   node scripts/bench.mjs --only fluid/,live  cases whose id starts with any of these
@@ -8,8 +8,8 @@
 // Options: --runs <n> timed runs per process (5), --warmup <n> untimed runs first (2), --rounds <n> processes per case
 // and side (1, or 5 with --compare), --json <new file> to keep the report (an existing file is never overwritten).
 //
-// Each case runs in a fresh process, so its peak memory (the process's maximum resident set size) is its own; a process
-// that only loads the modules gives the baseline. Inputs always come from this checkout and code from the root being
+// Each case runs in a fresh process, so its peak memory (the process's maximum resident set size, the median over its
+// processes) is its own; a process that only loads the modules gives the baseline. Inputs always come from this checkout and code from the root being
 // timed, so both sides of a comparison get the same inputs. Every case hashes its output, and a comparison says whether
 // the outputs match: a speed-up must not change what the code makes.
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -26,13 +26,19 @@ const hash = (...parts) => { const h = createHash('sha256'); for (const part of 
 const framesHash = project => hash(...project.frames.map(frame => frame.data));
 
 // A case: setup (untimed, once per process) returns the state; run(state) is timed and returns { frames, hash }.
-const fluids = readdirSync(path.join(here, 'examples')).filter(name => name.endsWith('.fluid.json')).sort();
+const shipped = suffix => readdirSync(path.join(here, 'examples')).filter(name => name.endsWith(suffix)).sort();
+const fluids = shipped('.fluid.json');
 const compiled = async (load, name) => (await load('src/fluid.js')).compileFluid(example(name)).recipe;
 const CASES = [
   ...fluids.map(name => ({
     id: `fluid/${name.replace('.fluid.json', '')}`, what: 'compileFluid',
     setup: async load => ({ compileFluid: (await load('src/fluid.js')).compileFluid, source: example(name) }),
     run: ({ compileFluid, source }) => { const { recipe } = compileFluid(source); return { frames: recipe.frames.length, hash: hash(JSON.stringify(recipe)) }; }
+  })),
+  ...shipped('.wave.json').map(name => ({
+    id: `wave/${name.replace('.wave.json', '')}`, what: 'compileWaves',
+    setup: async load => ({ compileWaves: (await load('src/wave.js')).compileWaves, source: example(name) }),
+    run: ({ compileWaves, source }) => { const { recipe } = compileWaves(source); return { frames: recipe.frames.length, hash: hash(JSON.stringify(recipe)) }; }
   })),
   { id: 'fx/effects', what: 'compileEffects',
     setup: async load => ({ compileEffects: (await load('src/fx.js')).compileEffects, source: example('effects.fx.json') }),
@@ -79,7 +85,8 @@ async function child(id, root, runs, warmup) {
   const load = rel => import(pathToFileURL(path.join(root, rel)).href);
   const report = { id, root };
   if (id === 'baseline') {
-    for (const rel of ['src/core.js', 'src/fluid.js', 'src/fx.js', 'src/authoring.js', 'src/export.js', 'src/gif.js']) await load(rel);
+    // A checkout from before a module existed loads the rest.
+    for (const rel of ['src/core.js', 'src/fluid.js', 'src/wave.js', 'src/fx.js', 'src/authoring.js', 'src/export.js', 'src/gif.js']) await load(rel).catch(() => {});
   } else {
     const spec = CASES.find(item => item.id === id), state = await spec.setup(load), times = [];
     let result;
@@ -130,7 +137,7 @@ async function main() {
       const failed = list.find(entry => entry.error);
       if (failed) { summary[label] = { error: failed.error }; continue; }
       const medians = list.map(entry => median(entry.ms)), hashes = [...new Set(list.map(entry => entry.hash))];
-      summary[label] = { frames: list[0].frames, medianMs: round(median(medians), 3), minMs: round(Math.min(...medians), 3), maxMs: round(Math.max(...medians), 3), peakRssMB: Math.max(...list.map(entry => entry.peakRssMB)), hash: hashes.length === 1 ? hashes[0] : hashes, runsMs: list.map(entry => entry.ms) };
+      summary[label] = { frames: list[0].frames, medianMs: round(median(medians), 3), minMs: round(Math.min(...medians), 3), maxMs: round(Math.max(...medians), 3), peakRssMB: median(list.map(entry => entry.peakRssMB)), hash: hashes.length === 1 ? hashes[0] : hashes, runsMs: list.map(entry => entry.ms) };
     }
     report.cases[item.id] = summary;
     const b = summary.B, a = summary.A;
