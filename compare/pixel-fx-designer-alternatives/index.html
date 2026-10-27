@@ -83,7 +83,8 @@ repeat, and everything about the other tools links to the page we read it on. We
 ideas from Pixel Composer's node set, adapted to text recipes, and its README credits them. If we got something wrong,
 <a href="https://github.com/skulitom/Pixelbolt/issues/new">open an issue</a> and we will correct it.</p>
 
-<p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Pixelbolt release 0.9.0 (<code>2c180d6</code>) and
+<p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Pixelbolt's spell shapes and Godot 4 export on <code>main</code>
+(<code>5bd294d</code>) noted 27 October 2026 · Pixelbolt release 0.9.0 (<code>2c180d6</code>) and
 <code>main</code> at <code>d8776d4</code> · Prices are US list prices on Steam and itch.io; the table also gives the sales
 running on 19 October and when they end · Next check by 18 November 2026, or sooner when one of these tools releases.</p>
 
@@ -126,8 +127,8 @@ and linked under <a href="#sources">Sources</a>; we did not run them. "Not state
 </thead>
 <tbody>
 <tr><th scope="row">How effects are made</th>
-<td>A JSON source compiled on the CPU: a fluid simulation (gases and liquids) or seeded particle emitters, baked into
-palette pixels frame by frame</td>
+<td>A JSON source compiled on the CPU: a fluid simulation (gases and liquids) or seeded particle emitters (on
+<code>main</code>, also spell-shape layers), baked into palette pixels frame by frame</td>
 <td>Particle emitters tuned with sliders, or particle motion drawn with the mouse, in a desktop app</td>
 <td>Layers of particles, emitters and fluids, plus a node graph and imported 3D models, in a desktop app</td>
 <td>A fluid simulation started from 20+ presets and tuned with sliders, in a desktop app</td>
@@ -182,7 +183,8 @@ paid</td></tr>
 notice; Scenario's MIT-licensed skills repository on GitHub doesn't include it</td></tr>
 <tr><th scope="row">Exports</th>
 <td>PNG sprite sheet with atlas JSON, numbered PNG frames, animated PNG, GIF, CSS, a Canvas player, and frame folders
-for video editors</td>
+for video editors; on <code>main</code>, not yet in a release, also Aseprite frame tags in the atlas and a Godot 4
+SpriteFrames <code>.tres</code></td>
 <td>PNG sprite sheet or frame by frame (Steam page); GIF (marked experimental in its docs); the emitter data as JSON</td>
 <td>PNG sprite sheet, a PNG per frame, GIF (without alpha), MP4, WEBM</td>
 <td>Trimmed PNG sprite sheet; GIF for previews</td>
@@ -428,10 +430,12 @@ its own character image. Canvases run from 8 to 512 pixels a side and from 1 to 
 unknown fields are ignored, so a misspelt setting is skipped rather than reported. The announcement calls the skill
 open-sourced, but the download carries no licence file or notice, and Scenario's MIT-licensed skills repository does
 not include it. We read its page, its making-of and the skill's source; we did not run it.</p>
-<p><strong>Choose it over Pixelbolt</strong> when you want stylised combat and magic effects that Pixelbolt has no
-ready-made shapes for (sword slashes, beams, shockwave rings, lightning, magic circles, impact stars, claw marks,
-shields, damage numbers), picked from a library and previewed on a character in the browser, with MP4 for posting or a
-Godot 4 resource to import. Its skill lets an agent render the same recipes from a Node script, without an MCP
+<p><strong>Choose it over Pixelbolt</strong> when you want stylised combat and magic effects picked from a library
+of ready-made recipes and previewed on a character in the browser, with MP4 for posting or a Godot 4 resource to
+import. Its 22 layer types include sword slashes, beams, shockwave rings, lightning, magic circles, impact stars, claw
+marks, shields and damage numbers. Pixelbolt's releases (0.9.1 and earlier) have no such shapes; <code>main</code> adds
+rings, slashes, beams, lightning, magic circles, impact stars and fireball bursts as effect layers, and a Godot 4
+export, not yet in a release. Its skill lets an agent render the same recipes from a Node script, without an MCP
 server.</p>
 
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
@@ -449,9 +453,10 @@ Desktop from the <a href="https://github.com/skulitom/Pixelbolt/releases/latest"
 <li><strong>No hand-editing tool for new effects.</strong> A new effect is a JSON source that you or an agent write.
 The studio's Fluid lab (in its docs; not used for this page) runs a preset in your browser with a few sliders and
 downloads the result, but there is no emitter editor, timeline or node graph like the desktop apps above.</li>
-<li><strong>No ready-made spell shapes.</strong> Pixelbolt has no slash, beam, shockwave ring, lightning or
-magic-circle primitive: an agent builds them from particle emitters or draws them with lines, ellipses and stamps.
-Pixel VFX Forge has these as layer types.</li>
+<li><strong>Spell shapes only on <code>main</code>.</strong> The releases (0.9.1 and earlier) have no slash, beam,
+shockwave ring, lightning or magic-circle primitive: an agent builds them from particle emitters or draws them with
+lines, ellipses and stamps. <code>main</code> adds seven shape layers (rings, slashes, beams, bolts, magic circles,
+stars and fireball bursts), not yet in a release. Pixel VFX Forge has 22 layer types.</li>
 <li><strong>New and bounded.</strong> Fluid effects shipped in 0.9.0 on 18 October 2026, the day before this check. A
 source is refused if it needs more than 32,768 liquid particles, 4,096 sparks or about 400 million cell updates, and
 flows are capped at 32 pixels a frame.</li>
@@ -608,7 +613,7 @@ guide</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/fluid.sche
 </ul>
 
 <footer class="muted">
-<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 19 October 2026; Pixel VFX Forge, and Pixelbolt's spell shapes and Godot 4 export on <code>main</code>, added 27 October 2026. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·
