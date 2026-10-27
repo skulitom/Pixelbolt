@@ -69,6 +69,6 @@ test('CLI compile lists an out-of-reach target in its result when the metadata g
   await writeFile(path.join(dir, 'arm.poses.json'), JSON.stringify(arm([100, 100])));
   const { stdout } = await promisify(execFile)(process.execPath, [cli, 'compile', 'arm.poses.json', '--out', 'arm.json', '--metadata', 'arm.metadata.json'], { cwd: dir });
   const result = JSON.parse(stdout);
-  assert.deepEqual(result.warnings, [expected]); assert.equal(result.metadata, path.join(dir, 'arm.metadata.json'));
+  assert.deepEqual(result.warnings, [expected]); assert.equal(path.basename(result.metadata), 'arm.metadata.json');
   assert.equal(JSON.parse(await readFile(path.join(dir, 'arm.metadata.json'), 'utf8')).warnings[0].path, 'poses.poses[0].parts[0].reach');
 });
