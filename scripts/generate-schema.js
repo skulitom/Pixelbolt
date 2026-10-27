@@ -290,7 +290,7 @@ const layerCommon = {
   power: tween(0, 8, 'Multiplies the field: bright bands shrink as it falls, so the shape erodes instead of fading; default 1.'),
   flicker: num(0, 1, 'Every other frame of the window, power drops by this share.'),
   blend: { enum: ['max', 'add'], description: 'max (default): the brighter layer of a look wins; add: layers sum.' },
-  tilt: num(-3600, 3600, 'Rotate the shape clockwise by degrees.'), squash: { ...pairOf(num(0.125, 8)), description: 'Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground.' },
+  tilt: num(-3600, 3600, 'Rotate the shape clockwise by degrees.'), squash: { ...pairOf(num(0.125, 8)), description: 'Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground.' },
   drift: vector(-4096, 4096, 'Move by [x, y] pixels over the window (smoke rising).'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
   cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' }
 };

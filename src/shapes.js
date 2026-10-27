@@ -279,20 +279,23 @@ const PAINTERS = {
   },
   // A straight beam from `at` to `to`: the head shoots out over the first `reveal` share, the width ripples with
   // travelling waves, and the value falls from 1 on the axis to 0 at the edge, with round caps, and by `fade` from the
-  // origin to the far end (a pillar of light that thins out upward).
+  // origin to the far end (a pillar of light that thins out upward). `squash` and `tilt` shape the caps alone, so a
+  // pillar given its circle's squash stands on a foot that lies on the same ground.
   beam(layer, s, put, W, H) {
     const ax = s.cx, ay = s.cy, bx = layer.to[0] + s.dx, by = layer.to[1] + s.dy, ex = bx - ax, ey = by - ay, L = Math.sqrt(ex * ex + ey * ey) || 1;
     const ux = ex / L, uy = ey / L, w = sample(layer.width, s.q) / 2, head = (layer.reveal ? ease('out', clamp01(s.end / layer.reveal)) : 1) * L;
     if (w <= 0) return;
     const half = along => Math.max(0.6, w * (1 + layer.wobble * sinDeg(360 * (along / layer.wavelength - layer.waves * s.p))));
-    const margin = w * (1 + layer.wobble) + 2;
+    const [sx, sy] = layer.squash, c = cosDeg(layer.tilt), sn = sinDeg(layer.tilt);
+    const cap = (px, py) => { const u = (px * c + py * sn) / sx, v = (-px * sn + py * c) / sy; return Math.sqrt(u * u + v * v); };
+    const margin = w * (1 + layer.wobble) * s.frame.reach + 2;
     const x0 = Math.max(0, Math.floor(Math.min(ax, ax + ux * head) - margin)), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, ax + ux * head) + margin));
     const y0 = Math.max(0, Math.floor(Math.min(ay, ay + uy * head) - margin)), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, ay + uy * head) + margin));
     for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
       const dx = i - ax, dy = j - ay, along = dx * ux + dy * uy;
       let distance, hw;
-      if (along < 0) { distance = Math.sqrt(dx * dx + dy * dy); hw = half(0); }
-      else if (along > head) { const hx = i - (ax + ux * head), hy = j - (ay + uy * head); distance = Math.sqrt(hx * hx + hy * hy); hw = half(head); }
+      if (along < 0) { distance = cap(dx, dy); hw = half(0); }
+      else if (along > head) { distance = cap(i - (ax + ux * head), j - (ay + uy * head)); hw = half(head); }
       else { distance = Math.abs(dx * uy - dy * ux); hw = half(along); }
       if (distance < hw) put(i, j, (1 - distance / hw) * (1 - layer.fade * clamp01(along / L)));
     }

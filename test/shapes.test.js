@@ -74,6 +74,21 @@ test('shape layers compile to golden recipes, the same every time', () => {
   });
 });
 
+test('a beam\'s squash flattens its round ends alone, so a pillar stands on the ground of its circle', () => {
+  const pillar = extra => {
+    const grid = gridOf(compileEffects(source({ layers: [{ kind: 'beam', look: 'cool', at: [24, 40], to: [24, 14], width: 16, reveal: 0, wobble: 0, ...extra }] })).recipe.frames[0]);
+    const widthAt = y => grid.rows[y - grid.y].replace(/^\.+|\.+$/g, '').length;
+    return { lowest: grid.y + grid.rows.length - 1, top: grid.y, body: widthAt(20), foot: widthAt(40) };
+  };
+  const round = pillar(), flat = pillar({ squash: [1, 0.42] });
+  // A round foot reaches most of the half width (8) below `at`; squashed by 0.42 it reaches under half as far.
+  assert.ok(round.lowest >= 45, `round foot ends at ${round.lowest}`);
+  assert.ok(flat.lowest <= 43, `flat foot ends at ${flat.lowest}`);
+  assert.ok(flat.top >= round.top + 3, 'the far end flattens too');
+  assert.equal(flat.body, round.body, 'the body keeps its width');
+  assert.equal(flat.foot, round.foot, 'the foot is as wide as the body');
+});
+
 test('a falling power erodes a shape band by band, and reveals already show the first frame', () => {
   const counts = power => compileEffects(source({ layers: [{ ...LAYERS.star, radius: 14, width: 3, power }] })).recipe.frames.map(f => visible(gridOf(f)?.rows ?? []));
   const steady = counts(1), fading = counts([1.2, 0.2]);

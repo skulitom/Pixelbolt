@@ -1768,7 +1768,7 @@
       },
       "maxItems": 2,
       "minItems": 2,
-      "description": "Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground."
+      "description": "Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground."
     },
     "layer-drift": {
       "type": "array",
