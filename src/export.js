@@ -84,9 +84,14 @@ export async function createBundle(spec) {
   files.set('player.js', await readFile(new URL('./runtime.js', import.meta.url)));
   files.set('preview.html', Buffer.from(previewHTML(project)));
   files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames, named animation sequences and Aseprite-style frame tags\n${name}.tres: Godot 4 SpriteFrames; it finds ${name}.png in its own folder, so keep the two together\n${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nGodot 4: copy ${name}.png and ${name}.tres into one folder of your project, give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${Object.keys(project.animations)[0]}"). Set the node's Texture Filter to Nearest for crisp pixels.\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
-  // A forced export over an earlier export of this recipe removes the PNGs of frames and animations it no longer has.
-  return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/ } };
+  // A forced export over an earlier export of this recipe removes the frame and animation PNGs that export's atlas
+  // lists and this one no longer has. Another recipe's export in the same folder keeps its PNGs, and so does a PNG
+  // put in frames/ by hand.
+  return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/, listed: atlasFiles, peers: /\.atlas\.json$/ } };
 }
+// The frame and animation PNGs an export wrote, as its atlas metadata names them. Anything else lists nothing.
+const keysOf = value => (value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value) : []);
+const atlasFiles = metadata => [...keysOf(metadata?.frames).map(frame => `frames/${frame}.png`), ...keysOf(metadata?.animations).map(key => `animations/${key}.png`)];
 function previewHTML(project) {
   const { name, animations } = project;
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>${name} · Pixelbolt</title><link rel="stylesheet" href="${name}.css"><style>body{font:16px system-ui;background:#17191d;color:#e6e7eb;margin:48px}main{display:flex;gap:32px;flex-wrap:wrap}figure{margin:0;padding:24px;background:#252930;border-radius:12px}img{width:${project.width * Math.min(8, Math.max(1, Math.floor(256 / project.width)))}px;image-rendering:pixelated}figcaption{margin-top:20px}a{color:#c4b9f3}</style><h1>${name}</h1><p>Animated PNGs. Original frame timing and transparency are preserved.</p><main>${Object.keys(animations).map(key => `<figure><img src="animations/${key}.png" alt="${key} animation"><figcaption>${key}</figcaption></figure>`).join('')}</main><p><a href="${name}.png">Sprite sheet</a> · <a href="${name}.atlas.json">Atlas metadata</a> · <a href="${name}.pixel.json">Editable source</a></p></html>`;
@@ -173,11 +178,26 @@ export async function sameFiles(targets, inputs) {
 // What an earlier export of the same thing left in this folder that this one does not write: a longer sequence's
 // later frames, or a renamed frame's or animation's PNG. Only a bundle that declares `owns` has any, and only when the
 // folder holds that bundle's own index file (`owns.marker`), which shows the earlier export was this kind. Nothing
-// outside `owns.folders` that fails `owns.match` is ever listed.
+// outside `owns.folders` that fails `owns.match` is ever listed. Where `owns.listed` reads the files an export wrote
+// from its marker, only files the earlier marker lists are leftovers, and none that another export's marker in the
+// folder (`owns.peers`) lists: a sprite's frames are not another sprite's to remove. When the marker or a peer can't
+// be read, what it lists is unknown, so nothing goes.
 async function leftovers(bundle, root) {
   const { owns } = bundle;
   if (!owns) return [];
   try { await access(path.join(root, owns.marker)); } catch { return []; }
+  let earlier = null, others = [];
+  if (owns.listed) {
+    const listing = async file => { try { return owns.listed(JSON.parse(await readFile(path.join(root, file), 'utf8'))); } catch { return null; } };
+    earlier = await listing(owns.marker);
+    if (!earlier?.length) return [];
+    // The marker under another spelling, where the folder ignores case, is the earlier export's own, not a peer's.
+    const peers = [];
+    for (const file of await readdir(root).catch(() => [])) if (owns.peers.test(file) && file !== owns.marker && !await oneFile(root, file, owns.marker)) peers.push(file);
+    const listings = await Promise.all(peers.map(listing));
+    if (listings.includes(null)) return [];
+    others = listings.flat();
+  }
   // Pixelbolt writes these extensions exactly, so a photo.PNG of someone else's beside them is never taken for one.
   const extensions = new Set([...bundle.files.keys()].map(name => path.posix.extname(name))), found = [];
   for (const folder of owns.folders) {
@@ -189,9 +209,10 @@ async function leftovers(bundle, root) {
     const caseless = folded && sample !== undefined && await oneFile(path.join(root, folder), sample.name, swapCase(sample.name));
     const key = caseless ? name => name.toLowerCase() : name => name, keys = new Set([...bundle.files.keys()].map(key));
     const match = caseless && !owns.match.flags.includes('i') ? new RegExp(owns.match.source, `${owns.match.flags}i`) : owns.match;
+    const wrote = earlier && new Set(earlier.map(key)), kept = new Set(others.map(key));
     for (const entry of entries) {
       const name = folder === '.' ? entry.name : `${folder}/${entry.name}`;
-      if (extensions.has(path.posix.extname(name)) && match.test(name) && !keys.has(key(name))) found.push(name);
+      if (extensions.has(path.posix.extname(name)) && match.test(name) && !keys.has(key(name)) && (!wrote || wrote.has(key(name))) && !kept.has(key(name))) found.push(name);
     }
   }
   return found.sort();
