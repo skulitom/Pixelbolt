@@ -702,6 +702,26 @@
             "type": "boolean",
             "description": "false keeps this placement's authored colours under scene lighting: fires, lamps, glows and other light sources. Default true."
           },
+          "parallax": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 4
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                "maxItems": 2,
+                "minItems": 2
+              }
+            ],
+            "description": "How much of scene.camera's movement this placement or tilemap follows, as a number or [x, y]: 1 the scene (default), 0.5 a far plane, 0 fixed on screen (a sky), above 1 a plane nearer than the scene. Each plane rounds its share to whole pixels. Not on attached placements, which move with their target."
+          },
           "haze": {
             "type": "number",
             "minimum": 0,
@@ -716,6 +736,74 @@
         "additionalProperties": false
       },
       "maxItems": 256
+    },
+    "camera": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -4096,
+            "maximum": 4096
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 60000
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}([+-][0-9]{1,5})?$"
+                  }
+                ],
+                "description": "Milliseconds or a named cue."
+              },
+              "at": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -4096,
+                  "maximum": 4096
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+              },
+              "ease": {
+                "enum": [
+                  "linear",
+                  "hold",
+                  "in",
+                  "out",
+                  "inOut",
+                  "overshoot",
+                  "bounce"
+                ],
+                "description": "Shape of the move from this key to the next: linear (default), hold (jump at the end), in, out, inOut, overshoot or bounce."
+              }
+            },
+            "required": [
+              "time",
+              "at"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 256,
+          "minItems": 1
+        }
+      ],
+      "description": "The scene point at the view's top-left corner: [x, y], or keys over time held before the first and after the last. Placements move by their parallax share of it; at [0, 0] everything is where it is written."
     },
     "haze": {
       "type": "object",

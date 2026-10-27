@@ -83,9 +83,10 @@ function lightControls() {
     const near = lights.findIndex((light, i) => { const now = shown[i] ?? light; return Math.hypot(now.at[0] - point[0], now.at[1] - point[1]) <= reach; });
     if (near >= 0) $('light-pick').value = String(near);
     canvas.setPointerCapture(event.pointerId);
-    // A following light's `at` is an offset from what it follows, so dragging it moves the offset.
+    // A light is shown where the scene puts it on screen: a following light's `at` is an offset from what it follows,
+    // and a camera moves every light, so dragging keeps that difference and moves `at` by as much as the pointer.
     const light = selected(), now = shown[Number($('light-pick').value)];
-    const base = light.follow && now ? [now.at[0] - light.at[0], now.at[1] - light.at[1]] : [0, 0];
+    const base = now ? [now.at[0] - light.at[0], now.at[1] - light.at[1]] : [0, 0];
     const move = moved => change('at', () => { const [x, y] = toScene(moved); selected().at = [x - base[0], y - base[1]]; });
     move(event);
     canvas.onpointermove = moved => { if (canvas.hasPointerCapture(moved.pointerId)) move(moved); };

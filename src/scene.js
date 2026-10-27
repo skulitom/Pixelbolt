@@ -35,6 +35,16 @@ function liftAt(lift, time) {
   }
   return lift.at(-1).height;
 }
+// The camera at `time`: keys held before the first and after the last and eased between neighbours by the earlier
+// key's ease. It is not rounded: each plane rounds its own share of it.
+function cameraAt(keys, time) {
+  if (time <= keys[0].time) return keys[0].at;
+  for (let k = 1; k < keys.length; k++) {
+    const a = keys[k - 1], b = keys[k];
+    if (time < b.time) { const f = ease(a.ease, (time - a.time) / (b.time - a.time)); return a.at.map((v, axis) => v + (b.at[axis] - v) * f); }
+  }
+  return keys.at(-1).at;
+}
 const alphaOver = (target, at, color) => {
   if (color[3] === 255) { target.set(color, at); return; }
   const alpha = color[3] / 255; if (!alpha) return;
@@ -74,7 +84,7 @@ const paletteMap = (value, path) => {
 };
 
 export function prepareScene(source) {
-  fields(source, ['format', 'version', 'name', 'width', 'height', 'background', 'duration', 'palette', 'cues', 'assets', 'instances', 'lighting', 'haze'], 'scene');
+  fields(source, ['format', 'version', 'name', 'width', 'height', 'background', 'duration', 'palette', 'cues', 'assets', 'instances', 'lighting', 'haze', 'camera'], 'scene');
   if (source.format !== 'pixelforge-scene' || source.version !== 1) fail('scene', 'expected version-1 pixelforge-scene');
   const width = int(source.width, 1, 256, 'scene.width'), height = int(source.height, 1, 256, 'scene.height');
   const duration = int(source.duration ?? 2000, 1, 60000, 'scene.duration');
@@ -112,6 +122,25 @@ export function prepareScene(source) {
     }
     return int(value, 0, max, path);
   };
+  // The camera: the scene point at the view's top-left corner, fixed or keyed over time. Without one the view is the
+  // scene from [0, 0], as before.
+  let camera = null;
+  if (source.camera !== undefined) {
+    if (Array.isArray(source.camera) && typeof source.camera[0] !== 'object') camera = [{ time: 0, at: point(source.camera, 'scene.camera'), ease: 'linear' }];
+    else {
+      if (!Array.isArray(source.camera) || !source.camera.length || source.camera.length > 256) fail('scene.camera', 'expected [x, y] or 1–256 timed positions');
+      let prior = -1;
+      camera = source.camera.map((key, j) => {
+        const kp = `scene.camera[${j}]`;
+        fields(key, ['time', 'at', 'ease'], kp);
+        const time = when(key.time, `${kp}.time`, duration);
+        if (time <= prior) fail('scene.camera', 'key times must increase strictly');
+        if (key.ease !== undefined && !EASINGS.includes(key.ease)) fail(`${kp}.ease`, `expected one of ${EASINGS.join(', ')}`);
+        prior = time;
+        return { time, at: point(key.at, `${kp}.at`), ease: key.ease ?? 'linear' };
+      });
+    }
+  }
   if (!source.assets || Array.isArray(source.assets) || typeof source.assets !== 'object' || Object.keys(source.assets).length > 64) fail('scene.assets', 'expected at most 64 inlined assets');
   // Ramp shifters per asset (kept apart from the passes, which exports iterate as images).
   const assets = Object.create(null), shifts = Object.create(null), warnings = []; let sourceArea = 0;
@@ -146,7 +175,7 @@ export function prepareScene(source) {
   source.instances.forEach((instance, i) => { if (typeof instance?.name === 'string') named.set(instance.name, named.has(instance.name) ? null : i); });
   const instances = source.instances.map((instance, i) => {
     const path = `scene.instances[${i}]`;
-    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit', 'haze'], path);
+    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit', 'haze', 'parallax'], path);
     if (instance.name !== undefined && typeof instance.name !== 'string') fail(`${path}.name`, 'expected a string label');
     // `lit: false` keeps a placement's authored colours under scene lighting: a fire, a lamp or a glow is a light
     // source, not something the scene's lights fall on.
@@ -169,6 +198,14 @@ export function prepareScene(source) {
       if (!shifts[instance.asset]) fail(`${path}.shade`, `shade moves colours along ramps; declare ramps in ${instance.asset}'s recipe`);
     }
     if (instance.sort !== undefined && instance.sort !== 'ground') fail(`${path}.sort`, 'expected ground: draw this placement among the other sorted ones by its ground line');
+    // How much of the camera's movement a placement follows: 1 is the scene (the default), less is a farther plane, 0
+    // stays on screen (a sky), more than 1 is a plane nearer than the scene. A number, or [x, y] for each axis.
+    let parallax = [1, 1];
+    if (instance.parallax !== undefined) {
+      if (!camera) fail(`${path}.parallax`, 'parallax moves a placement with scene.camera; set a camera first');
+      if (instance.attach !== undefined) fail(`${path}.parallax`, 'an attached placement moves with its target');
+      parallax = Array.isArray(instance.parallax) && instance.parallax.length === 2 ? instance.parallax.map((v, axis) => num(v, 0, 4, `${path}.parallax[${axis}]`)) : [num(instance.parallax, 0, 4, `${path}.parallax`), instance.parallax];
+    }
     // How far into the haze a placement stands: 0 is none, 1 is the haze colour itself.
     if (instance.haze !== undefined) {
       if (!haze) fail(`${path}.haze`, 'set scene.haze first: the colour far planes fade toward');
@@ -183,7 +220,7 @@ export function prepareScene(source) {
       count += tilemap.cells.length; work += tilemap.cells.length * project.width * project.height * scale ** 2;
       if (count > MAX_DRAWS || work > MAX_WORK) fail(path, 'scene exceeds 4,096 draws or 4,194,304 drawing pixels');
       if (scale !== 1) warnings.push(`${instance.name ?? i}: ${scale}× pixels; compare density against neighboring 1× assets.`);
-      return { ...instance, at, anchor, scale, shade, tilemap };
+      return { ...instance, at, anchor, scale, shade, tilemap, parallax };
     }
     const repeat = point(instance.repeat ?? [1, 1], `${path}.repeat`, 32);
     if (repeat.some(n => n < 1)) fail(`${path}.repeat`, 'repeat counts must be positive');
@@ -255,7 +292,7 @@ export function prepareScene(source) {
       });
     } else if (instance.lift !== undefined) lift = int(instance.lift, 0, 256, `${path}.lift`);
     if (scale !== 1) warnings.push(`${instance.name ?? i}: ${scale}× pixels; compare density against neighboring 1× assets.`);
-    return { ...instance, at, anchor, scale, repeat, step, shade, attach, lift, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
+    return { ...instance, at, anchor, scale, repeat, step, shade, attach, lift, parallax, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
   });
   let lighting = null;
   if (source.lighting !== undefined) {
@@ -313,7 +350,7 @@ export function prepareScene(source) {
     }) };
     if (mode === 'ramp' && !Object.keys(shifts).length) warnings.push('Ramp lighting needs ramps in the recipes it lights; no asset declares any, so nothing is lit.');
   }
-  return { source, width, height, duration, assets, shifts, instances, background, lighting, haze, warnings: [...new Set(warnings)] };
+  return { source, width, height, duration, assets, shifts, instances, background, lighting, haze, camera, warnings: [...new Set(warnings)] };
 }
 // Sets a prepared light's radius as prepareScene reads it from a scene: keys that set no radius of their own take the
 // light's. The studio's slider uses this, so its preview is what the saved scene shows.
@@ -341,6 +378,14 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   if (!Number.isFinite(time) || time < 0) fail('scene.time', 'expected a nonnegative finite time in milliseconds');
   if (typeof lit !== 'boolean' || typeof density !== 'boolean' || typeof depth !== 'boolean') fail('scene.preview', 'lit, density and depth must be booleans');
   const { width, height, background, assets, shifts, lighting } = scene, data = new Uint8ClampedArray(width * height * 4), placements = [];
+  // Where the camera is, and how far each placement moves on screen for it: its parallax share of the camera, rounded
+  // to whole pixels per plane. An attached placement moves with its target; -1 is the scene itself.
+  const camera = scene.camera ? cameraAt(scene.camera, time) : null;
+  const shiftOf = i => {
+    if (!camera) return [0, 0];
+    const factor = i < 0 ? [1, 1] : scene.instances[scene.instances[i].attach?.index ?? i].parallax;
+    return [Math.round(camera[0] * factor[0]), Math.round(camera[1] * factor[1])];
+  };
   for (let at = 0; at < data.length; at += 4) data.set(background, at);
   const clipped = new Map();
   // Depth bookkeeping: one entry per drawn placement copy (shade placements darken and own nothing), the entry that
@@ -462,6 +507,9 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       else if (spot) at = [target.left + spot[0] * target.scale + light.at[0], target.top + spot[1] * target.scale + light.at[1]];
       else at = [target.position[0] + light.at[0], target.position[1] + light.at[1]];
     }
+    // On screen, a light moves with the scene, or with the plane of what it follows.
+    const [sx, sy] = shiftOf(light.follow ? light.follow.index : -1);
+    at = [at[0] - sx, at[1] - sy];
     // Flicker swings either way around the light's own strength, so a flickering light is as bright on average as a steady one.
     if (light.flicker) { const swing = light.flicker.amount * (1 - 2 * flickerAt(light.flicker, i, time, scene.duration)); strength *= 1 + swing; radius *= 1 + swing / 2; }
     return { at, height: light.height, radius, color: light.color, strength: on ? strength : 0 };
@@ -492,7 +540,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   for (const item of order) {
     const { i } = item, instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
     if (instance.tilemap) {
-      const { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s, top = instance.at[1] - instance.anchor[1] * s;
+      const shift = shiftOf(i), { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s - shift[0], top = instance.at[1] - instance.anchor[1] * s - shift[1];
       const box = { x: left, y: top, w: tilemap.columns * tilemap.tile[0] * s, h: tilemap.rows * tilemap.tile[1] * s };
       if (item.cell !== undefined) {
         // The cells of a sorted tilemap that stand on one row are drawn one after another and share a depth entry.
@@ -503,7 +551,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           if (last?.spans && last.instance === i && last.ground === item.ground) {
             const right = Math.max(last.box.x + last.box.w, x + w);
             last.spans.push([x, w]); last.tiles++; last.box.x = Math.min(last.box.x, x); last.box.w = right - last.box.x;
-          } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, covers: false });
+          } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, shift, covers: false });
           entry = entries.length - 1;
         }
         drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze);
@@ -518,11 +566,11 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     }
     const state = states[i], { rx, ry } = item;
     if (state.hidden) continue;
-    const left = state.left + rx * instance.step[0], top = state.top + ry * instance.step[1];
+    const shift = shiftOf(i), left = state.left + rx * instance.step[0] - shift[0], top = state.top + ry * instance.step[1] - shift[1];
     placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(state.lift && { lift: state.lift }), ...(instance.haze && { haze: instance.haze }), ...(instance.shade && { shade: instance.shade }) });
     // A sorted copy stands at its placement point; its y is the ground line it was sorted by.
     const sorted = instance.sort === 'ground', at = [state.position[0] + rx * instance.step[0], state.position[1] + ry * instance.step[1]];
-    const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, covers: false }) - 1 : -1;
+    const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, shift, covers: false }) - 1 : -1;
     drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze);
   }
   if (density) for (const box of placements) {
@@ -532,7 +580,8 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     }
   }
   const total = [...clipped.values()].reduce((sum, n) => sum + n, 0), named = [...clipped].sort((a, b) => b[1] - a[1]);
-  const clipWarning = total ? [`${total} drawn pixels clipped at scene bounds (${named.slice(0, 4).map(([name, n]) => `${name} ${n}`).join(', ')}${named.length > 4 ? `, ${named.length - 4} more` : ''}).`] : [];
+  // With a camera, much of the scene is off screen at any time, so clipping is no cause for a warning.
+  const clipWarning = total && !camera ? [`${total} drawn pixels clipped at scene bounds (${named.slice(0, 4).map(([name, n]) => `${name} ${n}`).join(', ')}${named.length > 4 ? `, ${named.length - 4} more` : ''}).`] : [];
   // Where each light was and how strong, rounded for reading; viewers draw their markers from it.
   const round = v => Math.round(v * 100) / 100;
   const lightsNow = lights.map(light => ({ at: light.at.map(round), radius: round(light.radius), strength: round(light.strength) }));
@@ -548,7 +597,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     }
     return { name: instance.name ?? `${instance.asset}#${i}`, haze: instance.haze, palette };
   });
-  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }), ...(hazy.length && { haze: hazy }) };
+  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }), ...(hazy.length && { haze: hazy }), ...(camera && { camera: camera.map(round) }) };
   if (depth) {
     // Who covers whom, largest first. Placements that lie straight on the background (a floor, a backdrop, a tilemap
     // under everything) are the ground and are left out as the one behind; sorted placements always count.
@@ -603,16 +652,17 @@ export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
       if (y + 1 < height && o !== owner[(y + 1) * width + x] && (tintOf(o) || tintOf(owner[(y + 1) * width + x]))) for (let k = 0; k < s; k++) put(x * s + k, y * s + s - 1, [12, 12, 20, 255]);
     }
     for (const e of entries) if (e.sorted) {
-      // A tile row's line runs under each of its tiles; it has no placement point to mark.
-      const ay = (e.spans ? e.ground : e.at[1]) * s;
+      // A tile row's line runs under each of its tiles; it has no placement point to mark. Ground lines and points are
+      // in scene coordinates, so they move on screen as their placement does.
+      const ay = ((e.spans ? e.ground : e.at[1]) - e.shift[1]) * s;
       for (const [x0, span] of e.spans ?? [[e.box.x, e.box.w]]) for (let x = x0 * s; x < (x0 + span) * s; x++) { put(x, ay, [255, 255, 255, 255]); put(x, ay + 1, [12, 12, 20, 255]); }
       if (e.spans) continue;
-      const ax = e.at[0] * s;
+      const ax = (e.at[0] - e.shift[0]) * s;
       // A tick on the line at the placement point (a pixel corner, so two pixels wide), edged dark.
       for (let dy = -4; dy <= -1; dy++) for (let dx = -2; dx <= 1; dx++) put(ax + dx, ay + dy, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
       // A lifted placement: dashes from the tick up to the point it is drawn at, so a jump shows how high above its
       // ground line it is.
-      if (e.lift > 0) for (let y = ay - 5; y >= (e.at[1] - e.lift) * s; y--) if ((ay - 5 - y) % 4 < 2) for (let dx = -2; dx <= 1; dx++) put(ax + dx, y, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
+      if (e.lift > 0) for (let y = ay - 5; y >= ay - e.lift * s; y--) if ((ay - 5 - y) % 4 < 2) for (let dx = -2; dx <= 1; dx++) put(ax + dx, y, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
     }
   } else out = scalePixels(native, width, height, s);
   if (checked) drawGuides(out, w, { left: 0, top: 0, w, h }, s, { x: 0, y: 0 }, checked);

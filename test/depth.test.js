@@ -262,6 +262,66 @@ test('haze is checked where it is written, and the schema matches', () => {
   assert.doesNotMatch('#b8c8d880', new RegExp(schema.properties.haze.properties.color.pattern));
 });
 
+// Camera and parallax: one-pixel markers on four planes, and a camera that pans 20 pixels right and 10 down.
+const dot = color => ({ version: 1, name: 'dot', width: 1, height: 1, palette: { c: color }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'c' }] }] });
+const pan = (camera = [{ time: 0, at: [0, 0] }, { time: 1000, at: [20, 10] }], extra = {}) => ({
+  format: 'pixelforge-scene', version: 1, name: 'pan', width: 40, height: 30, background: '#000000', duration: 1000, camera,
+  assets: { red: dot('#ff0000'), green: dot('#00ff00'), blue: dot('#0000ff'), white: dot('#ffffff') },
+  instances: [
+    { name: 'sky', asset: 'red', at: [2, 2], parallax: 0 },
+    { name: 'far', asset: 'green', at: [10, 5], parallax: 0.5 },
+    { name: 'scene', asset: 'blue', at: [30, 20] },
+    { name: 'near', asset: 'white', at: [36, 25], parallax: [1.5, 0] }
+  ],
+  ...extra
+});
+const where = (view, name) => { const p = view.placements.find(q => q.name === name); return p && [p.x, p.y]; };
+
+test('a camera pans the view, and each plane follows its parallax share of it in whole pixels', () => {
+  const scene = prepareScene(pan()), at = time => renderScene(scene, { time });
+  const start = at(0), middle = at(500), end = at(1000);
+  for (const name of ['sky', 'far', 'scene', 'near']) assert.deepEqual(where(start, name), scene.instances.find(i => i.name === name).at, `${name} starts where it is written`);
+  // Halfway the camera is at [10, 5]: the far plane moves [5, 2.5], rounded to [5, 3]; the near plane 15 across only.
+  assert.deepEqual(middle.camera, [10, 5]);
+  assert.deepEqual(['sky', 'far', 'scene', 'near'].map(name => where(middle, name)), [[2, 2], [5, 2], [20, 15], [21, 25]]);
+  assert.deepEqual(['sky', 'far', 'scene', 'near'].map(name => where(end, name)), [[2, 2], [0, 0], [10, 10], [6, 25]]);
+  assert.deepEqual(colour(end, 10, 10), [0, 0, 255, 255]);
+  assert.deepEqual(colour(end, 0, 0), [0, 255, 0, 255]);
+  // Keys take cues and eases and hold at both ends; a fixed camera is one position.
+  const eased = prepareScene({ ...pan([{ time: 'go', at: [0, 0], ease: 'in' }, { time: 'go+500', at: [16, 0] }]), cues: { go: 200 } });
+  assert.deepEqual([100, 450, 900].map(time => where(renderScene(eased, { time }), 'scene')[0]), [30, 28, 14]);
+  assert.deepEqual(where(renderScene(prepareScene(pan([5, 0]))), 'scene'), [25, 20]);
+  // Off-screen drawing is no warning with a camera, and still is without one.
+  const offscreen = { asset: 'blue', at: [60, 2] };
+  assert.equal(renderScene(prepareScene(pan(undefined, { instances: [...pan().instances, offscreen] }))).warnings.length, 0);
+  const still = pan(); delete still.camera; still.instances = [still.instances[2], offscreen];
+  assert.match(renderScene(prepareScene(still)).warnings[0], /clipped at scene bounds/);
+});
+
+test('attachments and lights move with their plane, and depth marks with the view', () => {
+  const lighting = { lights: [{ at: [20, 15] }, { follow: { instance: 'far' } }] };
+  const source = pan(undefined, { lighting }); source.instances.push({ name: 'pin', asset: 'white', at: [1, 0], attach: { instance: 'far' } });
+  source.instances[2].sort = 'ground';
+  const view = renderScene(prepareScene(source), { time: 1000, depth: true });
+  assert.deepEqual(where(view, 'pin'), [1, 0], 'the pin rides the far plane');
+  assert.deepEqual(view.lights.map(light => light.at), [[0, 5], [0, 0]]);
+  // The depth report keeps scene positions; the image draws the ground line where the placement is on screen.
+  assert.deepEqual(view.depth.sorted, [{ name: 'scene', at: [30, 20] }]);
+  const s = 4, image = sceneImage(view, { mode: 'depth', scale: s }), pixel = (x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
+  assert.deepEqual(pixel(10 * s, 10 * s), [255, 255, 255, 255]);
+  const fails = (change, message) => { const bad = pan(); change(bad); assert.throws(() => prepareScene(bad), message); };
+  fails(bad => { delete bad.camera; }, /parallax moves a placement with scene\.camera/);
+  fails(bad => { bad.instances[1].parallax = 5; }, /parallax: expected a number from 0 to 4/);
+  fails(bad => { bad.instances[3].parallax = [1, 9]; }, /parallax\[1\]: expected a number from 0 to 4/);
+  fails(bad => { bad.instances.push({ asset: 'red', at: [0, 0], parallax: 1, attach: { instance: 'far' } }); }, /an attached placement moves with its target/);
+  fails(bad => { bad.camera = [{ time: 10, at: [0, 0] }, { time: 10, at: [1, 0] }]; }, /key times must increase strictly/);
+  fails(bad => { bad.camera = [1.5, 0]; }, /scene\.camera: expected two integer coordinates/);
+  fails(bad => { bad.camera = [{ time: 0, at: [0, 0], zoom: 2 }]; }, /zoom/);
+  const schema = JSON.parse(readFileSync(path.join(root, 'scene.schema.json'), 'utf8'));
+  assert.equal(schema.properties.camera.oneOf.length, 2);
+  assert.equal(schema.properties.instances.items.properties.parallax.oneOf[0].maximum, 4);
+});
+
 test('the depth view draws dashes from the ground tick up to a lifted placement', () => {
   const s = 4, view = renderScene(prepareScene(hop()), { time: 350, depth: true }), image = sceneImage(view, { mode: 'depth', scale: s });
   const at = (x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
@@ -372,6 +432,7 @@ test('MCP pixel_scene returns the depth report with its image, and pixel_inspect
   assert.equal(plain.depth, undefined);
   const hazed = JSON.parse((await call('pixel_scene', { scene: { ...yard(), haze: { color: '#ffffff' }, instances: yard().instances.map(i => (i.name === 'post' ? { ...i, haze: 0.5 } : i)) } })).content[0].text);
   assert.deepEqual(hazed.haze, [{ name: 'post', haze: 0.5, palette: { c: '#e0e0e0' } }]);
+  assert.deepEqual(JSON.parse((await call('pixel_scene', { scene: pan(), time: 500 })).content[0].text).camera, [10, 5]);
   // Guides sent as JSON text are read as the object the schema declares.
   const recipe = { version: 1, name: 'wall', width: 8, height: 8, palette: { k: '#404040' }, frames: [{ name: 'a', ops: [{ op: 'rect', w: 8, h: 8, color: 'k' }] }] };
   const inspected = await call('pixel_inspect', { project: recipe, guides: '{"horizon": 4, "iso": {"tile": [8, 4]}}' });
