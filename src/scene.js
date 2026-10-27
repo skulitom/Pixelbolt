@@ -406,16 +406,20 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       }
     }
     const anchor = instance.anchor === 'frame' ? frame.anchor ?? [0, 0] : instance.anchor;
-    // `position` is where a placement stands, which orders it; it is drawn `lift` pixels higher. A frame point rises
-    // with its placement, so a placement attached to one is lifted as much and stands below it; the point where a
-    // placement stands stays on the ground.
+    // `position` is where a placement stands, which orders it; it is drawn `lift` pixels higher. A placement attached to
+    // a frame point (a held sword) stands on its target's ground line, straight below the point, and is lifted up to it,
+    // so it sorts with its target and list order decides which is in front. One attached without a point follows where
+    // its target stands, which stays on the ground while the target is lifted.
     let lift = liftAt(instance.lift, time);
     if (instance.attach) {
       const target = states[instance.attach.index], { point } = instance.attach;
       const spot = target && !target.hidden ? (point ? target.frame.points?.[point] : target.position) : undefined;
       if (!spot) hidden = true;
       else if (!point) position = [spot[0] + instance.at[0], spot[1] + instance.at[1]];
-      else { position = [target.left + spot[0] * target.scale + instance.at[0], target.top + spot[1] * target.scale + instance.at[1] + target.lift]; lift += target.lift; }
+      else {
+        position = [target.left + spot[0] * target.scale + instance.at[0], target.position[1]];
+        lift += target.position[1] - (target.top + spot[1] * target.scale + instance.at[1]);
+      }
     }
     states[i] = { hidden, index, frame, position, lift, left: position[0] - anchor[0] * instance.scale, top: position[1] - anchor[1] * instance.scale - lift, scale: instance.scale };
   }

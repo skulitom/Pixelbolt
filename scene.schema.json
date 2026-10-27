@@ -384,7 +384,7 @@
               "instance"
             ],
             "additionalProperties": false,
-            "description": "Follow another placement; at becomes the offset from the point followed. A frame point rises with its placement's lift, and so does what is attached to it."
+            "description": "Follow another placement; at becomes the offset from the point followed. Attached to a frame point, it stands on the other placement's ground line below the point and is lifted up to it, so a sorted held item sorts with its holder (list order decides which is in front)."
           },
           "sort": {
             "const": "ground",

@@ -156,11 +156,12 @@ test('lift draws a placement higher while where it stands still orders it', () =
   assert.deepEqual(colour(renderScene(prepareScene(moved)), 16, 14), BARREL);
   // Keys hold before the first and after the last; out on the way up and in on the way down ease the arc.
   assert.deepEqual([0, 200, 275, 350, 425, 500, 900].map(time => at(time).placements.find(p => p.name === 'hero').lift ?? 0), [0, 0, Math.round(12 * (1 - 0.5 ** 3)), 12, Math.round(12 - 12 * 0.5 ** 3), 0, 0]);
-  // The shadow, attached to where the hero stands, stays on the floor; the sword at the hand rises with it.
+  // The shadow, attached to where the hero stands, stays on the floor; the sword at the hand rises with it. The sword
+  // stands on the hero's ground line, so its lift is the hand's height above it: 5, and 17 at the top of the jump.
   const placed = name => top.placements.find(p => p.name === name), ground = renderScene(scene, { time: 0 });
   assert.equal(placed('shadow').y, ground.placements.find(p => p.name === 'shadow').y);
   assert.equal(placed('sword').y, ground.placements.find(p => p.name === 'sword').y - 12);
-  assert.equal(placed('sword').lift, 12);
+  assert.deepEqual([ground.placements.find(p => p.name === 'sword').lift, placed('sword').lift], [5, 17]);
   assert.equal(placed('shadow').lift, undefined);
   // A fixed lift hovers, and a scene without lift draws as before.
   assert.equal(renderScene(prepareScene(hop({ heroLift: 5 }))).placements.find(p => p.name === 'hero').y, 24 - 9 - 5);
@@ -182,6 +183,24 @@ test('lift and point-free attachments are checked where they are written', () =>
   const schema = JSON.parse(readFileSync(path.join(root, 'scene.schema.json'), 'utf8')), placement = schema.properties.instances.items.properties;
   assert.equal(placement.lift.oneOf.length, 2);
   assert.deepEqual(placement.attach.required, ['instance']);
+});
+
+test("a sorted placement attached to a frame point stands on its target's ground line, so a held sword stays with its hero", () => {
+  const SWORD = [224, 224, 224, 255], held = (change = () => {}) => { const source = hop(); source.instances[4].sort = 'ground'; change(source); return prepareScene(source); };
+  const view = renderScene(held(), { depth: true });
+  // The hero stands in front of the barrel, so the sword in its hand does too, and covers the barrel where they meet.
+  assert.deepEqual(view.depth.sorted, [{ name: 'barrel', at: [16, 20] }, { name: 'hero', at: [16, 24] }, { name: 'sword', at: [18, 24], lift: 5 }]);
+  assert.deepEqual(view.depth.overlaps.find(o => o.behind === 'barrel' && o.front === 'sword'), { front: 'sword', behind: 'barrel', pixels: 4 });
+  assert.deepEqual(colour(view, 18, 17), SWORD);
+  // At the top of the jump it still stands on the hero's line, 17 rows below the hand.
+  assert.deepEqual(renderScene(held(), { time: 350, depth: true }).depth.sorted.at(-1), { name: 'sword', at: [18, 24], lift: 17 });
+  // Sharing the hero's line, list order decides: listed after the hero it is drawn over it, listed before, under it.
+  const over = held(s => { s.instances[4].at = [-1, 0]; }), under = held(s => { s.instances[4].at = [-1, 0]; s.instances.splice(3, 0, s.instances.pop()); });
+  assert.deepEqual(colour(renderScene(over), 16, 17), SWORD);
+  assert.deepEqual(colour(renderScene(under), 16, 17), HERO);
+  // A light that follows the sword without a point is where the sword stands, on the floor below the hand.
+  const lit = held(s => { s.lighting = { lights: [{ follow: { instance: 'sword' } }] }; });
+  assert.deepEqual(renderScene(lit).lights[0].at, [18, 24]);
 });
 
 test('the depth view draws dashes from the ground tick up to a lifted placement', () => {
