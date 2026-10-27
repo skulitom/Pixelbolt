@@ -116,6 +116,20 @@ test('a forced export removes only what its own earlier export wrote, never anot
   // so e stays: an unlisted PNG is never taken for a leftover.
   assert.deepEqual((await writeBundle(await createBundle(recipe('other', ['d'], 'twice')), dir, { force: true })).removed, [path.join(dir, 'frames', 'c.png')]);
   await access(path.join(dir, 'frames', 'e.png'));
+  // Another atlas that can't be read might list anything, so nothing is removed either.
+  await writeFile(path.join(dir, 'sample.atlas.json'), '{ not json');
+  assert.equal((await writeBundle(await createBundle(recipe('other', ['c'], 'twice')), dir, { force: true })).removed, undefined);
+  await access(path.join(dir, 'frames', 'd.png'));
+});
+test('a forced export after renaming the recipe only in letter case reads its old atlas as its own', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  if (!await ignoresCase(dir)) { t.diagnostic('this folder keeps letter case apart: Sample and sample are two recipes'); return; }
+  // Sample.atlas.json is sample.atlas.json here, so it is not another sprite's atlas that keeps frame b.
+  await writeBundle(await createBundle({ ...tiny, name: 'Sample' }), dir);
+  const renamed = { ...tiny, frames: [tiny.frames[0], { ...tiny.frames[1], name: 'c' }], animations: { once: { frames: ['a', 'c'], loop: false } } };
+  assert.deepEqual((await writeBundle(await createBundle(renamed), dir, { force: true })).removed, [path.join(dir, 'frames', 'b.png')]);
+  assert.deepEqual((await readdir(path.join(dir, 'frames'))).sort(), ['a.png', 'c.png']);
 });
 test('a forced export after a rename that only changes letter case writes the new names and keeps every file', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));

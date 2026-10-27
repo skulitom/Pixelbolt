@@ -180,21 +180,23 @@ export async function sameFiles(targets, inputs) {
 // folder holds that bundle's own index file (`owns.marker`), which shows the earlier export was this kind. Nothing
 // outside `owns.folders` that fails `owns.match` is ever listed. Where `owns.listed` reads the files an export wrote
 // from its marker, only files the earlier marker lists are leftovers, and none that another export's marker in the
-// folder (`owns.peers`) lists: a sprite's frames are not another sprite's to remove. A marker that can't be read lists
-// nothing, so nothing goes.
+// folder (`owns.peers`) lists: a sprite's frames are not another sprite's to remove. When the marker or a peer can't
+// be read, what it lists is unknown, so nothing goes.
 async function leftovers(bundle, root) {
   const { owns } = bundle;
   if (!owns) return [];
   try { await access(path.join(root, owns.marker)); } catch { return []; }
   let earlier = null, others = [];
   if (owns.listed) {
-    const listing = async file => { try { return owns.listed(JSON.parse(await readFile(path.join(root, file), 'utf8'))); } catch { return []; } };
+    const listing = async file => { try { return owns.listed(JSON.parse(await readFile(path.join(root, file), 'utf8'))); } catch { return null; } };
     earlier = await listing(owns.marker);
-    if (!earlier.length) return [];
+    if (!earlier?.length) return [];
     // The marker under another spelling, where the folder ignores case, is the earlier export's own, not a peer's.
     const peers = [];
-    for (const file of await readdir(root).catch(() => [])) if (owns.peers.test(file) && file !== owns.marker && !await oneFile(root, owns.marker, file)) peers.push(file);
-    others = (await Promise.all(peers.map(listing))).flat();
+    for (const file of await readdir(root).catch(() => [])) if (owns.peers.test(file) && file !== owns.marker && !await oneFile(root, file, owns.marker)) peers.push(file);
+    const listings = await Promise.all(peers.map(listing));
+    if (listings.includes(null)) return [];
+    others = listings.flat();
   }
   // Pixelbolt writes these extensions exactly, so a photo.PNG of someone else's beside them is never taken for one.
   const extensions = new Set([...bundle.files.keys()].map(name => path.posix.extname(name))), found = [];
