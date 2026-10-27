@@ -30,15 +30,19 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
     if (make === heroRig) assert.ok(JSON.stringify(f.recipe).length < 150000);
     else assert.ok(f.project.work.pixels <= 6700000);
     if (make === heroRig) {
-      // Match the benchmark's warm-median contract, including on translated Intel runtimes. The hero's first
-      // compile and render also warm the whole compiler and renderer, so a single cold sample is not the budget.
-      const median = run => {
-        const times = [];
-        for (let i = 0; i < 5; i++) { const start = performance.now(); run(); times.push(performance.now() - start); }
-        return times.sort((a, b) => a - b)[2];
-      };
-      for (let i = 0; i < 3; i++) expandPoses(f.source);
-      const expand = median(() => expandPoses(f.source)), compile = median(() => compilePoses(f.source)), render = median(() => renderProject(f.recipe, { stats: true }));
+      // Match the benchmark's warm-median contract (three warm-ups, then the median of fifteen runs), including on
+      // translated Intel runtimes. The hero's first compile and render also warm the whole compiler and renderer, so
+      // a single cold sample is not the budget. The three are timed in turn, so each median's samples spread over the
+      // whole measurement: a burst of CPU from a test file running beside this one moves a median only if it lasts
+      // about half the measurement.
+      const runs = { expand: () => expandPoses(f.source), compile: () => compilePoses(f.source), render: () => renderProject(f.recipe, { stats: true }) };
+      const times = { expand: [], compile: [], render: [] };
+      for (let i = 0; i < 18; i++) for (const [name, run] of Object.entries(runs)) {
+        const start = performance.now();
+        run();
+        if (i >= 3) times[name].push(performance.now() - start);
+      }
+      const [expand, compile, render] = Object.values(times).map(samples => samples.sort((a, b) => a - b)[7]);
       assert.ok(expand < 50, `expand CI budget, warmed median: ${expand}`);
       assert.ok(compile < 400, `compile CI budget, warmed median: ${compile}`);
       assert.ok(render < 150, `render CI budget, warmed median: ${render}`);
