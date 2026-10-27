@@ -6,7 +6,7 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prepareScene, renderScene } from '../src/scene.js';
+import { prepareScene, renderScene, withLightSettings } from '../src/scene.js';
 import { startMCP } from '../src/mcp.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -21,9 +21,12 @@ const post = { version: 1, name: 'post', width: 1, height: 4, palette: { p: '#c0
 const ell = { version: 1, name: 'ell', width: 2, height: 4, palette: { p: '#c03030' }, frames: [{ name: 'a', ops: [{ op: 'rect', w: 1, h: 4, color: 'p' }, { op: 'pixel', x: 1, y: 3, color: 'p' }] }] };
 // A stone post on the floor's ramp, which shows whether it is lit.
 const stele = { ...floor, name: 'stele', width: 1, height: 4, frames: [{ name: 'a', ops: [{ op: 'rect', w: 1, h: 4, color: 'c' }] }] };
+// Two stone pixels, the left facing left and the right facing right, by their normal pass.
+const slab = { recipe: { ...floor, name: 'slab', width: 2, height: 1, frames: [{ name: 'a', ops: [{ op: 'rect', w: 2, h: 1, color: 'c' }] }] },
+  normal: { version: 1, name: 'slab-normal', width: 2, height: 1, palette: { l: '#008080', r: '#ff8080' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'l' }, { op: 'pixel', x: 1, y: 0, color: 'r' }] }] } };
 const lamp = (instances, { light = {}, lighting = {}, ...scene } = {}) => ({
   format: 'pixelforge-scene', version: 1, name: 'lamp', width: 40, height: 32, background: '#000000',
-  assets: { floor, post, ell, stele },
+  assets: { floor, post, ell, stele, slab },
   lighting: { mode: 'ramp', scope: 'all', ambient: 0.2, bands: 16, steps: 2, lights: [{ at: [10, 20], height: 8, radius: 96, strength: 8, ...light }], ...lighting },
   instances: [{ name: 'floor', asset: 'floor', at: [0, 0] }, ...instances], ...scene
 });
@@ -111,6 +114,50 @@ test('a lifted placement casts a shadow that leaves its feet, and a tilemap cast
   // Under a camera the shadow moves with what casts it and the light.
   const panned = render(lamp([standing()], { camera: [2, 0] }));
   assert.equal(row(panned, 20, 16, 30), 'eep' + 'a'.repeat(7) + 'eeee');
+});
+
+// A sun with the floor's light and shade: flat ground facing a sun [x, y] gets 1 / sqrt(1 + x² + y²) of it.
+const sunny = (sun, instances = [], extra = {}) => lamp(instances, { lighting: { lights: [{ sun, strength: 8, ...extra }] } });
+
+test('a sun lights everything from one way, with no falloff, and casts parallel shadows', () => {
+  // At strength 1 the floor gets 0.2 + 7/15 (sun [2, 0]): one step under its colour, from corner to corner.
+  const plain = render(sunny([2, 0], [], { strength: 1 }));
+  assert.equal([0, 10, 20, 31].map(y => row(plain, y)).join(''), 'b'.repeat(160));
+  assert.deepEqual(plain.lights, [{ sun: [2, 0], strength: 1 }]);
+  // Sun [2, 0]: each pixel of height falls 2 pixels right, so heights 0 to 3 land at t = 0 to 6, for both posts alike.
+  const two = render(sunny([2, 0], [standing(), standing({ at: [8, 10] })]));
+  assert.equal(row(two, 20, 18, 30), 'eep' + 'a'.repeat(6) + 'eee');
+  assert.equal(row(two, 10, 6, 18), 'eep' + 'a'.repeat(6) + 'eee');
+  assert.deepEqual(two.shadows, [{ name: 'post#1', light: 0, pixels: 7, length: 6, toward: [1, 0] }, { name: 'post#2', light: 0, pixels: 7, length: 6, toward: [1, 0] }]);
+  // Lifted 2 under sun [1, 0], the post's heights 2 to 5 fall 2 to 5 pixels from its foot.
+  assert.equal(row(render(sunny([1, 0], [standing({ lift: 2 })])), 20, 18, 30), 'eeee' + 'aaaa' + 'eeee');
+  // Straight overhead, a sun casts no shadow; a diagonal sun casts the same way everywhere.
+  assert.equal(render(sunny([0, 0], [standing()])).shadows, undefined);
+  assert.deepEqual(render(sunny([-1, 1], [standing(), standing({ at: [30, 6] })])).shadows.map(s => s.toward), [[-0.71, 0.71], [-0.71, 0.71]]);
+  // A surface turned toward the sun is lit, one turned away keeps the ambient light: sun [1, 0] shines from the left.
+  const slabs = render(sunny([1, 0], [{ name: 'slab', asset: 'slab', at: [4, 4] }], { strength: 1 }));
+  assert.equal(row(slabs, 4, 4, 6), 'ca');
+});
+
+test('a sun takes no position, height or reach, and the studio saves its direction', () => {
+  const refuse = (scene, at, pattern) => assert.throws(() => prepareScene(scene), error => error.path === at && pattern.test(error.message));
+  refuse(sunny([1, 0], [], { at: [0, 0] }), 'scene.lighting.lights[0].at', /a sun has no position/);
+  refuse(sunny([1, 0], [], { radius: 40 }), 'scene.lighting.lights[0].radius', /a sun has no position/);
+  refuse(sunny([9, 0]), 'scene.lighting.lights[0].sun[0]', /-8 to 8/);
+  refuse(sunny('east'), 'scene.lighting.lights[0].sun', /\[x, y\]/);
+  refuse(sunny([1, 0], [], { keys: [{ time: 0, radius: 20 }] }), 'scene.lighting.lights[0].keys[0].radius', /reaches everywhere/);
+  // Keys and flicker change a sun's strength.
+  const keyed = sunny([1, 0], [], { strength: 1, keys: [{ time: 0, strength: 0 }, { time: 500, strength: 2 }] });
+  assert.equal(render(keyed, { time: 250 }).lights[0].strength, 1);
+  // The studio's sliders change the prepared sun; saving writes it into the scene as written, and nothing else.
+  const written = sunny([1, 0.5]), scene = prepareScene(written);
+  scene.lighting.lights[0].sun[1] = -0.25;
+  const saved = withLightSettings(written, scene, new Set(['0.sun']));
+  assert.deepEqual(saved.lighting.lights[0], { sun: [1, -0.25], strength: 8 });
+  assert.deepEqual(written.lighting.lights[0].sun, [1, 0.5]);
+  const schema = JSON.parse(readFileSync(path.join(root, 'scene.schema.json'), 'utf8')).properties.lighting.properties.lights.items;
+  assert.equal(schema.properties.sun.maxItems, 2);
+  assert.ok(schema.anyOf.some(choice => choice.required?.includes('sun')));
 });
 
 test('shadows are refused without lights, on shade placements and past their bound, and warn when nothing is lit', () => {

@@ -326,7 +326,16 @@ export function prepareScene(source) {
     if (!Array.isArray(lights) || lights.length > 8) fail('scene.lighting.lights', 'expected at most 8 lights');
     lighting = { ambient, bands, scope, mode, steps, lights: lights.map((light, i) => {
       const lp = `scene.lighting.lights[${i}]`;
-      fields(light, ['at', 'height', 'radius', 'color', 'strength', 'follow', 'flicker', 'keys'], lp);
+      fields(light, ['at', 'height', 'radius', 'color', 'strength', 'follow', 'flicker', 'keys', 'sun'], lp);
+      // A sun is a light so far away that it falls the same way everywhere, with no position, height or reach. `sun` is
+      // how far a shadow falls across the ground per pixel of height: [1, 0.5] is a low sun up and to the left, whose
+      // shadows fall right and a little down, a little longer than their casters are tall; [0, 0] is straight overhead.
+      let sun = null;
+      if (light.sun !== undefined) {
+        for (const key of ['at', 'height', 'radius', 'follow']) if (light[key] !== undefined) fail(`${lp}.${key}`, 'a sun has no position, height or reach: sun alone sets where its light comes from');
+        if (!Array.isArray(light.sun) || light.sun.length !== 2) fail(`${lp}.sun`, 'expected [x, y]: how far a shadow falls across the ground per pixel of height');
+        sun = light.sun.map((v, axis) => num(v, -8, 8, `${lp}.sun[${axis}]`));
+      }
       // A following light rides a placement (where it stands) or one of its frame points; `at` is then an offset. It is
       // off while that placement is hidden or its current frame has no such point.
       let follow = null;
@@ -337,8 +346,8 @@ export function prepareScene(source) {
         if (light.follow.point !== undefined && (typeof light.follow.point !== 'string' || !assets[target.asset].recipe.frames.some(frame => frame.points && Object.hasOwn(frame.points, light.follow.point)))) fail(`${lp}.follow.point`, `no frame of ${target.asset} has a point named ${JSON.stringify(light.follow.point)}`);
         follow = { index, point: light.follow.point ?? null };
       }
-      const at = follow && light.at === undefined ? [0, 0] : point(light.at, `${lp}.at`);
-      const radius = int(light.radius ?? 96, 1, 512, `${lp}.radius`), strength = num(light.strength ?? 1, 0, 8, `${lp}.strength`);
+      const at = sun ? null : follow && light.at === undefined ? [0, 0] : point(light.at, `${lp}.at`);
+      const radius = sun ? null : int(light.radius ?? 96, 1, 512, `${lp}.radius`), strength = num(light.strength ?? 1, 0, 8, `${lp}.strength`);
       // Flicker raises or lowers a light's strength by up to `amount` of it and its reach by up to half that, along seeded
       // noise that changes about every `every` ms and repeats once per scene duration.
       let flicker = null;
@@ -359,10 +368,11 @@ export function prepareScene(source) {
           if (time <= prior) fail(`${lp}.keys`, 'key times must increase strictly');
           prior = time;
           if (key.ease !== undefined && !EASINGS.includes(key.ease)) fail(`${kp}.ease`, `expected one of ${EASINGS.join(', ')}`);
+          if (sun && key.radius !== undefined) fail(`${kp}.radius`, 'a sun reaches everywhere; its keys set strength');
           return { time, strength: key.strength === undefined ? strength : num(key.strength, 0, 8, `${kp}.strength`), radius: key.radius === undefined ? radius : int(key.radius, 1, 512, `${kp}.radius`), ease: key.ease ?? 'linear' };
         });
       }
-      return { at, height: int(light.height ?? 24, 1, 256, `${lp}.height`), radius, color: parseColor(light.color ?? '#fff', {}, `${lp}.color`), strength, follow, flicker, keys };
+      return { at, height: sun ? null : int(light.height ?? 24, 1, 256, `${lp}.height`), radius, color: parseColor(light.color ?? '#fff', {}, `${lp}.color`), strength, follow, flicker, keys, ...(sun && { sun }) };
     }) };
     if (mode === 'ramp' && !Object.keys(shifts).length) warnings.push('Ramp lighting needs ramps in the recipes it lights; no asset declares any, so nothing is lit.');
   }
@@ -385,14 +395,14 @@ export function setLightRadius(scene, index, radius) {
 }
 // True when every key of the light sets its own radius, so the light's own radius changes nothing.
 export const keysSetRadius = (scene, index) => scene.source.lighting.lights[index].keys?.every(key => key.radius !== undefined) ?? false;
-// The scene as written with the light settings named in `edited` ("0.at", "0.height", "0.radius", "0.color" or
-// "ambient") taken from a prepared scene the studio changed. Everything else stays as written, file references included.
+// The scene as written with the light settings named in `edited` ("0.at", "0.sun", "0.height", "0.radius", "0.color"
+// or "ambient") taken from a prepared scene the studio changed. Everything else stays as written, file references included.
 export function withLightSettings(written, scene, edited) {
   const saved = structuredClone(written);
   for (const setting of edited) {
     if (setting === 'ambient') { saved.lighting.ambient = scene.lighting.ambient; continue; }
     const [index, field] = setting.split('.'), light = scene.lighting.lights[index];
-    saved.lighting.lights[index][field] = field === 'at' ? [...light.at] : field === 'color' ? `#${light.color.slice(0, light.color[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('')}` : light[field];
+    saved.lighting.lights[index][field] = field === 'at' || field === 'sun' ? [...light[field]] : field === 'color' ? `#${light.color.slice(0, light.color[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('')}` : light[field];
   }
   return saved;
 }
@@ -464,8 +474,14 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           // Under a shadow cast by something drawn after this placement, the light does not reach the pixel.
           const mask = shadowMasks[li], px = left + x * s, py = top + y * s;
           if (mask && px >= 0 && py >= 0 && px < width && py < height && mask[py * width + px] > rank) continue;
-          const dx = source.at[0] - px, dy = source.at[1] - py, dz = source.height;
-          const distance = Math.hypot(dx, dy, dz), diffuse = Math.max(0, (nx * dx + ny * dy + nz * dz) / norm / distance) * Math.max(0, 1 - Math.hypot(dx, dy) / source.radius);
+          // A sun lights every pixel from the same way, with no falloff.
+          let diffuse;
+          if (source.toward) diffuse = Math.max(0, (nx * source.toward[0] + ny * source.toward[1] + nz * source.toward[2]) / norm);
+          else {
+            const dx = source.at[0] - px, dy = source.at[1] - py, dz = source.height;
+            const distance = Math.hypot(dx, dy, dz);
+            diffuse = Math.max(0, (nx * dx + ny * dy + nz * dz) / norm / distance) * Math.max(0, 1 - Math.hypot(dx, dy) / source.radius);
+          }
           // Band the light's brightness once, then tint it: banding each channel separately made a coloured light
           // change band at different distances per channel, painting rainbow rings. Strength scales the banded light,
           // so above 1 a flash can lift ramp-lit colours past their authored shade.
@@ -531,6 +547,12 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   }
   if (lighting && lit) lights = lighting.lights.map((light, i) => {
     let at = light.at, on = true, { strength, radius } = light.keys ? keyedAt(light.keys, time) : light;
+    if (light.sun) {
+      // Toward the sun: up from the ground, and back the way its shadows fall. Flicker changes only its strength.
+      if (light.flicker) strength *= 1 + light.flicker.amount * (1 - 2 * flickerAt(light.flicker, i, time, scene.duration));
+      const [sx, sy] = light.sun, length = Math.sqrt(sx * sx + sy * sy + 1);
+      return { sun: light.sun, toward: [-sx / length, -sy / length, 1 / length], color: light.color, strength };
+    }
     if (light.follow) {
       const target = states[light.follow.index], spot = target && !target.hidden ? (light.follow.point ? target.frame.points?.[light.follow.point] : null) : undefined;
       if (!target || target.hidden || spot === undefined) on = false;
@@ -581,17 +603,25 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   if (lights.length && scene.instances.some(instance => instance.shadow)) {
     const rootOf = i => scene.instances[i].attach?.index ?? i;
     const cast = (c, light, li, rank, s, project) => {
-      const H = light.height, vx = c.pivot - light.at[0], vy = c.ground - light.at[1], D = Math.sqrt(vx * vx + vy * vy);
-      // Straight under a light a cutout casts nothing to see, and beyond its reach the light lights nothing.
-      if (D < 1 || D >= light.radius) return null;
-      // d is the way the shadow falls; p runs across it, turned so the cutout's left stays on the left when the light
-      // is behind it or in front of it.
-      const dx = vx / D, dy = vy / D, side = dy < 0 ? -1 : 1, px = dy * side, py = -dx * side;
-      const w = project.width * s, h = project.height * s, tall = c.ground - c.top;
+      const w = project.width * s, h = project.height * s, tall = c.ground - c.top, edge = tall + 0.5;
       if (tall <= 0) return null;
-      // The top row's upper edge casts this far from the ground point; a top at or above the light's height casts to
-      // the light's reach.
-      const edge = tall + 0.5, reach = Math.min(light.radius - D, edge < H ? D * edge / (H - edge) : Infinity);
+      // d is the way the shadow falls, `heightAt` the height whose shadow lands t pixels beyond the foot, and `reach`
+      // how far the top row's upper edge casts.
+      let dx, dy, reach, heightAt;
+      if (light.sun) {
+        // A sun's shadows are parallel: each pixel of height falls the length of `sun` along it. Overhead, none.
+        const [sx, sy] = light.sun, L = Math.sqrt(sx * sx + sy * sy);
+        if (!L) return null;
+        dx = sx / L; dy = sy / L; reach = edge * L; heightAt = t => t / L;
+      } else {
+        const H = light.height, vx = c.pivot - light.at[0], vy = c.ground - light.at[1], D = Math.sqrt(vx * vx + vy * vy);
+        // Straight under a light a cutout casts nothing to see, and beyond its reach the light lights nothing.
+        if (D < 1 || D >= light.radius) return null;
+        // A pixel of height k casts to t = D * k / (H - k); a top at or above the light's height casts to its reach.
+        dx = vx / D; dy = vy / D; reach = Math.min(light.radius - D, edge < H ? D * edge / (H - edge) : Infinity); heightAt = t => t * H / (D + t);
+      }
+      // p runs across the shadow, turned so the cutout's left stays on the left when the light is behind it or in front.
+      const side = dy < 0 ? -1 : 1, px = dy * side, py = -dx * side;
       const xs = [], ys = [];
       for (const u of [c.left - c.pivot - 1, c.left + w - c.pivot]) for (const t of [-1, reach + 1]) { xs.push(c.pivot + u * px + t * dx); ys.push(c.ground + u * py + t * dy); }
       const x0 = Math.max(0, Math.floor(Math.min(...xs))), x1 = Math.min(width - 1, Math.ceil(Math.max(...xs)));
@@ -601,8 +631,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
         const wx = x - c.pivot, wy = y - c.ground, t = wx * dx + wy * dy;
         if (t < -0.5 || t > reach) continue;
-        // The height whose shadow lands at distance t: t = D * k / (H - k), solved for k.
-        const k = t > 0 ? t * H / (D + t) : 0, col = c.pivot + Math.round(wx * px + wy * py) - c.left, row = c.ground - Math.round(k) - c.top;
+        const k = t > 0 ? heightAt(t) : 0, col = c.pivot + Math.round(wx * px + wy * py) - c.left, row = c.ground - Math.round(k) - c.top;
         if (col < 0 || row < 0 || col >= w || row >= h || !c.frame.data[(Math.floor(row / s) * project.width + Math.floor(col / s)) * 4 + 3]) continue;
         const at = y * width + x;
         if (mask[at] < rank) mask[at] = rank;
@@ -687,7 +716,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   const clipWarning = total && !camera ? [`${total} drawn pixels clipped at scene bounds (${named.slice(0, 4).map(([name, n]) => `${name} ${n}`).join(', ')}${named.length > 4 ? `, ${named.length - 4} more` : ''}).`] : [];
   // Where each light was and how strong, rounded for reading; viewers draw their markers from it.
   const round = v => Math.round(v * 100) / 100;
-  const lightsNow = lights.map(light => ({ at: light.at.map(round), radius: round(light.radius), strength: round(light.strength) }));
+  const lightsNow = lights.map(light => (light.sun ? { sun: light.sun, strength: round(light.strength) } : { at: light.at.map(round), radius: round(light.radius), strength: round(light.strength) }));
   // Each hazed placement (the first 16) with the colours its palette keys became before lighting: an asset entry's
   // `palette` that draws the same far copy.
   const hazy = scene.instances.flatMap((instance, i) => (instance.haze ? [[instance, i]] : [])).slice(0, 16).map(([instance, i]) => {

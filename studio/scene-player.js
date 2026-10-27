@@ -14,6 +14,8 @@ function marks() {
   const lights = $('lit').checked ? scene.lighting?.lights ?? [] : [], scale = Number($('scale').value), chosen = Number($('light-pick').value);
   $('scene').parentElement.classList.toggle('lit', lights.length > 0);
   $('light-marks').replaceChildren(...lights.flatMap((light, i) => {
+    // A sun is everywhere at once, so it has no marker.
+    if (light.sun) return [];
     // A light that is off now (its keys at 0, or what it follows hidden) keeps a faint marker so it can still be picked.
     const now = shown[i] ?? light, [x, y] = now.at.map(v => (v + 0.5) * scale), color = hex(light.color), off = now.strength === 0;
     return [shape('circle', { cx: x, cy: y, r: now.radius * scale, fill: 'none', stroke: color, 'stroke-opacity': off ? 0.1 : i === chosen ? 0.7 : 0.3, 'stroke-dasharray': '4 4' }),
@@ -49,23 +51,31 @@ function lightControls() {
   // Every light is adjustable: pick one, then drag it on the scene or use the sliders.
   const lights = scene.lighting.lights, canvas = $('scene');
   $('lights').hidden = false;
-  $('light-pick').replaceChildren(...lights.map((_, i) => Object.assign(document.createElement('option'), { value: String(i), textContent: String(i + 1) })));
+  $('light-pick').replaceChildren(...lights.map((light, i) => Object.assign(document.createElement('option'), { value: String(i), textContent: light.sun ? `${i + 1} (sun)` : String(i + 1) })));
   const selected = () => lights[Number($('light-pick').value)];
-  // Position sliders reach a scene's width or height beyond each side, and always hold every light.
-  for (const [axis, id, size] of [[0, 'light-x', scene.width], [1, 'light-y', scene.height]]) {
-    $(id).min = String(Math.max(-4096, Math.min(-size, ...lights.map(light => light.at[axis])))); $(id).max = String(Math.min(4096, Math.max(size * 2, ...lights.map(light => light.at[axis]))));
-  }
+  // Position sliders reach a scene's width or height beyond each side, and always hold every light that has a position.
+  const placed = lights.filter(light => !light.sun);
+  const ranges = [scene.width, scene.height].map((size, axis) => [Math.max(-4096, Math.min(-size, ...placed.map(light => light.at[axis]))), Math.min(4096, Math.max(size * 2, ...placed.map(light => light.at[axis])))]);
   const sync = () => {
-    const light = selected(), keyed = keysSetRadius(scene, Number($('light-pick').value));
-    $('light-x').value = light.at[0]; $('light-y').value = light.at[1]; $('light-height').value = light.height; $('light-radius').value = light.radius;
+    const light = selected(), sun = Boolean(light.sun), keyed = !sun && keysSetRadius(scene, Number($('light-pick').value));
+    // A sun has no position, height or reach: its X and Y are how far a shadow falls per pixel of height.
+    for (const [axis, id] of [[0, 'light-x'], [1, 'light-y']]) {
+      Object.assign($(id), sun ? { min: '-8', max: '8', step: '0.05' } : { min: String(ranges[axis][0]), max: String(ranges[axis][1]), step: '1' });
+      $(id).value = sun ? light.sun[axis] : light.at[axis];
+      $(`${id}-name`).textContent = `${sun ? 'Shadow' : 'Light'} ${axis ? 'Y' : 'X'}`;
+    }
+    if (!sun) { $('light-height').value = light.height; $('light-radius').value = light.radius; }
     $('light-color').value = hex(light.color); $('ambient').value = scene.lighting.ambient;
     // When each of the light's keys sets its own radius, the light's radius changes nothing, so its slider is off.
-    $('light-radius').disabled = keyed; $('light-radius').title = keyed ? "Each of this light's keys sets its radius" : '';
-    $('light-height-value').value = `${light.height} px`; $('light-radius-value').value = keyed ? 'set by keys' : `${light.radius} px`; $('ambient-value').value = `${Math.round(scene.lighting.ambient * 100)}%`;
+    $('light-height').disabled = sun; $('light-height').title = sun ? 'A sun is too far away to have a height; its shadow X and Y set how high it stands' : '';
+    $('light-radius').disabled = sun || keyed; $('light-radius').title = sun ? 'A sun reaches everywhere' : keyed ? "Each of this light's keys sets its radius" : '';
+    $('light-height-value').value = sun ? 'sun' : `${light.height} px`; $('light-radius-value').value = sun ? 'everywhere' : keyed ? 'set by keys' : `${light.radius} px`; $('ambient-value').value = `${Math.round(scene.lighting.ambient * 100)}%`;
   };
   const change = (field, apply) => { apply(); edited.add(field === 'ambient' ? field : `${$('light-pick').value}.${field}`); sync(); draw(); };
-  $('light-x').oninput = () => change('at', () => { selected().at[0] = Number($('light-x').value); });
-  $('light-y').oninput = () => change('at', () => { selected().at[1] = Number($('light-y').value); });
+  for (const [axis, id] of [[0, 'light-x'], [1, 'light-y']]) $(id).oninput = () => {
+    const light = selected();
+    change(light.sun ? 'sun' : 'at', () => { (light.sun ?? light.at)[axis] = Number($(id).value); });
+  };
   $('light-height').oninput = () => change('height', () => { selected().height = Number($('light-height').value); });
   $('light-radius').oninput = () => change('radius', () => setLightRadius(scene, Number($('light-pick').value), Number($('light-radius').value)));
   $('light-color').oninput = () => change('color', () => { const value = $('light-color').value; selected().color = [1, 3, 5].map(i => parseInt(value.slice(i, i + 2), 16)).concat(255); });
@@ -74,14 +84,16 @@ function lightControls() {
   // Pressing on the scene moves the chosen light there, or picks up the light whose marker is under the pointer;
   // it follows the pointer until release.
   const toScene = event => {
-    const box = canvas.getBoundingClientRect(), clamp = (value, id) => Math.max(Number($(id).min), Math.min(Number($(id).max), value));
-    return [clamp(Math.floor((event.clientX - box.left) / box.width * scene.width), 'light-x'), clamp(Math.floor((event.clientY - box.top) / box.height * scene.height), 'light-y')];
+    const box = canvas.getBoundingClientRect(), clamp = (value, axis) => Math.max(ranges[axis][0], Math.min(ranges[axis][1], value));
+    return [clamp(Math.floor((event.clientX - box.left) / box.width * scene.width), 0), clamp(Math.floor((event.clientY - box.top) / box.height * scene.height), 1)];
   };
   canvas.addEventListener('pointerdown', event => {
     if (!$('lit').checked || event.button !== 0) return;
     const point = toScene(event), reach = 8 / Number($('scale').value);
-    const near = lights.findIndex((light, i) => { const now = shown[i] ?? light; return Math.hypot(now.at[0] - point[0], now.at[1] - point[1]) <= reach; });
-    if (near >= 0) $('light-pick').value = String(near);
+    const near = lights.findIndex((light, i) => { const now = shown[i] ?? light; return !light.sun && Math.hypot(now.at[0] - point[0], now.at[1] - point[1]) <= reach; });
+    if (near >= 0) { $('light-pick').value = String(near); sync(); }
+    // A sun is moved with its sliders, not by dragging.
+    if (selected().sun) return;
     canvas.setPointerCapture(event.pointerId);
     // A light is shown where the scene puts it on screen: a following light's `at` is an offset from what it follows,
     // and a camera moves every light, so dragging keeps that difference and moves `at` by as much as the pointer.

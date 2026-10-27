@@ -888,23 +888,34 @@
                 },
                 "maxItems": 2,
                 "minItems": 2,
-                "description": "Where the light is, the point on the ground under it for shadows; with follow, an offset from what it follows (default [0, 0])."
+                "description": "Where the light is, the point on the ground under it for shadows; with follow, an offset from what it follows (default [0, 0]). Not on a sun."
               },
               "height": {
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 256,
-                "description": "Pixels above the scene; default 24."
+                "description": "Pixels above the scene; default 24. Not on a sun."
               },
               "radius": {
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 512,
-                "description": "How far it reaches; default 96."
+                "description": "How far it reaches; default 96. Not on a sun."
               },
               "color": {
                 "type": "string",
                 "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+              },
+              "sun": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -8,
+                  "maximum": 8
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "Makes this light a sun: so far away it falls the same way everywhere, with no position, height or reach. [x, y] is how far a shadow falls across the ground per pixel of height: [1, 0.5] is a low sun up and to the left, whose shadows fall right and down; [0, 0] is overhead. Takes color, strength, flicker and strength keys."
               },
               "strength": {
                 "type": "number",
@@ -1024,6 +1035,11 @@
               {
                 "required": [
                   "follow"
+                ]
+              },
+              {
+                "required": [
+                  "sun"
                 ]
               }
             ]
