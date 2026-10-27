@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { renderProject } from '../src/core.js';
 import { compileEffects } from '../src/fx.js';
 import { SHAPE_KINDS, atan2Deg } from '../src/shapes.js';
+import { spellPresets } from '../scripts/spell-presets.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -182,4 +183,20 @@ test('effects without shape layers keep their exact output', async () => {
   const fx = JSON.parse(await readFile(path.join(root, 'examples/effects.fx.json'), 'utf8')), compiled = compileEffects(fx).recipe;
   const generated = JSON.parse(await readFile(path.join(root, 'examples/effects.json'), 'utf8'));
   assert.deepEqual(compiled.frames, generated.frames);
+});
+
+test('the reviewed spell examples match their presets and compile to the pixels the owner approved', async () => {
+  // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
+  const golden = {
+    'slash-hit': 'c184a564e5c2c3bc461a43dc3b182ec4d6e11457e2a9502d12e8c7610f8b12aa', 'fire-explosion': 'd99620d5189a507b462f778c6a78d7091fa4767ab500f3998d0f1045130447b7',
+    'lightning-strike': '2da952dbcd93107cc51bddab14c3d54943c47b352fc37410f5f82e3efa2785fc', 'healing-circle': '6e40fdfe6ce5ebefa848adb3f6649bd9e0a93e8a2ebd1740583931fbf3e8a01a'
+  };
+  assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
+  for (const [name, preset] of Object.entries(spellPresets)) {
+    const example = JSON.parse(await readFile(path.join(root, `examples/${name}.fx.json`), 'utf8'));
+    assert.deepEqual(example, preset, `examples/${name}.fx.json is stale; run node scripts/generate-examples.js`);
+    const { recipe } = compileEffects(example);
+    assert.deepEqual(renderProject(recipe).warnings, [], name);
+    assert.equal(sha(recipe), golden[name], name);
+  }
 });
