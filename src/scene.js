@@ -148,8 +148,9 @@ export function prepareScene(source) {
       if (!shade) fail(`${path}.shade`, 'expected a nonzero number of steps: negative darkens, positive lightens');
       if (!shifts[instance.asset]) fail(`${path}.shade`, `shade moves colours along ramps; declare ramps in ${instance.asset}'s recipe`);
     }
+    if (instance.sort !== undefined && instance.sort !== 'ground') fail(`${path}.sort`, 'expected ground: draw this placement among the other sorted ones by its ground line');
     if (instance.tilemap !== undefined) {
-      for (const key of ['frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort']) if (instance[key] !== undefined) fail(`${path}.${key}`, 'tilemap placements choose frames through their legend');
+      for (const key of ['frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach']) if (instance[key] !== undefined) fail(`${path}.${key}`, 'tilemap placements choose frames through their legend');
       if (anchor === 'frame') fail(`${path}.anchor`, 'a tilemap is placed by one [x, y] anchor in map pixels, not per frame');
       const tilemap = sceneTilemap(instance.tilemap, project, `${path}.tilemap`);
       count += tilemap.cells.length; work += tilemap.cells.length * project.width * project.height * scale ** 2;
@@ -208,7 +209,6 @@ export function prepareScene(source) {
       if (trajectory) fail(`${path}.trajectory`, 'an attached placement moves with its target; remove the trajectory');
       attach = { index, point: instance.attach.point };
     }
-    if (instance.sort !== undefined && instance.sort !== 'ground') fail(`${path}.sort`, 'expected ground: draw this placement among the other sorted ones by its ground line');
     if (scale !== 1) warnings.push(`${instance.name ?? i}: ${scale}× pixels; compare density against neighboring 1× assets.`);
     return { ...instance, at, anchor, scale, repeat, step, shade, attach, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
   });
@@ -397,25 +397,55 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   });
   // Drawing order is list order, except that placements with sort "ground" are drawn together, where the first of
   // them is listed, ordered by their ground line (the y of their placement point), as a game draws actors and props.
-  // Every placement draws each of its repeat copies, row by row; a tilemap draws once.
+  // Every placement draws each of its repeat copies, row by row. A tilemap draws once, or, with sort "ground", each of
+  // its cells joins the group, standing on the bottom row of its frame, so a wall or a tree taller than its tile covers
+  // whoever stands behind it. Equal lines keep list order, then map order.
   const order = [], sorted = scene.instances.flatMap((instance, i) => instance.sort === 'ground' ? [i] : []);
-  const copies = j => { const [columns, rows] = scene.instances[j].repeat ?? [1, 1]; return Array.from({ length: columns * rows }, (_, k) => [j, k % columns, Math.floor(k / columns)]); };
+  const copies = i => {
+    const instance = scene.instances[i], s = instance.scale;
+    if (instance.tilemap) {
+      if (instance.sort !== 'ground') return [{ i }];
+      const top = instance.at[1] - instance.anchor[1] * s, height = assets[instance.asset].recipe.height;
+      return instance.tilemap.cells.map((cell, k) => ({ i, cell: k, ground: top + (cell.y + height) * s - 1 }));
+    }
+    const [columns, rows] = instance.repeat;
+    return Array.from({ length: columns * rows }, (_, k) => ({ i, rx: k % columns, ry: Math.floor(k / columns), ground: states[i].position[1] + Math.floor(k / columns) * instance.step[1] }));
+  };
   for (const [i, instance] of scene.instances.entries()) {
     if (instance.sort !== 'ground') { order.push(...copies(i)); continue; }
     if (i !== sorted[0]) continue;
-    order.push(...sorted.flatMap(copies).map(([j, rx, ry], n) => ({ n, entry: [j, rx, ry], ground: states[j].position[1] + ry * scene.instances[j].step[1] })).sort((a, b) => a.ground - b.ground || a.n - b.n).map(item => item.entry));
+    // A sorted tilemap is listed among the placements where its group starts.
+    order.push(...sorted.filter(j => scene.instances[j].tilemap).map(j => ({ i: j, record: true })));
+    order.push(...sorted.flatMap(copies).map((item, n) => ({ n, item })).sort((a, b) => a.item.ground - b.item.ground || a.n - b.n).map(({ item }) => item));
   }
-  for (const [i, rx, ry] of order) {
-    const instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
+  for (const item of order) {
+    const { i } = item, instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
     if (instance.tilemap) {
       const { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s, top = instance.at[1] - instance.anchor[1] * s;
       const box = { x: left, y: top, w: tilemap.columns * tilemap.tile[0] * s, h: tilemap.rows * tilemap.tile[1] * s };
-      const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
-      for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry);
+      if (item.cell !== undefined) {
+        // The cells of a sorted tilemap that stand on one row are drawn one after another and share a depth entry.
+        const cell = tilemap.cells[item.cell], x = left + cell.x * s, y = top + cell.y * s, w = project.width * s, h = project.height * s;
+        let entry = -1;
+        if (owner && !instance.shade) {
+          const last = entries.at(-1);
+          if (last?.spans && last.instance === i && last.ground === item.ground) {
+            const right = Math.max(last.box.x + last.box.w, x + w);
+            last.spans.push([x, w]); last.tiles++; last.box.x = Math.min(last.box.x, x); last.box.w = right - last.box.x;
+          } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, covers: false });
+          entry = entries.length - 1;
+        }
+        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry);
+        continue;
+      }
+      if (!item.record) {
+        const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
+        for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry);
+      }
       placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s });
       continue;
     }
-    const state = states[i];
+    const state = states[i], { rx, ry } = item;
     if (state.hidden) continue;
     const left = state.left + rx * instance.step[0], top = state.top + ry * instance.step[1];
     placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(instance.shade && { shade: instance.shade }) });
@@ -446,7 +476,8 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const labels = new Map(entries.map(e => [e.instance, e.label])), sorted = entries.filter(e => e.sorted);
     const overlaps = [...pairs].map(([key, pixels]) => { const [front, behind] = key.split(' ').map(Number); return { front: labels.get(front), behind: labels.get(behind), pixels }; }).sort((a, b) => b.pixels - a.pixels);
     const omitted = { ...(sorted.length > 64 && { sorted: sorted.length - 64 }), ...(overlaps.length > 32 && { overlaps: overlaps.length - 32 }) };
-    result.depth = { ...(sorted.length && { sorted: sorted.slice(0, 64).map(e => ({ name: e.label, at: e.at })) }), overlaps: overlaps.slice(0, 32), ...(Object.keys(omitted).length && { omitted }),
+    // A row of a sorted tilemap is listed by the row it stands on and how many of its tiles stand there.
+    result.depth = { ...(sorted.length && { sorted: sorted.slice(0, 64).map(e => (e.spans ? { name: e.label, ground: e.ground, tiles: e.tiles } : { name: e.label, at: e.at })) }), overlaps: overlaps.slice(0, 32), ...(Object.keys(omitted).length && { omitted }),
       ...(!scene.instances.some(instance => instance.sort === 'ground') && overlaps.length && { note: 'No placement has sort: "ground", so placements draw in list order. Give everything that stands on the ground sort: "ground" to draw it by where it stands.' }) };
     Object.defineProperty(result, 'depthMap', { value: { owner, entries } });
   }
@@ -462,7 +493,8 @@ const depthTint = t => {
 // The scene image a reviewer sees, enlarged: `color`, `grayscale` or `depth`, with optional perspective guides. The
 // depth view tints each placement by when it is drawn, cool for far and warm for near; the ground (placements that lie
 // straight on the background) is grey. Each sorted placement shows its ground line, white across its width, with a
-// mark at its placement point, so an anchor on the wrong row shows at once.
+// mark at its placement point, so an anchor on the wrong row shows at once; a sorted tilemap's line runs under each
+// tile, on the bottom row of its frame.
 export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
   if (!['color', 'grayscale', 'depth'].includes(mode)) fail('scene.view', 'expected color, grayscale or depth');
   const { width, height } = view, s = scale, w = width * s, h = height * s;
@@ -488,8 +520,11 @@ export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
       if (y + 1 < height && o !== owner[(y + 1) * width + x] && (tintOf(o) || tintOf(owner[(y + 1) * width + x]))) for (let k = 0; k < s; k++) put(x * s + k, y * s + s - 1, [12, 12, 20, 255]);
     }
     for (const e of entries) if (e.sorted) {
-      const [ax, ay] = e.at.map(v => v * s);
-      for (let x = e.box.x * s; x < (e.box.x + e.box.w) * s; x++) { put(x, ay, [255, 255, 255, 255]); put(x, ay + 1, [12, 12, 20, 255]); }
+      // A tile row's line runs under each of its tiles; it has no placement point to mark.
+      const ay = (e.spans ? e.ground : e.at[1]) * s;
+      for (const [x0, span] of e.spans ?? [[e.box.x, e.box.w]]) for (let x = x0 * s; x < (x0 + span) * s; x++) { put(x, ay, [255, 255, 255, 255]); put(x, ay + 1, [12, 12, 20, 255]); }
+      if (e.spans) continue;
+      const ax = e.at[0] * s;
       // A tick on the line at the placement point (a pixel corner, so two pixels wide), edged dark.
       for (let dy = -4; dy <= -1; dy++) for (let dx = -2; dx <= 1; dx++) put(ax + dx, ay + dy, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
     }

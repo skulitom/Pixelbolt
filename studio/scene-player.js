@@ -20,9 +20,10 @@ function marks() {
       shape('circle', { cx: x, cy: y, r: i === chosen ? 6 : 4, fill: color, 'fill-opacity': off ? 0.35 : 1, stroke: '#080c12', 'stroke-width': 2 })];
   }));
 }
-// The depth report in words: sorted placements far to near and who covers whom, as pixel_scene returns them.
+// The depth report in words: sorted placements (and rows of sorted tilemaps) far to near and who covers whom, as
+// pixel_scene returns them.
 function depthReport(depth, at) {
-  const sorted = depth.sorted ? `Far to near: ${depth.sorted.map(s => `${s.name} (${s.at.join(', ')})`).join(', ')}${depth.omitted?.sorted ? ` and ${depth.omitted.sorted} more` : ''}.` : 'No placement is sorted by ground.';
+  const sorted = depth.sorted ? `Far to near: ${depth.sorted.map(s => (s.at ? `${s.name} (${s.at.join(', ')})` : `${s.name} row ${s.ground} (${s.tiles} ${s.tiles === 1 ? 'tile' : 'tiles'})`)).join(', ')}${depth.omitted?.sorted ? ` and ${depth.omitted.sorted} more` : ''}.` : 'No placement is sorted by ground.';
   const covers = depth.overlaps.length ? ` Covers: ${depth.overlaps.map(o => `${o.front} covers ${o.behind} (${o.pixels} px)`).join('; ')}${depth.omitted?.overlaps ? `; ${depth.omitted.overlaps} more` : ''}.` : ' Nothing covers a standing placement.';
   $('depth-text').textContent = sorted + covers + (depth.note ? ` ${depth.note}` : '');
   $('depth-mcp').textContent = `pixel_scene {"view": "depth", "time": ${at}}`;

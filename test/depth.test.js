@@ -71,6 +71,67 @@ test('shared names get their instance index, and shade placements cover nothing'
   assert.ok(view.depth.overlaps.every(o => !String(o.front).startsWith('shadow')));
 });
 
+// A court with a row of walls drawn as tiles: each wall's cap (rows 8–15) and, through a rule's offset, its face in
+// the cell below (rows 16–23). The hero stands on the row of its feet.
+const tiles = (name, w, h, colors) => ({ version: 1, name, width: w, height: h, palette: Object.fromEntries(colors.map((c, k) => [`k${k}`, c])), frames: colors.map((c, k) => ({ name: `f${k}`, ops: [{ op: 'rect', w, h, color: `k${k}` }] })) });
+const CAP = [128, 128, 128, 255], FACE = [80, 80, 80, 255], HERO = [48, 80, 192, 255], TREE = [32, 128, 32, 255];
+const court = ({ sorted = true, heroAt = [10, 12], rows = ['WWWW'], extra = [] } = {}) => ({
+  format: 'pixelforge-scene', version: 1, name: 'court', width: 32, height: 32, background: '#000000',
+  assets: { floor: block('floor', 32, 32, '#406040', [0, 0]), wall: tiles('wall', 8, 8, ['#808080', '#505050']), tree: tiles('tree', 8, 16, ['#208020']), canopy: tiles('canopy', 8, 8, ['#208020', '#604020']), hero: block('hero', 4, 10, '#3050c0', [2, 9]) },
+  instances: [
+    { name: 'floor', asset: 'floor', at: [0, 0] },
+    { name: 'walls', asset: 'wall', at: [0, 8], ...(sorted && { sort: 'ground' }), tilemap: { rows, legend: { W: { rules: [{ frame: 'f0' }, { frame: 'f1', offset: [0, 1] }] } } } },
+    ...extra,
+    { name: 'hero', asset: 'hero', at: heroAt, anchor: 'frame', sort: 'ground' }
+  ]
+});
+const colour = (view, x, y) => [...view.data.subarray((y * view.width + x) * 4, (y * view.width + x) * 4 + 4)];
+
+test('a sorted tilemap joins the group tile by tile, so a wall covers a hero behind it and a hero in front covers it', () => {
+  const behind = renderScene(prepareScene(court()), { depth: true });
+  assert.deepEqual(colour(behind, 10, 10), CAP, 'the cap, standing on row 15, covers the hero standing on row 12');
+  assert.deepEqual(colour(behind, 10, 5), HERO, "the hero's head shows above the wall");
+  // Each row of tiles is one entry far to near, by the row it stands on.
+  assert.deepEqual(behind.depth.sorted, [{ name: 'hero', at: [10, 12] }, { name: 'walls', ground: 15, tiles: 4 }, { name: 'walls', ground: 23, tiles: 4 }]);
+  assert.deepEqual(behind.depth.overlaps, [{ front: 'walls', behind: 'hero', pixels: 20 }]);
+  assert.deepEqual(behind.placements.filter(p => p.tilemap), [{ name: 'walls', tilemap: true, x: 0, y: 8, w: 32, h: 8, tiles: 8, scale: 1 }]);
+  const front = renderScene(prepareScene(court({ heroAt: [10, 30] })), { depth: true });
+  assert.deepEqual(colour(front, 10, 22), HERO, 'the hero standing on row 30 covers the face');
+  assert.deepEqual(front.depth.sorted.map(s => s.name), ['walls', 'walls', 'hero']);
+  // Unsorted, the tilemap draws once in list order, under the hero wherever the hero stands.
+  const listed = renderScene(prepareScene(court({ sorted: false })), { depth: true });
+  assert.deepEqual(colour(listed, 10, 10), HERO);
+  assert.deepEqual(listed.depth.sorted, [{ name: 'hero', at: [10, 12] }]);
+  // Sorting changes the order of drawing, never what a tile draws: with nothing in front, the pixels match.
+  const alone = source => { source.instances.pop(); return renderScene(prepareScene(source)).data; };
+  assert.deepEqual(alone(court()), alone(court({ sorted: false })));
+  assert.throws(() => prepareScene({ ...court(), instances: [{ asset: 'wall', at: [0, 0], sort: 'y', tilemap: { rows: ['W'], legend: { W: 'f0' } } }] }), /sort: expected ground/);
+  assert.throws(() => prepareScene({ ...court(), instances: [{ asset: 'wall', at: [0, 0], sort: 'ground', hidden: true, tilemap: { rows: ['W'], legend: { W: 'f0' } } }] }), /choose frames through their legend/);
+});
+
+test('a frame taller than its tile stands on its own bottom row, so a tree covers whoever walks behind its trunk', () => {
+  // Trees 16 pixels tall on an 8-pixel grid, raised by the overhang so the T marks the cell the trunk stands in.
+  const tall = { name: 'trees', asset: 'tree', at: [0, 16], anchor: [0, 8], sort: 'ground', tilemap: { tile: [8, 8], rows: ['T'], legend: { T: 'f0' } } };
+  const view = renderScene(prepareScene(court({ rows: ['....'], heroAt: [4, 21], extra: [tall] })), { depth: true });
+  assert.deepEqual(colour(view, 3, 13), TREE, "the canopy covers the hero, who stands on row 21, above the trunk's 23");
+  assert.deepEqual(view.depth.sorted, [{ name: 'hero', at: [4, 21] }, { name: 'trees', ground: 23, tiles: 1 }]);
+  assert.deepEqual(view.placements.find(p => p.name === 'trees'), { name: 'trees', tilemap: true, x: 0, y: 8, w: 8, h: 8, tiles: 1, scale: 1 });
+  // A canopy drawn as its own tile stands on its own row instead, so the same hero draws over it.
+  const split = { name: 'trees', asset: 'canopy', at: [0, 8], sort: 'ground', tilemap: { tile: [8, 8], rows: ['C', 'T'], legend: { C: 'f0', T: 'f1' } } };
+  assert.deepEqual(colour(renderScene(prepareScene(court({ rows: ['....'], heroAt: [4, 21], extra: [split] }))), 3, 13), HERO);
+});
+
+test("the depth image runs a tile row's ground line under each of its tiles, without a placement mark", () => {
+  const view = renderScene(prepareScene(court({ rows: ['W.W.'], heroAt: [28, 30] })), { depth: true }), s = 3, image = sceneImage(view, { mode: 'depth', scale: s });
+  const at = (x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
+  for (const x of [0, 7 * s, 16 * s, 24 * s - 1]) assert.deepEqual(at(x, 15 * s), [255, 255, 255, 255], `cap line at ${x}`);
+  assert.notDeepEqual(at(12 * s, 15 * s), [255, 255, 255, 255], 'no line across the gap between tiles');
+  assert.notDeepEqual(at(4 * s, 15 * s - 2), [255, 255, 255, 255], 'no tick');
+  // The two caps are one row, so they share a tint.
+  assert.deepEqual(at(2 * s + 1, 10 * s + 1), at(18 * s + 1, 10 * s + 1));
+  assert.notDeepEqual(at(2 * s + 1, 10 * s + 1), at(2 * s + 1, 18 * s + 1), 'the face row, nearer, is tinted apart from the caps');
+});
+
 test('the depth image tints far cool and near warm, keeps the ground grey and draws ground lines', () => {
   const view = renderScene(prepareScene(yard()), { time: 0, depth: true }), s = 3, image = sceneImage(view, { mode: 'depth', scale: s });
   assert.equal(image.width, 24 * s); assert.equal(image.height, 16 * s);

@@ -389,7 +389,7 @@
           },
           "sort": {
             "const": "ground",
-            "description": "Draw among the other sorted placements by ground line (the y of the placement point), where the first of them is listed."
+            "description": "Draw among the other sorted placements by ground line (the y of the placement point), where the first of them is listed. A sorted tilemap joins cell by cell, each standing on the bottom row of its frame, so walls and trees taller than their tile cover what stands behind them."
           },
           "shade": {
             "type": "integer",
