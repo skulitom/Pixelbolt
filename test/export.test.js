@@ -89,6 +89,34 @@ test('a forced export replaces an earlier export of the recipe without leaving i
   assert.equal((await writeBundle(await createBundle(tiny), other, { force: true })).removed, undefined);
   await access(path.join(other, 'frames', 'hand-drawn.png'));
 });
+test('a forced export removes only what its own earlier export wrote, never another recipe\'s export in the same folder', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const recipe = (name, frames, animation) => ({ ...tiny, name, frames: frames.map((frame, i) => ({ ...tiny.frames[i % 2], name: frame })), animations: { [animation]: { frames, loop: false } } });
+  // Two sprites share one folder (they share player.js, so the second export needs force), and a PNG is added by hand.
+  await writeBundle(await createBundle(tiny), dir);
+  await writeBundle(await createBundle(recipe('other', ['c', 'd'], 'twice')), dir, { force: true });
+  await writeFile(path.join(dir, 'frames', 'hand-drawn.png'), 'mine');
+  // Frame b becomes e: only sample's own old frame and animation go. They used to take other's c, d and twice too,
+  // and the hand-drawn PNG.
+  const written = await writeBundle(await createBundle(recipe('sample', ['a', 'e'], 'again')), dir, { force: true });
+  assert.deepEqual(written.removed, [path.join(dir, 'animations', 'once.png'), path.join(dir, 'frames', 'b.png')]);
+  assert.deepEqual((await readdir(path.join(dir, 'frames'))).sort(), ['a.png', 'c.png', 'd.png', 'e.png', 'hand-drawn.png']);
+  assert.deepEqual((await readdir(path.join(dir, 'animations'))).sort(), ['again.png', 'twice.png']);
+  assert.equal(await readFile(path.join(dir, 'frames', 'hand-drawn.png'), 'utf8'), 'mine');
+  // A frame name both recipes use stays while the other's atlas lists it.
+  await writeBundle(await createBundle(recipe('other', ['c', 'e'], 'twice')), dir, { force: true });
+  assert.equal((await writeBundle(await createBundle(recipe('sample', ['a'], 'again')), dir, { force: true })).removed, undefined);
+  await access(path.join(dir, 'frames', 'e.png'));
+  // An atlas that can't be read lists nothing, so nothing is removed.
+  await writeFile(path.join(dir, 'other.atlas.json'), '{ not json');
+  assert.equal((await writeBundle(await createBundle(recipe('other', ['c'], 'twice')), dir, { force: true })).removed, undefined);
+  await access(path.join(dir, 'frames', 'e.png'));
+  // That export wrote a readable atlas again, so the next one removes c, which it lists. No atlas lists e any more,
+  // so e stays: an unlisted PNG is never taken for a leftover.
+  assert.deepEqual((await writeBundle(await createBundle(recipe('other', ['d'], 'twice')), dir, { force: true })).removed, [path.join(dir, 'frames', 'c.png')]);
+  await access(path.join(dir, 'frames', 'e.png'));
+});
 test('a forced export after a rename that only changes letter case writes the new names and keeps every file', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
   t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
