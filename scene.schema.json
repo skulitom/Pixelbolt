@@ -701,6 +701,12 @@
           "lit": {
             "type": "boolean",
             "description": "false keeps this placement's authored colours under scene lighting: fires, lamps, glows and other light sources. Default true."
+          },
+          "haze": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "How far into scene.haze this placement or tilemap stands: each of its colours moves this much of the way to the haze colour, after lighting (0 none, 1 the haze colour)."
           }
         },
         "required": [
@@ -710,6 +716,31 @@
         "additionalProperties": false
       },
       "maxItems": 256
+    },
+    "haze": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string",
+          "pattern": "^#([a-fA-F0-9]{3}[fF]?|[a-fA-F0-9]{6}([fF]{2})?)$",
+          "description": "The colour far planes fade toward, usually the sky's."
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#([a-fA-F0-9]{3}[fF]?|[a-fA-F0-9]{6}([fF]{2})?)$"
+          },
+          "maxItems": 64,
+          "minItems": 1,
+          "description": "The only colours hazed placements may end on, with color: each faded colour becomes the nearest. List a fixed game palette, or a short ramp toward the haze for silhouettes. Without it, every colour fades exactly."
+        }
+      },
+      "required": [
+        "color"
+      ],
+      "additionalProperties": false,
+      "description": "Atmospheric haze for placements with haze: each colour fades as a whole, never per pixel, so each becomes one colour and keeps its place among the others."
     },
     "lighting": {
       "type": "object",

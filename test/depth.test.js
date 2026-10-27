@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, inspectProject, readGuides } from '../src/core.js';
 import { compileNormals, NORMAL_DIRECTIONS } from '../src/authoring.js';
+import { nearestColor } from '../src/craft.js';
 import { prepareScene, renderScene, sceneImage } from '../src/scene.js';
 import { decodePNG } from '../src/import.js';
 import { startMCP } from '../src/mcp.js';
@@ -203,6 +204,64 @@ test("a sorted placement attached to a frame point stands on its target's ground
   assert.deepEqual(renderScene(lit).lights[0].at, [18, 24]);
 });
 
+// Haze: a strip of two colours drawn in four rows, each row standing a different distance into the haze.
+const strip = { version: 1, name: 'strip', width: 2, height: 1, palette: { a: '#204060', b: '#c08040' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'a' }, { op: 'pixel', x: 1, y: 0, color: 'b' }] }] };
+const hazy = (haze, amounts = [0.5, undefined, 1, 0], extra = {}) => ({
+  format: 'pixelforge-scene', version: 1, name: 'hazy', width: 2, height: amounts.length, background: '#000000', haze, assets: { strip }, ...extra,
+  instances: amounts.map((amount, row) => ({ name: `row${row}`, asset: 'strip', at: [0, row], ...(amount !== undefined && { haze: amount }) }))
+});
+const row = (view, y) => [colour(view, 0, y), colour(view, 1, y)];
+
+test('haze fades each colour as a whole toward the haze colour, so each stays one colour', () => {
+  const view = renderScene(prepareScene(hazy({ color: '#ffffff' })));
+  // Halfway to white: #204060 becomes #90a0b0 and #c08040 becomes #e0c0a0, rounding halves up.
+  assert.deepEqual(row(view, 0), [[144, 160, 176, 255], [224, 192, 160, 255]]);
+  assert.deepEqual(row(view, 1), [[32, 64, 96, 255], [192, 128, 64, 255]], 'a placement without haze keeps its colours');
+  assert.deepEqual(row(view, 2), [[255, 255, 255, 255], [255, 255, 255, 255]], 'all the way in is the haze colour');
+  assert.deepEqual(row(view, 3), row(view, 1), 'haze 0 changes nothing');
+  // The reply lists the colours each hazed placement's palette keys became: an asset entry palette for a fixed far copy.
+  assert.deepEqual(view.haze, [{ name: 'row0', haze: 0.5, palette: { a: '#90a0b0', b: '#e0c0a0' } }, { name: 'row2', haze: 1, palette: { a: '#ffffff', b: '#ffffff' } }, { name: 'row3', haze: 0, palette: {} }].filter(h => h.haze));
+  assert.equal(view.placements[0].haze, 0.5);
+  assert.equal(view.placements[1].haze, undefined);
+  const copy = renderScene(prepareScene({ ...hazy({ color: '#ffffff' }, [undefined]), assets: { strip: { recipe: strip, palette: view.haze[0].palette } } }));
+  assert.deepEqual(row(copy, 0), row(view, 0), 'that palette draws the same far copy');
+  // A tilemap takes haze too, and a scene without haze draws as before.
+  const tiles = renderScene(prepareScene({ ...hazy({ color: '#ffffff' }, []), height: 1, instances: [{ asset: 'strip', at: [0, 0], haze: 1, tilemap: { rows: ['s'], legend: { s: 'a' } } }] }));
+  assert.deepEqual(row(tiles, 0), [[255, 255, 255, 255], [255, 255, 255, 255]]);
+  assert.equal(renderScene(prepareScene(hazy(undefined, [undefined]))).haze, undefined);
+});
+
+test('haze colours keep hazed placements inside a fixed palette, even under multiplied light', () => {
+  const allowed = ['#808080', '#204060', '#c08040', '#606060', '#a0a0a0'], rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const lighting = { scope: 'all', ambient: 0.4, lights: [{ at: [0, 0], radius: 6, height: 4 }] };
+  const view = renderScene(prepareScene(hazy({ color: allowed[0], colors: allowed.slice(1) }, [0.3, undefined, 0.3, undefined], { lighting })));
+  const inside = c => allowed.some(hex => rgb(hex).every((v, k) => v === c[k]));
+  for (const y of [0, 2]) for (const c of row(view, y)) assert.ok(inside(c), `hazed row ${y}: ${c}`);
+  assert.ok([1, 3].some(y => row(view, y).some(c => !inside(c))), 'unhazed lit rows leave the palette, as multiplied light does');
+  // The nearest colour follows how far apart colours look: a step in green shows more than a slightly larger step in
+  // blue. The first of equals wins.
+  assert.deepEqual(nearestColor([0, 0, 0], [[0, 9, 0], [0, 0, 10]]), [0, 0, 10]);
+  assert.deepEqual(nearestColor([10, 10, 10], [[10, 10, 12], [10, 10, 8]]), [10, 10, 12]);
+});
+
+test('haze is checked where it is written, and the schema matches', () => {
+  const fails = (source, message) => assert.throws(() => prepareScene(source), message);
+  fails(hazy(undefined), /instances\[0\]\.haze: set scene\.haze first/);
+  fails(hazy({ color: '#ffffff' }, [1.5]), /haze: expected a number from 0 to 1/);
+  fails(hazy({ color: '#fff8' }), /scene\.haze\.color: haze colours are opaque/);
+  fails(hazy({ color: '#ffffff', colors: [] }), /scene\.haze\.colors: expected 1–64 colours/);
+  fails(hazy({ color: '#ffffff', tint: 1 }), /scene\.haze\.tint: unknown or null field/);
+  const shaded = hazy({ color: '#ffffff' }, [0.5]);
+  shaded.assets.strip = { ...strip, ramps: [['a', 'b']] }; shaded.instances[0].shade = -1;
+  fails(shaded, /a shade placement draws no colours of its own to haze/);
+  const schema = JSON.parse(readFileSync(path.join(root, 'scene.schema.json'), 'utf8'));
+  assert.deepEqual(schema.properties.haze.required, ['color']);
+  assert.equal(schema.properties.haze.properties.colors.maxItems, 64);
+  assert.equal(schema.properties.instances.items.properties.haze.maximum, 1);
+  assert.match('#B8C8D8', new RegExp(schema.properties.haze.properties.color.pattern));
+  assert.doesNotMatch('#b8c8d880', new RegExp(schema.properties.haze.properties.color.pattern));
+});
+
 test('the depth view draws dashes from the ground tick up to a lifted placement', () => {
   const s = 4, view = renderScene(prepareScene(hop()), { time: 350, depth: true }), image = sceneImage(view, { mode: 'depth', scale: s });
   const at = (x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
@@ -311,6 +370,8 @@ test('MCP pixel_scene returns the depth report with its image, and pixel_inspect
   assert.deepEqual([png.width, png.height], [48, 32]);
   const plain = JSON.parse((await call('pixel_scene', { scene: yard() })).content[0].text);
   assert.equal(plain.depth, undefined);
+  const hazed = JSON.parse((await call('pixel_scene', { scene: { ...yard(), haze: { color: '#ffffff' }, instances: yard().instances.map(i => (i.name === 'post' ? { ...i, haze: 0.5 } : i)) } })).content[0].text);
+  assert.deepEqual(hazed.haze, [{ name: 'post', haze: 0.5, palette: { c: '#e0e0e0' } }]);
   // Guides sent as JSON text are read as the object the schema declares.
   const recipe = { version: 1, name: 'wall', width: 8, height: 8, palette: { k: '#404040' }, frames: [{ name: 'a', ops: [{ op: 'rect', w: 8, h: 8, color: 'k' }] }] };
   const inspected = await call('pixel_inspect', { project: recipe, guides: '{"horizon": 4, "iso": {"tile": [8, 4]}}' });

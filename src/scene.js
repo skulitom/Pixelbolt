@@ -1,6 +1,6 @@
 // Bounded scene review, not a game engine. In-memory recipes only; no filesystem or network access.
 import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, reviewPixels, scalePixels, readGuides, drawGuides, CANVAS_SIDE } from './core.js';
-import { EASINGS, ease, pixelId, random } from './craft.js';
+import { EASINGS, ease, pixelId, random, nearestColor } from './craft.js';
 import { fields, point } from './authoring.js';
 import { expandTilemap } from './autotile.js';
 
@@ -74,7 +74,7 @@ const paletteMap = (value, path) => {
 };
 
 export function prepareScene(source) {
-  fields(source, ['format', 'version', 'name', 'width', 'height', 'background', 'duration', 'palette', 'cues', 'assets', 'instances', 'lighting'], 'scene');
+  fields(source, ['format', 'version', 'name', 'width', 'height', 'background', 'duration', 'palette', 'cues', 'assets', 'instances', 'lighting', 'haze'], 'scene');
   if (source.format !== 'pixelforge-scene' || source.version !== 1) fail('scene', 'expected version-1 pixelforge-scene');
   const width = int(source.width, 1, 256, 'scene.width'), height = int(source.height, 1, 256, 'scene.height');
   const duration = int(source.duration ?? 2000, 1, 60000, 'scene.duration');
@@ -82,6 +82,15 @@ export function prepareScene(source) {
   renderProject({ version: 1, name: source.name, width: 1, height: 1, frames: [{ name: 'check' }] });
   const background = parseColor(source.background ?? '#10121e');
   const scenePalette = paletteMap(source.palette, 'scene.palette');
+  // Haze: the colour far planes fade toward, and optionally the only colours hazed placements may end on (a fixed
+  // game palette, or a short ramp toward the haze for far planes that read as silhouettes).
+  let haze = null;
+  if (source.haze !== undefined) {
+    fields(source.haze, ['color', 'colors'], 'scene.haze');
+    const opaque = (value, path) => { const rgba = parseColor(value, {}, path); if (rgba[3] !== 255) fail(path, 'haze colours are opaque'); return rgba.slice(0, 3); };
+    if (source.haze.colors !== undefined && (!Array.isArray(source.haze.colors) || !source.haze.colors.length || source.haze.colors.length > 64)) fail('scene.haze.colors', 'expected 1–64 colours');
+    haze = { color: opaque(source.haze.color, 'scene.haze.color'), colors: (source.haze.colors ?? []).map((value, j) => opaque(value, `scene.haze.colors[${j}]`)) };
+  }
   // Named times: a cue or trajectory key may say "strike" or "strike+90" instead of a number, so related events are
   // written as one time and offsets.
   const cues = Object.create(null);
@@ -137,7 +146,7 @@ export function prepareScene(source) {
   source.instances.forEach((instance, i) => { if (typeof instance?.name === 'string') named.set(instance.name, named.has(instance.name) ? null : i); });
   const instances = source.instances.map((instance, i) => {
     const path = `scene.instances[${i}]`;
-    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit'], path);
+    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit', 'haze'], path);
     if (instance.name !== undefined && typeof instance.name !== 'string') fail(`${path}.name`, 'expected a string label');
     // `lit: false` keeps a placement's authored colours under scene lighting: a fire, a lamp or a glow is a light
     // source, not something the scene's lights fall on.
@@ -160,6 +169,12 @@ export function prepareScene(source) {
       if (!shifts[instance.asset]) fail(`${path}.shade`, `shade moves colours along ramps; declare ramps in ${instance.asset}'s recipe`);
     }
     if (instance.sort !== undefined && instance.sort !== 'ground') fail(`${path}.sort`, 'expected ground: draw this placement among the other sorted ones by its ground line');
+    // How far into the haze a placement stands: 0 is none, 1 is the haze colour itself.
+    if (instance.haze !== undefined) {
+      if (!haze) fail(`${path}.haze`, 'set scene.haze first: the colour far planes fade toward');
+      num(instance.haze, 0, 1, `${path}.haze`);
+      if (instance.shade !== undefined) fail(`${path}.haze`, 'a shade placement draws no colours of its own to haze');
+    }
     if (instance.tilemap !== undefined) {
       for (const key of ['frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach']) if (instance[key] !== undefined) fail(`${path}.${key}`, 'tilemap placements choose frames through their legend');
       if (anchor === 'frame') fail(`${path}.anchor`, 'a tilemap is placed by one [x, y] anchor in map pixels, not per frame');
@@ -298,7 +313,7 @@ export function prepareScene(source) {
     }) };
     if (mode === 'ramp' && !Object.keys(shifts).length) warnings.push('Ramp lighting needs ramps in the recipes it lights; no asset declares any, so nothing is lit.');
   }
-  return { source, width, height, duration, assets, shifts, instances, background, lighting, warnings: [...new Set(warnings)] };
+  return { source, width, height, duration, assets, shifts, instances, background, lighting, haze, warnings: [...new Set(warnings)] };
 }
 // Sets a prepared light's radius as prepareScene reads it from a scene: keys that set no radius of their own take the
 // light's. The studio's slider uses this, so its preview is what the saved scene shows.
@@ -344,7 +359,22 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   // The lights as they are at this time (where they are, how strong, how far they reach), once the placements they
   // follow are known.
   let lights = [];
-  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1) => {
+  // Haze, after lighting: each colour moves `amount` of the way to the haze colour, as a whole colour rather than per
+  // pixel, so every colour of a placement becomes exactly one colour and keeps its place among the others, as a far
+  // palette an artist mixes does. With haze colours listed, it then becomes the nearest of them and the haze colour.
+  const hazeMaps = new Map();
+  const hazed = (amount, rgba) => {
+    let map = hazeMaps.get(amount);
+    if (!map) hazeMaps.set(amount, map = new Map());
+    const colour = (rgba[0] << 16) | (rgba[1] << 8) | rgba[2];
+    let out = map.get(colour);
+    if (!out) {
+      const { color, colors } = scene.haze, faded = [0, 1, 2].map(c => Math.round(rgba[c] + (color[c] - rgba[c]) * amount));
+      map.set(colour, out = colors.length ? nearestColor(faded, [color, ...colors]) : faded);
+    }
+    return out;
+  };
+  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1, fade = 0) => {
     const asset = assets[id], shift = shifts[id], project = asset.recipe, frame = project.frames[index];
     const normal = asset.normal?.frames[index].data, emission = asset.emissive?.frames[index].data;
     const light = !shade && !unlit && lit && lighting && (normal || emission || lighting.scope === 'all') && (lighting.mode === 'multiply' || shift);
@@ -375,6 +405,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           if (steps) { const next = shift(pixelId(rgba, 0), steps); if (next) rgba.set(next); }
         } else for (let c = 0; c < 3; c++) rgba[c] = Math.min(255, Math.round(rgba[c] * Math.min(1, intensity[c]) + (emission ? emission[at + c] * emission[at + 3] / 255 : 0)));
       }
+      if (fade) rgba.set(hazed(fade, rgba));
       for (let sy = 0; sy < s; sy++) for (let sx = 0; sx < s; sx++) {
         const tx = left + x * s + sx, ty = top + y * s + sy;
         if (tx < 0 || ty < 0 || tx >= width || ty >= height) { clipped.set(label, (clipped.get(label) ?? 0) + 1); continue; }
@@ -475,24 +506,24 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, covers: false });
           entry = entries.length - 1;
         }
-        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry);
+        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze);
         continue;
       }
       if (!item.record) {
         const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
-        for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry);
+        for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze);
       }
-      placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s });
+      placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s, ...(instance.haze && { haze: instance.haze }) });
       continue;
     }
     const state = states[i], { rx, ry } = item;
     if (state.hidden) continue;
     const left = state.left + rx * instance.step[0], top = state.top + ry * instance.step[1];
-    placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(state.lift && { lift: state.lift }), ...(instance.shade && { shade: instance.shade }) });
+    placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(state.lift && { lift: state.lift }), ...(instance.haze && { haze: instance.haze }), ...(instance.shade && { shade: instance.shade }) });
     // A sorted copy stands at its placement point; its y is the ground line it was sorted by.
     const sorted = instance.sort === 'ground', at = [state.position[0] + rx * instance.step[0], state.position[1] + ry * instance.step[1]];
     const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, covers: false }) - 1 : -1;
-    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry);
+    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze);
   }
   if (density) for (const box of placements) {
     const color = box.scale === 1 ? [65, 201, 240, 180] : [255, 70, 100, 255];
@@ -505,7 +536,19 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   // Where each light was and how strong, rounded for reading; viewers draw their markers from it.
   const round = v => Math.round(v * 100) / 100;
   const lightsNow = lights.map(light => ({ at: light.at.map(round), radius: round(light.radius), strength: round(light.strength) }));
-  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }) };
+  // Each hazed placement (the first 16) with the colours its palette keys became before lighting: an asset entry's
+  // `palette` that draws the same far copy.
+  const hazy = scene.instances.flatMap((instance, i) => (instance.haze ? [[instance, i]] : [])).slice(0, 16).map(([instance, i]) => {
+    const project = assets[instance.asset].recipe, palette = {};
+    for (const key of Object.keys(project.palette)) {
+      const rgba = parseColor(key, project.palette);
+      if (!rgba[3]) continue;
+      const out = hazed(instance.haze, rgba);
+      if (out.some((v, c) => v !== rgba[c])) palette[key] = `#${[...out, ...(rgba[3] === 255 ? [] : [rgba[3]])].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+    }
+    return { name: instance.name ?? `${instance.asset}#${i}`, haze: instance.haze, palette };
+  });
+  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }), ...(hazy.length && { haze: hazy }) };
   if (depth) {
     // Who covers whom, largest first. Placements that lie straight on the background (a floor, a backdrop, a tilemap
     // under everything) are the ground and are left out as the one behind; sorted placements always count.

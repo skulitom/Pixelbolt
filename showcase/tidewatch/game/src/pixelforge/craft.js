@@ -136,6 +136,19 @@ export function traceLine(x, y, x2, y2, visit) {
   }
 }
 
+// ---- Colour distance --------------------------------------------------------------------------------------------
+// The one of `candidates` (RGB triples) nearest `rgb` by the red-mean weighted distance, which follows how far apart
+// colours look much better than plain RGB and needs only + − ×; the first of equally near candidates wins.
+export function nearestColor(rgb, candidates) {
+  let best = 0, nearest = Infinity;
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i], mean = (rgb[0] + c[0]) / 2, dr = rgb[0] - c[0], dg = rgb[1] - c[1], db = rgb[2] - c[2];
+    const distance = (512 + mean) * dr * dr + 1024 * dg * dg + (767 - mean) * db * db;
+    if (distance < nearest) { nearest = distance; best = i; }
+  }
+  return candidates[best];
+}
+
 // ---- Colour ids --------------------------------------------------------------------------------------------------
 // Exact RGBA packed into one number; every fully transparent pixel is 0, whatever its hidden RGB.
 export const pixelId = (data, at) => data[at + 3] ? (((data[at] << 24) | (data[at + 1] << 16) | (data[at + 2] << 8) | data[at + 3]) >>> 0) : 0;

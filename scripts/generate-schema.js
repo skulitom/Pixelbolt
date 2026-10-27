@@ -25,6 +25,8 @@ const transform = { scale: int(1, 16), flipX: bool, flipY: bool, rotate: { enum:
 const remap = { type: 'object', propertyNames: { minLength: 1, maxLength: 1 }, additionalProperties: color, description: 'Recolor grid characters for this operation only: character → palette name or colour.' };
 const operation = (op, properties, required = []) => object({ op: { const: op }, ...properties }, ['op', ...required]);
 const hex = '^(transparent|#([a-fA-F0-9]{3,4}|[a-fA-F0-9]{6}|[a-fA-F0-9]{8}))$';
+// An opaque colour: #RGB or #RRGGBB, or with a full alpha.
+const opaqueHex = '^#([a-fA-F0-9]{3}[fF]?|[a-fA-F0-9]{6}([fF]{2})?)$';
 const pairOf = item => ({ ...array(item, 2), minItems: 2 });
 const ruleRows = { ...array({ type: 'string', minLength: 1, maxLength: 8 }, 8), minItems: 1, description: 'Equal-width rows of palette keys; dot or space matches anything (match) or keeps the pixel (replace); the empty character stands for transparent.' };
 const ease = { enum: EASINGS, description: 'linear (default), hold (jump at the end), in, out, inOut, overshoot or bounce.' };
@@ -202,8 +204,11 @@ const scene = {
         description: 'Draw this many pixels above where the placement stands, which still orders it: a jump or a flight keeps its ground line. A height, or keys of height over time, held before the first and after the last. Not on tilemaps.' },
       shade: int(-8, 8, 'Draw no colours: wherever the frame is opaque, move the pixels beneath this many steps along the asset recipe\'s ramps (negative darkens). Not 0.'),
       tilemap: object({ tile: point, ...tilemapFields, legend: legend(['frame', 'animation'], { frame: 'Frame name; with autotile, {mask} becomes the neighbour mask.', animation: 'Animation name; with autotile, {mask} becomes the neighbour mask.' }) }, ['rows', 'legend']),
-      lit: { type: 'boolean', description: 'false keeps this placement\'s authored colours under scene lighting: fires, lamps, glows and other light sources. Default true.' }
+      lit: { type: 'boolean', description: 'false keeps this placement\'s authored colours under scene lighting: fires, lamps, glows and other light sources. Default true.' },
+      haze: num(0, 1, 'How far into scene.haze this placement or tilemap stands: each of its colours moves this much of the way to the haze colour, after lighting (0 none, 1 the haze colour).')
     }, ['asset', 'at']), 256),
+    haze: { ...object({ color: { type: 'string', pattern: opaqueHex, description: 'The colour far planes fade toward, usually the sky\'s.' }, colors: { ...array({ type: 'string', pattern: opaqueHex }, 64), minItems: 1, description: 'The only colours hazed placements may end on, with color: each faded colour becomes the nearest. List a fixed game palette, or a short ramp toward the haze for silhouettes. Without it, every colour fades exactly.' } }, ['color']),
+      description: 'Atmospheric haze for placements with haze: each colour fades as a whole, never per pixel, so each becomes one colour and keeps its place among the others.' },
     lighting: object({ ambient: { type: 'number', minimum: 0, maximum: 1 }, bands: int(2, 16), scope: { enum: ['passes', 'all'], description: 'passes (default) lights only assets with normal/emissive passes; all also lights plain assets as flat surfaces.' },
       mode: { enum: ['multiply', 'ramp'], description: 'multiply (default) scales colours by the light; ramp moves each colour along its recipe\'s ramps instead, so the lit scene keeps its palette (light colour then only sets brightness).' },
       steps: int(1, 8, 'Ramp lighting: steps per unit of brightness away from 1; default 2.'),
