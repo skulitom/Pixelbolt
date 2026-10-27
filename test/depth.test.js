@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
@@ -119,6 +120,82 @@ test('a frame taller than its tile stands on its own bottom row, so a tree cover
   // A canopy drawn as its own tile stands on its own row instead, so the same hero draws over it.
   const split = { name: 'trees', asset: 'canopy', at: [0, 8], sort: 'ground', tilemap: { tile: [8, 8], rows: ['C', 'T'], legend: { C: 'f0', T: 'f1' } } };
   assert.deepEqual(colour(renderScene(prepareScene(court({ rows: ['....'], heroAt: [4, 21], extra: [split] }))), 3, 13), HERO);
+});
+
+// A hero in front of a barrel jumps from 200 ms to 500 ms, 12 pixels high at 350 ms, holding a sword at its hand; its
+// shadow follows where it stands.
+const hop = ({ heroLift } = {}) => ({
+  format: 'pixelforge-scene', version: 1, name: 'hop', width: 32, height: 32, background: '#000000', duration: 1000, cues: { jump: 200 },
+  assets: {
+    floor: block('floor', 32, 32, '#406040', [0, 0]), barrel: block('barrel', 6, 8, '#a06030', [3, 7]),
+    hero: { ...block('hero', 4, 10, '#3050c0', [2, 9]), frames: [{ name: 'a', points: { hand: [3, 4] }, ops: [{ op: 'rect', w: 4, h: 10, color: 'c' }] }] },
+    sword: block('sword', 1, 4, '#e0e0e0', [0, 3]), shadow: { ...block('shadow', 6, 2, '#000000', [3, 1]), palette: { c: '#000000', d: '#101010' }, ramps: [['c', 'd']] }
+  },
+  instances: [
+    { name: 'floor', asset: 'floor', at: [0, 0] },
+    { name: 'shadow', asset: 'shadow', at: [0, 0], anchor: 'frame', attach: { instance: 'hero' }, shade: -1 },
+    { name: 'barrel', asset: 'barrel', at: [16, 20], anchor: 'frame', sort: 'ground' },
+    { name: 'hero', asset: 'hero', at: [16, 24], anchor: 'frame', sort: 'ground', lift: heroLift ?? [{ time: 'jump', height: 0, ease: 'out' }, { time: 'jump+150', height: 12, ease: 'in' }, { time: 'jump+300', height: 0 }] },
+    { name: 'sword', asset: 'sword', at: [1, 0], anchor: 'frame', attach: { instance: 'hero', point: 'hand' } }
+  ]
+});
+const BARREL = [160, 96, 48, 255];
+
+test('lift draws a placement higher while where it stands still orders it', () => {
+  const scene = prepareScene(hop()), at = time => renderScene(scene, { time, depth: true });
+  const top = at(350), hero = top.placements.find(p => p.name === 'hero');
+  assert.deepEqual([hero.y, hero.lift], [24 - 9 - 12, 12]);
+  assert.deepEqual(top.depth.sorted, [{ name: 'barrel', at: [16, 20] }, { name: 'hero', at: [16, 24], lift: 12 }]);
+  // Rising through the barrel's rows (8 pixels up at 250 ms), the hero is still drawn in front of it.
+  const rising = at(250);
+  assert.equal(rising.placements.find(p => p.name === 'hero').lift, 8);
+  assert.deepEqual(colour(rising, 16, 14), HERO);
+  assert.deepEqual(rising.depth.overlaps.find(o => o.behind === 'barrel'), { front: 'hero', behind: 'barrel', pixels: 16 });
+  // Moving the hero up by the same 8 pixels instead puts it behind the barrel, which covers it.
+  const moved = hop({ heroLift: 0 }); moved.instances[3].at = [16, 16];
+  assert.deepEqual(colour(renderScene(prepareScene(moved)), 16, 14), BARREL);
+  // Keys hold before the first and after the last; out on the way up and in on the way down ease the arc.
+  assert.deepEqual([0, 200, 275, 350, 425, 500, 900].map(time => at(time).placements.find(p => p.name === 'hero').lift ?? 0), [0, 0, Math.round(12 * (1 - 0.5 ** 3)), 12, Math.round(12 - 12 * 0.5 ** 3), 0, 0]);
+  // The shadow, attached to where the hero stands, stays on the floor; the sword at the hand rises with it.
+  const placed = name => top.placements.find(p => p.name === name), ground = renderScene(scene, { time: 0 });
+  assert.equal(placed('shadow').y, ground.placements.find(p => p.name === 'shadow').y);
+  assert.equal(placed('sword').y, ground.placements.find(p => p.name === 'sword').y - 12);
+  assert.equal(placed('sword').lift, 12);
+  assert.equal(placed('shadow').lift, undefined);
+  // A fixed lift hovers, and a scene without lift draws as before.
+  assert.equal(renderScene(prepareScene(hop({ heroLift: 5 }))).placements.find(p => p.name === 'hero').y, 24 - 9 - 5);
+  const flat = hop(); delete flat.instances[3].lift;
+  assert.deepEqual(renderScene(prepareScene(flat), { time: 350 }).data, renderScene(prepareScene(hop({ heroLift: 0 })), { time: 350 }).data);
+});
+
+test('lift and point-free attachments are checked where they are written', () => {
+  const fails = (change, message) => { const source = hop(); change(source); assert.throws(() => prepareScene(source), message); };
+  fails(s => { s.instances[3].lift = -1; }, /lift: expected an integer from 0 to 256/);
+  fails(s => { s.instances[3].lift = []; }, /lift: expected 1–64 timed heights/);
+  fails(s => { s.instances[3].lift = [{ time: 10, height: 2 }, { time: 10, height: 3 }]; }, /key times must increase strictly/);
+  fails(s => { s.instances[3].lift = [{ time: 'leap', height: 2 }]; }, /not in scene\.cues/);
+  fails(s => { s.instances[3].lift = [{ time: 0, height: 2, ease: 'spring' }]; }, /lift\[0\]\.ease: expected one of/);
+  fails(s => { s.instances[3].lift = [{ time: 0, height: 2, speed: 1 }]; }, /speed/);
+  fails(s => { s.instances[1].attach = { instance: 'hero', point: 'foot' }; }, /no frame of hero has a point named "foot"/);
+  fails(s => { s.instances.push({ asset: 'floor', at: [0, 0], lift: 2, tilemap: { rows: ['f'], legend: { f: 'a' } } }); }, /a tilemap lies where it is placed/);
+  // The schema offers both forms, and attach needs only the instance.
+  const schema = JSON.parse(readFileSync(path.join(root, 'scene.schema.json'), 'utf8')), placement = schema.properties.instances.items.properties;
+  assert.equal(placement.lift.oneOf.length, 2);
+  assert.deepEqual(placement.attach.required, ['instance']);
+});
+
+test('the depth view draws dashes from the ground tick up to a lifted placement', () => {
+  const s = 4, view = renderScene(prepareScene(hop()), { time: 350, depth: true }), image = sceneImage(view, { mode: 'depth', scale: s });
+  const at = (x, y) => [...image.data.subarray((y * image.width + x) * 4, (y * image.width + x) * 4 + 4)];
+  const white = [255, 255, 255, 255], column = y => at(16 * s - 1, y);
+  // The hero's tick ends 5 screen pixels above its ground line; dashes go on up to its lifted point, 12 rows higher.
+  const dashes = [];
+  for (let y = 24 * s - 5; y >= 12 * s; y--) dashes.push(column(y)[0] === 255 && column(y)[1] === 255 ? 1 : 0);
+  assert.deepEqual(dashes.slice(0, 8), [1, 1, 0, 0, 1, 1, 0, 0]);
+  assert.deepEqual(column(24 * s), white, 'the ground line stays at the row the hero stands on');
+  // Standing on the ground, no dashes.
+  const still = sceneImage(renderScene(prepareScene(hop()), { time: 0, depth: true }), { mode: 'depth', scale: s });
+  assert.notDeepEqual([...still.data.subarray(((24 * s - 8) * still.width + 16 * s - 1) * 4, ((24 * s - 8) * still.width + 16 * s - 1) * 4 + 4)], white);
 });
 
 test("the depth image runs a tile row's ground line under each of its tiles, without a placement mark", () => {

@@ -24,6 +24,17 @@ function keyedAt(keys, time) {
   }
   return keys.at(-1);
 }
+// A placement's lift at `time`: a fixed height, or keys held before the first and after the last and eased between
+// neighbours by the earlier key's ease, rounded to whole pixels.
+function liftAt(lift, time) {
+  if (typeof lift === 'number') return lift;
+  if (time <= lift[0].time) return lift[0].height;
+  for (let k = 1; k < lift.length; k++) {
+    const a = lift[k - 1], b = lift[k];
+    if (time < b.time) return Math.round(a.height + (b.height - a.height) * ease(a.ease, (time - a.time) / (b.time - a.time)));
+  }
+  return lift.at(-1).height;
+}
 const alphaOver = (target, at, color) => {
   if (color[3] === 255) { target.set(color, at); return; }
   const alpha = color[3] / 255; if (!alpha) return;
@@ -126,7 +137,7 @@ export function prepareScene(source) {
   source.instances.forEach((instance, i) => { if (typeof instance?.name === 'string') named.set(instance.name, named.has(instance.name) ? null : i); });
   const instances = source.instances.map((instance, i) => {
     const path = `scene.instances[${i}]`;
-    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'shade', 'tilemap', 'lit'], path);
+    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit'], path);
     if (instance.name !== undefined && typeof instance.name !== 'string') fail(`${path}.name`, 'expected a string label');
     // `lit: false` keeps a placement's authored colours under scene lighting: a fire, a lamp or a glow is a light
     // source, not something the scene's lights fall on.
@@ -152,6 +163,7 @@ export function prepareScene(source) {
     if (instance.tilemap !== undefined) {
       for (const key of ['frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach']) if (instance[key] !== undefined) fail(`${path}.${key}`, 'tilemap placements choose frames through their legend');
       if (anchor === 'frame') fail(`${path}.anchor`, 'a tilemap is placed by one [x, y] anchor in map pixels, not per frame');
+      if (instance.lift !== undefined) fail(`${path}.lift`, 'a tilemap lies where it is placed; lift a placement instead');
       const tilemap = sceneTilemap(instance.tilemap, project, `${path}.tilemap`);
       count += tilemap.cells.length; work += tilemap.cells.length * project.width * project.height * scale ** 2;
       if (count > MAX_DRAWS || work > MAX_WORK) fail(path, 'scene exceeds 4,096 draws or 4,194,304 drawing pixels');
@@ -200,17 +212,35 @@ export function prepareScene(source) {
     // An attached placement follows a named point of another placement's current frame; `at` is its offset from that
     // point. It is not drawn while the frame there has no such point. Its target may be listed anywhere, so a shadow
     // can be drawn before the actor that casts it.
+    // Without a point it follows where the target stands, which stays on the ground while the target is lifted: a
+    // contact shadow under a jump.
     let attach = null;
     if (instance.attach !== undefined) {
       fields(instance.attach, ['instance', 'point'], `${path}.attach`);
       const index = named.get(instance.attach.instance), target = source.instances[index];
       if (typeof instance.attach.instance !== 'string' || index === undefined || index === null || index === i || target.tilemap !== undefined || target.attach !== undefined || !Object.hasOwn(assets, target.asset)) fail(`${path}.attach.instance`, 'expected the name of another, uniquely named placement that is neither a tilemap nor attached itself');
-      if (typeof instance.attach.point !== 'string' || !assets[target.asset].recipe.frames.some(frame => frame.points && Object.hasOwn(frame.points, instance.attach.point))) fail(`${path}.attach.point`, `no frame of ${target.asset} has a point named ${JSON.stringify(instance.attach.point)}`);
+      if (instance.attach.point !== undefined && (typeof instance.attach.point !== 'string' || !assets[target.asset].recipe.frames.some(frame => frame.points && Object.hasOwn(frame.points, instance.attach.point)))) fail(`${path}.attach.point`, `no frame of ${target.asset} has a point named ${JSON.stringify(instance.attach.point)}`);
       if (trajectory) fail(`${path}.trajectory`, 'an attached placement moves with its target; remove the trajectory');
-      attach = { index, point: instance.attach.point };
+      attach = { index, point: instance.attach.point ?? null };
     }
+    // Lift draws a placement this many pixels above where it stands, and where it stands still orders it: a jump or a
+    // flight keeps its ground line. A height, or keys of height over time; each key's ease shapes the change to the next.
+    let lift = 0;
+    if (Array.isArray(instance.lift)) {
+      if (!instance.lift.length || instance.lift.length > 64) fail(`${path}.lift`, 'expected 1–64 timed heights');
+      let prior = -1;
+      lift = instance.lift.map((key, j) => {
+        const kp = `${path}.lift[${j}]`;
+        fields(key, ['time', 'height', 'ease'], kp);
+        const time = when(key.time, `${kp}.time`, duration);
+        if (time <= prior) fail(`${path}.lift`, 'key times must increase strictly');
+        if (key.ease !== undefined && !EASINGS.includes(key.ease)) fail(`${kp}.ease`, `expected one of ${EASINGS.join(', ')}`);
+        prior = time;
+        return { time, height: int(key.height, 0, 256, `${kp}.height`), ease: key.ease ?? 'linear' };
+      });
+    } else if (instance.lift !== undefined) lift = int(instance.lift, 0, 256, `${path}.lift`);
     if (scale !== 1) warnings.push(`${instance.name ?? i}: ${scale}× pixels; compare density against neighboring 1× assets.`);
-    return { ...instance, at, anchor, scale, repeat, step, shade, attach, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
+    return { ...instance, at, anchor, scale, repeat, step, shade, attach, lift, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
   });
   let lighting = null;
   if (source.lighting !== undefined) {
@@ -376,12 +406,18 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       }
     }
     const anchor = instance.anchor === 'frame' ? frame.anchor ?? [0, 0] : instance.anchor;
+    // `position` is where a placement stands, which orders it; it is drawn `lift` pixels higher. A frame point rises
+    // with its placement, so a placement attached to one is lifted as much and stands below it; the point where a
+    // placement stands stays on the ground.
+    let lift = liftAt(instance.lift, time);
     if (instance.attach) {
-      const target = states[instance.attach.index], spot = target && !target.hidden ? target.frame.points?.[instance.attach.point] : undefined;
+      const target = states[instance.attach.index], { point } = instance.attach;
+      const spot = target && !target.hidden ? (point ? target.frame.points?.[point] : target.position) : undefined;
       if (!spot) hidden = true;
-      else position = [target.left + spot[0] * target.scale + instance.at[0], target.top + spot[1] * target.scale + instance.at[1]];
+      else if (!point) position = [spot[0] + instance.at[0], spot[1] + instance.at[1]];
+      else { position = [target.left + spot[0] * target.scale + instance.at[0], target.top + spot[1] * target.scale + instance.at[1] + target.lift]; lift += target.lift; }
     }
-    states[i] = { hidden, index, frame, position, left: position[0] - anchor[0] * instance.scale, top: position[1] - anchor[1] * instance.scale, scale: instance.scale };
+    states[i] = { hidden, index, frame, position, lift, left: position[0] - anchor[0] * instance.scale, top: position[1] - anchor[1] * instance.scale - lift, scale: instance.scale };
   }
   if (lighting && lit) lights = lighting.lights.map((light, i) => {
     let at = light.at, on = true, { strength, radius } = light.keys ? keyedAt(light.keys, time) : light;
@@ -448,10 +484,10 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const state = states[i], { rx, ry } = item;
     if (state.hidden) continue;
     const left = state.left + rx * instance.step[0], top = state.top + ry * instance.step[1];
-    placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(instance.shade && { shade: instance.shade }) });
+    placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(state.lift && { lift: state.lift }), ...(instance.shade && { shade: instance.shade }) });
     // A sorted copy stands at its placement point; its y is the ground line it was sorted by.
     const sorted = instance.sort === 'ground', at = [state.position[0] + rx * instance.step[0], state.position[1] + ry * instance.step[1]];
-    const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, covers: false }) - 1 : -1;
+    const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, covers: false }) - 1 : -1;
     drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry);
   }
   if (density) for (const box of placements) {
@@ -477,7 +513,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const overlaps = [...pairs].map(([key, pixels]) => { const [front, behind] = key.split(' ').map(Number); return { front: labels.get(front), behind: labels.get(behind), pixels }; }).sort((a, b) => b.pixels - a.pixels);
     const omitted = { ...(sorted.length > 64 && { sorted: sorted.length - 64 }), ...(overlaps.length > 32 && { overlaps: overlaps.length - 32 }) };
     // A row of a sorted tilemap is listed by the row it stands on and how many of its tiles stand there.
-    result.depth = { ...(sorted.length && { sorted: sorted.slice(0, 64).map(e => (e.spans ? { name: e.label, ground: e.ground, tiles: e.tiles } : { name: e.label, at: e.at })) }), overlaps: overlaps.slice(0, 32), ...(Object.keys(omitted).length && { omitted }),
+    result.depth = { ...(sorted.length && { sorted: sorted.slice(0, 64).map(e => (e.spans ? { name: e.label, ground: e.ground, tiles: e.tiles } : { name: e.label, at: e.at, ...(e.lift && { lift: e.lift }) })) }), overlaps: overlaps.slice(0, 32), ...(Object.keys(omitted).length && { omitted }),
       ...(!scene.instances.some(instance => instance.sort === 'ground') && overlaps.length && { note: 'No placement has sort: "ground", so placements draw in list order. Give everything that stands on the ground sort: "ground" to draw it by where it stands.' }) };
     Object.defineProperty(result, 'depthMap', { value: { owner, entries } });
   }
@@ -493,8 +529,8 @@ const depthTint = t => {
 // The scene image a reviewer sees, enlarged: `color`, `grayscale` or `depth`, with optional perspective guides. The
 // depth view tints each placement by when it is drawn, cool for far and warm for near; the ground (placements that lie
 // straight on the background) is grey. Each sorted placement shows its ground line, white across its width, with a
-// mark at its placement point, so an anchor on the wrong row shows at once; a sorted tilemap's line runs under each
-// tile, on the bottom row of its frame.
+// mark at its placement point, so an anchor on the wrong row shows at once, and dashes up to a lifted placement; a
+// sorted tilemap's line runs under each tile, on the bottom row of its frame.
 export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
   if (!['color', 'grayscale', 'depth'].includes(mode)) fail('scene.view', 'expected color, grayscale or depth');
   const { width, height } = view, s = scale, w = width * s, h = height * s;
@@ -527,6 +563,9 @@ export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
       const ax = e.at[0] * s;
       // A tick on the line at the placement point (a pixel corner, so two pixels wide), edged dark.
       for (let dy = -4; dy <= -1; dy++) for (let dx = -2; dx <= 1; dx++) put(ax + dx, ay + dy, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
+      // A lifted placement: dashes from the tick up to the point it is drawn at, so a jump shows how high above its
+      // ground line it is.
+      if (e.lift > 0) for (let y = ay - 5; y >= (e.at[1] - e.lift) * s; y--) if ((ay - 5 - y) % 4 < 2) for (let dx = -2; dx <= 1; dx++) put(ax + dx, y, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
     }
   } else out = scalePixels(native, width, height, s);
   if (checked) drawGuides(out, w, { left: 0, top: 0, w, h }, s, { x: 0, y: 0 }, checked);

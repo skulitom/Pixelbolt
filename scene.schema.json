@@ -372,24 +372,79 @@
             "properties": {
               "instance": {
                 "type": "string",
-                "description": "Name of an earlier, uniquely named placement."
+                "description": "Name of another uniquely named placement that is neither a tilemap nor attached itself."
               },
               "point": {
                 "type": "string",
                 "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-                "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+                "description": "A named point of its current frame; not drawn while that frame has no such point. Without one, follow where it stands, which stays on the ground while it is lifted (a contact shadow)."
               }
             },
             "required": [
-              "instance",
-              "point"
+              "instance"
             ],
             "additionalProperties": false,
-            "description": "Follow a named frame point of another placement; at becomes the offset from it. Not drawn while that frame has no such point."
+            "description": "Follow another placement; at becomes the offset from the point followed. A frame point rises with its placement's lift, and so does what is attached to it."
           },
           "sort": {
             "const": "ground",
             "description": "Draw among the other sorted placements by ground line (the y of the placement point), where the first of them is listed. A sorted tilemap joins cell by cell, each standing on the bottom row of its frame, so walls and trees taller than their tile cover what stands behind them."
+          },
+          "lift": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 256
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "time": {
+                      "oneOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 60000
+                        },
+                        {
+                          "type": "string",
+                          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}([+-][0-9]{1,5})?$"
+                        }
+                      ],
+                      "description": "Milliseconds or a named cue such as \"jump+150\"."
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 256
+                    },
+                    "ease": {
+                      "enum": [
+                        "linear",
+                        "hold",
+                        "in",
+                        "out",
+                        "inOut",
+                        "overshoot",
+                        "bounce"
+                      ],
+                      "description": "Shape of the change from this key to the next: linear (default), hold (jump at the end), in, out, inOut, overshoot or bounce."
+                    }
+                  },
+                  "required": [
+                    "time",
+                    "height"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 64,
+                "minItems": 1
+              }
+            ],
+            "description": "Draw this many pixels above where the placement stands, which still orders it: a jump or a flight keeps its ground line. A height, or keys of height over time, held before the first and after the last. Not on tilemaps."
           },
           "shade": {
             "type": "integer",
