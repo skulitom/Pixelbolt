@@ -1,6 +1,6 @@
 // Browser-compatible, deterministic rasterizer. No I/O and no dependencies.
 import { patternProblem, ditherThreshold, traceLine, pixelId, colorOf, idsOf, cleanupIds, ruleVariants, rewriteIds } from './craft.js';
-import { reduceBlobMask, quadrantPieces, templatePiece, expandTilemap } from './autotile.js';
+import { reduceBlobMask, quadrantPieces, templatePiece, expandTilemap, isoLayout } from './autotile.js';
 import { layoutText } from './font.js';
 export class PixelError extends Error {
   constructor(path, message) { super(`${path}: ${message}`); this.name = 'PixelError'; this.path = path; }
@@ -94,7 +94,7 @@ const round6 = value => Math.round(value * 1e6) / 1e6;
 // 4,194,304 pixels that bound every recipe's frames.
 export const CANVAS_SIDE = 256, STILL_SIDE = 4096, FRAME_AREA = 4194304;
 // What may stand in a layer with sort "ground", and what works on an area instead.
-const STANDING = new Set(['pixel', 'rect', 'ellipse', 'line', 'grid', 'stamp', 'text', 'copy', 'autotile']);
+const STANDING = new Set(['pixel', 'rect', 'ellipse', 'line', 'grid', 'stamp', 'text', 'copy', 'autotile', 'box']);
 const AREA = new Set(['clear', 'fill', 'replace', 'tilemap', 'outline', 'dither', 'shade', 'rewrite']);
 
 // `stills: false` keeps a document to the animation limit even with one frame (pose sources compile to animations).
@@ -207,6 +207,7 @@ export function renderProject(spec, options = {}) {
     const grid = typeof op.symbol === 'string' && own(symbols, op.symbol) ? symbols[op.symbol] : null;
     if (op.op === 'stamp') return grid ? box(grid.width, grid.height) : y;
     if (op.op === 'autotile') return grid ? y + grid.width / 2 - 1 : y;
+    if (op.op === 'box') return y + Math.floor((whole(op.w, 2) + whole(op.d, 2)) / 2) + whole(op.h, 0) - 1;
     // copy: the copied rectangle, from a symbol or from an earlier frame (the canvas).
     const [sourceWidth, sourceHeight] = grid ? [grid.width, grid.height] : [width, height];
     return box(whole(op.w, sourceWidth - whole(op.sx, 0)), whole(op.h, sourceHeight - whole(op.sy, 0)));
@@ -242,7 +243,8 @@ export function renderProject(spec, options = {}) {
         text: ['x', 'y', 'text', 'color', 'align', 'spacing', 'lineHeight', ...transform, 'ground'],
         copy: ['x', 'y', 'from', 'symbol', 'sx', 'sy', 'w', 'h', ...transform, 'remap', 'ground'],
         autotile: ['x', 'y', 'symbol', 'mask', 'mode', 'remap', 'ground'],
-        tilemap: ['x', 'y', 'tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed'],
+        box: ['x', 'y', 'w', 'd', 'h', 'top', 'left', 'right', 'edge', 'ground'],
+        tilemap: ['x', 'y', 'tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed', 'layout'],
         outline: ['color', 'diagonal', 'position', 'width', 'directions'],
         dither: ['x', 'y', 'w', 'h', 'color', 'erase', 'density', 'direction', 'pattern', 'offset', 'seed', 'scale', 'over'],
         shade: ['x', 'y', 'w', 'h', 'steps', 'shape', 'density', 'direction', 'pattern', 'offset', 'seed', 'scale', 'over'],
@@ -419,6 +421,32 @@ export function renderProject(spec, options = {}) {
         const mode = op.mode ?? 'blob';
         if (!['blob', 'cardinal'].includes(mode)) fail(`${p}.mode`, 'expected blob or cardinal');
         drawTemplate(grid, integer(op.mask, `${p}.mask`, 0, mode === 'cardinal' ? 15 : 255), mode, x, y, paletteSampler(), `${p}.symbol`);
+      } else if (op.op === 'box') {
+        // An isometric box from the top-left of its bounds: a 2:1 top face whose right edge runs `w` pixels across and
+        // left edge `d`, over a left and a right face `h` pixels tall. Each pixel belongs to the face its centre lies in
+        // (tested on doubled coordinates, so on whole numbers), so edges step two pixels across for each one down and
+        // boxes laid on a 2:1 grid meet with no gap or overlap. `edge` marks the top's front edges and the corner
+        // between the sides. A face without a colour is left out; h 0 and a top alone is a floor diamond.
+        const w = integer(op.w, `${p}.w`, 2, 512), d = integer(op.d, `${p}.d`, 2, 512), h = integer(op.h ?? 0, `${p}.h`, 0, 512);
+        for (const [key, value] of [['w', w], ['d', d]]) if (value % 2) fail(`${p}.${key}`, 'expected an even number: a 2:1 edge runs two pixels across for each one down');
+        const faces = ['top', 'left', 'right'].map(key => (op[key] === undefined ? null : color(op[key], `${p}.${key}`)));
+        if (!faces.some(Boolean)) fail(`${p}.top`, 'give at least one face a colour: top, left or right');
+        const edge = op.edge === undefined ? null : color(op.edge, `${p}.edge`), across = w + d, down = across / 2 + h;
+        spend(across * down);
+        // 0 top, 1 left, 2 right, -1 outside the box.
+        const face = (i, j) => {
+          if (i < 0 || j < 0 || i >= across || j >= down) return -1;
+          const s = 2 * i + 4 * j + 3 - 2 * d, t = 4 * j - 2 * i + 2 * d + 1;
+          if (s > 0 && s < 4 * w && t > 0 && t < 4 * d) return 0;
+          const below = i < w ? t - 4 * d : s - 4 * w;
+          return below > 0 && below < 4 * h ? (i < w ? 1 : 2) : -1;
+        };
+        for (let j = 0; j < down; j++) for (let i = 0; i < across; i++) {
+          const f = face(i, j);
+          if (f < 0 || !faces[f]) continue;
+          const marked = edge && ((f === 0 && face(i, j + 1) > 0) || (f === 1 && face(i + 1, j) === 2));
+          put(x + i, y + j, marked ? edge : faces[f]);
+        }
       } else if (op.op === 'tilemap') {
         // A character map drawn from this recipe's symbols and autotile templates, with the legend, variants and rules of
         // scene tilemaps (see expandTilemap in autotile.js). Later operations see the composed result: dither over its
@@ -426,11 +454,21 @@ export function renderProject(spec, options = {}) {
         if (op.tile === undefined) fail(`${p}.tile`, 'expected [width, height]: the distance between cells in pixels');
         const tile = point(op.tile, `${p}.tile`);
         if (tile.some(n => n < 1 || n > 256)) fail(`${p}.tile`, 'cells are 1–256 pixels wide and tall');
+        // An iso map lays cells on a 2:1 diamond grid, back to front; each symbol stands on its diamond, bottoms aligned
+        // and centred across, so a block taller than the tile rises above its cell.
+        if (op.layout !== undefined && op.layout !== 'square' && op.layout !== 'iso') fail(`${p}.layout`, 'expected square or iso');
+        const iso = op.layout === 'iso';
+        if (iso && tile.some(n => n % 2)) fail(`${p}.tile`, 'an iso tile has an even width and height');
         const expanded = expandTilemap(op, { path: p, fail, kinds: ['symbol', 'template'], text: 'symbol', masked: kind => kind !== 'template', exists: (kind, key) => own(symbols, key) });
         const sample = paletteSampler();
-        for (const cell of expanded.cells) {
-          const grid = symbols[cell.name], left = x + cell.x * tile[0], top = y + cell.y * tile[1];
-          if (cell.kind === 'template') { drawTemplate(grid, cell.mask, cell.mode, left, top, sample, `${p}.legend: template ${JSON.stringify(cell.name)}`); continue; }
+        const cells = iso ? isoLayout(expanded.cells, expanded.rows, tile) : expanded.cells.map(cell => ({ ...cell, left: cell.x * tile[0], top: cell.y * tile[1] }));
+        for (const cell of cells) {
+          const grid = symbols[cell.name];
+          if (cell.kind === 'template') {
+            if (iso) fail(`${p}.legend`, `template ${JSON.stringify(cell.name)} draws square tiles; an iso map takes symbols`);
+            drawTemplate(grid, cell.mask, cell.mode, x + cell.left, y + cell.top, sample, `${p}.legend: template ${JSON.stringify(cell.name)}`); continue;
+          }
+          const left = x + cell.left + (iso ? Math.floor((tile[0] - grid.width) / 2) : 0), top = y + cell.top + (iso ? tile[1] - grid.height : 0);
           spend(grid.width * grid.height);
           for (let gy = 0; gy < grid.height; gy++) for (let gx = 0; gx < grid.width; gx++) { const c = sample(grid.rows[gy][gx]); if (c) put(left + gx, top + gy, c); }
         }

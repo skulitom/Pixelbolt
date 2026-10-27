@@ -508,6 +508,13 @@
                 "maximum": 2147483647,
                 "description": "Reshuffles variant picks and rule chances, which are seeded by cell position; default 0."
               },
+              "layout": {
+                "enum": [
+                  "square",
+                  "iso"
+                ],
+                "description": "square (default): cells side by side, each drawing from its top-left. iso: a 2:1 diamond grid (even tile sizes such as [32, 16]), drawn back to front, cell [x, y] at [(x - y + rows - 1) * w/2, (x + y) * h/2]; each drawing stands on its diamond, bottoms aligned and centred across, so a block taller than the tile rises above its cell."
+              },
               "legend": {
                 "type": "object",
                 "propertyNames": {
@@ -1872,6 +1879,90 @@
           "type": "object",
           "properties": {
             "op": {
+              "const": "box"
+            },
+            "x": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "y": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
+            },
+            "w": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 512,
+              "multipleOf": 2,
+              "description": "How far the top face's right edge runs across, in pixels (even); it runs half as far down."
+            },
+            "d": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 512,
+              "multipleOf": 2,
+              "description": "How far the top face's left edge runs across, in pixels (even)."
+            },
+            "h": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 512,
+              "description": "Height of the side faces in pixels; default 0, a flat diamond."
+            },
+            "top": {
+              "type": "string",
+              "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+            },
+            "left": {
+              "type": "string",
+              "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+            },
+            "right": {
+              "type": "string",
+              "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+            },
+            "edge": {
+              "type": "string",
+              "description": "Marks the top face's front edges and the corner between the side faces."
+            }
+          },
+          "required": [
+            "op",
+            "w",
+            "d"
+          ],
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "top"
+              ]
+            },
+            {
+              "required": [
+                "left"
+              ]
+            },
+            {
+              "required": [
+                "right"
+              ]
+            }
+          ],
+          "description": "An isometric box from the top-left of its bounds (w + d wide, (w + d) / 2 + h tall): a 2:1 top face over a left and a right face. Each pixel belongs to the face its centre lies in, so edges step two pixels across per row and boxes on a 2:1 grid meet exactly. A face without a colour is left out."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
               "const": "outline"
             },
             "color": {
@@ -2287,6 +2378,13 @@
               "maximum": 2147483647,
               "description": "Reshuffles variant picks and rule chances, which are seeded by cell position; default 0."
             },
+            "layout": {
+              "enum": [
+                "square",
+                "iso"
+              ],
+              "description": "square (default): cells side by side, each drawing from its top-left. iso: a 2:1 diamond grid (even tile sizes such as [32, 16]), drawn back to front, cell [x, y] at [(x - y + rows - 1) * w/2, (x + y) * h/2]; each drawing stands on its diamond, bottoms aligned and centred across, so a block taller than the tile rises above its cell."
+            },
             "legend": {
               "type": "object",
               "propertyNames": {
@@ -2298,14 +2396,14 @@
                 "oneOf": [
                   {
                     "type": "string",
-                    "description": "A symbol drawn at the cell's top-left; with autotile, {mask} in its name becomes the neighbour mask."
+                    "description": "A symbol drawn at the cell's top-left (in an iso map, standing on its diamond); with autotile, {mask} in its name becomes the neighbour mask."
                   },
                   {
                     "type": "object",
                     "properties": {
                       "symbol": {
                         "type": "string",
-                        "description": "A symbol drawn at the cell's top-left; with autotile, {mask} in its name becomes the neighbour mask."
+                        "description": "A symbol drawn at the cell's top-left (in an iso map, standing on its diamond); with autotile, {mask} in its name becomes the neighbour mask."
                       },
                       "symbols": {
                         "type": "array",
@@ -2368,7 +2466,7 @@
                           "properties": {
                             "symbol": {
                               "type": "string",
-                              "description": "A symbol drawn at the cell's top-left; with autotile, {mask} in its name becomes the neighbour mask."
+                              "description": "A symbol drawn at the cell's top-left (in an iso map, standing on its diamond); with autotile, {mask} in its name becomes the neighbour mask."
                             },
                             "symbols": {
                               "type": "array",

@@ -72,5 +72,5 @@ test('the schema offers sort on layers and ground on the operations that can sta
   const schema = JSON.parse(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
   assert.deepEqual(schema.$defs.layer.properties.sort.enum, ['ground']);
   const standing = schema.$defs.op.oneOf.filter(op => op.properties.ground).map(op => op.properties.op.const).sort();
-  assert.deepEqual(standing, ['autotile', 'copy', 'ellipse', 'grid', 'line', 'pixel', 'rect', 'stamp', 'text']);
+  assert.deepEqual(standing, ['autotile', 'box', 'copy', 'ellipse', 'grid', 'line', 'pixel', 'rect', 'stamp', 'text']);
 });

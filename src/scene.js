@@ -2,7 +2,7 @@
 import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, reviewPixels, scalePixels, readGuides, drawGuides, CANVAS_SIDE } from './core.js';
 import { EASINGS, ease, pixelId, random, nearestColor } from './craft.js';
 import { fields, point } from './authoring.js';
-import { expandTilemap } from './autotile.js';
+import { expandTilemap, isoLayout } from './autotile.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const int = (v, min, max, path) => { if (!Number.isInteger(v) || v < min || v > max) fail(path, `expected an integer from ${min} to ${max}`); return v; };
@@ -56,15 +56,26 @@ const alphaOver = (target, at, color) => {
 const sheetSettings = sheet => JSON.stringify([sheet.columns, sheet.padding, sheet.scale, Boolean(sheet.trim)]);
 const MAX_DRAWS = 4096, MAX_WORK = 4194304;
 
-// Expands a tilemap placement into cells of one asset's frames and animations (see expandTilemap in autotile.js).
+// Expands a tilemap placement into cells of one asset's frames and animations (see expandTilemap in autotile.js): each
+// cell's frame top-left in map pixels, and `bottom`, the map row below the line it stands on when the map is sorted.
+// A square cell's frame hangs from the cell's top-left and stands on its own bottom row. An iso map lays cells on a 2:1
+// diamond grid, back to front (see isoLayout); each frame stands on its diamond, bottoms aligned and centred across, and
+// stands just above the diamond's centre, so whatever stands at the centre of the same cell, on top of a block, is
+// drawn after it.
 function sceneTilemap(tilemap, project, path) {
-  fields(tilemap, ['tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed'], path);
+  fields(tilemap, ['tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed', 'layout'], path);
   const tile = point(tilemap.tile ?? [project.width, project.height], `${path}.tile`, 256);
   if (tile.some(n => n < 1)) fail(`${path}.tile`, 'tile size must be positive');
+  if (tilemap.layout !== undefined && tilemap.layout !== 'square' && tilemap.layout !== 'iso') fail(`${path}.layout`, 'expected square or iso');
+  const iso = tilemap.layout === 'iso';
+  if (iso && tile.some(n => n % 2)) fail(`${path}.tile`, 'an iso tile has an even width and height');
   const frames = new Set(project.frames.map(f => f.name));
   const expanded = expandTilemap(tilemap, { path, fail, kinds: ['frame', 'animation'], text: 'frame', masked: () => true,
     exists: (kind, name) => kind === 'frame' ? frames.has(name) : Object.hasOwn(project.animations, name) });
-  return { tile, cells: expanded.cells.map(cell => ({ x: cell.x * tile[0], y: cell.y * tile[1], [cell.kind]: cell.name })), columns: expanded.columns, rows: expanded.rows };
+  const { columns, rows } = expanded, [w, h] = tile;
+  if (!iso) return { tile, width: columns * w, height: rows * h, cells: expanded.cells.map(cell => ({ x: cell.x * w, y: cell.y * h, bottom: cell.y * h + project.height, [cell.kind]: cell.name })), columns, rows };
+  const cells = isoLayout(expanded.cells, rows, tile).map(cell => ({ x: cell.left + Math.floor((w - project.width) / 2), y: cell.top + h - project.height, bottom: cell.top + h / 2, [cell.kind]: cell.name }));
+  return { tile, width: (columns + rows) * w / 2, height: (columns + rows) * h / 2, cells, columns, rows, iso };
 }
 
 // A theme: palette overrides for keys the recipe already has, from the scene and then from the asset entry.
@@ -524,8 +535,8 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const instance = scene.instances[i], s = instance.scale;
     if (instance.tilemap) {
       if (instance.sort !== 'ground') return [{ i }];
-      const top = instance.at[1] - instance.anchor[1] * s, height = assets[instance.asset].recipe.height;
-      return instance.tilemap.cells.map((cell, k) => ({ i, cell: k, ground: top + (cell.y + height) * s - 1 }));
+      const top = instance.at[1] - instance.anchor[1] * s;
+      return instance.tilemap.cells.map((cell, k) => ({ i, cell: k, ground: top + cell.bottom * s - 1 }));
     }
     const [columns, rows] = instance.repeat;
     return Array.from({ length: columns * rows }, (_, k) => ({ i, rx: k % columns, ry: Math.floor(k / columns), ground: states[i].position[1] + Math.floor(k / columns) * instance.step[1] }));
@@ -541,7 +552,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const { i } = item, instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
     if (instance.tilemap) {
       const shift = shiftOf(i), { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s - shift[0], top = instance.at[1] - instance.anchor[1] * s - shift[1];
-      const box = { x: left, y: top, w: tilemap.columns * tilemap.tile[0] * s, h: tilemap.rows * tilemap.tile[1] * s };
+      const box = { x: left, y: top, w: tilemap.width * s, h: tilemap.height * s };
       if (item.cell !== undefined) {
         // The cells of a sorted tilemap that stand on one row are drawn one after another and share a depth entry.
         const cell = tilemap.cells[item.cell], x = left + cell.x * s, y = top + cell.y * s, w = project.width * s, h = project.height * s;

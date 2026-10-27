@@ -178,3 +178,13 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
   outputs.sort((a, b) => a.y - b.y || a.x - b.x || a.moved - b.moved || a.order - b.order);
   return { cells: outputs.map(({ order, moved, ...cell }) => cell), columns: width, rows: rows.length };
 }
+
+// An iso map lays its cells on a 2:1 diamond grid: cell [x, y] (the character's column and row) has its diamond's
+// top-left at [(x - y + rows - 1) * w / 2, (x + y) * h / 2] for a tile [w, h], so the map's top-left is [0, 0] and it
+// is (columns + rows) * w / 2 wide. Cells draw back to front: by column plus row, then column, then as listed. Each
+// returned cell keeps its fields and adds `left` and `top`.
+export function isoLayout(cells, rows, [w, h]) {
+  return cells.map((cell, order) => ({ cell, order }))
+    .sort((a, b) => a.cell.x + a.cell.y - (b.cell.x + b.cell.y) || a.cell.x - b.cell.x || a.order - b.order)
+    .map(({ cell }) => ({ ...cell, left: (cell.x - cell.y + rows - 1) * w / 2, top: (cell.x + cell.y) * h / 2 }));
+}
