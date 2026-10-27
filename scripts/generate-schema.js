@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
 import { FX_EVENTS } from '../src/fx.js';
+import { SHAPE_KINDS } from '../src/shapes.js';
 import { NORMAL_DIRECTIONS } from '../src/authoring.js';
 const NORMAL_KEYS = Object.keys(NORMAL_DIRECTIONS);
 const int = (minimum, maximum, description) => ({ type: 'integer', minimum, maximum, ...(description ? { description } : {}) });
@@ -271,17 +272,54 @@ const emitter = { ...object({
   behind: { type: 'boolean', description: 'Draw this emitter\'s particles under every other emitter\'s (smoke behind sparks, a trail behind its bolt).' },
   cue: { ...id, description: 'Name a point at the spawn centre in each frame this emitter spawns. Frames carry it as a named point, which atlases export for game code (a shake or a pause on impact); the metadata lists every cue.' }
 }, ['shapes']), anyOf: [{ required: ['at'] }, { required: ['from'] }] };
+// Shape layers: each writes an intensity field inside its frame window; a look cuts the layers that name it into bands.
+const tween = (minimum, maximum, description) => ({ oneOf: [num(minimum, maximum), { ...array(num(minimum, maximum), 8), minItems: 2 }], description: `${description} A number, or 2–8 keys spread evenly over the layer's frames through its ease.` });
+const shapeLook = object({
+  colors: { ...array({ type: 'string', minLength: 1, maxLength: 1 }, 8), minItems: 1, description: 'Palette keys from the faintest band to the brightest.' },
+  thresholds: { ...array(num(0.001, 16), 8), minItems: 1, description: 'One rising threshold per colour: a colour is on where the combined field reaches its threshold.' },
+  dither: num(0, 1, 'Feather each band in below its threshold through the pattern, over this share of the gap to the band below; default 0 (hard bands).'),
+  pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dither pattern, as for the dither operation; default bayer4. Needs dither.' },
+  outline: { type: 'string', minLength: 1, maxLength: 1, description: 'Palette key for a one-pixel outline on the empty pixels beside this look\'s own.' }
+}, ['colors', 'thresholds']);
+const layerCommon = {
+  look: { ...id, description: 'The look that colours this layer; may be left out when the effect has one look.' },
+  at: vector(-4096, 4096, 'Centre [x, y] (a beam or bolt starts here).'),
+  frames: { ...pairOf(int(0, 256)), description: '[first, end]: the first frame drawn and the frame after the last; default the whole effect. Progress runs from 0 at first toward 1.' },
+  ease: { ...ease, description: 'How tweened values move across the window: out (default), linear, in, inOut, hold, overshoot or bounce.' },
+  power: tween(0, 8, 'Multiplies the field: bright bands shrink as it falls, so the shape erodes instead of fading; default 1.'),
+  flicker: num(0, 1, 'Every other frame of the window, power drops by this share.'),
+  blend: { enum: ['max', 'add'], description: 'max (default): the brighter layer of a look wins; add: layers sum.' },
+  tilt: num(-3600, 3600, 'Rotate the shape clockwise by degrees.'), squash: { ...pairOf(num(0.125, 8)), description: 'Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground.' },
+  drift: vector(-4096, 4096, 'Move by [x, y] pixels over the window (smoke rising).'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
+  cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' }
+};
+// The fields every kind shares are defined once, under $defs, and referenced from each kind.
+const layerRefs = Object.fromEntries(Object.keys(layerCommon).map(key => [key, ref(`layer-${key}`)]));
+const shapeLayer = (kind, description, properties, required = []) => ({ ...object({ kind: { const: kind }, ...layerRefs, ...properties }, ['kind', 'at', ...required]), description });
+const reveal = share => num(0, 0.95, `Share of the window the shape takes to draw on; default ${share}.`);
+const layer = { oneOf: [
+  shapeLayer('ring', 'A shockwave: a crisp leading edge at radius, fading inward over width.', { radius: tween(0, 512, 'Pixels to the leading edge.'), width: tween(0, 256, 'Band thickness behind the edge; default 3. Ending at 2 or more, with noise, breaks a fading ring up instead of thinning it to an outline.'), fill: tween(0, 2, 'Glow inside the band, as a share; default 0.'), noise: num(0, 1, 'Seeded breaks along the ring; default 0.'), scale: num(1, 64, 'Noise feature size in pixels; default 6.') }, ['radius']),
+  shapeLayer('slash', 'A crescent: a crisp outer arc at radius, thickest mid-arc and pointed at both ends; the head sweeps arc during reveal and the tail chases it.', { radius: tween(1, 512, 'Pixels to the outer edge.'), width: tween(0, 256, 'Thickest point, inward from the edge; default 6.'), arc: { ...pairOf(num(-3600, 3600)), description: '[from, to] degrees clockwise (0 right, 90 down), at most 360 apart; the slash sweeps from the first to the second.' }, reveal: reveal(0.35) }, ['radius', 'arc']),
+  shapeLayer('beam', 'A straight beam from at to to, brightest on its axis, with travelling ripples.', { to: vector(-4096, 4096, 'The far end.'), width: tween(0, 256, 'Pixels across; default 5.'), reveal: reveal(0.15), wobble: num(0, 1, 'Share by which the width ripples; default 0.15.'), wavelength: num(2, 512, 'Pixels between ripples; default 12.'), waves: num(-64, 64, 'Ripples that pass over the window; negative runs back toward at. Default 3.'), fade: num(0, 1, 'Share by which it dims toward to (a pillar of light); default 0.') }, ['to']),
+  shapeLayer('bolt', 'Lightning from at to to: a jagged one-pixel core with a glow and seeded branches, re-rolled every reroll frames.', { to: vector(-4096, 4096, 'Where it strikes.'), width: tween(1, 9, 'Core thickness in pixels; default 1.'), glow: tween(0, 4, 'Glow in pixels around the core; default 1.'), jag: num(0, 1, 'How far the path strays; default 0.35.'), branches: int(0, 8, 'Default 2.'), reroll: int(0, 256, 'Frames per new path; 0 keeps one. Default 2.'), segment: num(2, 64, 'Pixels per straight piece; default 4.'), reveal: reveal(0) }, ['to']),
+  shapeLayer('glyph', 'A magic circle in one-pixel ink: an outer ring (doubled on request), an inner ring, upright seeded runes between them and an optional star polygon; it draws on clockwise from the top.', { radius: tween(2, 512, 'Outer ring radius.'), inner: num(0.2, 0.95, 'Inner ring as a share of radius; default 0.72.'), points: int(0, 12, 'Star corners on the inner ring: 0 for none (default 5).'), step: int(1, 6, 'Corners each star line skips to: 1 a polygon, 2 a pentagram from 5. Default half the corners, rounded down.'), runes: int(0, 48, 'Default 12.'), double: { type: 'boolean', description: 'A second outer ring two pixels inside the first.' }, spin: tween(-3600, 3600, 'Degrees the runes travel round (the star turns the other way); default 0.'), reveal: reveal(0.3), glow: tween(0, 4, 'Glow in pixels around the ink; default 1.'), fill: tween(0, 2, 'Glow inside the outer ring; default 0.') }, ['radius']),
+  shapeLayer('star', 'An impact star: points spikes, every other one ratio as long, tapering to one-pixel tips around a bright core.', { radius: tween(0, 512, 'Length of the long spikes.'), points: int(2, 16, 'Default 8.'), ratio: num(0.05, 1, 'Length of the short spikes; default 0.55.'), width: tween(0, 64, 'Half-width at the base; default 2.5.'), core: tween(0, 128, 'Core radius; default 1.2 × width.'), angle: num(-3600, 3600, 'Direction of the first spike; default 0 (right).'), spin: tween(-3600, 3600, 'Degrees turned over the window; default 0.'), jitter: num(0, 1, 'Seeded variation in spike length; default 0.') }, ['radius']),
+  shapeLayer('burst', 'A fireball or puff: a disc broken by seeded smooth noise that boils outward, hottest in the middle, with an optional hole opening from the centre.', { radius: tween(0, 512, 'Pixels.'), hole: tween(0, 1, 'Burnt-out centre as a share of radius; default 0.'), noise: num(0, 1, 'Default 0.4.'), scale: num(1, 64, 'Noise feature size in pixels; default 4.'), boil: num(-512, 512, 'Pixels the noise moves outward over the window; default half the largest radius.') }, ['radius'])
+] };
 const fx = {
   $schema: schema.$schema, title: 'Pixelbolt particle effects',
-  description: 'Seeded particle emitters compiled into an ordinary recipe: one frame sequence and animation per effect (frames <effect>-0, <effect>-1…), drawn with stamp, grid and line operations on these symbols. Deterministic for a given seed.',
+  description: 'Seeded particle emitters and shape layers (shockwave rings, slashes, beams, lightning, magic circles, impact stars, fireballs) compiled into an ordinary recipe: one frame sequence and animation per effect (frames <effect>-0, <effect>-1…). Shapes draw as one grid per frame between behind particles and the rest; particles draw with stamp, grid and line operations on these symbols. Deterministic for a given seed.',
   ...object({ format: { const: 'pixelforge-fx' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
-    symbols: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: ref('rows') }, anchor: schema.properties.anchor,
-    effects: { type: 'object', minProperties: 1, maxProperties: 64, propertyNames: id, additionalProperties: object({ frames: int(1, 256), duration: { oneOf: [int(1, 60000), array(int(1, 60000), 256),
+    symbols: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: ref('rows'), description: 'Particle drawings; may be left out when no effect has emitters.' }, anchor: schema.properties.anchor,
+    effects: { type: 'object', minProperties: 1, maxProperties: 64, propertyNames: id, additionalProperties: { ...object({ frames: int(1, 256), duration: { oneOf: [int(1, 60000), array(int(1, 60000), 256),
       object({ from: int(1, 60000, 'Milliseconds of the first frame.'), to: int(1, 60000, 'Milliseconds of the last frame.'), ease: { ...ease, description: 'How durations move from from to to: linear (default), in (quick frames, then a slow settle: impacts), out, inOut, hold, overshoot or bounce.' } }, ['from', 'to'])],
       description: 'Milliseconds per frame, one per frame, or {from, to, ease} eased across the frames; default 100.' },
-      loop: { type: 'boolean', description: 'Seamless loop: the simulation warms up so particles in flight at frame 0 are those alive at the end. Needs a finite life.' }, seed: int(0, 2147483647, 'Default 1.'), emitters: { ...array(emitter, 16), minItems: 1 } }, ['frames', 'emitters']) },
+      loop: { type: 'boolean', description: 'Seamless loop: the simulation warms up so particles in flight at frame 0 are those alive at the end. Needs a finite life.' }, seed: int(0, 2147483647, 'Default 1.'), emitters: { ...array(emitter, 16), minItems: 1, description: 'Particle emitters; may be left out when the effect has layers.' },
+      looks: { type: 'object', minProperties: 1, maxProperties: 8, propertyNames: id, additionalProperties: ref('shape-look'), description: 'Named colour ramps for the layers, drawn in this order (later over earlier).' },
+      layers: { ...array(layer, 16), minItems: 1, description: `Shape layers: ${SHAPE_KINDS.join(', ')}. Needs looks.` },
+      cleanup: { ...object({ corners: bool, strays: bool }), description: 'Remove doubled corners and stray pixels from the shapes (not the particles).' } }, ['frames']), anyOf: [{ required: ['emitters'] }, { required: ['layers', 'looks'] }] } },
     sheet: schema.properties.sheet
-  }, ['format', 'version', 'name', 'width', 'height', 'symbols', 'effects']), $defs: { rows: schema.$defs.rows }
+  }, ['format', 'version', 'name', 'width', 'height', 'effects']), $defs: { rows: schema.$defs.rows, 'shape-look': shapeLook, ...Object.fromEntries(Object.entries(layerCommon).map(([key, value]) => [`layer-${key}`, value])) }
 };
 const key = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key (grid rows name colours by character).' };
 const keys = description => ({ ...array(key, 16), minItems: 1, description });

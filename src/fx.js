@@ -3,11 +3,14 @@
 // line operations on the source's own symbols. The result inspects, patches and exports like any other version-1
 // recipe, and editing a symbol in it updates every particle drawn with it. Emitters spawn in a box, on a ring or arc,
 // or along a line; a child emitter spawns where its parent's particles end, land or travel; particles can face their
-// direction of travel and change colour over their life; cues mark frames for game code. Browser-compatible and
-// deterministic: seeded hashing and polynomial trigonometry, no Math.random.
+// direction of travel and change colour over their life; cues mark frames for game code. Shape layers (src/shapes.js:
+// shockwave rings, slashes, beams, lightning, magic circles, impact stars, fireballs) bake into one grid per frame
+// between `behind` particles and the rest. Browser-compatible and deterministic: seeded hashing and polynomial
+// trigonometry, no Math.random.
 import { PixelError, parseColor, renderProject } from './core.js';
 import { fields, point } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
+import { readShapes, renderShapes } from './shapes.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -197,7 +200,7 @@ function simulate(effect, context) {
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
   const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
-  const alive = [], output = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
+  const alive = [], output = Array.from({ length: frames }, () => []), behind = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
   const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0 }));
   let operations = 0, culled = 0;
   const inside = (x, y) => x >= 0 && y >= 0 && x < width && y < height;
@@ -285,7 +288,7 @@ function simulate(effect, context) {
     if (drawing) for (const pass of layered ? [true, false] : [null]) alive.forEach((p, i) => {
       const e = p.emitter;
       if (pass !== null && e.behind !== pass) return;
-      const [X, Y] = places[i], ops = output[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
+      const [X, Y] = places[i], ops = (pass === true ? behind : output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
       const sequence = e.face ? e.variants[p.facing] : p.variant, share = stages => Math.min(stages - 1, Math.floor(p.age / span * stages));
       const step = e.play === 'loop' ? (p.age + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
       const symbol = sequence[step], rows = symbols[symbol], w = rows[0].length, h = rows.length, left = X - Math.floor(w / 2), top = Y - Math.floor(h / 2);
@@ -334,7 +337,7 @@ function simulate(effect, context) {
     for (let k = events.length - 1; k >= 0; k--) { const [q, when] = events[k]; for (const index of children[q.index][when]) spawnChildren(index, q, emitters[index].burst, t + 1); }
     if (operations > LIMITS.operations) fail(context.path, `the effect needs more than ${LIMITS.operations} drawing operations; lower counts or frames`);
   }
-  return { output, operations, culled, stats, cues };
+  return { output, behind, operations, culled, stats, cues };
 }
 
 // Frame durations eased from `from` to `to` milliseconds across the effect: `in` stays quick and slows at the end,
@@ -352,8 +355,9 @@ export function compileEffects(source) {
   const palette = source.palette ?? {};
   if (!isObject(palette)) fail('fx.palette', 'expected a palette object');
   const width = integer(source.width, 'fx.width', 1, 256), height = integer(source.height, 'fx.height', 1, 256);
-  if (!isObject(source.symbols) || !Object.keys(source.symbols).length) fail('fx.symbols', 'expected named symbols for the particles to draw');
-  for (const [name, rows] of Object.entries(source.symbols)) {
+  const symbols = source.symbols ?? {};
+  if (!isObject(symbols) || (source.symbols !== undefined && !Object.keys(symbols).length)) fail('fx.symbols', 'expected named symbols for the particles to draw');
+  for (const [name, rows] of Object.entries(symbols)) {
     identifier(name, `fx.symbols.${name}`);
     if (!Array.isArray(rows) || !rows.length || rows.length > 256 || typeof rows[0] !== 'string' || !rows[0].length || rows.some(row => typeof row !== 'string' || row.length !== rows[0].length)) fail(`fx.symbols.${name}`, 'expected 1–256 equal-width text rows');
   }
@@ -365,33 +369,40 @@ export function compileEffects(source) {
     // Effect names become animation and frame names, which must be unique ignoring case for portable bundles.
     if (seen.has(name.toLowerCase())) fail(path, 'effect names must be unique ignoring case; they name animations and frames');
     seen.add(name.toLowerCase());
-    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters'], path);
+    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup'], path);
     const count = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop ?? false;
     if (typeof loop !== 'boolean') fail(`${path}.loop`, 'expected a boolean');
     const durations = Array.isArray(effect.duration)
       ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
       : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
         : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-    if (!Array.isArray(effect.emitters) || !effect.emitters.length || effect.emitters.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters`);
-    const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols: source.symbols, palette, width, height, path };
+    const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, palette, width, height, path };
+    // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts) draw between `behind` particles and the rest.
+    const shapes = readShapes(effect, path, context);
+    const list = effect.emitters ?? (shapes ? [] : undefined);
+    if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
     const emitters = [];
-    effect.emitters.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
-    const run = simulate({ frames: count, loop, seed, emitters }, context);
+    list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
+    const run = emitters.length ? simulate({ frames: count, loop, seed, emitters }, context)
+      : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
+    if (shapes) for (const layer of shapes.layers) if (layer.cue && !run.cues[layer.t0][layer.cue]) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
     const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
     if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
     // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
     const cues = [];
-    const names = run.output.map((ops, i) => {
+    const names = run.output.map((front, i) => {
+      const grid = shapes && renderShapes(shapes, i, width, height);
+      const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
       const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
       if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
       frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
       return `${name}-${i}`;
     });
     animations[name] = { frames: names, ...(!loop && { loop: false }) };
-    metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, operations: run.operations, culled: run.culled, emitters: run.stats, ...(cues.length && { cues }) };
+    metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes && { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) }), ...(cues.length && { cues }) };
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
-  const recipe = { version: 1, name: source.name, width, height, palette, symbols: source.symbols, ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
   renderProject(recipe);
   return JSON.parse(JSON.stringify({ recipe, metadata }));
 }

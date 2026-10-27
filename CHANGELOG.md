@@ -12,6 +12,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A bundle now has 8 support files, so a recipe fits 65,535 − 8 − frames animations (65,526 with one frame). Tidewatch's game atlases are regenerated with their frame tags.
 - `node scripts/verify-godot.mjs` loads the forest spirit and a trimmed, scaled sheet with unequal durations into a headless Godot 4 and checks every frame's region, margin, size, pixels and time, and each animation's playback step by step against a replay of `AnimatedSprite2D`'s own code. Godot 4.6.3 passes.
 
+### Spell shapes
+
+- A `pixelforge-fx` effect can carry shape `layers` beside its emitters: a `ring` shockwave, a `slash` crescent, a `beam`, a `bolt` of lightning, a `glyph` magic circle, an impact `star` and a `burst` fireball, each one line of JSON. Every layer writes a brightness field inside its own window of frames, with any number written as 2–8 keys moving across the window; named `looks` cut the layers' fields into hard bands of palette colours, with optional ordered dither, then `cleanup` and a one-pixel `outline`. `power` erodes a shape as it falls, `squash` and `tilt` lay rings and magic circles on the ground or turn a slash onto a diagonal, and `cue` marks a layer's first frame for game code. The shapes compile to one grid per frame between `behind` particles and the rest, so sparks and embers still draw on top, and the result is an ordinary recipe. Sources with only layers need no `symbols` or `emitters`; effects without layers compile exactly as before. The `fx` schema and the art workflow describe every field.
+
 ### Large stills
 
 - A recipe with a single frame may be up to 4096 pixels a side, within the 4,194,304 pixels every recipe's frames already shared, so a 1920 × 1080 or 2560 × 1440 backdrop or mural is one canvas at one screen pixel per art pixel. Rectangles, ellipses and dither or shade regions on such a canvas may be up to twice its side. Recipes with two or more frames, scenes and their assets, pose, effect, wave and fluid sources, and `import` keep the 256-pixel limit, and every existing recipe renders exactly as before.
