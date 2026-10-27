@@ -54,7 +54,7 @@ const alphaOver = (target, at, color) => {
 };
 // Material passes must agree on the recipe's sheet settings; trimmed layouts may differ and are rebuilt as grids.
 const sheetSettings = sheet => JSON.stringify([sheet.columns, sheet.padding, sheet.scale, Boolean(sheet.trim)]);
-const MAX_DRAWS = 4096, MAX_WORK = 4194304;
+const MAX_DRAWS = 4096, MAX_WORK = 4194304, MAX_CASTS = 2048;
 
 // Expands a tilemap placement into cells of one asset's frames and animations (see expandTilemap in autotile.js): each
 // cell's frame top-left in map pixels, and `bottom`, the map row below the line it stands on when the map is sorted.
@@ -186,7 +186,7 @@ export function prepareScene(source) {
   source.instances.forEach((instance, i) => { if (typeof instance?.name === 'string') named.set(instance.name, named.has(instance.name) ? null : i); });
   const instances = source.instances.map((instance, i) => {
     const path = `scene.instances[${i}]`;
-    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit', 'haze', 'parallax'], path);
+    fields(instance, ['name', 'asset', 'at', 'anchor', 'scale', 'frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach', 'sort', 'lift', 'shade', 'tilemap', 'lit', 'haze', 'parallax', 'shadow'], path);
     if (instance.name !== undefined && typeof instance.name !== 'string') fail(`${path}.name`, 'expected a string label');
     // `lit: false` keeps a placement's authored colours under scene lighting: a fire, a lamp or a glow is a light
     // source, not something the scene's lights fall on.
@@ -222,6 +222,11 @@ export function prepareScene(source) {
       if (!haze) fail(`${path}.haze`, 'set scene.haze first: the colour far planes fade toward');
       num(instance.haze, 0, 1, `${path}.haze`);
       if (instance.shade !== undefined) fail(`${path}.haze`, 'a shade placement draws no colours of its own to haze');
+    }
+    // A shadow is cast by the scene's lights, which are read after the placements.
+    if (instance.shadow !== undefined) {
+      if (typeof instance.shadow !== 'boolean') fail(`${path}.shadow`, 'expected a boolean');
+      if (instance.shadow && instance.shade !== undefined) fail(`${path}.shadow`, 'a shade placement draws nothing to cast a shadow');
     }
     if (instance.tilemap !== undefined) {
       for (const key of ['frame', 'animation', 'hidden', 'repeat', 'step', 'sequence', 'trajectory', 'attach']) if (instance[key] !== undefined) fail(`${path}.${key}`, 'tilemap placements choose frames through their legend');
@@ -361,6 +366,14 @@ export function prepareScene(source) {
     }) };
     if (mode === 'ramp' && !Object.keys(shifts).length) warnings.push('Ramp lighting needs ramps in the recipes it lights; no asset declares any, so nothing is lit.');
   }
+  // Every drawn copy or tile of a placement with `shadow` is cast from every light, so their product is bounded.
+  const casting = instances.reduce((n, instance) => n + (instance.shadow ? (instance.tilemap ? instance.tilemap.cells.length : instance.repeat[0] * instance.repeat[1]) : 0), 0);
+  if (casting) {
+    const first = `scene.instances[${instances.findIndex(instance => instance.shadow)}].shadow`;
+    if (!lighting?.lights.length) fail(first, 'a shadow is cast by scene lights; add lighting with lights first');
+    if (casting * lighting.lights.length > MAX_CASTS) fail(first, `${casting} casting draws under ${lighting.lights.length} lights exceed 2,048 shadow casts; cast from fewer placements or lights`);
+    if (lighting.scope === 'passes' && !instances.some(instance => !instance.shadow && (assets[instance.asset].normal || assets[instance.asset].emissive))) warnings.push('Shadows fall only on lit placements, and lighting.scope "passes" lights only assets with normal or emissive passes; set lighting.scope to "all" to shadow plain floors and walls.');
+  }
   return { source, width, height, duration, assets, shifts, instances, background, lighting, haze, camera, warnings: [...new Set(warnings)] };
 }
 // Sets a prepared light's radius as prepareScene reads it from a scene: keys that set no radius of their own take the
@@ -430,7 +443,9 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     }
     return out;
   };
-  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1, fade = 0) => {
+  // Shadows (below): per light, the rank of the last-drawn caster shadowing each pixel, or nothing when none does.
+  let shadowMasks = [];
+  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1, fade = 0, rank = -1) => {
     const asset = assets[id], shift = shifts[id], project = asset.recipe, frame = project.frames[index];
     const normal = asset.normal?.frames[index].data, emission = asset.emissive?.frames[index].data;
     const light = !shade && !unlit && lit && lighting && (normal || emission || lighting.scope === 'all') && (lighting.mode === 'multiply' || shift);
@@ -443,9 +458,13 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
         let nx = 0, ny = 0, nz = 1;
         if (normal?.[at + 3]) { nx = normal[at] / 127.5 - 1; ny = normal[at + 1] / 127.5 - 1; nz = normal[at + 2] / 127.5 - 1; }
         const norm = Math.hypot(nx, ny, nz) || 1, intensity = [lighting.ambient, lighting.ambient, lighting.ambient];
-        for (const source of lights) {
+        for (let li = 0; li < lights.length; li++) {
+          const source = lights[li];
           if (!source.strength) continue;
-          const dx = source.at[0] - (left + x * s), dy = source.at[1] - (top + y * s), dz = source.height;
+          // Under a shadow cast by something drawn after this placement, the light does not reach the pixel.
+          const mask = shadowMasks[li], px = left + x * s, py = top + y * s;
+          if (mask && px >= 0 && py >= 0 && px < width && py < height && mask[py * width + px] > rank) continue;
+          const dx = source.at[0] - px, dy = source.at[1] - py, dz = source.height;
           const distance = Math.hypot(dx, dy, dz), diffuse = Math.max(0, (nx * dx + ny * dy + nz * dz) / norm / distance) * Math.max(0, 1 - Math.hypot(dx, dy) / source.radius);
           // Band the light's brightness once, then tint it: banding each channel separately made a coloured light
           // change band at different distances per channel, painting rainbow rings. Strength scales the banded light,
@@ -530,6 +549,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   // Every placement draws each of its repeat copies, row by row. A tilemap draws once, or, with sort "ground", each of
   // its cells joins the group, standing on the bottom row of its frame, so a wall or a tree taller than its tile covers
   // whoever stands behind it. Equal lines keep list order, then map order.
+  // Each item's rank is where its placement, or its sorted group, starts drawing.
   const order = [], sorted = scene.instances.flatMap((instance, i) => instance.sort === 'ground' ? [i] : []);
   const copies = i => {
     const instance = scene.instances[i], s = instance.scale;
@@ -542,11 +562,83 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     return Array.from({ length: columns * rows }, (_, k) => ({ i, rx: k % columns, ry: Math.floor(k / columns), ground: states[i].position[1] + Math.floor(k / columns) * instance.step[1] }));
   };
   for (const [i, instance] of scene.instances.entries()) {
-    if (instance.sort !== 'ground') { order.push(...copies(i)); continue; }
+    const rank = order.length;
+    if (instance.sort !== 'ground') { order.push(...copies(i).map(item => ({ ...item, rank }))); continue; }
     if (i !== sorted[0]) continue;
     // A sorted tilemap is listed among the placements where its group starts.
-    order.push(...sorted.filter(j => scene.instances[j].tilemap).map(j => ({ i: j, record: true })));
-    order.push(...sorted.flatMap(copies).map((item, n) => ({ n, item })).sort((a, b) => a.item.ground - b.item.ground || a.n - b.n).map(({ item }) => item));
+    order.push(...sorted.filter(j => scene.instances[j].tilemap).map(j => ({ i: j, record: true, rank })));
+    order.push(...sorted.flatMap(copies).map((item, n) => ({ n, item })).sort((a, b) => a.item.ground - b.item.ground || a.n - b.n).map(({ item }) => ({ ...item, rank })));
+  }
+  // Shadows. A placement or tilemap with `shadow` stops each light that reaches it, over the shape its frame casts on
+  // the ground: a cutout standing on its ground line and turned to face the light, falling away from the light, longer
+  // the farther it stands from the light and the nearer its top comes to the light's height. Each pixel of the shadow
+  // takes the cutout's column across it and the height whose shadow lands there. A shadow falls on what is drawn before
+  // its caster (before the group, for a sorted caster), as a game draws shadows on the ground under everything that
+  // stands, so standing things never shadow each other or themselves. A light riding a placement casts no shadow of it
+  // or of what is attached to it: a held lantern. Only + - * / and sqrt, so shadows are the same in every engine.
+  shadowMasks = lights.map(() => null);
+  const casts = new Map();
+  if (lights.length && scene.instances.some(instance => instance.shadow)) {
+    const rootOf = i => scene.instances[i].attach?.index ?? i;
+    const cast = (c, light, li, rank, s, project) => {
+      const H = light.height, vx = c.pivot - light.at[0], vy = c.ground - light.at[1], D = Math.sqrt(vx * vx + vy * vy);
+      // Straight under a light a cutout casts nothing to see, and beyond its reach the light lights nothing.
+      if (D < 1 || D >= light.radius) return null;
+      // d is the way the shadow falls; p runs across it, turned so the cutout's left stays on the left when the light
+      // is behind it or in front of it.
+      const dx = vx / D, dy = vy / D, side = dy < 0 ? -1 : 1, px = dy * side, py = -dx * side;
+      const w = project.width * s, h = project.height * s, tall = c.ground - c.top;
+      if (tall <= 0) return null;
+      // The top row's upper edge casts this far from the ground point; a top at or above the light's height casts to
+      // the light's reach.
+      const edge = tall + 0.5, reach = Math.min(light.radius - D, edge < H ? D * edge / (H - edge) : Infinity);
+      const xs = [], ys = [];
+      for (const u of [c.left - c.pivot - 1, c.left + w - c.pivot]) for (const t of [-1, reach + 1]) { xs.push(c.pivot + u * px + t * dx); ys.push(c.ground + u * py + t * dy); }
+      const x0 = Math.max(0, Math.floor(Math.min(...xs))), x1 = Math.min(width - 1, Math.ceil(Math.max(...xs)));
+      const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(height - 1, Math.ceil(Math.max(...ys)));
+      const mask = shadowMasks[li] ??= new Int32Array(width * height).fill(-1);
+      let pixels = 0, length = 0;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const wx = x - c.pivot, wy = y - c.ground, t = wx * dx + wy * dy;
+        if (t < -0.5 || t > reach) continue;
+        // The height whose shadow lands at distance t: t = D * k / (H - k), solved for k.
+        const k = t > 0 ? t * H / (D + t) : 0, col = c.pivot + Math.round(wx * px + wy * py) - c.left, row = c.ground - Math.round(k) - c.top;
+        if (col < 0 || row < 0 || col >= w || row >= h || !c.frame.data[(Math.floor(row / s) * project.width + Math.floor(col / s)) * 4 + 3]) continue;
+        const at = y * width + x;
+        if (mask[at] < rank) mask[at] = rank;
+        pixels++;
+        if (t > length) length = t;
+      }
+      return { pixels, length, toward: [dx, dy] };
+    };
+    for (const item of order) {
+      const { i } = item, instance = scene.instances[i];
+      if (!instance.shadow || item.record) continue;
+      const project = assets[instance.asset].recipe, s = instance.scale, shift = shiftOf(i);
+      let casters;
+      if (instance.tilemap) {
+        // Each tile casts from the middle of its frame, standing on the row it sorts by.
+        const { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s - shift[0], top = instance.at[1] - instance.anchor[1] * s - shift[1];
+        casters = (item.cell === undefined ? tilemap.cells : [tilemap.cells[item.cell]]).map(cell => ({ frame: project.frames[frameIndex(project, cell, 0)], left: left + cell.x * s, top: top + cell.y * s, ground: top + cell.bottom * s - 1, pivot: left + cell.x * s + Math.floor(project.width * s / 2) }));
+      } else {
+        // A placement casts from where it stands; lifted, its shadow leaves its feet.
+        const state = states[i];
+        if (state.hidden) continue;
+        const ox = item.rx * instance.step[0] - shift[0], oy = item.ry * instance.step[1] - shift[1];
+        casters = [{ frame: state.frame, left: state.left + ox, top: state.top + oy, ground: state.position[1] + oy, pivot: state.position[0] + ox }];
+      }
+      lights.forEach((light, li) => {
+        const follow = scene.lighting.lights[li].follow;
+        if (!light.strength || (follow && rootOf(follow.index) === rootOf(i))) return;
+        for (const c of casters) {
+          const shadow = cast(c, light, li, item.rank, s, project);
+          if (!shadow) continue;
+          const key = `${i} ${li}`, seen = casts.get(key);
+          if (!seen) casts.set(key, { i, light: li, casts: 1, ...shadow });
+          else { seen.casts++; seen.pixels += shadow.pixels; seen.length = Math.max(seen.length, shadow.length); }
+        }
+      });
+    }
   }
   for (const item of order) {
     const { i } = item, instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
@@ -565,12 +657,12 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, shift, covers: false });
           entry = entries.length - 1;
         }
-        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze);
+        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank);
         continue;
       }
       if (!item.record) {
         const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
-        for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze);
+        for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank);
       }
       placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s, ...(instance.haze && { haze: instance.haze }) });
       continue;
@@ -582,7 +674,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     // A sorted copy stands at its placement point; its y is the ground line it was sorted by.
     const sorted = instance.sort === 'ground', at = [state.position[0] + rx * instance.step[0], state.position[1] + ry * instance.step[1]];
     const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, shift, covers: false }) - 1 : -1;
-    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze);
+    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank);
   }
   if (density) for (const box of placements) {
     const color = box.scale === 1 ? [65, 201, 240, 180] : [255, 70, 100, 255];
@@ -608,7 +700,14 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     }
     return { name: instance.name ?? `${instance.asset}#${i}`, haze: instance.haze, palette };
   });
-  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }), ...(hazy.length && { haze: hazy }), ...(camera && { camera: camera.map(round) }) };
+  // Each casting placement (the first 16) with each light it casts from: how many pixels its shadow covers, how far it
+  // reaches from where the placement stands, and, for a single caster, the way it falls. A tilemap or repeated
+  // placement counts its casts and sums its pixels. A name several placements share gets #index, as in the depth report.
+  const shared = new Map();
+  for (const instance of scene.instances) if (instance.name !== undefined) shared.set(instance.name, (shared.get(instance.name) ?? 0) + 1);
+  const nameOf = i => { const { name, asset } = scene.instances[i]; return name !== undefined && shared.get(name) === 1 ? name : `${name ?? asset}#${i}`; };
+  const shadows = [...casts.values()].slice(0, 16).map(({ i, light, casts: n, pixels, length, toward }) => ({ name: nameOf(i), light, pixels, length: Math.round(length), ...(n === 1 ? { toward: toward.map(round) } : { casts: n }) }));
+  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }), ...(shadows.length && { shadows }), ...(hazy.length && { haze: hazy }), ...(camera && { camera: camera.map(round) }) };
   if (depth) {
     // Who covers whom, largest first. Placements that lie straight on the background (a floor, a backdrop, a tilemap
     // under everything) are the ground and are left out as the one behind; sorted placements always count.

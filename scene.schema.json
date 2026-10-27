@@ -734,6 +734,10 @@
             "minimum": 0,
             "maximum": 1,
             "description": "How far into scene.haze this placement or tilemap stands: each of its colours moves this much of the way to the haze colour, after lighting (0 none, 1 the haze colour)."
+          },
+          "shadow": {
+            "type": "boolean",
+            "description": "Cast a shadow from each scene light that reaches this placement (or each tile of this tilemap): its frame, a cutout standing on its ground line and facing the light, stops that light on what is drawn before it (before its sorted group, when sorted). Needs lighting.lights; not on shade placements."
           }
         },
         "required": [
@@ -884,7 +888,7 @@
                 },
                 "maxItems": 2,
                 "minItems": 2,
-                "description": "Where the light is; with follow, an offset from what it follows (default [0, 0])."
+                "description": "Where the light is, the point on the ground under it for shadows; with follow, an offset from what it follows (default [0, 0])."
               },
               "height": {
                 "type": "integer",
