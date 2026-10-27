@@ -410,7 +410,9 @@ export function compilePoses(source, mode) {
     }) };
   }
   if (warnings.length) metadata.warnings = warnings;
-  return plain({ recipe, metadata });
+  // Also as text at the top level, where every other compiler puts its warnings, so the CLI, MCP and the studio show
+  // a target out of reach without anyone asking for the metadata.
+  return plain({ recipe, metadata, ...(warnings.length && { warnings: warnings.map(warning => `${warning.path}: ${warning.message}`) }) });
 }
 
 // Compiles a small template into an autotile set. The template is two tiles wide and three tall:
