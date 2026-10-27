@@ -823,6 +823,80 @@ export function scalePixels(data, width, height, scale = 1) {
   return result;
 }
 
+// Perspective guides drawn over an enlarged review image, never into art: a horizon row, rays from up to three
+// vanishing points and an isometric grid of tile diagonals. Coordinates are canvas pixel corners, like anchors.
+export function readGuides(value, path = 'guides') {
+  object(value, path, ['horizon', 'vanish', 'iso']);
+  if (!Object.keys(value).length) fail(path, 'name a horizon, vanish points or an iso grid');
+  const guides = {};
+  if (value.horizon !== undefined) guides.horizon = integer(value.horizon, `${path}.horizon`, -4096, 8192);
+  if (value.vanish !== undefined) {
+    list(value.vanish, `${path}.vanish`, 3);
+    if (!value.vanish.length) fail(`${path}.vanish`, 'expected 1–3 points [x, y]');
+    guides.vanish = value.vanish.map((p, i) => { if (!Array.isArray(p) || p.length !== 2) fail(`${path}.vanish[${i}]`, 'expected [x, y]'); return [integer(p[0], `${path}.vanish[${i}][0]`, -16384, 16384), integer(p[1], `${path}.vanish[${i}][1]`, -16384, 16384)]; });
+  }
+  if (value.iso !== undefined) {
+    const iso = object(value.iso, `${path}.iso`, ['tile', 'at']);
+    if (!Array.isArray(iso.tile) || iso.tile.length !== 2) fail(`${path}.iso.tile`, 'expected [width, height] of one diamond tile, such as [32, 16]');
+    guides.iso = { tile: [integer(iso.tile[0], `${path}.iso.tile[0]`, 2, 256), integer(iso.tile[1], `${path}.iso.tile[1]`, 1, 256)], at: iso.at === undefined ? [0, 0] : point(iso.at, `${path}.iso.at`) };
+  }
+  return guides;
+}
+const GUIDE_COLORS = { horizon: [255, 176, 32, 220], vanish: [40, 210, 255, 150], iso: [130, 255, 120, 120] };
+// Draws `guides` into `target` (an RGBA image `targetWidth` wide) inside `box` ({left, top, w, h} in target pixels),
+// where canvas pixel corner (region.x, region.y) sits at the box's corner and each canvas pixel is `scale` wide.
+export function drawGuides(target, targetWidth, box, scale, region, guides) {
+  const toX = x => box.left + (x - region.x) * scale, toY = y => box.top + (y - region.y) * scale;
+  const right = box.left + box.w, bottom = box.top + box.h;
+  // A segment in target pixels, clipped to the box (Liang–Barsky), then stepped one pixel at a time.
+  const segment = (x0, y0, x1, y1, color) => {
+    let t0 = 0, t1 = 1;
+    const dx = x1 - x0, dy = y1 - y0;
+    for (const [p, q] of [[-dx, x0 - box.left], [dx, right - 1 - x0], [-dy, y0 - box.top], [dy, bottom - 1 - y0]]) {
+      if (p === 0) { if (q < 0) return; continue; }
+      const t = q / p;
+      if (p < 0) { if (t > t1) return; if (t > t0) t0 = t; } else { if (t < t0) return; if (t < t1) t1 = t; }
+    }
+    const ax = x0 + t0 * dx, ay = y0 + t0 * dy, bx = x0 + t1 * dx, by = y0 + t1 * dy, steps = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay))));
+    let last = -1;
+    for (let i = 0; i <= steps; i++) {
+      const x = Math.round(ax + (bx - ax) * i / steps), y = Math.round(ay + (by - ay) * i / steps);
+      if (x < box.left || y < box.top || x >= right || y >= bottom) continue;
+      const at = (y * targetWidth + x) * 4;
+      if (at !== last) blend(target, at, color);
+      last = at;
+    }
+  };
+  // Canvas extent of the box, for lines that cross all of it.
+  const cx0 = region.x, cy0 = region.y, cx1 = region.x + box.w / scale, cy1 = region.y + box.h / scale;
+  if (guides.iso) {
+    const [w, h] = guides.iso.tile, [x0, y0] = guides.iso.at, m = h / w;
+    // Tile edges run through each diamond's top corner (x0 + w/2, y0) at slopes ±h/w, one line every h rows.
+    for (const sign of [1, -1]) {
+      const c0 = y0 - sign * m * (x0 + w / 2), at = x => sign * m * x;
+      const low = Math.min(cy0 - at(cx0), cy0 - at(cx1)), high = Math.max(cy1 - at(cx0), cy1 - at(cx1));
+      for (let k = Math.ceil((low - c0) / h); k <= Math.floor((high - c0) / h); k++) {
+        const c = c0 + k * h;
+        segment(toX(cx0), toY(at(cx0) + c), toX(cx1), toY(at(cx1) + c), GUIDE_COLORS.iso);
+      }
+    }
+  }
+  for (const [vx, vy] of guides.vanish ?? []) {
+    // Rays through eight evenly spaced points on each side of the box, extended across it.
+    const span = Math.max(cx1 - cx0, cy1 - cy0) * 2;
+    for (let i = 0; i < 8; i++) {
+      const f = (i + 0.5) / 8, x = cx0 + (cx1 - cx0) * f, y = cy0 + (cy1 - cy0) * f;
+      for (const [px, py] of [[x, cy0], [x, cy1], [cx0, y], [cx1, y]]) {
+        const reach = Math.max(Math.abs(px - vx), Math.abs(py - vy));
+        if (!reach) continue;
+        const k = 1 + span / reach;
+        segment(toX(vx), toY(vy), toX(vx + (px - vx) * k), toY(vy + (py - vy) * k), GUIDE_COLORS.vanish);
+      }
+    }
+  }
+  if (guides.horizon !== undefined) segment(toX(cx0), toY(guides.horizon), toX(cx1), toY(guides.horizon), GUIDE_COLORS.horizon);
+}
+
 // Packs frames into one RGBA sheet. `trim: false` forces the uniform grid even for a trimmed recipe (aligned
 // material passes need identical rectangles). Anchors and points are exported pixels; pivot is anchor/source size.
 export function buildAtlas(project, { trim } = {}) {
@@ -996,7 +1070,7 @@ export function wildcard(pattern, text) {
 }
 
 export function inspectProject(project, options = {}) {
-  object(options, 'inspect', ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'view', 'native', 'diagnostics', 'maxCells', 'step', 'offset']);
+  object(options, 'inspect', ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'view', 'native', 'diagnostics', 'maxCells', 'step', 'offset', 'guides']);
   const { width, height, frames } = project;
   if (options.frames !== undefined && options.animation !== undefined) fail('inspect', 'choose frames or animation, not both');
   let cells = frames.map((_, i) => i);
@@ -1023,6 +1097,8 @@ export function inspectProject(project, options = {}) {
   if (!['color', 'silhouette', 'grayscale', 'onion', 'tile'].includes(mode)) fail('inspect.view', 'expected color, silhouette, grayscale, onion or tile');
   if (mode === 'onion' && options.animation === undefined) fail('inspect.view', 'onion requires an animation so neighbors have an unambiguous playback position');
   if (mode === 'tile' && options.region !== undefined) fail('inspect.region', 'tile view repeats whole frames; omit region');
+  if (mode === 'tile' && options.guides !== undefined) fail('inspect.guides', 'guides draw over one canvas; tile view repeats it, so omit guides');
+  const guides = options.guides === undefined ? null : readGuides(options.guides, 'inspect.guides');
   let region = { x: 0, y: 0, w: width, h: height };
   if (options.region !== undefined) {
     const r = object(options.region, 'inspect.region', ['x', 'y', 'w', 'h']);
@@ -1064,6 +1140,12 @@ export function inspectProject(project, options = {}) {
   } else {
     const sources = cells.map((i, n) => mode === 'onion' ? onionPixels(project, project.animations[options.animation], positions[n]) : reviewPixels(frames[i].data, mode));
     view = { cells: cells.map(i => ({ frame: frames[i].name, duration: frames[i].duration })), region, sheet: drawSheet(sources, width, region, { scale, background }) };
+    if (guides) {
+      // Over every cell of the enlarged sheet; the native sheet keeps its exact pixels.
+      const { sheet } = view, w = region.w * sheet.scale, h = region.h * sheet.scale;
+      cells.forEach((_, n) => drawGuides(sheet.data, sheet.width, { left: sheet.gap + (n % sheet.columns) * (w + sheet.gap), top: sheet.gap + Math.floor(n / sheet.columns) * (h + sheet.gap), w, h }, sheet.scale, region, guides));
+      view.guides = guides;
+    }
     if (mode !== 'color') view.mode = mode;
     if (native) view.nativeSheet = drawSheet(sources, width, region, { scale: 1, background });
   }

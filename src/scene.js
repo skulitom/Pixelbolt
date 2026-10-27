@@ -1,5 +1,5 @@
 // Bounded scene review, not a game engine. In-memory recipes only; no filesystem or network access.
-import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, CANVAS_SIDE } from './core.js';
+import { PixelError, renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, reviewPixels, scalePixels, readGuides, drawGuides, CANVAS_SIDE } from './core.js';
 import { EASINGS, ease, pixelId, random } from './craft.js';
 import { fields, point } from './authoring.js';
 import { expandTilemap } from './autotile.js';
@@ -290,12 +290,23 @@ export function withLightSettings(written, scene, edited) {
   }
   return saved;
 }
-export function renderScene(scene, { time = 0, lit = true, density = false } = {}) {
+// `depth: true` also records which placement drew each pixel last and who covers whom, for `depth` in the result and
+// for `sceneImage(view, { mode: 'depth' })`.
+export function renderScene(scene, { time = 0, lit = true, density = false, depth = false } = {}) {
   if (!Number.isFinite(time) || time < 0) fail('scene.time', 'expected a nonnegative finite time in milliseconds');
-  if (typeof lit !== 'boolean' || typeof density !== 'boolean') fail('scene.preview', 'lit and density must be booleans');
+  if (typeof lit !== 'boolean' || typeof density !== 'boolean' || typeof depth !== 'boolean') fail('scene.preview', 'lit, density and depth must be booleans');
   const { width, height, background, assets, shifts, lighting } = scene, data = new Uint8ClampedArray(width * height * 4), placements = [];
   for (let at = 0; at < data.length; at += 4) data.set(background, at);
   const clipped = new Map();
+  // Depth bookkeeping: one entry per drawn placement copy (shade placements darken and own nothing), the entry that
+  // drew each pixel last, and pixel counts of placement `front` covering placement `behind`. An entry covers when it
+  // draws over another; one that covers nothing lies straight on the background, as a floor or backdrop does.
+  const owner = depth ? new Int32Array(width * height).fill(-1) : null, entries = [], pairs = new Map();
+  const cover = (front, behind) => {
+    const f = entries[front], b = entries[behind];
+    f.covers = true;
+    if ((b.covers || b.sorted) && b.instance !== f.instance) { const key = `${f.instance} ${b.instance}`; pairs.set(key, (pairs.get(key) ?? 0) + 1); }
+  };
   const frameIndex = (project, selection, start) => {
     const animation = selection.animation === undefined ? null : project.animations[selection.animation];
     return animation ? animation.frames[animationPosition(project, animation, time - start)] : selection.frame ? project.frames.findIndex(f => f.name === selection.frame) : 0;
@@ -303,7 +314,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false } = {
   // The lights as they are at this time (where they are, how strong, how far they reach), once the placements they
   // follow are known.
   let lights = [];
-  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false) => {
+  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1) => {
     const asset = assets[id], shift = shifts[id], project = asset.recipe, frame = project.frames[index];
     const normal = asset.normal?.frames[index].data, emission = asset.emissive?.frames[index].data;
     const light = !shade && !unlit && lit && lighting && (normal || emission || lighting.scope === 'all') && (lighting.mode === 'multiply' || shift);
@@ -339,7 +350,10 @@ export function renderScene(scene, { time = 0, lit = true, density = false } = {
         if (tx < 0 || ty < 0 || tx >= width || ty >= height) { clipped.set(label, (clipped.get(label) ?? 0) + 1); continue; }
         const to = (ty * width + tx) * 4;
         if (shade) { const next = data[to + 3] ? shift(pixelId(data, to), shade) : null; if (next) data.set(next, to); }
-        else alphaOver(data, to, rgba);
+        else {
+          if (owner) { const o = ty * width + tx, below = owner[o]; if (below !== entry) { if (below >= 0) cover(entry, below); owner[o] = entry; } }
+          alphaOver(data, to, rgba);
+        }
       }
     }
   };
@@ -395,15 +409,20 @@ export function renderScene(scene, { time = 0, lit = true, density = false } = {
     const instance = scene.instances[i], asset = assets[instance.asset], project = asset.recipe, s = instance.scale, label = instance.name ?? `${instance.asset}#${i}`;
     if (instance.tilemap) {
       const { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s, top = instance.at[1] - instance.anchor[1] * s;
-      for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false);
-      placements.push({ name: label, tilemap: true, x: left, y: top, w: tilemap.columns * tilemap.tile[0] * s, h: tilemap.rows * tilemap.tile[1] * s, tiles: tilemap.cells.length, scale: s });
+      const box = { x: left, y: top, w: tilemap.columns * tilemap.tile[0] * s, h: tilemap.rows * tilemap.tile[1] * s };
+      const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
+      for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry);
+      placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s });
       continue;
     }
     const state = states[i];
     if (state.hidden) continue;
     const left = state.left + rx * instance.step[0], top = state.top + ry * instance.step[1];
     placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(instance.shade && { shade: instance.shade }) });
-    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false);
+    // A sorted copy stands at its placement point; its y is the ground line it was sorted by.
+    const sorted = instance.sort === 'ground', at = [state.position[0] + rx * instance.step[0], state.position[1] + ry * instance.step[1]];
+    const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, covers: false }) - 1 : -1;
+    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry);
   }
   if (density) for (const box of placements) {
     const color = box.scale === 1 ? [65, 201, 240, 180] : [255, 70, 100, 255];
@@ -416,7 +435,67 @@ export function renderScene(scene, { time = 0, lit = true, density = false } = {
   // Where each light was and how strong, rounded for reading; viewers draw their markers from it.
   const round = v => Math.round(v * 100) / 100;
   const lightsNow = lights.map(light => ({ at: light.at.map(round), radius: round(light.radius), strength: round(light.strength) }));
-  return { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }) };
+  const result = { data, width, height, placements, warnings: [...scene.warnings, ...clipWarning], ...(total && { clipped: Object.fromEntries(named) }), ...(lightsNow.length && { lights: lightsNow }) };
+  if (depth) {
+    // Who covers whom, largest first. Placements that lie straight on the background (a floor, a backdrop, a tilemap
+    // under everything) are the ground and are left out as the one behind; sorted placements always count.
+    // A name several placements share gets #index, its position in `instances`, as unnamed placements do.
+    const counts = new Map();
+    for (const instance of scene.instances) if (instance.name !== undefined) counts.set(instance.name, (counts.get(instance.name) ?? 0) + 1);
+    for (const e of entries) if (counts.get(e.label) > 1) e.label = `${e.label}#${e.instance}`;
+    const labels = new Map(entries.map(e => [e.instance, e.label])), sorted = entries.filter(e => e.sorted);
+    const overlaps = [...pairs].map(([key, pixels]) => { const [front, behind] = key.split(' ').map(Number); return { front: labels.get(front), behind: labels.get(behind), pixels }; }).sort((a, b) => b.pixels - a.pixels);
+    const omitted = { ...(sorted.length > 64 && { sorted: sorted.length - 64 }), ...(overlaps.length > 32 && { overlaps: overlaps.length - 32 }) };
+    result.depth = { ...(sorted.length && { sorted: sorted.slice(0, 64).map(e => ({ name: e.label, at: e.at })) }), overlaps: overlaps.slice(0, 32), ...(Object.keys(omitted).length && { omitted }),
+      ...(!scene.instances.some(instance => instance.sort === 'ground') && overlaps.length && { note: 'No placement has sort: "ground", so placements draw in list order. Give everything that stands on the ground sort: "ground" to draw it by where it stands.' }) };
+    Object.defineProperty(result, 'depthMap', { value: { owner, entries } });
+  }
+  return result;
+}
+
+// Far to near: cool to warm. Each tint is darkened by the pixel's own value, so forms still read.
+const DEPTH_RAMP = [[70, 110, 255], [60, 205, 215], [245, 205, 60], [255, 90, 70]];
+const depthTint = t => {
+  const u = Math.min(0.999999, Math.max(0, t)) * (DEPTH_RAMP.length - 1), k = Math.floor(u), f = u - k;
+  return DEPTH_RAMP[k].map((v, c) => v + (DEPTH_RAMP[k + 1][c] - v) * f);
+};
+// The scene image a reviewer sees, enlarged: `color`, `grayscale` or `depth`, with optional perspective guides. The
+// depth view tints each placement by when it is drawn, cool for far and warm for near; the ground (placements that lie
+// straight on the background) is grey. Each sorted placement shows its ground line, white across its width, with a
+// mark at its placement point, so an anchor on the wrong row shows at once.
+export function sceneImage(view, { mode = 'color', scale = 1, guides } = {}) {
+  if (!['color', 'grayscale', 'depth'].includes(mode)) fail('scene.view', 'expected color, grayscale or depth');
+  const { width, height } = view, s = scale, w = width * s, h = height * s;
+  const checked = guides === undefined || guides === null ? null : readGuides(guides, 'guides');
+  let native = mode === 'grayscale' ? reviewPixels(view.data, 'grayscale') : view.data, out;
+  if (mode === 'depth') {
+    if (!view.depthMap) fail('scene.view', 'render the scene with depth: true for the depth view');
+    const { owner, entries } = view.depthMap, coloured = entries.filter(e => e.sorted || e.covers), tints = new Map();
+    coloured.forEach((e, rank) => tints.set(e, depthTint(coloured.length < 2 ? 1 : rank / (coloured.length - 1))));
+    const tintOf = o => (o >= 0 ? tints.get(entries[o]) : undefined);
+    native = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < width * height; i++) {
+      const at = i * 4, d = view.data, value = (0.2126 * d[at] + 0.7152 * d[at + 1] + 0.0722 * d[at + 2]) / 255 * d[at + 3] / 255, tint = tintOf(owner[i]);
+      if (tint) native.set([...tint.map(v => Math.round(v * (0.35 + 0.65 * value))), 255], at);
+      else { const grey = Math.round(owner[i] < 0 ? 20 + value * 40 : 40 + value * 110); native.set([grey, grey, grey, 255], at); }
+    }
+    out = scalePixels(native, width, height, s);
+    const put = (x, y, color) => { if (x >= 0 && y >= 0 && x < w && y < h) out.set(color, (y * w + x) * 4); };
+    // A dark edge where one placement's visible pixels meet another's.
+    if (s >= 2) for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+      const o = owner[y * width + x];
+      if (x + 1 < width && o !== owner[y * width + x + 1] && (tintOf(o) || tintOf(owner[y * width + x + 1]))) for (let k = 0; k < s; k++) put(x * s + s - 1, y * s + k, [12, 12, 20, 255]);
+      if (y + 1 < height && o !== owner[(y + 1) * width + x] && (tintOf(o) || tintOf(owner[(y + 1) * width + x]))) for (let k = 0; k < s; k++) put(x * s + k, y * s + s - 1, [12, 12, 20, 255]);
+    }
+    for (const e of entries) if (e.sorted) {
+      const [ax, ay] = e.at.map(v => v * s);
+      for (let x = e.box.x * s; x < (e.box.x + e.box.w) * s; x++) { put(x, ay, [255, 255, 255, 255]); put(x, ay + 1, [12, 12, 20, 255]); }
+      // A tick on the line at the placement point (a pixel corner, so two pixels wide), edged dark.
+      for (let dy = -4; dy <= -1; dy++) for (let dx = -2; dx <= 1; dx++) put(ax + dx, ay + dy, dx === -2 || dx === 1 ? [12, 12, 20, 255] : [255, 255, 255, 255]);
+    }
+  } else out = scalePixels(native, width, height, s);
+  if (checked) drawGuides(out, w, { left: 0, top: 0, w, h }, s, { x: 0, y: 0 }, checked);
+  return { data: out, width: w, height: h, ...(checked && { guides: checked }) };
 }
 // Kept for compatibility: the 3x3 repeat plus the same advisory seam evidence as `inspect --view tile`.
 export function inspectTile(project, frameName = project.frames[0].name) {

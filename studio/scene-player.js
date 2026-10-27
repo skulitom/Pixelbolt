@@ -1,4 +1,4 @@
-import { prepareScene, renderScene, withLightSettings, setLightRadius, keysSetRadius } from './scene.js';
+import { prepareScene, renderScene, sceneImage, withLightSettings, setLightRadius, keysSetRadius } from './scene.js';
 import { reviewPixels } from './core.js';
 const $ = id => document.getElementById(id);
 let scene, time = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, last, manualScale = false;
@@ -20,10 +20,24 @@ function marks() {
       shape('circle', { cx: x, cy: y, r: i === chosen ? 6 : 4, fill: color, 'fill-opacity': off ? 0.35 : 1, stroke: '#080c12', 'stroke-width': 2 })];
   }));
 }
+// The depth report in words: sorted placements far to near and who covers whom, as pixel_scene returns them.
+function depthReport(depth, at) {
+  const sorted = depth.sorted ? `Far to near: ${depth.sorted.map(s => `${s.name} (${s.at.join(', ')})`).join(', ')}${depth.omitted?.sorted ? ` and ${depth.omitted.sorted} more` : ''}.` : 'No placement is sorted by ground.';
+  const covers = depth.overlaps.length ? ` Covers: ${depth.overlaps.map(o => `${o.front} covers ${o.behind} (${o.pixels} px)`).join('; ')}${depth.omitted?.overlaps ? `; ${depth.omitted.overlaps} more` : ''}.` : ' Nothing covers a standing placement.';
+  $('depth-text').textContent = sorted + covers + (depth.note ? ` ${depth.note}` : '');
+  $('depth-mcp').textContent = `pixel_scene {"view": "depth", "time": ${at}}`;
+  $('depth-cli').textContent = `pixelbolt scene <scene.json> --image depth.png --view depth --time ${at}`;
+}
 function draw() {
-  const view = renderScene(scene, { time, lit: $('lit').checked, density: $('density').checked });
+  const depth = $('depth').checked, scale = Number($('scale').value);
+  const view = renderScene(scene, { time, lit: $('lit').checked, density: $('density').checked, depth });
   shown = view.lights ?? [];
-  paint($('scene'), view.data, view.width, view.height); paint($('native'), view.data, view.width, view.height);
+  // The depth view is drawn enlarged, so its ground lines stay one screen pixel thin; it fills the same display size.
+  if (depth) { const image = sceneImage(view, { mode: 'depth', scale }); paint($('scene'), image.data, image.width, image.height); }
+  else paint($('scene'), view.data, view.width, view.height);
+  $('depth-report').hidden = !depth;
+  if (depth) depthReport(view.depth, Math.round(time));
+  paint($('native'), view.data, view.width, view.height);
   paint($('values'), reviewPixels(view.data, 'grayscale'), view.width, view.height);
   $('scene').style.width = `${view.width * Number($('scale').value)}px`; $('scene').style.height = `${view.height * Number($('scale').value)}px`;
   $('time').value = time; $('clock').value = `${Math.round(time)} ms`; $('warnings').textContent = view.warnings.join(' ');
@@ -93,7 +107,7 @@ try {
   $('name').textContent = source.name.replaceAll('-', ' '); $('time').max = scene.duration - 1;
   $('play').onclick = () => { playing = !playing; last = undefined; playState(); };
   $('time').oninput = () => { time = Number($('time').value); playing = false; playState(); draw(); };
-  for (const id of ['lit', 'density']) $(id).onchange = draw;
+  for (const id of ['lit', 'density', 'depth']) $(id).onchange = draw;
   $('scale').onchange = () => { manualScale = true; draw(); };
   if (scene.lighting?.lights.length) lightControls();
   $('save').onclick = () => {

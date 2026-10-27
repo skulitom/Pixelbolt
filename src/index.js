@@ -1,4 +1,4 @@
-export { PixelError, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, compareProjects, analyzeProject, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport } from './core.js';
+export { PixelError, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, compareProjects, analyzeProject, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport, readGuides, drawGuides } from './core.js';
 export { patchRecipe } from './patch.js';
 export { encodePNG, encodeAPNG } from './png.js';
 export { measureText, layoutText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';
@@ -13,7 +13,7 @@ export { compileWaves, WAVE_KINDS } from './wave.js';
 export { compileFluid, createLiveFluid, FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from './fluid.js';
 export { DITHER_PATTERNS, EASINGS, ease, ditherThreshold, cleanupIds, rotateRows, ruleVariants, rewriteIds } from './craft.js';
 export { BLOB_MASKS, CARDINAL_MASKS, neighbourMask, quadrantPieces, templatePiece } from './autotile.js';
-export { prepareScene, renderScene, inspectTile } from './scene.js';
+export { prepareScene, renderScene, sceneImage, inspectTile } from './scene.js';
 export { createSceneBundle } from './scene-export.js';
 export { createOverlay, applyOverlay, recipeFingerprint } from './overlays.js';
 export { decodePNG, importPNG } from './import.js';

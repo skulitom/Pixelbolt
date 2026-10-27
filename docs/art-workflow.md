@@ -8,6 +8,7 @@ Keep an `asset.brief.md` beside the authoritative source. Record:
 - Native dimensions and intended display scale. Review at 1× and the intended integer scale.
 - Three silhouette landmarks and the negative spaces that distinguish the subject.
 - Palette roles: outline, occlusion, shadow, local color, illuminated plane, accent. State light direction.
+- Projection and depth: side view, 3/4 top-down, isometric 2:1 or top-down, the same for every asset in the set; the horizon or ground row; and the depth planes (backdrop, play plane, foreground) with how each reads at its distance. See [depth and perspective](#depth-and-perspective).
 - Material rules: growth direction for plants, planes for stone, expansion/fragmentation for effects.
 - Outline treatment and any deliberate isolated pixels or alpha blends.
 - Action intent, contact/release/impact poses, timing, ground origin and attachments.
@@ -23,7 +24,7 @@ Briefs and review notes are sidecars. Do not add these fields to a version-1 spr
 3. **Materials.** Compare related assets. Leaves branch from stems; stone highlights follow planes; water flows and collects; crystal breaks along a fault and leaves debris. Palette swaps alone do not establish material behavior.
 4. **Key poses.** Author contact, compression, passing and extension for locomotion; anticipation, release and recovery for an action. Replacing a drawn part is often more useful than translating the same stamp.
 5. **Timing.** Inspect `--animation run --view onion --diagnostics`, then actually watch the studio or exported APNG. Sheets and timing strips cannot show perceived weight. Repeated poses/holds remain valid. The studio timeline uses expanded animation order, including repeated occurrences; pink is previous and cyan next. Once-only animations have no wrapped neighbor.
-6. **Scene.** Use `preview room.scene.json` to check native size, value separation, density, overlap and reaction/aftermath. A good sprite can fail against its background. Keep a failed comparison when it teaches a specific correction.
+6. **Scene.** Use `preview room.scene.json` to check native size, value separation, density, overlap and reaction/aftermath. A good sprite can fail against its background. Keep a failed comparison when it teaches a specific correction. Where things pass in front of each other, render the [depth view](#depth-and-perspective) at those moments and read who covers whom.
 7. **Revision.** Read the regional grid; make a bounded patch; inspect its changed-pixel report. Preserve unrelated poses deliberately. Keep an undo revision and recheck motion after the correction.
 
 These are authoring decisions, not user permission gates. Passing validation, increasing frame count, or producing many variants does not pass an artistic checkpoint.
@@ -182,7 +183,7 @@ Placements can relate to each other:
 - **Named cues.** A scene-level `cues` map names times, `{"strike": 1200}`, and any `sequence` or `trajectory` time may then say `"strike"`, `"strike+90"` or `"strike-20"`, so the moment a blow lands is written once and the smear, the breaking pot and the debris follow it.
 - **Hiding.** `hidden: true` starts a placement hidden until its first frame or animation cue, and a cue `{"time": "strike+250", "hide": true}` hides it again, so a smear or a burst needs no empty frame.
 - **Attachment.** `attach: {"instance": "hero", "point": "blade"}` places this placement at a named point of another placement's current frame (frame `points`, which compiled poses export from their markers), plus `at` as an offset. It is not drawn while that frame has no such point. The target is any uniquely named placement that is not a tilemap or attached itself, listed anywhere, so a shadow can be listed (and drawn) before the actor that casts it.
-- **Ground sorting.** Placements with `sort: "ground"` are drawn together, where the first of them is listed, ordered by their ground line: the y of their placement point, which is the anchor's position. With ground anchors on props and actors, a hero walking above a barrel is drawn behind it and below it in front, as a game draws them. A recipe layer takes the same `sort: "ground"`, ordering its operations by the row each stands on ([frames and layers](agent-guide.md#frames-and-layers)).
+- **Ground sorting.** Placements with `sort: "ground"` are drawn together, where the first of them is listed, ordered by their ground line: the y of their placement point, which is the anchor's position. With ground anchors on props and actors, a hero walking above a barrel is drawn behind it and below it in front, as a game draws them. A recipe layer takes the same `sort: "ground"`, ordering its operations by the row each stands on ([frames and layers](agent-guide.md#frames-and-layers)). The [depth view](#depth-and-perspective) shows each ground line and lists who covers whom.
 - **Shade placements.** `shade: -1` draws no colours: wherever the placement's frame is opaque, the pixels already drawn beneath move one step down the ramps of the asset's recipe. One shadow frame then darkens stone, floor, moss or brick correctly, and an attached shadow follows an actor across them.
 
 ```sh
@@ -229,6 +230,35 @@ Every rule that matches draws, in order. Tiles are drawn in map order of the cel
 Recipes draw the same legends with the `tilemap` operation (symbols and autotile templates instead of frames), so a room can be composed inside one recipe and shaded, dithered and rewritten afterwards; see the [authoring guide](agent-guide.md#operations). The [diorama study](../showcase/diorama/README.md) builds a whole room both ways.
 
 `inspectTile(renderProject(recipe), frameName)` and `inspect --view tile` return a 3×3 repeat plus advisory seam evidence per axis. `doubledRows` (left/right wrap) and `doubledColumns` (top/bottom wrap) list lines where both opposite edges carry the same color that differs from its inner neighbours, which doubles into a 2px seam. `wrapSteps` counts large value steps across the wrap, compared with `interiorMaxSteps`, the busiest interior boundary. `suspicious` is true when a quarter or more of the lines double, or the wrap has more large steps than any interior boundary (a gradient or texture that does not continue). A stroke that merely touches one edge is not flagged. This is evidence to inspect, not proof that a tile is defective. Distinguish spatial variants from animations by selecting explicit frames in scene placements. Fractional scales are rejected; larger integer source pixels are highlighted for review. There is no automated style/palette harmonization, ground-speed solver or general scene editor.
+
+## Depth and perspective
+
+Pixelbolt has no camera: a recipe or a scene is flat pixels drawn in order. Depth comes from choices made the same way in every asset of a set, so settle them in the brief before drawing.
+
+**One projection.** Mixing projections is the quickest way for a set to look wrong: a floor seen from above beside a crate seen straight on.
+
+| Projection | Ground and walls | Props and figures | Normal `faces` |
+| --- | --- | --- | --- |
+| Side view | The ground is a row; walls stand upright | Seen straight on, standing on their bottom row | tops `w`, fronts `5` |
+| 3/4 top-down | Floor seen from above; walls show a cap and a front face (tilemap `rules`) | Seen from a shallow front angle: a box shows its top and its front | tops `w` (or `8` seen from higher), south faces `2` (or `5` seen from lower) |
+| Isometric 2:1 | Diamond tiles twice as wide as tall; edges step 2 pixels across for each pixel down | A box shows its top and two sides | tops `w`, left faces `z`, right faces `c` |
+| Top-down | Everything seen from above | Shapes are plans; height shows only in shadows | tops `5` |
+
+**Depth cues and the tool for each.**
+
+- *Overlap.* What stands nearer draws over what stands farther. Put everything that stands on the ground in one sorted group (scene placements, or the operations of a recipe layer, with `sort: "ground"`), each placed by an anchor at its feet or base (a recipe or frame `anchor`, and `anchor: "frame"` on the placement). In a side view a figure's far limbs are a ramp step darker and stay behind the body; `swapDepth` is for front and back views.
+- *Contact.* Whatever touches the ground needs a contact shadow, or it floats: a `shade` ellipse under a prop in a recipe, or a `shade` placement attached to an actor's `feet` point.
+- *Form.* Shade from one light direction along `ramps`; scene lights have a `height` above the ground. Give boxes, walls and buildings generated normals with `faces` ([generated normal passes](#generated-normal-passes)) so their planes stay flat.
+- *Value and detail with distance.* Far planes have less contrast and fewer details, with values closer to the sky's; the darkest darks and brightest lights belong to the near planes. Draw distant versions of assets rather than fading or scaling them, and recolour a far copy with an asset entry's `palette`. Check with `view: "grayscale"`.
+- *Size.* Farther is smaller only when it is drawn smaller: placement `scale` enlarges by whole numbers and fractional scale is refused.
+- *Lines.* Receding edges meet at a vanishing point, and isometric edges run 2:1. A `line` from (0, 0) to (2n, n) steps evenly; endpoints off that ratio give uneven steps.
+
+**Review.**
+
+- **Depth view.** `pixel_scene` with `view: "depth"` (CLI `pixelbolt scene room.scene.json --image depth.png --view depth --time 900`; the studio's **Depth** box) tints each placement by when it is drawn, cool for far and warm for near, and leaves the ground grey: placements that lie straight on the background, such as a floor, a backdrop or a tilemap under everything. Each sorted placement shows its ground line in white across its width, with a tick at its placement point. A line across the top of a tree means its anchor is on the wrong row, and it sorts behind everything standing in front of its trunk. The reply's `depth` lists the sorted placements far to near with the point each stands on (`at`), and `overlaps`: who covers whom, by how many pixels, largest first. The placement behind is never the ground, sorted placements always count, and a name several placements share gets `#index`, its place in `instances`. When nothing is sorted, a `note` says so. Render the view at the moments things cross, such as a hero walking past a barrel.
+- **Guides.** `guides` on `pixel_inspect` and `pixel_scene` (CLI `--guides` on `inspect` and `scene --image`) draw over the enlarged image, never into the art: `horizon` (a row), `vanish` (one to three points drawn as rays; they may lie off the canvas) and `iso` (`{"tile": [32, 16], "at": [0, 0]}`: the diagonals of diamond tiles whose bounding box starts at `at`). Compare the drawn edges with them: `{"horizon": 40, "vanish": [[64, 40]]}` checks a one-point room, and two points on the horizon a building's corner.
+
+**Not built in.** There is no camera, parallax scrolling, depth haze or shadow cast from a light. Draw parallax as frames whose layers move by different `x` each frame (far layers least), recolour far planes with their own palette, and draw each shadow.
 
 ## Autotile templates
 
@@ -388,6 +418,8 @@ A `pixelforge-normals` source ([normals.schema.json](../normals.schema.json)) de
 
 The result is an ordinary recipe with the colour recipe's size, frame names and durations, animations and `sheet`. It covers exactly the colour silhouette, so its atlas has the same rectangles as the colour atlas, trimmed or not. Its palette names 17 directions: `5` faces the viewer, the digits around it lean 30° the way they sit around 5 on a numeric keypad (`8` up, `6` right, `1` down-left), and `q w e`, `a d`, `z x c` lean 60° the same way on a keyboard. A generated pass therefore reads as letters around the rims and digits across the faces, and a fix is written the same way: `a` on a left rim, `9` on a face turned up and right. [examples/forest-spirit.normals.json](../examples/forest-spirit.normals.json) compiles to [examples/forest-spirit-normal.json](../examples/forest-spirit-normal.json); `pixelbolt preview examples/forest-spirit-lit.scene.json` lights it, and you can move the light.
 
-Inflating a silhouette cannot see forms its outline does not show. A tower or a box seen from the front comes out as a cushion, with ridges where its rims meet, and overlapping parts (an arm across the body) share one surface. Treat the pass as a start: light it from both sides in a scene, correct it with `patch`, and keep approved corrections in an overlay; they reapply to the frames a later compile leaves unchanged. Hand-drawn passes stay right for strong geometric forms, such as a tower or a crate.
+Inflating a silhouette cannot see forms its outline does not show. A tower or a box seen from the front comes out as a cushion, with ridges where its rims meet, and overlapping parts (an arm across the body) share one surface. Treat the pass as a start: light it from both sides in a scene, correct it with `patch`, and keep approved corrections in an overlay; they reapply to the frames a later compile leaves unchanged.
+
+`faces` gives strong geometric forms, such as a tower, a wall or a crate, flat planes instead: it maps palette keys of the colour recipe to one direction each, and every pixel drawn in that key's colour takes it. A crate drawn with a top colour `t` and a front colour `f` takes `"faces": {"t": "w", "f": "5"}` in a side view; [depth and perspective](#depth-and-perspective) lists the keys for 3/4 and isometric views. Pixels in other colours, such as the outline, are rounded as before, and `detail` does not emboss faced pixels. The match is by the colour drawn, so a key that a frame `palette` recolours does not match in that frame. Metadata counts each faced key's pixels, and a key that draws no pixel is a warning.
 
 Mirrored frames get mirrored normals, because the pass is derived from the drawn pixels. A hand-drawn normal recipe that mirrors with `flipX` (a frame, an operation or a mirrored pose) only moves its pixels: each keeps its left or right lean, so the mirrored frame lights from the wrong side. Derive those frames, or repaint their left and right keys. For engines that read normals with +Y up (Godot, Unity), see [game integration](game-integration.md#normal-and-emissive-passes).

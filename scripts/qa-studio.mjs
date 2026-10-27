@@ -603,6 +603,20 @@ try {
     assert.deepEqual(saved, { ...written, lighting: { ...written.lighting, lights: [{ ...written.lighting.lights[0], at: to, height: 6 }, ...written.lighting.lights.slice(1)] } });
     return `light moved to ${to.join(', ')}`;
   });
+  await check('the Depth box swaps in the enlarged depth view at the same display size, with who covers whom and the matching MCP and CLI calls', async () => {
+    const size = `(() => { const c = document.getElementById('scene'); return [c.width, c.height, c.style.width, c.style.height]; })()`;
+    const [width, height, cssWidth, cssHeight] = await evaluate(size), scale = Number(await evaluate(`document.getElementById('scale').value`));
+    await click('#depth');
+    assert.deepEqual(await evaluate(size), [width * scale, height * scale, cssWidth, cssHeight]);
+    assert.equal(await evaluate(`document.getElementById('depth-report').hidden`), false);
+    assert.match(await text('depth-text'), /Far to near|No placement is sorted/);
+    assert.match(await text('depth-mcp'), /"view": "depth"/); assert.match(await text('depth-cli'), /--view depth/);
+    await studio.shot('scene-depth');
+    await click('#depth');
+    assert.deepEqual(await evaluate(size), [width, height, cssWidth, cssHeight]);
+    assert.equal(await evaluate(`document.getElementById('depth-report').hidden`), true);
+    return `depth view at ${scale}×`;
+  });
 
   console.log('Baked wave effects');
   await studio.goto(`${origin}/`); await ready();

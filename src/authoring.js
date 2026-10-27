@@ -474,8 +474,10 @@ const encodeNormal = vector => '#' + vector.map(v => Math.round((v + 1) * 127.5)
 // not, so tiles and shapes cut by the frame stay open, and frames with `wrap` read their slopes across the border.
 // The output is an ordinary recipe aligned with the colour recipe: same size, frame names and durations, animations
 // and atlas layout. Mirrored frames get mirrored normals because they are derived from the drawn pixels.
+// `faces` gives pixels drawn in chosen palette keys one direction each instead (the top, front and side of a box,
+// a wall or a building, which a cushion cannot describe); every other pixel is rounded as before.
 export function compileNormals(source) {
-  fields(source, ['format', 'version', 'name', 'recipe', 'bevel', 'detail'], 'normals');
+  fields(source, ['format', 'version', 'name', 'recipe', 'bevel', 'detail', 'faces'], 'normals');
   if (source.format !== 'pixelforge-normals' || source.version !== 1) fail('normals', 'expected version-1 pixelforge-normals');
   const spec = source.recipe;
   if (typeof spec === 'string' || (spec && typeof spec === 'object' && spec.revision !== undefined && spec.version === undefined)) fail('normals.recipe', 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
@@ -487,6 +489,23 @@ export function compileNormals(source) {
   const project = renderProject(spec), { width: w, height: h } = project, size = w * h;
   if (source.name === undefined && project.name.length > 57) fail('normals.name', `${project.name}-normal would exceed 64 characters; name the normal recipe`);
   const name = source.name ?? `${project.name}-normal`;
+  // Flat faces by colour: each named palette key's exact colour, as drawn, takes one direction.
+  // `faced` maps a colour to its direction and pixel count; keys that share a colour share the face.
+  const faced = new Map(), facedBy = Object.create(null);
+  if (source.faces !== undefined) {
+    if (!source.faces || typeof source.faces !== 'object' || Array.isArray(source.faces) || !Object.keys(source.faces).length) fail('normals.faces', 'expected a map of the colour recipe\'s palette keys to directions, such as {"t": "w", "f": "2"}');
+    for (const [key, way] of Object.entries(source.faces)) {
+      const path = `normals.faces${/^[A-Za-z0-9_-]+$/.test(key) ? `.${key}` : `[${JSON.stringify(key)}]`}`;
+      if (!Object.hasOwn(project.palette, key)) fail(path, `${JSON.stringify(key)} is not a palette key of ${project.name}`);
+      if (typeof way !== 'string' || !Object.hasOwn(NORMAL_DIRECTIONS, way)) fail(path, 'expected a direction: 5 faces the viewer, the keypad digits 1–4 and 6–9 lean 30° and q w e a d z x c lean 60° the same ways');
+      const rgba = parseColor(key, project.palette), id = rgba.join(',');
+      if (!rgba[3]) fail(path, `${JSON.stringify(key)} is transparent and draws no pixels to face`);
+      const other = faced.get(id);
+      if (other && other.way !== way) fail(path, `${JSON.stringify(key)} is the same colour as ${JSON.stringify(other.key)}, which faces ${other.way}; a colour can face one way`);
+      if (!other) faced.set(id, { key, way, pixels: 0 });
+      facedBy[key] = faced.get(id);
+    }
+  }
   // Brightness from 0 to 1 per colour: its step along the first ramp that holds it, otherwise its luma.
   const value = new Map();
   for (const ramp of project.ramps) ramp.forEach((key, i) => { const [r, g, b] = parseColor(key, project.palette); const id = `${r},${g},${b}`; if (!value.has(id)) value.set(id, i / (ramp.length - 1)); });
@@ -532,6 +551,8 @@ export function compileNormals(source) {
       let row = '';
       for (let x = 0; x < w; x++) {
         if (!solid(y * w + x)) { row += '.'; continue; }
+        const at4 = (y * w + x) * 4, face = faced.size ? faced.get(`${data[at4]},${data[at4 + 1]},${data[at4 + 2]},${data[at4 + 3]}`) : undefined;
+        if (face) { row += face.way; counts[face.way] = (counts[face.way] ?? 0) + 1; face.pixels++; continue; }
         // Sobel slopes in pixels of height per pixel; the surface normal leans downhill.
         const gx = (at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1)) / 8;
         const gy = (at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1)) / 8;
@@ -546,5 +567,8 @@ export function compileNormals(source) {
   const used = keys.filter(key => counts[key]);
   const recipe = { version: 1, name, width: w, height: h, palette: Object.fromEntries(keys.map(key => [key, encodeNormal(NORMAL_DIRECTIONS[key])])), frames, ...(spec.animations !== undefined && { animations: spec.animations }), ...(spec.sheet !== undefined && { sheet: spec.sheet }) };
   renderProject(recipe);
-  return plain({ recipe, metadata: { format: 'pixelforge-normals-metadata', version: 1, encoding: 'RGB = (XYZ + 1) × 127.5; +X right, +Y down, +Z toward the viewer', bevel: source.bevel ?? 'each shape to its thickest point', detail, directions: Object.fromEntries(keys.map(key => [key, NORMAL_DIRECTIONS[key].map(v => Math.round(v * 1e4) / 1e4)])), pixels: Object.fromEntries(used.map(key => [key, counts[key]])) } });
+  // A faced key that no frame draws is usually a typo or a key recoloured by a frame palette.
+  const unmatched = Object.keys(facedBy).filter(key => !facedBy[key].pixels);
+  return plain({ recipe, metadata: { format: 'pixelforge-normals-metadata', version: 1, encoding: 'RGB = (XYZ + 1) × 127.5; +X right, +Y down, +Z toward the viewer', bevel: source.bevel ?? 'each shape to its thickest point', detail, ...(source.faces !== undefined && { faces: Object.fromEntries(Object.entries(facedBy).map(([key, face]) => [key, { direction: face.way, pixels: face.pixels }])) }), directions: Object.fromEntries(keys.map(key => [key, NORMAL_DIRECTIONS[key].map(v => Math.round(v * 1e4) / 1e4)])), pixels: Object.fromEntries(used.map(key => [key, counts[key]])) },
+    ...(unmatched.length && { warnings: unmatched.map(key => `faces.${key}: no pixel is drawn in ${JSON.stringify(key)}'s colour, so it faces nothing; check the key, or a frame palette that recolours it.`) }) });
 }

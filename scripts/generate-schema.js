@@ -2,6 +2,8 @@ import { writeFile } from 'node:fs/promises';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
 import { FX_EVENTS } from '../src/fx.js';
+import { NORMAL_DIRECTIONS } from '../src/authoring.js';
+const NORMAL_KEYS = Object.keys(NORMAL_DIRECTIONS);
 const int = (minimum, maximum, description) => ({ type: 'integer', minimum, maximum, ...(description ? { description } : {}) });
 const num = (minimum, maximum, description) => ({ type: 'number', minimum, maximum, ...(description ? { description } : {}) });
 const bool = { type: 'boolean' }, color = { type: 'string', description: 'Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA.' };
@@ -397,7 +399,8 @@ const normals = {
   ...object({ format: { const: 'pixelforge-normals' }, version: { const: 1 }, name: { ...id, description: 'Name of the normal recipe; default <recipe name>-normal.' },
     recipe: { ...assetRef, description: 'The colour recipe: inline, a file resolved by the CLI relative to this source (or inside the MCP root), or {"revision": id} through MCP.' },
     bevel: int(1, 64, 'Pixels from the edge to the flat top. Default: each shape rounds all the way to its thickest point, like a cushion.'),
-    detail: num(0, 1, 'How far lighter colours stand out of the surface, up to 2 pixels: 0 (default) keeps only the silhouette\'s shape; 0.5–1 embosses textured surfaces such as brick, bark or rock. A colour on a ramp counts its step along the ramp, any other its brightness.')
+    detail: num(0, 1, 'How far lighter colours stand out of the surface, up to 2 pixels: 0 (default) keeps only the silhouette\'s shape; 0.5–1 embosses textured surfaces such as brick, bark or rock. A colour on a ramp counts its step along the ramp, any other its brightness.'),
+    faces: { type: 'object', minProperties: 1, additionalProperties: { enum: NORMAL_KEYS }, description: 'Flat faces by colour: maps the colour recipe\'s palette keys to one direction each, so a box, wall or building gets flat planes instead of a cushion. Pixels drawn in that key\'s colour take the direction; all others are rounded as usual. Side view: tops w, fronts 5. 3/4 top-down: tops w or 8, south faces 2 or 5. Isometric 2:1: tops w, left faces z, right faces c.' }
   }, ['format', 'version', 'recipe']), $defs: { ...schema.$defs, recipe: recipeSchema }
 };
 for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');

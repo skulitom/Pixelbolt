@@ -51,6 +51,32 @@
       "minimum": 0,
       "maximum": 1,
       "description": "How far lighter colours stand out of the surface, up to 2 pixels: 0 (default) keeps only the silhouette's shape; 0.5–1 embosses textured surfaces such as brick, bark or rock. A colour on a ramp counts its step along the ramp, any other its brightness."
+    },
+    "faces": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "enum": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "q",
+          "w",
+          "e",
+          "a",
+          "d",
+          "z",
+          "x",
+          "c"
+        ]
+      },
+      "description": "Flat faces by colour: maps the colour recipe's palette keys to one direction each, so a box, wall or building gets flat planes instead of a cushion. Pixels drawn in that key's colour take the direction; all others are rounded as usual. Side view: tops w, fronts 5. 3/4 top-down: tops w or 8, south faces 2 or 5. Isometric 2:1: tops w, left faces z, right faces c."
     }
   },
   "required": [
