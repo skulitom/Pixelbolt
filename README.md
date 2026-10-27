@@ -116,7 +116,7 @@ cd Pixelbolt
 node bin/pixelbolt.js preview
 ```
 
-Open **http://127.0.0.1:4747**, or add `--open` to have your default browser opened for you. If that port is in use, a free one is taken and printed instead; `--port N` insists on one port and fails when it is busy. `preview hero.pixel.json` starts with your own recipe. Pick the forest spirit, campfire or coin; edit the JSON; inspect the animation or sprite sheet; download the asset ZIP. The studio includes playback speed, frame selection, integer zoom, a pixel grid, onion skinning, palette inspection, source save/open, a GIF download of the current animation, numbered frames for a video editor, recovery of unsaved edits and live error messages. All assets and fonts are local.
+Open **http://127.0.0.1:4747**, or add `--open` to have your default browser opened for you. If that port is in use, a free one is taken and printed instead; `--port N` insists on one port and fails when it is busy. `preview hero.pixel.json` starts with your own recipe. Pick the forest spirit, campfire or coin; edit the JSON; inspect the animation or sprite sheet; download the asset ZIP. The studio includes playback speed, frame selection, whole-number zoom (the scroll wheel zooms at the pointer, dragging pans, and + − 0 and F zoom, fit and go full screen), a pixel grid, onion skinning, palette inspection, source save/open, a GIF download of the current animation, numbered frames for a video editor, recovery of unsaved edits and live error messages. All assets and fonts are local.
 
 ![Pixelbolt's local studio showing the forest spirit sprite, animation frames, editable JSON recipe and palette](docs/images/studio.png)
 
@@ -268,7 +268,7 @@ The studio's **Frames** button downloads the same files for the animation on scr
 
 A recipe with a single frame may be larger than 256 × 256: up to 4096 pixels a side and 4,194,304 pixels in all. A 1920 × 1080 or 2560 × 1440 backdrop, wallpaper or mural is then one canvas, drawn at one screen pixel per art pixel, and every drawing operation sees all of it. On such a canvas, rectangles, ellipses and dither or shade regions may be up to twice its side instead of 512.
 
-Everything else keeps its limits. A recipe with two or more frames, a scene and its assets, pose, effect, wave and fluid sources, and `import` stay at 256 pixels a side, and the 67-million-pixel drawing budget is unchanged: `fill`, `replace` and `outline` each pass over the whole canvas, about 2 million of that budget at 1920 × 1080. To show bigger pixels instead, enlarge a small canvas with `sheet.scale` or `sequence --size`, as before. The studio opens a large still fitted to its window, scaled down smoothly so dither reads as the tone it makes; choose 1× or more to see its pixels.
+Everything else keeps its limits. A recipe with two or more frames, a scene and its assets, pose, effect, wave and fluid sources, and `import` stay at 256 pixels a side, and the 67-million-pixel drawing budget is unchanged: `fill`, `replace` and `outline` each pass over the whole canvas, about 2 million of that budget at 1920 × 1080. To show bigger pixels instead, enlarge a small canvas with `sheet.scale` or `sequence --size`, as before. The studio opens a large still fitted to its window, scaled down smoothly so dither reads as the tone it makes; zoom in with the scroll wheel and drag to look around at 1× and up.
 
 ## Connect an agent through MCP
 

@@ -339,6 +339,12 @@ select{
   padding:5px;
   border-radius:4px
 }
+/* An open list is drawn on its options' background, which a transparent select leaves white on Windows: light text
+   on white. Give the options the dark surface. */
+select option,select optgroup{
+  background:var(--surface);
+  color:var(--ink)
+}
 .zoom-label{
   border-left:1px solid var(--line);
   padding-left:7px;
@@ -375,6 +381,33 @@ select{
 #canvas{
   image-rendering:pixelated;
   display:block
+}
+/* A picture larger than the artboard pans by dragging. */
+.artboard.pannable{
+  cursor:grab
+}
+.artboard.panning{
+  cursor:grabbing;
+  user-select:none
+}
+/* Full screen: the preview alone over the whole window, its artboard taking the height the tools and playback bar
+   leave. The toast stays above it. */
+.artboard-section.expanded{
+  position:fixed;
+  inset:0;
+  z-index:4;
+  display:flex;
+  flex-direction:column;
+  border:0;
+  border-radius:0
+}
+.artboard-section.expanded .artboard{
+  flex:1;
+  height:auto;
+  min-height:0
+}
+body.stage-open{
+  overflow:hidden
 }
 /* A large still fitted below 1×: scaled down smoothly so dither reads as a tone, not as noise. */
 #canvas.smooth,.frame img.smooth{

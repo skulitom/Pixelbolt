@@ -25,18 +25,18 @@ function withSharedPalette(value) {
 }
 const compileSource = value => { const drawn = withSharedPalette(value); return drawn?.format === 'pixelforge-poses' ? compilePoses(drawn) : drawn?.format === 'pixelforge-wave' ? compileWaves(drawn) : { recipe: drawn, metadata: null }; };
 let elapsed = 0, lastTime = 0, zoom = 12, dirty = false, valid = false, compileTimer, toastTimer, loadVersion = 0;
-// A still larger than 256 px a side opens fitted to the artboard ("fit", offered only for such stills): whole, and
-// scaled down smoothly when it is larger than the artboard, so a dither reads as the tone it makes rather than as
-// noise. 1× and up show its pixels. The zoom chosen for sprites comes back when a sprite is shown again.
-let spriteZoom = zoom;
+// Zoom is a whole number, or "fit": the whole picture in the artboard, at the largest whole number that fits or, for a
+// still larger than the artboard, scaled down smoothly so a dither reads as the tone it makes rather than as noise.
+// A still larger than 256 px a side opens fitted; the zoom chosen for sprites comes back when a sprite is shown again.
+const ZOOMS = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32];
+let spriteZoom = zoom, shownScale = 1;
 const isLarge = p => p.width > 256 || p.height > 256;
-// The whole number or `fit` zoom as the GIF and frame exports take it: a fitted view exports at 1×.
-const exportScale = () => (zoom === 'fit' ? 1 : zoom);
+// The zoom as the GIF and frame exports take it: a whole number, at most `max`; a view fitted below 1× exports at 1×.
+const exportScale = max => Math.min(max, zoom === 'fit' ? Math.max(1, Math.floor(shownScale)) : zoom);
 function fitZoom(next) {
   const wasLarge = project ? isLarge(project) : false, large = isLarge(next);
   if (large === wasLarge) return;
   if (large) { spriteZoom = zoom; zoom = 'fit'; } else zoom = spriteZoom;
-  $('zoom-fit').hidden = !large;
   $('zoom').value = String(zoom);
 }
 // The recipe text last sent to Save JSON. The page cannot tell whether the browser kept that file or the save was
@@ -81,6 +81,11 @@ function reviewMotion() {
   $('motion-summary').textContent = Object.entries(report.checks).map(([key, pass]) => `${names[key] ?? key}: ${pass === null ? 'unavailable' : `${pass ? 'pass' : 'check'} (${details[key]})`}`).join(' · ');
   return motionReview;
 }
+// The scale "fit" shows: the largest whole number that fits the artboard, or below 1× when even 1× does not fit.
+function fittedScale(width, height) {
+  const board = $('artboard'), whole = Math.max(1 / 64, Math.min((board.clientWidth - 72) / width, (board.clientHeight - 72) / height));
+  return whole >= 1 ? Math.floor(whole) : whole;
+}
 function render() {
   if (!project) return;
   const isSheet = mode === 'sheet', isMotion = mode === 'motion';
@@ -105,10 +110,12 @@ function render() {
   native.parentElement.hidden = isLarge(project);
   if (!isLarge(project)) { native.width = project.width; native.height = project.height; native.getContext('2d').drawImage(frameImages[selected], 0, 0); }
   const fit = Math.max(1, Math.floor(($('artboard').clientWidth - 48) / width));
-  const whole = Math.max(1 / 64, Math.min(($('artboard').clientWidth - 72) / width, ($('artboard').clientHeight - 72) / height));
-  const displayScale = zoom === 'fit' ? (whole >= 1 ? Math.floor(whole) : whole) : isSheet || isMotion ? Math.min(zoom, fit) : zoom;
+  const displayScale = zoom === 'fit' ? fittedScale(width, height) : isSheet || isMotion ? Math.min(zoom, fit) : zoom;
+  shownScale = displayScale;
   canvas.style.width = `${width * displayScale}px`; canvas.style.height = `${height * displayScale}px`;
   canvas.classList.toggle('smooth', displayScale < 1);
+  const board = $('artboard');
+  board.classList.toggle('pannable', board.scrollWidth > board.clientWidth || board.scrollHeight > board.clientHeight);
   $('canvas-wrap').style.setProperty('--pixel-size', `${displayScale}px`);
   $('canvas-wrap').classList.toggle('grid', $('grid').getAttribute('aria-pressed') === 'true' && displayScale >= 1);
   $('frame-counter').textContent = `${String(position + 1).padStart(2, '0')} / ${String(animation.frames.length).padStart(2, '0')}`;
@@ -243,7 +250,83 @@ source.addEventListener('keydown', event => {
 source.addEventListener('blur', () => { leavingEditor = false; });
 $('play').addEventListener('click', () => { if (!project) return; playing = !playing; if (playing) { if (elapsed >= project.animations[$('animation').value].duration) elapsed = 0; setMode('animation'); } playState(); });
 $('animation').addEventListener('change', animationChanged);
-$('zoom').addEventListener('change', () => { zoom = $('zoom').value === 'fit' ? 'fit' : Number($('zoom').value); render(); });
+$('zoom').addEventListener('change', () => zoomTo($('zoom').value === 'fit' ? 'fit' : Number($('zoom').value)));
+// Zooming keeps the picture point under the pointer (or the artboard's centre) where it was.
+function zoomTo(next, clientX, clientY) {
+  if (!project) return;
+  const board = $('artboard'), box = board.getBoundingClientRect();
+  clientX ??= box.left + box.width / 2; clientY ??= box.top + box.height / 2;
+  const before = canvas.getBoundingClientRect(), u = (clientX - before.left) / before.width, v = (clientY - before.top) / before.height;
+  zoom = next; $('zoom').value = String(zoom); render();
+  const after = canvas.getBoundingClientRect();
+  board.scrollLeft += after.left + u * after.width - clientX; board.scrollTop += after.top + v * after.height - clientY;
+}
+// One step along the zoom list from the scale on screen; zooming out below 1× goes to fit when that is smaller.
+// Steps stop where the enlarged picture would pass 32,768 px, which browsers draw unreliably.
+function zoomStep(direction, clientX, clientY) {
+  if (!project) return;
+  const s = shownScale, width = canvas.width, height = canvas.height, fits = z => width * z <= 32768 && height * z <= 32768;
+  let next = direction > 0 ? ZOOMS.find(z => z > s + 1e-9 && fits(z)) : [...ZOOMS].reverse().find(z => z < s - 1e-9);
+  if (next === undefined && direction < 0 && fittedScale(width, height) < s - 1e-9) next = 'fit';
+  if (next !== undefined) zoomTo(next, clientX, clientY);
+}
+$('zoom-in').addEventListener('click', () => zoomStep(1));
+$('zoom-out').addEventListener('click', () => zoomStep(-1));
+{
+  const board = $('artboard');
+  // The wheel zooms at the pointer; sideways scrolling (Shift, or a trackpad swipe) still pans. Small trackpad
+  // deltas add up to one step, so a swipe does not race through every zoom.
+  let wheel = 0, wheelAt = 0;
+  board.addEventListener('wheel', event => {
+    if (!project || event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    event.preventDefault();
+    if (event.timeStamp - wheelAt > 250) wheel = 0;
+    wheelAt = event.timeStamp; wheel += event.deltaY * (event.deltaMode === 1 ? 33 : event.deltaMode === 2 ? 400 : 1);
+    if (Math.abs(wheel) < (event.ctrlKey ? 12 : 50)) return;
+    const direction = wheel < 0 ? 1 : -1; wheel = 0;
+    zoomStep(direction, event.clientX, event.clientY);
+  }, { passive: false });
+  // Dragging pans a picture larger than the artboard (touch scrolls natively); the scrollbars keep working.
+  let drag = null;
+  board.addEventListener('pointerdown', event => {
+    const box = board.getBoundingClientRect();
+    if (event.pointerType === 'touch' || (event.button !== 0 && event.button !== 1) || !board.classList.contains('pannable')) return;
+    if (event.clientX - box.left - board.clientLeft >= board.clientWidth || event.clientY - box.top - board.clientTop >= board.clientHeight) return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: board.scrollLeft, top: board.scrollTop };
+    board.setPointerCapture(event.pointerId); board.classList.add('panning'); event.preventDefault();
+  });
+  board.addEventListener('pointermove', event => {
+    if (drag?.id !== event.pointerId) return;
+    board.scrollLeft = drag.left - (event.clientX - drag.x); board.scrollTop = drag.top - (event.clientY - drag.y);
+  });
+  const release = event => { if (drag?.id === event.pointerId) { drag = null; board.classList.remove('panning'); } };
+  board.addEventListener('pointerup', release); board.addEventListener('pointercancel', release);
+  board.addEventListener('dblclick', () => zoomTo('fit'));
+}
+// Full screen shows the preview alone: it fills the window, fitted again when the zoom is fit, and the browser's own
+// full screen hides its bars too where the browser allows it (an embedded browser may not; the window view still works).
+const stage = document.querySelector('.artboard-section');
+function setExpanded(on) {
+  stage.classList.toggle('expanded', on); document.body.classList.toggle('stage-open', on);
+  $('fullscreen').setAttribute('aria-pressed', String(on)); $('fullscreen').title = on ? 'Leave full screen (F or Esc)' : 'Full screen (F)';
+  render();
+}
+function toggleFullscreen() {
+  if (stage.classList.contains('expanded')) { setExpanded(false); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); return; }
+  setExpanded(true);
+  if (document.fullscreenEnabled && !document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+}
+$('fullscreen').addEventListener('click', toggleFullscreen);
+// Esc in the browser's full screen leaves it; leave the window view with it.
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && stage.classList.contains('expanded')) setExpanded(false); else render(); });
+// + and − zoom, 0 fits and F toggles full screen, except while typing in a field or with a dialog open; Esc leaves
+// full screen.
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && stage.classList.contains('expanded') && !document.querySelector('dialog[open]')) { toggleFullscreen(); return; }
+  if (event.ctrlKey || event.metaKey || event.altKey || event.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('dialog[open]')) return;
+  const action = { '+': () => zoomStep(1), '=': () => zoomStep(1), '-': () => zoomStep(-1), '_': () => zoomStep(-1), '0': () => zoomTo('fit'), f: toggleFullscreen, F: toggleFullscreen }[event.key];
+  if (action) { event.preventDefault(); action(); }
+});
 $('review-view').addEventListener('change', render);
 for (const id of ['grid', 'onion', 'contacts']) $(id).addEventListener('click', () => { $(id).setAttribute('aria-pressed', String($(id).getAttribute('aria-pressed') !== 'true')); render(); });
 $('animation-view').addEventListener('click', () => setMode('animation'));
@@ -279,14 +362,14 @@ $('save').addEventListener('click', () => {
 $('gif').addEventListener('click', () => {
   compile(); if (!valid) { toast('Fix the recipe to export a GIF.'); return; }
   try {
-    const gif = animationGIF(project, $('animation').value, { scale: exportScale() });
+    const gif = animationGIF(project, $('animation').value, { scale: exportScale(16) });
     download(gif.data, `${project.name}-${gif.animation}.gif`, 'image/gif');
     toast(`GIF saved: ${gif.width} × ${gif.height} px.${gif.partialAlpha ? ` ${gif.partialAlpha} partly transparent pixels became fully transparent or opaque; the gif command can blend them onto a background.` : ''}`);
   } catch (error) { toast(error.message); }
 });
 // Frames for a video editor: the server builds them exactly as `pixelbolt sequence` does. The dialog also shows that
 // call, and the MCP one, because agents are who usually make these.
-const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: exportScale() }) });
+const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: exportScale(256) }) });
 function showFramesCall() {
   const settings = framesSettings(), sizing = settings.size ? `--size ${settings.size}` : `--scale ${settings.scale}`;
   $('frames-call').textContent = `pixelbolt sequence ${project.name}.pixel.json --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;

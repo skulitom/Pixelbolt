@@ -266,6 +266,40 @@ try {
     await click('#sheet-view'); const sheet = await canvas(); assert.ok(sheet.width > still.width, 'the sheet is no wider than one frame'); assert.match(await text('artboard-caption'), /Export layout/);
     await click('#animation-view'); assert.equal((await canvas()).hash, still.hash);
   });
+  await check('the wheel zooms at the pointer, dragging pans, the − and 0 keys zoom out and fit, and full screen fills the window until Escape', async () => {
+    const view = () => evaluate(`(() => { const b = document.getElementById('artboard'), c = document.getElementById('canvas').getBoundingClientRect(), box = b.getBoundingClientRect(); return { zoom: document.getElementById('zoom').value, left: b.scrollLeft, top: b.scrollTop, maxLeft: b.scrollWidth - b.clientWidth, maxTop: b.scrollHeight - b.clientHeight, canvas: { x: c.left, y: c.top, w: c.width, h: c.height }, x: box.left + box.width / 2, y: box.top + box.height / 2, inner: { x: box.left + b.clientLeft + b.clientWidth / 2, y: box.top + b.clientTop + b.clientHeight / 2 }, pannable: b.classList.contains('pannable') }; })()`);
+    await evaluate(`document.getElementById('artboard').scrollIntoView({ block: 'center' })`);
+    let at = await view();
+    // One wheel notch is one step (12× to 16×). Along a side where the picture overflows the artboard, the picture
+    // point under the pointer stays under it; along a side where it fits, the picture stays centred.
+    const point = { x: at.x + 30, y: at.y + 20 }, u = (point.x - at.canvas.x) / at.canvas.w, v = (point.y - at.canvas.y) / at.canvas.h;
+    await studio.page('Input.dispatchMouseEvent', { type: 'mouseWheel', ...point, deltaX: 0, deltaY: -100 });
+    await until(`document.getElementById('zoom').value === '16'`, 'the wheel to zoom in one step');
+    at = await view();
+    assert.ok(at.maxTop > 0, 'a 16× sprite should overflow the artboard\'s height');
+    assert.ok(Math.abs(at.canvas.y + v * at.canvas.h - point.y) < 1.5, 'the picture moved under the pointer');
+    assert.ok(at.maxLeft > 0 ? Math.abs(at.canvas.x + u * at.canvas.w - point.x) < 1.5 : Math.abs(at.canvas.x + at.canvas.w / 2 - at.inner.x) < 1.5, 'the picture is neither under the pointer nor centred across');
+    // Dragging moves the picture with the pointer, as far as the artboard scrolls.
+    await choose('zoom', '32'); at = await view(); assert.equal(at.pannable, true, 'a 32× sprite does not pan');
+    await studio.page('Input.dispatchMouseEvent', { type: 'mousePressed', x: at.x, y: at.y, button: 'left', buttons: 1, clickCount: 1 });
+    await studio.page('Input.dispatchMouseEvent', { type: 'mouseMoved', x: at.x - 40, y: at.y - 30, button: 'left', buttons: 1 });
+    await studio.page('Input.dispatchMouseEvent', { type: 'mouseReleased', x: at.x - 40, y: at.y - 30, button: 'left', clickCount: 1 });
+    const panned = await view();
+    assert.deepEqual([panned.left, panned.top], [Math.min(at.maxLeft, at.left + 40), Math.min(at.maxTop, at.top + 30)]);
+    await evaluate(`document.activeElement.blur()`);
+    await key('-', 189); await until(`document.getElementById('zoom').value === '24'`, 'the − key to zoom out');
+    await key('0', 48); await until(`document.getElementById('zoom').value === 'fit'`, 'the 0 key to fit');
+    const fitted = await view(); assert.equal(fitted.pannable, false, 'the fitted sprite still overflows the artboard');
+    await click('#fullscreen');
+    await until(`document.querySelector('.artboard-section').classList.contains('expanded')`, 'full screen');
+    assert.deepEqual(await evaluate(`(() => { const r = document.querySelector('.artboard-section').getBoundingClientRect(); return [r.left, r.top, Math.round(r.width) === innerWidth, Math.round(r.height) === innerHeight, document.getElementById('fullscreen').getAttribute('aria-pressed')]; })()`), [0, 0, true, true, 'true']);
+    assert.ok((await view()).canvas.w > fitted.canvas.w, 'the fitted sprite did not grow in full screen');
+    await studio.shot('full-screen');
+    await key('Escape', 27);
+    await until(`!document.querySelector('.artboard-section').classList.contains('expanded') && !document.fullscreenElement`, 'Escape to leave full screen');
+    await choose('zoom', '12');
+    return `fit ${Math.round(fitted.canvas.w / still.width)}×, larger in full screen`;
+  });
   await check('the animation, speed and palette controls respond', async () => {
     const [timing, others] = [await text('timing'), await evaluate(`[...document.getElementById('animation').options].map(option => option.value)`)];
     await choose('animation', others.at(-1)); assert.notEqual(await text('timing'), timing); await choose('animation', others[0]);
