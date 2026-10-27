@@ -21,7 +21,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Shape looks take `lit` and `shade` bands with a `light` direction: each recolours the look's own pixels by how far its field falls two pixels toward the light (or away from it), so a body of water gets a highlight on one rim and a shadow side on the other, as the fluid looks do.
 - A `stream` layer draws a tapered body along a smooth curve through 2–8 points, with `head` and `tail` keys for the part drawn, a `taper` along it and a travelling `sway`: geyser spikes, whips, spirals and wave curls.
 - An emitter with `blob` draws its particles as soft discs summed into a look's field instead of symbols, so drops that touch merge into one body and split again, shrinking through `radius` keys over their lives.
-- Every shape kind takes `noise` and `scale`, so a falling `power` breaks any shape into pieces and drops, and every layer takes a `floor` that cuts it off below a row (a dome, an arch). Effects that use none of these compile exactly as before.
+- Every shape kind takes `noise` and `scale`, so a falling `power` breaks any shape into pieces and drops, and every layer takes a `floor` that cuts it off below a row (a dome, an arch). Effects that use none of these compile exactly as before. `examples/water.fx.json` has five reviewed water effects: a geyser, a whip, a ring breaking into drops, a popping dome and a curling wave.
 
 ### Large stills
 
