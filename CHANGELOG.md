@@ -12,6 +12,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Studio viewing
 
 - The studio's preview zooms with the scroll wheel at the pointer, pans by dragging, and has − and + buttons, a **Fit** zoom for any canvas, 3×, 6×, 24× and 32×, and keys: + and − zoom, 0 fits and F toggles full screen. **Full screen** fills the window with the preview (and the screen, where the browser allows it); Escape leaves it.
+- On a desktop-sized window the studio fits one screen: the page no longer scrolls, the projects, preview and source columns each scroll on their own, and the preview and the recipe editor take the height there is. Narrow or short windows keep the stacked layout.
 - Dropdown lists in the studio are dark. On Windows an open list drew the light option text on white, so the zoom and other choices could not be read.
 
 ### Exports at the names the user asked for
