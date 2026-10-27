@@ -33,7 +33,8 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
       // Match the benchmark's warm-median contract (three warm-ups, then the median of fifteen runs), including on
       // translated Intel runtimes. The hero's first compile and render also warm the whole compiler and renderer, so
       // a single cold sample is not the budget. The three are timed in turn, so each median's samples spread over the
-      // whole measurement: a short burst of CPU from a test file running beside this one can't fill a median.
+      // whole measurement: a burst of CPU from a test file running beside this one moves a median only if it lasts
+      // about half the measurement.
       const runs = { expand: () => expandPoses(f.source), compile: () => compilePoses(f.source), render: () => renderProject(f.recipe, { stats: true }) };
       const times = { expand: [], compile: [], render: [] };
       for (let i = 0; i < 18; i++) for (const [name, run] of Object.entries(runs)) {
