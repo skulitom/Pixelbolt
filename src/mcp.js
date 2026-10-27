@@ -337,11 +337,11 @@ export function createToolRunner({ directory, root, version }) {
         return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
       } else if (name === 'pixel_inspect') {
         const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
-        let recipe, resolved, sources, metadata = suppliedMetadata;
+        let recipe, resolved, sources, metadata = suppliedMetadata, poseWarnings = [];
         if (poseSource !== undefined) {
           if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
           const input = await resolveReferences(poseSource, { baseDir: root, root });
-          ({ recipe, metadata } = compilePoses(input.document)); resolved = sources = relativeToRoot(input.files);
+          ({ recipe, metadata, warnings: poseWarnings = [] } = compilePoses(input.document)); resolved = sources = relativeToRoot(input.files);
         } else ({ recipe, resolved, sources } = await recipeFrom(spec, revision));
         const project = renderProject(recipe, layers === undefined ? {} : { layers });
         let view;
@@ -354,7 +354,7 @@ export function createToolRunner({ directory, root, version }) {
           view = inspectProject(project, inspection);
         }
         const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
-        const content = [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: project.warnings }, resolved)), imageContent(view.sheet)];
+        const content = [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), name: project.name, width: project.width, height: project.height, ...viewSummary(view), warnings: [...poseWarnings, ...project.warnings] }, resolved)), imageContent(view.sheet)];
         if (view.nativeSheet) content.push(imageContent(view.nativeSheet));
         if (view.grids) content.push(textContent(gridText(view)));
         if (reference !== undefined) {
