@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject } from './core.js';
 import { fields, point } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
-import { readShapes, renderShapes } from './shapes.js';
+import { readShapes, renderShapes, tween, sample } from './shapes.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -64,8 +64,18 @@ const readRemap = (remap, path, palette) => {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue'], path);
-  const { frames, symbols, palette, loop, seed } = context;
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob'], path);
+  const { frames, symbols, palette, loop, seed, looks } = context;
+  // A blob particle draws no symbol: it adds a soft disc to one of the effect's looks, so touching drops merge.
+  let blob = null;
+  if (emitter.blob !== undefined) {
+    if (emitter.blob === null || typeof emitter.blob !== 'object' || Array.isArray(emitter.blob)) fail(`${path}.blob`, 'expected { look, radius }');
+    fields(emitter.blob, ['look', 'radius'], `${path}.blob`);
+    const look = emitter.blob.look ?? (looks.length === 1 ? looks[0] : undefined);
+    if (!looks.includes(look)) fail(`${path}.blob.look`, emitter.blob.look === undefined ? `name the look this blob is drawn into: ${looks.join(', ')}` : `no look is named ${JSON.stringify(emitter.blob.look)}`);
+    blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64) };
+    for (const key of ['shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'behind']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to particles drawn as symbols; a blob particle is drawn into its look`);
+  }
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
   if ((emitter.burst === undefined) === (emitter.rate === undefined)) fail(path, 'use exactly one of burst (particles at start) or rate (particles per frame)');
   // A child spawns from the particles of an earlier emitter, at an event, instead of on a schedule of its own.
@@ -104,9 +114,9 @@ function readEmitter(emitter, path, context, earlier) {
     const to = pair(emitter.line.to, `${path}.line.to`, -4096, 4096);
     line = { dx: to[0] - at[0], dy: to[1] - at[1], even: flag(emitter.line.even, `${path}.line.even`) };
   }
-  if (!Array.isArray(emitter.shapes) || !emitter.shapes.length || emitter.shapes.length > 64) fail(`${path}.shapes`, 'expected 1–64 symbol names (one sequence) or lists of them (variants picked per particle)');
-  const nested = Array.isArray(emitter.shapes[0]);
-  const variants = (nested ? emitter.shapes : [emitter.shapes]).map((sequence, v) => {
+  if (!blob && (!Array.isArray(emitter.shapes) || !emitter.shapes.length || emitter.shapes.length > 64)) fail(`${path}.shapes`, 'expected 1–64 symbol names (one sequence) or lists of them (variants picked per particle), or a blob drawn into a look');
+  const nested = !blob && Array.isArray(emitter.shapes[0]);
+  const variants = blob ? [] : (nested ? emitter.shapes : [emitter.shapes]).map((sequence, v) => {
     const sp = nested ? `${path}.shapes[${v}]` : `${path}.shapes`;
     if (!Array.isArray(sequence) || !sequence.length || sequence.length > 64) fail(sp, 'expected a list of 1–64 symbol names');
     return sequence.map((name, i) => {
@@ -160,7 +170,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, parent, when, cue,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, parent, when, cue, blob,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -200,7 +210,7 @@ function simulate(effect, context) {
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
   const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
-  const alive = [], output = Array.from({ length: frames }, () => []), behind = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
+  const alive = [], output = Array.from({ length: frames }, () => []), behind = Array.from({ length: frames }, () => []), blobs = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
   const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0 }));
   let operations = 0, culled = 0;
   const inside = (x, y) => x >= 0 && y >= 0 && x < width && y < height;
@@ -277,11 +287,11 @@ function simulate(effect, context) {
     const places = alive.map(p => {
       const e = p.emitter, sway = e.sway;
       const sx = sway ? sway.amplitude[0] * sinDeg(360 * p.age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * p.age / sway.period + p.phase) : 0;
-      const X = Math.floor(p.x + sx + 0.5), Y = Math.floor((e.floor !== null && p.y + sy > e.floor ? e.floor : p.y + sy) + 0.5);
+      const x = p.x + sx, y = e.floor !== null && p.y + sy > e.floor ? e.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
       p.trail.push([X, Y]);
       if (p.trail.length > 17) p.trail.shift();
       if (e.face) p.facing = facing(e, p.vx, p.vy, p.facing);
-      return [X, Y];
+      return [X, Y, x, y];
     });
     // Draw oldest first, with `behind` emitters' particles under everyone else's. Particles partly off the canvas are
     // cropped into grid operations and trails keep only their on-canvas pixels, so nothing clips.
@@ -289,6 +299,13 @@ function simulate(effect, context) {
       const e = p.emitter;
       if (pass !== null && e.behind !== pass) return;
       const [X, Y] = places[i], ops = (pass === true ? behind : output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
+      if (e.blob) {
+        // Its radius moves through the keys over its life; the shape layers' grid draws it.
+        const radius = sample(e.blob.radius, Math.min(1, p.age / Math.max(1, span - 1))), [, , x, y] = places[i];
+        if (radius > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius });
+        else culled++;
+        return;
+      }
       const sequence = e.face ? e.variants[p.facing] : p.variant, share = stages => Math.min(stages - 1, Math.floor(p.age / span * stages));
       const step = e.play === 'loop' ? (p.age + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
       const symbol = sequence[step], rows = symbols[symbol], w = rows[0].length, h = rows.length, left = X - Math.floor(w / 2), top = Y - Math.floor(h / 2);
@@ -337,7 +354,7 @@ function simulate(effect, context) {
     for (let k = events.length - 1; k >= 0; k--) { const [q, when] = events[k]; for (const index of children[q.index][when]) spawnChildren(index, q, emitters[index].burst, t + 1); }
     if (operations > LIMITS.operations) fail(context.path, `the effect needs more than ${LIMITS.operations} drawing operations; lower counts or frames`);
   }
-  return { output, behind, operations, culled, stats, cues };
+  return { output, behind, blobs, operations, culled, stats, cues };
 }
 
 // Frame durations eased from `from` to `to` milliseconds across the effect: `in` stays quick and slows at the end,
@@ -379,19 +396,20 @@ export function compileEffects(source) {
     const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, palette, width, height, path };
     // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts) draw between `behind` particles and the rest.
     const shapes = readShapes(effect, path, context);
+    context.looks = shapes ? shapes.looks.map(look => look.name) : [];
     const list = effect.emitters ?? (shapes ? [] : undefined);
     if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
     const emitters = [];
     list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
     const run = emitters.length ? simulate({ frames: count, loop, seed, emitters }, context)
-      : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
+      : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), blobs: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
     if (shapes) for (const layer of shapes.layers) if (layer.cue && !run.cues[layer.t0][layer.cue]) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
     const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
     if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
     // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
     const cues = [];
     const names = run.output.map((front, i) => {
-      const grid = shapes && renderShapes(shapes, i, width, height);
+      const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i]);
       const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
       const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
       if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
@@ -399,7 +417,7 @@ export function compileEffects(source) {
       return `${name}-${i}`;
     });
     animations[name] = { frames: names, ...(!loop && { loop: false }) };
-    metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes && { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) }), ...(cues.length && { cues }) };
+    metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
   const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };

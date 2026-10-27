@@ -9,19 +9,20 @@ import { PixelError } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, hash, random, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
 
-export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst'];
+export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream'];
 const LIMITS = { layers: 16, looks: 8, colors: 8 };
 const PI = 3.141592653589793;
 const SPECIFIC = {
   ring: ['radius', 'width', 'fill', 'noise', 'scale'],
-  slash: ['radius', 'width', 'arc', 'reveal'],
-  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade'],
-  bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal'],
-  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill'],
-  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter'],
-  burst: ['radius', 'hole', 'noise', 'scale', 'boil']
+  slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale'],
+  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale'],
+  bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal', 'noise', 'scale'],
+  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'scale'],
+  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'scale'],
+  burst: ['radius', 'hole', 'noise', 'scale', 'boil'],
+  stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'noise', 'scale']
 };
-const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'tilt', 'squash', 'drift', 'seed', 'cue'];
+const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'tilt', 'squash', 'drift', 'floor', 'seed', 'cue'];
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -58,12 +59,12 @@ export function atan2Deg(y, x) {
 }
 
 // A number, or 2–8 keys spread evenly over the layer's frames (through its easing).
-function tween(value, path, min, max) {
+export function tween(value, path, min, max) {
   if (!Array.isArray(value)) return [number(value, path, min, max)];
   if (value.length < 2 || value.length > 8) fail(path, `expected a number from ${min} to ${max}, or 2–8 of them as keys spread over the layer's frames`);
   return value.map((v, i) => number(v, `${path}[${i}]`, min, max));
 }
-function sample(keys, q) {
+export function sample(keys, q) {
   if (keys.length === 1) return keys[0];
   const s = q * (keys.length - 1), i = Math.max(0, Math.min(keys.length - 2, Math.floor(s)));
   return keys[i] + (keys[i + 1] - keys[i]) * (s - i);
@@ -82,8 +83,28 @@ function paletteKey(key, path, palette) {
   return key;
 }
 
+// Lit and shade bands: palette keys cut from the share by which the look's field falls two pixels toward the light
+// (or away from it): 1 on a rim that faces that way, 0 inside.
+function readShading(value, path, palette) {
+  if (!isObject(value)) fail(path, 'expected { colors, thresholds }: palette keys and the rising shares (0–1) where each begins');
+  fields(value, ['colors', 'thresholds'], path);
+  if (!Array.isArray(value.colors) || !value.colors.length || value.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys`);
+  const codes = value.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette).charCodeAt(0));
+  if (!Array.isArray(value.thresholds) || value.thresholds.length !== codes.length) fail(`${path}.thresholds`, `expected ${codes.length} thresholds, one per colour`);
+  const thresholds = value.thresholds.map((t, i) => {
+    number(t, `${path}.thresholds[${i}]`, 0.001, 1);
+    if (i && t <= value.thresholds[i - 1]) fail(`${path}.thresholds[${i}]`, 'thresholds must rise from one colour to the next');
+    return t;
+  });
+  return { codes, thresholds };
+}
+
 function readLook(look, path, palette, seed) {
-  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline'], path);
+  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'lit', 'shade'], path);
+  const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette);
+  if (look.light !== undefined && !lit && !shade) fail(`${path}.light`, 'light points the lit and shade bands; add lit or shade too');
+  const toward = look.light === undefined ? [-1, -1] : pair(look.light, `${path}.light`, -1, 1), reach = Math.sqrt(toward[0] * toward[0] + toward[1] * toward[1]);
+  if (!reach) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
   if (!Array.isArray(look.colors) || !look.colors.length || look.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, from the faintest band to the brightest`);
   const colors = look.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette));
   if (!Array.isArray(look.thresholds) || look.thresholds.length !== colors.length) fail(`${path}.thresholds`, `expected ${colors.length} thresholds, one per colour`);
@@ -98,7 +119,8 @@ function readLook(look, path, palette, seed) {
   return {
     codes: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)),
     dither: number(look.dither ?? 0, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed),
-    outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0)
+    outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0),
+    lit, shade, light: [toward[0] / reach, toward[1] / reach]
   };
 }
 
@@ -133,6 +155,7 @@ function readLayer(layer, path, context, index) {
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
     squash: pair(layer.squash ?? [1, 1], `${path}.squash`, 0.125, 8),
     drift: pair(layer.drift ?? [0, 0], `${path}.drift`, -4096, 4096),
+    floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };
   const t = (key, fallback, min, max) => tween(layer[key] ?? fallback, `${path}.${key}`, min, max);
@@ -156,24 +179,40 @@ function readLayer(layer, path, context, index) {
     const radius = t('radius', required('radius'), 0, 512);
     Object.assign(out, { radius, hole: t('hole', 0, 0, 1), noise: number(layer.noise ?? 0.4, `${path}.noise`, 0, 1), scale: number(layer.scale ?? 4, `${path}.scale`, 1, 64), boil: number(layer.boil ?? maxKey(radius) * 0.5, `${path}.boil`, -512, 512) });
   }
+  if (kind === 'stream') {
+    if (!Array.isArray(layer.through) || !layer.through.length || layer.through.length > 7) fail(`${path}.through`, 'expected 1–7 more [x, y] points: the stream runs from at through each of them on a smooth curve');
+    if (layer.taper !== undefined && !Array.isArray(layer.taper)) fail(`${path}.taper`, 'expected 2–8 width shares spread along the stream, from its tail to its head');
+    const points = [out.at, ...layer.through.map((point, i) => pair(point, `${path}.through[${i}]`, -4096, 4096))];
+    Object.assign(out, {
+      curve: spline(points), width: t('width', 6, 0, 256), taper: tween(layer.taper ?? [0, 1, 0], `${path}.taper`, 0, 2), head: t('head', 1, 0, 1), tail: t('tail', 0, 0, 1),
+      sway: number(layer.sway ?? 0, `${path}.sway`, -64, 64), wavelength: number(layer.wavelength ?? 16, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 1, `${path}.waves`, -64, 64)
+    });
+  }
   if (kind === 'ring' || kind === 'burst') out.noiseAt = ditherThreshold('value', [0, 0], out.seed, out.scale);
+  else {
+    // The other kinds take noise in screen space, moving with the layer, so a falling power breaks them up.
+    Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: number(layer.scale ?? 4, `${path}.scale`, 1, 64) });
+    if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
+  }
   return out;
 }
 
 /** Reads an effect's looks, layers and cleanup; null when it has no layers. */
 export function readShapes(effect, path, context) {
-  if (effect.layers === undefined) {
-    for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers; add layers too`);
+  const blobs = Array.isArray(effect.emitters) && effect.emitters.some(emitter => isObject(emitter) && emitter.blob !== undefined);
+  if (effect.layers === undefined && !blobs) {
+    for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
   const { palette, seed, frames } = context;
+  if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
     if (!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(name)) fail(`${path}.looks.${name}`, 'expected a name of letters, digits, hyphens or underscores, starting with a letter');
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
-  if (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = effect.layers.map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, lookNames: looks.map(l => l.name) }, i));
+  if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -236,6 +275,21 @@ function zigzag(ax, ay, bx, by, segment, jag, salt) {
     offset[i] = (offset[i - step / 2] + offset[i + step / 2]) / 2 + (random(salt, step, i) - 0.5) * jag * length * step / n;
   }
   return Array.from({ length: n + 1 }, (_, i) => [ax + dx * i / n + px * offset[i], ay + dy * i / n + py * offset[i]]);
+}
+
+// A smooth curve through 2–8 points (uniform Catmull-Rom, its ends continued straight), as a polyline of about
+// one-pixel steps with the distance along it at every point.
+function spline(points) {
+  const n = points.length - 1, out = [points[0]], beyond = (a, b) => [2 * a[0] - b[0], 2 * a[1] - b[1]];
+  for (let i = 0; i < n; i++) {
+    const p0 = i ? points[i - 1] : beyond(points[0], points[1]), p1 = points[i], p2 = points[i + 1], p3 = i + 2 <= n ? points[i + 2] : beyond(points[n], points[n - 1]);
+    const chord = Math.sqrt((p2[0] - p1[0]) * (p2[0] - p1[0]) + (p2[1] - p1[1]) * (p2[1] - p1[1])), steps = Math.max(2, Math.ceil(chord));
+    const f = (a, b, c, d, t) => 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+    for (let k = 1; k <= steps; k++) { const t = k / steps; out.push([f(p0[0], p1[0], p2[0], p3[0], t), f(p0[1], p1[1], p2[1], p3[1], t)]); }
+  }
+  const lengths = [0];
+  for (let k = 1; k < out.length; k++) { const dx = out[k][0] - out[k - 1][0], dy = out[k][1] - out[k - 1][1]; lengths.push(lengths[k - 1] + Math.sqrt(dx * dx + dy * dy)); }
+  return { points: out, lengths };
 }
 
 const PAINTERS = {
@@ -387,11 +441,50 @@ const PAINTERS = {
       if (hole > 0) value *= clamp01((d - hole * (1 + n * noise)) / Math.max(1, 0.35 * R));
       return value;
     });
+  },
+  // A tapered body of water (or anything that flows): the part of a smooth curve between `tail` and `head` (shares of
+  // its length), `width` across at most, narrowing by `taper` from tail to head, brightest on its centre line, and
+  // swaying sideways in travelling waves that grow toward the far end. Head and tail count to the end of each frame,
+  // as reveals do.
+  stream(layer, s, put) {
+    const { points, lengths } = layer.curve, L = lengths[lengths.length - 1], at = ease(layer.ease, s.end);
+    const tail = clamp01(sample(layer.tail, at)) * L, head = clamp01(sample(layer.head, at)) * L, span = head - tail, w = sample(layer.width, s.q) / 2;
+    if (span < 0.5 || w <= 0) return;
+    let k = 0;
+    for (let d = tail; d <= head + 1e-9; d += 0.5) {
+      while (k < lengths.length - 2 && lengths[k + 1] < d) k++;
+      const a = points[k], b = points[k + 1], piece = lengths[k + 1] - lengths[k] || 1, f = (d - lengths[k]) / piece, tx = (b[0] - a[0]) / piece, ty = (b[1] - a[1]) / piece;
+      let x = a[0] + (b[0] - a[0]) * f + s.dx, y = a[1] + (b[1] - a[1]) * f + s.dy;
+      if (layer.sway) { const off = layer.sway * (d / L) * sinDeg(360 * (d / layer.wavelength - layer.waves * s.p)); x -= ty * off; y += tx * off; }
+      // Each step stamps a cone a little wider than its half width, so even a one-pixel tip keeps its pixels.
+      const hw = Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, reach = Math.ceil(hw);
+      const X = round(x), Y = round(y);
+      for (let j = Y - reach; j <= Y + reach; j++) for (let i = X - reach; i <= X + reach; i++) {
+        const dx = i - x, dy = j - y, dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < hw) put(i, j, 1 - dist / hw);
+      }
+    }
   }
 };
 
-/** The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. */
-export function renderShapes(shapes, f, width, height) {
+// The look's field at (x, y), between pixels, zero off the canvas.
+function between(field, width, height, x, y) {
+  const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+  const v = (a, b) => (a >= 0 && b >= 0 && a < width && b < height ? field[b * width + a] : 0);
+  return (v(i, j) * (1 - fx) + v(i + 1, j) * fx) * (1 - fy) + (v(i, j + 1) * (1 - fx) + v(i + 1, j + 1) * fx) * fy;
+}
+function band(value, thresholds) {
+  let level = 0;
+  while (level < thresholds.length && value >= thresholds[level]) level++;
+  return level;
+}
+
+/**
+ * The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. `blobs` are this frame's blob
+ * particles, { look, x, y, radius }: each adds a soft disc, (1 − d²/r²)², to its look's field, so drops that touch merge
+ * into one body.
+ */
+export function renderShapes(shapes, f, width, height, blobs = []) {
   const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N);
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
@@ -404,25 +497,46 @@ export function renderShapes(shapes, f, width, height) {
       if (power <= 0) continue;
       const dx = layer.drift[0] * q, dy = layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
-      const put = (i, j, value) => { if (i >= 0 && j >= 0 && i < width && j < height) { const c = j * width + i; if (value > scratch[c]) scratch[c] = value; } };
+      // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.
+      const bottom = layer.floor === null ? height - 1 : Math.min(height - 1, Math.floor(layer.floor));
+      const put = (i, j, value) => { if (i >= 0 && j >= 0 && i < width && j <= bottom) { const c = j * width + i; if (value > scratch[c]) scratch[c] = value; } };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
       PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, frame: frameOf(layer, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
-        const value = scratch[c] * power;
+        let value = scratch[c] * power;
         if (value <= 0) continue;
+        if (layer.grain) value *= 1 - layer.noise * layer.grain(256 + (c % width) - round(dx), 256 + Math.floor(c / width) - round(dy));
         field[c] = layer.blend === 'add' ? field[c] + value : Math.max(field[c], value);
         any = true;
       }
     }
+    for (const blob of blobs) {
+      if (blob.look !== look.name) continue;
+      const r = blob.radius, r2 = r * r;
+      const x0 = Math.max(0, Math.ceil(blob.x - r)), x1 = Math.min(width - 1, Math.floor(blob.x + r)), y0 = Math.max(0, Math.ceil(blob.y - r)), y1 = Math.min(height - 1, Math.floor(blob.y + r));
+      for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
+        const dx = i - blob.x, dy = j - blob.y, d2 = dx * dx + dy * dy;
+        if (d2 >= r2) continue;
+        const k = 1 - d2 / r2;
+        field[j * width + i] += k * k;
+        any = true;
+      }
+    }
     if (!any) return;
-    const { thresholds, gaps, codes, dither, threshold } = look;
+    const { thresholds, gaps, codes, dither, threshold, lit, shade, light: [lx, ly] } = look;
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
       if (value < thresholds[0] - dither * gaps[0]) continue;
       const feather = (1 - threshold(i, j)) * dither;
       let level = 0;
       while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
-      if (level) { chars[c] = codes[level - 1]; owner[c] = lookIndex + 1; drawn = true; }
+      if (!level) continue;
+      let code = codes[level - 1];
+      // Lit and shade bands recolour the look's own pixels by how far its field falls two pixels toward the light
+      // (and away from it): a highlight on the rim that faces the light, a shadow side opposite.
+      if (shade) { const s = band(1 - between(field, width, height, i - 2 * lx, j - 2 * ly) / value, shade.thresholds); if (s) code = shade.codes[s - 1]; }
+      if (lit) { const s = band(1 - between(field, width, height, i + 2 * lx, j + 2 * ly) / value, lit.thresholds); if (s) code = lit.codes[s - 1]; }
+      chars[c] = code; owner[c] = lookIndex + 1; drawn = true;
     }
   });
   if (!drawn) return null;

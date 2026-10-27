@@ -16,6 +16,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - A `pixelforge-fx` effect can carry shape `layers` beside its emitters: a `ring` shockwave, a `slash` crescent, a `beam`, a `bolt` of lightning, a `glyph` magic circle, an impact `star` and a `burst` fireball, each one line of JSON. Every layer writes a brightness field inside its own window of frames, with any number written as 2–8 keys moving across the window; named `looks` cut the layers' fields into hard bands of palette colours, with optional ordered dither, then `cleanup` and a one-pixel `outline`. `power` erodes a shape as it falls, `squash` and `tilt` lay rings, magic circles and a pillar's foot on the ground or turn a slash onto a diagonal, and `cue` marks a layer's first frame for game code. The shapes compile to one grid per frame between `behind` particles and the rest, so sparks and embers still draw on top, and the result is an ordinary recipe. Sources with only layers need no `symbols` or `emitters`; effects without layers compile exactly as before. The `fx` schema and the art workflow describe every field, and `examples/` has four reviewed effects to start from: a slash hit, a fire explosion, a lightning strike and a healing circle.
 
+### Liquid shapes
+
+- Shape looks take `lit` and `shade` bands with a `light` direction: each recolours the look's own pixels by how far its field falls two pixels toward the light (or away from it), so a body of water gets a highlight on one rim and a shadow side on the other, as the fluid looks do.
+- A `stream` layer draws a tapered body along a smooth curve through 2–8 points, with `head` and `tail` keys for the part drawn, a `taper` along it and a travelling `sway`: geyser spikes, whips, spirals and wave curls.
+- An emitter with `blob` draws its particles as soft discs summed into a look's field instead of symbols, so drops that touch merge into one body and split again, shrinking through `radius` keys over their lives.
+- Every shape kind takes `noise` and `scale`, so a falling `power` breaks any shape into pieces and drops, and every layer takes a `floor` that cuts it off below a row (a dome, an arch). Effects that use none of these compile exactly as before.
+
 ### Large stills
 
 - A recipe with a single frame may be up to 4096 pixels a side, within the 4,194,304 pixels every recipe's frames already shared, so a 1920 × 1080 or 2560 × 1440 backdrop or mural is one canvas at one screen pixel per art pixel. Rectangles, ellipses and dither or shade regions on such a canvas may be up to twice its side. Recipes with two or more frames, scenes and their assets, pose, effect, wave and fluid sources, and `import` keep the 256-pixel limit, and every existing recipe renders exactly as before.

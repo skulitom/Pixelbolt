@@ -205,7 +205,8 @@ test('fx emitter fields in the schema match the compiler', async () => {
   };
   for (const key of Object.keys(emitter.properties)) assert.equal(unknown(key), false, `${key} is in the schema but the compiler rejects it`);
   assert.equal(unknown('notAField'), true);
-  assert.deepEqual(emitter.anyOf, [{ required: ['at'] }, { required: ['from'] }]);
+  // A spawn point (or a parent), and either symbols to draw or a blob drawn into a look.
+  assert.deepEqual(emitter.allOf, [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { oneOf: [{ required: ['shapes'] }, { required: ['blob'] }] }]);
 });
 
 const armSource = poses => ({ format: 'pixelforge-poses', version: 1, name: 'arm', width: 16, height: 16, palette: { a: '#f00', b: '#00f', c: '#0f0' },

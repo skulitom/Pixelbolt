@@ -22,7 +22,8 @@ const LAYERS = {
   bolt: { kind: 'bolt', look: 'cool', at: [26, 0], to: [22, 44], width: [3, 1], glow: [2, 1], branches: 3, flicker: 0.3 },
   glyph: { kind: 'glyph', look: 'cool', at: [24, 30], radius: 20, inner: 0.65, squash: [1, 0.45], points: 4, step: 1, runes: 8, double: true, spin: [0, 20], glow: 0, fill: [0, 0.2, 0] },
   star: { kind: 'star', look: 'warm', at: [24, 24], radius: [16, 4], width: [3, 1], points: 8, power: [1.3, 0.6], jitter: 0.2 },
-  burst: { kind: 'burst', look: 'warm', at: [24, 26], radius: [6, 18], hole: [0, 0.3], power: [1.4, 1] }
+  burst: { kind: 'burst', look: 'warm', at: [24, 26], radius: [6, 18], hole: [0, 0.3], power: [1.4, 1] },
+  stream: { kind: 'stream', look: 'cool', at: [6, 40], through: [[18, 14], [32, 30], [42, 8]], width: [4, 8, 5], head: [0.3, 1], tail: [0, 0.4], sway: 2, noise: 0.3, power: [1.3, 0.8] }
 };
 const visible = rows => rows.join('').replace(/\./g, '').length;
 const gridOf = frame => (frame.ops ?? []).find(op => op.op === 'grid');
@@ -71,7 +72,8 @@ test('shape layers compile to golden recipes, the same every time', () => {
     ring: '61b165d169c36d373c64f88e298539c008ece0b0c635b570d91e3d270037bb26', slash: 'd492d264e470aebe75138384c462467d31f879264e81c1074587e715d31a0ec6',
     beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'd54bdf63f41345c64b9ab402feb72ebdf809f1fbde4a71a8e63a6b06f9a3acee',
     glyph: '69221282a0198e368d410b9398d735b0e7f1e5959bd21933693472c65b92c802', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
-    burst: '4151bac6ad5f35c106bdfde17ea8ae0249eaaa4bdbd1599d57a93f414378ae2c', all: '257505288a5f06496383b48891b0fe07da0201662aa8339589fe267bab8bc8e5'
+    burst: '4151bac6ad5f35c106bdfde17ea8ae0249eaaa4bdbd1599d57a93f414378ae2c', stream: '0ce67436fbd732efd96876017738fed1cae5a3c4bcd18cf843d8d7fab8b15e09',
+    all: 'd515b0d1c38a42b23eef630e048ee6dd9aeee9f6a16f8d06740b3ef82af15a8d'
   });
 });
 
@@ -161,7 +163,8 @@ test('fx shape fields in the schema match the compiler', async () => {
   assert.deepEqual(kinds.map(k => k.properties.kind.const), SHAPE_KINDS);
   const values = { look: 'cool', at: [24, 24], frames: [0, 8], ease: 'linear', power: 1, flicker: 0, blend: 'max', tilt: 0, squash: [1, 1], drift: [0, 0], seed: 3, cue: 'hit',
     radius: 10, width: 2, fill: 0, noise: 0, scale: 4, arc: [0, 90], reveal: 0, to: [40, 24], wobble: 0, wavelength: 8, waves: 1, fade: 0, glow: 1, jag: 0.3, branches: 1, reroll: 2,
-    segment: 4, inner: 0.7, points: 5, step: 2, runes: 4, double: false, spin: 0, ratio: 0.5, core: 2, angle: 0, jitter: 0, hole: 0, boil: 2 };
+    segment: 4, inner: 0.7, points: 5, step: 2, runes: 4, double: false, spin: 0, ratio: 0.5, core: 2, angle: 0, jitter: 0, hole: 0, boil: 2,
+    floor: 40, through: [[30, 10]], taper: [0, 1, 0], head: 1, tail: 0, sway: 0 };
   const unknown = (kind, key) => {
     const layer = { kind, ...Object.fromEntries(kinds.find(k => k.properties.kind.const === kind).required.filter(k => k !== 'kind').map(k => [k, values[k]])), [key]: values[key] ?? 0 };
     try { compileEffects(source({ layers: [layer] })); return false; } catch (error) { return /unknown or null field/.test(error.message) && error.path.endsWith(`.${key}`); }
@@ -173,8 +176,10 @@ test('fx shape fields in the schema match the compiler', async () => {
   }
   const look = schema.$defs['shape-look'];
   for (const key of Object.keys(look.properties)) {
-    const probe = { colors: ['b'], thresholds: [0.5], [key]: { colors: ['b'], thresholds: [0.5], dither: 0.5, pattern: 'bayer2', outline: 'k' }[key] };
+    const bands = { colors: ['W'], thresholds: [0.5] };
+    const probe = { colors: ['b'], thresholds: [0.5], [key]: { colors: ['b'], thresholds: [0.5], dither: 0.5, pattern: 'bayer2', outline: 'k', light: [1, -1], lit: bands, shade: bands }[key] };
     if (key === 'pattern') probe.dither = 0.5;
+    if (key === 'light') probe.lit = bands;
     assert.doesNotThrow(() => compileEffects(source({ looks: { cool: probe }, layers: [LAYERS.slash] })), key);
   }
 });
@@ -199,4 +204,110 @@ test('the reviewed spell examples match their presets and compile to the pixels 
     assert.deepEqual(renderProject(recipe).warnings, [], name);
     assert.equal(sha(recipe), golden[name], name);
   }
+});
+
+// ---- Liquid shapes: light and shade, noise on every kind, a ground clip, streams and blob particles ----------------------
+const water = { colors: ['b', 'c'], thresholds: [0.2, 0.55], lit: { colors: ['W'], thresholds: [0.45] }, shade: { colors: ['k'], thresholds: [0.4] }, outline: 's' };
+const cells = grid => grid.rows.flatMap((row, j) => [...row].map((key, i) => ({ x: grid.x + i, y: grid.y + j, key }))).filter(cell => cell.key !== '.');
+// Connected pieces of drawn pixels (4-neighbour), for break-up checks.
+const pieces = grid => {
+  const seen = new Set(), at = new Set(cells(grid).map(c => `${c.x},${c.y}`));
+  let count = 0;
+  for (const start of at) {
+    if (seen.has(start)) continue;
+    count++;
+    const stack = [start];
+    while (stack.length) {
+      const here = stack.pop();
+      if (seen.has(here) || !at.has(here)) continue;
+      seen.add(here);
+      const [x, y] = here.split(',').map(Number);
+      stack.push(`${x + 1},${y}`, `${x - 1},${y}`, `${x},${y + 1}`, `${x},${y - 1}`);
+    }
+  }
+  return count;
+};
+
+test('lit and shade bands put a highlight on the rim facing the light and a shadow opposite, only on the look\'s own pixels', () => {
+  const disc = light => gridOf(compileEffects(source({ looks: { cool: { ...water, ...(light && { light }) } }, layers: [{ kind: 'burst', look: 'cool', at: [24, 24], radius: 14, noise: 0 }] })).recipe.frames[0]);
+  const mean = (list, axis) => list.reduce((sum, c) => sum + c[axis], 0) / list.length;
+  for (const [light, sx, sy] of [[undefined, -1, -1], [[1, 0], 1, 0], [[0, 1], 0, 1]]) {
+    const all = cells(disc(light)), lit = all.filter(c => c.key === 'W'), shade = all.filter(c => c.key === 'k');
+    assert.ok(lit.length > 4 && shade.length > 4, `light ${light}: ${lit.length} lit, ${shade.length} shade`);
+    // The highlight sits toward the light and the shadow away from it, on either side of the centre.
+    if (sx) { assert.ok(Math.sign(mean(lit, 'x') - 24) === sx && Math.sign(mean(shade, 'x') - 24) === -sx, `light ${light} across`); }
+    if (sy) { assert.ok(Math.sign(mean(lit, 'y') - 24) === sy && Math.sign(mean(shade, 'y') - 24) === -sy, `light ${light} down`); }
+    // Inside, where the field barely falls, the body keeps its own bands; the outline stays outside.
+    assert.ok(all.some(c => c.key === 'c'));
+  }
+  const plain = cells(gridOf(compileEffects(source({ looks: { cool: { colors: ['b', 'c'], thresholds: [0.2, 0.55], outline: 's' } }, layers: [{ kind: 'burst', look: 'cool', at: [24, 24], radius: 14, noise: 0 }] })).recipe.frames[0]));
+  assert.deepEqual(cells(disc()).map(c => `${c.x},${c.y}`), plain.map(c => `${c.x},${c.y}`), 'lit and shade recolour, never add or remove pixels');
+});
+
+test('a floor cuts any layer off below its row: a disc becomes a dome, a ring an arch', () => {
+  for (const layer of [{ kind: 'burst', look: 'cool', at: [24, 30], radius: 12, noise: 0 }, { kind: 'ring', look: 'cool', at: [24, 30], radius: 12, width: 3 }, LAYERS.stream]) {
+    const whole = cells(gridOf(compileEffects(source({ looks: { cool: water }, layers: [layer] })).recipe.frames[7]));
+    const cut = cells(gridOf(compileEffects(source({ looks: { cool: water }, layers: [{ ...layer, floor: 30 }] })).recipe.frames[7]));
+    assert.ok(whole.some(c => c.y > 31), layer.kind);
+    // Only the outline may reach one row below the floor.
+    assert.ok(cut.every(c => c.y <= 30 || (c.y === 31 && c.key === 's')), `${layer.kind} stops at the floor`);
+    assert.ok(cut.length > 10, `${layer.kind} keeps its part above`);
+  }
+});
+
+test('noise on any kind breaks it into pieces as power falls, and changes nothing at 0', () => {
+  for (const kind of ['slash', 'beam', 'star', 'stream']) {
+    // At a low steady power only the brightest parts reach the first threshold; noise then decides which survive.
+    const { noise, ...plain } = LAYERS[kind], base = { ...plain, power: 0.5, frames: [0, 8] }, drawn = layer => gridOf(compileEffects(source({ looks: { cool: water, warm: water }, layers: [layer] })).recipe.frames[4]);
+    assert.deepEqual(drawn({ ...base, noise: 0 }), drawn(base), `${kind} noise 0`);
+    const whole = drawn(base), broken = drawn({ ...base, noise: 0.6, scale: 3 });
+    assert.ok(cells(broken).length < cells(whole).length, `${kind} erodes: ${cells(whole).length} → ${cells(broken).length} pixels`);
+    if (kind === 'stream') assert.ok(pieces(broken) > pieces(whole), `a stream breaks into pieces: ${pieces(whole)} → ${pieces(broken)}`);
+  }
+});
+
+test('a stream draws the part of its curve between tail and head, tapered to points, from its first frame', () => {
+  const frames = compileEffects(source({ looks: { cool: water }, layers: [{ kind: 'stream', look: 'cool', at: [4, 24], through: [[24, 24], [44, 24]], width: 8, head: [0, 1], tail: [0, 0, 1], ease: 'linear', frames: [0, 8] }] })).recipe.frames;
+  const spans = frames.map(f => { const g = gridOf(f); return g ? [g.x, g.x + g.rows[0].length - 1] : null; });
+  assert.ok(spans[0], 'the first frame already shows the head under way');
+  // The front moves right, then the back follows it.
+  for (let k = 1; k < 4; k++) assert.ok(spans[k][1] >= spans[k - 1][1], `head advances at ${k}`);
+  for (let k = 5; k < 7; k++) assert.ok(spans[k][0] > spans[k - 1][0], `tail chases at ${k}`);
+  // Pointed at both ends: the middle column is wider than the columns near either end.
+  const g = gridOf(frames[4]), column = x => g.rows.filter(row => row[x - g.x] !== '.').length, [x0, x1] = spans[4];
+  assert.ok(column(Math.floor((x0 + x1) / 2)) > column(x0 + 1) && column(Math.floor((x0 + x1) / 2)) > column(x1 - 1));
+});
+
+test('blob particles draw soft discs into a look, merging where they touch, shrinking through their radius keys', () => {
+  const effect = blobs => source({ looks: { cool: water }, emitters: blobs });
+  const drop = (at, extra = {}) => ({ at, burst: 1, life: 8, blob: { radius: 4 }, ...extra });
+  // Without symbols or layers, blobs alone draw one grid per frame and no stamps.
+  const one = compileEffects(effect([drop([24, 24])]));
+  assert.equal(one.recipe.symbols, undefined);
+  assert.ok(one.recipe.frames.every(f => (f.ops ?? []).every(op => op.op === 'grid')));
+  assert.equal(pieces(gridOf(one.recipe.frames[0])), 1);
+  assert.equal(pieces(gridOf(compileEffects(effect([drop([18, 24]), drop([25, 24])])).recipe.frames[0])), 1, 'two touching drops merge');
+  assert.equal(pieces(gridOf(compileEffects(effect([drop([10, 24]), drop([36, 24])])).recipe.frames[0])), 2, 'two far drops stay apart');
+  const shrinking = compileEffects(effect([drop([24, 24], { blob: { radius: [5, 1] } })])).recipe.frames.map(f => cells(gridOf(f)).length);
+  assert.ok(shrinking.every((n, k) => !k || n <= shrinking[k - 1]) && shrinking[7] < shrinking[0] / 3, `${shrinking}`);
+  // Blobs and layers of one look share its field, under the particles drawn as symbols.
+  const mixed = compileEffects(source({ looks: { cool: water }, layers: [LAYERS.stream], emitters: [drop([40, 10]), { at: [4, 4], burst: 1, life: 8, shapes: ['dot'] }] }, { symbols: { dot: ['W'] } })).recipe.frames[7].ops;
+  assert.deepEqual(mixed.map(op => op.op), ['grid', 'stamp']);
+  // Mistakes name the field to fix.
+  const wrong = (emitter, extra = {}) => { try { compileEffects({ ...effect([emitter]), ...extra }); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ ...drop([24, 24]), shapes: ['dot'] }, { symbols: { dot: ['W'] } }), /emitters\[0\]\.shapes: shapes applies to particles drawn as symbols/);
+  assert.match(wrong(drop([24, 24], { blob: { look: 'ice' } })), /blob\.look: no look is named "ice"/);
+  assert.match(wrong(drop([24, 24]), { effects: { hit: { frames: 8, emitters: [drop([24, 24])] } } }), /hit\.looks: blob particles are drawn into the effect's looks/);
+  assert.match(wrong(drop([24, 24]), { effects: { hit: { frames: 8, looks, emitters: [drop([24, 24])] } } }), /blob\.look: name the look this blob is drawn into: cool, warm/);
+  const twice = (first, second) => { try { compileEffects(effect([first, second])); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(twice(drop([24, 24]), { at: [24, 24], burst: 1 }), /emitters\[1\]\.shapes: expected 1–64 symbol names .* or a blob drawn into a look/);
+});
+
+test('liquid shapes compile to golden recipes, the same every time', () => {
+  const liquid = source({ looks: { cool: { ...water, light: [-1, -0.5] } }, cleanup: { corners: true, strays: true },
+    layers: [{ ...LAYERS.stream, look: 'cool', floor: 36 }, { kind: 'ring', look: 'cool', at: [24, 38], radius: [4, 18], width: [4, 2], squash: [1, 0.3], noise: 0.7, power: [1.3, 0.25] },
+      { ...LAYERS.slash, noise: 0.8, power: [1.4, 0.3] }],
+    emitters: [{ at: [40, 10], area: [6, 3], burst: 6, start: 3, angle: [200, 340], speed: [0.6, 1.4], gravity: [0, 0.25], floor: 38, life: [4, 6], blob: { radius: [2.5, 1.2] } }] });
+  assert.deepEqual(compileEffects(liquid), compileEffects(structuredClone(liquid)));
+  assert.equal(sha(compileEffects(liquid).recipe), 'cc84e2aebeb0789f8deb0126b55c11e267c3cd7c5519f9a761e5c3ebf64de1c2');
 });
