@@ -74,7 +74,7 @@ const schema = {
     background: color, symbols: { type: 'object', propertyNames: id, additionalProperties: ref('rows') },
     anchor: { ...point, description: 'Default pivot for every frame, exported to the atlas as anchor (exported pixels) and pivot (anchor / source size).' },
     frames: { ...array(ref('frame'), 256), minItems: 1 },
-    animations: { type: 'object', minProperties: 1, maxProperties: 65527, description: 'ZIP32 bundle budget: animation count + frame count + 7 support files must not exceed 65,535.', propertyNames: id, additionalProperties: object({ frames: { ...array(id, 1024), minItems: 1 }, direction: { enum: ['forward', 'reverse', 'pingpong'] }, loop: bool }, ['frames']) },
+    animations: { type: 'object', minProperties: 1, maxProperties: 65526, description: 'ZIP32 bundle budget: animation count + frame count + 8 support files must not exceed 65,535.', propertyNames: id, additionalProperties: object({ frames: { ...array(id, 1024), minItems: 1 }, direction: { enum: ['forward', 'reverse', 'pingpong'] }, loop: bool }, ['frames']) },
     sheet: object({ columns: int(1, 256), padding: int(0, 16), scale: int(1, 16), trim: { type: 'boolean', description: 'Pack each frame by its visible bounds; the atlas reports trimmed rectangles with spriteSourceSize. Ignores columns.' } })
   }, ['version', 'name', 'width', 'height', 'frames']),
   if: { properties: { frames: { minItems: 2 } }, required: ['frames'] },

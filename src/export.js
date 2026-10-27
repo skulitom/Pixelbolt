@@ -3,6 +3,7 @@ import { encodePNG, encodeAPNG, crc32 } from './png.js';
 import { readFile, readdir, mkdir, writeFile, access, rm, stat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { embedRecipe, recipeKind } from './share.js';
+import { spriteFrames } from './godot.js';
 
 const json = value => JSON.stringify(value, null, 2) + '\n';
 // Compact, deterministic JSON for generated recipes: any object or array that fits within `width` columns stays on one
@@ -63,6 +64,9 @@ export async function createBundle(spec) {
   const files = new Map();
   files.set(`${name}.png`, encodePNG(atlas.data, atlas.width, atlas.height));
   files.set(`${name}.atlas.json`, Buffer.from(json(atlas.metadata)));
+  const godot = spriteFrames(atlas.metadata);
+  files.set(`${name}.tres`, Buffer.from(godot.text));
+  if (godot.approximate.length) project.warnings.push(`${name}.tres: the frame times of ${godot.approximate.length === 1 ? 'animation' : 'animations'} ${godot.approximate.slice(0, 8).join(', ')}${godot.approximate.length > 8 ? ', …' : ''} share no step of 9 ms or more, so Godot gets fractional frame durations, kept as 32-bit floats: each frame plays within a ten-millionth of its length. Frame times in multiples of 10 ms are exact.`);
   files.set(`${name}.pixel.json`, Buffer.from(json(spec)));
   files.set(`${name}.css`, Buffer.from(generateCSS(project, atlas)));
   const scaledFrames = frames.map(f => ({ ...f, data: scalePixels(f.data, width, height, sheet.scale) }));
@@ -79,7 +83,7 @@ export async function createBundle(spec) {
   if (raised.size) project.warnings.push(`${raised.size} frame${raised.size === 1 ? '' : 's'} of 10 ms or less (${[...raised].slice(0, 8).join(', ')}${raised.size > 8 ? ', …' : ''}) last 11 ms in the animated PNGs: browsers play such short frames at 100 ms. The atlas, CSS and player keep the exact durations.`);
   files.set('player.js', await readFile(new URL('./runtime.js', import.meta.url)));
   files.set('preview.html', Buffer.from(previewHTML(project)));
-  files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames and named animation sequences\n${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
+  files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames, named animation sequences and Aseprite-style frame tags\n${name}.tres: Godot 4 SpriteFrames; it finds ${name}.png in its own folder, so keep the two together\n${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nGodot 4: copy ${name}.png and ${name}.tres into one folder of your project, give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${Object.keys(project.animations)[0]}"). Set the node's Texture Filter to Nearest for crisp pixels.\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
   // A forced export over an earlier export of this recipe removes the PNGs of frames and animations it no longer has.
   return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/ } };
 }

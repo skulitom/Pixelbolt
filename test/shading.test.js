@@ -55,9 +55,9 @@ test('shade placements darken whatever lies beneath along its ramps, so one shad
   const rows = view(scene([{ asset: 'floor', at: [0, 0], frame: 'f' }, { asset: 'shadow', at: [1, 0], anchor: 'frame', frame: 's', shade: -1 }, { asset: 'shadow', at: [3, 1], anchor: 'frame', frame: 's', shade: -1 }]));
   assert.deepEqual(rows, ['aannxc', 'ccmmxc']);
   assert.throws(() => prepareScene(scene([{ asset: 'plain', at: [0, 0], frame: 'p', shade: -1 }])), /instances\[0\]\.shade: shade moves colours along ramps; declare ramps in plain's recipe/);
-  // Scene exports write one atlas per asset; ramps do not add passes.
+  // Scene exports write one atlas (and Godot SpriteFrames) per asset; ramps do not add passes.
   const bundle = await createSceneBundle(scene([{ asset: 'floor', at: [0, 0], frame: 'f' }, { asset: 'shadow', at: [1, 0], anchor: 'frame', frame: 's', shade: -1 }]));
-  assert.deepEqual([...bundle.files.keys()].filter(file => file.startsWith('assets/')).sort(), ['assets/0/atlas.json', 'assets/0/color.png', 'assets/1/atlas.json', 'assets/1/color.png', 'assets/2/atlas.json', 'assets/2/color.png']);
+  assert.deepEqual([...bundle.files.keys()].filter(file => file.startsWith('assets/')).sort(), ['assets/0/atlas.json', 'assets/0/color.png', 'assets/0/sprite_frames.tres', 'assets/1/atlas.json', 'assets/1/color.png', 'assets/1/sprite_frames.tres', 'assets/2/atlas.json', 'assets/2/color.png', 'assets/2/sprite_frames.tres']);
   assert.throws(() => prepareScene(scene([{ asset: 'shadow', at: [0, 0], frame: 's', shade: 0 }])), /shade: expected a nonzero number of steps/);
 });
 

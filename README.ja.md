@@ -113,7 +113,8 @@ Pixelbolt は公式 MCP Registry に `io.github.skulitom/pixelbolt` として登
 | ファイル | 用途 |
 | --- | --- |
 | `name.png` | RGBA PNG スプライトシート |
-| `name.atlas.json` | TexturePacker 形式の JSON アトラス：矩形、アンカー、フレームの表示時間、名前付きアニメーション |
+| `name.atlas.json` | TexturePacker 形式の JSON アトラス：矩形、アンカー、フレームの表示時間、名前付きアニメーション、Aseprite 形式のフレームタグ |
+| `name.tres` | Godot 4 の `SpriteFrames`（`AnimatedSprite2D` 用）。`name.png` と同じフォルダーに置いてください |
 | `frames/*.png` | 各フレームの透過 PNG |
 | `animations/*.png` | アニメーションごとの APNG（透過とフレームの表示時間を保持） |
 | `name.css` | CSS アニメーションのクラス |

@@ -142,7 +142,7 @@ function readProject(spec, { stills = true } = {}) {
   if (width * height * spec.frames.length > 4194304) fail('project.frames', 'total frame area exceeds 4,194,304 pixels');
   object(spec.animations ?? {}, 'project.animations');
   const animationCount = spec.animations === undefined ? 1 : Object.keys(spec.animations).length;
-  if (7 + spec.frames.length + animationCount > 65535) fail('project.animations', `bundle exceeds the ZIP32 limit of 65,535 files; at most ${65535 - 7 - spec.frames.length} animations fit alongside these frames and 7 support files`);
+  if (8 + spec.frames.length + animationCount > 65535) fail('project.animations', `bundle exceeds the ZIP32 limit of 65,535 files; at most ${65535 - 8 - spec.frames.length} animations fit alongside these frames and 8 support files`);
   return { projectName, width, height, palette, ramps, background, projectAnchor, symbols };
 }
 
@@ -929,8 +929,24 @@ export function buildAtlas(project, { trim } = {}) {
     entries[frame.name] = { frame: { x, y, w, h }, rotated: false, trimmed: false, spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h }, duration: frame.duration, ...extras(frame) };
   });
   const animations = Object.fromEntries(Object.entries(project.animations).map(([key, a]) => [key, { ...a, frames: a.frames.map(i => frames[i].name) }]));
-  const meta = { app: 'Pixelbolt', version: '1', image: `${project.name}.png`, format: 'RGBA8888', size: { w: atlasWidth, h: atlasHeight }, scale: String(s) };
+  const frameTags = Object.entries(project.animations).map(([key, a]) => frameTag(key, a.frames)).filter(Boolean);
+  const meta = { app: 'Pixelbolt', version: '1', image: `${project.name}.png`, format: 'RGBA8888', size: { w: atlasWidth, h: atlasHeight }, scale: String(s), frameTags };
   return { data, width: atlasWidth, height: atlasHeight, metadata: { frames: entries, animations, meta } };
+}
+
+// An Aseprite-style tag for an animation that plays one run of frames in recipe order: forward, backward, or forward
+// and back without repeating either end (a ping-pong of a, b, c plays a, b, c, b). `from` and `to` are indices into
+// the atlas's frames, lowest first. Any other sequence (holds, skips, frames from all over) has no from/to range, so
+// it gets no tag: the atlas's `animations` lists every animation in full.
+export function frameTag(name, sequence) {
+  const first = sequence[0], last = sequence.at(-1), runs = (list, step) => list.every((index, i) => i === 0 || index - list[i - 1] === step);
+  if (runs(sequence, 1)) return { name, from: first, to: last, direction: 'forward' };
+  if (runs(sequence, -1)) return { name, from: last, to: first, direction: 'reverse' };
+  if (sequence.length % 2 === 0) {
+    const peak = sequence.length / 2, up = sequence.slice(0, peak + 1), down = sequence.slice(peak + 1);
+    if (runs(up, 1) && down.every((index, i) => index === up[peak - 1 - i])) return { name, from: first, to: up[peak], direction: 'pingpong' };
+  }
+  return null;
 }
 
 // Inspection and comparison build in-memory contact sheets and palette-key text. Nothing is written.

@@ -381,3 +381,37 @@ test('pixel_render saveAs protects a palette read through a link that is later r
   assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(info));
   assert.deepEqual(JSON.parse(await readFile(path.join(project, 'shared', 'palette.json'), 'utf8')), spirit.palette);
 });
+
+test('pixel_render saveAs writes the Godot SpriteFrames naming its sheet, which must be inside the Godot project with it', async t => {
+  const project = await temp(t), mcp = await session(t, project), text = (await createBundle(spirit)).files.get('forest-spirit.tres').toString();
+  // Beside a saved sheet, the .tres names that sheet; everything else is the export's .tres.
+  let { isError, info } = await mcp.render({ project: spirit, saveAs: { sheet: 'game/sprites/spirit.png', godot: 'game/sprites/spirit.tres' } });
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.file), ['forest-spirit.png', 'forest-spirit.tres']);
+  assert.equal(await readFile(path.join(project, 'game', 'sprites', 'spirit.tres'), 'utf8'), text.replace('path="forest-spirit.png"', 'path="spirit.png"'));
+  assert.equal(await readFile(path.join(info.directory, 'forest-spirit.tres'), 'utf8'), text);
+  // Without a saved sheet it names the export folder's, relative to itself.
+  ({ isError, info } = await mcp.render({ project: spirit, saveAs: { godot: 'loose/spirit.tres' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.ok((await readFile(path.join(project, 'loose', 'spirit.tres'), 'utf8')).includes(`path="../output/${path.basename(info.directory)}/forest-spirit.png"`));
+  // Godot loads textures only from inside its project, so a .tres saved in one needs its sheet there too.
+  await writeFile(path.join(project, 'game', 'project.godot'), 'config_version=5\n');
+  for (const [saveAs, message] of [
+    [{ godot: 'game/sprites/other.tres' }, /is in the Godot project .*game, but its sheet would stay in the export folder, outside it/],
+    [{ sheet: 'elsewhere/spirit.png', godot: 'game/sprites/other.tres' }, /elsewhere.spirit\.png is outside it/]
+  ]) {
+    ({ isError, info } = await mcp.render({ project: spirit, saveAs }));
+    assert.equal(isError, true, JSON.stringify(saveAs)); assert.equal(info.path, 'saveAs.godot'); assert.match(info.error, message);
+  }
+  assert.equal(existsSync(path.join(project, 'game', 'sprites', 'other.tres')), false);
+  assert.equal(existsSync(path.join(project, 'elsewhere')), false);
+  // overwrite replaces a SpriteFrames .tres, never another Godot resource.
+  ({ isError, info } = await mcp.render({ project: spirit, overwrite: true, saveAs: { sheet: 'game/sprites/spirit.png', godot: 'game/sprites/spirit.tres' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.replaced), [true, true]);
+  await writeFile(path.join(project, 'game', 'theme.tres'), '[gd_resource type="Theme" format=3]\n');
+  ({ isError, info } = await mcp.render({ project: spirit, overwrite: true, saveAs: { sheet: 'game/theme.png', godot: 'game/theme.tres' } }));
+  assert.equal(isError, true); assert.match(info.error, /theme\.tres is not a Godot SpriteFrames resource, so overwrite won't replace it/);
+  assert.equal(await readFile(path.join(project, 'game', 'theme.tres'), 'utf8'), '[gd_resource type="Theme" format=3]\n');
+  assert.equal(existsSync(path.join(project, 'game', 'theme.png')), false);
+});

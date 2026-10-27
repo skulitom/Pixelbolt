@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { prepareScene, renderScene } from './scene.js';
 import { encodePNG } from './png.js';
 import { buildAtlas } from './core.js';
+import { spriteFrames } from './godot.js';
 
 export async function createSceneBundle(source) {
   const scene = prepareScene(source), view = renderScene(scene), files = new Map();
@@ -16,8 +17,10 @@ export async function createSceneBundle(source) {
     // Aligned passes share one uniform grid, even when a recipe trims its own export.
     const atlas = buildAtlas(asset.recipe, { trim: false });
     atlas.metadata.meta.image = 'color.png';
-    alignment.assets[id] = { directory, metadata: `${directory}/atlas.json`, passes: {} };
+    alignment.assets[id] = { directory, metadata: `${directory}/atlas.json`, godot: `${directory}/sprite_frames.tres`, passes: {} };
     files.set(`${directory}/atlas.json`, Buffer.from(JSON.stringify(atlas.metadata, null, 2) + '\n'));
+    // Godot 4 SpriteFrames over the colour pass beside it.
+    files.set(`${directory}/sprite_frames.tres`, Buffer.from(spriteFrames(atlas.metadata).text));
     for (const [pass, project] of Object.entries(asset)) {
       const rendered = pass === 'recipe' ? atlas : buildAtlas(project, { trim: false }), filename = `${directory}/${pass === 'recipe' ? 'color' : pass}.png`;
       files.set(filename, encodePNG(rendered.data, rendered.width, rendered.height));
