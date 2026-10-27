@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Pixel FX Designer alternatives: 7 pixel-art effect tools compared (October 2026)</title>
-<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX and Pixelbolt, with Pixelbolt measured.">
+<title>Pixel FX Designer alternatives: 8 pixel-art effect tools compared (October 2026)</title>
+<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt, with Pixelbolt measured.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 7 tools compared",
-  "description": "By the Pixelbolt maintainers: seven tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt measured; the others read from their own pages.",
+  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared",
+  "description": "By the Pixelbolt maintainers: eight tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt measured; the others read from their own pages.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-19",
+  "dateModified": "2026-10-27",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
@@ -27,7 +27,8 @@
     {"@type": "SoftwareApplication", "name": "Fluid FX", "url": "https://codemanu.itch.io/fluid-fx", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "Pixel Composer", "url": "https://pixel-composer.com/", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "PHOSPHOR VFX", "url": "https://sinopskyd.itch.io/phosphor", "applicationCategory": "MultimediaApplication"},
-    {"@type": "SoftwareApplication", "name": "BlastFX", "url": "https://mnkytech.itch.io/blastfx", "applicationCategory": "MultimediaApplication"}
+    {"@type": "SoftwareApplication", "name": "BlastFX", "url": "https://mnkytech.itch.io/blastfx", "applicationCategory": "MultimediaApplication"},
+    {"@type": "SoftwareApplication", "name": "Pixel VFX Forge", "url": "https://www.scenario.com/explorations/pixel-vfx-forge/", "applicationCategory": "MultimediaApplication"}
   ]
 }
 </script>
@@ -44,7 +45,7 @@ h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
 .meta, .muted { color: var(--muted); font-size: 0.92rem; }
 .note { background: var(--note); border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.9rem; }
 .wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
-table { border-collapse: collapse; font-size: 0.86rem; min-width: 60rem; }
+table { border-collapse: collapse; font-size: 0.86rem; min-width: 68rem; }
 table.small { min-width: 44rem; }
 caption { text-align: left; color: var(--muted); font-size: 0.9rem; padding-bottom: 0.4rem; }
 th, td { border: 1px solid var(--rule); padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
@@ -60,18 +61,21 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 </head>
 <body>
 <main>
-<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 7 tools compared</h1>
+<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared</h1>
 
-<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt: alternatives to Pixel FX Designer
-(CodeManu's particle-effect app, US$9.99 on Steam) include its maker's SpriteMancer and
-Fluid FX, the node-based Pixel Composer, the free browser app PHOSPHOR, BlastFX and Pixelbolt, and all of them except
-BlastFX run a fluid or material simulation for smoke, fire or liquids, which Pixel FX Designer does not.</strong> Pixelbolt, free and MIT-licensed like PHOSPHOR, is the only one
-of the seven whose docs describe an MCP server for AI agents; measured on one Windows PC, its 0.9.0 release compiled
+<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt, and updated on 27 October to add Pixel
+VFX Forge: alternatives to Pixel FX Designer (CodeManu's particle-effect app, US$9.99 on Steam) include its maker's
+SpriteMancer and Fluid FX, the node-based Pixel Composer, the free browser apps PHOSPHOR and Pixel VFX Forge, BlastFX
+and Pixelbolt. All of them except BlastFX and Pixel VFX Forge run a fluid or material simulation for smoke, fire or
+liquids, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as slashes, beams, shockwaves
+and lightning instead.</strong> Pixelbolt, free and MIT-licensed like PHOSPHOR, is the only one of the eight with an
+MCP server that makes the effects (Pixel VFX Forge's agent skill renders with a Node script and uses Scenario's MCP
+server for character art); measured on one Windows PC, its 0.9.0 release compiled
 each of its 10 fire, smoke, explosion, magic and water presets three times to byte-identical files in 0.12–0.49 s per
 command, and Pillow, a decoder independent of Pixelbolt's code, found only palette colours in every exported frame.
-Pixel Composer and PHOSPHOR also document a way to render effects from a script; the others are used through their
-own window. We read the other six tools' pages and docs without running them, so the only measured numbers here are
-Pixelbolt's. Method, sources and data are below.</p>
+Pixel Composer, PHOSPHOR and Pixel VFX Forge also document a way to render effects from a script; the others are used
+through their own window. We read the other seven tools' pages and docs without running them (for Pixel VFX Forge, also
+its agent skill's source), so the only measured numbers here are Pixelbolt's. Method, sources and data are below.</p>
 
 <p class="note"><strong>We make Pixelbolt.</strong> Read this as a vendor's page: our own numbers come from runs you can
 repeat, and everything about the other tools links to the page we read it on. We are not affiliated with CodeManu
@@ -79,7 +83,7 @@ repeat, and everything about the other tools links to the page we read it on. We
 ideas from Pixel Composer's node set, adapted to text recipes, and its README credits them. If we got something wrong,
 <a href="https://github.com/skulitom/Pixelbolt/issues/new">open an issue</a> and we will correct it.</p>
 
-<p class="meta">Last checked: 19 October 2026 (UK time) · Pixelbolt release 0.9.0 (<code>2c180d6</code>) and
+<p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Pixelbolt release 0.9.0 (<code>2c180d6</code>) and
 <code>main</code> at <code>d8776d4</code> · Prices are US list prices on Steam and itch.io; the table also gives the sales
 running on 19 October and when they end · Next check by 18 November 2026, or sooner when one of these tools releases.</p>
 
@@ -100,6 +104,10 @@ paid).</li>
 lock and JSON scenes an agent can write:</strong> PHOSPHOR (MIT, version 0.1).</li>
 <li><strong>You want GPU particles with post-effects such as palette mapping, pixelation, glow and outline, on Windows,
 macOS or Linux:</strong> BlastFX (US$19.99 on Steam or itch.io).</li>
+<li><strong>You want ready-made stylised combat and magic effects (sword slashes, beams, shockwaves, lightning, magic
+circles, damage numbers) to remix in the browser, preview on a character and download as MP4, GIF, a sprite sheet or a
+Godot 4 resource, with an agent skill that renders the same JSON recipes:</strong> Pixel VFX Forge (Scenario, free;
+announced on 26 October 2026). Its making-of describes it as a library of 42 hand-built effects.</li>
 <li><strong>You want an AI agent (Claude Code, Codex, Cursor, Claude Desktop) to make and revise the effect over MCP (or a
 command line), seeing each result as an image, with the same files on every run and no colour outside your
 palette:</strong> Pixelbolt (free, MIT). You or the agent describe the effect in JSON; there is no hand-drawing editor
@@ -108,13 +116,13 @@ for effects.</li>
 
 <h2>Side by side</h2>
 <p class="muted">Pixelbolt's column is measured (see <a href="#measured">below</a>) or taken from its own docs. The other
-columns come from each tool's store pages, docs and source, read on 19 October 2026 and linked under
-<a href="#sources">Sources</a>; we did not run them. "Not stated" means the pages we read don't say.</p>
+columns come from each tool's store pages, docs and source, read on 19 October 2026 (Pixel VFX Forge on 27 October)
+and linked under <a href="#sources">Sources</a>; we did not run them. "Not stated" means the pages we read don't say.</p>
 <div class="wrap" tabindex="0" role="region" aria-label="Side-by-side table, scrolls sideways">
 <table>
-<caption>Seven tools for pixel-art effects, as of 19 October 2026</caption>
+<caption>Eight tools for pixel-art effects, as of 19 October 2026 (Pixel VFX Forge: 27 October)</caption>
 <thead>
-<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th></tr>
+<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th><th scope="col">Pixel VFX Forge</th></tr>
 </thead>
 <tbody>
 <tr><th scope="row">How effects are made</th>
@@ -127,7 +135,10 @@ palette pixels frame by frame</td>
 strand and verlet simulation nodes</td>
 <td>A browser app: cellular materials (water, sand, smoke, fire, lava and more), rigid and soft bodies, cloth, ropes,
 force fields and particle emitters, on a keyframe timeline</td>
-<td>GPU particle emitters with render layers and chains of post-effects, in a desktop app</td></tr>
+<td>GPU particle emitters with render layers and chains of post-effects, in a desktop app</td>
+<td>Layers of 22 types (fireball, shockwave ring, slash, beam, lightning, magic circle, smoke puffs, particles, pixel
+text and more), each writing a heat field that is cut into hard bands of a 4–7 colour ramp; 42 library effects remixed
+with words or an inspector in a browser, or a JSON recipe rendered by its agent skill's Node script</td></tr>
 <tr><th scope="row">Fluid simulation</th>
 <td>Yes: gases with a grid solver (stable fluids, vorticity, buoyancy) and liquids as FLIP particles, one grid cell per
 pixel, up to 128×128</td>
@@ -138,7 +149,8 @@ method isn't stated</td>
 <td>Yes: smoke simulation nodes and FLIP liquid nodes (the docs give a FLIP-to-PIC ratio)</td>
 <td>Cellular materials (water, smoke, fire, steam) and liquid and gas emitter behaviours; no grid fluid solver
 described</td>
-<td>None stated</td></tr>
+<td>None stated</td>
+<td>None described; fire and smoke are noise-shaped layers</td></tr>
 <tr><th scope="row">Runs on</th>
 <td>Node.js 20 or newer on Windows, macOS or Linux (its CI tests all three; we measured on Windows)</td>
 <td>Windows; an older macOS build on itch.io</td>
@@ -146,7 +158,8 @@ described</td>
 <td>Windows</td>
 <td>Windows, macOS, Linux</td>
 <td>A desktop browser (Canvas 2D), from itch.io or a local folder; not phones</td>
-<td>Windows, macOS, Linux</td></tr>
+<td>Windows, macOS, Linux</td>
+<td>A browser (it renders in module workers); the agent skill's script needs Node.js 18 or newer</td></tr>
 <tr><th scope="row">Price (US list price; sales on 19 Oct 2026)</th>
 <td>Free</td>
 <td>US$9.99 on Steam (US$6.99 in a week-long Steam deal that ran until 19 Oct); US$19.95 on itch.io (US$14.96 in a sale until 10 Nov 2026), with a Steam key</td>
@@ -154,7 +167,9 @@ described</td>
 <td>US$9.99 on Steam (US$6.99 in the same Steam deal); US$19.95 on itch.io (US$14.96 until 10 Nov)</td>
 <td>US$14.99 on Steam; US$15 on itch.io</td>
 <td>Free (donations optional)</td>
-<td>US$19.99 on Steam or itch.io (itch.io includes a Steam key)</td></tr>
+<td>US$19.99 on Steam or itch.io (itch.io includes a Steam key)</td>
+<td>Free, with no account for the web page; the agent skill's optional character art through Scenario's MCP server is
+paid</td></tr>
 <tr><th scope="row">Source code</th>
 <td>MIT</td>
 <td>No source offered</td>
@@ -162,7 +177,9 @@ described</td>
 <td>No source offered</td>
 <td>MIT on GitHub; building it needs the GameMaker IDE, and the newest free binary on GitHub is 0.8.2 (2022)</td>
 <td>MIT (its itch.io code licence)</td>
-<td>No source offered</td></tr>
+<td>No source offered</td>
+<td>The skill download is readable JavaScript (engine, prompt interpreter, render script) with no licence file or
+notice; Scenario's MIT-licensed skills repository on GitHub doesn't include it</td></tr>
 <tr><th scope="row">Exports</th>
 <td>PNG sprite sheet with atlas JSON, numbered PNG frames, animated PNG, GIF, CSS, a Canvas player, and frame folders
 for video editors</td>
@@ -173,7 +190,11 @@ for video editors</td>
 MP4, WEBM (MP4 needs a separate FFmpeg)</td>
 <td>PNG frames (the current frame, or a sequence from its render tool), sprite sheet (with a JSON sidecar from its render tool), looping GIF, scene JSON, an HTML player, layers
 as a ZIP</td>
-<td>Sprite sheet, PNG sequence, GIF; video (uncompressed AVI per the store page; MP4, WebM and AVI through a separately installed FFmpeg per its docs)</td></tr>
+<td>Sprite sheet, PNG sequence, GIF; video (uncompressed AVI per the store page; MP4, WebM and AVI through a separately installed FFmpeg per its docs)</td>
+<td>Web page: MP4 (H.264, 16:9, 1:1 or 9:16), transparent GIF, PNG sprite sheet, and a ZIP with frames, GIFs, a
+TexturePacker-style atlas with Aseprite frame tags, a Godot 4 SpriteFrames <code>.tres</code> and the recipe. Agent
+skill: sprite sheet, atlas JSON with the impact frame and pivot, GIF, PNG frames, and a preview GIF over your own
+image</td></tr>
 <tr><th scope="row">Palette control</th>
 <td>Colours come only from the source's palette (measured: no other colour in any frame), with ordered dither</td>
 <td>Import a palette of up to 256 colours; custom dithering</td>
@@ -181,7 +202,9 @@ as a ZIP</td>
 <td>Not stated</td>
 <td>Palette and dither nodes; indexed PNG</td>
 <td>Palette lock with ordered dithering (PICO-8, Game Boy, NES or your own)</td>
-<td>Palette Map and Pixelate post-effects</td></tr>
+<td>Palette Map and Pixelate post-effects</td>
+<td>Hue-shifted ramps (27 named, or your own colours) with optional 4×4 Bayer dither; a palette lock maps every colour to
+PICO-8, Sweetie 16, Endesga 32, Game Boy, 1-bit or your own list (nearest in OKLab)</td></tr>
 <tr><th scope="row">Without the GUI</th>
 <td>An MCP server (8 tools), a command line and a JavaScript API</td>
 <td>None documented</td>
@@ -191,7 +214,9 @@ as a ZIP</td>
 persist or server mode stays open for console commands such as <code>set</code> and <code>render</code></td>
 <td>Command-line tools render (through an installed Chrome or Edge), validate and summarise JSON scenes; a SKILL.md
 for AI agents; its page mentions no MCP server</td>
-<td>None stated</td></tr>
+<td>None stated</td>
+<td>A SKILL.md and a Node script that renders a recipe, or a prompt in its fixed vocabulary; no MCP server for effects
+(the skill uses Scenario's MCP server for character art)</td></tr>
 <tr><th scope="row">Same output every run</th>
 <td>Measured: byte-identical across runs, and the same recipes in Node, Chromium, Firefox and WebKit</td>
 <td>Not stated</td>
@@ -199,7 +224,10 @@ for AI agents; its page mentions no MCP server</td>
 <td>Not stated</td>
 <td>Seed inputs on some nodes; repeatability not stated</td>
 <td>Its page says the engine is "deterministic and seed-based"</td>
-<td>A random seed per emitter (its docs); repeatability not stated</td></tr>
+<td>A random seed per emitter (its docs); repeatability not stated</td>
+<td>Its reference says the same recipe and seed give identical frames. Its engine uses <code>Math.sin</code>,
+<code>cos</code>, <code>atan2</code> and other functions that JavaScript engines may round differently, so identical
+output across browsers is not guaranteed by design; not measured</td></tr>
 <tr><th scope="row">GPU</th>
 <td>Not used</td>
 <td>Steam minimum lists a GeForce GTX 670</td>
@@ -207,7 +235,8 @@ for AI agents; its page mentions no MCP server</td>
 <td>Steam minimum lists a GeForce GTX 670</td>
 <td>An OpenGL GPU or integrated GPU</td>
 <td>None stated (Canvas 2D)</td>
-<td>OpenGL 3.3</td></tr>
+<td>OpenGL 3.3</td>
+<td>Not used (its skill says no GPU)</td></tr>
 <tr><th scope="row">Latest version</th>
 <td>0.9.0, 18 October 2026</td>
 <td>1.1.8.0, April 2024 (a 2.0 beta from 2022)</td>
@@ -215,7 +244,8 @@ for AI agents; its page mentions no MCP server</td>
 <td>1.1.0, January 2022</td>
 <td>1.22, 28 September 2026 (current build 1.22.0.5, October 2026)</td>
 <td>0.1 (its devlog is from August 2026)</td>
-<td>2.0.6, August 2026</td></tr>
+<td>2.0.6, August 2026</td>
+<td>Engine version 1; announced 26 October 2026</td></tr>
 </tbody>
 </table>
 </div>
@@ -304,7 +334,7 @@ thin obstacles. Its waterfall differs because of that fix, a depth-band fix and 
 presets compile to the same recipes as in 0.9.0.</p>
 
 <h2>Each tool, and when to choose it over Pixelbolt</h2>
-<p class="muted">From each tool's own pages, read on 19 October 2026; not run by us.</p>
+<p class="muted">From each tool's own pages, read on 19 October 2026 (Pixel VFX Forge on 27 October); not run by us.</p>
 
 <h3 id="pixel-fx-designer">Pixel FX Designer (CodeManu)</h3>
 <p>A desktop app for particle effects: emitters, motion, a timeline, physics such as attractors and gravity points,
@@ -380,11 +410,35 @@ itch.io, needs OpenGL 3.3, and its demo can't export. Its pages describe no flui
 <p><strong>Choose it over Pixelbolt</strong> when you want GPU particles with soft glows and blur that you then
 pixelate and palette-map, edited by hand, with video export.</p>
 
+<h3 id="pixel-vfx-forge">Pixel VFX Forge (Scenario)</h3>
+<p>Added on 27 October 2026, the day after Scenario announced it: a free page in the browser and a downloadable agent
+skill for stylised combat and magic effects. Its making-of describes it as a library of 42 hand-built effects in five
+groups (combat, magic, elements, feedback and ambient) that you remix with words or an inspector. The words are read by
+rules, not a language model: 34 forms (explosion, slash, beam, portal, heal, level up and more), 18 elements (fire,
+ice, poison, holy, shadow and more) and modifiers for size, speed, colour and style. An effect is a JSON recipe of
+layers, 22 types in all, each writing a heat field over its own time window. The renderer cuts the heat into hard bands
+of a hue-shifted 4–7 colour ramp, optionally with a 4×4 Bayer dither, then removes stray pixels, fills one-pixel holes,
+draws inner or outer outlines and can lock every colour to a retro palette. Loops close because periodic settings
+complete whole cycles, and a one-shot's impact frame is found automatically or set in the recipe. The page previews each
+effect on a caster or a target in a 384×216 scene, with a hit flash, knockback and screen shake timed to the impact;
+that stage art was generated through Scenario's MCP server. It encodes MP4 in the browser and exports GIF, sprite sheets
+and a game-ready ZIP that includes a Godot 4 SpriteFrames resource. The agent skill carries the same engine and a Node
+script: an agent writes a recipe, renders it locally, checks the frames and iterates, and can preview the effect over
+its own character image. Canvases run from 8 to 512 pixels a side and from 1 to 120 frames. Its recipe reference says
+unknown fields are ignored, so a misspelt setting is skipped rather than reported. The announcement calls the skill
+open-sourced, but the download carries no licence file or notice, and Scenario's MIT-licensed skills repository does
+not include it. We read its page, its making-of and the skill's source; we did not run it.</p>
+<p><strong>Choose it over Pixelbolt</strong> when you want stylised combat and magic effects that Pixelbolt has no
+ready-made shapes for (sword slashes, beams, shockwave rings, lightning, magic circles, impact stars, claw marks,
+shields, damage numbers), picked from a library and previewed on a character in the browser, with MP4 for posting or a
+Godot 4 resource to import. Its skill lets an agent render the same recipes from a Node script, without an MCP
+server.</p>
+
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
 <p>When an AI agent should make, check and change the effect over MCP, seeing each result as an image: the agent writes
 a few kilobytes of JSON (palette, obstacles, emitters and how fields map to colours), compiles it, looks at the contact
-sheet it gets back, and changes one setting at a time, with the same file every time. (PHOSPHOR also takes
-agent-written JSON scenes, through command-line tools rather than MCP.) The result is an ordinary Pixelbolt recipe, so
+sheet it gets back, and changes one setting at a time, with the same file every time. (PHOSPHOR and Pixel VFX Forge
+also take agent-written JSON, through command-line scripts rather than MCP.) The result is an ordinary Pixelbolt recipe, so
 the same agent can inspect it, patch single pixels, and export sprite sheets, atlases, GIFs or frames for a video
 editor. It is free and needs only Node.js: no account, API key or network service. Install it from the
 <a href="https://github.com/skulitom/Pixelbolt">GitHub repository</a>, or as <code>pixelbolt.mcpb</code> for Claude
@@ -395,6 +449,9 @@ Desktop from the <a href="https://github.com/skulitom/Pixelbolt/releases/latest"
 <li><strong>No hand-editing tool for new effects.</strong> A new effect is a JSON source that you or an agent write.
 The studio's Fluid lab (in its docs; not used for this page) runs a preset in your browser with a few sliders and
 downloads the result, but there is no emitter editor, timeline or node graph like the desktop apps above.</li>
+<li><strong>No ready-made spell shapes.</strong> Pixelbolt has no slash, beam, shockwave ring, lightning or
+magic-circle primitive: an agent builds them from particle emitters or draws them with lines, ellipses and stamps.
+Pixel VFX Forge has these as layer types.</li>
 <li><strong>New and bounded.</strong> Fluid effects shipped in 0.9.0 on 18 October 2026, the day before this check. A
 source is refused if it needs more than 32,768 liquid particles, 4,096 sparks or about 400 million cell updates, and
 flows are capped at 32 pixels a frame.</li>
@@ -452,11 +509,14 @@ FX is the one exception: its pages describe no such control, and we kept it beca
 from Pixel FX Designer's own maker. Pixelpart and Effekseer make particle effects, but the pages we read describe none
 of these controls. Two tools meet the rule and were left out for scope: Heos Explosions (an Aseprite 1.3 script that
 makes explosions only) and glideengine's Particles Editor (Mac and iOS App Stores; it exports PNG textures and source
-code).</li>
+code). Pixel VFX Forge, announced on 26 October 2026, meets the rule and was added on 27 October.</li>
 <li><strong>The other tools</strong> were read from their store pages, docs, devlogs and (for Pixel Composer) source,
 on 19 October 2026. We did not download or run them. That was a choice of scope: PHOSPHOR is free and runs in a
 browser, and the five paid tools have free demos (BlastFX's can't export). So nothing here compares speed or output
 quality between tools; the only measured numbers are Pixelbolt's. No page we read restricts comparisons.</li>
+<li><strong>Pixel VFX Forge</strong> was read on 27 October 2026 from its page and its illustrated making-of. We also
+downloaded its agent skill, a 49,821-byte ZIP whose SHA-256 (<code>f5284ec0…7d23cd2c</code>) matches the hash in its
+download address, and read its source and recipe reference; we did not run it.</li>
 <li><strong>Pixelbolt</strong> was measured on Windows 11 Pro (build 26200), an AMD Ryzen 9 7950X3D with about 64 GB
 of RAM, Node.js 24.19.0, Pillow 12.0.0 and Playwright's Chromium 156, Firefox 157 and WebKit 26.6. We used two builds:
 <ul>
@@ -488,7 +548,7 @@ script instead.</li>
 </ul>
 
 <h2 id="sources">Sources</h2>
-<p class="muted">All read on 19 October 2026.</p>
+<p class="muted">Read on 19 October 2026, except Pixel VFX Forge (27 October).</p>
 <ul>
 <li>Pixel FX Designer: <a href="https://codemanu.itch.io/particle-fx-designer">itch.io page</a>,
 <a href="https://store.steampowered.com/app/939360/Pixel_FX_Designer/">Steam page</a> (price, exports, minimum
@@ -525,6 +585,13 @@ docs on <a href="https://docs.pixel-composer.com/nodes/simulation/index.html">si
 <li>BlastFX: <a href="https://mnkytech.itch.io/blastfx">itch.io page</a>,
 <a href="https://mnkytech.itch.io/blastfx-documentation">documentation</a>,
 <a href="https://store.steampowered.com/app/940920/BlastFX/">Steam page</a>.</li>
+<li>Pixel VFX Forge: <a href="https://www.scenario.com/explorations/pixel-vfx-forge/">page</a>,
+<a href="https://iieqkinwjorxrzjp.public.blob.vercel-storage.com/explorations/4d09a2a612b5e2bc12c30a62d72334f11232891b0cbc9d012c16c7a34fbbb4e8/pixel-vfx-forge-making-of.pdf">illustrated
+making-of (PDF)</a>,
+<a href="https://iieqkinwjorxrzjp.public.blob.vercel-storage.com/explorations/f5284ec0200005bb234c2b9ddafa82cd3ab54b3321dda785ce8cccd17d23cd2c/scenario-pixel-vfx-skill.zip?download=1">agent
+skill (ZIP)</a> (<code>SKILL.md</code>, <code>references/recipe.md</code>, <code>scripts/lib/engine.js</code>,
+<code>scripts/render.mjs</code>), <a href="https://x.com/emmanuel_2m/status/2114763793284857865">announcement on X</a>
+(26 October 2026), <a href="https://github.com/scenario-labs/skills">Scenario's skills repository</a>.</li>
 <li>Also: <a href="https://soeren-m.itch.io/pixelpart">Pixelpart</a>,
 <a href="https://heosphorus.itch.io/heos-explosions">Heos Explosions</a>,
 <a href="https://glideengine.itch.io/particles-editor">Particles Editor</a>,
@@ -541,7 +608,7 @@ guide</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/fluid.sche
 </ul>
 
 <footer class="muted">
-<p>Last checked 19 October 2026. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·
