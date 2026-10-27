@@ -9,6 +9,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A recipe with a single frame may be up to 4096 pixels a side, within the 4,194,304 pixels every recipe's frames already shared, so a 1920 × 1080 or 2560 × 1440 backdrop or mural is one canvas at one screen pixel per art pixel. Rectangles, ellipses and dither or shade regions on such a canvas may be up to twice its side. Recipes with two or more frames, scenes and their assets, pose, effect, wave and fluid sources, and `import` keep the 256-pixel limit, and every existing recipe renders exactly as before.
 - The render check offers a still at the asked size alongside a smaller canvas at a whole `sheet.scale`, and alone when no whole scale makes the size; a recipe with several frames gets the same advice as before. MCP `pixel_inspect` regions reach across a large still. The studio opens one fitted to its window (a **Fit** zoom, offered only for large stills, that scales it down smoothly) and leaves out the native-size preview, which a large still would push off the page; 1× and up show its pixels, and sprites keep their zoom.
 
+### Ground sorting in recipe layers
+
+- A layer with `sort: "ground"` draws its operations far to near by the row each stands on, as scene placements with the same `sort` do: an operation's `ground`, or the lowest row it draws (a stamp's or grid's bottom after scale and rotation, a line's lower end). Trees, grass, rocks and figures in one sorted layer overlap correctly whatever order they are listed in; with a layer per kind, grass drawn after the trees covered the trees standing in front of it. Text needs `ground`, area operations such as `dither` and `fill` are refused in a sorted layer, and `ground` outside one is an error. Layers without `sort` draw as before.
+
 ### Studio viewing
 
 - The studio's preview zooms with the scroll wheel at the pointer, pans by dragging, and has − and + buttons, a **Fit** zoom for any canvas, 3×, 6×, 24× and 32×, and keys: + and − zoom, 0 fits and F toggles full screen. **Full screen** fills the window with the preview (and the screen, where the browser allows it); Escape leaves it.

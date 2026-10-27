@@ -355,6 +355,12 @@
           "minimum": -4096,
           "maximum": 4096
         },
+        "sort": {
+          "enum": [
+            "ground"
+          ],
+          "description": "ground: draw the operations far to near by the row each stands on (its ground, or the lowest row it draws), list order breaking ties, as a game draws actors and props. Use it for everything standing on the ground: trees, grass, rocks, figures. Area operations (dither, shade, fill, outline, tilemap...) are refused."
+        },
         "palette": {
           "type": "object",
           "maxProperties": 256,
@@ -393,6 +399,12 @@
               "minimum": -4096,
               "maximum": 4096
             },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
+            },
             "color": {
               "type": "string",
               "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
@@ -419,6 +431,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "w": {
               "type": "integer",
@@ -464,6 +482,12 @@
               "minimum": -4096,
               "maximum": 4096
             },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
+            },
             "w": {
               "type": "integer",
               "minimum": 1,
@@ -507,6 +531,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "x2": {
               "type": "integer",
@@ -632,6 +662,12 @@
               "minimum": -4096,
               "maximum": 4096
             },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
+            },
             "rows": {
               "$ref": "#/$defs/rows"
             },
@@ -688,6 +724,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "symbol": {
               "type": "string",
@@ -747,6 +789,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "text": {
               "type": "string",
@@ -821,6 +869,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "from": {
               "type": "string",
@@ -918,6 +972,12 @@
               "type": "integer",
               "minimum": -4096,
               "maximum": 4096
+            },
+            "ground": {
+              "type": "integer",
+              "minimum": -4096,
+              "maximum": 4096,
+              "description": "In a layer with sort \"ground\": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line's lower end). Text needs it."
             },
             "symbol": {
               "type": "string",

@@ -93,6 +93,9 @@ const round6 = value => Math.round(value * 1e6) / 1e6;
 // backdrop, mural or wallpaper drawn at one pixel per screen pixel) may be up to 4096 a side, within the same
 // 4,194,304 pixels that bound every recipe's frames.
 export const CANVAS_SIDE = 256, STILL_SIDE = 4096, FRAME_AREA = 4194304;
+// What may stand in a layer with sort "ground", and what works on an area instead.
+const STANDING = new Set(['pixel', 'rect', 'ellipse', 'line', 'grid', 'stamp', 'text', 'copy', 'autotile']);
+const AREA = new Set(['clear', 'fill', 'replace', 'tilemap', 'outline', 'dither', 'shade', 'rewrite']);
 
 // `stills: false` keeps a document to the animation limit even with one frame (pose sources compile to animations).
 function readProject(spec, { stills = true } = {}) {
@@ -182,7 +185,35 @@ export function renderProject(spec, options = {}) {
   const clipped = new Map();
   const clip = (path, pixels = 1) => clipped.set(path, (clipped.get(path) ?? 0) + pixels);
   const rendered = new Map(), frameNames = new Set();
-  function drawOps(data, ops, path, bounds = null) {
+  // The row an operation stands on, for a layer with sort "ground": its `ground`, or the lowest row it draws (a
+  // stamp's or grid's bottom after scale and rotation, a line's lower end, a shape's bottom edge). Text needs `ground`,
+  // since accents and alignment move it. Operations that work on an area rather than stand on the ground are refused.
+  // Malformed values count as their own y here and are reported when the operation is drawn.
+  const whole = (value, fallback) => (Number.isInteger(value) ? value : fallback);
+  const standingRow = (op, p) => {
+    if (!isObject(op) || typeof op.op !== 'string') return 0;
+    if (!STANDING.has(op.op)) {
+      if (AREA.has(op.op)) fail(`${p}.op`, `${op.op} works on an area rather than standing on the ground; draw it in a layer without sort`);
+      return 0;
+    }
+    if (op.ground !== undefined) return integer(op.ground, `${p}.ground`);
+    if (op.op === 'text') fail(`${p}.ground`, 'text in a layer with sort "ground" needs ground: the row it stands on');
+    const y = whole(op.y, 0), turned = op.rotate === 90 || op.rotate === 270, scale = whole(op.scale, 1);
+    const box = (w, h) => y + (turned ? w : h) * scale - 1;
+    if (op.op === 'pixel') return y;
+    if (op.op === 'line') return Math.max(y, whole(op.y2, y));
+    if (op.op === 'rect' || op.op === 'ellipse') return y + whole(op.h, 1) - 1;
+    if (op.op === 'grid') return Array.isArray(op.rows) && typeof op.rows[0] === 'string' ? box(op.rows[0].length, op.rows.length) : y;
+    const grid = typeof op.symbol === 'string' && own(symbols, op.symbol) ? symbols[op.symbol] : null;
+    if (op.op === 'stamp') return grid ? box(grid.width, grid.height) : y;
+    if (op.op === 'autotile') return grid ? y + grid.width / 2 - 1 : y;
+    // copy: the copied rectangle, from a symbol or from an earlier frame (the canvas).
+    const [sourceWidth, sourceHeight] = grid ? [grid.width, grid.height] : [width, height];
+    return box(whole(op.w, sourceWidth - whole(op.sx, 0)), whole(op.h, sourceHeight - whole(op.sy, 0)));
+  };
+  // Operations draw in list order; in a layer with sort "ground" they draw far to near, by the row each stands on, and
+  // operations on the same row keep list order (as a game draws actors and props). Paths keep list positions.
+  function drawOps(data, ops, path, bounds = null, sorted = false) {
     // Conservative dirty bounds, including writes later erased. Global operations still see the complete buffer.
     const touch = (x, y) => {
       if (!bounds) return;
@@ -192,20 +223,25 @@ export function renderProject(spec, options = {}) {
       if (y > bounds[3]) bounds[3] = y;
     };
     list(ops, path);
-    for (let index = 0; index < ops.length; index++) {
+    const order = ops.map((_, index) => index);
+    if (sorted) {
+      const rows = ops.map((op, index) => standingRow(op, `${path}[${index}]`));
+      order.sort((a, b) => rows[a] - rows[b] || a - b);
+    }
+    for (const index of order) {
       if (++operationCount > 20000) fail(path, 'project exceeds 20,000 drawing operations');
       const op = ops[index], p = `${path}[${index}]`;
       object(op, p);
       const transform = ['scale', 'flipX', 'flipY', 'rotate'];
       const fields = {
-        pixel: ['x', 'y', 'color'], rect: ['x', 'y', 'w', 'h', 'color', 'filled'],
-        ellipse: ['x', 'y', 'w', 'h', 'color', 'filled'], line: ['x', 'y', 'x2', 'y2', 'color'],
+        pixel: ['x', 'y', 'color', 'ground'], rect: ['x', 'y', 'w', 'h', 'color', 'filled', 'ground'],
+        ellipse: ['x', 'y', 'w', 'h', 'color', 'filled', 'ground'], line: ['x', 'y', 'x2', 'y2', 'color', 'ground'],
         clear: ['x', 'y', 'w', 'h'], fill: ['x', 'y', 'color'],
-        grid: ['x', 'y', 'rows', ...transform, 'remap'],
-        stamp: ['x', 'y', 'symbol', ...transform, 'remap'], replace: ['from', 'to'],
-        text: ['x', 'y', 'text', 'color', 'align', 'spacing', 'lineHeight', ...transform],
-        copy: ['x', 'y', 'from', 'symbol', 'sx', 'sy', 'w', 'h', ...transform, 'remap'],
-        autotile: ['x', 'y', 'symbol', 'mask', 'mode', 'remap'],
+        grid: ['x', 'y', 'rows', ...transform, 'remap', 'ground'],
+        stamp: ['x', 'y', 'symbol', ...transform, 'remap', 'ground'], replace: ['from', 'to'],
+        text: ['x', 'y', 'text', 'color', 'align', 'spacing', 'lineHeight', ...transform, 'ground'],
+        copy: ['x', 'y', 'from', 'symbol', 'sx', 'sy', 'w', 'h', ...transform, 'remap', 'ground'],
+        autotile: ['x', 'y', 'symbol', 'mask', 'mode', 'remap', 'ground'],
         tilemap: ['x', 'y', 'tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed'],
         outline: ['color', 'diagonal', 'position', 'width', 'directions'],
         dither: ['x', 'y', 'w', 'h', 'color', 'erase', 'density', 'direction', 'pattern', 'offset', 'seed', 'scale', 'over'],
@@ -214,6 +250,7 @@ export function renderProject(spec, options = {}) {
       };
       if (typeof op.op !== 'string' || !own(fields, op.op)) fail(`${p}.op`, `unknown operation ${JSON.stringify(op.op)}`);
       object(op, p, ['op', ...fields[op.op]]);
+      if (op.ground !== undefined && !sorted) fail(`${p}.ground`, 'ground orders a layer with sort "ground"; set sort on this layer, or remove ground');
       const x = integer(op.x ?? 0, `${p}.x`), y = integer(op.y ?? 0, `${p}.y`);
       const put = (px, py, c, erase = false) => {
         if (px < 0 || py < 0 || px >= width || py >= height) { clip(p); return; }
@@ -575,7 +612,8 @@ export function renderProject(spec, options = {}) {
     const pixels = (frame.layers ?? []).length ? new Uint8ClampedArray(data.length) : null;
     for (const [li, layer] of (frame.layers ?? []).entries()) {
       const lp = `${p}.layers[${li}]`;
-      object(layer, lp, ['name', 'visible', 'opacity', 'x', 'y', 'palette', 'ops']);
+      object(layer, lp, ['name', 'visible', 'opacity', 'x', 'y', 'palette', 'sort', 'ops']);
+      if (layer.sort !== undefined && layer.sort !== 'ground') fail(`${lp}.sort`, 'expected "ground": draw this layer\'s operations far to near by the row each stands on');
       if (layer.name !== undefined) name(layer.name, `${lp}.name`);
       // A layer palette recolors keys for this layer's drawing only, on top of the frame's palette, so one layer can
       // flash or cycle while other drawing that shares the key keeps its colour.
@@ -594,7 +632,7 @@ export function renderProject(spec, options = {}) {
       if (typeof opacity !== 'number' || !Number.isFinite(opacity) || opacity < 0 || opacity > 1) fail(`${lp}.opacity`, 'expected a number from 0 to 1');
       const lx = integer(layer.x ?? 0, `${lp}.x`), ly = integer(layer.y ?? 0, `${lp}.y`);
       const bounds = [width, height, -1, -1];
-      drawOps(pixels, layer.ops ?? [], `${lp}.ops`, bounds);
+      drawOps(pixels, layer.ops ?? [], `${lp}.ops`, bounds, layer.sort === 'ground');
       activePalette = framePalette;
       if (visible && opacity > 0 && bounds[2] >= 0) {
         const area = (bounds[2] - bounds[0] + 1) * (bounds[3] - bounds[1] + 1);

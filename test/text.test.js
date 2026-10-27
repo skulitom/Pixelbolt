@@ -101,7 +101,7 @@ test('the schema describes the text operation the renderer accepts', async () =>
   // Only the recipe schema and the schemas that embed a recipe (scenes, normal sources) carry drawing operations.
   for (const file of ['schema.json', 'scene.schema.json', 'normals.schema.json']) {
     const text = JSON.parse(await readFile(path.join(root, file), 'utf8')).$defs.op.oneOf.find(op => op.properties.op.const === 'text');
-    assert.deepEqual([Object.keys(text.properties).sort(), text.required, text.additionalProperties], [['align', 'color', 'flipX', 'flipY', 'lineHeight', 'op', 'rotate', 'scale', 'spacing', 'text', 'x', 'y'], ['op', 'text', 'color'], false], file);
+    assert.deepEqual([Object.keys(text.properties).sort(), text.required, text.additionalProperties], [['align', 'color', 'flipX', 'flipY', 'ground', 'lineHeight', 'op', 'rotate', 'scale', 'spacing', 'text', 'x', 'y'], ['op', 'text', 'color'], false], file);
     assert.deepEqual([text.properties.text.maxLength, text.properties.align.enum, text.properties.spacing.maximum, text.properties.lineHeight.maximum], [512, ['left', 'center', 'right'], 16, 64], file);
   }
 });

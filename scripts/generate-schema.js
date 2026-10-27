@@ -16,6 +16,8 @@ const wh = { w: int(1, 8192, 'At most 512, or twice the canvas width on a still 
 const region = { w: int(1, 4096, 'Default: to the canvas edge. The region stays inside the canvas.'), h: int(1, 4096, 'Default: to the canvas edge. The region stays inside the canvas.') };
 // One frame may be a still larger than 256 pixels a side; a recipe with several frames may not.
 const side = int(1, 4096, '1–256 pixels; a still (a recipe with exactly one frame) may be up to 4096, within 4,194,304 pixels in all.');
+// The row an operation stands on, in a layer with sort "ground".
+const ground = int(-4096, 4096, 'In a layer with sort "ground": the row this stands on, which orders the drawing far to near. Default: the lowest row it draws (a line\'s lower end). Text needs it.');
 const point = { ...array(int(-4096, 4096), 2), minItems: 2, description: '[x, y] in unscaled canvas pixels; the top-left corner of that pixel.' };
 const transform = { scale: int(1, 16), flipX: bool, flipY: bool, rotate: { enum: [0, 90, 180, 270] } };
 const remap = { type: 'object', propertyNames: { minLength: 1, maxLength: 1 }, additionalProperties: color, description: 'Recolor grid characters for this operation only: character → palette name or colour.' };
@@ -81,22 +83,23 @@ const schema = {
       ops: array(ref('op')), layers: array(ref('layer'), 64), pixels: { ...array(ref('pixel'), 65536), description: 'Final canvas-coordinate RGBA replacements after ops and layers. Coordinates must be inside this canvas. Later entries win; transparent erases.' } }, ['name']),
     pixel: object({ x: int(0, 255), y: int(0, 255), color }, ['x', 'y', 'color']),
     layer: object({ name: id, visible: bool, opacity: { type: 'number', minimum: 0, maximum: 1 }, ...xy,
+      sort: { enum: ['ground'], description: 'ground: draw the operations far to near by the row each stands on (its ground, or the lowest row it draws), list order breaking ties, as a game draws actors and props. Use it for everything standing on the ground: trees, grass, rocks, figures. Area operations (dither, shade, fill, outline, tilemap...) are refused.' },
       palette: { type: 'object', maxProperties: 256, additionalProperties: color, description: 'Recolor project palette keys for this layer\'s drawing only, on top of the frame palette: a flash or cycle on one layer leaves other drawing that shares the key alone. Keys must exist in the project palette; values are colours or project palette names.' },
       ops: array(ref('op')) }),
     op: { oneOf: [
-      operation('pixel', { ...xy, color }, ['color']),
-      operation('rect', { ...xy, ...wh, color, filled: bool }, ['w', 'h', 'color']),
-      operation('ellipse', { ...xy, ...wh, color, filled: bool }, ['w', 'h', 'color']),
-      operation('line', { ...xy, x2: int(-4096, 4096), y2: int(-4096, 4096), color }, ['x2', 'y2', 'color']),
+      operation('pixel', { ...xy, ground, color }, ['color']),
+      operation('rect', { ...xy, ground, ...wh, color, filled: bool }, ['w', 'h', 'color']),
+      operation('ellipse', { ...xy, ground, ...wh, color, filled: bool }, ['w', 'h', 'color']),
+      operation('line', { ...xy, ground, x2: int(-4096, 4096), y2: int(-4096, 4096), color }, ['x2', 'y2', 'color']),
       operation('clear', { ...xy, ...wh }, ['w', 'h']),
       operation('fill', { ...xy, color }, ['color']),
       operation('replace', { from: color, to: color }, ['from', 'to']),
-      operation('grid', { ...xy, rows: ref('rows'), ...transform, remap }, ['rows']),
-      operation('stamp', { ...xy, symbol: id, ...transform, remap }, ['symbol']),
-      { ...operation('text', { ...xy, text: { type: 'string', minLength: 1, maxLength: 512, description: 'Printable ASCII, western European accented letters and common symbols; \\n starts a new line (at most 64).' }, color, align: { enum: ['left', 'center', 'right'], description: 'What x is: the left edge of the text (default), its centre or its right edge. Lines align the same way.' }, spacing: int(0, 16, 'Pixels between glyphs; default 1.'), lineHeight: int(1, 64, 'Pixels from the top of one line to the top of the next; default 10.'), ...transform }, ['text', 'color']),
+      operation('grid', { ...xy, ground, rows: ref('rows'), ...transform, remap }, ['rows']),
+      operation('stamp', { ...xy, ground, symbol: id, ...transform, remap }, ['symbol']),
+      { ...operation('text', { ...xy, ground, text: { type: 'string', minLength: 1, maxLength: 512, description: 'Printable ASCII, western European accented letters and common symbols; \\n starts a new line (at most 64).' }, color, align: { enum: ['left', 'center', 'right'], description: 'What x is: the left edge of the text (default), its centre or its right edge. Lines align the same way.' }, spacing: int(0, 16, 'Pixels between glyphs; default 1.'), lineHeight: int(1, 64, 'Pixels from the top of one line to the top of the next; default 10.'), ...transform }, ['text', 'color']),
         description: 'Draw text in the built-in pixel font. y is the top of the capitals; a line is 8 rows: capitals 7 tall, lowercase 5, descenders 1 below, and the accent of a capital reaches 2 rows above y. Glyphs are 1 to 5 pixels wide (© ® — Œ œ are 7), digits always 5, a space 3. One line of n average characters is about 6n pixels wide.' },
-      { ...operation('copy', { ...xy, from: id, symbol: id, sx: int(0, 255), sy: int(0, 255), w: int(1, 256), h: int(1, 256), ...transform, remap: { type: 'object', maxProperties: 256, propertyNames: { minLength: 1, maxLength: 64 }, additionalProperties: color, description: 'Symbol copies: recolor grid characters (one character each) → palette name or colour. Frame copies: swap exact colours, named by project palette key or hex (#RGB to #RRGGBBAA), for a palette name or colour.' } }), oneOf: [{ required: ['from'] }, { required: ['symbol'] }], description: 'Copy a rectangle of a symbol (palette characters) or an earlier frame (exact RGBA).' },
-      { ...operation('autotile', { ...xy, symbol: id, mask: int(0, 255, 'Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8.'), mode: { enum: ['blob', 'cardinal'], description: 'blob (default) or cardinal.' }, remap }, ['symbol', 'mask']),
+      { ...operation('copy', { ...xy, ground, from: id, symbol: id, sx: int(0, 255), sy: int(0, 255), w: int(1, 256), h: int(1, 256), ...transform, remap: { type: 'object', maxProperties: 256, propertyNames: { minLength: 1, maxLength: 64 }, additionalProperties: color, description: 'Symbol copies: recolor grid characters (one character each) → palette name or colour. Frame copies: swap exact colours, named by project palette key or hex (#RGB to #RRGGBBAA), for a palette name or colour.' } }), oneOf: [{ required: ['from'] }, { required: ['symbol'] }], description: 'Copy a rectangle of a symbol (palette characters) or an earlier frame (exact RGBA).' },
+      { ...operation('autotile', { ...xy, ground, symbol: id, mask: int(0, 255, 'Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8.'), mode: { enum: ['blob', 'cardinal'], description: 'blob (default) or cardinal.' }, remap }, ['symbol', 'mask']),
         description: 'Draw one autotile tile from a template symbol two tiles wide and three tall: the four quarters the mask selects (see the autotile template format). The autotile compiler emits one per frame, so editing the template redraws every tile.' },
       { ...operation('outline', { color, diagonal: bool, position: { enum: ['outside', 'inside', 'middle'], description: 'outside (default) surrounds the visible pixels; inside recolors their edge pixels; middle splits the width, the odd pixel outside.' }, width: int(1, 8, 'Rings of pixels; default 1.'),
         directions: { ...array({ type: 'string', pattern: '^[x.]{3}$' }, 3), minItems: 3, description: '3×3 grid centred on a visible pixel, with a dot in the centre: x marks the sides that get the line, e.g. ["...", "...", "..x"] for a drop shadow or [".x.", "...", "..."] for a top rim. Replaces diagonal.' } }, ['color']), description: 'Outline every visible pixel in this buffer (frame or layer): outside rings, inside edge rings or both, in chosen directions.' },
