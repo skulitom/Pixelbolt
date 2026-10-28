@@ -22,7 +22,7 @@ import { prepareScene, renderScene, sceneImage } from './scene.js';
 import { createSceneBundle } from './scene-export.js';
 import { importPNG } from './import.js';
 import { applyOverlay } from './overlays.js';
-import { resolveReferences } from './resolve.js';
+import { resolveReferences, assertInside } from './resolve.js';
 
 const versions = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const textContent = value => ({ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) });
@@ -428,8 +428,8 @@ export function createToolRunner({ directory, root, version }) {
         let bytes;
         if (args.data !== undefined) bytes = Buffer.from(args.data, 'base64');
         else {
-          const file = path.resolve(root, args.path), relative = path.relative(path.resolve(root), file);
-          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) throw new PixelError('path', `must stay inside ${path.resolve(root)}`);
+          const file = path.resolve(root, args.path);
+          await assertInside(file, root, 'path');
           bytes = await readFile(file);
         }
         const imported = importPNG(bytes, { ...(args.name !== undefined && { name: args.name }), ...(args.atlas !== undefined && { atlas: args.atlas }) });
@@ -444,10 +444,13 @@ export function createToolRunner({ directory, root, version }) {
 // result that names the limit; the server keeps serving. The memory limit bounds JavaScript objects (a runaway particle
 // or tile expansion), not pixel buffers.
 export const TOOL_TIME_LIMIT = 50_000, TOOL_MEMORY_LIMIT = 2048;
+// Requests that may wait behind a running call before the server stops reading (see startMCP).
+const MAX_WAITING = 256;
 const stopped = (name, why) => ({ isError: true, content: [textContent({ error: `${name} ${why} and was stopped. Make the work smaller (canvas or video size, frames, scale, particles, simulation steps) or split it across calls.` })] });
 
-// One worker thread runs the tool calls, one at a time. Stopping a call ends its worker, and the next call starts a
-// fresh one, so a stopped call leaves nothing behind but any files it had already written.
+// One worker thread runs the tool calls, one at a time. Stopping a call (past a limit, or cancelled through `signal`)
+// ends its worker, and the next call starts a fresh one, so a stopped call leaves nothing behind but any files it had
+// already written.
 function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
   let worker = null;
   const spawn = () => {
@@ -463,17 +466,22 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
     });
     return { thread, ready };
   };
-  async function run(name, args) {
+  async function run(name, args, signal) {
     const current = worker ??= spawn(), { thread } = current, failure = await current.ready;
     if (failure) { if (worker === current) worker = null; return { isError: true, content: [textContent({ error: failure.message })] }; }
+    const cancelled = { isError: true, content: [textContent({ error: `${name} was cancelled` })] };
+    // Cancelled while the worker started: it never saw the call, so it stays for the next one.
+    if (signal?.aborted) return cancelled;
     return new Promise(resolve => {
       let timer;
-      const finish = value => { clearTimeout(timer); thread.off('message', finish).off('error', failed).off('exit', ended); resolve(value); };
+      const finish = value => { clearTimeout(timer); signal?.removeEventListener('abort', cancel); thread.off('message', finish).off('error', failed).off('exit', ended); resolve(value); };
       const stop = value => { if (worker === current) worker = null; thread.terminate(); finish(value); };
       const failed = error => stop(error.code === 'ERR_WORKER_OUT_OF_MEMORY' ? stopped(name, `ran out of memory (${memoryLimit} MB)`) : { isError: true, content: [textContent({ error: error.message })] });
       const ended = () => stop(stopped(name, 'ended unexpectedly'));
+      const cancel = () => stop(cancelled);
       timer = setTimeout(() => stop(stopped(name, `took longer than ${timeLimit / 1000} s`)), timeLimit);
       thread.on('message', finish).on('error', failed).on('exit', ended);
+      signal?.addEventListener('abort', cancel, { once: true });
       // A value the worker can't be sent is this call's error; the worker never saw it and keeps serving.
       try { thread.postMessage({ name, args }); } catch (cause) { finish({ isError: true, content: [textContent({ error: `${name} could not be started: ${cause.message}` })] }); }
     });
@@ -485,48 +493,47 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   // The recipe's full JSON Schema is about 30 KB; repeated in four tool listings it cost every client about 30,000
   // tokens before the first call. The server checks recipes itself and names the path of any mistake, so the tools
-  // describe the recipe briefly and pixel_help's schema topic carries the full schema.
+  // describe the recipe briefly and pixel_help's schema topic carries the full schema. Option descriptions stay short
+  // for the same reason: pixel_help's guide topic explains every option, and the listing has a byte cap (see the test).
   const source = {
-    project: { type: 'object', description: 'A version-1 Pixelbolt recipe: {"version": 1, "name", "width", "height", "palette", "symbols"?, "frames": [{"name", "duration"?, "from"?, "ops"?, "layers"?}], "animations"?}. pixel_help explains it; its topic schema is the full JSON Schema. Mistakes come back with their exact path.' },
-    revision: { type: 'string', pattern: '^[a-f0-9]{12}$', description: 'Revision id from an earlier Pixelbolt response. Send it instead of project to reuse that recipe, including after restarting with the same MCP --out directory.' }
+    project: { type: 'object', description: 'A version-1 Pixelbolt recipe: {"version": 1, "name", "width", "height", "palette", "symbols"?, "frames": [{"name", "duration"?, "from"?, "ops"?, "layers"?}], "animations"?}; see pixel_help.' },
+    revision: { type: 'string', pattern: '^[a-f0-9]{12}$', description: 'Revision id from an earlier response, sent instead of project.' }
   };
   const projectInput = { type: 'object', properties: source, additionalProperties: false };
-  const sequenceOptions = animated => ({ type: 'object', required: ['fps'], additionalProperties: false, description: `Also write a numbered PNG sequence for a video editor into sequence/: one PNG per video frame with alpha, plus sequence.json and a README with the ffmpeg command for a .mov. The result reports timing changes and whether a loop closes on the frame grid.`, properties: {
-    fps: { type: ['number', 'string'], description: 'Frame rate: 24, 25, 30, 60, or "23.976", "29.97", "59.94" (exact n000/1001), or a fraction such as "30000/1001".' },
-    ...(animated && { animation: { type: 'string', description: 'Default: the previewed animation, or the first.' }, step: { type: 'integer', minimum: 1, maximum: 60, description: 'Hold each sampled frame for this many video frames; 2 animates on twos.' } }),
-    size: { type: 'string', description: 'Canvas: 720p, 1080p, 1440p, 4k, vertical, square or WIDTHxHEIGHT. Default: the sprite at scale.' },
-    scale: { type: 'integer', minimum: 1, maximum: 256, description: 'Whole-number enlargement. Default: the largest that fits the canvas, or 1 without a size.' },
-    fit: { enum: ['contain', 'cover'], description: 'contain (default): the whole sprite fits the canvas. cover: the smallest scale that covers the canvas; the overhang is cropped.' },
+  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order; every animation is exported either way.' }, listFiles: { type: 'boolean', description: 'List every exported file, not only the key ones.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default 1, the frames\' own size; enlarge only for posting.' }, background: { type: 'string', description: 'Palette name or opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write each animation as a GIF in gifs/ ({} for defaults): exact colours, at most 256 per frame.' }, sequence: { type: 'object', required: ['fps'], additionalProperties: false, description: 'Also write numbered PNG frames with alpha for a video editor into sequence/, with the ffmpeg command for a .mov.', properties: {
+    fps: { type: ['number', 'string'], description: '24, 25, 30, 60, "23.976", "29.97", "59.94" or a fraction such as "30000/1001".' },
+    animation: { type: 'string', description: 'Default: the previewed animation, or the first.' }, step: { type: 'integer', minimum: 1, maximum: 60, description: 'Video frames per sampled frame; 2 animates on twos.' },
+    size: { type: 'string', description: '720p, 1080p, 1440p, 4k, vertical, square or WIDTHxHEIGHT. Default: the sprite at scale.' },
+    scale: { type: 'integer', minimum: 1, maximum: 256 }, fit: { enum: ['contain', 'cover'] },
     align: { enum: ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'] },
-    offset: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2, description: '[x, y] canvas pixels added to the aligned position.' },
-    background: { type: 'string', description: 'Palette name or opaque hex colour. Default: transparent.' },
-    loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Length of the clip instead of loops.' }
-  } });
-  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order. Default: preview every frame in project order. All animations are always exported.' }, listFiles: { type: 'boolean', description: 'List every exported file. Default: key files plus frame/animation counts.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default: 1, the frames\' own size. Enlarge (4 or 8) only for posting where a small sprite would look tiny.' }, background: { type: 'string', description: 'Palette name or opaque hex colour to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write every animation as a GIF in gifs/ for sharing ({} for defaults). Exact colours, at most 256 per frame, never quantized; notes report alpha and timing changes.' }, sequence: sequenceOptions(true), share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1, description: 'Per animation.' }, colors: { type: 'integer', minimum: 1, description: 'At most.' }, transparent: { type: 'boolean', description: 'Background.' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: pixel size of each frame, frames, colours, background, loop, GIF scale. The reply\'s check lists every file that misses it and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: keys sheet, atlas, godot (Godot 4 SpriteFrames .tres), recipe, gif or apng (one animation), or a listed PNG, GIF or JSON file such as gifs/walk.gif; values such as "assets/hero.png", never hidden names. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing images, recipes, atlases, sequences and SpriteFrames. Default: refuse.' } } };
-  const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, 29.97, 30, 60 or a fraction): frameGrid lists frame durations that are not whole video frames, positions a sequence would lengthen, shorten or never show, and whether each loop closes on the grid.' } } };
+    offset: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2, description: '[x, y] added to the aligned position.' },
+    background: { type: 'string', description: 'Palette name or opaque hex. Default: transparent.' },
+    loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Clip length instead of loops.' }
+  } }, share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1 }, colors: { type: 'integer', minimum: 1 }, transparent: { type: 'boolean' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: frame size, frames per animation, at most colors, a transparent background, loop, GIF scale. The reply\'s check lists each miss and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: {"sheet"|"atlas"|"godot"|"recipe"|"gif"|"apng" or a listed file such as "gifs/walk.gif": "assets/hero.png"}. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
+  const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, "29.97", 30, 60 or a fraction): frameGrid lists durations off the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
-  const guides = { type: 'object', description: 'Perspective guides over the enlarged image: {horizon: row, vanish: [[x, y]] (1–3 points, drawn as rays), iso: {tile: [32, 16], at: [x, y]}}.' };
+  const guides = { type: 'object', description: 'Perspective guides: {horizon: row, vanish: [[x, y], …up to 3], iso: {tile: [32, 16], at: [x, y]}}.' };
   const inspectInput = { ...projectInput, properties: {
     guides,
     ...source,
-    source: { type: 'object', description: 'A pixelforge-poses source, instead of project/revision; compiles it with contact and joint metadata for motion review.' },
-    metadata: { type: 'object', description: 'Pose metadata returned by pixel_compile with metadata:true. Needed with a compiled project/revision for contacts and joint angles; a source supplies its own.' },
-    speed: { type: 'number', minimum: -4096, maximum: 4096, description: 'Motion view: horizontal speed in pixels per second.' },
-    ground: { type: 'integer', minimum: 0, maximum: 255, description: 'Motion view: ground pixel row; overrides metadata.rig.ground.' },
-    layers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 64, description: 'Isolate named layers, preserving inheritance/transforms/visibility. Omits frame ops, background and final canvas corrections, which do not belong to a named layer.' },
-    reference: { type: 'string', description: 'Saved revision to compare against at the same origin. Adds a before/after image and changed-pixel report.' },
-    frames: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1024, description: 'Frame names to show, in this order. * (any characters) and ? (one character) in a name select every matching frame in project order, such as "flash-*". Default: every frame.' },
+    source: { type: 'object', description: 'A pixelforge-poses source instead of project/revision, for motion review with its contacts.' },
+    metadata: { type: 'object', description: 'Pose metadata from pixel_compile (metadata: true), for motion review of a compiled revision.' },
+    speed: { type: 'number', minimum: -4096, maximum: 4096, description: 'Motion view: pixels per second.' },
+    ground: { type: 'integer', minimum: 0, maximum: 255, description: 'Motion view: ground row.' },
+    layers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 64, description: 'Show only these named layers.' },
+    reference: { type: 'string', description: 'Revision to compare against: adds a before/after image and the changed pixels.' },
+    frames: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1024, description: 'Frame names to show, in order; * and ? match, as in "flash-*". Default: every frame.' },
     animation: { type: 'string', description: 'Show one animation in playback order instead of frames.' },
-    region: { type: 'object', properties: { x: coordinate(0, 4095), y: coordinate(0, 4095), w: coordinate(1, 4096), h: coordinate(1, 4096) }, required: ['x', 'y', 'w', 'h'], additionalProperties: false, description: 'Crop every frame to this canvas rectangle. Smaller regions are shown larger.' },
-    grid: { type: 'boolean', description: 'Also return each frame as palette-key text rows with x/y rulers. At most 16,384 pixels in total.' },
-    scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024px.' },
-    background: { type: 'string', description: 'Cell background: checker (default), transparent, a palette name or a hex color.' },
-    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'motion'], description: 'Onion uses pink previous/cyan next poses in playback order. Motion requires animation and reports slide, signed ground error, joint seam and pose spread, with native and enlarged trajectory/timing strips. Pass source or compile metadata to measure contacts. Tile repeats each frame 3x3.' },
-    native: { type: 'boolean', description: 'Also return a native-size contact sheet beside the enlarged view.' },
-    diagnostics: { type: 'boolean', description: 'Advisory duplicate, empty, isolated-pixel, palette and loop-boundary evidence, original animation timing, and per-frame counts of pixels a cleanup change would alter (corners, strays).' },
-    maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Bound the preview with evenly spaced samples; returns omitted count and original positions. Does not alter exported animation. Evenly spaced samples can alias with a repeating pattern; use step and offset to choose positions.' },
-    step: { type: 'integer', minimum: 1, maximum: 1024, description: 'Keep every step-th cell of the selection (frames or animation positions), starting at offset: step 2 shows only the A frames of an A/B strobe. Applied before maxCells.' },
-    offset: { type: 'integer', minimum: 0, maximum: 2047, description: 'First position the step keeps, counting from 0. Default 0; offset 1 with step 2 shows the B frames.' }
+    region: { type: 'object', properties: { x: coordinate(0, 4095), y: coordinate(0, 4095), w: coordinate(1, 4096), h: coordinate(1, 4096) }, required: ['x', 'y', 'w', 'h'], additionalProperties: false, description: 'Crop every frame to this canvas rectangle.' },
+    grid: { type: 'boolean', description: 'Also return palette-key text grids with x/y rulers (at most 16,384 pixels).' },
+    scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024 px.' },
+    background: { type: 'string', description: 'checker (default), transparent, a palette name or a hex color.' },
+    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'motion'], description: 'onion and motion need animation; motion reports foot slide, ground error and loop joins (source or metadata adds contacts); tile repeats each frame 3x3.' },
+    native: { type: 'boolean', description: 'Also return a 1x contact sheet.' },
+    diagnostics: { type: 'boolean', description: 'Advisory evidence: duplicate and empty frames, stray pixels, palette, loop joins, timing, cleanup counts.' },
+    maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Show at most this many evenly spaced cells; step and offset pick positions instead.' },
+    step: { type: 'integer', minimum: 1, maximum: 1024, description: 'Keep every step-th cell from offset; step 2 shows the A frames of an A/B strobe.' },
+    offset: { type: 'integer', minimum: 0, maximum: 2047 }
   } };
   const patchInput = { ...projectInput, properties: {
     ...source,
@@ -534,36 +541,31 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       set: { type: 'string', description: 'Path to replace, or an object field to add.' },
       insert: { type: 'string', description: 'List position to insert before; [-] appends.' },
       remove: { type: 'string', description: 'Object field or list item to delete.' },
-      paint: { type: 'string', description: 'Frame path, such as frames[blink]. Replaces pixels in final canvas coordinates, after all layers, preserving source operations. Use transparent to erase.' },
-      grid: { type: 'string', description: 'Frame path. Value: {x,y,rows,erase?,mask?}. Dots/spaces preserve; explicit erase character clears; mask x selects and dot preserves.' },
-      move: { type: 'string', description: 'Frame path. Value: {x,y,w,h,dx,dy,mask?}. Moves exact pixels including corrections; erases selected source. Destination must fit.' },
-      recolor: { type: 'string', description: 'Frame path. Value: {x,y,w,h,from,to,mask?}. Replaces only matching selected colors.' },
-      cleanup: { type: 'string', description: 'Frame path. Value: {corners?, strays?, x?, y?, w?, h?, mask?, colors?}. Proposes fixes as canvas corrections: corners removes doubled L-shaped steps in one-pixel lines; strays gives a pixel the colour all eight neighbours share (noise, pinholes, isolated specks). Check the report and keep deliberate corners, eyes and sparks. Inspection diagnostics count both per frame.' },
-      scope: { enum: ['frame', 'inherited'], description: 'Canvas edits: inherited is default. frame preserves other poses by recording compensating canvas corrections, reported in edits.protected.' },
-      value: { description: 'JSON value for set or insert; for paint, a list of {x, y, color} pixels inside the canvas (palette names or hex colors, exact RGBA replacement).' }
+      paint: { type: 'string', description: 'Frame path such as frames[blink]; value: [{x, y, color}] canvas pixels after all layers (transparent erases).' },
+      grid: { type: 'string', description: 'Frame path; value: {x, y, rows, erase?, mask?}, dots keep pixels.' },
+      move: { type: 'string', description: 'Frame path; value: {x, y, w, h, dx, dy, mask?}.' },
+      recolor: { type: 'string', description: 'Frame path; value: {x, y, w, h, from, to, mask?}.' },
+      cleanup: { type: 'string', description: 'Frame path; value: {corners?, strays?, x?, y?, w?, h?, mask?, colors?}. Proposes fixes for doubled corners and stray pixels; check the report.' },
+      scope: { enum: ['frame', 'inherited'], description: 'Canvas edits: inherited (default), or frame to leave frames that inherit it unchanged.' },
+      value: {}
     }, additionalProperties: false } },
-    overlay: { type: 'object', description: 'Apply a saved pixelforge-overlay instead of changes. Canvas-only overlays reapply when the frames they touch are unchanged (reported as rebased).' }
+    overlay: { type: 'object', description: 'A saved pixelforge-overlay to apply instead of changes.' }
   } };
   const tools = [
-    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: guide (the full authoring reference), workflow (art workflow: poses, scenes, particles, fluids, lighting), schema (the recipe JSON Schema), example (a complete recipe), or poses, scenes, autotile, fx, fluid, wave or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: Object.keys(HELP_TOPICS) } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Validate a pixel project and return its revision id, dimensions, frame timing, animations, and clipping locations. Pass fps to check the timing against a video frame grid. Saves an immutable recipe revision; no asset export.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks. See a project without exporting assets. Returns one PNG contact sheet of every frame (or the chosen frames, or one animation in playback order), read left to right and top to bottom, with each cell\'s frame name and duration. With grid: true it also returns palette-key text grids with x/y rulers for exact pixel checks. view: tile repeats frames 3x3 for seam review. view: motion accepts a pose source or explicit compile metadata with animation, optional speed and ground; reports foot slide, ground error, pose spread and loop joins with trajectory strips. Use region to zoom in. Saves an immutable recipe revision. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Change a recipe with targeted edits instead of resending it. Pass revision or project, plus changes applied in order: {"set": path, "value": v}, {"insert": path, "value": v}, {"remove": path}, or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}. Paint replaces exact RGBA in canvas coordinates after all layers; transparent erases. {"cleanup": "frames[run-2]", "value": {"corners": true}} proposes fixes for doubled corners and stray pixels. Other paths look like frames[blink].layers[body].ops[2].x2, palette.k or animations.idle.frames[-]. Or pass overlay to apply a saved correction overlay. The patch is atomic and the result must validate. Returns the new revision, edit details, every frame whose pixels changed (exact pixels for small changes), timing and animation changes, and a before/after PNG with one row per frame. Saves immutable base and result revisions; render the revision to export assets.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Render a project into PNG sprite sheet, atlas JSON, Godot 4 SpriteFrames, individual PNGs, APNG animations, CSS, and Canvas player. Writes a new unique folder inside the configured export directory and saves an immutable recipe revision. Returns the folder, key files (relative), frame/animation counts, actual playback, a check of what was delivered and a bounded contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files at the names and folders the user asked for. Large previews report sample positions and omissions; all frames still export. Optionally select an animation.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
-    { name: 'pixel_compile', description: 'Build a character animation from parts, a terrain tileset, particle effects (sparks, embers, dust) and spell shapes (slashes, shockwave rings, beams, lightning, magic circles, impact stars, fireballs, cel water streams and drops), simulated smoke, fire, explosions, steam, magic swirls, water (splashes, waterfalls, drips, bubbling potions) and thick liquids (honey, slime, mud), coherent interference and portal loops, or a lighting normal map. Compile a pixelforge-poses source (grid, bone and mass parts; relative joints, two-bone reach, authored views, tweens, relit mirrors, contacts, and idle/walk/run/jump/attack/hurt motion templates), a pixelforge-autotile template (47-tile blob or 16-tile cardinal sets), a pixelforge-fx source (seeded particle emitters and shape layers baked into frames), a pixelforge-fluid source (a deterministic fluid simulation mapped onto palette ramps; loops seamlessly), a pixelforge-wave source (coherent waves baked into palette grids) or a pixelforge-normals source (a lighting normal pass derived from a colour recipe, aligned for scene lighting and editable like any recipe) into an ordinary recipe. Saves the recipe as a revision and returns a contact sheet; pass metadata: true for pose joints, contacts, markers and motion timing, the autotile mask table, particle counts, fluid peaks and per-frame figures (pixels, box, middle, amount, pieces, speed), wave duration and pixel counts, or the normal directions.', inputSchema: { type: 'object', properties: { source: { type: 'object', description: 'A pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid, pixelforge-wave or pixelforge-normals document (see pixel_help topics). A normals source\'s recipe may be inline, a file under the server root or {"revision": id}.' }, metadata: { type: 'boolean' } }, required: ['source'], additionalProperties: false }, annotations: { title: 'Compile poses, tilesets, effects or fluids', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Render a pixelforge-scene manifest (placements, tilemaps with autotile legends and neighbour rules, named cues, sequences, trajectories, attachments, ground sorting, shade placements, palette themes and optional multiplied or ramp lighting, whose lights can follow placements, flicker and flash on cues) at a time in milliseconds and return the image plus placements, the lights at that time and warnings. view: depth tints placements far (cool) to near (warm), marks each sorted one\'s ground line and lists who covers whom. Assets may be inline recipes, files under the server root, or {"revision": id}. Pass export: true to write a replayable scene bundle to a new folder, and sequence: { fps, size } to write the scene as numbered PNG frames for a video editor.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, sequence: sequenceOptions(false) }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
+    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: guide (the full authoring reference and every tool option), workflow (art workflow: poses, scenes, particles, fluids, lighting), schema (the recipe JSON Schema), example (a complete recipe), or poses, scenes, autotile, fx, fluid, wave or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: Object.keys(HELP_TOPICS) } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Returns its revision id, size, frame timing, animations and clipping, without images or files.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks, without exporting. Returns a PNG contact sheet of every frame (or the chosen frames, or one animation in playback order) with each cell\'s name and duration. grid: true adds palette-key text grids for exact pixels, region zooms in, and view picks a tile, onion or motion review. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Pass revision or project plus changes applied in order, such as {"set": "frames[blink].duration", "value": 120} or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}; other paths look like palette.k or frames[blink].layers[body].ops[2].x2. The patch is atomic and must validate. Returns the new revision, every frame whose pixels changed and a before/after PNG.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Writes a PNG sheet, atlas JSON, Godot 4 SpriteFrames, frame PNGs, APNGs, CSS and a Canvas player to a new folder in the export directory, and returns the key files, a check of what was delivered and a contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files where the user asked.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
+    { name: 'pixel_compile', description: 'Build a character animation from parts (with idle, walk, run, jump, attack and hurt templates, squash and tweens), a terrain tileset, particle effects (sparks, embers, dust) and spell shapes (slashes, shockwave rings, beams, lightning, magic circles, impact stars, fireballs, cel water streams and drops), simulated smoke, fire, explosions, steam, magic swirls, water (splashes, waterfalls, drips, bubbling potions) and thick liquids (honey, slime, mud), coherent interference and portal loops, or a lighting normal map. Compiles the source into an ordinary recipe revision and returns a contact sheet; metadata: true adds pose joints, contacts and timing, the autotile mask table, particle counts, fluid figures, wave counts or normal directions.', inputSchema: { type: 'object', properties: { source: { type: 'object', description: 'A pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid, pixelforge-wave or pixelforge-normals document (see pixel_help topics). A normals source\'s recipe may be inline, a file under the server root or {"revision": id}.' }, metadata: { type: 'boolean' } }, required: ['source'], additionalProperties: false }, annotations: { title: 'Compile poses, tilesets, effects or fluids', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Renders a pixelforge-scene manifest (placements, autotiled tilemaps, cues, motion, ground sorting, camera and parallax, haze, lights and shadows; pixel_help topic scenes) at a time in milliseconds and returns the image, placements, lights and warnings. Assets may be inline recipes, files under the server root or {"revision": id}. view: depth shows who covers whom; export: true writes a replayable scene bundle.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, sequence: { type: 'object', required: ['fps'], description: 'Also write numbered PNG frames for a video editor: pixel_render\'s sequence options, without animation and step.' } }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution 8-bit RGB/RGBA PNG (optionally sliced by an unscaled atlas) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Saves the recipe as a revision.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }
   ];
   const host = createToolHost({ directory: path.resolve(directory), root: path.resolve(root), version, timeLimit, memoryLimit });
   const send = value => output.write(JSON.stringify(value) + '\n');
   let initialized = false;
-  async function handle(line) {
-    let request;
-    try { request = JSON.parse(line); } catch { send({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); return; }
-    if (!request || Array.isArray(request) || request.jsonrpc !== '2.0' || typeof request.method !== 'string' || ('id' in request && typeof request.id !== 'string' && !(typeof request.id === 'number' && Number.isFinite(request.id)))) {
-      send({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } }); return;
-    }
-    if (!Object.hasOwn(request, 'id')) return;
+  // One request, already parsed and checked by receive(), answered in arrival order.
+  async function handle(request, signal) {
     const { id, method, params } = request;
     const error = (code, message) => send({ jsonrpc: '2.0', id, error: { code, message } });
     const result = value => send({ jsonrpc: '2.0', id, result: value });
@@ -572,7 +574,6 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       initialized = true;
       result({ protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {} }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water) and normals sources (lighting passes derived from a colour recipe); pixel_scene reviews assets together.' }); return;
     }
-    if (method === 'ping') { result({}); return; }
     if (!initialized) { error(-32000, 'Initialize the server first'); return; }
     if (method === 'tools/list') { result({ tools }); return; }
     if (method !== 'tools/call') { error(-32601, `Unknown method: ${method}`); return; }
@@ -583,28 +584,60 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     try { ({ args, parsed } = parseTextArguments(args, tool.inputSchema.properties)); } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, path: cause.path })] }); return; }
     if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
     let reply;
-    try { reply = await host.run(params.name, args); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    try { reply = await host.run(params.name, args, signal); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    // A cancelled call gets no response: the client has stopped waiting for it (MCP cancellation).
+    if (signal.aborted) return;
     result(parsed.length ? { ...reply, content: [...reply.content, textContent({ note: `${parsed.join('; ')}. Send JSON values as they are, not inside strings.` })] } : reply);
   }
-  // No request may end the server: anything handle() didn't answer is answered here, and the next line is read.
-  const serve = line => handle(line).catch(cause => send({ jsonrpc: '2.0', id: leadingId(line.slice(0, 4096)), error: { code: -32603, message: `Internal error: ${cause.message}` } }));
-  const tooLarge = prefix => send({ jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
+  // Requests are answered one at a time in arrival order, so initialization comes first and two calls never share
+  // memory. Only ping and cancellations skip the queue, so a client can check the server and stop a call while one
+  // runs. `waiting` holds the requests queued or running, oldest first.
+  const waiting = [];
+  let queuedBytes = 0, last = Promise.resolve();
+  function enqueue(id, method, bytes, work) {
+    const entry = { id, method, bytes, controller: new AbortController() }, { signal } = entry.controller;
+    waiting.push(entry); queuedBytes += bytes;
+    // No request may end the server: anything work() didn't answer is answered here, and the next one runs.
+    entry.done = last = last.then(() => signal.aborted ? undefined : work(signal))
+      .catch(cause => { if (!signal.aborted) send({ jsonrpc: '2.0', id: id ?? null, error: { code: -32603, message: `Internal error: ${cause.message}` } }); })
+      .finally(() => { waiting.splice(waiting.indexOf(entry), 1); queuedBytes -= bytes; });
+  }
+  const reply = (bytes, message) => enqueue(undefined, undefined, bytes, () => send(message));
+  function receive(line, bytes) {
+    let request;
+    try { request = JSON.parse(line); } catch { reply(bytes, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); return; }
+    if (!request || typeof request !== 'object' || Array.isArray(request) || request.jsonrpc !== '2.0' || typeof request.method !== 'string' || ('id' in request && typeof request.id !== 'string' && !(typeof request.id === 'number' && Number.isFinite(request.id)))) {
+      reply(bytes, { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } }); return;
+    }
+    if (!Object.hasOwn(request, 'id')) {
+      // A cancelled request still waiting is skipped; a running one is stopped. initialize can't be cancelled.
+      const target = request.method === 'notifications/cancelled' ? request.params?.requestId : undefined;
+      if (typeof target === 'string' || typeof target === 'number') for (const entry of waiting) if (entry.id === target && entry.method !== 'initialize') entry.controller.abort();
+      return;
+    }
+    if (request.method === 'ping') { send({ jsonrpc: '2.0', id: request.id, result: {} }); return; }
+    enqueue(request.id, request.method, bytes, signal => handle(request, signal));
+  }
+  const tooLarge = prefix => reply(0, { jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
   input.setEncoding('utf8');
   let pending = '', discarding = null;
-  // Sequential dispatch preserves initialization order and bounds parallel render memory. An oversized line is
-  // answered with an error and skipped up to its newline; the server keeps serving.
+  // An oversized line is answered with an error and skipped up to its newline; the server keeps serving.
   for await (const chunk of input) {
     pending += chunk;
     let newline;
     while ((newline = pending.indexOf('\n')) !== -1) {
-      const line = pending.slice(0, newline).replace(/\r$/, ''); pending = pending.slice(newline + 1);
+      const line = pending.slice(0, newline).replace(/\r$/, ''), bytes = Buffer.byteLength(line); pending = pending.slice(newline + 1);
       if (discarding !== null) { tooLarge(discarding); discarding = null; continue; }
-      if (Buffer.byteLength(line) > MAX_REQUEST_BYTES) { tooLarge(line.slice(0, 4096)); continue; }
-      if (line.trim()) await serve(line);
+      if (bytes > MAX_REQUEST_BYTES) { tooLarge(line.slice(0, 4096)); continue; }
+      if (line.trim()) receive(line, bytes);
+      // Reading pauses while more than one request's worth waits, so a client can't queue without bound. ping and
+      // cancellations sent meanwhile are read once the queue is short again.
+      while (queuedBytes > MAX_REQUEST_BYTES || waiting.length > MAX_WAITING) await waiting[0].done;
     }
     if (Buffer.byteLength(pending) > MAX_REQUEST_BYTES) { if (discarding === null) discarding = pending.slice(0, 4096); pending = ''; }
   }
   if (discarding !== null) tooLarge(discarding);
-  else if (pending.trim()) await serve(pending);
+  else if (pending.trim()) receive(pending, Buffer.byteLength(pending));
+  await last;
   await host.close();
 }
