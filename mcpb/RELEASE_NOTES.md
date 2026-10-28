@@ -1,18 +1,17 @@
-# 0.9.1
+# 0.9.2
 
-A browser playground and recipes you can share, renders that check themselves against what was asked for, thicker and livelier fluids, moving scene lights, and an MCP server that stops a runaway call instead of hanging on it.
+Depth and perspective for scenes, spell and water effects, Godot 4 export, the pixel art skill on its own, and an MCP server that answers while it works.
 
-- **Playground:** [try Pixelbolt in the browser](https://skulitom.github.io/Pixelbolt/playground/) with nothing installed. A share link carries the recipe inside the link, and every PNG the playground exports carries its recipe, so it reopens. `pixelbolt share`, `--embed-recipe` and MCP `share` and `embedRecipe` do the same from the command line and the server.
-- **Renders check themselves:** `pixel_render` and `pixelbolt render` report each frame's size, the frames and loops, colours and transparency. Given `expect`, they name every file that misses what was asked for, with the call that fixes it.
-- **GIFs at the size you drew:** GIFs keep the frames' own size; a 32×32 animation used to come out 256×256. Pass `scale` to enlarge one for posting.
-- **Fluids:** thick liquids and gases (`viscosity`, `yield`, `adhesion`, `apic`), smooth obstacles that liquids slide down, obstacles and liquid settings that change on cue (`keys`), bursts in mid-air, thrown dust, decorations the fluid ignores, per-frame figures, and warnings for setups that make nothing. `createLiveFluid` runs an effect a frame at a time for interactive pages. Seven new presets: honey, slime, snow off a roof, dam break, dust wave, bursting slime and honey let-go.
-- **Particle effects:** ring and line spawn shapes, sparks that face their direction of travel, colour stages over a life, child emitters (trails, and bursts where a particle ends or lands), eased timing, and cue points for game code.
-- **Scenes:** lights that follow a placement or a point, flicker, and flash on cues; `lit: false` keeps fires and lamps in their own colours.
-- **Figures in motion:** bone and mass parts, six motion templates, and motion review for foot slide, ground error and loop seams.
-- **Less for agents to read:** the tool listing is about 20 KB instead of 133 KB, and `pixel_help` returns a 7 KB quick start, with the longer guides as topics.
-- **A sturdier MCP server:** each tool call runs in a worker thread and is stopped after 50 seconds (`--time-limit` changes this) or when it runs out of memory, with an error that says so, and the server keeps serving. A video sequence from one call may come to at most 512 MB.
-- **Fixes:** a scene placement's `repeat` draws every copy again; `--force` re-exports remove an earlier export's leftover frames and never write over their own recipe; nothing passes through thin fluid obstacles; GIF holes stay clear in Pillow and ffmpeg; H.264 exports keep every colour.
-- **Claude Code plugin:** `claude plugin install pixelbolt --marketplace skulitom/Pixelbolt` installs the MCP server and the pixel art skill.
+- **The skill on its own:** `npx -y pixelbolt@latest skill install` installs the pixel art skill for Claude Code, with no MCP server and nothing cloned. Every command it names runs through `npx -y pixelbolt@0.9.2`.
+- **Godot and Aseprite:** every export writes a Godot 4 `SpriteFrames` resource (`name.tres`) beside the sheet, and the atlas carries Aseprite-style `frameTags`.
+- **Depth and perspective:** scenes get a depth view, perspective guides, ground-sorted tilemaps, `lift` for jumps, held items that sort with their holder, `haze` for far planes, a `camera` with `parallax` planes, cast `shadow`s and a `sun`. Recipes get an isometric `box`, iso tilemaps and ground-sorted layers, and normals sources take flat `faces`.
+- **Spell and water effects:** `pixelforge-fx` shape layers draw rings, slashes, beams, lightning, magic circles, impact stars and fireballs, and with lit and shade bands, `stream`s, blob particles, `noise` and a ground `floor`, cel-shaded water. Nine reviewed examples.
+- **Wave effects:** `pixelforge-wave` bakes looping interference and portal interiors into palette grids.
+- **Large stills:** a single-frame recipe may be up to 4096 pixels a side, so a 1080p backdrop is one canvas at one screen pixel per art pixel.
+- **Exports at the names asked for:** `pixel_render`'s `saveAs` writes the sheet, atlas, `.tres`, GIF or recipe where the user asked inside the server root, and never over a file it shouldn't.
+- **MCP server:** answers `ping` during a call and stops a call on `notifications/cancelled`, reads a recipe sent as JSON text, and lists its tools in 15.9 KB instead of 23.3 KB.
+- **Studio:** zoom with the wheel, pan by dragging and full screen; one screen on a desktop window; each tab keeps its own draft.
+- **Fixes:** a link under the MCP root can't lead outside it; forced exports keep other sprites' files and survive renames that only change letter case; no CLI command writes over a file it reads; GIFs keep later transparency in Pillow; APNG frames of 10 ms or less play as written; embedded recipes stay within what Pillow opens; fast thin fluid obstacles push water instead of passing through. Tilemap variants without a `seed` no longer form a checkerboard, so those maps render differently from 0.9.1.
 
 The full list of changes is in `CHANGELOG.md`.
 
