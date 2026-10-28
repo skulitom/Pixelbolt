@@ -88,6 +88,8 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The timings moved to `npm run bench -- --budgets`: the figure workflow's targets and a few loose limits, as eleven cases with a budget each. CI runs it as an advisory job; a case over its budget is a warning on the run, never a failure.
 - The MCP time-limit test moves a mocked clock, so only the slow call meets the 0.3 s limit. On a real clock the call after it was held to 0.3 s too, and a busy Windows runner once took longer.
 - The portable build tries a Node.js runtime download again after a dropped connection, a stall of 30 s, a connection slower than 256 KB/s over 15 s or a server error (four tries), and says how to supply the archive yourself if every try fails. CI keeps the downloaded runtimes in a cache keyed on the pinned version, and a runner without its own entry starts from another system's.
+- The studio walk waits up to 30 s instead of 8 s for something to happen, and for each sample's drawing instead of a fixed 150 ms. A cold browser on a busy runner once took longer than 8 s to load the studio.
+
 ### Fixes
 
 - `<command> --help` (and `-h`) prints the help, as the quick start and the standalone skill tell agents to; it used to answer `Unknown option: --help`. `skill install` finishes an install cut short while it was writing a file and clears the temporary file it left, names in `kept` an edited file from an earlier version that `--force` leaves alone (it was listed as overwritten), and lists in `overwrote` what `--force` replaced in a folder it didn't write.

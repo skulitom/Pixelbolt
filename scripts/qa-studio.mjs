@@ -103,8 +103,10 @@ try {
       if (exceptionDetails) throw new Error(exceptionDetails.exception?.description ?? exceptionDetails.text);
       return result.value;
     };
-    // A page that is navigating cannot answer; that counts as "not yet".
-    const until = async (expression, what, timeout = 8000) => {
+    // A page that is navigating cannot answer; that counts as "not yet". The wait asks whether something happens, not
+    // how fast: it returns as soon as it does, and the 30 s is room for a busy CI runner (a cold browser on one took
+    // more than 8 s to load the studio), so only something that never happens fails.
+    const until = async (expression, what, timeout = 30000) => {
       for (const start = Date.now(); ;) { const value = await evaluate(expression).catch(() => false); if (value) return value; if (Date.now() - start > timeout) throw new Error(`timed out waiting for ${what}`); await sleep(50); }
     };
     const goto = async url => { await page('Page.navigate', { url }); await until('document.readyState === "complete"', `${url} to load`); };
@@ -134,7 +136,7 @@ try {
     await send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: folder, eventsEnabled: true });
     const saved = new Promise((resolve, reject) => {
       let filename = null;
-      const timer = setTimeout(() => { listeners.delete(listener); reject(new Error('no download arrived within 15 seconds')); }, 15000);
+      const timer = setTimeout(() => { listeners.delete(listener); reject(new Error('no download arrived within 30 seconds')); }, 30000);
       const listener = ({ method, params }) => {
         if (method === 'Browser.downloadWillBegin') filename = params.suggestedFilename;
         else if (method === 'Browser.downloadProgress' && params.state !== 'inProgress') { clearTimeout(timer); listeners.delete(listener); params.state === 'completed' ? resolve(path.join(folder, filename)) : reject(new Error(`the download was ${params.state}`)); }
@@ -178,7 +180,8 @@ try {
   for (const [index, sample] of samples.entries()) await check(`sample "${sample.title}" opens and renders`, async () => {
     await click(`#examples .example:nth-child(${index + 1})`);
     await until(`document.querySelector('#examples .example:nth-child(${index + 1})').classList.contains('active') && document.getElementById('source').value.includes(${JSON.stringify(`"name": "`)})`, 'the sample to load');
-    await sleep(150);
+    // Wait for the drawing rather than a fixed pause; if it never comes, the assertion below says what is missing.
+    await until(`(() => { const c = document.getElementById('canvas'); if (!c.width || !document.getElementById('timeline').children.length) return false; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; for (let i = 3; i < d.length; i += 4) if (d[i]) return true; return false; })()`, 'the sample to draw').catch(() => {});
     const [drawn, frames, hidden, status] = [(await canvas()).drawn, await evaluate(`document.getElementById('timeline').children.length`), await evaluate(`document.getElementById('error').hidden`), await text('compile-status')];
     assert.ok(drawn > 0 && frames > 0 && hidden, `drawn ${drawn}, frames ${frames}, error hidden ${hidden}`);
     await studio.shot(`sample-${sample.file.replace('/', '-')}`); return `${frames} frames, ${status.replace('● ', '')}`;
@@ -496,7 +499,7 @@ try {
     try {
       const address = await new Promise((resolve, reject) => {
         let output = '';
-        const timer = setTimeout(() => reject(new Error(`pixelbolt preview did not start within 15 seconds:\n${output}`)), 15000);
+        const timer = setTimeout(() => reject(new Error(`pixelbolt preview did not start within 30 seconds:\n${output}`)), 30000);
         for (const stream of [preview.stdout, preview.stderr]) stream.on('data', chunk => { output += chunk; const found = /Pixelbolt studio: (http:\/\/127\.0\.0\.1:\d+)/.exec(output); if (found) { clearTimeout(timer); resolve(found[1]); } });
         preview.once('error', reject); preview.once('exit', code => { clearTimeout(timer); reject(new Error(`pixelbolt preview exited with ${code}:\n${output}`)); });
       });
