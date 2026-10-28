@@ -31,7 +31,13 @@ cd Pixelbolt
 node bin/pixelbolt.js preview --open
 ```
 
-**Give it to your agent.** In Claude Desktop, download [`pixelbolt.mcpb`](https://github.com/skulitom/Pixelbolt/releases/latest/download/pixelbolt.mcpb) from the latest release and open it (or install it from file under Settings → Extensions), choose a workspace folder for recipes and artwork, then ask the agent to call `pixel_help`. For Claude Code, Codex, Cursor and other MCP clients, see [Connect an agent through MCP](#connect-an-agent-through-mcp). Pixelbolt is in the official MCP Registry as `io.github.skulitom/pixelbolt`.
+**Give it to your agent.** For Claude Code, one line installs the pixel art skill, with nothing to clone and no MCP server (Pixelbolt 0.9.2 or later):
+
+```sh
+npx -y pixelbolt skill install
+```
+
+It writes `~/.claude/skills/pixelbolt-pixel-art/` (`--project` writes the current folder's `.claude/skills/` instead, `--dir` any skills folder), runs every command it names through `npx -y pixelbolt@<that version>`, and never replaces a copy you have changed unless you add `--force`. For Pixelbolt's MCP tools as well, the [Claude Code plugin](#connect-an-agent-through-mcp) installs the server and the skill together. In Claude Desktop, download [`pixelbolt.mcpb`](https://github.com/skulitom/Pixelbolt/releases/latest/download/pixelbolt.mcpb) from the latest release and open it (or install it from file under Settings → Extensions), choose a workspace folder for recipes and artwork, then ask the agent to call `pixel_help`. For Codex, Cursor and other MCP clients, see [Connect an agent through MCP](#connect-an-agent-through-mcp). Pixelbolt is in the official MCP Registry as `io.github.skulitom/pixelbolt`.
 
 Pixelbolt was called PixelForge until 0.8.0. The `pixelforge` command still works as an alias, and recipe files keep their `pixelforge-*` format tags, so existing files and agent setups keep working.
 
@@ -165,7 +171,7 @@ Use Pixelbolt to create or revise pixel sprites, tiles, icons, effects and short
 | Entry point | Purpose |
 | --- | --- |
 | [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt) | Compact documentation index with direct links for agents |
-| [Pixel art skill](skills/pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow |
+| [Pixel art skill](skills/pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow; `npx -y pixelbolt skill install` installs it on its own |
 | [Authoring guide](docs/agent-guide.md) | Recipe fields, drawing operations and limits |
 | [JSON Schema](schema.json) | Machine-readable recipe structure |
 | [Examples](examples/) | Complete forest spirit, campfire, coin and shrine recipes, a caption with pixel text, a rotated sword swing, a particle effects source, four spell effects (slash hit, fire explosion, lightning strike, healing circle), five cel-shaded water effects and seventeen fluid presets |
@@ -328,7 +334,7 @@ Send a recipe once. Each successful recipe-tool response includes a `revision` i
 
 The server implements newline-delimited stdio MCP with initialization, version negotiation, ping and tool discovery/calls. It supports protocol versions 2024-11-05, 2025-03-26, 2025-06-18 and 2025-11-25. It uses no HTTP transport or external services. See the [MCP stdio specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
 
-An agent can also use the CLI directly. The reusable [agent skill](skills/pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md) explain the complete format. [schema.json](schema.json) supports editor completion and structural validation; the rasterizer additionally validates references, matching row widths and resource limits.
+An agent can also use the CLI directly. The reusable [agent skill](skills/pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md) explain the complete format; `npx -y pixelbolt skill install` gives Claude Code the skill with its guides, schemas and examples and no server. [schema.json](schema.json) supports editor completion and structural validation; the rasterizer additionally validates references, matching row widths and resource limits.
 
 ## Use in a web app
 

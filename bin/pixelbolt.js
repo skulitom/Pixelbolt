@@ -50,6 +50,10 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            Port 4747, or a free one when it is in use; --open starts your browser
   pixelbolt mcp [--out directory] [--root directory] [--time-limit seconds]  Run the MCP server over stdio
   pixelbolt schema                         Print the JSON Schema
+  pixelbolt skill install [--project | --dir folder] [--force]
+                                           Install the pixel art skill on its own, with no checkout or MCP server:
+                                           into ~/.claude/skills (Claude Code), ./.claude/skills with --project, or
+                                           a skills folder you name; its commands run npx -y pixelbolt@<this version>
 
 Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. No command writes over a file it reads, however the path is spelled (patch may save over the recipe it edits). '-' reads JSON from stdin.
 --embed-recipe on render or scene embeds the resolved recipe in exported PNGs (not scene asset passes).
@@ -84,8 +88,8 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
-    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded'].includes(args[i])) options[args[i].slice(2)] = true;
-    else if (['--out', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time'].includes(args[i])) {
+    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded', '--project'].includes(args[i])) options[args[i].slice(2)] = true;
+    else if (['--out', '--dir', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
       options[key] = args[++i];
@@ -169,6 +173,7 @@ try {
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     allowed.compile.push('expand');
     allowed.share = [];
+    allowed.skill = ['project', 'dir', 'force'];
     allowed.render.push('embed-recipe'); allowed.scene.push('embed-recipe'); allowed.import.push('embedded');
     if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
@@ -183,7 +188,11 @@ try {
       }
       console.log(JSON.stringify({ ok: true, file }));
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
-    else if (command === 'mcp') {
+    else if (command === 'skill') {
+      if (positional[0] !== 'install') throw new Error('Usage: pixelbolt skill install [--project | --dir <skills folder>] [--force]');
+      const { installSkill } = await import('../src/skill.js');
+      console.log(JSON.stringify({ ok: true, ...await installSkill({ version: await engineVersion(), force: options.force, project: options.project, dir: options.dir }) }, null, 2));
+    } else if (command === 'mcp') {
       const { startMCP } = await import('../src/mcp.js');
       // A tool call that runs longer is stopped and answered with an error; the default is 50 seconds.
       const limit = options['time-limit'] === undefined ? undefined : Number(options['time-limit']);
