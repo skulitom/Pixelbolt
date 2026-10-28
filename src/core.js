@@ -149,14 +149,13 @@ function readProject(spec, { stills = true } = {}) {
 /**
  * Puts a shared palette file's colours into a document whose palette links it (`"palette": { "$ref": "shared.json",
  * ...local entries }`). `shared` is the file as read, `{ palette, ramps }`: entries the document sets itself win, and a
- * recipe without ramps of its own takes the file's (pose, autotile, effect and fluid sources do not). A document without
- * a link comes back as it is. The renderer never reads files: the CLI and MCP read the file (src/resolve.js), and the
- * studio is sent the one its recipe links, so both draw a linked recipe alike.
+ * recipe or pose source without ramps of its own takes the file's (autotile, effect, fluid, wave and normals sources
+ * have no ramps). A document without a link comes back as it is. The renderer never reads files: the CLI and MCP read
+ * the file (src/resolve.js), and the studio is sent the one its recipe links, so both draw a linked recipe alike.
  */
 export function inlineSharedPalette(document, { palette, ramps = null }) {
   if (!isObject(document) || !isObject(document.palette) || !own(document.palette, '$ref')) return document;
   const { $ref, ...local } = document.palette;
-  // Recipes and pose sources declare ramps; one without ramps of its own takes the shared file's.
   const inherit = ramps && (document.format === undefined || document.format === 'pixelforge-poses') && document.ramps === undefined;
   return { ...document, palette: { ...palette, ...local }, ...(inherit && { ramps }) };
 }

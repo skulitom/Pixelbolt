@@ -30,7 +30,7 @@ async function locate(reference, baseDir, root, where) {
   return file;
 }
 // A shared palette file is either a flat map of names to colours or any JSON document with a `palette` map, which may
-// also list `ramps` (palette keys from dark to light) for the recipes that link it.
+// also list `ramps` (palette keys from dark to light) for the recipes and pose sources that link it.
 async function sharedPalette(reference, baseDir, context, where) {
   const file = await locate(reference, baseDir, context.root, where), loaded = await readJSON(file, where);
   const palette = isObject(loaded?.palette) ? loaded.palette : loaded;
