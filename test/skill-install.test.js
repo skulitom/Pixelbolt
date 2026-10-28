@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { access, copyFile, link, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, link, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,8 +10,9 @@ import { SKILL_MANIFEST, SKILL_NAME, skillCommand, skillFiles, standaloneProblem
 const root = fileURLToPath(new URL('../', import.meta.url));
 const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const command = skillCommand(version);
+// The real path: macOS's temp folder is behind a link (/var is /private/var), and the CLI's working folder is real.
 const temp = async t => {
-  const base = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(base, 'pixelbolt-skill-'));
+  const base = await realpath(os.tmpdir()), dir = await mkdtemp(path.join(base, 'pixelbolt-skill-'));
   t.after(async () => { assert.ok(dir.startsWith(base + path.sep)); await rm(dir, { recursive: true, force: true }); });
   const home = path.join(dir, 'home'), project = path.join(dir, 'project');
   await mkdir(home); await mkdir(project);
