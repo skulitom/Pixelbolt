@@ -26,7 +26,7 @@
   "description": "Make a pixel art campfire, torch or flame animation in your browser: open a free Pixelbolt recipe, change a few values and download a sprite sheet, atlas or GIF.",
   "image": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/preview.png",
   "datePublished": "2026-10-25",
-  "dateModified": "2026-10-25",
+  "dateModified": "2026-10-28",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/",
@@ -101,8 +101,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <h3>Make it yours</h3>
 <p class="muted">These sit under <code>effects</code> → <code>campfire</code> in the recipe.</p>
 <ul>
-<li><code>buoyancy</code> (now 0.45): how hard the heat rises. A higher value lifts the flames higher and faster.</li>
-<li><code>cooling</code> (0.24): the share of heat lost each frame. Raise it for a lower fire; lower it for taller flames.</li>
+<li><code>buoyancy</code> (now 0.45): how hard the heat rises. A higher value lifts the smoke and embers higher and faster.</li>
+<li><code>cooling</code> (0.24): the share of heat lost each frame. Raise it for a lower fire. Lowering it makes the flame taller only gradually: at 0.16 it is a little taller and its smoke a little redder; at 0.08 it is clearly taller, and the smoke stays hot enough to draw red instead of grey.</li>
 <li><code>vorticity</code> (0.45): keeps small swirls alive, so the flames and smoke curl.</li>
 <li><code>flicker</code> on the <code>fire</code> emitter (0.6): random variation from cell to cell and frame to frame, which breaks the base of the flame into tongues.</li>
 <li><code>count</code> in the <code>embers</code> emitter's <code>sparks</code> (0.5): embers per frame. Fractions mean some frames get one and some don't.</li>
