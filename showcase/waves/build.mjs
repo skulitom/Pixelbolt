@@ -40,7 +40,7 @@ export async function buildWaveShowcase() {
   for (const name of ['interference', 'portal']) {
     const source = await json(path.join(root, 'examples', `${name}.wave.json`)), started = performance.now();
     const { recipe, warnings } = compileWaves(source), compileMs = performance.now() - started;
-    const project = renderProject(recipe), view = inspectProject(project, { native: true, diagnostics: true });
+    const project = renderProject(recipe), view = inspectProject(project, { native: true });
     recipes[name] = recipe; baseline[name] = independentRings(source, recipe);
     files.set(`${name}.json`, Buffer.from(formatJSON(recipe)));
     files.set(`${name}.gif`, Buffer.from(encodeGIF(project.frames, project.width, project.height, { loop: true, scale: 4 }).data));

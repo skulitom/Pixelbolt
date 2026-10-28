@@ -104,7 +104,7 @@ async function child(id, root, runs, warmup) {
       return { result, ms: performance.now() - start };
     };
     let result;
-    for (let i = 0; i < warmup; i++) ({ result } = await once());
+    for (let i = 0; i < warmup; i++) await once();
     for (let i = 0; i < runs; i++) { const timed = await once(); result = timed.result; times.push(timed.ms); }
     times.sort((a, b) => a - b);
     Object.assign(report, { frames: result.frames, hash: result.hash, ms: times.map(t => Math.round(t * 1000) / 1000) });
@@ -114,7 +114,7 @@ async function child(id, root, runs, warmup) {
 }
 
 const median = list => { const sorted = [...list].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
-const round = (n, places = 2) => Math.round(n * 10 ** places) / 10 ** places;
+const round = (n, places) => Math.round(n * 10 ** places) / 10 ** places;
 function spawnCase(id, root, runs, warmup) {
   const done = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--child', id, '--root', root, '--runs', String(runs), '--warmup', String(warmup), ...(inputs ? ['--inputs', inputs] : [])], { encoding: 'utf8', timeout: 300_000, maxBuffer: 1 << 24 });
   const line = done.stdout?.trim().split('\n').at(-1);

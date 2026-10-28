@@ -86,7 +86,7 @@ function ensureWorker() {
   worker.onerror = event => { event.preventDefault(); if (worker === started) stopWorker(new Error(event.message || 'The render worker could not start. Use a static HTTP server and a browser with module worker support.')); };
   worker.onmessageerror = () => { if (worker === started) stopWorker(new Error('The render worker could not return its result. Try rendering again.')); };
 }
-function request(type, extra = {}) {
+function request(type, extra) {
   if (pending) stopWorker();
   clearError();
   const isSource = ['render', 'example', 'open', 'link'].includes(type);

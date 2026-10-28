@@ -169,7 +169,6 @@ function compile() {
     $('project-name').textContent = title(project.name);
     $('dimensions').textContent = `${project.width} × ${project.height} px`;
     $('source-filename').textContent = `${project.name}${poseMetadata ? '.poses' : nextSpec.format === 'pixelforge-wave' ? '.wave' : ''}.json`;
-    $('frame-count').textContent = `${project.frames.length} frames`;
     const oldAnimation = $('animation').value;
     $('animation').replaceChildren(...Object.keys(project.animations).map(key => { const option = document.createElement('option'); option.value = key; option.textContent = title(key); return option; }));
     if (project.animations[oldAnimation]) $('animation').value = oldAnimation;
