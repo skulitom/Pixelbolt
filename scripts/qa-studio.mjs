@@ -35,14 +35,14 @@ let program = options.browser ?? null;
 for (const candidate of program ? [] : installed) if (await access(candidate).then(() => true, () => false)) { program = candidate; break; }
 if (!program) { console.log('No Chromium-based browser (Edge or Chrome) was found, so the studio was not walked. Name one with --browser.'); process.exit(3); }
 
-const out = options.out ? path.resolve(options.out) : null, results = [], notes = [];
+const out = options.out ? path.resolve(options.out) : null, results = [];
 if (out) await mkdir(out); else await mkdir(path.join(root, 'output', 'studio-qa'), { recursive: true });
 const kept = out ?? await mkdtemp(path.join(root, 'output', 'studio-qa', 'run-')), profile = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-browser-'));
 const check = async (name, run) => {
   try { const detail = await run(); results.push({ name, ok: true }); console.log(`  ok    ${name}${detail ? ` (${detail})` : ''}`); }
   catch (error) { results.push({ name, ok: false }); console.log(`  FAIL  ${name}\n        ${String(error.message).replace(/\n/g, '\n        ')}`); }
 };
-const note = text => { notes.push(text); console.log(`  note  ${text}`); };
+const note = text => console.log(`  note  ${text}`);
 
 const { startStudio } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'server.js')));
 const { renderProject, MAX_REQUEST_BYTES } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'core.js')));

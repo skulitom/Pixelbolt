@@ -69,7 +69,7 @@ function readEffect(effect, path, source) {
     if (effect[key] === undefined) return null;
     const { rows } = readRows(effect[key], `${path}.${key}`, source.palette);
     if (rows.length !== source.height || rows[0].length !== source.width) fail(`${path}.${key}`, 'expected a full-canvas grid');
-    return rows.slice();
+    return rows;
   };
   return { frames, duration, sources, mask, positive, negative, thresholds, underlay: decoration('underlay'), overlay: decoration('overlay') };
 }
@@ -131,9 +131,9 @@ export function compileWaves(source) {
         rows.push(row);
       }
       const layers = [], grid = (name, rows) => ({ name, ops: [{ op: 'grid', rows }] });
-      if (e.underlay) layers.push(grid('underlay', e.underlay.slice()));
+      if (e.underlay) layers.push(grid('underlay', e.underlay));
       layers.push(grid('wave', rows));
-      if (e.overlay) layers.push(grid('overlay', e.overlay.slice()));
+      if (e.overlay) layers.push(grid('overlay', e.overlay));
       const frameName = `${name}-${f}`; names.push(frameName); visiblePixels.push(visible);
       frames.push({ name: frameName, duration: e.duration, layers });
     }

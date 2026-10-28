@@ -74,7 +74,7 @@ function indexFrame(data, area, background, describe) {
 // colour. `loops` is how many times the animation plays: 0 for ever, 1 once (no loop extension), n written as n − 1
 // repeats. An opaque animation needs one spare shared entry to keep pixels (see writeFrames); when that doubles the
 // table, the file is written both ways and the smaller kept.
-function writeGIF(indexed, width, height, options = {}) {
+function writeGIF(indexed, width, height, options) {
   const transparency = indexed.some(frame => frame.transparent), all = new Map();
   for (const frame of indexed) for (const color of frame.colors) if (!all.has(color)) all.set(color, all.size);
   const shared = all.size + (transparency ? 1 : 0) <= 256, write = spare => writeFrames(indexed, width, height, options, all, shared, transparency, spare);
@@ -95,7 +95,7 @@ function writeGIF(indexed, width, height, options = {}) {
 // which showed as opaque black wherever the next frame was transparent. A frame with 256 opaque colours of its own table has no index to
 // spare, so it is cleared without one (browsers and ffmpeg still clear it; Pillow shows a colour of its table) and
 // counted in `backgroundClears`, for the notes.
-function writeFrames(indexed, width, height, { loops = 0, scale = 1 }, all, shared, transparency, spare) {
+function writeFrames(indexed, width, height, { loops, scale = 1 }, all, shared, transparency, spare) {
   const table = (colors, offset, extra) => {
     const bits = bitsFor(colors.length + offset + extra), bytes = new Uint8Array(3 << bits);
     for (const [index, color] of colors.entries()) bytes.set([color >> 16, color >> 8 & 255, color & 255], (index + offset) * 3);
