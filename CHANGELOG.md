@@ -16,6 +16,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
+- A pose source without `ramps` of its own takes them from the shared palette file it links (`{"palette": {...}, "ramps": [...]}`), as a recipe does and as `poses.schema.json` says, in the CLI, MCP and studio. A bone or mass that names a ramp in a source with none now says to add `ramps` instead of "expected an integer from 0 to -1".
 - An fx cue named like a member of every JavaScript object (`toString`, `constructor`, `hasOwnProperty`, `valueOf`) becomes a frame point and a metadata cue like any other name. It was dropped without a word, because the cue map seemed to have it already.
 
 ## 0.9.2 (2026-10-28)

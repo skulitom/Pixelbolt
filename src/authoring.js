@@ -37,7 +37,8 @@ function structuralPart(part, source, path) {
     if (!Array.isArray(shape.size) || shape.size.length !== 2) fail(`${p}.size`, 'expected [width, height]');
     shape.size.forEach((value, i) => integer(value, `${p}.size[${i}]`, 2, 64));
   }
-  integer(shape.ramp, `${p}.ramp`, 0, (source.ramps?.length ?? 0) - 1);
+  if (!source.ramps?.length) fail(`${p}.ramp`, 'this pose source has no ramps: add "ramps" (lists of palette keys from dark to light), or link a shared palette file that lists them');
+  integer(shape.ramp, `${p}.ramp`, 0, source.ramps.length - 1);
   const ramp = source.ramps[shape.ramp];
   if (!Array.isArray(ramp) || ramp.length < 2 || ramp.length > 32) fail(`poses.ramps[${shape.ramp}]`, 'expected 2–32 palette keys from dark to light');
   for (const [i, key] of ramp.entries()) {
