@@ -102,7 +102,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="muted">These sit under <code>effects</code> → <code>campfire</code> in the recipe.</p>
 <ul>
 <li><code>buoyancy</code> (now 0.45): how hard the heat rises. A higher value lifts the smoke and embers higher and faster.</li>
-<li><code>cooling</code> (0.24): the share of heat lost each frame. Raise it for a lower fire. Lowering it grows the flame slowly: at 0.16 it is only a little taller, and at 0.08 it is clearly taller, but its smoke stays hot enough to draw red instead of grey.</li>
+<li><code>cooling</code> (0.24): the share of heat lost each frame. Raise it for a lower fire. Lowering it makes the flame taller only gradually: at 0.16 it is a little taller and its smoke a little redder; at 0.08 it is clearly taller, and the smoke stays hot enough to draw red instead of grey.</li>
 <li><code>vorticity</code> (0.45): keeps small swirls alive, so the flames and smoke curl.</li>
 <li><code>flicker</code> on the <code>fire</code> emitter (0.6): random variation from cell to cell and frame to frame, which breaks the base of the flame into tongues.</li>
 <li><code>count</code> in the <code>embers</code> emitter's <code>sparks</code> (0.5): embers per frame. Fractions mean some frames get one and some don't.</li>
