@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Blow on a pixel-art campfire, pour honey and slime and stir a waterfall: real fluid simulations drawn in pixels, live in your browser. Save a GIF, or share a link that replays exactly what you did.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Poke the pixels: live pixel-art fire, honey and slime</title>
+  <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/playground/fluids/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pixelbolt">
+  <meta property="og:title" content="Poke the pixels: live pixel-art fire, honey and slime">
+  <meta property="og:description" content="Real fluid simulations drawn in pixel art, live in your browser. Drag to stir, hold to pour, then save a GIF or share a link that replays it.">
+  <meta property="og:url" content="https://skulitom.github.io/Pixelbolt/playground/fluids/">
+  <meta property="og:image" content="https://skulitom.github.io/Pixelbolt/playground/fluids/preview.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A pixel-art campfire, a jar of honey and a blob of slime from Pixelbolt's fluid simulation">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../playground.css">
+  <link rel="stylesheet" href="./fluids.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body data-state="loading">
+  <main class="toy">
+    <header>
+      <p class="eyebrow">Pixelbolt live fluids <span id="active-engine" class="muted"></span></p>
+      <h1>Poke the pixels</h1>
+      <p class="lead">Fire, honey and slime from a real fluid simulation, drawn in pixel art and running in your browser. Drag to stir, hold to pour.</p>
+    </header>
+    <div id="presets" class="presets" role="group" aria-label="Choose an effect"></div>
+    <section id="stage" class="stage" aria-label="Live effect">
+      <div class="art">
+        <canvas id="fluid" width="1" height="1" tabindex="0" aria-label="Live pixel-art effect" aria-describedby="hint keys">Your browser needs Canvas to show the effect.</canvas>
+        <span id="ghost" class="ghost" hidden></span>
+      </div>
+      <p id="stage-note" class="stage-note">Loading…</p>
+    </section>
+    <div class="bar">
+      <p id="hint" class="hint-line"></p>
+      <div class="control-row">
+        <button id="pause" type="button" aria-pressed="false" disabled>Pause</button>
+        <button id="restart" type="button" disabled>Start again</button>
+      </div>
+    </div>
+    <div class="control-row share">
+      <button id="save-gif" class="primary" type="button" aria-describedby="gif-help" disabled>Save GIF</button>
+      <button id="copy-link" type="button" aria-describedby="link-help" disabled>Copy link</button>
+      <a id="remix" class="button" href="../">Edit the recipe</a>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <input id="share-link" type="text" readonly hidden aria-label="Link that replays what you did">
+    <p class="hint"><span id="gif-help">Save GIF keeps the last four seconds.</span> <span id="link-help">Copy link makes a link that replays what you did, frame for frame, for whoever opens it.</span> <span id="keys">With the effect focused, arrow keys blow and Space pours.</span></p>
+    <section class="about" aria-labelledby="about-title">
+      <h2 id="about-title">Make it yours</h2>
+      <p>Each effect is a short JSON recipe. Pixelbolt bakes the same simulation into sprite sheets, atlases, GIFs and Godot 4 files for your game, and your AI agent can write and tune the recipe for you: <code id="cli">pixelbolt compile campfire.fluid.json --out campfire.json</code> on the command line, or <code>pixel_compile</code> over MCP.</p>
+      <p><a href="../">Open the playground</a> · <a href="../../guides/">Effect guides</a> · <a href="https://github.com/skulitom/Pixelbolt">Pixelbolt on GitHub</a></p>
+    </section>
+    <footer><p>Everything runs in your browser and nothing you do is sent anywhere: a link keeps what you did after its #, which browsers never send to a server. The engine and effects load from jsDelivr.</p></footer>
+    <noscript>This page needs JavaScript and a current browser.</noscript>
+  </main>
+</body>
+</html>
