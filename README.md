@@ -4,6 +4,8 @@
 
 [Try it in your browser](https://skulitom.github.io/Pixelbolt/playground/): render, export and share recipes with nothing installed.
 
+[Poke the pixels](https://skulitom.github.io/Pixelbolt/playground/fluids/): blow on a live pixel-art campfire, pour honey and slime, then save a GIF or share a link that replays exactly what you did.
+
 [Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground.
 
 English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README.zh-CN.md) · [日本語](https://github.com/skulitom/Pixelbolt/blob/main/README.ja.md)
