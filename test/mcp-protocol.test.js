@@ -43,6 +43,8 @@ test('MCP answers ping while a call runs, and stops a cancelled call without ans
     mcp.cancel(queued.id); mcp.cancel(slow.id);
     const cancelled = performance.now(), next = await mcp.call('pixel_validate', { project: strip }).answered;
     assert.equal(info(next).ok, true);
+    // A hang guard, not a speed check (AGENTS.md): the wait is idle, so no work count can show the worker stopped. A
+    // working cancel answers the next call in about 1 s on the slowest CI job; a broken one waits for the 50 s limit.
     assert.ok(performance.now() - cancelled < 20000, 'the next call ran without waiting for the cancelled one');
     assert.deepEqual(mcp.received.filter(message => message.id === slow.id || message.id === queued.id), []);
   } finally { await mcp.end(); }
