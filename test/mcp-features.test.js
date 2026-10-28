@@ -125,20 +125,30 @@ test('MCP answers a deeply nested request with an error and keeps serving', asyn
 });
 
 test('MCP stops a tool call that runs past its time limit or out of memory, and keeps serving', async t => {
+  // The time limit is a timer in this process, so the test moves a mocked clock: the slow call is stopped when the
+  // clock passes 0.3 s, and the calls after it take as long as the machine needs. On a real clock the next call, in a
+  // fresh worker, was held to 0.3 s too, and a busy Windows runner once took longer (P-048).
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const dir = await temp(t, 'limits'), slow = session({ directory: dir, timeLimit: 300 }); await slow.init();
   try {
     // A thick liquid this size takes most of a minute to simulate, well inside the compiler's own work budget.
     const goo = { kind: 'liquid', frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
       fill: [{ x: 0, y: 0, w: 64, h: 52 }], emitters: [], look: [{ field: 'density', colors: ['a', 'b'], thresholds: [0.3, 0.6] }] };
     const source = { format: 'pixelforge-fluid', version: 1, name: 'slow', width: 64, height: 52, palette: { a: '#123', b: '#456' }, effects: { goo } };
-    const started = performance.now(), stopped = await slow.call('pixel_compile', { source });
+    // The limit's timer starts once the worker has loaded. A first call loads it, so the slow call's timer starts at
+    // once, and the clock moves on until the slow call is answered.
+    assert.equal((await slow.call('pixel_validate', { project: strip })).info.ok, true);
+    let stopped;
+    const answered = slow.call('pixel_compile', { source }).then(reply => { stopped = reply; });
+    while (!stopped) { t.mock.timers.tick(300); await new Promise(resolve => setImmediate(resolve)); }
+    await answered;
     assert.equal(stopped.result.isError, true);
     assert.match(stopped.info.error, /^pixel_compile took longer than 0\.3 s and was stopped\. Make the work smaller/);
-    assert.ok(performance.now() - started < 20000);
     // The protocol kept answering, and the next call runs in a fresh worker.
     assert.deepEqual((await slow.request('ping')).result, {});
-    assert.equal((await slow.call('pixel_validate', { project: strip })).info.ok, true);
-  } finally { slow.input.end(); await slow.running; }
+    const next = await slow.call('pixel_validate', { project: strip });
+    assert.equal(next.info.error, undefined); assert.equal(next.info.ok, true);
+  } finally { slow.input.end(); await slow.running; t.mock.timers.reset(); }
   // A call that needs more JavaScript objects than the memory limit allows is stopped the same way. The worker starts
   // in about 11 MB; this recipe's 400,000 operations take about 24 MB more before any drawing.
   const small = session({ directory: dir, memoryLimit: 24 }); await small.init();
