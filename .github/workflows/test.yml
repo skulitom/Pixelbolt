@@ -64,6 +64,32 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      # The pinned Node.js runtimes come from nodejs.org once per version and runner system, then from this cache, so a
+      # dropped download no longer turns main red (P-053). A download also retries a dropped or stalled connection, and
+      # the pinned SHA-256 checks every archive, cached or not.
+      - name: Read the pinned Node.js version
+        id: pinned
+        shell: bash
+        run: echo "version=$(node --input-type=module -e "import { NODE_VERSION } from './scripts/build-studio.mjs'; console.log(NODE_VERSION)")" >> "$GITHUB_OUTPUT"
+      - name: Restore the pinned runtimes
+        id: runtimes
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: dist/.cache
+          key: studio-node-${{ steps.pinned.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+      # Every runner builds every target and prints the archives' hashes, so builds made on different systems can be
+      # compared. It comes first so that the cache is saved with all five runtimes even when a later step fails.
+      - name: Build every target on this system
+        shell: bash
+        run: |
+          node scripts/build-studio.mjs --target all --out dist-all
+          cat dist-all/*.sha256
+      - name: Save the pinned runtimes
+        if: steps.runtimes.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: dist/.cache
+          key: ${{ steps.runtimes.outputs.cache-primary-key }}
       - name: Build the archive
         run: node scripts/build-studio.mjs --target ${{ matrix.target }}
       - name: Build it again and compare
@@ -110,12 +136,6 @@ jobs:
         run: |
           build=$(ls -d "$RUNNER_TEMP"/studio/*)
           "$build/runtime/node" scripts/qa-studio.mjs --app "$build/app" --out "$RUNNER_TEMP/studio-qa" || { code=$?; if [ "$code" = 3 ] && [ "${{ matrix.target }}" = linux-arm64 ]; then echo "No browser on this runner; the studio walk did not run here."; else exit "$code"; fi; }
-      # Every runner prints the hashes of all the archives, so builds made on different systems can be compared.
-      - name: Build every target on this system
-        shell: bash
-        run: |
-          node scripts/build-studio.mjs --target all --out dist-all
-          cat dist-all/*.sha256
 
   mcpb:
     name: MCPB bundle

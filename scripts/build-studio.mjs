@@ -169,6 +169,37 @@ export async function sourceState(base = root) {
   return { ...state, read: file => blobs.get(file) };
 }
 
+// Downloads `url`, and tries again after a dropped connection, a stall, a server error or bytes that `accept` refuses:
+// three tries, 3 s and then 9 s apart. A try is given up when no bytes arrive for `stall` ms, however long the whole
+// download takes on a slow line. A missing file (another 4xx) is not tried again. Bytes `accept` still refuses on the
+// last try are returned, so the caller's own check names them.
+export async function download(url, { log = () => {}, accept = () => true, tries = 3, stall = 30_000, fetch = globalThis.fetch, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    const controller = new AbortController();
+    let timer, bytes;
+    const waiting = () => { clearTimeout(timer); timer = setTimeout(() => controller.abort(new Error(`no data for ${stall / 1000} s`)), stall); };
+    try {
+      waiting();
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        const transient = response.status >= 500 || response.status === 408 || response.status === 429;
+        throw Object.assign(new Error(`status ${response.status}`), { final: !transient });
+      }
+      const chunks = [];
+      for await (const chunk of response.body) { chunks.push(chunk); waiting(); }
+      bytes = Buffer.concat(chunks);
+      if (accept(bytes) || attempt >= tries) return bytes;
+      throw new Error(`the ${bytes.length} bytes received are not the expected file`);
+    } catch (error) {
+      const reason = controller.signal.aborted ? controller.signal.reason.message : error.cause?.message ? `${error.message} (${error.cause.message})` : error.message;
+      if (error.final || attempt >= tries) throw new Error(`Download failed${attempt > 1 ? ` after ${attempt} tries` : ''} (${reason}): ${url}`);
+      const pause = 3000 * 3 ** (attempt - 1);
+      log(`Download of ${url} failed (${reason}); trying again in ${pause / 1000} s (try ${attempt + 1} of ${tries})`);
+      await wait(pause);
+    } finally { clearTimeout(timer); }
+  }
+}
+
 // The pinned runtime for `name`: its node program and license, from --node-archive, the cache or nodejs.org.
 async function nodeRuntime(name, { nodeArchive, cache, log }) {
   const target = TARGETS[name], file = nodeArchive ?? path.join(cache, target.archive);
@@ -176,9 +207,7 @@ async function nodeRuntime(name, { nodeArchive, cache, log }) {
   try { archive = await readFile(file); } catch (error) {
     if (error.code !== 'ENOENT' || nodeArchive) throw error;
     log(`Downloading ${target.url}`);
-    const response = await fetch(target.url);
-    if (!response.ok) throw new Error(`Download failed with status ${response.status}: ${target.url}`);
-    archive = Buffer.from(await response.arrayBuffer());
+    archive = await download(target.url, { log, accept: bytes => sha256(bytes) === target.sha256 });
     if (sha256(archive) === target.sha256) { await mkdir(cache, { recursive: true }); await writeFile(file, archive); }
   }
   if (sha256(archive) !== target.sha256) throw new Error(`${nodeArchive ? file : target.url} has SHA-256 ${sha256(archive)}, not the pinned ${target.sha256}. Nothing was built.${nodeArchive ? '' : ` If ${file} exists, delete it and try again.`}`);
