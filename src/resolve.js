@@ -30,7 +30,7 @@ async function locate(reference, baseDir, root, where) {
   return file;
 }
 // A shared palette file is either a flat map of names to colours or any JSON document with a `palette` map, which may
-// also list `ramps` (palette keys from dark to light) for the recipes that link it.
+// also list `ramps` (palette keys from dark to light) for the recipes and pose sources that link it.
 async function sharedPalette(reference, baseDir, context, where) {
   const file = await locate(reference, baseDir, context.root, where), loaded = await readJSON(file, where);
   const palette = isObject(loaded?.palette) ? loaded.palette : loaded;
@@ -42,7 +42,8 @@ async function sharedPalette(reference, baseDir, context, where) {
 async function resolvePalette(document, baseDir, context, where) {
   if (!isObject(document) || !isObject(document.palette) || !Object.hasOwn(document.palette, '$ref')) return document;
   const reference = document.palette.$ref, file = await sharedPalette(reference, baseDir, context, `${where}.palette.$ref`);
-  // A recipe without ramps of its own takes the shared file's; sidecar sources compile to recipes without them.
+  // A recipe or pose source without ramps of its own takes the shared file's; the other sidecar sources compile to
+  // recipes without them.
   const resolved = inlineSharedPalette(document, file), inherited = resolved.ramps !== document.ramps;
   // `ramps` are set when the document took the file's; `sharedRamps` are the file's own, for the studio, which draws the
   // recipe as written with the file and so inlines it again after every edit.

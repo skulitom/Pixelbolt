@@ -14,6 +14,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The portable build tries a Node.js runtime download again after a dropped connection, a stall of 30 s, a connection slower than 256 KB/s over 15 s or a server error (four tries), and says how to supply the archive yourself if every try fails. CI keeps the downloaded runtimes in a cache keyed on the pinned version, and a runner without its own entry starts from another system's.
 - The studio walk waits up to 30 s instead of 8 s for something to happen, and for each sample's drawing instead of a fixed 150 ms. A cold browser on a busy runner once took longer than 8 s to load the studio.
 
+### Fixes
+
+- A pose source without `ramps` of its own takes them from the shared palette file it links (`{"palette": {...}, "ramps": [...]}`), as a recipe does and as `poses.schema.json` says, in the CLI, MCP and studio. A bone or mass that names a ramp in a source with none now says to add `ramps` instead of "expected an integer from 0 to -1".
+
 ## 0.9.2 (2026-10-28)
 
 ### The pixel art skill on its own
