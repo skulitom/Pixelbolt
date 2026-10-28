@@ -8,6 +8,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
 
+### CI: slow downloads and a slow browser
+
+- The portable build tries a Node.js runtime download again after a dropped connection, a stall of 30 s, a connection slower than 256 KB/s over 15 s or a server error (four tries), and says how to supply the archive yourself if every try fails. CI keeps the downloaded runtimes in a cache keyed on the pinned version, and a runner without its own entry starts from another system's.
+- The studio walk waits up to 30 s instead of 8 s for something to happen, and for each sample's drawing instead of a fixed 150 ms. A cold browser on a busy runner once took longer than 8 s to load the studio.
+
 ## 0.9.2 (2026-10-28)
 
 ### The pixel art skill on its own
@@ -87,8 +92,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The test suite and the studio walk no longer assert how long anything takes, so a slow or busy runner can't fail them. They hold the work instead: the renderer's drawing count for the hero and boss rigs, the size of their motion review images, and one redraw for every live edit in the studio. Two checks that guard against a hang (the fluid work budget, wildcard frame names) bound this process's own CPU time.
 - The timings moved to `npm run bench -- --budgets`: the figure workflow's targets and a few loose limits, as eleven cases with a budget each. CI runs it as an advisory job; a case over its budget is a warning on the run, never a failure.
 - The MCP time-limit test moves a mocked clock, so only the slow call meets the 0.3 s limit. On a real clock the call after it was held to 0.3 s too, and a busy Windows runner once took longer.
-- The portable build tries a Node.js runtime download again after a dropped connection, a stall of 30 s, a connection slower than 256 KB/s over 15 s or a server error (four tries), and says how to supply the archive yourself if every try fails. CI keeps the downloaded runtimes in a cache keyed on the pinned version, and a runner without its own entry starts from another system's.
-- The studio walk waits up to 30 s instead of 8 s for something to happen, and for each sample's drawing instead of a fixed 150 ms. A cold browser on a busy runner once took longer than 8 s to load the studio.
+- The portable build tries a Node.js runtime download again after a dropped connection, a stall of 30 s or a server error (three tries), and CI keeps the downloaded runtimes in a cache keyed on the pinned version.
 
 ### Fixes
 
