@@ -679,10 +679,13 @@ test('limits are reported with the effect path, extreme settings stay finite, an
   assert.throws(() => compileFluid(liquidBox([{ at: [64, 64], area: [128, 128], rate: 1, density: -0.5 }], [{ x: 0, y: 0, w: 128, h: 128 }])), error => error.path === 'fluid.effects.flood' && /32768 liquid particles/.test(error.message));
   const sparks = gas({ frames: 40, emitters: [{ at: [8, 8], rate: 1, sparks: { count: 16, life: 256, colors: ['w'] } }, { at: [8, 8], rate: 1, sparks: { count: 16, life: 256, colors: ['w'] } }], look: smoke });
   assert.throws(() => compileFluid({ ...sparks, effects: { plume: { ...sparks.effects.plume, frames: 200 } } }), error => error.path === 'fluid.effects.plume' && /4096 sparks/.test(error.message));
-  // The work budget refuses the most expensive source the schema allows before simulating anything.
-  const started = performance.now();
-  assert.throws(() => compileFluid({ ...gas({ frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 }), error => error.path === 'fluid.effects.plume' && /million cell updates/.test(error.message));
-  assert.ok(performance.now() - started < 1000);
+  // The work budget refuses the most expensive source the schema allows before simulating anything. Refusing takes
+  // about a millisecond; simulating its 31,709 million cell updates first would take minutes. The bound is this
+  // process's own CPU time, so other work on a busy runner can't trip it.
+  const cpu = process.cpuUsage();
+  assert.throws(() => compileFluid({ ...gas({ frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 }), error => error.path === 'fluid.effects.plume' && /about 31709 million cell updates/.test(error.message));
+  const used = process.cpuUsage(cpu);
+  assert.ok(used.user + used.system < 10e6, `refusing took ${(used.user + used.system) / 1000} ms of CPU`);
   // A viscosity solve costs about three times a plain step, and the budget counts it.
   const plain = { ...gas({ frames: 20, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 };
   assert.throws(() => compileFluid({ ...plain, effects: { plume: { ...plain.effects.plume, viscosity: 1 } } }), error => error.path === 'fluid.effects.plume' && /million cell updates/.test(error.message));
@@ -1022,22 +1025,26 @@ test('live runners check sources like compileFluid, and their own inputs with pa
   fails(() => live.step(1.5), 'step', /integer/);
 });
 
-test('a live runner steps a hero-sized steam plume in milliseconds', t => {
+// Its speed (250 ms a frame at most, a few milliseconds in practice) is measured by `npm run bench -- --budgets`
+// (live/steam), which reports a case over budget without failing CI. The timing here is only a diagnostic.
+test('a live runner steps and draws a hero-sized steam plume while it is pushed', t => {
   // 128 × 60, the size of the portfolio hero's steam: a breathing source, wind and a draining band near the top.
   const steam = { ...gas(null), width: 128, height: 60, effects: { steam: { frames: 48, loop: true, buoyancy: 0.2, vorticity: 0.35, dissipation: 0.04, cooling: 0, drag: 0.09, wind: [-0.035, 0],
     emitters: [{ name: 'breath', at: [86, 54], radius: 2, rate: 1, density: 0.6, temperature: 0.5, velocity: [0, -1.1], noise: 0.15, flicker: 0.2, pulse: { amplitude: 0.6, period: 16 } }, { at: [64, 0], area: [128, 12], rate: 1, density: -0.3 }],
     look: [{ field: 'density', colors: ['s', 'w'], thresholds: [0.16, 0.5] }, { field: 'shadow', colors: ['k'], thresholds: [0.5], dither: 0 }], cleanup: { strays: true, corners: true } } } };
   const live = createLiveFluid(steam, { warmup: 24 }), frames = 48, timed = [0, 0];
+  let shown;
   for (let k = 0; k < frames; k++) {
     if (k % 8 === 0) live.push({ x: 60 + k, y: 30, vx: 1.5, vy: -0.5, radius: 6 });
     let started = performance.now();
     live.step();
     timed[0] += performance.now() - started;
     started = performance.now();
-    live.render();
+    shown = live.render();
     timed[1] += performance.now() - started;
   }
   const [step, render] = timed.map(ms => ms / frames);
   t.diagnostic(`128 × 60 steam: ${step.toFixed(2)} ms a step, ${render.toFixed(2)} ms a render, ${Math.round(1000 / (step + render))} frames per second`);
-  assert.ok(step + render < 250, `${step + render} ms a frame`);
+  assert.equal(shown.rgba.length, 128 * 60 * 4); assert.equal(shown.keys.length, 60);
+  assert.ok(shown.keys.some(row => /[sw]/.test(row)), 'the plume drew nothing');
 });

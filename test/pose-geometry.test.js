@@ -182,13 +182,8 @@ test('hierarchy, reach, views and relighting errors identify their source fields
   }
 });
 
-test('reach solves stay within the loose 5ms CI budget', () => {
-  const run = () => solveReach(bone(16), bone(12), [14, 16], { rest: [90, 40] });
-  for (let i = 0; i < 3; i++) run();
-  const times = [];
-  for (let i = 0; i < 15; i++) { const start = performance.now(); run(); times.push(performance.now() - start); }
-  assert.ok(times.sort((a, b) => a - b)[7] < 5);
-});
+// The 5 ms reach-solve budget is measured by `npm run bench -- --budgets` (reach/arm), which reports a case over budget
+// without failing CI.
 
 test('pose geometry uses no engine-dependent mathematics', async () => {
   const code = await readFile(new URL('../src/pose-geometry.js', import.meta.url), 'utf8');

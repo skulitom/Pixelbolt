@@ -137,6 +137,23 @@ jobs:
           build=$(ls -d "$RUNNER_TEMP"/studio/*)
           "$build/runtime/node" scripts/qa-studio.mjs --app "$build/app" --out "$RUNNER_TEMP/studio-qa" || { code=$?; if [ "$code" = 3 ] && [ "${{ matrix.target }}" = linux-arm64 ]; then echo "No browser on this runner; the studio walk did not run here."; else exit "$code"; fi; }
 
+  # Speed is reported here, never asserted in the suite or the studio walk: a slow or busy runner is not a broken
+  # build. A case over its budget becomes a warning on the run and a row in the job summary. The job fails only when a
+  # case breaks or makes different output between runs.
+  budgets:
+    name: Speed budgets (advisory)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm run bench -- --budgets
+
   mcpb:
     name: MCPB bundle
     runs-on: ubuntu-latest

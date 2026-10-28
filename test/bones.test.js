@@ -139,13 +139,8 @@ test('structural fields reject invalid values with their source path', () => {
   assert.doesNotThrow(() => compilePoses(s));
 });
 
-test('one maximum-sized bone stays within the loose 1ms CI raster budget', () => {
-  const bone = shape(64, 16), run = () => rasterizeBone(bone, { ramp });
-  for (let i = 0; i < 3; i++) run();
-  const times = [];
-  for (let i = 0; i < 15; i++) { const start = performance.now(); run(); times.push(performance.now() - start); }
-  assert.ok(times.sort((a, b) => a - b)[7] < 1);
-});
+// The 1 ms budget for one maximum-sized bone (64 × 16) is measured by `npm run bench -- --budgets` (raster/bone), which
+// reports a case over budget without failing CI.
 
 test('structural rasterizers use engine-independent mathematics', async () => {
   const source = await readFile(new URL('../src/craft.js', import.meta.url), 'utf8');

@@ -10,9 +10,8 @@ import { heroRig, bossRig, plainRig } from '../scripts/figure-rigs.mjs';
 const cached = new Map();
 function fixture(make) {
   if (!cached.has(make)) {
-    const source = make(), start = performance.now(), expanded = expandPoses(source), expandedAt = performance.now(), compiled = compilePoses(source), compiledAt = performance.now(), project = renderProject(compiled.recipe, { stats: true });
-    cached.set(make, { source, expanded, ...compiled, project, rasters: new Map(),
-      times: { expand: expandedAt - start, compile: compiledAt - expandedAt, render: performance.now() - compiledAt } });
+    const source = make(), expanded = expandPoses(source), compiled = compilePoses(source), project = renderProject(compiled.recipe, { stats: true });
+    cached.set(make, { source, expanded, ...compiled, project, rasters: new Map() });
   }
   return cached.get(make);
 }
@@ -27,30 +26,12 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
     assert.equal(new Set(rows).size, rows.length);
     assert.equal(f.metadata.warnings, undefined);
     assert.equal(f.project.clipping, undefined);
+    // The suite holds the work, which a slower algorithm moves on every machine: the recipe's size and the renderer's
+    // own drawing count (the hero draws 67,269 pixels, the boss 929,888). How long expansion, compilation and rendering
+    // take is measured by `npm run bench -- --budgets` (poses/hero-expand, poses/hero, render/hero, poses/boss,
+    // render/boss), which reports a case over its budget without failing CI: a busy runner is not a broken build.
     if (make === heroRig) assert.ok(JSON.stringify(f.recipe).length < 150000);
-    else assert.ok(f.project.work.pixels <= 6700000);
-    if (make === heroRig) {
-      // Match the benchmark's warm-median contract (three warm-ups, then the median of fifteen runs), including on
-      // translated Intel runtimes. The hero's first compile and render also warm the whole compiler and renderer, so
-      // a single cold sample is not the budget. The three are timed in turn, so each median's samples spread over the
-      // whole measurement: a burst of CPU from a test file running beside this one moves a median only if it lasts
-      // about half the measurement.
-      const runs = { expand: () => expandPoses(f.source), compile: () => compilePoses(f.source), render: () => renderProject(f.recipe, { stats: true }) };
-      const times = { expand: [], compile: [], render: [] };
-      for (let i = 0; i < 18; i++) for (const [name, run] of Object.entries(runs)) {
-        const start = performance.now();
-        run();
-        if (i >= 3) times[name].push(performance.now() - start);
-      }
-      const [expand, compile, render] = Object.values(times).map(samples => samples.sort((a, b) => a - b)[7]);
-      assert.ok(expand < 50, `expand CI budget, warmed median: ${expand}`);
-      assert.ok(compile < 400, `compile CI budget, warmed median: ${compile}`);
-      assert.ok(render < 150, `render CI budget, warmed median: ${render}`);
-    } else {
-      // In a full run the hero's tests have already warmed the compiler, so this sample is mostly the boss's own work.
-      assert.ok(f.times.compile < 2000, `compile CI budget: ${f.times.compile}`);
-      assert.ok(f.times.render < 600, `render CI budget: ${f.times.render}`);
-    }
+    assert.ok(f.project.work.pixels <= (make === heroRig ? 135000 : 6700000), `drawing work: ${f.project.work.pixels} pixels`);
     const colors = new Set(Object.values(f.source.palette).map(c => new Uint32Array(Uint8Array.from(parseColor(c)).buffer)[0]));
     for (const frame of f.project.frames) {
       const pixels = new Uint32Array(frame.data.buffer);
@@ -59,8 +40,10 @@ for (const [make, count, instances] of [[heroRig, 40, 18], [bossRig, 96, 32]]) {
   });
   const motions = make === heroRig ? ['idle', 'walk', 'run', 'jump', 'attack'] : ['idle', 'walk', 'run', 'jump', 'attack', 'hurt', 'prowl', 'charge'];
   for (const animation of motions) test(`${make.name}: ${animation} has clean parts, joined bones and passing motion measurements`, () => {
-    const f = fixture(make), start = performance.now(), view = inspectMotion(f.project, { animation, metadata: f.metadata, scale: 1 });
-    if (make === heroRig) assert.ok(performance.now() - start < 500, 'R2 image-inclusive motion review CI budget');
+    const f = fixture(make), view = inspectMotion(f.project, { animation, metadata: f.metadata, scale: 1 });
+    // The review's images are its work, about half these bounds at most (the hero's walk is 286 × 420, the boss's
+    // charge 718 × 1060). Its time is the bench's motion/hero-run.
+    assert.ok(view.sheet.width * view.sheet.height <= (make === heroRig ? 250000 : 1600000), `review sheet ${view.sheet.width} × ${view.sheet.height}`);
     for (const [name, pass] of Object.entries(view.motion.checks)) assert.notEqual(pass, false, `${name}: ${JSON.stringify(view.motion)}`);
     const names = new Set(f.project.animations[animation].frames.map(i => f.project.frames[i].name));
     for (const pose of f.expanded.poses.filter(p => names.has(p.name))) {

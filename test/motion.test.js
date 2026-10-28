@@ -100,8 +100,8 @@ test('old skink fails pose spread while the bone skink passes every run motion c
   const oldView = inspectMotion(renderProject(old), { animation: 'run', speed: 48 });
   assert.equal(oldView.motion.checks.poseSpread, false);
   const { recipe, metadata } = compilePoses(skinkRig()), project = renderProject(recipe);
-  const start = performance.now(), view = inspectMotion(project, { animation: 'run', speed: 48, metadata });
-  assert.ok(performance.now() - start < 500, 'loose CI review limit');
+  // The review's 500 ms budget is measured by `npm run bench -- --budgets` (motion/skink-run), not here.
+  const view = inspectMotion(project, { animation: 'run', speed: 48, metadata });
   assert.deepEqual(view.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true });
   assert.equal(Math.max(...view.motion.slide.map(p => p.pixels)), .16);
 });

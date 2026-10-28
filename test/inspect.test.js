@@ -86,10 +86,13 @@ test('frame-name patterns match as * and ? always did, in time proportional to p
   }
   // The regular expression backtracked through every *: against this name, six *a took about 4 s and eight ran for
   // over a minute. This pattern has nine.
+  // Matching it now takes about a millisecond. The bound is this process's own CPU time, so other work on a busy runner
+  // can't trip it; the backtracking it guards against would take minutes.
   const project = renderProject({ version: 1, name: 'long', width: 1, height: 1, frames: [{ name: 'a'.repeat(64) }] });
-  const started = performance.now();
+  const cpu = process.cpuUsage();
   assert.throws(() => inspectProject(project, { frames: ['*a*a*a*a*a*a*a*a*a*b'] }), /no frame matches/);
-  assert.ok(performance.now() - started < 1000);
+  const used = process.cpuUsage(cpu);
+  assert.ok(used.user + used.system < 10e6, `matching took ${(used.user + used.system) / 1000} ms of CPU`);
 });
 test('CLI inspect takes --step and --offset', () => {
   const run = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', 'inspect', 'examples/forest-spirit.json', ...args], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
