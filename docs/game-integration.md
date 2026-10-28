@@ -71,6 +71,8 @@ Use an HTTP server for module imports/fetch. The separate `preview.html` and APN
 
 ## Atlas contract
 
+The forest spirit's atlas, with the first of its six frames:
+
 ```json
 {
   "frames": {
@@ -84,11 +86,13 @@ Use an HTTP server for module imports/fetch. The separate `preview.html` and APN
     }
   },
   "animations": {
-    "idle": { "frames": ["rest"], "loop": true, "duration": 240 }
+    "idle": { "frames": ["rest", "rise", "float", "blink", "float", "fall", "settle"], "loop": true, "duration": 1220 },
+    "bob": { "frames": ["rest", "rise", "float", "rise"], "loop": true, "duration": 740 },
+    "blink": { "frames": ["rest", "blink", "rest"], "loop": false, "duration": 580 }
   },
   "meta": {
-    "image": "forest-spirit.png", "size": { "w": 26, "h": 26 }, "scale": "1",
-    "frameTags": [{ "name": "idle", "from": 0, "to": 0, "direction": "forward" }]
+    "image": "forest-spirit.png", "size": { "w": 156, "h": 26 }, "scale": "1",
+    "frameTags": [{ "name": "bob", "from": 0, "to": 2, "direction": "pingpong" }]
   }
 }
 ```

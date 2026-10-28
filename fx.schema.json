@@ -691,12 +691,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -708,6 +702,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "radius": {
                       "oneOf": [
@@ -776,7 +776,7 @@
                       "description": "Seeded breaks along the ring; default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 6."
@@ -817,12 +817,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -834,6 +828,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "radius": {
                       "oneOf": [
@@ -899,7 +899,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -941,12 +941,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -958,6 +952,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "to": {
                       "type": "array",
@@ -1027,7 +1027,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -1067,12 +1067,6 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
-                    },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1174,7 +1168,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -1215,12 +1209,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1232,6 +1220,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "radius": {
                       "oneOf": [
@@ -1269,7 +1263,7 @@
                       "type": "integer",
                       "minimum": 1,
                       "maximum": 6,
-                      "description": "Corners each star line skips to: 1 a polygon, 2 a pentagram from 5. Default half the corners, rounded down."
+                      "description": "Corners each star line skips to, fewer than points: 1 a polygon, 2 a pentagram from 5. Default the largest below half the corners: 1 for 3 or 4, 2 for 5 or 6, 3 for 7 or 8."
                     },
                     "runes": {
                       "type": "integer",
@@ -1354,7 +1348,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -1395,12 +1389,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1412,6 +1400,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "radius": {
                       "oneOf": [
@@ -1524,7 +1518,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -1565,12 +1559,6 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
-                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1582,6 +1570,12 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "tilt": {
+                      "$ref": "#/$defs/layer-tilt"
+                    },
+                    "squash": {
+                      "$ref": "#/$defs/layer-squash"
                     },
                     "radius": {
                       "oneOf": [
@@ -1630,7 +1624,7 @@
                       "description": "Default 0.4."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -1676,12 +1670,6 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
-                    },
-                    "tilt": {
-                      "$ref": "#/$defs/layer-tilt"
-                    },
-                    "squash": {
-                      "$ref": "#/$defs/layer-squash"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1807,7 +1795,7 @@
                       "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
                     },
                     "scale": {
-                      "type": "number",
+                      "type": "integer",
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 4."
@@ -2131,23 +2119,6 @@
       ],
       "description": "max (default): the brighter layer of a look wins; add: layers sum."
     },
-    "layer-tilt": {
-      "type": "number",
-      "minimum": -3600,
-      "maximum": 3600,
-      "description": "Rotate the shape clockwise by degrees."
-    },
-    "layer-squash": {
-      "type": "array",
-      "items": {
-        "type": "number",
-        "minimum": 0.125,
-        "maximum": 8
-      },
-      "maxItems": 2,
-      "minItems": 2,
-      "description": "Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground."
-    },
     "layer-drift": {
       "type": "array",
       "items": {
@@ -2175,6 +2146,23 @@
       "type": "string",
       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
       "description": "Name a point at at in the layer's first frame, as an emitter cue does (a shake on impact)."
+    },
+    "layer-tilt": {
+      "type": "number",
+      "minimum": -3600,
+      "maximum": 3600,
+      "description": "Rotate the shape clockwise by degrees."
+    },
+    "layer-squash": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0.125,
+        "maximum": 8
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "description": "Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground."
     }
   }
 }

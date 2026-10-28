@@ -79,7 +79,8 @@ export async function skillFiles(version) {
   for (const [source, target] of copied) {
     let data = await readFile(path.join(ROOT, source));
     if (source.endsWith('.md')) {
-      let text = data.toString('utf8');
+      // A package packed from a CRLF tree would otherwise hide the paragraphs standaloneSkill drops.
+      let text = data.toString('utf8').replace(/\r\n/g, '\n');
       if (source === SKILL_SOURCE) text = standaloneSkill(text, version);
       text = runThrough(relink(text, source, target, copied, version), command);
       const problems = standaloneProblems(text, { skill: source === SKILL_SOURCE });
@@ -108,17 +109,20 @@ async function readManifest(folder) {
 // What changed since an earlier install wrote the folder: files it wrote that were edited or replaced, and files this
 // version ships that it didn't write but that are already there with other bytes (the user's own). A file that already
 // holds this version's bytes is unchanged, and a missing one holds nothing to lose, so an interrupted update finishes
-// without --force. `missing` lists this version's files that aren't there.
+// without --force. `missing` lists this version's files that aren't there; `kept`, the changed files this version no
+// longer ships, which even --force leaves alone (and stops listing as its own).
 async function changedSince(folder, manifest, hashes) {
-  const changed = [], missing = [];
+  const changed = [], missing = [], shipped = new Set(Object.keys(hashes).map(file => file.toLowerCase()));
   for (const file of new Set([...Object.keys(manifest.files), ...Object.keys(hashes)])) {
     const now = await hashOf(path.join(folder, ...file.split('/')));
     if (now === null) { if (Object.hasOwn(hashes, file)) missing.push(file); continue; }
     if (now === hashes[file]) continue;
     if (!Object.hasOwn(manifest.files, file) || now !== manifest.files[file]) changed.push(file);
   }
-  return { changed: changed.sort(), missing };
+  return { changed: changed.sort(), missing, kept: changed.filter(file => !shipped.has(file.toLowerCase())).sort() };
 }
+// Temporary files an interrupted write left beside one of the skill's files (see replaceFile).
+const leftover = (file, ours) => { const match = /^(.+)\.[0-9a-f]{12}\.tmp$/.exec(file); return match !== null && ours.has(match[1]); };
 // Every file under a folder, or null when it holds anything but folders and files (a link).
 async function filesIn(folder, prefix = '') {
   const found = [];
@@ -156,17 +160,22 @@ export async function installSkill({ version, force = false, ...where }) {
     const inner = await lstatOrNull(path.join(folder, ...sub.split('/')));
     if (inner && !inner.isDirectory()) throw new Error(`${path.join(folder, ...sub.split('/'))} is ${inner.isSymbolicLink() ? 'a link' : 'not a folder'}; remove it and install again. Nothing was written.`);
   }
-  let changed = [], missing = [], status = stats ? 'updated' : 'installed';
+  let changed = [], missing = [], kept = [], status = stats ? 'updated' : 'installed';
+  const own = new Set([...list, ...previous, SKILL_MANIFEST]), present = stats ? await filesIn(folder) : [];
+  const leftovers = (present ?? []).filter(file => leftover(file, own));
   if (stats && !manifest) {
-    // A first install cut short before its manifest left only this version's files, byte for byte: it finishes.
-    const present = await filesIn(folder);
-    const ours = present && (await Promise.all(present.map(async file => Object.hasOwn(hashes, file) && await hashOf(path.join(folder, ...file.split('/'))) === hashes[file]))).every(Boolean);
+    // A first install cut short before its manifest left only this version's files, byte for byte, and perhaps the
+    // temporary file it was writing: it finishes.
+    const differ = present && (await Promise.all(present.map(async file => Object.hasOwn(hashes, file) && await hashOf(path.join(folder, ...file.split('/'))) !== hashes[file] ? file : null))).filter(Boolean);
+    const ours = present && present.every(file => leftovers.includes(file) || (Object.hasOwn(hashes, file) && !differ.includes(file)));
     if (ours) status = 'installed';
     else if (!force) throw new Error(`${folder} already holds files this command didn't write. ${usage}`);
-    else status = 'replaced';
+    else { status = 'replaced'; changed = (differ ?? []).sort(); }
   } else if (manifest) {
-    ({ changed, missing } = await changedSince(folder, manifest, hashes));
+    ({ changed, missing, kept } = await changedSince(folder, manifest, hashes));
     if (changed.length && !force) throw new Error(`${folder} has changes since Pixelbolt ${manifest.version ?? 'an earlier version'} installed it (${changed.slice(0, 5).join(', ')}${changed.length > 5 ? `, and ${changed.length - 5} more` : ''}). ${usage}`);
+    // --force replaces the changed files this version ships; the ones it no longer ships stay as they are.
+    changed = changed.filter(file => !kept.includes(file));
     if (changed.length) status = 'replaced';
   }
   for (const file of list) {
@@ -176,8 +185,8 @@ export async function installSkill({ version, force = false, ...where }) {
   // Files the earlier version wrote and this one doesn't ship go, unless edited or, on a file system that ignores
   // case, the same file as one this version writes.
   const shipped = new Set(list.map(file => file.toLowerCase()));
-  const stale = previous.filter(file => !shipped.has(file.toLowerCase()) && !changed.includes(file));
-  const same = manifest && !changed.length && !missing.length && !stale.length && manifest.version === version && JSON.stringify(manifest.files) === JSON.stringify(hashes);
+  const stale = previous.filter(file => !shipped.has(file.toLowerCase()) && !kept.includes(file));
+  const same = manifest && !changed.length && !missing.length && !stale.length && !leftovers.length && manifest.version === version && JSON.stringify(manifest.files) === JSON.stringify(hashes);
   const command = skillCommand(version), result = { skill: folder, version, command, files: list.length };
   // From a checkout, npx fetches the released version of the same number, which lacks the checkout's later changes.
   if (await lstatOrNull(path.join(ROOT, '.git'))) result.warning = `Installed from a Pixelbolt checkout: the copy runs ${command} from npm, which may lack this checkout's unreleased changes. For a released copy, run npx -y pixelbolt@latest skill install.`;
@@ -194,5 +203,6 @@ export async function installSkill({ version, force = false, ...where }) {
     if (await lstatOrNull(target)) { await rm(target, { force: true }); removed.push(file); }
   }
   await replaceFile(path.join(folder, SKILL_MANIFEST), JSON.stringify({ installedBy: 'pixelbolt skill install', version, command, files: hashes }, null, 2) + '\n');
-  return { status, ...result, ...(manifest?.version && manifest.version !== version && { from: manifest.version }), ...(changed.length && { overwrote: changed }), ...(removed.length && { removed }) };
+  for (const file of leftovers) await rm(path.join(folder, ...file.split('/')), { force: true });
+  return { status, ...result, ...(manifest?.version && manifest.version !== version && { from: manifest.version }), ...(changed.length && { overwrote: changed }), ...(removed.length && { removed }), ...(kept.length && { kept }) };
 }

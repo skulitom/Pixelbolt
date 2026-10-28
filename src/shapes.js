@@ -12,17 +12,22 @@ import { patternProblem, ditherThreshold, cleanupIds, traceLine, hash, random, s
 export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream'];
 const LIMITS = { layers: 16, looks: 8, colors: 8 };
 const PI = 3.141592653589793;
+// Tilt and squash belong to the kinds drawn around a centre; bolts and streams run between points and take neither.
 const SPECIFIC = {
-  ring: ['radius', 'width', 'fill', 'noise', 'scale'],
-  slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale'],
-  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale'],
+  ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
+  slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale', 'tilt', 'squash'],
+  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale', 'tilt', 'squash'],
   bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal', 'noise', 'scale'],
-  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'scale'],
-  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'scale'],
-  burst: ['radius', 'hole', 'noise', 'scale', 'boil'],
+  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'scale', 'tilt', 'squash'],
+  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'scale', 'tilt', 'squash'],
+  burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
   stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'noise', 'scale']
 };
-const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'tilt', 'squash', 'drift', 'floor', 'seed', 'cue'];
+const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'floor', 'seed', 'cue'];
+// Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
+// of running for hours. Area shapes visit each canvas pixel once a frame, so the recipe's frame-area limit keeps them
+// well under it. The shipped effects use under 0.1%; reaching it takes a few seconds.
+export const SHAPE_WORK = 400_000_000;
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -160,7 +165,7 @@ function readLayer(layer, path, context, index) {
   };
   const t = (key, fallback, min, max) => tween(layer[key] ?? fallback, `${path}.${key}`, min, max);
   const required = key => { if (layer[key] === undefined) fail(`${path}.${key}`, `a ${kind} layer needs ${key}`); return layer[key]; };
-  if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: number(layer.scale ?? 6, `${path}.scale`, 1, 64) });
+  if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64) });
   if (kind === 'slash') {
     const arc = pair(required('arc'), `${path}.arc`, -3600, 3600);
     if (arc[0] === arc[1] || Math.abs(arc[1] - arc[0]) > 360) fail(`${path}.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), at most 360 apart; the slash sweeps from the first to the second');
@@ -172,12 +177,14 @@ function readLayer(layer, path, context, index) {
     const points = integer(layer.points ?? 5, `${path}.points`, 0, 12);
     if (points && points < 3) fail(`${path}.points`, 'expected 0 (no star) or 3–12 star points');
     const step = integer(layer.step ?? Math.max(1, Math.floor((points - 1) / 2)), `${path}.step`, 1, 6);
+    // A step of the corner count or more joins each corner to itself, drawing dots instead of lines.
+    if (points && step >= points) fail(`${path}.step`, `expected fewer than the ${points} points: each line joins a corner to the one step corners on`);
     Object.assign(out, { radius: t('radius', required('radius'), 2, 512), inner: number(layer.inner ?? 0.72, `${path}.inner`, 0.2, 0.95), points, step, runes: integer(layer.runes ?? 12, `${path}.runes`, 0, 48), double: layer.double === undefined ? false : (typeof layer.double === 'boolean' ? layer.double : fail(`${path}.double`, 'expected true or false')), spin: t('spin', 0, -3600, 3600), reveal: number(layer.reveal ?? 0.3, `${path}.reveal`, 0, 0.95), glow: t('glow', 1, 0, 4), fill: t('fill', 0, 0, 2) });
   }
   if (kind === 'star') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), points: integer(layer.points ?? 8, `${path}.points`, 2, 16), ratio: number(layer.ratio ?? 0.55, `${path}.ratio`, 0.05, 1), width: t('width', 2.5, 0, 64), core: t('core', layer.width === undefined ? 3 : maxKey(tween(layer.width, `${path}.width`, 0, 64)) * 1.2, 0, 128), angle: number(layer.angle ?? 0, `${path}.angle`, -3600, 3600), spin: t('spin', 0, -3600, 3600), jitter: number(layer.jitter ?? 0, `${path}.jitter`, 0, 1) });
   if (kind === 'burst') {
     const radius = t('radius', required('radius'), 0, 512);
-    Object.assign(out, { radius, hole: t('hole', 0, 0, 1), noise: number(layer.noise ?? 0.4, `${path}.noise`, 0, 1), scale: number(layer.scale ?? 4, `${path}.scale`, 1, 64), boil: number(layer.boil ?? maxKey(radius) * 0.5, `${path}.boil`, -512, 512) });
+    Object.assign(out, { radius, hole: t('hole', 0, 0, 1), noise: number(layer.noise ?? 0.4, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64), boil: number(layer.boil ?? maxKey(radius) * 0.5, `${path}.boil`, -512, 512) });
   }
   if (kind === 'stream') {
     if (!Array.isArray(layer.through) || !layer.through.length || layer.through.length > 7) fail(`${path}.through`, 'expected 1–7 more [x, y] points: the stream runs from at through each of them on a smooth curve');
@@ -190,8 +197,9 @@ function readLayer(layer, path, context, index) {
   }
   if (kind === 'ring' || kind === 'burst') out.noiseAt = ditherThreshold('value', [0, 0], out.seed, out.scale);
   else {
-    // The other kinds take noise in screen space, moving with the layer, so a falling power breaks them up.
-    Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: number(layer.scale ?? 4, `${path}.scale`, 1, 64) });
+    // The other kinds take noise in screen space, moving with the layer, so a falling power breaks them up. Scales are
+    // whole pixels, as the dither op's are: craft keeps one noise table per scale for the life of the process.
+    Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
   }
   return out;
@@ -238,6 +246,8 @@ function frameOf(layer, cx, cy) {
 function paintArea(put, width, height, cx, cy, bound, frame, value) {
   const y0 = Math.max(0, Math.floor(cy - bound)), y1 = Math.min(height - 1, Math.ceil(cy + bound));
   const x0 = Math.max(0, Math.floor(cx - bound)), x1 = Math.min(width - 1, Math.ceil(cx + bound));
+  if (x0 > x1 || y0 > y1) return;
+  put.spend((x1 - x0 + 1) * (y1 - y0 + 1));
   for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
     const [u, v] = frame.local(i, j), amount = value(u, v, i, j);
     if (amount > 0) put(i, j, amount);
@@ -246,10 +256,13 @@ function paintArea(put, width, height, cx, cy, bound, frame, value) {
 
 // One ink pixel: a core disc of `core` pixels radius at `value` and a glow `glow` pixels beyond it at a fraction of
 // it. `keep(x, y)` may hide pixels (a reveal).
+// Only the part on the canvas is visited: put drops the rest anyway.
 function dab(put, x, y, value, core, glow, keep) {
-  if (!keep(x, y)) return;
   const reach = Math.ceil(core + glow);
-  for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) {
+  const x0 = Math.max(-reach, -x), x1 = Math.min(reach, put.width - 1 - x), y0 = Math.max(-reach, -y), y1 = Math.min(reach, put.bottom - y);
+  if (x0 > x1 || y0 > y1 || !keep(x, y)) return;
+  put.spend((x1 - x0 + 1) * (y1 - y0 + 1));
+  for (let dy = y0; dy <= y1; dy++) for (let dx = x0; dx <= x1; dx++) {
     const d2 = dx * dx + dy * dy;
     if (d2 <= core * core + 0.5) put(x + dx, y + dy, value);
     else if (glow > 0) {
@@ -261,7 +274,12 @@ function dab(put, x, y, value, core, glow, keep) {
 // Ink: a polyline one pixel wide (Bresenham between rounded points), every pixel dabbed.
 function ink(put, points, value, core, glow, keep = () => true) {
   const stamp = (x, y) => dab(put, x, y, value, core, glow, keep);
-  for (let k = 0; k + 1 < points.length; k++) traceLine(round(points[k][0]), round(points[k][1]), round(points[k + 1][0]), round(points[k + 1][1]), stamp);
+  for (let k = 0; k + 1 < points.length; k++) {
+    const x0 = round(points[k][0]), y0 = round(points[k][1]), x1 = round(points[k + 1][0]), y1 = round(points[k + 1][1]);
+    // The walk itself costs a step per pixel, on the canvas or off it.
+    put.spend(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) + 1);
+    traceLine(x0, y0, x1, y1, stamp);
+  }
   if (points.length === 1) stamp(round(points[0][0]), round(points[0][1]));
 }
 
@@ -336,8 +354,9 @@ const PAINTERS = {
   // origin to the far end (a pillar of light that thins out upward). `squash` and `tilt` shape the caps alone, so a
   // pillar given its circle's squash stands on a foot that lies on the same ground.
   beam(layer, s, put, W, H) {
-    const ax = s.cx, ay = s.cy, bx = layer.to[0] + s.dx, by = layer.to[1] + s.dy, ex = bx - ax, ey = by - ay, L = Math.sqrt(ex * ex + ey * ey) || 1;
-    const ux = ex / L, uy = ey / L, w = sample(layer.width, s.q) / 2, head = (layer.reveal ? ease('out', clamp01(s.end / layer.reveal)) : 1) * L;
+    // A beam whose far end is its start is just its round cap (a direction of [0, 0] filled its whole box).
+    const ax = s.cx, ay = s.cy, bx = layer.to[0] + s.dx, by = layer.to[1] + s.dy, ex = bx - ax, ey = by - ay, length = Math.sqrt(ex * ex + ey * ey), L = length || 1;
+    const ux = length ? ex / L : 1, uy = length ? ey / L : 0, w = sample(layer.width, s.q) / 2, head = (layer.reveal ? ease('out', clamp01(s.end / layer.reveal)) : 1) * L;
     if (w <= 0) return;
     const half = along => Math.max(0.6, w * (1 + layer.wobble * sinDeg(360 * (along / layer.wavelength - layer.waves * s.p))));
     const [sx, sy] = layer.squash, c = cosDeg(layer.tilt), sn = sinDeg(layer.tilt);
@@ -345,6 +364,8 @@ const PAINTERS = {
     const margin = w * (1 + layer.wobble) * s.frame.reach + 2;
     const x0 = Math.max(0, Math.floor(Math.min(ax, ax + ux * head) - margin)), x1 = Math.min(W - 1, Math.ceil(Math.max(ax, ax + ux * head) + margin));
     const y0 = Math.max(0, Math.floor(Math.min(ay, ay + uy * head) - margin)), y1 = Math.min(H - 1, Math.ceil(Math.max(ay, ay + uy * head) + margin));
+    if (x0 > x1 || y0 > y1) return;
+    put.spend((x1 - x0 + 1) * (y1 - y0 + 1));
     for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
       const dx = i - ax, dy = j - ay, along = dx * ux + dy * uy;
       let distance, hw;
@@ -450,6 +471,7 @@ const PAINTERS = {
     const { points, lengths } = layer.curve, L = lengths[lengths.length - 1], at = ease(layer.ease, s.end);
     const tail = clamp01(sample(layer.tail, at)) * L, head = clamp01(sample(layer.head, at)) * L, span = head - tail, w = sample(layer.width, s.q) / 2;
     if (span < 0.5 || w <= 0) return;
+    put.spend(Math.floor((head + 1e-9 - tail) / 0.5) + 1);
     let k = 0;
     for (let d = tail; d <= head + 1e-9; d += 0.5) {
       while (k < lengths.length - 2 && lengths[k + 1] < d) k++;
@@ -458,8 +480,11 @@ const PAINTERS = {
       if (layer.sway) { const off = layer.sway * (d / L) * sinDeg(360 * (d / layer.wavelength - layer.waves * s.p)); x -= ty * off; y += tx * off; }
       // Each step stamps a cone a little wider than its half width, so even a one-pixel tip keeps its pixels.
       const hw = Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, reach = Math.ceil(hw);
-      const X = round(x), Y = round(y);
-      for (let j = Y - reach; j <= Y + reach; j++) for (let i = X - reach; i <= X + reach; i++) {
+      // Only the part of the stamp on the canvas is visited: put drops the rest anyway.
+      const X = round(x), Y = round(y), i0 = Math.max(0, X - reach), i1 = Math.min(put.width - 1, X + reach), j0 = Math.max(0, Y - reach), j1 = Math.min(put.bottom, Y + reach);
+      if (i0 > i1 || j0 > j1) continue;
+      put.spend((i1 - i0 + 1) * (j1 - j0 + 1));
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
         const dx = i - x, dy = j - y, dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < hw) put(i, j, 1 - dist / hw);
       }
@@ -482,9 +507,10 @@ function band(value, thresholds) {
 /**
  * The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. `blobs` are this frame's blob
  * particles, { look, x, y, radius }: each adds a soft disc, (1 − d²/r²)², to its look's field, so drops that touch merge
- * into one body.
+ * into one body. `work` counts the pixels painting visits across one compile (pass the same object for every frame and
+ * effect); past SHAPE_WORK the layer that crosses it is refused.
  */
-export function renderShapes(shapes, f, width, height, blobs = []) {
+export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }) {
   const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N);
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
@@ -500,6 +526,12 @@ export function renderShapes(shapes, f, width, height, blobs = []) {
       // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.
       const bottom = layer.floor === null ? height - 1 : Math.min(height - 1, Math.floor(layer.floor));
       const put = (i, j, value) => { if (i >= 0 && j >= 0 && i < width && j <= bottom) { const c = j * width + i; if (value > scratch[c]) scratch[c] = value; } };
+      // Painters visit only the canvas (width × rows down to bottom) and count what they visit.
+      put.width = width; put.bottom = bottom;
+      put.spend = n => {
+        work.spent += n;
+        if (work.spent > SHAPE_WORK) fail(layer.path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
+      };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
       PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, frame: frameOf(layer, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {

@@ -38,7 +38,7 @@
           "additionalProperties": false
         }
       ],
-      "description": "The colour recipe: inline, a file resolved by the CLI relative to this source (or inside the MCP root), or {\"revision\": id} through MCP."
+      "description": "The colour recipe, at most 256 pixels a side (a normal pass lights scene assets): inline, a file resolved by the CLI relative to this source (or inside the MCP root), or {\"revision\": id} through MCP."
     },
     "bevel": {
       "type": "integer",
@@ -211,12 +211,12 @@
         "x": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 255
+          "maximum": 4095
         },
         "y": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 255
+          "maximum": 4095
         },
         "color": {
           "type": "string",

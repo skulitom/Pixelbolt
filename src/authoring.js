@@ -1,5 +1,5 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
-import { PixelError, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
+import { PixelError, CANVAS_SIDE, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
 import { BLOB_MASKS, CARDINAL_MASKS } from './autotile.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
@@ -485,6 +485,9 @@ export function compileNormals(source) {
   if (typeof spec === 'string' || (spec && typeof spec === 'object' && spec.revision !== undefined && spec.version === undefined)) fail('normals.recipe', 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) fail('normals.recipe', 'expected the colour recipe, inline or as a file reference');
   if (spec.format !== undefined) fail('normals.recipe', `expected a recipe, not a ${spec.format} source; compile it first and derive normals from the result`);
+  // A normal pass lights scene assets, which are at most 256 a side, so a larger still is refused here rather than as
+  // an error in a grid the user never wrote.
+  if ([spec.width, spec.height].some(side => typeof side === 'number' && side > CANVAS_SIDE)) fail('normals.recipe', `the colour recipe is ${spec.width}×${spec.height}; a normal pass is at most ${CANVAS_SIDE}×${CANVAS_SIDE} (it lights scene assets, which keep that limit), so derive normals from a recipe of at most ${CANVAS_SIDE} a side`);
   if (source.bevel !== undefined && (!Number.isInteger(source.bevel) || source.bevel < 1 || source.bevel > 64)) fail('normals.bevel', 'expected 1–64 pixels from the edge to the flat top; omit it to round each shape up to its thickest point');
   const detail = source.detail ?? 0;
   if (typeof detail !== 'number' || !Number.isFinite(detail) || detail < 0 || detail > 1) fail('normals.detail', 'expected 0 (shape only) to 1');

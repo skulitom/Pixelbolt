@@ -20,18 +20,21 @@ function keyedAt(keys, time) {
   if (time <= keys[0].time) return keys[0];
   for (let k = 1; k < keys.length; k++) {
     const a = keys[k - 1], b = keys[k];
-    if (time < b.time) { const f = ease(a.ease, (time - a.time) / (b.time - a.time)); return { strength: a.strength + (b.strength - a.strength) * f, radius: a.radius + (b.radius - a.radius) * f }; }
+    // An overshoot carries past the next key: strength stays at least 0 and the radius, which lighting divides by, at
+    // least 1, the least a key may set.
+    if (time < b.time) { const f = ease(a.ease, (time - a.time) / (b.time - a.time)); return { strength: Math.max(0, a.strength + (b.strength - a.strength) * f), radius: Math.max(1, a.radius + (b.radius - a.radius) * f) }; }
   }
   return keys.at(-1);
 }
 // A placement's lift at `time`: a fixed height, or keys held before the first and after the last and eased between
-// neighbours by the earlier key's ease, rounded to whole pixels.
+// neighbours by the earlier key's ease, rounded to whole pixels and kept from 0 to 256 as keys are, so an overshoot
+// never sinks it below its ground line.
 function liftAt(lift, time) {
   if (typeof lift === 'number') return lift;
   if (time <= lift[0].time) return lift[0].height;
   for (let k = 1; k < lift.length; k++) {
     const a = lift[k - 1], b = lift[k];
-    if (time < b.time) return Math.round(a.height + (b.height - a.height) * ease(a.ease, (time - a.time) / (b.time - a.time)));
+    if (time < b.time) return Math.min(256, Math.max(0, Math.round(a.height + (b.height - a.height) * ease(a.ease, (time - a.time) / (b.time - a.time)))));
   }
   return lift.at(-1).height;
 }
@@ -307,6 +310,13 @@ export function prepareScene(source) {
         return { time, height: int(key.height, 0, 256, `${kp}.height`), ease: key.ease ?? 'linear' };
       });
     } else if (instance.lift !== undefined) lift = int(instance.lift, 0, 256, `${path}.lift`);
+    // A shadow is cast by the part of a frame above where it stands. Anchored on its top row (the default [0, 0]), none
+    // is, unless it is always lifted or held at a frame point, which stands on its holder's ground.
+    if (instance.shadow && !attach?.point && !(typeof lift === 'number' && lift > 0)) {
+      const label = instance.name ?? i;
+      if (anchor !== 'frame' && anchor[1] <= 0) warnings.push(`${label}: shadow, but its anchor is on its top row, so it casts nothing; anchor it at its feet (anchor: "frame" or [x, bottom]).`);
+      if (anchor === 'frame' && project.frames.some(frame => !(frame.anchor?.[1] > 0))) warnings.push(`${label}: shadow, but its anchor is on its top row, so it casts nothing; anchor ${instance.asset}'s frames at their feet.`);
+    }
     if (scale !== 1) warnings.push(`${instance.name ?? i}: ${scale}× pixels; compare density against neighboring 1× assets.`);
     return { ...instance, at, anchor, scale, repeat, step, shade, attach, lift, parallax, ...(instance.sequence && { sequence }), ...(trajectory && { trajectory }) };
   });
@@ -426,10 +436,13 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   // drew each pixel last, and pixel counts of placement `front` covering placement `behind`. An entry covers when it
   // draws over another; one that covers nothing lies straight on the background, as a floor or backdrop does.
   const owner = depth ? new Int32Array(width * height).fill(-1) : null, entries = [], pairs = new Map();
+  // A copy drawn over another copy of the same placement (overlapping repeat copies) covers only what that copy covers,
+  // so a strip of overlapping grass still lies on the background.
   const cover = (front, behind) => {
     const f = entries[front], b = entries[behind];
+    if (b.instance === f.instance) { f.covers ||= b.covers; return; }
     f.covers = true;
-    if ((b.covers || b.sorted) && b.instance !== f.instance) { const key = `${f.instance} ${b.instance}`; pairs.set(key, (pairs.get(key) ?? 0) + 1); }
+    if (b.covers || b.sorted) { const key = `${f.instance} ${b.instance}`; pairs.set(key, (pairs.get(key) ?? 0) + 1); }
   };
   const frameIndex = (project, selection, start) => {
     const animation = selection.animation === undefined ? null : project.animations[selection.animation];
@@ -467,7 +480,8 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       if (light) {
         let nx = 0, ny = 0, nz = 1;
         if (normal?.[at + 3]) { nx = normal[at] / 127.5 - 1; ny = normal[at + 1] / 127.5 - 1; nz = normal[at + 2] / 127.5 - 1; }
-        const norm = Math.hypot(nx, ny, nz) || 1, intensity = [lighting.ambient, lighting.ambient, lighting.ambient];
+        // Lengths use sqrt of a sum of squares, not Math.hypot, which engines may round differently (see AGENTS.md).
+        const norm = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1, intensity = [lighting.ambient, lighting.ambient, lighting.ambient];
         for (let li = 0; li < lights.length; li++) {
           const source = lights[li];
           if (!source.strength) continue;
@@ -479,8 +493,8 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           if (source.toward) diffuse = Math.max(0, (nx * source.toward[0] + ny * source.toward[1] + nz * source.toward[2]) / norm);
           else {
             const dx = source.at[0] - px, dy = source.at[1] - py, dz = source.height;
-            const distance = Math.hypot(dx, dy, dz);
-            diffuse = Math.max(0, (nx * dx + ny * dy + nz * dz) / norm / distance) * Math.max(0, 1 - Math.hypot(dx, dy) / source.radius);
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            diffuse = Math.max(0, (nx * dx + ny * dy + nz * dz) / norm / distance) * Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy) / source.radius);
           }
           // Band the light's brightness once, then tint it: banding each channel separately made a coloured light
           // change band at different distances per channel, painting rainbow rings. Strength scales the banded light,
@@ -577,8 +591,10 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const instance = scene.instances[i], s = instance.scale;
     if (instance.tilemap) {
       if (instance.sort !== 'ground') return [{ i }];
+      // A cell stands on the first screen row of the map row above `bottom`, as a placement stands on the first screen
+      // row of its anchor row, so a tile and a placement on the same art row tie at any scale.
       const top = instance.at[1] - instance.anchor[1] * s;
-      return instance.tilemap.cells.map((cell, k) => ({ i, cell: k, ground: top + cell.bottom * s - 1 }));
+      return instance.tilemap.cells.map((cell, k) => ({ i, cell: k, ground: top + (cell.bottom - 1) * s }));
     }
     const [columns, rows] = instance.repeat;
     return Array.from({ length: columns * rows }, (_, k) => ({ i, rx: k % columns, ry: Math.floor(k / columns), ground: states[i].position[1] + Math.floor(k / columns) * instance.step[1] }));
@@ -648,7 +664,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       if (instance.tilemap) {
         // Each tile casts from the middle of its frame, standing on the row it sorts by.
         const { tilemap } = instance, left = instance.at[0] - instance.anchor[0] * s - shift[0], top = instance.at[1] - instance.anchor[1] * s - shift[1];
-        casters = (item.cell === undefined ? tilemap.cells : [tilemap.cells[item.cell]]).map(cell => ({ frame: project.frames[frameIndex(project, cell, 0)], left: left + cell.x * s, top: top + cell.y * s, ground: top + cell.bottom * s - 1, pivot: left + cell.x * s + Math.floor(project.width * s / 2) }));
+        casters = (item.cell === undefined ? tilemap.cells : [tilemap.cells[item.cell]]).map(cell => ({ frame: project.frames[frameIndex(project, cell, 0)], left: left + cell.x * s, top: top + cell.y * s, ground: top + (cell.bottom - 1) * s, pivot: left + cell.x * s + Math.floor(project.width * s / 2) }));
       } else {
         // A placement casts from where it stands; lifted, its shadow leaves its feet.
         const state = states[i];

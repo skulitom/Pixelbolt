@@ -7,7 +7,7 @@
 // shockwave rings, slashes, beams, lightning, magic circles, impact stars, fireballs) bake into one grid per frame
 // between `behind` particles and the rest. Browser-compatible and deterministic: seeded hashing and polynomial
 // trigonometry, no Math.random.
-import { PixelError, parseColor, renderProject } from './core.js';
+import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
 import { readShapes, renderShapes, tween, sample } from './shapes.js';
@@ -380,6 +380,9 @@ export function compileEffects(source) {
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
   const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Set();
+  // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
+  const shapeWork = { spent: 0 };
+  let totalFrames = 0;
   for (const [name, effect] of Object.entries(source.effects)) {
     const path = `fx.effects.${name}`;
     identifier(name, path);
@@ -388,6 +391,10 @@ export function compileEffects(source) {
     seen.add(name.toLowerCase());
     fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup'], path);
     const count = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop ?? false;
+    // The recipe's limits on frames, checked before anything is simulated or painted rather than after.
+    totalFrames += count;
+    if (totalFrames > 256) fail('fx.effects', `the effects make ${totalFrames} frames; a recipe holds at most 256`);
+    if (totalFrames * width * height > FRAME_AREA) fail('fx.effects', `the effects make ${totalFrames} frames of ${width}×${height}, more than the 4,194,304 pixels a recipe's frames share; use fewer frames or a smaller canvas`);
     if (typeof loop !== 'boolean') fail(`${path}.loop`, 'expected a boolean');
     const durations = Array.isArray(effect.duration)
       ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
@@ -409,7 +416,7 @@ export function compileEffects(source) {
     // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
     const cues = [];
     const names = run.output.map((front, i) => {
-      const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i]);
+      const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork);
       const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
       const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
       if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });

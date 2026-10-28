@@ -1032,6 +1032,9 @@ const readRegion = (data, width, region, namer) => Array.from({ length: region.h
 
 // Cells run left to right, top to bottom. The largest scale that keeps cells within 256px and the sheet within 1024px
 // wins, then fewer rows, then less area. Checker squares span whole source pixels so transparency never reads as dithering.
+// A sheet holds at most 4096 pixels of cells a side; their 2-pixel gutters may take it past that, so a still 4096
+// pixels wide shows whole. Wider gutters (above scale 2) count against the limit.
+const SHEET_SIDE = 4096;
 function drawSheet(sources, width, region, { scale, background = null, columns, where = 'inspect' } = {}) {
   const measure = (c, s) => {
     const rows = Math.ceil(sources.length / c), gap = Math.max(2, s);
@@ -1049,7 +1052,7 @@ function drawSheet(sources, width, region, { scale, background = null, columns, 
     const m = measure(c, scale ?? 1);
     if (!layout || Math.max(m.width, m.height) < Math.max(layout.width, layout.height)) layout = m;
   }
-  if (layout.width > 4096 || layout.height > 4096) fail(where, `the contact sheet would be ${layout.width}×${layout.height} pixels, above the 4096-pixel limit; select fewer frames, a smaller region or a lower scale`);
+  if (layout.width > SHEET_SIDE + 2 * (layout.columns + 1) || layout.height > SHEET_SIDE + 2 * (layout.rows + 1)) fail(where, `the contact sheet would be ${layout.width}×${layout.height} pixels, above the 4096-pixel limit (4096 pixels of frames and 2-pixel gutters); select fewer frames, a smaller region or a lower scale`);
   const data = new Uint8ClampedArray(layout.width * layout.height * 4), square = Math.max(2, Math.ceil(8 / layout.scale)), composed = new Map();
   for (let i = 0; i < data.length; i += 4) data.set(gutterColor, i);
   sources.forEach((source, n) => {
@@ -1355,14 +1358,21 @@ export function compareProjects(before, after) {
     ...(Object.keys(filled(animations)).length && { animations: filled(animations) })
   };
   // Before and after share one row per frame, cropped to the changed area plus 2 pixels unless frames were added or removed.
+  // When two frames side by side would pass the sheet limit (a still over 2048 wide), before goes above after; a
+  // comparison too large either way (over 2048 a side, which no recipe is) keeps its report without the image.
   if (shown.length && !resized) {
     let region = { x: 0, y: 0, w: width, h: height };
     if (shown.every(row => row.box)) {
       const x = Math.max(0, Math.min(...shown.map(row => row.box.x)) - 2), y = Math.max(0, Math.min(...shown.map(row => row.box.y)) - 2);
       region = { x, y, w: Math.min(width, Math.max(...shown.map(row => row.box.x + row.box.w)) + 2) - x, h: Math.min(height, Math.max(...shown.map(row => row.box.y + row.box.h)) + 2) - y };
     }
-    const rows = shown.slice(0, Math.max(1, Math.min(16, Math.floor(4094 / (region.h + 2)))));
-    report.image = { region, frames: rows.map(({ frame, status }) => ({ frame, status })), ...(rows.length < shown.length && { omitted: shown.length - rows.length }), sheet: drawSheet(rows.flatMap(row => [row.before, row.after]), width, region, { columns: 2, where: 'image' }) };
+    const stacked = 2 * region.w > SHEET_SIDE;
+    if (stacked && 2 * region.h > SHEET_SIDE) report.imageNote = `no before/after image: two ${region.w}×${region.h} frames pass the 4096-pixel sheet limit side by side and stacked; inspect each revision with a region instead`;
+    else {
+      const rows = shown.slice(0, Math.max(1, Math.min(16, Math.floor(4094 / ((stacked ? 2 : 1) * (region.h + 2))))));
+      report.image = { region, frames: rows.map(({ frame, status }) => ({ frame, status })), ...(rows.length < shown.length && { omitted: shown.length - rows.length }), sheet: drawSheet(rows.flatMap(row => [row.before, row.after]), width, region, { columns: stacked ? 1 : 2, where: 'image' }) };
+      if (stacked) report.imageNote = `before above after: side by side, two ${region.w}-pixel frames would pass the 4096-pixel sheet limit`;
+    }
   }
   const legend = namer.legend();
   if (Object.keys(legend).length) report.legend = legend;

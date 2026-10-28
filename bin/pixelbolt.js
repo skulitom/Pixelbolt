@@ -165,7 +165,8 @@ const referenced = input => input.resolution.files.length ? { resolved: input.re
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 try {
   const [command = 'help', ...rest] = process.argv.slice(2);
-  if (['help', '--help', '-h'].includes(command)) process.stdout.write(HELP);
+  // `<command> --help` shows the same help, which lists every command's options (the quick start points agents there).
+  if (['help', '--help', '-h'].includes(command) || rest.includes('--help') || rest.includes('-h')) process.stdout.write(HELP);
   else {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
