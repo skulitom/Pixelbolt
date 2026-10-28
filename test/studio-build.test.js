@@ -160,41 +160,45 @@ test('a release build takes its files from the commit, whatever line endings the
   assert.equal(dev.files.get('PixelboltStudio-9.9.9-dev-win-x64/app/notes.txt').toString(), 'one\r\nthree\r\n');
 });
 
-test('a runtime download tries again after a dropped connection, a stall, a server error or wrong bytes, and stops at three tries', async () => {
+test('a runtime download tries again after a dropped connection, a stall, a slow connection, a server error or wrong bytes, and stops at four tries', async () => {
   // A stand-in for fetch: each try answers with the next reply. A stalled body sends one chunk and then nothing, until
-  // the download gives the try up through its signal, as a real connection would.
+  // the download gives the try up through its signal, as a real connection would. A slow body sends 1 KB for every
+  // second of a stand-in clock, so its speed is judged without waiting.
   const archive = Buffer.from('node runtime archive'), url = 'https://nodejs.org/dist/stand-in.tar.gz';
   const body = (...chunks) => new ReadableStream({ start(stream) { for (const chunk of chunks) stream.enqueue(chunk); stream.close(); } });
+  let clock = 0;
   const replies = {
     ok: () => new Response(body(archive.subarray(0, 4), archive.subarray(4))),
     dropped: () => { throw new TypeError('fetch failed', { cause: new Error('terminated') }); },
     unavailable: () => new Response('busy', { status: 503 }),
     missing: () => new Response('no such file', { status: 404 }),
     wrong: () => new Response(body(Buffer.from('a captive portal page'))),
-    stalled: signal => new Response(new ReadableStream({ start(stream) { stream.enqueue(archive.subarray(0, 4)); signal.addEventListener('abort', () => stream.error(signal.reason)); } }))
+    stalled: signal => new Response(new ReadableStream({ start(stream) { stream.enqueue(archive.subarray(0, 4)); signal.addEventListener('abort', () => stream.error(signal.reason)); } })),
+    slow: () => new Response(new ReadableStream({ pull(stream) { clock += 1000; stream.enqueue(new Uint8Array(1024)); } }))
   };
   const attempt = async (...sequence) => {
     const logged = [], waits = [];
     let tries = 0;
     const fetch = async (address, { signal }) => { assert.equal(address, url); return replies[sequence[tries++]](signal); };
-    const result = download(url, { fetch, stall: 50, log: line => logged.push(line), wait: async ms => { waits.push(ms); }, accept: bytes => bytes.equals(archive) });
-    return { result: await result.then(bytes => bytes, error => error), logged, waits, tries };
+    const options = { fetch, stall: 50, floor: 10 * 1024, window: 5000, now: () => clock, log: line => logged.push(line), wait: async ms => { waits.push(ms); }, accept: bytes => bytes.equals(archive) };
+    return { result: await download(url, options).then(bytes => bytes, error => error), logged, waits, tries };
   };
-  for (const first of ['dropped', 'unavailable', 'stalled', 'wrong']) {
+  for (const first of ['dropped', 'unavailable', 'stalled', 'slow', 'wrong']) {
     const { result, logged, waits, tries } = await attempt(first, 'ok');
     assert.ok(Buffer.isBuffer(result) && result.equals(archive), `${first}: ${result.message ?? result}`);
-    assert.equal(tries, 2); assert.deepEqual(waits, [3000]);
-    assert.equal(logged.length, 1); assert.match(logged[0], /^Download of https:\/\/nodejs\.org\/dist\/stand-in\.tar\.gz failed \(.+\); trying again in 3 s \(try 2 of 3\)$/);
+    assert.equal(tries, 2); assert.deepEqual(waits, [2000]);
+    assert.equal(logged.length, 1); assert.match(logged[0], /^Download of https:\/\/nodejs\.org\/dist\/stand-in\.tar\.gz failed \(.+\); trying again in 2 s \(try 2 of 4\)$/);
   }
   assert.match((await attempt('stalled', 'ok')).logged[0], /\(no data for 0\.05 s\)/);
+  assert.match((await attempt('slow', 'ok')).logged[0], /\(only 1 KB\/s\)/);
   assert.match((await attempt('dropped', 'ok')).logged[0], /\(fetch failed \(terminated\)\)/);
-  // A missing file is not tried again; three failures end the download with the last reason.
+  // A missing file is not tried again; four failures end the download with the last reason.
   const missing = await attempt('missing', 'ok');
   assert.equal(missing.tries, 1); assert.equal(missing.result.message, `Download failed (status 404): ${url}`);
-  const failing = await attempt('dropped', 'unavailable', 'dropped', 'ok');
-  assert.equal(failing.tries, 3); assert.deepEqual(failing.waits, [3000, 9000]);
-  assert.equal(failing.result.message, `Download failed after 3 tries (fetch failed (terminated)): ${url}`);
+  const failing = await attempt('dropped', 'slow', 'unavailable', 'dropped', 'ok');
+  assert.equal(failing.tries, 4); assert.deepEqual(failing.waits, [2000, 6000, 18000]);
+  assert.equal(failing.result.message, `Download failed after 4 tries (fetch failed (terminated)): ${url}`);
   // Bytes still wrong on the last try come back, so the build's own SHA-256 check names them.
-  const wrong = await attempt('wrong', 'wrong', 'wrong');
-  assert.equal(wrong.tries, 3); assert.equal(wrong.result.toString(), 'a captive portal page');
+  const wrong = await attempt('wrong', 'wrong', 'wrong', 'wrong');
+  assert.equal(wrong.tries, 4); assert.equal(wrong.result.toString(), 'a captive portal page');
 });

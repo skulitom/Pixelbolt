@@ -169,14 +169,17 @@ export async function sourceState(base = root) {
   return { ...state, read: file => blobs.get(file) };
 }
 
-// Downloads `url`, and tries again after a dropped connection, a stall, a server error or bytes that `accept` refuses:
-// three tries, 3 s and then 9 s apart. A try is given up when no bytes arrive for `stall` ms, however long the whole
-// download takes on a slow line. A missing file (another 4xx) is not tried again. Bytes `accept` still refuses on the
-// last try are returned, so the caller's own check names them.
-export async function download(url, { log = () => {}, accept = () => true, tries = 3, stall = 30_000, fetch = globalThis.fetch, wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
+// Downloads `url`, and tries again after a dropped connection, a stall, a slow connection, a server error or bytes that
+// `accept` refuses: four tries, 2, 6 and 18 s apart. A try is given up when no bytes arrive for `stall` ms, or when
+// fewer than `floor` bytes a second arrive over `window` ms. That is a slow route more often than a slow line: one CI
+// runner got 38 KB/s for one archive (16 minutes) and 5 MB/s for the next, so a fresh connection usually does better.
+// A missing file (another 4xx) is not tried again. Bytes `accept` still refuses on the last try are returned, so the
+// caller's own check names them. `fetch`, `now` and `wait` are replaced in tests.
+export async function download(url, { log = () => {}, accept = () => true, tries = 4, stall = 30_000, floor = 256 * 1024, window = 15_000,
+  fetch = globalThis.fetch, now = () => performance.now(), wait = ms => new Promise(resolve => setTimeout(resolve, ms)) } = {}) {
   for (let attempt = 1; ; attempt++) {
     const controller = new AbortController();
-    let timer, bytes;
+    let timer;
     const waiting = () => { clearTimeout(timer); timer = setTimeout(() => controller.abort(new Error(`no data for ${stall / 1000} s`)), stall); };
     try {
       waiting();
@@ -186,17 +189,26 @@ export async function download(url, { log = () => {}, accept = () => true, tries
         throw Object.assign(new Error(`status ${response.status}`), { final: !transient });
       }
       const chunks = [];
-      for await (const chunk of response.body) { chunks.push(chunk); waiting(); }
-      bytes = Buffer.concat(chunks);
+      let since = now(), counted = 0;
+      for await (const chunk of response.body) {
+        chunks.push(chunk); waiting();
+        counted += chunk.length;
+        const elapsed = now() - since;
+        if (elapsed < window) continue;
+        const rate = counted / (elapsed / 1000);
+        if (rate < floor) throw new Error(`only ${Math.round(rate / 1024)} KB/s`);
+        since = now(); counted = 0;
+      }
+      const bytes = Buffer.concat(chunks);
       if (accept(bytes) || attempt >= tries) return bytes;
       throw new Error(`the ${bytes.length} bytes received are not the expected file`);
     } catch (error) {
       const reason = controller.signal.aborted ? controller.signal.reason.message : error.cause?.message ? `${error.message} (${error.cause.message})` : error.message;
       if (error.final || attempt >= tries) throw new Error(`Download failed${attempt > 1 ? ` after ${attempt} tries` : ''} (${reason}): ${url}`);
-      const pause = 3000 * 3 ** (attempt - 1);
+      const pause = 2000 * 3 ** (attempt - 1);
       log(`Download of ${url} failed (${reason}); trying again in ${pause / 1000} s (try ${attempt + 1} of ${tries})`);
       await wait(pause);
-    } finally { clearTimeout(timer); }
+    } finally { clearTimeout(timer); controller.abort(); }
   }
 }
 
@@ -207,7 +219,9 @@ async function nodeRuntime(name, { nodeArchive, cache, log }) {
   try { archive = await readFile(file); } catch (error) {
     if (error.code !== 'ENOENT' || nodeArchive) throw error;
     log(`Downloading ${target.url}`);
-    archive = await download(target.url, { log, accept: bytes => sha256(bytes) === target.sha256 });
+    archive = await download(target.url, { log, accept: bytes => sha256(bytes) === target.sha256 }).catch(error => {
+      throw new Error(`${error.message}\nTo build anyway, fetch ${target.archive} another way and put it in ${cache}, or pass it as --node-archive (one target); its pinned SHA-256 is checked either way.`);
+    });
     if (sha256(archive) === target.sha256) { await mkdir(cache, { recursive: true }); await writeFile(file, archive); }
   }
   if (sha256(archive) !== target.sha256) throw new Error(`${nodeArchive ? file : target.url} has SHA-256 ${sha256(archive)}, not the pinned ${target.sha256}. Nothing was built.${nodeArchive ? '' : ` If ${file} exists, delete it and try again.`}`);

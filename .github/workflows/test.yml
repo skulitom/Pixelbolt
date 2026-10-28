@@ -65,8 +65,10 @@ jobs:
           node-version: 24
           package-manager-cache: false
       # The pinned Node.js runtimes come from nodejs.org once per version and runner system, then from this cache, so a
-      # dropped download no longer turns main red (P-053). A download also retries a dropped or stalled connection, and
-      # the pinned SHA-256 checks every archive, cached or not.
+      # dropped download no longer turns main red (P-053). A download also retries a dropped, stalled or slow
+      # connection, and the pinned SHA-256 checks every archive, cached or not. The archives are the same on every
+      # system, so a runner without its own entry starts from another system's: the ARM Linux runner's route to
+      # nodejs.org has crawled at 38 KB/s.
       - name: Read the pinned Node.js version
         id: pinned
         shell: bash
@@ -77,6 +79,8 @@ jobs:
         with:
           path: dist/.cache
           key: studio-node-${{ steps.pinned.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+          restore-keys: studio-node-${{ steps.pinned.outputs.version }}-
+          enableCrossOsArchive: true
       # Every runner builds every target and prints the archives' hashes, so builds made on different systems can be
       # compared. It comes first so that the cache is saved with all five runtimes even when a later step fails.
       - name: Build every target on this system
@@ -90,6 +94,7 @@ jobs:
         with:
           path: dist/.cache
           key: ${{ steps.runtimes.outputs.cache-primary-key }}
+          enableCrossOsArchive: true
       - name: Build the archive
         run: node scripts/build-studio.mjs --target ${{ matrix.target }}
       - name: Build it again and compare
