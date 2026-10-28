@@ -156,7 +156,8 @@ function readProject(spec, { stills = true } = {}) {
 export function inlineSharedPalette(document, { palette, ramps = null }) {
   if (!isObject(document) || !isObject(document.palette) || !own(document.palette, '$ref')) return document;
   const { $ref, ...local } = document.palette;
-  const inherit = ramps && document.format === undefined && document.ramps === undefined;
+  // Recipes and pose sources declare ramps; one without ramps of its own takes the shared file's.
+  const inherit = ramps && (document.format === undefined || document.format === 'pixelforge-poses') && document.ramps === undefined;
   return { ...document, palette: { ...palette, ...local }, ...(inherit && { ramps }) };
 }
 
