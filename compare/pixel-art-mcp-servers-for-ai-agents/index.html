@@ -14,7 +14,7 @@
   "headline": "Pixel art and sprite MCP servers for AI agents: 7 compared",
   "description": "By the Pixelbolt maintainers: seven pixel art and sprite MCP servers compared (Pixelbolt, aseprite-mcp, pixel-mcp, pixscii, pixelart-mcp, pixelforge-mcp and SpriteCook): how each makes the art, what it needs, exports, single-pixel edits, repeatable output and cost. Pixelbolt measured; the others read from their code and docs.",
   "datePublished": "2026-10-17",
-  "dateModified": "2026-10-17",
+  "dateModified": "2026-10-28",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/",
@@ -75,7 +75,7 @@ repositories called pixelforge-mcp. If we got something wrong,
 <a href="https://github.com/skulitom/Pixelbolt/issues/new">open an issue</a> and we will correct it.</p>
 
 <p class="meta">Last checked: 17 October 2026 (UK time) · Pixelbolt <code>main</code> at <code>a2420d5</code> and
-release 0.8.0 · Next check by 16 November 2026, or sooner when one of these tools releases.</p>
+release 0.8.0 · Pixelbolt's npm and release facts updated 28 October 2026 · Next check by 16 November 2026, or sooner when one of these tools releases.</p>
 
 <h2>The short answer</h2>
 <ul>
@@ -232,7 +232,7 @@ PNG, a Canvas player, a preview page and a README
 <code>examples/quality/</code> (11), meaning recipes with frames rather than the particle, pose, fluid, scene and
 overlay sources that compile into them, was rendered twice through the command line into fresh folders, and every output
 file matched its twin by SHA-256 (9 to 69 files per recipe; 75 to 142 ms per render, with Node's start-up and the file
-writes). The 10 fluid-effect presets, new on <code>main</code> and not yet released, also compiled twice to identical
+writes). The 10 fluid-effect presets, then new on <code>main</code> (released in 0.9.0 the next day), also compiled twice to identical
 recipes, in 115 to 456 ms each (<a href="data/pixelbolt-determinism-main-a2420d5.json">results</a>). We checked one
 machine only; Pixelbolt's own CI runs its tests on other systems, which we didn't repeat.</li>
 <li><strong>Footprint:</strong> no runtime dependencies. The Claude Desktop bundle (<code>pixelbolt.mcpb</code>, release
@@ -334,10 +334,12 @@ only as good as the drawing; the inspection images and quality diagnostics help 
 <code>.aseprite</code>.</li>
 <li>Its <code>tools/list</code> result is large: 135,519 bytes of JSON on <code>main</code> and 134,532 on 0.8.0, mostly
 because four tools carry the full recipe JSON Schema.</li>
-<li>It isn't on npm: install it with <code>git clone</code>, or open the MCPB bundle in Claude Desktop. It is in the
-official MCP Registry as <code>io.github.skulitom/pixelbolt</code>.</li>
-<li>It is young, with 7 GitHub stars. The fluid effects (fire, smoke, steam, water) are on <code>main</code> but not yet
-in a release.</li>
+<li>It is new to npm: <code>pixelbolt</code> has been there only since 0.9.0 (19 October 2026, after this check), and
+<code>npx -y pixelbolt@latest skill install</code> (0.9.2) sets up Claude Code without an MCP server. You can also
+install it with <code>git clone</code>, or open the MCPB bundle in Claude Desktop. It is in the official MCP Registry as
+<code>io.github.skulitom/pixelbolt</code>.</li>
+<li>It is young, with 7 GitHub stars when checked. The fluid effects (fire, smoke, steam, water) were on
+<code>main</code> then and shipped in 0.9.0 on 18 October 2026.</li>
 </ul>
 
 <h2>Also in the same searches</h2>
@@ -462,7 +464,7 @@ and this page's data: <a href="data/pixelbolt-node-test-main-a2420d5.txt">tests<
 </ul>
 
 <footer class="muted">
-<p>Last checked 17 October 2026. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 17 October 2026; Pixelbolt's npm and release facts updated 28 October 2026. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·

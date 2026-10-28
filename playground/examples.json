@@ -26,5 +26,10 @@
   { "title": "Dust wave", "file": "dust-wave.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
   { "title": "Bursting slime", "file": "slime-burst.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
   { "title": "Honey let-go", "file": "honey-drop.fluid.json", "kind": "fluid", "minVersion": "0.9.1" },
-  { "title": "Typed caption", "file": "caption.json", "kind": "project", "minVersion": "0.9.1" }
+  { "title": "Typed caption", "file": "caption.json", "kind": "project", "minVersion": "0.9.1" },
+  { "title": "Slash hit", "file": "slash-hit.fx.json", "kind": "fx", "minVersion": "0.9.2" },
+  { "title": "Fire explosion", "file": "fire-explosion.fx.json", "kind": "fx", "minVersion": "0.9.2" },
+  { "title": "Lightning strike", "file": "lightning-strike.fx.json", "kind": "fx", "minVersion": "0.9.2" },
+  { "title": "Healing circle", "file": "healing-circle.fx.json", "kind": "fx", "minVersion": "0.9.2" },
+  { "title": "Cel-shaded water: geyser, whip, ring, dome and curl", "file": "water.fx.json", "kind": "fx", "minVersion": "0.9.2" }
 ]
