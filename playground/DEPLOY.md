@@ -12,13 +12,22 @@ Alternatively, run `node scripts/deploy-playground.mjs <tmp>` and serve that out
 
 The `?engine=` override accepts only the page's own origin, or loopback-to-loopback URLs (`localhost`, `127.0.0.1`, `[::1]`). The production CSP also restricts connections and scripts to self and jsDelivr. A cross-origin loopback engine therefore needs a test server with a suitably adjusted CSP and CORS; the ordinary same-origin override needs neither.
 
+## Live fluid toy
+
+`fluids/` is **Poke the pixels**, at `/playground/fluids/`: seven fluid presets run live with the released engine's `createLiveFluid`. Dragging pushes, holding pours (a liquid) or adds heat (a gas), **Save GIF** keeps the last four seconds blended onto the stage colour, and **Copy link** makes a link that replays the visitor's pokes on the same frames, so whoever opens it sees exactly what they saw. **Edit the recipe** opens the preset in the playground. Try it locally at `http://127.0.0.1:8000/playground/fluids/?engine=../../src/`.
+
+- `fluids/lib.js` holds the presets, the pokes and the link format: `#v=<version>&p=<preset>&i=<base64url of deflate(pokes)>`, with a format byte inside `i`. Links name a preset by id, so renaming or removing a preset breaks the links that name it. Keep `TOY_VERSION` equal to `PINNED_VERSION` (a test checks), and bump the two together.
+- A preset belongs in the toy only if it keeps working however long it is poked: a one-shot effect repeats every cycle in a live run, and an obstacle key (the dam break's plank) comes back each cycle.
+- On a loopback page, `globalThis.fluidToy.advance(frames)` steps frames without animation frames, for tests in a hidden browser tab.
+- `preview.png` is the 1200 × 630 link card: `node scripts/fluid-toy-preview.mjs --force` draws it again from the engine.
+
 ## Publish
 
 1. Prepare a local checkout of the site's `gh-pages` branch in a separate folder.
 2. Run `node scripts/deploy-playground.mjs <out>` with that folder as `<out>`.
-3. Review the copied `playground/`, the new sitemap entry and the paragraph after the GitHub source link on the home page. The script changes existing files only where needed and is idempotent. It never runs git or pushes. Missing home pages or sitemaps are left absent.
+3. Review the copied `playground/`, the new sitemap entries (the playground and `playground/fluids/`) and the paragraphs on the home page: the playground's after the GitHub source link, and the fluid toy's after that. The script changes existing files only where needed and is idempotent. It never runs git or pushes. Missing home pages or sitemaps are left absent.
 4. Run the exact `git -C` add, commit and push commands printed by the script. If a home page or sitemap was absent, omit that missing path from the add command.
-5. Check `https://skulitom.github.io/Pixelbolt/playground/`, including a share link, a PNG round trip and downloads. Check narrow screens, light/dark modes, reduced motion and keyboard controls. Atlas export downloads two files; explicit links remain for two minutes if the browser blocks a second automatic download.
+5. Check `https://skulitom.github.io/Pixelbolt/playground/`, including a share link, a PNG round trip and downloads, and `…/playground/fluids/`: poke an effect, save a GIF, and open a copied link in a new tab to see it replay. Check narrow screens, light/dark modes, reduced motion and keyboard controls. Atlas export downloads two files; explicit links remain for two minutes if the browser blocks a second automatic download.
 
 After deployment, add this exact Markdown directly under the README's first paragraph:
 

@@ -1,0 +1,32 @@
+/* The live fluid toy, on top of the playground's tokens and controls. The stage stays dark in both themes: the
+   effects are drawn for it, and saved GIFs are blended onto the same colour (STAGE in lib.js). */
+:root { --stage: #15161f; --stage-rule: #2a2c3a; }
+.toy { max-width: 60rem; }
+.lead { font-size: 1.1rem; max-width: 40rem; }
+.presets { display: flex; flex-wrap: wrap; gap: .4rem; margin: 1.2rem 0 .8rem; }
+.presets button[aria-pressed='true'] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.stage { position: relative; display: grid; place-items: center; height: min(68vh, 38rem); min-height: 18rem; background: var(--stage); border: 1px solid var(--stage-rule); border-radius: 8px; overflow: hidden; }
+.art { position: relative; grid-area: 1 / 1; line-height: 0; }
+/* Holding is how you pour, so a long press must not select, magnify or open a menu. */
+#fluid { display: block; image-rendering: pixelated; cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+#fluid:focus-visible { outline: 3px solid #8ab4f8; outline-offset: 4px; }
+.ghost { position: absolute; border: 2px solid rgba(255, 255, 255, .7); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.ghost.pour { background: rgba(255, 255, 255, .25); }
+.stage-note { grid-area: 1 / 1; align-self: end; margin: 0 0 .8rem; padding: .25rem .7rem; border-radius: 4px; background: rgba(0, 0, 0, .55); color: #e8e8ec; font-size: .85rem; }
+.bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .6rem; margin-top: .7rem; }
+.hint-line { margin: 0; font-weight: 600; }
+.share { margin-top: .6rem; }
+button.primary { background: var(--link); border-color: var(--link); color: var(--bg); }
+button.primary:hover:not(:disabled) { background: var(--link); filter: brightness(1.1); }
+a.button { display: inline-flex; align-items: center; min-height: 2.4rem; padding: .35rem .65rem; border: 1px solid var(--rule); border-radius: 5px; font-size: .85rem; font-weight: 550; text-decoration: none; }
+a.button:hover { border-color: var(--link); background: var(--surface); }
+.status { min-height: 1.6rem; font-size: .9rem; overflow-wrap: anywhere; }
+#share-link { width: 100%; padding: .4rem .6rem; font-size: .8rem; }
+.about { border-top: 1px solid var(--rule); margin-top: 1.5rem; padding-top: .8rem; max-width: 46rem; }
+.about h2 { font-size: 1.05rem; margin-bottom: .3rem; }
+code { font: .85em Consolas, 'Courier New', monospace; overflow-wrap: anywhere; }
+body[data-state='loading'] #fluid { opacity: .4; }
+@media (max-width: 760px) {
+  .stage { height: 56vh; }
+  .presets button { flex: 1 1 auto; }
+}

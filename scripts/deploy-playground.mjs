@@ -32,11 +32,16 @@ if (!argument || process.argv.length !== 3) {
     if (!relative || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))) throw new Error('Choose an output folder outside playground/.');
     await copy(source);
     const sitemapPath = path.join(out, 'sitemap.xml'), sitemap = (await read(sitemapPath))?.toString('utf8');
-    const url = 'https://skulitom.github.io/Pixelbolt/playground/';
-    if (sitemap !== undefined && !sitemap.includes(`<loc>${url}</loc>`)) {
-      if (!sitemap.includes('</urlset>')) throw new Error('sitemap.xml has no closing urlset tag.');
-      const newline = sitemap.includes('\r\n') ? '\r\n' : '\n';
-      await put(sitemapPath, sitemap.replace('</urlset>', `  <url><loc>${url}</loc><lastmod>${new Date().toISOString().slice(0, 10)}</lastmod></url>${newline}</urlset>`));
+    if (sitemap !== undefined) {
+      let next = sitemap;
+      // The playground and its live fluid toy, each listed once.
+      for (const url of ['https://skulitom.github.io/Pixelbolt/playground/', 'https://skulitom.github.io/Pixelbolt/playground/fluids/']) {
+        if (next.includes(`<loc>${url}</loc>`)) continue;
+        if (!next.includes('</urlset>')) throw new Error('sitemap.xml has no closing urlset tag.');
+        const newline = next.includes('\r\n') ? '\r\n' : '\n';
+        next = next.replace('</urlset>', `  <url><loc>${url}</loc><lastmod>${new Date().toISOString().slice(0, 10)}</lastmod></url>${newline}</urlset>`);
+      }
+      await put(sitemapPath, next);
     }
     const indexPath = path.join(out, 'index.html'), index = (await read(indexPath))?.toString('utf8');
     if (index !== undefined) {
@@ -47,6 +52,14 @@ if (!argument || process.argv.length !== 3) {
         if (!sourceParagraph) throw new Error('index.html has no paragraph containing the GitHub source link.');
         const at = sourceParagraph.index + sourceParagraph[0].length, newline = next.includes('\r\n') ? '\r\n' : '\n';
         const paragraph = '<p>Try Pixelbolt in your browser: <a href="playground/">the playground</a> renders, exports and shares recipes with nothing installed.</p>';
+        next = next.slice(0, at) + newline + paragraph + next.slice(at);
+      }
+      // The live fluid toy goes right after the paragraph that links the playground.
+      if (!/href\s*=\s*["'][^"']*\bplayground\/fluids\/["'#?]/i.test(next)) {
+        const playgroundParagraph = [...next.matchAll(/<p\b[^>]*>[\s\S]*?<\/p>/gi)].find(match => /href\s*=\s*["'][^"']*\bplayground\/["'#?]/i.test(match[0]));
+        if (!playgroundParagraph) throw new Error('index.html has no paragraph linking the playground.');
+        const at = playgroundParagraph.index + playgroundParagraph[0].length, newline = next.includes('\r\n') ? '\r\n' : '\n';
+        const paragraph = '<p>Poke live pixel fluids: <a href="playground/fluids/">blow on a campfire, pour honey and slime</a>, then save a GIF or share a link that replays what you did.</p>';
         next = next.slice(0, at) + newline + paragraph + next.slice(at);
       }
       // The site's footer promises pages without scripts; the playground is the one page that has them.

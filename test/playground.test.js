@@ -334,9 +334,20 @@ test('deploy copies only page files, inserts once, keeps second-run bytes and mt
     const index = (await readFile(path.join(out, 'index.html'), 'utf8'));
     assert.equal((index.match(/href="playground\/"/g) ?? []).length, 1); assert.ok(index.indexOf('Try Pixelbolt') < index.indexOf('Next paragraph'));
     assert.match(index, /<footer>Plain static pages with no trackers or cookies; only the playground runs scripts, in your browser\. Made here\.<\/footer>/);
-    assert.match(await readFile(path.join(out, 'sitemap.xml'), 'utf8'), /<loc>https:\/\/skulitom.github.io\/Pixelbolt\/playground\/<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+    const sitemap = await readFile(path.join(out, 'sitemap.xml'), 'utf8');
+    assert.match(sitemap, /<loc>https:\/\/skulitom.github.io\/Pixelbolt\/playground\/<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
+    assert.equal((sitemap.match(/<loc>https:\/\/skulitom.github.io\/Pixelbolt\/playground\/fluids\/<\/loc>/g) ?? []).length, 1);
+    // The live fluid toy is linked once, right after the playground's paragraph.
+    assert.equal((index.match(/href="playground\/fluids\/"/g) ?? []).length, 1);
+    assert.ok(index.indexOf('Try Pixelbolt') < index.indexOf('Poke live pixel fluids') && index.indexOf('Poke live pixel fluids') < index.indexOf('Next paragraph'));
     assert.ok(!before.has(path.join(out, 'playground/DEPLOY.md')));
-    for (const file of await readdir(path.join(root, 'playground'))) if (file !== 'DEPLOY.md') assert.deepEqual(await readFile(path.join(out, 'playground', file)), await readFile(path.join(root, 'playground', file)));
+    const pages = path.join(root, 'playground'), copied = [];
+    for (const file of await walk(pages)) {
+      const relative = path.relative(pages, file);
+      if (relative === 'DEPLOY.md') continue;
+      assert.deepEqual(await readFile(path.join(out, 'playground', relative)), await readFile(file), relative); copied.push(relative);
+    }
+    assert.ok(copied.includes(path.join('fluids', 'index.html')) && copied.includes(path.join('fluids', 'preview.png')));
     assert.match(execFileSync(process.execPath, [script, out], { encoding: 'utf8', env: { ...process.env, PATH: '' } }), /No files changed/);
     assert.equal((await walk(out)).length, before.size);
     for (const [file, original] of before) { assert.deepEqual(await readFile(file), original.bytes); assert.equal((await stat(file)).mtimeMs, original.mtime); }
