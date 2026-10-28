@@ -105,17 +105,28 @@ async function readManifest(folder) {
     return valid ? manifest : null;
   } catch { return null; }
 }
-// What changed since an earlier install wrote the folder: files it wrote that were edited, removed or replaced, and
-// files this version ships that it didn't write but that are already there with other bytes (the user's own). A file
-// that already holds this version's bytes is unchanged, so an interrupted update finishes without --force.
+// What changed since an earlier install wrote the folder: files it wrote that were edited or replaced, and files this
+// version ships that it didn't write but that are already there with other bytes (the user's own). A file that already
+// holds this version's bytes is unchanged, and a missing one holds nothing to lose, so an interrupted update finishes
+// without --force. `missing` lists this version's files that aren't there.
 async function changedSince(folder, manifest, hashes) {
-  const changed = [];
+  const changed = [], missing = [];
   for (const file of new Set([...Object.keys(manifest.files), ...Object.keys(hashes)])) {
     const now = await hashOf(path.join(folder, ...file.split('/')));
+    if (now === null) { if (Object.hasOwn(hashes, file)) missing.push(file); continue; }
     if (now === hashes[file]) continue;
-    if (Object.hasOwn(manifest.files, file) ? now !== manifest.files[file] : now !== null) changed.push(file);
+    if (!Object.hasOwn(manifest.files, file) || now !== manifest.files[file]) changed.push(file);
   }
-  return changed.sort();
+  return { changed: changed.sort(), missing };
+}
+// Every file under a folder, or null when it holds anything but folders and files (a link).
+async function filesIn(folder, prefix = '') {
+  const found = [];
+  for (const entry of await readdir(folder, { withFileTypes: true })) {
+    const name = `${prefix}${entry.name}`;
+    if (entry.isDirectory()) { const inner = await filesIn(path.join(folder, entry.name), `${name}/`); if (!inner) return null; found.push(...inner); } else if (entry.isFile()) found.push(name); else return null;
+  }
+  return found;
 }
 // Each folder on the way to these files, inside the skill folder.
 const foldersOf = files => [...new Set(files.flatMap(file => file.split('/').slice(0, -1).map((part, i, parts) => parts.slice(0, i + 1).join('/'))))].sort();
@@ -145,12 +156,16 @@ export async function installSkill({ version, force = false, ...where }) {
     const inner = await lstatOrNull(path.join(folder, ...sub.split('/')));
     if (inner && !inner.isDirectory()) throw new Error(`${path.join(folder, ...sub.split('/'))} is ${inner.isSymbolicLink() ? 'a link' : 'not a folder'}; remove it and install again. Nothing was written.`);
   }
-  let changed = [], status = stats ? 'updated' : 'installed';
+  let changed = [], missing = [], status = stats ? 'updated' : 'installed';
   if (stats && !manifest) {
-    if ((await readdir(folder)).length && !force) throw new Error(`${folder} already holds files this command didn't write. ${usage}`);
-    if ((await readdir(folder)).length) status = 'replaced';
+    // A first install cut short before its manifest left only this version's files, byte for byte: it finishes.
+    const present = await filesIn(folder);
+    const ours = present && (await Promise.all(present.map(async file => Object.hasOwn(hashes, file) && await hashOf(path.join(folder, ...file.split('/'))) === hashes[file]))).every(Boolean);
+    if (ours) status = 'installed';
+    else if (!force) throw new Error(`${folder} already holds files this command didn't write. ${usage}`);
+    else status = 'replaced';
   } else if (manifest) {
-    changed = await changedSince(folder, manifest, hashes);
+    ({ changed, missing } = await changedSince(folder, manifest, hashes));
     if (changed.length && !force) throw new Error(`${folder} has changes since Pixelbolt ${manifest.version ?? 'an earlier version'} installed it (${changed.slice(0, 5).join(', ')}${changed.length > 5 ? `, and ${changed.length - 5} more` : ''}). ${usage}`);
     if (changed.length) status = 'replaced';
   }
@@ -162,7 +177,7 @@ export async function installSkill({ version, force = false, ...where }) {
   // case, the same file as one this version writes.
   const shipped = new Set(list.map(file => file.toLowerCase()));
   const stale = previous.filter(file => !shipped.has(file.toLowerCase()) && !changed.includes(file));
-  const same = manifest && !changed.length && !stale.length && manifest.version === version && JSON.stringify(manifest.files) === JSON.stringify(hashes);
+  const same = manifest && !changed.length && !missing.length && !stale.length && manifest.version === version && JSON.stringify(manifest.files) === JSON.stringify(hashes);
   const command = skillCommand(version), result = { skill: folder, version, command, files: list.length };
   // From a checkout, npx fetches the released version of the same number, which lacks the checkout's later changes.
   if (await lstatOrNull(path.join(ROOT, '.git'))) result.warning = `Installed from a Pixelbolt checkout: the copy runs ${command} from npm, which may lack this checkout's unreleased changes. For a released copy, run npx -y pixelbolt@latest skill install.`;
@@ -173,7 +188,11 @@ export async function installSkill({ version, force = false, ...where }) {
     await mkdir(path.dirname(target), { recursive: true });
     await replaceFile(target, files.get(file));
   }
-  for (const file of stale) await rm(path.join(folder, ...file.split('/')), { force: true });
+  const removed = [];
+  for (const file of stale) {
+    const target = path.join(folder, ...file.split('/'));
+    if (await lstatOrNull(target)) { await rm(target, { force: true }); removed.push(file); }
+  }
   await replaceFile(path.join(folder, SKILL_MANIFEST), JSON.stringify({ installedBy: 'pixelbolt skill install', version, command, files: hashes }, null, 2) + '\n');
-  return { status, ...result, ...(manifest?.version && manifest.version !== version && { from: manifest.version }), ...(changed.length && { overwrote: changed }), ...(stale.length && { removed: stale }) };
+  return { status, ...result, ...(manifest?.version && manifest.version !== version && { from: manifest.version }), ...(changed.length && { overwrote: changed }), ...(removed.length && { removed }) };
 }

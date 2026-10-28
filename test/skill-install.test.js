@@ -209,4 +209,22 @@ test('skill install trusts no manifest path outside the skill, removes nothing t
   refused(cli(['skill', 'install'], where), /\(examples\/coin\.json\)\. Pass --force/);
   assert.equal(await readFile(path.join(where.skill, 'examples', 'coin.json'), 'utf8'), '{"mine": true}\n');
   assert.deepEqual(ok(cli(['skill', 'install', '--force'], where)).overwrote, ['examples/coin.json']);
+
+  // A first install stopped before its manifest finishes; so does an update stopped while removing old files, and a
+  // deleted file comes back even at the same version.
+  const first = path.join(where.project, 'first', SKILL_NAME), firstManifest = path.join(first, SKILL_MANIFEST);
+  ok(cli(['skill', 'install', '--dir', 'first'], where));
+  await rm(firstManifest); await rm(path.join(first, 'LICENSE'));
+  assert.equal(ok(cli(['skill', 'install', '--dir', 'first'], where)).status, 'installed');
+  assert.ok(await exists(path.join(first, 'LICENSE')));
+  const earlier = JSON.parse(await readFile(firstManifest, 'utf8'));
+  earlier.version = '0.0.1'; earlier.files['docs/old.md'] = sha('old\n');
+  await writeFile(firstManifest, JSON.stringify(earlier)); await rm(path.join(first, 'examples', 'coin.json'));
+  const finished = ok(cli(['skill', 'install', '--dir', 'first'], where));
+  assert.equal(finished.status, 'updated'); assert.equal(finished.removed, undefined);
+  assert.ok(await exists(path.join(first, 'examples', 'coin.json')));
+  await rm(path.join(first, 'examples', 'coin.json'));
+  assert.equal(ok(cli(['skill', 'install', '--dir', 'first'], where)).status, 'updated');
+  assert.ok(await exists(path.join(first, 'examples', 'coin.json')));
+  assert.equal(ok(cli(['skill', 'install', '--dir', 'first'], where)).status, 'unchanged');
 });
