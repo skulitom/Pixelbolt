@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { access, copyFile, link, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -39,8 +40,11 @@ const words = line => [...line.matchAll(/'([^']*)'|(\S+)/g)].map(match => match[
 
 test('skill install writes a standalone skill to Claude Code\'s skills folder in the home folder, the project or a named folder', async t => {
   const where = await temp(t);
-  const installed = ok(cli(['skill', 'install'], where));
+  const { warning, ...installed } = ok(cli(['skill', 'install'], where));
   assert.deepEqual(installed, { ok: true, status: 'installed', skill: where.skill, version, command, files: installed.files });
+  // From a checkout (as here), npx's release of the same number may lack the checkout's later work, and it says so.
+  assert.equal(warning !== undefined, await exists(path.join(root, '.git')));
+  if (warning) assert.match(warning, /^Installed from a Pixelbolt checkout: the copy runs npx -y pixelbolt@\S+ from npm, .* run npx -y pixelbolt@latest skill install\.$/);
   const skill = await readFile(path.join(where.skill, 'SKILL.md'), 'utf8');
   const front = /^---\r?\nname: (.+)\r?\ndescription: (.+)\r?\n---\r?\n/.exec(skill);
   assert.ok(front, 'SKILL.md starts with name and description front matter');
@@ -140,7 +144,7 @@ test('skill install keeps a changed copy unless --force, updates its own, keeps 
   manifest.version = '0.0.1'; manifest.files['docs/old.md'] = 'ca4f3ddea1e4fc7cb2f2cc8b1b8e6b1e4c9f05b9a0fa6c6b3f0ef9ca2b4a1b3c';
   await writeFile(manifestFile, JSON.stringify(manifest));
   refused(cli(['skill', 'install'], where), /docs\/old\.md/);
-  manifest.files['docs/old.md'] = (await import('node:crypto')).createHash('sha256').update('old\n').digest('hex');
+  manifest.files['docs/old.md'] = createHash('sha256').update('old\n').digest('hex');
   await writeFile(manifestFile, JSON.stringify(manifest));
   const updated = ok(cli(['skill', 'install'], where));
   assert.equal(updated.status, 'updated'); assert.equal(updated.from, '0.0.1'); assert.deepEqual(updated.removed, ['docs/old.md']);
@@ -165,4 +169,44 @@ test('skill install keeps a changed copy unless --force, updates its own, keeps 
   await symlink(target, path.join(where.skill, 'examples'), process.platform === 'win32' ? 'junction' : 'dir');
   refused(cli(['skill', 'install', '--force'], where), /examples is a link; remove it/);
   assert.deepEqual(await readdir(target), ['SKILL.md']);
+});
+
+test('skill install trusts no manifest path outside the skill, removes nothing through a link, finishes an interrupted update and keeps a file of the user\'s that a new version also ships', async t => {
+  const where = await temp(t), manifestFile = path.join(where.skill, SKILL_MANIFEST), sha = text => createHash('sha256').update(text).digest('hex');
+  ok(cli(['skill', 'install'], where));
+  const fresh = await readFile(manifestFile, 'utf8'), edit = async change => { const manifest = JSON.parse(fresh); change(manifest); await writeFile(manifestFile, JSON.stringify(manifest)); };
+
+  // A manifest naming a file outside the skill (one a repository could ship in .claude/skills) is no manifest at all.
+  const victim = path.join(where.dir, 'victim.txt');
+  await writeFile(victim, 'keep\n');
+  await edit(manifest => { manifest.files['../../../../victim.txt'] = sha('keep\n'); });
+  refused(cli(['skill', 'install'], where), /already holds files this command didn't write/);
+  assert.equal(ok(cli(['skill', 'install', '--force'], where)).status, 'replaced');
+  assert.equal(await readFile(victim, 'utf8'), 'keep\n');
+  assert.equal(await readFile(manifestFile, 'utf8'), fresh);
+
+  // An earlier version's file behind a linked folder is not removed through the link, even with --force.
+  const elsewhere = path.join(where.dir, 'elsewhere');
+  await mkdir(elsewhere); await writeFile(path.join(elsewhere, 'x.json'), '{}\n');
+  let linked = true;
+  try { await symlink(elsewhere, path.join(where.skill, 'old'), process.platform === 'win32' ? 'junction' : 'dir'); } catch (error) { linked = false; t.diagnostic(`no folder link here (${error.code})`); }
+  if (linked) {
+    await edit(manifest => { manifest.version = '0.0.1'; manifest.files['old/x.json'] = sha('{}\n'); });
+    for (const force of [[], ['--force']]) refused(cli(['skill', 'install', ...force], where), /old is a link/);
+    assert.equal(await readFile(path.join(elsewhere, 'x.json'), 'utf8'), '{}\n');
+    await rm(path.join(where.skill, 'old'));
+    await writeFile(manifestFile, fresh);
+  }
+
+  // An update cut short leaves files already holding this version's bytes: they count as unchanged.
+  await edit(manifest => { manifest.version = '0.0.1'; manifest.files['SKILL.md'] = sha('the older skill\n'); });
+  const resumed = ok(cli(['skill', 'install'], where));
+  assert.equal(resumed.status, 'updated'); assert.equal(resumed.from, '0.0.1'); assert.equal(resumed.overwrote, undefined);
+
+  // A file the earlier install didn't write, which this version ships, is the user's until --force.
+  await edit(manifest => { delete manifest.files['examples/coin.json']; });
+  await writeFile(path.join(where.skill, 'examples', 'coin.json'), '{"mine": true}\n');
+  refused(cli(['skill', 'install'], where), /\(examples\/coin\.json\)\. Pass --force/);
+  assert.equal(await readFile(path.join(where.skill, 'examples', 'coin.json'), 'utf8'), '{"mine": true}\n');
+  assert.deepEqual(ok(cli(['skill', 'install', '--force'], where)).overwrote, ['examples/coin.json']);
 });

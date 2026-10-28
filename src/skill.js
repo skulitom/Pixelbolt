@@ -41,15 +41,17 @@ function relink(text, from, to, copied, version) {
     return `](${REPOSITORY}/blob/v${version}/${source.replace(/^(?:\.\.\/)+/, '')}${anchor})`;
   });
 }
-// Checkout commands and bare `pixelbolt <command>` mentions both run through npx at this version.
-const runThrough = (text, command) => text.replace(/node bin\/pixel(?:bolt|forge)\.js/g, command).replace(/(`|^)pixelbolt (?=[a-z])/gm, `$1${command} `);
+// Checkout commands and bare `pixelbolt <command>` mentions both run through npx at this version; a contributor
+// script (node scripts/...) is not in the copy, so it says where one is.
+const runThrough = (text, command) => text.replace(/node bin\/pixel(?:bolt|forge)\.js/g, command).replace(/(`|^)pixelbolt (?=[a-z])/gm, `$1${command} `)
+  .replace(/`node (scripts\/[^`]+)`(?! in a clone of)/g, `\`node $1\` in a clone of [Pixelbolt](${REPOSITORY})`);
 
 // The skill as shipped assumes the package two directories above it. Its standalone copy says where things are.
 function standaloneSkill(text, version) {
   const command = skillCommand(version);
   const end = text.startsWith('---') ? text.indexOf('\n---', 3) + 4 : 0;
   const head = text.slice(0, end), paragraphs = text.slice(end).split(/\n{2,}/);
-  const intro = `This copy of the skill was installed on its own by \`pixelbolt skill install\` from Pixelbolt ${version}, with no checkout and no MCP server. Run every command as written below, through \`${command}\` (Node.js 20 or newer; npm downloads the package on first use), or through \`pixelbolt\` when Pixelbolt ${version} is installed globally. The guides, schemas and examples it names are copied beside this file, so \`docs/\`, \`schema.json\`, the \`*.schema.json\` files and \`examples/\` mean this skill's directory (\`${command} schema\` also prints the recipe schema). Commands run in the user's project, where those paths don't exist: copy an example into the project before editing or compiling it, or pass its absolute path. If Pixelbolt's MCP tools (\`pixel_help\`, \`pixel_validate\`, \`pixel_inspect\`, \`pixel_patch\`, \`pixel_render\` and the rest) are configured as well, you may use them as described below.`;
+  const intro = `This copy of the skill was installed on its own by \`pixelbolt skill install\` from Pixelbolt ${version}, with no checkout and no MCP server. Run every command as written below, through \`${command}\` (Node.js 20 or newer; npm downloads the package on first use), or through \`pixelbolt\` when Pixelbolt ${version} is installed globally. The guides, schemas and examples it names are copied beside this file, so \`docs/\`, \`schema.json\`, the \`*.schema.json\` files and \`examples/\` mean this skill's directory (\`${command} schema\` also prints the recipe schema). Commands run in the user's project, where those paths don't exist: copy an example into the project before editing or compiling it, together with the files it names (a scene's assets, a normals source's recipe, a shared palette), or pass its absolute path. Where the text below names an MCP tool, the command line does the same: \`pixel_validate\` is \`validate\`, \`pixel_inspect\` is \`inspect\`, \`pixel_patch\` is \`patch\`, \`pixel_render\` is \`render\` (for GIFs, \`gif\`, whose \`--scale\` is \`gif.scale\`), \`pixel_compile\` is \`compile <source> --out <recipe.json>\`, \`pixel_scene\` is \`scene\` and \`pixel_import\` is \`import\`, each run as above. A revision is the recipe file you saved, and \`pixel_help\` and its topics are the copied \`docs/agent-quick-start.md\`, \`docs/agent-guide.md\` (guide), \`docs/art-workflow.md\` (workflow) and the schema files. If Pixelbolt's MCP tools are configured as well, you may use them as described below.`;
   const body = [];
   for (const paragraph of paragraphs) {
     // The plugin's server and the portable build don't apply to this copy.
@@ -64,7 +66,7 @@ function standaloneSkill(text, version) {
 // What the copy is checked for: anything still pointing into a checkout would send the agent to a missing file.
 // Relative links in the copied guides point only at copied files (relink), so only SKILL.md, at the top, can escape.
 export function standaloneProblems(text, { skill = true } = {}) {
-  return [[/two directories above/, 'a path two directories above the skill'], [/bin\/pixel(?:bolt|forge)\.js/, 'a checkout command'], ...(skill ? [[/\]\(\.\.\//, 'a relative link outside the skill']] : []), [/plugin's server/, "the plugin's server"]]
+  return [[/two directories above/, 'a path two directories above the skill'], [/bin\/pixel(?:bolt|forge)\.js/, 'a checkout command'], [/`node scripts\/[^`]*`(?! in a clone of)/, 'a checkout script'], ...(skill ? [[/\]\(\.\.\//, 'a relative link outside the skill']] : []), [/plugin's server/, "the plugin's server"]]
     .filter(([pattern]) => pattern.test(text)).map(([, problem]) => problem);
 }
 
@@ -90,23 +92,33 @@ export async function skillFiles(version) {
 }
 
 const lstatOrNull = async file => { try { return await lstat(file); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+const hashOf = async file => { const stats = await lstatOrNull(file); return stats?.isFile() ? sha256(await readFile(file)) : stats ? 'not a file' : null; };
+// A manifest name is a plain relative path of ordinary names: never .. or a hidden name, a drive, a backslash or a
+// Windows device name, so a manifest someone else wrote can't point an update or a removal outside the skill.
+const plainPath = file => typeof file === 'string' && file.length <= 200 && file.split('/').every(part => /^[A-Za-z0-9_][A-Za-z0-9._-]{0,99}$/.test(part) && !/^(?:con|prn|aux|nul|com\d|lpt\d)(?:\.|$)/i.test(part));
 async function readManifest(folder) {
-  const stats = await lstatOrNull(path.join(folder, SKILL_MANIFEST));
+  const file = path.join(folder, SKILL_MANIFEST), stats = await lstatOrNull(file);
   if (!stats?.isFile()) return null;
   try {
-    const manifest = JSON.parse(await readFile(path.join(folder, SKILL_MANIFEST), 'utf8'));
-    return manifest && typeof manifest.files === 'object' && !Array.isArray(manifest.files) ? manifest : null;
+    const manifest = JSON.parse(await readFile(file, 'utf8')), files = manifest?.files;
+    const valid = files && typeof files === 'object' && !Array.isArray(files) && Object.entries(files).every(([name, hash]) => plainPath(name) && /^[0-9a-f]{64}$/.test(hash));
+    return valid ? manifest : null;
   } catch { return null; }
 }
-// What changed in an earlier install: files edited, removed or replaced since it wrote them.
-async function changedSince(folder, manifest) {
+// What changed since an earlier install wrote the folder: files it wrote that were edited, removed or replaced, and
+// files this version ships that it didn't write but that are already there with other bytes (the user's own). A file
+// that already holds this version's bytes is unchanged, so an interrupted update finishes without --force.
+async function changedSince(folder, manifest, hashes) {
   const changed = [];
-  for (const [file, hash] of Object.entries(manifest.files)) {
-    const target = path.join(folder, ...file.split('/')), stats = await lstatOrNull(target);
-    if (!stats?.isFile() || sha256(await readFile(target)) !== hash) changed.push(file);
+  for (const file of new Set([...Object.keys(manifest.files), ...Object.keys(hashes)])) {
+    const now = await hashOf(path.join(folder, ...file.split('/')));
+    if (now === hashes[file]) continue;
+    if (Object.hasOwn(manifest.files, file) ? now !== manifest.files[file] : now !== null) changed.push(file);
   }
-  return changed;
+  return changed.sort();
 }
+// Each folder on the way to these files, inside the skill folder.
+const foldersOf = files => [...new Set(files.flatMap(file => file.split('/').slice(0, -1).map((part, i, parts) => parts.slice(0, i + 1).join('/'))))].sort();
 // Writes beside the target and renames it into place, so a link or a second name for the old file is never written
 // through.
 async function replaceFile(target, data) {
@@ -126,18 +138,19 @@ export async function installSkill({ version, force = false, ...where }) {
   const stats = await lstatOrNull(folder);
   // lstat: a link is never a folder here, whatever it points at.
   if (stats && !stats.isDirectory()) throw new Error(`${folder} is ${stats.isSymbolicLink() ? 'a link' : 'not a folder'}, so the skill is not installed through it, even with --force. Remove it or pass --dir; nothing was written.`);
-  // Folders inside the skill must be real folders too, or a write would land wherever they point.
-  for (const sub of new Set(list.flatMap(file => file.split('/').slice(0, -1).map((part, i, parts) => parts.slice(0, i + 1).join('/'))))) {
+  const manifest = stats ? await readManifest(folder) : null, previous = manifest ? Object.keys(manifest.files) : [];
+  const hashes = Object.fromEntries(list.map(file => [file, sha256(files.get(file))]));
+  // Folders inside the skill must be real folders too, or a write or a removal would land wherever they point.
+  for (const sub of foldersOf([...list, ...previous])) {
     const inner = await lstatOrNull(path.join(folder, ...sub.split('/')));
     if (inner && !inner.isDirectory()) throw new Error(`${path.join(folder, ...sub.split('/'))} is ${inner.isSymbolicLink() ? 'a link' : 'not a folder'}; remove it and install again. Nothing was written.`);
   }
-  const manifest = stats ? await readManifest(folder) : null;
   let changed = [], status = stats ? 'updated' : 'installed';
   if (stats && !manifest) {
     if ((await readdir(folder)).length && !force) throw new Error(`${folder} already holds files this command didn't write. ${usage}`);
     if ((await readdir(folder)).length) status = 'replaced';
   } else if (manifest) {
-    changed = await changedSince(folder, manifest);
+    changed = await changedSince(folder, manifest, hashes);
     if (changed.length && !force) throw new Error(`${folder} has changes since Pixelbolt ${manifest.version ?? 'an earlier version'} installed it (${changed.slice(0, 5).join(', ')}${changed.length > 5 ? `, and ${changed.length - 5} more` : ''}). ${usage}`);
     if (changed.length) status = 'replaced';
   }
@@ -145,10 +158,14 @@ export async function installSkill({ version, force = false, ...where }) {
     const target = path.join(folder, ...file.split('/')), existing = await lstatOrNull(target);
     if (existing?.isDirectory()) throw new Error(`${target} is a folder; remove it and install again. Nothing was written.`);
   }
-  const hashes = Object.fromEntries(list.map(file => [file, sha256(files.get(file))]));
-  const stale = manifest ? Object.keys(manifest.files).filter(file => !files.has(file) && !changed.includes(file)) : [];
+  // Files the earlier version wrote and this one doesn't ship go, unless edited or, on a file system that ignores
+  // case, the same file as one this version writes.
+  const shipped = new Set(list.map(file => file.toLowerCase()));
+  const stale = previous.filter(file => !shipped.has(file.toLowerCase()) && !changed.includes(file));
   const same = manifest && !changed.length && !stale.length && manifest.version === version && JSON.stringify(manifest.files) === JSON.stringify(hashes);
   const command = skillCommand(version), result = { skill: folder, version, command, files: list.length };
+  // From a checkout, npx fetches the released version of the same number, which lacks the checkout's later changes.
+  if (await lstatOrNull(path.join(ROOT, '.git'))) result.warning = `Installed from a Pixelbolt checkout: the copy runs ${command} from npm, which may lack this checkout's unreleased changes. For a released copy, run npx -y pixelbolt@latest skill install.`;
   if (same) return { status: 'unchanged', ...result };
   await mkdir(folder, { recursive: true });
   for (const file of list) {
