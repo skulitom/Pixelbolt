@@ -217,7 +217,7 @@ function simulate(effect, context) {
   // A cue names the spawn centre in the first frame its emitter spawns at; one point per name and frame.
   const mark = (e, t, x, y) => {
     const f = t - first;
-    if (e.cue && f >= 0 && f < frames && !cues[f][e.cue]) cues[f][e.cue] = [Math.floor(x + 0.5), Math.floor(y + 0.5)];
+    if (e.cue && f >= 0 && f < frames && !Object.hasOwn(cues[f], e.cue)) cues[f][e.cue] = [Math.floor(x + 0.5), Math.floor(y + 0.5)];
   };
   // One new particle around (cx, cy), the k-th of `count` spawned together; `r` draws its seeded values and `tag`
   // identifies it to its own children. A child adds `inherit` times its parent's velocity.
@@ -410,7 +410,7 @@ export function compileEffects(source) {
     list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
     const run = emitters.length ? simulate({ frames: count, loop, seed, emitters }, context)
       : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), blobs: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
-    if (shapes) for (const layer of shapes.layers) if (layer.cue && !run.cues[layer.t0][layer.cue]) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
+    if (shapes) for (const layer of shapes.layers) if (layer.cue && !Object.hasOwn(run.cues[layer.t0], layer.cue)) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
     const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
     if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
     // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).

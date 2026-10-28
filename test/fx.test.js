@@ -165,6 +165,17 @@ test('eased durations front-load an effect and cues become frame points for game
   assert.deepEqual(renderProject(recipe).frames[0].points, { impact: [12, 10] });
 });
 
+test('cues named like Object.prototype\'s members become frame points too, and the first cue of a name still wins', () => {
+  const names = ['toString', 'constructor', 'hasOwnProperty', 'valueOf'], dot = { burst: 1, life: 1, shapes: ['dot'] };
+  const { recipe, metadata } = compileEffects(effects({ frames: 3, looks: { warm: { colors: ['o', 'y', 'w'], thresholds: [0.2, 0.5, 0.8] } },
+    layers: [{ kind: 'ring', look: 'warm', at: [12, 12], radius: [2, 6], width: [2, 1], frames: [1, 3], cue: 'isPrototypeOf' }],
+    emitters: [...names.map((cue, i) => ({ ...dot, at: [2 + 4 * i, 3], cue })), { ...dot, at: [20, 20], cue: 'toString' }] }));
+  const first = Object.fromEntries(names.map((cue, i) => [cue, [2 + 4 * i, 3]]));
+  assert.deepEqual(recipe.frames.map(f => f.points), [first, { isPrototypeOf: [12, 12] }, undefined]);
+  assert.deepEqual(metadata.effects.burst.cues, [...names.map((name, i) => ({ name, frame: 0, at: [2 + 4 * i, 3] })), { name: 'isPrototypeOf', frame: 1, at: [12, 12] }]);
+  assert.deepEqual(renderProject(recipe).frames[0].points, first);
+});
+
 test('new emitter fields fail early with paths an agent can act on', () => {
   const bad = (emitters, path, message) => assert.throws(() => compileEffects(effects({ frames: 4, emitters })), error => error.path === path && (!message || message.test(error.message)), path);
   const dot = { at: [1, 1], burst: 1, shapes: ['dot'] };
