@@ -42,6 +42,12 @@ test('manifest has valid unique files, matching kinds and version-gated presets'
     assert.equal(entry.minVersion, '0.9.1');
     assert.ok(!filterExamples(manifest, '0.9.0').includes(entry)); assert.ok(filterExamples(manifest, '0.9.1').includes(entry));
   }
+  // The spell and water effects first shipped in 0.9.2, so a link on an older engine never lists them.
+  for (const file of ['slash-hit.fx.json', 'fire-explosion.fx.json', 'lightning-strike.fx.json', 'healing-circle.fx.json', 'water.fx.json']) {
+    const entry = manifest.find(item => item.file === file);
+    assert.equal(entry?.minVersion, '0.9.2', file);
+    assert.ok(!filterExamples(manifest, '0.9.1').includes(entry));
+  }
 });
 test('one engine pin is supported and no newer than the package; package excludes playground and scripts', async () => {
   assert.equal([...app.matchAll(/\b(?:const|let|var)\s+PINNED_VERSION\s*=/g)].length, 1);
