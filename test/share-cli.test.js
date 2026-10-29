@@ -96,7 +96,8 @@ test('CLI render embeds source in every PNG only on request, preserving every ot
     const bundle = await createBundle(recipe), plain = path.join(dir, recipe.name), embedded = path.join(dir, recipe.name + '-embedded');
     const input = source === '-' ? JSON.stringify(recipe) : undefined;
     const old = cli(['render', source, '--out', plain], { input });
-    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project), files: [...bundle.files.keys()].map(name => path.join(plain, name)), check: checkDelivery(bundle.project, { recipe }) }) + '\n');
+    // The folder once, and its files relative to it without each frame, which the summary already names.
+    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project), directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), check: checkDelivery(bundle.project, { recipe }) }) + '\n');
     await checkBundle(plain, bundle);
     const carried = cli(['render', source, '--out', embedded, '--embed-recipe'], { input });
     assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);
@@ -111,7 +112,7 @@ test('CLI scene embeds its resolved source only in scene.png and unlit.png; defa
   assert.deepEqual(document.assets.spirit.recipe, JSON.parse(await readFile(path.join(root, 'examples/forest-spirit.json'), 'utf8')));
   const bundle = await createSceneBundle(document), plain = path.join(dir, 'plain'), embedded = path.join(dir, 'embedded');
   const old = cli(['scene', source, '--out', plain]);
-  assert.equal(old.stdout, JSON.stringify({ ok: true, files: [...bundle.files.keys()].map(name => path.join(plain, name)), warnings: bundle.warnings, resolved: files }) + '\n');
+  assert.equal(old.stdout, JSON.stringify({ ok: true, directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), warnings: bundle.warnings, resolved: files }) + '\n');
   await checkBundle(plain, bundle);
   const carried = cli(['scene', source, '--out', embedded, '--embed-recipe']);
   assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);
@@ -164,12 +165,12 @@ test('CLI import --embedded recovers source, protects output and reports missing
   await assert.rejects(readFile(absent), { code: 'ENOENT' });
   const imported = importPNG(original), pixels = path.join(dir, 'pixels.json');
   const old = cli(['import', plain, '--out', pixels]);
-  assert.equal(old.stdout, JSON.stringify({ ok: true, recipe: pixels, metadata: imported.provenance }, null, 2) + '\n');
+  assert.equal(old.stdout, JSON.stringify({ ok: true, recipe: pixels, hint: 'The metadata was not saved; pass --metadata <new.json> to keep it.' }, null, 2) + '\n');
   assert.equal(await readFile(pixels, 'utf8'), formatJSON(imported.recipe));
   // Even a recipe-carrying PNG still takes the pixel-import path unless --embedded is supplied.
   const embeddedBytes = Buffer.from(await embedRecipe(original, blink, version)); await writeFile(carried, embeddedBytes);
   const traced = importPNG(embeddedBytes), tracedOut = path.join(dir, 'traced.json');
-  assert.equal(cli(['import', carried, '--out', tracedOut]).stdout, JSON.stringify({ ok: true, recipe: tracedOut, metadata: traced.provenance }, null, 2) + '\n');
+  assert.equal(cli(['import', carried, '--out', tracedOut]).stdout, JSON.stringify({ ok: true, recipe: tracedOut, hint: 'The metadata was not saved; pass --metadata <new.json> to keep it.' }, null, 2) + '\n');
   assert.equal(await readFile(tracedOut, 'utf8'), formatJSON(traced.recipe));
 });
 

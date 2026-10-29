@@ -122,10 +122,11 @@ test('the CLI compiles a normals source whose recipe file sits beside it, keepin
   await writeFile(path.join(dir, 'art', 'ball.json'), JSON.stringify({ ...recipe(disc(9)), name: 'ball', palette: { $ref: '../palette.json' } }));
   await writeFile(path.join(dir, 'art', 'ball.normals.json'), JSON.stringify({ format: 'pixelforge-normals', version: 1, recipe: 'ball.json', bevel: 3 }));
   const run = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', ...args], { cwd: root, encoding: 'utf8' });
-  const out = path.join(dir, 'art', 'ball-normal.json'), compiled = run('compile', path.join(dir, 'art', 'ball.normals.json'), '--out', out);
+  const out = path.join(dir, 'art', 'ball-normal.json'), meta = path.join(dir, 'art', 'ball-normal.meta.json');
+  const compiled = run('compile', path.join(dir, 'art', 'ball.normals.json'), '--out', out, '--metadata', meta);
   assert.equal(compiled.status, 0, compiled.stderr);
   const result = JSON.parse(compiled.stdout), normal = JSON.parse(await readFile(out, 'utf8'));
-  assert.deepEqual([result.metadata.bevel, result.resolved.map(file => path.basename(file)).sort()], [3, ['ball.json', 'palette.json']]);
+  assert.deepEqual([JSON.parse(await readFile(meta, 'utf8')).bevel, result.resolved.map(file => path.basename(file)).sort()], [3, ['ball.json', 'palette.json']]);
   assert.equal(normal.name, 'ball-normal'); assert.equal(normal.palette.$ref, undefined); assert.equal(normal.palette['5'], '#8080ff');
   assert.match(JSON.parse(run('compile', path.join(dir, 'art', 'ball.normals.json'), '--out', out).stderr).error, /already exists/);
   // The scene accepts the written pass as the colour recipe's normal.

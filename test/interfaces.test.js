@@ -366,3 +366,25 @@ test('every sample the studio lists is served, and the sidebar counts the list i
   // A number typed into the page went stale when samples were added, so the heading is filled in from the list.
   assert.match(page, /<h2>Projects<\/h2><span id="example-count"><\/span>/); assert.match(script, /\$\('example-count'\)\.textContent = String\(\$\('examples'\)\.children\.length\)/);
 });
+
+test('CLI replies stay small: render names its folder once, compile keeps metadata out, clipping lists 16 places', async t => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-replies-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const cli = (...args) => spawnSync(process.execPath, [path.join(root, 'bin', 'pixelbolt.js'), ...args], { cwd: dir, encoding: 'utf8' });
+  const coin = path.join(root, 'examples', 'coin.json');
+  const short = JSON.parse(cli('render', coin, '--out', 'short').stdout), every = JSON.parse(cli('render', coin, '--out', 'every', '--list-files').stdout);
+  assert.ok(path.isAbsolute(short.directory)); assert.equal(await realpath(short.directory), await realpath(path.join(dir, 'short')));
+  assert.ok(!short.files.some(file => file.startsWith('frames/') || path.isAbsolute(file)) && short.files.includes('coin.png'));
+  assert.equal(every.files.filter(file => file.startsWith('frames/')).length, short.frames);
+  for (const file of every.files) await access(path.join(every.directory, file));
+  // A rig's metadata runs to a hundred kilobytes: it goes to --metadata or nowhere.
+  await writeFile(path.join(dir, 'hero.poses.json'), await readFile(path.join(root, 'examples', 'hero.poses.json')));
+  const compiled = cli('compile', 'hero.poses.json', '--out', 'hero.json');
+  assert.equal(compiled.status, 0, compiled.stderr); assert.ok(compiled.stdout.length < 400, compiled.stdout);
+  assert.deepEqual(Object.keys(JSON.parse(compiled.stdout)), ['ok', 'recipe', 'hint']);
+  // Forty clipped operations: the warning counts them, the list keeps the first 16.
+  const over = { version: 1, name: 'over', width: 4, height: 4, palette: { r: '#f00' }, frames: [{ name: 'a', ops: Array.from({ length: 40 }, (_, i) => ({ op: 'pixel', x: 4 + i, y: 0, color: 'r' })) }] };
+  await writeFile(path.join(dir, 'over.json'), JSON.stringify(over));
+  const validated = JSON.parse(cli('validate', 'over.json').stdout);
+  assert.equal(validated.clipping.length, 16); assert.equal(validated.clippingOmitted, 24); assert.match(validated.warnings[0], /and 39 more locations/);
+});

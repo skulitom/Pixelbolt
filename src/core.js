@@ -743,7 +743,7 @@ export function renderProject(spec, options = {}) {
     name: projectName, width, height, frames, animations, palette, ramps,
     ...(options.stats && { work: { pixels: work, layerPixels, operations: operationCount } }),
     sheet,
-    warnings, ...(clipping.length && { clipping: clipping.slice(0, 64), ...(clipping.length > 64 && { clippingOmitted: clipping.length - 64 }) })
+    warnings, ...(clipping.length && { clipping: clipping.slice(0, 16), ...(clipping.length > 16 && { clippingOmitted: clipping.length - 16 }) })
   };
 }
 

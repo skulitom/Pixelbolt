@@ -8,7 +8,7 @@ import { patchRecipe } from './patch.js';
 import { createRevisionStore } from './revisions.js';
 import { inspectMotion } from './motion.js';
 import { encodePNG } from './png.js';
-import { createBundle, writeBundle, embedBundleRecipe } from './export.js';
+import { createBundle, writeBundle, embedBundleRecipe, outputSummary } from './export.js';
 import { spriteFrames, retexture } from './godot.js';
 import { shareLink } from './share.js';
 import { animationGIF } from './gif.js';
@@ -40,15 +40,6 @@ function gridText({ region, legend, grids }) {
   return lines.join('\n');
 }
 // Bundles can hold thousands of files; list the ones an agent opens and count the rest.
-function outputSummary(out, files, listFiles) {
-  const relative = files.map(file => path.relative(out, file).split(path.sep).join('/'));
-  const count = prefix => relative.filter(file => file.startsWith(`${prefix}/`)).length;
-  const animations = count('animations');
-  return {
-    files: listFiles ? relative : relative.filter(file => !file.startsWith('frames/') && !(file.startsWith('animations/') && animations > 16)),
-    frames: { directory: 'frames', count: count('frames') }, animations: { directory: 'animations', count: animations }
-  };
-}
 // JSON-RPC clients normally send "id" before "params", so an oversized request's id is usually in its first bytes.
 function leadingId(prefix) {
   const head = prefix.split('"params"')[0], match = /"id"\s*:\s*("(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?)/.exec(head);
@@ -337,7 +328,7 @@ export function createToolRunner({ directory, root, version }) {
         return { content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] };
       } else if (name === 'pixel_validate') {
         const { recipe, resolved, sources } = await recipeFrom(spec, revision), project = renderProject(recipe);
-        return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
+        return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), width: project.width, height: project.height, frames: project.frames.map(({ name, duration }) => ({ name, duration })), animations: project.animations, warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(project.clippingOmitted && { clippingOmitted: project.clippingOmitted }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
       } else if (name === 'pixel_inspect') {
         const { layers, reference, source: poseSource, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
         let recipe, resolved, sources, metadata = suppliedMetadata, poseWarnings = [];

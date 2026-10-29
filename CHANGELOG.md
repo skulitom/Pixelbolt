@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Smaller replies
+
+- The CLI's `render` and `scene` name their folder once (`directory`) and list files relative to it, leaving out each frame and, past 16, each animation, as MCP `pixel_render` does; `--list-files` lists every file. A 13-frame sprite's reply went from 3.9 KB to 0.8 KB. `removed` paths are relative too.
+- `compile`, `autotile` and `import` write their metadata only with `--metadata <new.json>`; without it the reply carries a hint instead of the metadata, which ran to 110 KB for one rigged figure (MCP `pixel_compile` already returned it only on request).
+- Clipping lists the first 16 places instead of 64, and the CLI and MCP replies now pass on `clippingOmitted`.
+
 ### Every error in one reply
 
 - Validation names every broken drawing operation at once instead of stopping at the first: the error's `path` and message start with the first, the message names the rest, and the CLI's and MCP's error replies list each in `errors` (up to ten). Frame fields, animations and the sheet still stop at once.

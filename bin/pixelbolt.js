@@ -5,7 +5,7 @@ import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { compileWaves } from '../src/wave.js';
 import { readExpect, checkDelivery } from '../src/check.js';
-import { embedBundleRecipe, sameFiles } from '../src/export.js';
+import { embedBundleRecipe, sameFiles, outputSummary } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference } from '../src/index.js';
 
@@ -57,6 +57,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
 
 Options: --force allows overwriting exported files, and removes an earlier export's frames the new one no longer has. No command writes over a file it reads, however the path is spelled (patch may save over the recipe it edits). '-' reads JSON from stdin.
 --embed-recipe on render or scene embeds the resolved recipe in exported PNGs (not scene asset passes).
+render and scene reply with their folder once and the files in it, leaving out frames/<name>.png and, past 16, each
+animation; --list-files lists every file. compile, autotile and import save their metadata only with --metadata <new.json>.
 Palette references ({"$ref": "palette.json"}), scene asset files and a normals source's recipe resolve from the
 input file's folder.
 Inspect: --frames a,b or --animation name picks cells (* and ? in a name match frames: --frames 'flash-*');
@@ -88,7 +90,7 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
-    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded', '--project'].includes(args[i])) options[args[i].slice(2)] = true;
+    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded', '--project', '--list-files'].includes(args[i])) options[args[i].slice(2)] = true;
     else if (['--out', '--dir', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
@@ -121,6 +123,9 @@ async function readResolved(file) {
 // Every file an export was made from: the recipe itself and the palette and asset files it references.
 const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.file)]), ...input.resolution.files];
 const removedBy = files => (files.removed ? { removed: files.removed } : {});
+// A bundle's files relative to its folder, leaving out each frame (frames/<name>.png) and, past 16, each animation
+// unless --list-files: the reply already names the frames and animations.
+const bundleFiles = (directory, files, options) => { const { files: listed, removed } = outputSummary(directory, files, options['list-files'] === true); return { directory, files: listed, ...(removed && { removed }) }; };
 // The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
 // and a scene's assets do not).
 const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'wave', 'project'];
@@ -160,7 +165,7 @@ async function writeOutputs(targets, force, inputs = []) {
 }
 // Sidecar sources compile by their format; `autotile` remains a dedicated command for templates.
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-normals': compileNormals };
-const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
+const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(project.clippingOmitted && { clippingOmitted: project.clippingOmitted }) });
 const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files } : {};
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 try {
@@ -170,7 +175,7 @@ try {
   else {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
-    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference', 'guides'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root', 'time-limit'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
+    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference', 'guides'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation', 'list-files'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root', 'time-limit'], schema: [], compile: ['out', 'metadata', 'force'], autotile: ['out', 'metadata', 'force'], scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
     allowed.compile.push('expand');
     allowed.share = [];
@@ -260,7 +265,8 @@ try {
       // Generated files use compact formatting: one line per frame, operation or short grid when it fits.
       const reads = command === 'import' ? filesRead(positional[0], options.atlas) : [...inputsOf(input), ...filesRead(options.changes, options.selections)];
       const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }) }, options.force, reads);
-      console.log(JSON.stringify({ ok: true, ...written, ...(warnings && { warnings }), ...(metadata && !options.metadata && { metadata }), ...(input && referenced(input)) }, null, 2));
+      // The metadata goes to a file or nowhere: a rig's runs to a hundred kilobytes, which no reply should carry.
+      console.log(JSON.stringify({ ok: true, ...written, ...(warnings && { warnings }), ...(metadata && !options.metadata && { hint: 'The metadata was not saved; pass --metadata <new.json> to keep it.' }), ...(input && referenced(input)) }, null, 2));
     } else if (command === 'scene' && options.image !== undefined) {
       // One image at one time, as MCP pixel_scene returns it: color, grayscale or depth, with optional guides.
       if (options.out !== undefined || options['embed-recipe']) throw new Error('scene --image writes one image; export a bundle with --out instead');
@@ -278,7 +284,7 @@ try {
       const input = await readResolved(positional[0]), bundle = await createSceneBundle(input.document);
       if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
       const files = await writeBundle(bundle, options.out, { force: options.force, inputs: inputsOf(input) });
-      console.log(JSON.stringify({ ok: true, files, ...removedBy(files), warnings: bundle.warnings, ...referenced(input) }));
+      console.log(JSON.stringify({ ok: true, ...bundleFiles(path.resolve(options.out), files, options), warnings: bundle.warnings, ...referenced(input) }));
     } else if (command === 'inspect') {
       const layerOptions = options.layers === undefined ? {} : { layers: options.layers.split(',') };
       if ([positional[0], options.reference, options.metadata].filter(file => file === '-').length > 1) throw new Error('Only one inspection input can use stdin');
@@ -313,7 +319,7 @@ try {
         ...(options.image && image && { image: [options.image, encodePNG(image.sheet.data, image.sheet.width, image.sheet.height)] })
       }, options.force, [...input.resolution.files, ...filesRead(options.changes)]);
       const { sheet, ...drawn } = image ?? {};
-      console.log(JSON.stringify({ ok: true, name: after.name, edits, ...(applied.rebased && { rebased: true }), ...report, ...(written.image && { image: { ...drawn, scale: sheet.scale, file: written.image } }), ...(written.recipe && { recipe: written.recipe }), warnings: after.warnings, ...(after.clipping && { clipping: after.clipping }) }, null, 2));
+      console.log(JSON.stringify({ ok: true, name: after.name, edits, ...(applied.rebased && { rebased: true }), ...report, ...(written.image && { image: { ...drawn, scale: sheet.scale, file: written.image } }), ...(written.recipe && { recipe: written.recipe }), warnings: after.warnings, ...(after.clipping && { clipping: after.clipping }), ...(after.clippingOmitted && { clippingOmitted: after.clippingOmitted }) }, null, 2));
     } else if (command === 'sequence') {
       if (!options.out) throw new Error('sequence requires --out <new folder>');
       if (options.fps === undefined) throw new Error('sequence requires --fps, for example 24, 25, 29.97, 30 or 60');
@@ -351,7 +357,7 @@ try {
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
         const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
         const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile] });
-        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), files, ...removedBy(files), check, ...referenced(input) }));
+        console.log(JSON.stringify({ ok: true, ...summary(bundle.project), ...bundleFiles(path.resolve(options.out), files, options), check, ...referenced(input) }));
       }
     }
   }
