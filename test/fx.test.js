@@ -447,3 +447,51 @@ test('the swing trail example compiles from the swing\'s pose source to the pixe
   // This changes with any change to the trail, sprite or particle pixels: regenerate it only after the art is seen again.
   assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '553f1d57519cdcb55dd5b64f88842e97bd2a86959a0bff5dfeac85ba86dc93b9');
 });
+
+// ---- Turned copies: one effect drawn in several directions ---------------------------------------------------------------
+test('turned copies draw an effect in each direction with its geometry turned, while gravity and light stay put', () => {
+  const shot = (turn, extra = {}) => compileEffects(effects({ frames: 3, turn, emitters: [{ at: [12, 12], burst: 1, angle: 0, speed: 3, life: 3, shapes: ['dot'], ...extra }] }));
+  const four = shot({ angles: [0, 90, 180, 270], about: [12, 12] });
+  assert.deepEqual(Object.keys(four.recipe.animations), ['burst-0', 'burst-90', 'burst-180', 'burst-270']);
+  const at = (recipe, name, i) => { const op = recipe.frames.find(f => f.name === `${name}-${i}`).ops[0]; return [op.x, op.y]; };
+  assert.deepEqual(['burst-0', 'burst-90', 'burst-180', 'burst-270'].map(name => at(four.recipe, name, 2)), [[18, 12], [12, 18], [6, 12], [12, 6]]);
+  assert.deepEqual(four.metadata.effects['burst-90'].turn, { of: 'burst', angle: 90, mirror: false });
+  // The copy at 0 is the effect as drawn, pixel for pixel; a mirror flips it across the upright line through about.
+  assert.deepEqual(four.recipe.frames.slice(0, 3).map(f => f.ops), shot(undefined).recipe.frames.map(f => f.ops));
+  const flipped = shot({ mirror: true, about: [12, 12] });
+  assert.deepEqual(Object.keys(flipped.recipe.animations), ['burst-0', 'burst-0-mirror']);
+  assert.deepEqual(at(flipped.recipe, 'burst-0-mirror', 2), [6, 12]);
+  // Gravity stays down the canvas: thrown left in the half turn, the spark still falls as far as it does thrown right.
+  const falling = shot({ angles: [0, 180], about: [12, 12] }, { gravity: [0, 1] });
+  const [right, left] = [at(falling.recipe, 'burst-0', 2), at(falling.recipe, 'burst-180', 2)];
+  assert.ok(right[1] > 12 && left[1] === right[1] && left[0] === 24 - right[0], `${right} ${left}`);
+  // Cues turn with their emitter.
+  const cued = shot({ angles: [90], about: [12, 12] }, { at: [18, 12], cue: 'hit' });
+  assert.deepEqual(cued.metadata.effects['burst-90'].cues, [{ name: 'hit', frame: 0, at: [12, 18] }]);
+  // A lit look keeps its light upper left: a lying ellipse stood up still has its highlight toward the upper left.
+  const lit = compileEffects(effects({ frames: 1, turn: { angles: [0, 90] }, looks: { warm: { colors: ['o'], thresholds: [0.2], lit: { colors: ['w'], thresholds: [0.45] } } }, layers: [{ kind: 'burst', at: [12, 12], radius: 9, squash: [1, 0.5], noise: 0 }] }));
+  for (const name of ['burst-0', 'burst-90']) {
+    const cells = cellsOf(gridIn(lit.recipe.frames.find(f => f.name === `${name}-0`))), shine = cells.filter(c => c.key === 'w');
+    const mean = axis => shine.reduce((sum, c) => sum + c[axis], 0) / shine.length;
+    assert.ok(shine.length > 3 && mean('x') < 12 && mean('y') < 12, `${name}: ${shine.length} lit, mean ${mean('x')}, ${mean('y')}`);
+  }
+  const box = name => { const g = gridIn(lit.recipe.frames.find(f => f.name === `${name}-0`)); return [g.rows[0].length, g.rows.length]; };
+  assert.deepEqual(box('burst-90'), box('burst-0').reverse());
+});
+
+test('a turned slash keeps its crescent, a mirror sweeps it the other way, and turn mistakes name the field to fix', () => {
+  const slash = turn => compileEffects(effects({ frames: 6, turn, looks: { steel: { colors: ['y', 'w'], thresholds: [0.2, 0.6] } }, layers: [{ kind: 'slash', at: [12, 12], radius: 9, width: 4, arc: [200, 340], reveal: 0.5 }] }));
+  const { recipe } = slash({ angles: [0, 180], mirror: true });
+  const cells = name => cellsOf(gridIn(recipe.frames.find(f => f.name === `${name}-5`))), side = list => list.reduce((sum, c) => sum + c.y, 0) / list.length;
+  // The crescent arcs over the top as drawn and under the bottom turned half way round; mirrored, over the top again.
+  assert.ok(side(cells('burst-0')) < 12 && side(cells('burst-180')) > 12 && side(cells('burst-0-mirror')) < 12);
+  // Mirrored, its head starts at the other end: the first frame draws on from the right instead of the left.
+  const first = name => { const list = cellsOf(gridIn(recipe.frames.find(f => f.name === `${name}-0`))); return list.reduce((sum, c) => sum + c.x, 0) / list.length; };
+  assert.ok(first('burst-0') < 12 && first('burst-0-mirror') > 12, `${first('burst-0')} ${first('burst-0-mirror')}`);
+  const wrong = (turn, extra = {}) => { try { compileEffects(sprited({ frames: 2, turn, emitters: [{ at: [4, 4], burst: 1, life: 2, shapes: ['dot'] }], ...extra })); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ angles: [360] }), /turn\.angles\[0\]: expected an integer from 0 to 359/);
+  assert.match(wrong({ angles: [90, 90] }), /turn\.angles: list each angle once/);
+  assert.match(wrong({ spin: 1 }), /turn: unknown or null field spin|turn\.spin/);
+  assert.match(wrong({ angles: [90] }, { emitters: [{ sprite: { symbol: 'block' }, at: [4, 4], burst: 1, life: 2 }] }), /turn: a sprite emitter can't turn/);
+  assert.match(compileEffectsError(() => compileEffects(effects({ frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }], turn: { angles: [90] } }, { effects: { burst: { frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }], turn: { angles: [90] } }, 'burst-90': { frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }] } } }))), /burst-90: effect names must be unique ignoring case/);
+});
