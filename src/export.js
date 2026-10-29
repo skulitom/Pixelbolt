@@ -3,7 +3,8 @@ import { encodePNG, encodeAPNG, crc32 } from './png.js';
 import { readFile, readdir, mkdir, writeFile, access, rm, stat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { embedRecipe, recipeKind } from './share.js';
-import { spriteFrames } from './godot.js';
+import { spriteFrames, tileSet } from './godot.js';
+import { autotileFrames } from './autotile.js';
 
 const json = value => JSON.stringify(value, null, 2) + '\n';
 // Compact, deterministic JSON for generated recipes: any object or array that fits within `width` columns stays on one
@@ -67,6 +68,8 @@ export async function createBundle(spec) {
   const godot = spriteFrames(atlas.metadata);
   files.set(`${name}.tres`, Buffer.from(godot.text));
   if (godot.approximate.length) project.warnings.push(`${name}.tres: the frame times of ${godot.approximate.length === 1 ? 'animation' : 'animations'} ${godot.approximate.slice(0, 8).join(', ')}${godot.approximate.length > 8 ? ', …' : ''} share no step of 9 ms or more, so Godot gets fractional frame durations, kept as 32-bit floats: each frame plays within a ten-millionth of its length. Frame times in multiples of 10 ms are exact.`);
+  const tiles = godotTiles(spec, project, atlas);
+  if (tiles) files.set(`${name}.tileset.tres`, Buffer.from(tiles));
   files.set(`${name}.pixel.json`, Buffer.from(json(spec)));
   files.set(`${name}.css`, Buffer.from(generateCSS(project, atlas)));
   const scaledFrames = frames.map(f => ({ ...f, data: scalePixels(f.data, width, height, sheet.scale) }));
@@ -83,12 +86,30 @@ export async function createBundle(spec) {
   if (raised.size) project.warnings.push(`${raised.size} frame${raised.size === 1 ? '' : 's'} of 10 ms or less (${[...raised].slice(0, 8).join(', ')}${raised.size > 8 ? ', …' : ''}) last 11 ms in the animated PNGs: browsers play such short frames at 100 ms. The atlas, CSS and player keep the exact durations.`);
   files.set('player.js', await readFile(new URL('./runtime.js', import.meta.url)));
   files.set('preview.html', Buffer.from(previewHTML(project)));
-  files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames, named animation sequences and Aseprite-style frame tags\n${name}.tres: Godot 4 SpriteFrames; it finds ${name}.png in its own folder, so keep the two together\n${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nGodot 4: copy ${name}.png and ${name}.tres into one folder of your project, give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${Object.keys(project.animations)[0]}"). Set the node's Texture Filter to Nearest for crisp pixels.\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
+  files.set('README.txt', Buffer.from(`${name} — Pixelbolt export\n\n${name}.png: transparent RGBA sprite sheet\n${name}.atlas.json: TexturePacker-style frames, named animation sequences and Aseprite-style frame tags\n${name}.tres: Godot 4 SpriteFrames; it finds ${name}.png in its own folder, so keep the two together\n${tiles ? `${name}.tileset.tres: Godot 4 TileSet with a terrain for painting this autotile set; it also finds ${name}.png in its own folder\n` : ''}${name}.css: CSS classes with per-frame timing\nframes/: individual PNGs\nanimations/: animated PNGs (APNG)\n${name}.pixel.json: editable source\nplayer.js: dependency-free Canvas player\npreview.html: open directly in a browser, or serve this folder\n\nCanvas: import { SpritePlayer } from './player.js';\nconst player = await SpritePlayer.load(canvas, './${name}.atlas.json');\nplayer.play('${Object.keys(project.animations)[0]}');\n\nGodot 4: copy ${name}.png and ${name}.tres into one folder of your project, give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${Object.keys(project.animations)[0]}"). Set the node's Texture Filter to Nearest for crisp pixels.\n\nCSS: <link rel="stylesheet" href="${name}.css">\n<span class="pf-${name} pf-${name}-${Object.keys(project.animations)[0]}"></span>\n`));
   // A forced export over an earlier export of this recipe removes the frame and animation PNGs that export's atlas
   // lists and this one no longer has. Another recipe's export in the same folder keeps its PNGs, and so does a PNG
   // put in frames/ by hand.
   return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/, listed: atlasFiles, peers: /\.atlas\.json$/ } };
 }
+// A Godot TileSet for a recipe whose frames are an autotile set (at least two masks), or null. Its warnings join the
+// project's. The terrain's editor colour is the commonest opaque colour of the fullest tile.
+function godotTiles(spec, project, atlas) {
+  const tiles = autotileFrames(spec), { name, sheet } = project;
+  if (new Set(tiles.map(tile => tile.mask)).size < 2) return null;
+  if (sheet.trim) {
+    project.warnings.push(`${name}.tileset.tres: not written: a Godot TileSet needs the sheet's grid, and sheet.trim packs frames without one. Remove sheet.trim to get it`);
+    return null;
+  }
+  const fullest = tiles.reduce((best, tile) => (popcount(tile.mask) > popcount(best.mask) ? tile : best));
+  const data = project.frames.find(frame => frame.name === fullest.frame).data, counts = new Map();
+  for (let i = 0; i < data.length; i += 4) if (data[i + 3] === 255) { const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]; counts.set(key, (counts.get(key) ?? 0) + 1); }
+  const top = [...counts].reduce((best, entry) => (entry[1] > best[1] ? entry : best), [0xffffff, 0])[0];
+  const result = tileSet(atlas.metadata, tiles, { name, color: [top >> 16, (top >> 8) & 255, top & 255], margin: sheet.padding * sheet.scale, separation: sheet.padding * 2 * sheet.scale });
+  project.warnings.push(...result.warnings.map(warning => `${name}.tileset.tres: ${warning}`));
+  return result.text;
+}
+const popcount = mask => { let bits = 0; for (let m = mask; m; m &= m - 1) bits++; return bits; };
 // The frame and animation PNGs an export wrote, as its atlas metadata names them. Anything else lists nothing.
 const keysOf = value => (value !== null && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value) : []);
 const atlasFiles = metadata => [...keysOf(metadata?.frames).map(frame => `frames/${frame}.png`), ...keysOf(metadata?.animations).map(key => `animations/${key}.png`)];

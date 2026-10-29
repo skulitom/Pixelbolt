@@ -115,6 +115,7 @@ Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pi
 | `name.png` | RGBA PNG 精灵表 |
 | `name.atlas.json` | TexturePacker 风格的 JSON 图集：矩形、锚点、帧时长、命名动画和 Aseprite 风格的帧标签 |
 | `name.tres` | Godot 4 的 `SpriteFrames`（用于 `AnimatedSprite2D`），请与 `name.png` 放在同一文件夹 |
+| `name.tileset.tres` | 仅限自动图块集：Godot 4 的 `TileSet`（用于 `TileMapLayer`），用地形绘制时选出的图块与 Pixelbolt 的图块地图相同；请与 `name.png` 放在同一文件夹 |
 | `frames/*.png` | 每一帧的透明 PNG |
 | `animations/*.png` | 每个动画的 APNG，保留透明度和帧时长 |
 | `name.css` | CSS 动画类 |

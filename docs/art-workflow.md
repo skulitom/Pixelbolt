@@ -284,7 +284,7 @@ Draw it like a tiny island in the sea: the island's four corner quadrants are ou
 node bin/pixelbolt.js autotile shore.autotile.json --out shore.json
 ```
 
-Every compiled frame is one `autotile` operation naming its neighbour mask, drawn from the `template` symbol, so a frame reads as `{"op": "autotile", "symbol": "template", "mask": 23}` and editing the template in the compiled recipe updates the whole set. Use the same masks in a scene `tilemap` legend (`"autotile": "blob"`) or in a game.
+Every compiled frame is one `autotile` operation naming its neighbour mask, drawn from the `template` symbol, so a frame reads as `{"op": "autotile", "symbol": "template", "mask": 23}` and editing the template in the compiled recipe updates the whole set. Use the same masks in a scene `tilemap` legend (`"autotile": "blob"`) or in a game. Exporting the compiled set also writes `name.tileset.tres`, a Godot 4 TileSet whose terrain paints with these masks ([tile sets](game-integration.md#tile-sets)).
 
 ## Particle effects
 

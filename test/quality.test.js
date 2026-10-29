@@ -13,12 +13,12 @@ test('PF-EF-001: ZIP32 accepts 65,535 entries and preflights overflow before rea
   files.set('overflow', Buffer.alloc(0));
   files[Symbol.iterator] = () => { throw new Error('must not read entries'); };
   assert.throws(() => createZip(files), error => error instanceof PixelError && /65,535/.test(error.message));
-  const many = { ...tiny, animations: Object.fromEntries(Array.from({ length: 65527 }, (_, i) => [`a${i}`, { frames: ['p'] }])) };
+  const many = { ...tiny, animations: Object.fromEntries(Array.from({ length: 65526 }, (_, i) => [`a${i}`, { frames: ['p'] }])) };
   // Even an invalid drawing op is not visited before the bundle-count preflight.
   many.frames = [{ name: 'p', ops: [{ op: 'not-an-op' }] }];
   await assert.rejects(createBundle(many), /project.animations: bundle exceeds/);
-  delete many.animations.a65526; many.frames = tiny.frames;
-  assert.equal(Object.keys(renderProject(many).animations).length, 65526);
+  delete many.animations.a65525; many.frames = tiny.frames;
+  assert.equal(Object.keys(renderProject(many).animations).length, 65525);
 });
 test('PF-EF-003: stamp references have the same string type as the schema', () => {
   const source = { ...tiny, symbols: { dot: ['x'] }, palette: { x: '#fff' } };

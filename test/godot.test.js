@@ -4,8 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { renderProject, buildAtlas, frameTag } from '../src/core.js';
 import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
-import { spriteFrames, godotTiming, GODOT_MAX_FPS } from '../src/godot.js';
-import { GODOT_FIXTURE, replaySprite } from '../scripts/verify-godot.mjs';
+import { spriteFrames, godotTiming, GODOT_MAX_FPS, tileSet, retexture } from '../src/godot.js';
+import { compileAutotile } from '../src/authoring.js';
+import { autotileFrames } from '../src/autotile.js';
+import { GODOT_FIXTURE, GODOT_TILE_SOURCES, replaySprite } from '../scripts/verify-godot.mjs';
 
 const spirit = JSON.parse(await readFile(new URL('../examples/forest-spirit.json', import.meta.url), 'utf8'));
 const tiny = { version: 1, name: 'tiny', width: 2, height: 1, frames: [{ name: 'a', duration: 80, ops: [{ op: 'pixel', color: '#f00' }] }, { name: 'b', duration: 120, ops: [{ op: 'pixel', x: 1, color: '#00f8' }] }], animations: { once: { frames: ['a', 'b'], loop: false } }, sheet: { columns: 1, padding: 1 } };
@@ -185,4 +187,122 @@ test('the Godot playback replay matches Godot 4.6, which runs the rest of a step
   const steps = Array(120).fill(1);
   assert.deepEqual(replaySprite(120, [0.6, 12], false, steps), [[5, 1], [86, -1]]);
   assert.deepEqual(replaySprite(120, [0.6, 12], false, steps, { stale: false }), [[5, 1], [105, -1]]);
+});
+
+// ---- Tile sets ----------------------------------------------------------------------------------------------------
+// Reads a TileSet .tres back: the atlas source's properties, each tile's lines by cell, and the [resource] lines.
+function readTileSet(text) {
+  assert.match(text, /^\[gd_resource type="TileSet" format=3\]\n\n\[ext_resource type="Texture2D" path="[^"]+" id="1_sheet"\]\n\n\[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tiles"\]\n/);
+  const [source, resource] = text.split('\n\n[resource]\n'), props = {}, tiles = {};
+  for (const line of source.split('\n').slice(5)) {
+    const [key, value] = line.split(' = '), cell = /^(\d+:\d+)\/(.*)$/.exec(key);
+    if (!cell) { props[key] = value; continue; }
+    (tiles[cell[1]] ??= {})[cell[2]] = value;
+  }
+  return { props, tiles, resource: Object.fromEntries(resource.trim().split('\n').map(line => line.split(' = '))) };
+}
+const peersOf = tile => Object.keys(tile).filter(key => key.startsWith('0/terrains_peering_bit/')).map(key => key.slice(23)).sort();
+const [turfSource, fenceSource, surfSource] = GODOT_TILE_SOURCES;
+
+test('an autotile set exports a Godot TileSet whose peering bits are each tile\'s neighbour mask', async () => {
+  const { recipe } = compileAutotile(turfSource), bundle = await createBundle(recipe), atlas = JSON.parse(bundle.files.get('turf.atlas.json'));
+  const { props, tiles, resource } = readTileSet(bundle.files.get('turf.tileset.tres').toString());
+  // Padding 1 at scale 2: 2 px margins, 4 px between 8 px tiles. The sheet beside it, one terrain matching corners and sides.
+  assert.deepEqual(props, { resource_name: '"turf"', texture: 'ExtResource("1_sheet")', margins: 'Vector2i(2, 2)', separation: 'Vector2i(4, 4)', texture_region_size: 'Vector2i(8, 8)' });
+  // The terrain's editor colour is the fill tile's commonest colour, d #3c7830.
+  assert.deepEqual(resource, { tile_size: 'Vector2i(8, 8)', 'terrain_set_0/mode': '0', 'terrain_set_0/terrain_0/name': '"turf"', 'terrain_set_0/terrain_0/color': 'Color(0.235294, 0.470588, 0.188235, 1)', 'sources/0': 'SubResource("TileSetAtlasSource_tiles")' });
+  assert.match(bundle.files.get('turf.tileset.tres').toString(), /\[ext_resource type="Texture2D" path="turf\.png" id="1_sheet"\]/);
+  // Every one of the 47 frames is a tile in its sheet cell, with a bit for each side and corner its mask has.
+  assert.equal(Object.keys(tiles).length, 47);
+  const names = { 1: 'top_side', 2: 'top_right_corner', 4: 'right_side', 8: 'bottom_right_corner', 16: 'bottom_side', 32: 'bottom_left_corner', 64: 'left_side', 128: 'top_left_corner' };
+  for (const frame of recipe.frames) {
+    const { x, y } = atlas.frames[frame.name].frame, tile = tiles[`${(x - 2) / 12}:${(y - 2) / 12}`], mask = frame.ops[0].mask;
+    assert.deepEqual([tile['0'], tile['0/terrain_set'], tile['0/terrain']], ['0', '0', '0'], frame.name);
+    assert.deepEqual(peersOf(tile), Object.entries(names).filter(([bit]) => mask & bit).map(([, name]) => name).sort(), frame.name);
+  }
+  assert.deepEqual(bundle.project.warnings, []);
+  assert.match(bundle.files.get('README.txt').toString(), /turf\.tileset\.tres: Godot 4 TileSet/);
+  // The same recipe always gives the same bytes.
+  assert.deepEqual((await createBundle(recipe)).files.get('turf.tileset.tres'), bundle.files.get('turf.tileset.tres'));
+});
+
+test('a cardinal set matches sides only, and every variant of a mask is a tile of its own', async () => {
+  const { recipe } = compileAutotile(fenceSource), bundle = await createBundle(recipe);
+  const { props, tiles, resource } = readTileSet(bundle.files.get('fence.tileset.tres').toString());
+  assert.equal(resource['terrain_set_0/mode'], '2');
+  assert.equal(props.margins, undefined, 'no padding, no margins');
+  assert.equal(Object.keys(tiles).length, 32);
+  // fence-5-plain (N and S) and fence-5-mossy: two tiles with the same bits, which Godot picks between at random.
+  const atlas = JSON.parse(bundle.files.get('fence.atlas.json')), cell = name => { const { x, y } = atlas.frames[name].frame; return `${x / 4}:${y / 4}`; };
+  for (const name of ['fence-5-plain', 'fence-5-mossy']) assert.deepEqual(peersOf(tiles[cell(name)]), ['bottom_side', 'top_side']);
+  assert.deepEqual(peersOf(tiles[cell('fence-15-plain')]), ['bottom_side', 'left_side', 'right_side', 'top_side']);
+});
+
+test('an animation over one mask\'s frames side by side in a row becomes an animated tile, and one that wraps keeps its first frame', async () => {
+  const { recipe } = compileAutotile(surfSource), bundle = await createBundle(recipe), text = bundle.files.get('surf.tileset.tres').toString(), { tiles } = readTileSet(text);
+  // Six columns: each mask's three frames share a row, so 47 animated tiles and no tiles at their later frames. Godot
+  // writes a tile's frame times before the tile.
+  assert.equal(Object.keys(tiles).length, 47);
+  assert.ok(Object.values(tiles).every(tile => tile['animation_frame_2/duration'] === '0.09'));
+  assert.match(text, /\n3:0\/animation_frame_0\/duration = 0\.12\n3:0\/animation_frame_1\/duration = 0\.25\n3:0\/animation_frame_2\/duration = 0\.09\n3:0\/0 = 0\n/);
+  assert.deepEqual(bundle.project.warnings, []);
+  // At the default eight columns a mask's frames can wrap onto the next row: those tiles keep their first frame, warned.
+  const wrapped = await createBundle({ ...recipe, sheet: undefined }), still = readTileSet(wrapped.files.get('surf.tileset.tres').toString()).tiles;
+  assert.equal(Object.keys(still).length, 47);
+  const animated = Object.values(still).filter(tile => tile['animation_frame_0/duration']).length;
+  assert.ok(animated > 0 && animated < 47, `${animated} animated tiles`);
+  assert.equal(wrapped.project.warnings.length, 1);
+  assert.match(wrapped.project.warnings[0], /^surf\.tileset\.tres: animations surf-\d+, .* became still tiles of their first frame: their frames run onto the next row of the sheet, and Godot animates a tile only through frames side by side in one row\. Set sheet\.columns to a multiple of 3$/);
+  // A ping-pong or a one-shot can't animate a tile at any width.
+  const { animations } = recipe, first = Object.keys(animations)[0];
+  for (const change of [{ direction: 'pingpong' }, { loop: false }]) {
+    const other = await createBundle({ ...recipe, animations: { ...animations, [first]: { ...animations[first], ...change } } });
+    assert.deepEqual(other.project.warnings, [`surf.tileset.tres: animation ${first} became still tiles of its first frame: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`], JSON.stringify(change));
+  }
+});
+
+test('only an autotile set on a grid gets a TileSet, and what can\'t be one is said', async () => {
+  const { recipe } = compileAutotile(turfSource);
+  // A sprite, a single tile and a set of one mask's variants have no TileSet and no warning about one.
+  for (const project of [spirit, { ...recipe, frames: recipe.frames.slice(0, 1) }, { ...recipe, frames: [recipe.frames[3], { ...recipe.frames[3], name: 'again' }] }]) {
+    const bundle = await createBundle(project);
+    assert.equal([...bundle.files.keys()].some(file => file.endsWith('.tileset.tres')), false, project.name);
+    assert.equal(bundle.project.warnings.some(text => text.includes('tileset')), false);
+  }
+  // A trimmed sheet has no grid.
+  let bundle = await createBundle({ ...recipe, sheet: { trim: true } });
+  assert.equal(bundle.files.has('turf.tileset.tres'), false);
+  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: not written: a Godot TileSet needs the sheet\'s grid, and sheet.trim packs frames without one. Remove sheet.trim to get it']);
+  // Blob and cardinal tiles can't share one terrain.
+  const fence = compileAutotile(fenceSource).recipe;
+  bundle = await createBundle({ ...recipe, frames: [...recipe.frames.slice(0, 3), ...fence.frames.slice(0, 3).map(frame => ({ ...frame, name: `c${frame.name}` }))] });
+  assert.equal(bundle.files.has('turf.tileset.tres'), false);
+  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: not written: the tiles mix blob and cardinal masks, and a Godot terrain matches one way; export each set from its own recipe']);
+  // A partial set is written, with the masks it lacks counted.
+  bundle = await createBundle({ ...recipe, frames: recipe.frames.slice(0, 40) });
+  assert.equal(readTileSet(bundle.files.get('turf.tileset.tres').toString()).tiles['0:0']['0'], '0');
+  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: 7 of the 47 blob masks have no tile, so Godot draws its nearest match where one is needed']);
+});
+
+test('autotileFrames finds frames drawn by one autotile mask at the corner, with blob masks reduced', () => {
+  const op = (mask, extra) => ({ op: 'autotile', symbol: 't', mask, ...extra });
+  const recipe = { frames: [
+    { name: 'a', ops: [op(255)] },
+    { name: 'raw', ops: [op(2 | 4), { op: 'pixel', x: 1, y: 1, color: '#fff' }] }, // NE without N counts as E only
+    { name: 'card', ops: [op(9, { mode: 'cardinal' })] },
+    { name: 'moved', ops: [op(255, { x: 4 })] },
+    { name: 'two', ops: [op(1), op(4)] },
+    { name: 'same', ops: [op(1), op(1 | 2)] }, // both reduce to N
+    { name: 'drawn', ops: [{ op: 'rect', x: 0, y: 0, w: 2, h: 2, color: '#fff' }] },
+    { name: 'empty' }
+  ] };
+  assert.deepEqual(autotileFrames(recipe), [{ frame: 'a', mask: 255, mode: 'blob' }, { frame: 'raw', mask: 4, mode: 'blob' }, { frame: 'card', mask: 9, mode: 'cardinal' }, { frame: 'same', mask: 1, mode: 'blob' }]);
+});
+
+test('retexture renames only the sheet a resource names', () => {
+  const atlas = { frames: { a: { frame: { x: 0, y: 0, w: 4, h: 4 } }, b: { frame: { x: 4, y: 0, w: 4, h: 4 } } }, animations: {}, meta: { image: 'set.png' } };
+  const { text } = tileSet(atlas, [{ frame: 'a', mask: 0, mode: 'cardinal' }, { frame: 'b', mask: 2, mode: 'cardinal' }], { name: 'set' });
+  const moved = retexture(text, '../art/a "b".png');
+  assert.match(moved, /\[ext_resource type="Texture2D" path="\.\.\/art\/a \\"b\\"\.png" id="1_sheet"\]/);
+  assert.equal(moved.replace('path="../art/a \\"b\\".png"', 'path="set.png"'), text);
 });

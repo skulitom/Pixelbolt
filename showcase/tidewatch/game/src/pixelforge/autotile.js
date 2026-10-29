@@ -26,6 +26,19 @@ export function neighbourMask(mode, matches) {
   if (mode === 'cardinal') return Object.entries(CARDINAL_BITS).reduce((mask, [key, bit]) => mask | (matches(...OFFSETS[key]) ? bit : 0), 0);
   return reduceBlobMask(Object.entries(BLOB_BITS).reduce((mask, [key, bit]) => mask | (matches(...OFFSETS[key]) ? bit : 0), 0));
 }
+// The frames of a validated recipe that are tiles of an autotile set, for engine tile sets: each frame whose own
+// operations draw `autotile` at the frame's corner, all with one mask and mode, as every compiled frame does. Masks
+// come back as drawn: blob masks reduced, cardinal ones 0–15.
+export function autotileFrames(recipe) {
+  const tiles = [];
+  for (const frame of recipe.frames) {
+    const ops = (frame.ops ?? []).filter(op => op.op === 'autotile');
+    if (!ops.length || ops.some(op => (op.x ?? 0) !== 0 || (op.y ?? 0) !== 0)) continue;
+    const mode = ops[0].mode ?? 'blob', mask = mode === 'cardinal' ? ops[0].mask : reduceBlobMask(ops[0].mask);
+    if (ops.every(op => (op.mode ?? 'blob') === mode && (mode === 'cardinal' ? op.mask : reduceBlobMask(op.mask)) === mask)) tiles.push({ frame: frame.name, mask, mode });
+  }
+  return tiles;
+}
 export function quadrantPieces(mode, mask) {
   const has = key => mode === 'cardinal' ? (mask & (CARDINAL_BITS[key] ?? 0)) !== 0 : (mask & BLOB_BITS[key]) !== 0;
   return Object.fromEntries(Object.entries(QUADRANTS).map(([position, [a, b, diagonal]]) => {

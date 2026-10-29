@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { startMCP } from '../src/mcp.js';
 import { createBundle } from '../src/export.js';
 import { animationGIF } from '../src/gif.js';
+import { compileAutotile } from '../src/authoring.js';
+import { GODOT_TILE_SOURCES } from '../scripts/verify-godot.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const spirit = JSON.parse(await readFile(path.join(root, 'examples', 'forest-spirit.json'), 'utf8'));
@@ -414,4 +416,37 @@ test('pixel_render saveAs writes the Godot SpriteFrames naming its sheet, which 
   assert.equal(isError, true); assert.match(info.error, /theme\.tres is not a Godot SpriteFrames resource, so overwrite won't replace it/);
   assert.equal(await readFile(path.join(project, 'game', 'theme.tres'), 'utf8'), '[gd_resource type="Theme" format=3]\n');
   assert.equal(existsSync(path.join(project, 'game', 'theme.png')), false);
+});
+
+test('pixel_render saveAs writes an autotile set\'s Godot TileSet naming its sheet, and replaces only a TileSet', async t => {
+  const project = await temp(t), mcp = await session(t, project), { recipe } = compileAutotile(GODOT_TILE_SOURCES[0]);
+  const text = (await createBundle(recipe)).files.get('turf.tileset.tres').toString();
+  let { isError, info } = await mcp.render({ project: recipe, saveAs: { sheet: 'game/tiles/turf.png', tileset: 'game/tiles/turf.tileset.tres' } });
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.file), ['turf.png', 'turf.tileset.tres']);
+  assert.equal(await readFile(path.join(project, 'game', 'tiles', 'turf.tileset.tres'), 'utf8'), text);
+  // In another folder it names the saved sheet relative to itself; the export's own copy is unchanged.
+  ({ isError, info } = await mcp.render({ project: recipe, saveAs: { sheet: 'game/art/turf.png', tileset: 'game/tiles/ground.tileset.tres' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.equal(await readFile(path.join(project, 'game', 'tiles', 'ground.tileset.tres'), 'utf8'), text.replace('path="turf.png"', 'path="../art/turf.png"'));
+  assert.equal(await readFile(path.join(info.directory, 'turf.tileset.tres'), 'utf8'), text);
+  // Inside a Godot project its sheet must be there too.
+  await writeFile(path.join(project, 'game', 'project.godot'), 'config_version=5\n');
+  ({ isError, info } = await mcp.render({ project: recipe, saveAs: { tileset: 'game/tiles/other.tileset.tres' } }));
+  assert.deepEqual([isError, info.path], [true, 'saveAs.tileset'], JSON.stringify(info));
+  assert.match(info.error, /is in the Godot project .*game, but its sheet would stay in the export folder, outside it/);
+  // overwrite replaces a TileSet, never a SpriteFrames or another resource, and a SpriteFrames never replaces a TileSet.
+  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', tileset: 'game/tiles/turf.tileset.tres' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.replaced), [true, true]);
+  await writeFile(path.join(project, 'game', 'tiles', 'frames.tileset.tres'), '[gd_resource type="SpriteFrames" format=3]\n');
+  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', tileset: 'game/tiles/frames.tileset.tres' } }));
+  assert.equal(isError, true); assert.match(info.error, /frames\.tileset\.tres is not a Godot TileSet resource, so overwrite won't replace it/);
+  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', godot: 'game/tiles/turf.tileset.tres' } }));
+  assert.equal(isError, true); assert.match(info.error, /turf\.tileset\.tres is not a Godot SpriteFrames resource/);
+  assert.equal(await readFile(path.join(project, 'game', 'tiles', 'turf.tileset.tres'), 'utf8'), text);
+  // A recipe that isn't an autotile set has none to save.
+  ({ isError, info } = await mcp.render({ project: spirit, saveAs: { tileset: 'game/tiles/spirit.tileset.tres' } }));
+  assert.deepEqual([isError, info.path], [true, 'saveAs.tileset'], JSON.stringify(info));
+  assert.match(info.error, /this export has no Godot TileSet: only a recipe whose frames are an autotile set/);
 });

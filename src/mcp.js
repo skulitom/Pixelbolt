@@ -9,7 +9,7 @@ import { createRevisionStore } from './revisions.js';
 import { inspectMotion } from './motion.js';
 import { encodePNG } from './png.js';
 import { createBundle, writeBundle, embedBundleRecipe } from './export.js';
-import { spriteFrames } from './godot.js';
+import { spriteFrames, retexture } from './godot.js';
 import { shareLink } from './share.js';
 import { animationGIF } from './gif.js';
 import { readExpect, checkDelivery } from './check.js';
@@ -157,9 +157,9 @@ export function createToolRunner({ directory, root, version }) {
   const windowsName = part => /[<>:"|?*]/.test(part) || /^(con|prn|aux|nul|com[0-9\u00b9\u00b2\u00b3]|lpt[0-9\u00b9\u00b2\u00b3])(\..*)?$/i.test(part) || /[. ]$/.test(part);
   const canonical = async target => { const folder = await nearest(target); return path.join(await realpath(folder), path.relative(folder, target)); };
   // The root can be a whole home folder (the desktop bundle's default), so saveAs writes only art: PNG, GIF and the JSON
-  // and Godot SpriteFrames that describe it, never to a hidden name (settings live in .config, .vscode, .claude.json),
-  // and overwrite replaces a JSON file only if it is a recipe, atlas or sequence (an object with frames), never a
-  // settings file, and a .tres only if it is a SpriteFrames, never a project's other resources.
+  // and Godot SpriteFrames and TileSets that describe it, never to a hidden name (settings live in .config, .vscode,
+  // .claude.json), and overwrite replaces a JSON file only if it is a recipe, atlas or sequence (an object with frames),
+  // never a settings file, and a .tres only if it is the same kind of resource, never a project's other resources.
   const SAVED_TYPES = ['.png', '.gif', '.json', '.tres'];
   const hidden = relative => relative.split(path.sep).some(part => part.startsWith('.'));
   // Where a home folder keeps app settings without a leading dot.
@@ -169,9 +169,9 @@ export function createToolRunner({ directory, root, version }) {
     try { const value = JSON.parse(await readFile(file, 'utf8')); return value !== null && typeof value === 'object' && !Array.isArray(value) && Object.hasOwn(value, 'frames'); }
     catch { return false; }
   };
-  const spriteFramesFile = async (file, size) => {
+  const godotResource = async (file, size, type) => {
     if (size > MAX_REQUEST_BYTES) return false;
-    try { return /^\[gd_resource type="SpriteFrames"[ \]]/.test(await readFile(file, 'utf8')); } catch { return false; }
+    try { return new RegExp(`^\\[gd_resource type="${type}"[ \\]]`).test(await readFile(file, 'utf8')); } catch { return false; }
   };
   // The Godot project a path is in: the nearest folder above it with a project.godot. Godot loads textures only from
   // inside its project, so a saved .tres there needs its sheet there too. The search may pass above the root, so a
@@ -199,7 +199,7 @@ export function createToolRunner({ directory, root, version }) {
     // A source that can't be resolved any more (a disconnected drive, a dangling link) is compared as written.
     const own = await Promise.all(inputs.map(file => canonical(path.resolve(root, file)).catch(() => path.resolve(root, file))));
     const names = Object.keys(project.animations), only = animation ?? (names.length === 1 ? names[0] : undefined);
-    const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, godot: `${project.name}.tres`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
+    const aliases = { sheet: `${project.name}.png`, atlas: `${project.name}.atlas.json`, godot: `${project.name}.tres`, tileset: `${project.name}.tileset.tres`, recipe: `${project.name}.pixel.json`, gif: `gifs/${only}.gif`, apng: `animations/${only}.png` };
     // The home folder's settings folder is off limits, unless the root itself is inside it.
     const settings = SETTINGS ? [path.join(os.homedir(), SETTINGS)] : [];
     if (settings.length) settings.push(await realpath(settings[0]).catch(() => settings[0]));
@@ -210,10 +210,11 @@ export function createToolRunner({ directory, root, version }) {
       if ((key === 'gif' || key === 'apng') && only === undefined) throw new PixelError(where, `the project has ${names.length} animations: pass animation, or name the file, such as ${key === 'gif' ? `gifs/${names[0]}.gif` : `animations/${names[0]}.png`}`);
       const file = Object.hasOwn(aliases, key) ? aliases[key] : key;
       const bytes = file.startsWith('gifs/') ? gifs.find(item => `gifs/${item.animation}.gif` === file)?.data : file.startsWith('sequence/') ? sequence?.files.get(file.slice(9)) : bundle.files.get(file);
-      if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, godot, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
+      if (!bytes && key === 'tileset') throw new PixelError(where, 'this export has no Godot TileSet: only a recipe whose frames are an autotile set (compiled from a pixelforge-autotile source) has one');
+      if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, godot, tileset, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
       if (/\.(css|html)$/i.test(file)) throw new PixelError(where, `${file} loads other export files by relative path, so a copy elsewhere would show nothing: save the files it uses (sheet, atlas, animations) instead, and keep ${file} in the export folder`);
       const type = path.extname(file).toLowerCase();
-      if (!SAVED_TYPES.includes(type)) throw new PixelError(where, `saveAs copies PNG, GIF and JSON files and the Godot .tres (sheet, atlas, godot, recipe, GIFs, animations, frames, sequence frames): keep ${file} in the export folder`);
+      if (!SAVED_TYPES.includes(type)) throw new PixelError(where, `saveAs copies PNG, GIF and JSON files and the Godot .tres (sheet, atlas, godot, tileset, recipe, GIFs, animations, frames, sequence frames): keep ${file} in the export folder`);
       if (typeof target !== 'string' || !target.trim()) throw new PixelError(where, 'expected a path such as "assets/hero.png"');
       if (path.extname(target).toLowerCase() !== type) throw new PixelError(where, `${file} is a ${type} file: give a path ending in ${type}`);
       if (/[\u0000-\u001f]/.test(target)) throw new PixelError(where, 'contains a control character');
@@ -234,7 +235,8 @@ export function createToolRunner({ directory, root, version }) {
       if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
       if (existing && overwrite !== true) throw new PixelError(where, `${destination} already exists: choose a new name, or pass "overwrite": true to replace it`);
       if (existing && type === '.json' && !(await spriteJSON(destination, existing.size))) throw new PixelError(where, `${destination} is not a recipe, atlas or sequence (a JSON object with frames), so overwrite won't replace it: choose a new name`);
-      if (existing && type === '.tres' && !(await spriteFramesFile(destination, existing.size))) throw new PixelError(where, `${destination} is not a Godot SpriteFrames resource, so overwrite won't replace it: choose a new name`);
+      const resource = file.endsWith('.tileset.tres') ? 'TileSet' : 'SpriteFrames';
+      if (existing && type === '.tres' && !(await godotResource(destination, existing.size, resource))) throw new PixelError(where, `${destination} is not a Godot ${resource} resource, so overwrite won't replace it: choose a new name`);
       const id = fold(real);
       if (seen.has(id)) throw new PixelError(where, `${target} is named twice`);
       const clash = [...seen].find(other => inside(other, id) || inside(id, other));
@@ -255,7 +257,7 @@ export function createToolRunner({ directory, root, version }) {
       if (!readsAsURL(image)) throw new PixelError(`saveAs.${atlas.key}`, `the atlas would name its sheet as ${image}, which reads as another name when it is loaded as a URL: choose a sheet path${sheet ? '' : ' in saveAs, or an export directory,'} without #, ?, %, backslashes or spaces at either end of a name`);
     }
     // A saved .tres names its sheet the same way, relative to itself, which Godot reads from the .tres's folder.
-    for (const godot of plan.filter(item => item.file === `${project.name}.tres`)) {
+    for (const godot of plan.filter(item => item.file === `${project.name}.tres` || item.file === `${project.name}.tileset.tres`)) {
       const sheet = sheets.find(item => fold(path.dirname(item.destination)) === fold(path.dirname(godot.destination))) ?? sheets[0];
       godot.rebase = sheet ? sheet.destination : null;
       const target = sheet ? sheet.destination : path.join(path.resolve(directory), `${project.name}-x`, `${project.name}.png`);
@@ -267,6 +269,7 @@ export function createToolRunner({ directory, root, version }) {
   };
   // The bytes a saved .tres gets: its sheet named relative to it, with / separators.
   const rebasedSpriteFrames = (atlas, tresPath, sheetPath) => Buffer.from(spriteFrames(atlas.metadata, { image: imagePath(tresPath, sheetPath) }).text);
+  const rebasedTileSet = (bytes, tresPath, sheetPath) => Buffer.from(retexture(Buffer.from(bytes).toString('utf8'), imagePath(tresPath, sheetPath)));
   // The bytes a saved atlas gets: its meta.image pointing at the given sheet, relative to the atlas, with / separators.
   const rebasedAtlas = (bytes, atlasPath, sheetPath) => {
     const atlas = JSON.parse(Buffer.from(bytes).toString('utf8'));
@@ -398,6 +401,7 @@ export function createToolRunner({ directory, root, version }) {
         await writeSaves(saves, overwrite === true, item => {
           if (item.rebase === undefined) return item.bytes;
           const sheet = item.rebase ?? path.join(out, `${bundle.project.name}.png`);
+          if (item.file.endsWith('.tileset.tres')) return rebasedTileSet(item.bytes, item.destination, sheet);
           return item.file.endsWith('.tres') ? rebasedSpriteFrames(bundle.atlas, item.destination, sheet) : rebasedAtlas(item.bytes, item.destination, sheet);
         });
         return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }) })) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
@@ -509,7 +513,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     offset: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2, description: '[x, y] added to the aligned position.' },
     background: { type: 'string', description: 'Palette name or opaque hex. Default: transparent.' },
     loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Clip length instead of loops.' }
-  } }, share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1 }, colors: { type: 'integer', minimum: 1 }, transparent: { type: 'boolean' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: frame size, frames per animation, at most colors, a transparent background, loop, GIF scale. The reply\'s check lists each miss and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: {"sheet"|"atlas"|"godot"|"recipe"|"gif"|"apng" or a listed file such as "gifs/walk.gif": "assets/hero.png"}. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
+  } }, share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: 'integer', minimum: 1 }, colors: { type: 'integer', minimum: 1 }, transparent: { type: 'boolean' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 } }, additionalProperties: false, description: 'What the user asked for: frame size, frames per animation, at most colors, a transparent background, loop, GIF scale. The reply\'s check lists each miss and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: {"sheet"|"atlas"|"godot"|"tileset"|"recipe"|"gif"|"apng" or a listed file such as "gifs/walk.gif": "assets/hero.png"}. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, "29.97", 30, 60 or a fraction): frameGrid lists durations off the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const guides = { type: 'object', description: 'Perspective guides: {horizon: row, vanish: [[x, y], …up to 3], iso: {tile: [32, 16], at: [x, y]}}.' };
@@ -556,7 +560,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Returns its revision id, size, frame timing, animations and clipping, without images or files.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks, without exporting. Returns a PNG contact sheet of every frame (or the chosen frames, or one animation in playback order) with each cell\'s name and duration. grid: true adds palette-key text grids for exact pixels, region zooms in, and view picks a tile, onion or motion review. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Pass revision or project plus changes applied in order, such as {"set": "frames[blink].duration", "value": 120} or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}; other paths look like palette.k or frames[blink].layers[body].ops[2].x2. The patch is atomic and must validate. Returns the new revision, every frame whose pixels changed and a before/after PNG.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Writes a PNG sheet, atlas JSON, Godot 4 SpriteFrames, frame PNGs, APNGs, CSS and a Canvas player to a new folder in the export directory, and returns the key files, a check of what was delivered and a contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files where the user asked.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
+    { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Writes a PNG sheet, atlas JSON, Godot 4 SpriteFrames (and a TileSet for an autotile set), frame PNGs, APNGs, CSS and a Canvas player to a new folder in the export directory, and returns the key files, a check of what was delivered and a contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files where the user asked.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_compile', description: 'Build a character animation from parts (with idle, walk, run, jump, attack and hurt templates, squash and tweens), a terrain tileset, particle effects (sparks, embers, dust) and spell shapes (slashes, shockwave rings, beams, lightning, magic circles, impact stars, fireballs, cel water streams and drops), simulated smoke, fire, explosions, steam, magic swirls, water (splashes, waterfalls, drips, bubbling potions) and thick liquids (honey, slime, mud), coherent interference and portal loops, or a lighting normal map. Compiles the source into an ordinary recipe revision and returns a contact sheet; metadata: true adds pose joints, contacts and timing, the autotile mask table, particle counts, fluid figures, wave counts or normal directions.', inputSchema: { type: 'object', properties: { source: { type: 'object', description: 'A pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid, pixelforge-wave or pixelforge-normals document (see pixel_help topics). A normals source\'s recipe may be inline, a file under the server root or {"revision": id}.' }, metadata: { type: 'boolean' } }, required: ['source'], additionalProperties: false }, annotations: { title: 'Compile poses, tilesets, effects or fluids', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Renders a pixelforge-scene manifest (placements, autotiled tilemaps, cues, motion, ground sorting, camera and parallax, haze, lights and shadows; pixel_help topic scenes) at a time in milliseconds and returns the image, placements, lights and warnings. Assets may be inline recipes, files under the server root or {"revision": id}. view: depth shows who covers whom; export: true writes a replayable scene bundle.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, sequence: { type: 'object', required: ['fps'], description: 'Also write numbered PNG frames for a video editor: pixel_render\'s sequence options, without animation and step.' } }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution 8-bit RGB/RGBA PNG (optionally sliced by an unscaled atlas) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Saves the recipe as a revision.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }

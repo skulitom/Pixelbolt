@@ -1,5 +1,5 @@
-// Godot 4 SpriteFrames resources in Godot's text format (.tres), made from a Pixelbolt atlas. Browser-compatible: no
-// imports, and the same atlas always gives the same bytes.
+// Godot 4 SpriteFrames and TileSet resources in Godot's text format (.tres), made from a Pixelbolt atlas.
+// Browser-compatible: no imports, and the same atlas always gives the same bytes.
 //
 // One AtlasTexture per frame cuts the frame's rectangle out of the sheet. A trimmed frame also gets a margin that puts
 // its visible pixels back where they sat on the canvas, so every frame keeps the canvas size and the same origin.
@@ -59,4 +59,73 @@ export function spriteFrames(atlas, { image = atlas.meta.image } = {}) {
   });
   lines.push('[resource]', `animations = [${entries.join(', ')}]`, '');
   return { text: lines.join('\n'), approximate };
+}
+
+// A resource written here, with its sheet named by another path relative to the .tres (for a copy saved elsewhere).
+export const retexture = (text, image) => text.replace(/^(\[ext_resource type="Texture2D" path=)"(?:[^"\\]|\\.)*"( id="1_sheet"\])$/m, (_, start, end) => `${start}${quote(image)}${end}`);
+
+// ---- Tile sets ---------------------------------------------------------------------------------------------------
+// Godot's names for a tile's neighbours, in the order Godot writes them, with the Pixelbolt mask bit of each. A blob
+// set matches corners and sides (Godot terrain mode 0), a cardinal set sides only (mode 2).
+const PEERS = {
+  blob: [['right_side', 4], ['bottom_right_corner', 8], ['bottom_side', 16], ['bottom_left_corner', 32], ['left_side', 64], ['top_left_corner', 128], ['top_side', 1], ['top_right_corner', 2]],
+  cardinal: [['right_side', 2], ['bottom_side', 4], ['left_side', 8], ['top_side', 1]]
+};
+const TERRAIN_MODES = { blob: 0, cardinal: 2 };
+// How many distinct masks a complete set has.
+const TILE_MASKS = { blob: 47, cardinal: 16 };
+// Godot writes colour components without a forced decimal point: Color(0.25, 0.5, 0.75, 1).
+const channel = value => String(Number((value / 255).toFixed(6)));
+
+// A Godot 4 TileSet over an untrimmed atlas: one atlas source on the sheet's grid and one terrain whose peering bits
+// come from each tile's neighbour mask, so Godot's terrain painter picks the tile Pixelbolt's tilemap would. `tiles`
+// lists the atlas frames that are tiles ({ frame, mask, mode }, blob masks reduced; see autotileFrames). Frames of one
+// mask are alternatives Godot picks between at random, except an atlas animation that loops over frames of one mask
+// laid side by side in a row of the sheet, which becomes an animated tile. `margin` and `separation` are the sheet's
+// padding and twice it, in exported pixels; `color` is the terrain's colour in Godot's editor, [r, g, b] from 0 to
+// 255. Returns { text, warnings }; text is null when the frames can't make one terrain.
+export function tileSet(atlas, tiles, { image = atlas.meta.image, name, color = [255, 255, 255], margin = 0, separation = 0 } = {}) {
+  const warnings = [], byFrame = new Map(tiles.map(tile => [tile.frame, tile]));
+  const modes = [...new Set(tiles.map(tile => tile.mode))];
+  if (modes.length !== 1) return { text: null, warnings: [`not written: the tiles mix ${modes.join(' and ')} masks, and a Godot terrain matches one way; export each set from its own recipe`] };
+  const mode = modes[0], { w, h } = atlas.frames[tiles[0].frame].frame;
+  const coords = frame => { const { x, y } = atlas.frames[frame].frame; return [(x - margin) / (w + separation), (y - margin) / (h + separation)]; };
+  // Animated tiles: Godot plays a tile's frames from its own cell rightwards along the row, always looping.
+  const animated = new Map(), covered = new Set(), wrapped = [], unplayable = [];
+  for (const [key, animation] of Object.entries(atlas.animations)) {
+    const frames = animation.frames, first = byFrame.get(frames[0]);
+    if (frames.length < 2 || !first || frames.some(frame => covered.has(frame))) continue;
+    if (!frames.every(frame => byFrame.get(frame)?.mask === first.mask && byFrame.get(frame).mode === first.mode)) continue;
+    // Its later frames are never tiles of their own, so a set whose animation can't play doesn't flicker between them.
+    for (const frame of frames.slice(1)) covered.add(frame);
+    const cells = frames.map(coords), [col, row] = cells[0];
+    if (animation.loop && cells.every(([c, r], i) => c === col + i && r === row)) animated.set(frames[0], frames.map(frame => atlas.frames[frame].duration));
+    // In sheet order but running onto the next row: more columns fix it.
+    else if (animation.loop && cells.every(([c, r], i) => i === 0 || (c === cells[i - 1][0] + 1 && r === cells[i - 1][1]) || (c === 0 && r === cells[i - 1][1] + 1))) wrapped.push(key);
+    else unplayable.push(key);
+  }
+  const named = keys => `animation${keys.length === 1 ? '' : 's'} ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''} became still tiles of ${keys.length === 1 ? 'its' : 'their'} first frame`;
+  if (wrapped.length) {
+    const counts = [...new Set(wrapped.map(key => atlas.animations[key].frames.length))];
+    warnings.push(`${named(wrapped)}: ${wrapped.length === 1 ? 'its frames run' : 'their frames run'} onto the next row of the sheet, and Godot animates a tile only through frames side by side in one row. Set sheet.columns to a multiple of ${counts.length === 1 ? counts[0] : 'each animation\'s frame count'}`);
+  }
+  if (unplayable.length) warnings.push(`${named(unplayable)}: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`);
+  const masks = new Set(tiles.map(tile => tile.mask));
+  if (masks.size < TILE_MASKS[mode]) warnings.push(`${TILE_MASKS[mode] - masks.size} of the ${TILE_MASKS[mode]} ${mode} masks have no tile, so Godot draws its nearest match where one is needed`);
+  const lines = ['[gd_resource type="TileSet" format=3]', '', `[ext_resource type="Texture2D" path=${quote(image)} id="1_sheet"]`, ''];
+  lines.push('[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tiles"]', `resource_name = ${quote(name)}`, 'texture = ExtResource("1_sheet")');
+  if (margin) lines.push(`margins = Vector2i(${margin}, ${margin})`);
+  if (separation) lines.push(`separation = Vector2i(${separation}, ${separation})`);
+  lines.push(`texture_region_size = Vector2i(${w}, ${h})`);
+  for (const frame of Object.keys(atlas.frames)) {
+    const tile = byFrame.get(frame);
+    if (!tile || covered.has(frame)) continue;
+    const cell = coords(frame).join(':');
+    animated.get(frame)?.forEach((ms, i) => lines.push(`${cell}/animation_frame_${i}/duration = ${real(ms / 1000)}`));
+    lines.push(`${cell}/0 = 0`, `${cell}/0/terrain_set = 0`, `${cell}/0/terrain = 0`);
+    for (const [peer, bit] of PEERS[mode]) if (tile.mask & bit) lines.push(`${cell}/0/terrains_peering_bit/${peer} = 0`);
+  }
+  lines.push('', '[resource]', `tile_size = Vector2i(${w}, ${h})`, `terrain_set_0/mode = ${TERRAIN_MODES[mode]}`, `terrain_set_0/terrain_0/name = ${quote(name)}`);
+  lines.push(`terrain_set_0/terrain_0/color = Color(${color.map(channel).join(', ')}, 1)`, 'sources/0 = SubResource("TileSetAtlasSource_tiles")', '');
+  return { text: lines.join('\n'), warnings };
 }

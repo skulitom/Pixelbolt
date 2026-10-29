@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Godot TileSets for autotile sets
+
+- A recipe whose frames are an autotile set also exports `name.tileset.tres`, a Godot 4 `TileSet` for `TileMapLayer`. It has one atlas source on the sheet's grid (padding and scale as margins and separation) and one terrain: blob sets match corners and sides, cardinal sets sides only, and each tile's peering bits are its neighbour mask. Painting the terrain in Godot picks the tile Pixelbolt's tilemap would. Frames of one mask are alternatives Godot picks between at random. An animation that loops over one mask's frames, laid side by side in a row of the sheet, becomes an animated tile with each frame's time.
+- The export warns instead of guessing: a trimmed sheet gets no TileSet, a set missing masks is named, and an animation that wraps onto the next row of the sheet keeps its first frame and says to set `sheet.columns` to a multiple of the frame count. A bundle can now hold 9 support files, so 65,535 − 9 − frames animations fit (65,525 with one frame).
+- The CLI's `render`, MCP `pixel_render` and the studio's **Export assets** ZIP include it, and `pixel_render`'s `saveAs` takes `tileset`. A saved TileSet names the saved sheet relative to itself, keeps its sheet inside the Godot project, and replaces only another TileSet with `overwrite`.
+- `node scripts/verify-godot.mjs` now also loads a blob, a cardinal and an animated TileSet in headless Godot. It checks every tile's peering bits, region, pixels and frame times, then paints five maps with Godot's terrain painter: Godot 4.6.3 chooses Pixelbolt's tile in all 762 painted cells.
+
 ### Poke the pixels: a live fluid toy
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.

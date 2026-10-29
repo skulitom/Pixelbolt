@@ -1,6 +1,7 @@
 // Loads exported SpriteFrames (.tres) in a real Godot 4 and checks them against the atlas: every animation's frames,
 // regions and trim margins, each frame's pixels as Godot composes them, loop flags, and playback timing, by playing
-// each animation on an AnimatedSprite2D at a fixed 1000 frames per second, so every process step is 1 ms.
+// each animation on an AnimatedSprite2D at a fixed 1000 frames per second, so every process step is 1 ms. Then loads
+// exported TileSets and paints maps with Godot's terrain painter, which must choose the tiles Pixelbolt would.
 // Independent developer check: Pixelbolt never needs Godot.
 //   node scripts/verify-godot.mjs [--godot <path to the Godot 4 executable>] [--keep]
 // Without --godot it uses $GODOT, then godot4 or godot on PATH, then a winget install of GodotEngine.
@@ -12,6 +13,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createBundle } from '../src/export.js';
+import { compileAutotile } from '../src/authoring.js';
+import { neighbourMask } from '../src/autotile.js';
 
 // A trimmed, scaled, padded sheet with unequal frame times: a 1×1 cell for an empty frame, a half-transparent frame, a
 // frame that fills the canvas, a 5 ms flash (Godot's 120 FPS ceiling), 33 and 34 ms frames (fractional durations),
@@ -132,6 +135,101 @@ func _process(delta: float) -> bool:
 	events = []
 	recording = true
 	return false
+`;
+
+// Tile sets: a blob set on a scaled, padded sheet, a cardinal set with two variants of every tile (Godot picks one at
+// random), and a blob set whose three palette variants animate each tile (six columns, so every tile's frames sit
+// side by side in one row).
+const TILE_TEMPLATE = ['....oggo', '....gddg', '....gddg', '....oggo', 'oooooooo', 'oggggggo', 'ogddddgo', 'ogdggdgo', 'ogdggdgo', 'ogddddgo', 'oggggggo', 'oooooooo'];
+const TILE_SOURCE = { format: 'pixelforge-autotile', version: 1, tile: 4, palette: { o: '#203018', g: '#58a040', d: '#3c7830' }, template: TILE_TEMPLATE };
+export const GODOT_TILE_SOURCES = [
+  { ...TILE_SOURCE, name: 'turf', frame: 'turf-{mask}', sheet: { padding: 1, scale: 2 } },
+  { ...TILE_SOURCE, name: 'fence', mode: 'cardinal', frame: 'fence-{mask}-{variant}', variants: [{ name: 'plain' }, { name: 'mossy', palette: { d: '#6a8a30' } }] },
+  { ...TILE_SOURCE, name: 'surf', frame: 'surf-{mask}-{variant}', animation: 'surf-{mask}', sheet: { columns: 6 },
+    variants: [{ name: 'a', duration: 120 }, { name: 'b', duration: 250, palette: { g: '#60b0e0' } }, { name: 'c', duration: 90, palette: { d: '#2c5878' } }] }
+];
+// Maps painted with Godot's terrain painter: islands, single cells and one-cell strips, inner corners, a ring, cells
+// touching only at a corner, and a seeded scatter.
+const scatter = Array.from({ length: 14 }, (_, y) => Array.from({ length: 22 }, (_, x) => ((x * 7919 + y * 104729 + x * y * 31) % 97 < 58 ? '#' : '.')).join(''));
+export const GODOT_TILE_MAPS = [
+  ['#.##.###', '..##.#.#', '#...####', '###.....', '#.#.##.#'],
+  ['.#####.', '##...##', '#..#..#', '##...##', '.#####.'],
+  ['#.#.#', '.#.#.', '#.#.#', '.###.', '#.#.#'],
+  ['..#..', '.###.', '#####', '.###.', '..#..'],
+  scatter
+];
+
+// Runs in Godot: reads each TileSet back (terrain, tiles, peering bits, animation frames and their pixels), then paints
+// every map with set_cells_terrain_connect and records the tile Godot chose for each cell.
+const TILE_CHECK = `extends SceneTree
+
+const NEIGHBOURS = {"right_side": TileSet.CELL_NEIGHBOR_RIGHT_SIDE, "bottom_right_corner": TileSet.CELL_NEIGHBOR_BOTTOM_RIGHT_CORNER, "bottom_side": TileSet.CELL_NEIGHBOR_BOTTOM_SIDE, "bottom_left_corner": TileSet.CELL_NEIGHBOR_BOTTOM_LEFT_CORNER, "left_side": TileSet.CELL_NEIGHBOR_LEFT_SIDE, "top_left_corner": TileSet.CELL_NEIGHBOR_TOP_LEFT_CORNER, "top_side": TileSet.CELL_NEIGHBOR_TOP_SIDE, "top_right_corner": TileSet.CELL_NEIGHBOR_TOP_RIGHT_CORNER}
+
+func _initialize():
+	var cases = JSON.parse_string(FileAccess.get_file_as_string("res://tilecases.json"))
+	var report := {}
+	for c in cases:
+		var tiles = load(c["tres"])
+		if not tiles is TileSet:
+			report[c["key"]] = {"error": "not a TileSet: %s" % [tiles]}
+			continue
+		var source: TileSetAtlasSource = tiles.get_source(tiles.get_source_id(0))
+		var list := []
+		for i in source.get_tiles_count():
+			var at := source.get_tile_id(i)
+			var data := source.get_tile_data(at, 0)
+			var bits := {}
+			for name in NEIGHBOURS:
+				if data.is_valid_terrain_peering_bit(NEIGHBOURS[name]) and data.get_terrain_peering_bit(NEIGHBOURS[name]) != -1:
+					bits[name] = data.get_terrain_peering_bit(NEIGHBOURS[name])
+			var frames := []
+			for f in source.get_tile_animation_frames_count(at):
+				var region := source.get_tile_texture_region(at, f)
+				var cell := Vector2i(at.x + f, at.y)
+				var file = c["files"].get("%d:%d" % [cell.x, cell.y], "")
+				frames.append({"duration": source.get_tile_animation_frame_duration(at, f), "region": [region.position.x, region.position.y, region.size.x, region.size.y], "mismatched": compare(source.texture, region, file)})
+			list.append({"at": [at.x, at.y], "alternatives": source.get_alternative_tiles_count(at), "terrain_set": data.terrain_set, "terrain": data.terrain, "probability": data.probability, "bits": bits, "frames": frames})
+		var painted := []
+		for rows in c["maps"]:
+			var layer := TileMapLayer.new()
+			layer.tile_set = tiles
+			root.add_child(layer)
+			var cells: Array[Vector2i] = []
+			for y in rows.size():
+				for x in rows[y].length():
+					if rows[y][x] != ".":
+						cells.append(Vector2i(x, y))
+			layer.set_cells_terrain_connect(cells, 0, 0)
+			var got := {}
+			for cell in layer.get_used_cells():
+				var at := layer.get_cell_atlas_coords(cell)
+				got["%d,%d" % [cell.x, cell.y]] = "%d:%d" % [at.x, at.y]
+			painted.append(got)
+			layer.free()
+		report[c["key"]] = {"mode": tiles.get_terrain_set_mode(0), "terrain": tiles.get_terrain_name(0, 0), "tile_size": [tiles.tile_size.x, tiles.tile_size.y], "texture": source.texture.resource_path, "margins": [source.margins.x, source.margins.y], "separation": [source.separation.x, source.separation.y], "region_size": [source.texture_region_size.x, source.texture_region_size.y], "tiles": list, "painted": painted}
+	print("PIXELBOLT " + JSON.stringify(report, "", false, true))
+	quit()
+
+# A tile's region of the sheet against the frame PNG it came from. Fully transparent pixels match whatever their colour.
+func compare(texture: Texture2D, region: Rect2i, file: String) -> int:
+	if file == "":
+		return -3
+	var sheet: Image = texture.get_image()
+	if sheet == null:
+		return -1
+	sheet.convert(Image.FORMAT_RGBA8)
+	var expected := Image.load_from_file(ProjectSettings.globalize_path(file))
+	expected.convert(Image.FORMAT_RGBA8)
+	if expected.get_size() != region.size:
+		return -2
+	var wrong := 0
+	for y in region.size.y:
+		for x in region.size.x:
+			var a := sheet.get_pixel(region.position.x + x, region.position.y + y)
+			var b := expected.get_pixel(x, y)
+			if not (a.a8 == 0 and b.a8 == 0) and (a.r8 != b.r8 or a.g8 != b.g8 or a.b8 != b.b8 or a.a8 != b.a8):
+				wrong += 1
+	return wrong
 `;
 
 export function findGodot(given = process.env.GODOT) {
@@ -281,10 +379,113 @@ export async function verifyGodot({ godot = findGodot(), keep = false, log = con
   }
 }
 
+// Pixelbolt's mask bit for each of Godot's peering bits, written out here rather than taken from src/godot.js.
+const GODOT_PEERS = {
+  blob: { top_side: 1, top_right_corner: 2, right_side: 4, bottom_right_corner: 8, bottom_side: 16, bottom_left_corner: 32, left_side: 64, top_left_corner: 128 },
+  cardinal: { top_side: 1, right_side: 2, bottom_side: 4, left_side: 8 }
+};
+
+// Loads exported TileSets in a real Godot 4: the terrain, every tile's peering bits, animation frames, durations and
+// pixels, then paints GODOT_TILE_MAPS with Godot's terrain painter and checks each cell got the tile whose mask
+// Pixelbolt's tilemap gives it.
+export async function verifyGodotTiles({ godot = findGodot(), keep = false, log = console.log } = {}) {
+  if (!godot) throw new Error('Godot 4 was not found: pass --godot <path> or set GODOT');
+  const version = godotRun(godot, ['--version']).output.trim().split('\n')[0];
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-godot-tiles-'));
+  try {
+    await writeFile(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\n\nconfig/name="Pixelbolt TileSet check"\n');
+    const cases = [], expected = {};
+    for (const source of GODOT_TILE_SOURCES) {
+      const { recipe } = compileAutotile(source), bundle = await createBundle(recipe), { name, sheet } = bundle.project, folder = `tiles/${name}`;
+      assert.ok(bundle.files.has(`${name}.tileset.tres`), `${name}: the export has no ${name}.tileset.tres`);
+      for (const [file, bytes] of bundle.files) if (file === `${name}.png` || file === `${name}.tileset.tres` || file.startsWith('frames/')) {
+        await mkdir(path.dirname(path.join(dir, folder, file)), { recursive: true });
+        await writeFile(path.join(dir, folder, file), bytes);
+      }
+      const atlas = JSON.parse(bundle.files.get(`${name}.atlas.json`)), size = [recipe.width * sheet.scale, recipe.height * sheet.scale];
+      const margin = sheet.padding * sheet.scale, step = size.map(side => side + sheet.padding * 2 * sheet.scale);
+      // The sheet cell of every frame, and back.
+      const cells = Object.fromEntries(Object.entries(atlas.frames).map(([frame, { frame: rect }]) => [frame, `${(rect.x - margin) / step[0]}:${(rect.y - margin) / step[1]}`]));
+      const frameAt = Object.fromEntries(Object.entries(cells).map(([frame, cell]) => [cell, frame]));
+      cases.push({ key: name, tres: `res://${folder}/${name}.tileset.tres`, files: Object.fromEntries(Object.entries(frameAt).map(([cell, frame]) => [cell, `res://${folder}/frames/${frame}.png`])), maps: GODOT_TILE_MAPS });
+      const masks = Object.fromEntries(recipe.frames.map(frame => [frame.name, frame.ops[0].mask]));
+      expected[name] = { mode: source.mode ?? 'blob', atlas, recipe, size, margin, step, cells, frameAt, masks, warnings: bundle.project.warnings };
+    }
+    await writeFile(path.join(dir, 'tilecases.json'), JSON.stringify(cases));
+    await writeFile(path.join(dir, 'tilecheck.gd'), TILE_CHECK);
+    const imported = godotRun(godot, ['--path', dir, '--import']);
+    const problems = imported.output.split('\n').filter(line => /ERROR|WARNING/.test(line) && /tiles\//.test(line));
+    assert.deepEqual(problems, [], `Godot reported problems while importing:\n${imported.output}`);
+    const checked = godotRun(godot, ['--path', dir, '--script', 'res://tilecheck.gd']);
+    const line = checked.output.split('\n').find(text => text.startsWith('PIXELBOLT '));
+    assert.ok(line, `Godot printed no report:\n${checked.output}`);
+    const errors = checked.output.split('\n').filter(text => /^\s*(ERROR|SCRIPT ERROR|WARNING)/.test(text));
+    assert.deepEqual(errors, [], `Godot reported problems:\n${checked.output}`);
+    const report = JSON.parse(line.slice(10));
+    let tiles = 0, frames = 0, painted = 0;
+    const differ = [];
+    for (const [name, want] of Object.entries(expected)) {
+      const got = report[name];
+      assert.ok(got && !got.error, `${name}: ${got?.error ?? 'missing from the report'}`);
+      assert.equal(got.mode, want.mode === 'cardinal' ? 2 : 0, `${name}: terrain mode`);
+      assert.equal(got.terrain, name, `${name}: terrain name`);
+      assert.deepEqual(got.tile_size, want.size, `${name}: tile size`);
+      assert.deepEqual(got.region_size, want.size, `${name}: texture region size`);
+      assert.deepEqual(got.margins, [want.margin, want.margin], `${name}: margins`);
+      assert.deepEqual(got.separation, [want.step[0] - want.size[0], want.step[1] - want.size[1]], `${name}: separation`);
+      assert.equal(got.texture, `res://tiles/${name}/${name}.png`, `${name}: the sheet beside the .tres`);
+      // One tile per frame, except that an animation over one mask's frames is one animated tile.
+      const animations = Object.values(want.atlas.animations).filter(a => a.frames.length > 1 && new Set(a.frames.map(f => want.masks[f])).size === 1);
+      const later = new Set(animations.flatMap(a => a.frames.slice(1))), firsts = new Map(animations.map(a => [a.frames[0], a.frames]));
+      const expectedTiles = Object.keys(want.atlas.frames).filter(frame => !later.has(frame));
+      assert.deepEqual(got.tiles.map(tile => want.frameAt[tile.at.join(':')]).sort(), [...expectedTiles].sort(), `${name}: tiles`);
+      for (const tile of got.tiles) {
+        // Compiled masks are already reduced.
+        const frame = want.frameAt[tile.at.join(':')], where = `${name} ${frame}`, mask = want.masks[frame];
+        assert.equal(tile.alternatives, 1, `${where}: alternatives`);
+        assert.equal(tile.terrain_set, 0, `${where}: terrain set`);
+        assert.equal(tile.terrain, 0, `${where}: terrain`);
+        assert.equal(tile.probability, 1, `${where}: probability`);
+        const bits = Object.fromEntries(Object.entries(GODOT_PEERS[want.mode]).filter(([, bit]) => mask & bit).map(([peer]) => [peer, 0]));
+        assert.deepEqual(tile.bits, bits, `${where}: peering bits for mask ${mask}`);
+        const sequence = firsts.get(frame) ?? [frame];
+        assert.equal(tile.frames.length, sequence.length, `${where}: animation frames`);
+        tile.frames.forEach((played, i) => {
+          const source = want.atlas.frames[sequence[i]], { x, y, w, h } = source.frame;
+          assert.deepEqual(played.region, [x, y, w, h], `${where}[${i}]: region`);
+          assert.equal(played.mismatched, 0, `${where}[${i}]: ${played.mismatched} pixels differ from frames/${sequence[i]}.png (-1: no image, -2: size, -3: no frame there)`);
+          if (sequence.length > 1) assert.ok(Math.abs(played.duration * 1000 - source.duration) < 1e-3, `${where}[${i}]: ${played.duration * 1000} ms, not ${source.duration}`);
+          frames++;
+        });
+        tiles++;
+      }
+      // Godot's terrain painter against Pixelbolt's tilemap masks, empty outside the map.
+      GODOT_TILE_MAPS.forEach((rows, m) => {
+        const filled = (x, y) => rows[y]?.[x] === '#';
+        rows.forEach((row, y) => [...row].forEach((char, x) => {
+          if (char !== '#') return;
+          const pixelbolt = neighbourMask(want.mode, (dx, dy) => filled(x + dx, y + dy)), cell = got.painted[m][`${x},${y}`];
+          const mask = cell === undefined ? null : want.masks[want.frameAt[cell]];
+          if (mask !== pixelbolt) differ.push(`${name} map ${m} cell ${x},${y}: Godot drew ${cell === undefined ? 'nothing' : `mask ${mask}`}, Pixelbolt mask ${pixelbolt}`);
+          painted++;
+        }));
+        assert.equal(Object.keys(got.painted[m]).length, rows.join('').split('#').length - 1, `${name} map ${m}: Godot painted cells outside the map's own`);
+      });
+    }
+    assert.deepEqual(differ.slice(0, 20), [], `Godot's terrain painter chose other tiles than Pixelbolt's masks in ${differ.length} cells`);
+    log(`${version}: ${Object.keys(expected).length} TileSets loaded; ${tiles} tiles match their peering bits, regions and ${frames} frames of pixels and timing; Godot's terrain painter chose Pixelbolt's tile in all ${painted} painted cells.`);
+    return { version, report, expected, dir: keep ? dir : null };
+  } finally {
+    if (!keep) await rm(dir, { recursive: true, force: true });
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const args = process.argv.slice(2), at = args.indexOf('--godot');
   try {
-    const result = await verifyGodot({ ...(at >= 0 && { godot: args[at + 1] }), keep: args.includes('--keep') });
-    if (result.dir) console.log(`Kept the Godot project at ${result.dir}`);
+    for (const verify of [verifyGodot, verifyGodotTiles]) {
+      const result = await verify({ ...(at >= 0 && { godot: args[at + 1] }), keep: args.includes('--keep') });
+      if (result.dir) console.log(`Kept the Godot project at ${result.dir}`);
+    }
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

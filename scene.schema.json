@@ -2802,8 +2802,8 @@
         "animations": {
           "type": "object",
           "minProperties": 1,
-          "maxProperties": 65526,
-          "description": "ZIP32 bundle budget: animation count + frame count + 8 support files must not exceed 65,535.",
+          "maxProperties": 65525,
+          "description": "ZIP32 bundle budget: animation count + frame count + 9 support files must not exceed 65,535.",
           "propertyNames": {
             "type": "string",
             "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
