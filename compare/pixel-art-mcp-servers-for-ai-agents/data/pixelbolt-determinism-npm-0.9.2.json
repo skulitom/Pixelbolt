@@ -1,0 +1,296 @@
+{
+ "commit": "npm pixelbolt@0.9.2",
+ "node": "v24.19.0",
+ "platform": "win32 x64 10.0.26200",
+ "cpu": "AMD Ryzen 9 7950X3D 16-Core Processor",
+ "renders": [
+  {
+   "recipe": "examples/caption.json",
+   "files": 18,
+   "identical": true,
+   "msA": 125,
+   "msB": 125
+  },
+  {
+   "recipe": "examples/coin.json",
+   "files": 15,
+   "identical": true,
+   "msA": 106,
+   "msB": 106
+  },
+  {
+   "recipe": "examples/effects.json",
+   "files": 70,
+   "identical": true,
+   "msA": 170,
+   "msB": 173
+  },
+  {
+   "recipe": "examples/ember.json",
+   "files": 13,
+   "identical": true,
+   "msA": 104,
+   "msB": 103
+  },
+  {
+   "recipe": "examples/forest-spirit-normal.json",
+   "files": 17,
+   "identical": true,
+   "msA": 113,
+   "msB": 108
+  },
+  {
+   "recipe": "examples/forest-spirit.json",
+   "files": 17,
+   "identical": true,
+   "msA": 110,
+   "msB": 109
+  },
+  {
+   "recipe": "examples/shrine.json",
+   "files": 11,
+   "identical": true,
+   "msA": 109,
+   "msB": 113
+  },
+  {
+   "recipe": "examples/swing.json",
+   "files": 14,
+   "identical": true,
+   "msA": 108,
+   "msB": 115
+  },
+  {
+   "recipe": "examples/quality/crystal.json",
+   "files": 13,
+   "identical": true,
+   "msA": 108,
+   "msB": 107
+  },
+  {
+   "recipe": "examples/quality/fern-base.json",
+   "files": 11,
+   "identical": true,
+   "msA": 106,
+   "msB": 104
+  },
+  {
+   "recipe": "examples/quality/fern-before.json",
+   "files": 10,
+   "identical": true,
+   "msA": 101,
+   "msB": 103
+  },
+  {
+   "recipe": "examples/quality/fern.json",
+   "files": 11,
+   "identical": true,
+   "msA": 104,
+   "msB": 102
+  },
+  {
+   "recipe": "examples/quality/lantern-emissive.json",
+   "files": 11,
+   "identical": true,
+   "msA": 103,
+   "msB": 102
+  },
+  {
+   "recipe": "examples/quality/lantern-normal.json",
+   "files": 11,
+   "identical": true,
+   "msA": 105,
+   "msB": 111
+  },
+  {
+   "recipe": "examples/quality/lantern.json",
+   "files": 11,
+   "identical": true,
+   "msA": 113,
+   "msB": 107
+  },
+  {
+   "recipe": "examples/quality/root-bank.json",
+   "files": 10,
+   "identical": true,
+   "msA": 106,
+   "msB": 106
+  },
+  {
+   "recipe": "examples/quality/sedge.json",
+   "files": 10,
+   "identical": true,
+   "msA": 103,
+   "msB": 109
+  },
+  {
+   "recipe": "examples/quality/shale.json",
+   "files": 10,
+   "identical": true,
+   "msA": 112,
+   "msB": 110
+  },
+  {
+   "recipe": "examples/quality/skink.json",
+   "files": 23,
+   "identical": true,
+   "msA": 125,
+   "msB": 123
+  }
+ ],
+ "fluids": [
+  {
+   "source": "examples/campfire.fluid.json",
+   "frames": 24,
+   "size": "32x48",
+   "identical": true,
+   "msA": 250,
+   "msB": 249,
+   "recipeSha256": "a936046b32f7a321b5265ba4d59f5403d0425b03431f11b6e14b297ba2864528"
+  },
+  {
+   "source": "examples/dam-break.fluid.json",
+   "frames": 70,
+   "size": "64x36",
+   "identical": true,
+   "msA": 312,
+   "msB": 309,
+   "recipeSha256": "27c4439253a7d802a869305fe14370cae8cf7929452210b226cee60344939787"
+  },
+  {
+   "source": "examples/drip.fluid.json",
+   "frames": 24,
+   "size": "16x32",
+   "identical": true,
+   "msA": 163,
+   "msB": 158,
+   "recipeSha256": "9a11bed3b69e5518c5e7e1157717cdbefd3d1d1edd8a4634dedda46dfab8afb2"
+  },
+  {
+   "source": "examples/dust-wave.fluid.json",
+   "frames": 26,
+   "size": "64x32",
+   "identical": true,
+   "msA": 197,
+   "msB": 190,
+   "recipeSha256": "365e9660fec56a8eb809747f1d5fd7c41cbd4073989fefedd1cb3bd49ced27ee"
+  },
+  {
+   "source": "examples/explosion.fluid.json",
+   "frames": 32,
+   "size": "64x64",
+   "identical": true,
+   "msA": 288,
+   "msB": 311,
+   "recipeSha256": "95a389b40373ee6ed91039f01d5dd0f2a6c8a68e349fbe98f56de212d3052be7"
+  },
+  {
+   "source": "examples/honey-drop.fluid.json",
+   "frames": 44,
+   "size": "40x48",
+   "identical": true,
+   "msA": 282,
+   "msB": 270,
+   "recipeSha256": "3ae464ad3315f3094941c43c94bb0d828666c9aa8c581560a5d4686f2f4a44dd"
+  },
+  {
+   "source": "examples/honey.fluid.json",
+   "frames": 24,
+   "size": "40x48",
+   "identical": true,
+   "msA": 402,
+   "msB": 418,
+   "recipeSha256": "bcde7e9820bd22d605377e9d962ed6c7aa9d548dde17885cc5f2db70861f5ec5"
+  },
+  {
+   "source": "examples/magic-swirl.fluid.json",
+   "frames": 24,
+   "size": "48x48",
+   "identical": true,
+   "msA": 252,
+   "msB": 268,
+   "recipeSha256": "acfcdf0f8199fe8d34798007b822fad7f5a598c74a56c1fd735d3e3f1f51d2b4"
+  },
+  {
+   "source": "examples/potion.fluid.json",
+   "frames": 24,
+   "size": "32x40",
+   "identical": true,
+   "msA": 243,
+   "msB": 245,
+   "recipeSha256": "f08e7c5a457229d5fb2a8bb461837f409e55d3334b7373f7f27d084450abf66a"
+  },
+  {
+   "source": "examples/roof-snow.fluid.json",
+   "frames": 48,
+   "size": "56x44",
+   "identical": true,
+   "msA": 339,
+   "msB": 339,
+   "recipeSha256": "ee34fd7476a0528dea122755ba019acc09aeaacf80f6675beec15e390833561a"
+  },
+  {
+   "source": "examples/slime-burst.fluid.json",
+   "frames": 40,
+   "size": "56x40",
+   "identical": true,
+   "msA": 420,
+   "msB": 414,
+   "recipeSha256": "27d9fdb7e121812958dfdae9219c3254482712f67eb0c70c7992dd1ee7e9c48e"
+  },
+  {
+   "source": "examples/slime.fluid.json",
+   "frames": 40,
+   "size": "32x32",
+   "identical": true,
+   "msA": 294,
+   "msB": 299,
+   "recipeSha256": "eafab745f47cc927c6bde20858bbb66baf4c04dd479e3ba858072beee860ac6e"
+  },
+  {
+   "source": "examples/smoke-puff.fluid.json",
+   "frames": 19,
+   "size": "32x32",
+   "identical": true,
+   "msA": 140,
+   "msB": 140,
+   "recipeSha256": "8141142d19e3beb35043a6d2e2bec011864c1e6f5c7d373c6207b4c4fc96b41c"
+  },
+  {
+   "source": "examples/splash.fluid.json",
+   "frames": 40,
+   "size": "48x40",
+   "identical": true,
+   "msA": 241,
+   "msB": 227,
+   "recipeSha256": "70eec430320aaadcea1cdf2549d83f2ab83a5ab848caf3a23200e1f8876cb912"
+  },
+  {
+   "source": "examples/steam-vent.fluid.json",
+   "frames": 24,
+   "size": "32x48",
+   "identical": true,
+   "msA": 238,
+   "msB": 240,
+   "recipeSha256": "f6a4f010345f9714d11dad0369bf6c51880cd2be1ee31af9c08b68d967388e2f"
+  },
+  {
+   "source": "examples/torch.fluid.json",
+   "frames": 16,
+   "size": "16x32",
+   "identical": true,
+   "msA": 141,
+   "msB": 140,
+   "recipeSha256": "29699a3865b8253afb924ebfbeaaab92c82c44ceb13c684089a63ed0becf7d43"
+  },
+  {
+   "source": "examples/waterfall.fluid.json",
+   "frames": 24,
+   "size": "48x64",
+   "identical": true,
+   "msA": 565,
+   "msB": 566,
+   "recipeSha256": "2f5ee7882bee96c65b2f81086d211b73c4ad58f4b259cd55bc16625b82cccf85"
+  }
+ ]
+}

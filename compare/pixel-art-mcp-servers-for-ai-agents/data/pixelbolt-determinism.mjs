@@ -1,10 +1,10 @@
 // Renders every plain recipe in examples/ and examples/quality/ twice, and compiles every fluid preset twice, through
 // Pixelbolt's CLI, timing each run and comparing SHA-256 hashes of all output files between the two runs.
 // A plain recipe is a JSON file with frames and no "format" field (sources, scenes and overlays are skipped).
-// Usage: node pixelbolt-determinism.mjs <pixelbolt-clone> <fresh-work-dir> <result.json>
+// Usage: node pixelbolt-determinism.mjs <pixelbolt-clone-or-unpacked-npm-package> <fresh-work-dir> <result.json>
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
 import { cpus, release } from 'node:os';
 import { join, relative } from 'node:path';
 
@@ -22,6 +22,12 @@ function hashTree(dir) {
   return out;
 }
 function hashFile(p) { return createHash('sha256').update(readFileSync(p)).digest('hex'); }
+function sourceId(dir) {
+  // A git clone is named by its commit; an unpacked npm package (no .git) by its name and version.
+  if (existsSync(join(dir, '.git'))) return execFileSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+  return `npm ${pkg.name}@${pkg.version}`;
+}
 function isPlainRecipe(p) {
   try { const j = JSON.parse(readFileSync(p, 'utf8')); return j && !j.format && Array.isArray(j.frames); } catch { return false; }
 }
@@ -29,7 +35,7 @@ function isPlainRecipe(p) {
 const folders = ['examples', join('examples', 'quality')];
 const recipes = folders.flatMap((d) => readdirSync(join(clone, d)).filter((f) => f.endsWith('.json') && isPlainRecipe(join(clone, d, f))).map((f) => join(d, f)));
 const fluids = readdirSync(join(clone, 'examples')).filter((f) => f.endsWith('.fluid.json'));
-const commit = execFileSync('git', ['-C', clone, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+const commit = sourceId(clone);
 const result = { commit, node: process.version, platform: `${process.platform} ${process.arch} ${release()}`, cpu: cpus()[0]?.model?.trim(), renders: [], fluids: [] };
 for (const rel of recipes) {
   const name = rel.replaceAll('\\', '/').replace(/\.json$/, '').replaceAll('/', '__');
