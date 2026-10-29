@@ -63,18 +63,33 @@ async function loadRecipe(entry, baseDir, context, where) {
   }
   return resolvePalette(entry, baseDir, context, where);
 }
-// A pixelforge-fx symbol may be a frame of a recipe or pose source ({ recipe, frame }): a file or saved revision named
-// there is inlined, and the compiler turns the frame into rows.
+// A pixelforge-fx symbol may be a frame or animation of a recipe or pose source ({ recipe, frame | animation }), and a
+// trail layer may follow a point of one ({ follow: { recipe, animation, point } }): a file or saved revision named there
+// is inlined, and the compiler reads the frames and points.
 async function resolveEffects(document, baseDir, context) {
   document = await resolvePalette(document, baseDir, context, 'fx');
-  if (!isObject(document?.symbols)) return document;
-  let symbols = null;
-  for (const [name, value] of Object.entries(document.symbols)) {
-    if (!isObject(value) || value.recipe === undefined) continue;
-    symbols ??= { ...document.symbols };
-    symbols[name] = { ...value, recipe: await loadRecipe(value.recipe, baseDir, context, `fx.symbols.${name}.recipe`) };
+  const load = (entry, where) => loadRecipe(entry, baseDir, context, where);
+  if (isObject(document?.symbols)) {
+    let symbols = null;
+    for (const [name, value] of Object.entries(document.symbols)) {
+      if (!isObject(value) || value.recipe === undefined) continue;
+      symbols ??= { ...document.symbols };
+      symbols[name] = { ...value, recipe: await load(value.recipe, `fx.symbols.${name}.recipe`) };
+    }
+    if (symbols) document = { ...document, symbols };
   }
-  return symbols ? { ...document, symbols } : document;
+  if (isObject(document?.effects)) {
+    let effects = null;
+    for (const [name, effect] of Object.entries(document.effects)) {
+      if (!isObject(effect) || !Array.isArray(effect.layers) || !effect.layers.some(layer => isObject(layer?.follow) && layer.follow.recipe !== undefined)) continue;
+      effects ??= { ...document.effects };
+      const layers = [];
+      for (const [i, layer] of effect.layers.entries()) layers.push(isObject(layer?.follow) && layer.follow.recipe !== undefined ? { ...layer, follow: { ...layer.follow, recipe: await load(layer.follow.recipe, `fx.effects.${name}.layers[${i}].follow.recipe`) } } : layer);
+      effects[name] = { ...effect, layers };
+    }
+    if (effects) document = { ...document, effects };
+  }
+  return document;
 }
 async function resolveScene(scene, baseDir, context) {
   if (!isObject(scene.assets)) return scene;

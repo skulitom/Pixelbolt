@@ -385,3 +385,65 @@ test('the hero magic example compiles from the hero\'s pose source to the pixels
   const inside = aura.slice(1).map((frame, k) => differ(aura[k], frame)), seam = differ(aura[aura.length - 1], aura[0]);
   assert.ok(seam <= Math.max(...inside), `seam ${seam}, inside ${inside}`);
 });
+
+// ---- Animations and trails: sprites frame for frame, and smears that follow a point ----------------------------------------
+const blink = { version: 1, name: 'blink', width: 6, height: 1, palette: { q: '#123456', r: '#654321' },
+  frames: [{ name: 'a', ops: [{ op: 'grid', rows: ['qq....'] }] }, { name: 'b', ops: [{ op: 'grid', rows: ['....rr'] }] }], animations: { blink: { frames: ['a', 'b'] } } };
+const swingPoses = JSON.parse(await readFile(path.join(root, 'examples/swing.poses.json'), 'utf8'));
+
+test('a sprite or an aura follows an animation frame for frame, holding its last frame or going round in a loop', () => {
+  const drawn = (frames, loop) => compileEffects(effects({ frames, loop, emitters: [{ sprite: { symbol: 'eye', draw: true }, at: [2, 2] }] }, { symbols: { eye: { recipe: blink, animation: 'blink' } } }));
+  const once = drawn(3, false);
+  assert.deepEqual(once.recipe.frames.map(f => gridIn(f).rows[0]), ['qq', 'rr', 'rr']);
+  assert.deepEqual(once.recipe.frames.map(f => gridIn(f).x), [2, 6, 6]);
+  assert.equal(once.recipe.symbols?.eye, undefined, 'an animation is not stamped, so it stays out of the recipe\'s symbols');
+  assert.deepEqual(drawn(4, true).recipe.frames.map(f => gridIn(f).rows[0]), ['qq', 'rr', 'qq', 'rr']);
+  // An aura hugs the frame showing.
+  const glow = compileEffects(effects({ frames: 2, looks: { warm: { colors: ['y'], thresholds: [0.3] } }, layers: [{ kind: 'aura', symbol: 'eye', at: [8, 10], width: 2, noise: 0 }] }, { symbols: { eye: { recipe: blink, animation: 'blink' } } }));
+  assert.equal(gridIn(glow.recipe.frames[1]).x - gridIn(glow.recipe.frames[0]).x, 4);
+  const wrong = emitter => { try { compileEffects(effects({ frames: 3, emitters: [emitter] }, { symbols: { ...effects({}).symbols, eye: { recipe: blink, animation: 'blink' } } })); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ at: [1, 1], burst: 1, shapes: ['eye'] }), /shapes\[0\]: eye is an animation: a sprite or an aura can follow it, but a particle draws one symbol/);
+  assert.match(wrong({ sprite: { symbol: 'eye' }, at: [1, 1], release: {} }), /sprite\.symbol: eye is an animation; a release takes apart one frame/);
+  assert.match(wrong({ sprite: { symbol: 'eye' }, at: [1, 1] }), /emitters\[0\]: use exactly one of burst/);
+});
+
+test('a trail follows a pose point frame for frame and, with a pivot, sweeps round it with its outer edge on the path', async () => {
+  const trail = (layer, frames = 5) => compileEffects(effects({ frames, looks: { steel: { colors: ['w'], thresholds: [0.1] } }, layers: [{ kind: 'trail', at: [0, 0], length: 3, width: 6, ...layer }] }, { width: 40, height: 40 })).recipe;
+  const follow = { recipe: swingPoses, animation: 'swing', point: 'blade.tip' };
+  // The strike (frame 3) sweeps from the raised tip over the top to the struck one.
+  const plain = cellsOf(gridIn(trail({ follow }).frames[3])), round = cellsOf(gridIn(trail({ follow: { ...follow, pivot: 'blade.anchor' } }).frames[3]));
+  for (const drawn of [plain, round]) assert.ok(drawn.some(c => c.x < 16 && c.y < 16) && drawn.some(c => c.x > 28 && c.y > 24), JSON.stringify(drawn.slice(0, 4)));
+  // Round the hilt at [20, 24], no pixel lies beyond the tip's reach (about 14), and it bulges out where the plain curve cuts across.
+  const reach = c => Math.sqrt((c.x - 20) ** 2 + (c.y - 24) ** 2);
+  assert.ok(round.every(c => reach(c) <= 15.5), Math.max(...round.map(reach)));
+  assert.ok(round.filter(c => c.x > 28 && c.y < 20).length > plain.filter(c => c.x > 28 && c.y < 20).length);
+  // The first frame has one place, so nothing; the frames after the animation shrink the smear away.
+  const frames = trail({ follow: { ...follow, pivot: 'blade.anchor' } }, 7).frames.map(f => cellsOf(gridIn(f)).length);
+  assert.ok(frames[0] === 0 && frames[3] > frames[6] && frames[6] > 0, `${frames}`);
+  // Fixed points and a fixed pivot work the same way.
+  assert.deepEqual(cellsOf(gridIn(trail({ points: [[10, 14], [11, 13], [21, 10], [32, 31], [29, 35]], pivot: [20, 24] }).frames[3])), round);
+  const wrong = layer => { try { trail(layer); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ follow: { ...follow, point: 'blade.edge' } }), /follow\.point: no frame of swing has a point named "blade\.edge"; it has .*blade\.tip/);
+  assert.match(wrong({ follow, points: [[1, 1]] }), /\.points: a trail follows a point \(follow\) or takes its positions \(points\), not both/);
+  assert.match(wrong({ follow: { ...follow, pivot: 'blade.anchor' }, pivot: [1, 1] }), /\.pivot: the trail already follows a pivot/);
+  assert.match(compileEffectsError(() => trail({ follow }, 3)), /follow\.animation: swing has 5 frames and the effect 3/);
+  assert.match(wrong({ follow: { ...follow, recipe: 'swing.poses.json' } }), /follow\.recipe: file and revision references are resolved by the CLI and MCP/);
+  assert.match(wrong({ points: [null, null] }), /\.points: expected at least one position to follow/);
+  // The CLI and MCP inline a file named there.
+  const { resolveReferences } = await import('../src/resolve.js');
+  const source = effects({ frames: 5, looks: { steel: { colors: ['w'], thresholds: [0.1] } }, layers: [{ kind: 'trail', at: [0, 0], follow: { ...follow, recipe: 'swing.poses.json' } }] });
+  const { document } = await resolveReferences(source, { baseDir: path.join(root, 'examples') });
+  assert.equal(document.effects.burst.layers[0].follow.recipe.format, 'pixelforge-poses');
+});
+const compileEffectsError = run => { try { run(); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+
+test('the swing trail example compiles from the swing\'s pose source to the pixels that were approved', async () => {
+  const { resolveReferences } = await import('../src/resolve.js');
+  const { createHash } = await import('node:crypto');
+  const written = JSON.parse(await readFile(path.join(root, 'examples/swing-trail.fx.json'), 'utf8'));
+  const { recipe, metadata } = compileEffects((await resolveReferences(written, { baseDir: path.join(root, 'examples') })).document);
+  assert.deepEqual(renderProject(recipe).warnings, []);
+  assert.deepEqual(metadata.effects.swing.cues, [{ name: 'hit', frame: 3, at: [32, 31] }]);
+  // This changes with any change to the trail, sprite or particle pixels: regenerate it only after the art is seen again.
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '553f1d57519cdcb55dd5b64f88842e97bd2a86959a0bff5dfeac85ba86dc93b9');
+});

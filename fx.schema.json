@@ -86,13 +86,24 @@
                 "type": "string",
                 "minLength": 1,
                 "description": "The frame to take; default the first."
+              },
+              "animation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Take every frame of this animation instead, in playing order: a sprite or aura then shows its frame i in the effect's frame i (holding the last; round again in a loop). Not a particle shape."
               }
             },
             "required": [
               "recipe"
             ],
             "additionalProperties": false,
-            "description": "A frame of a recipe or pose source, over its whole canvas (so it keeps the source's coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour."
+            "not": {
+              "required": [
+                "frame",
+                "animation"
+              ]
+            },
+            "description": "A frame (or an animation) of a recipe or pose source, over its whole canvas (so it keeps the source's coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour."
           }
         ]
       },
@@ -635,7 +646,7 @@
                     "symbol": {
                       "type": "string",
                       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-                      "description": "The symbol whose pixels the particles spawn from (it may be a frame of a recipe or pose source; see symbols)."
+                      "description": "The symbol whose pixels the particles spawn from: rows, or a frame or animation of a recipe or pose source (see symbols); an animation shows its frame i in frame i."
                     },
                     "pixels": {
                       "enum": [
@@ -647,7 +658,7 @@
                     },
                     "draw": {
                       "type": "boolean",
-                      "description": "Draw the sprite itself under its particles: what is left of it during a release (the default there), or all of it every frame with burst or rate (default false, for an overlay the game draws over its own sprite)."
+                      "description": "Draw the sprite itself under its particles: what is left of it during a release (the default there), or all of it every frame with burst or rate (default false, for an overlay the game draws over its own sprite). With no burst, rate or release, the emitter only draws the sprite: a character under its trail or aura."
                     }
                   },
                   "required": [
@@ -1971,7 +1982,7 @@
                     "symbol": {
                       "type": "string",
                       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
-                      "description": "The symbol it hugs (it may be a frame of a recipe or pose source; see symbols)."
+                      "description": "The symbol it hugs: rows, or a frame or animation of a recipe or pose source (see symbols); an animation is hugged frame for frame."
                     },
                     "width": {
                       "oneOf": [
@@ -2025,12 +2036,237 @@
                   ],
                   "additionalProperties": false,
                   "description": "A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "trail"
+                    },
+                    "look": {
+                      "$ref": "#/$defs/layer-look"
+                    },
+                    "at": {
+                      "$ref": "#/$defs/layer-at"
+                    },
+                    "frames": {
+                      "$ref": "#/$defs/layer-frames"
+                    },
+                    "ease": {
+                      "$ref": "#/$defs/layer-ease"
+                    },
+                    "power": {
+                      "$ref": "#/$defs/layer-power"
+                    },
+                    "flicker": {
+                      "$ref": "#/$defs/layer-flicker"
+                    },
+                    "blend": {
+                      "$ref": "#/$defs/layer-blend"
+                    },
+                    "drift": {
+                      "$ref": "#/$defs/layer-drift"
+                    },
+                    "floor": {
+                      "$ref": "#/$defs/layer-floor"
+                    },
+                    "seed": {
+                      "$ref": "#/$defs/layer-seed"
+                    },
+                    "cue": {
+                      "$ref": "#/$defs/layer-cue"
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "number",
+                              "minimum": -4096,
+                              "maximum": 4096
+                            },
+                            "maxItems": 2,
+                            "minItems": 2
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "maxItems": 256,
+                      "minItems": 1,
+                      "description": "The point's place [x, y] in each frame of the effect from the first (null where it has none); or use follow."
+                    },
+                    "follow": {
+                      "type": "object",
+                      "properties": {
+                        "recipe": {
+                          "oneOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "description": "A recipe or pose source file, relative to this source (CLI and MCP)."
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "revision": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "required": [
+                                "revision"
+                              ],
+                              "additionalProperties": false,
+                              "description": "A saved MCP revision."
+                            },
+                            {
+                              "type": "object",
+                              "description": "An inline recipe or pixelforge-poses source."
+                            }
+                          ]
+                        },
+                        "animation": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "The animation whose frames the effect's frames follow, one for one."
+                        },
+                        "point": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "A frame's named point (a pose marker), or part.point for a point of a pose part, such as blade.tip."
+                        },
+                        "pivot": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "A point the smear sweeps round, named the same way, such as blade.anchor (where the blade is fixed: its hilt)."
+                        }
+                      },
+                      "required": [
+                        "recipe",
+                        "animation",
+                        "point"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Take points from a point of a recipe's or pose source's animation (a file through the CLI and MCP). Give the effect the animation's frame durations so the two stay in step."
+                    },
+                    "pivot": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": -4096,
+                            "maximum": 4096
+                          },
+                          "maxItems": 2,
+                          "minItems": 2
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "oneOf": [
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "number",
+                                  "minimum": -4096,
+                                  "maximum": 4096
+                                },
+                                "maxItems": 2,
+                                "minItems": 2
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "maxItems": 256,
+                          "minItems": 1
+                        }
+                      ],
+                      "description": "A point the smear sweeps round, relative to at: [x, y], or one per frame. Each step between frames then runs round it, and the smear lies inside the path, its outer edge where the point went: a blade's crescent. Default none: a smooth curve through the places."
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 16,
+                      "description": "Frames of the point's path the smear reaches back over; default 3."
+                    },
+                    "width": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 64
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 64
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Pixels across at the widest; default 4. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
+                    },
+                    "taper": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 2
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 2
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Width shares from the oldest end to the newest; default [0, 1]."
+                    },
+                    "fade": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Share by which it dims toward its oldest end; default 0.5."
+                    },
+                    "noise": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                    },
+                    "scale": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 64,
+                      "description": "Noise feature size in pixels; default 4."
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "at"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A smear behind a moving point, such as a sword tip: a stroke along a smooth curve through where the point was over the last length frames, tapered from its oldest end to its newest and dimming toward the oldest. Points are relative to at (the followed sprite's top-left corner)."
                 }
               ]
             },
             "maxItems": 16,
             "minItems": 1,
-            "description": "Shape layers: ring, slash, beam, bolt, glyph, star, burst, stream, aura. Needs looks."
+            "description": "Shape layers: ring, slash, beam, bolt, glyph, star, burst, stream, aura, trail. Needs looks."
           },
           "cleanup": {
             "type": "object",

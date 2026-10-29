@@ -4,12 +4,21 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.9.2 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name 0.9.1 still open on 0.9.1.
+
+## 0.10.0 (2026-10-29)
+
 ### Effects on a sprite
 
 - A `pixelforge-fx` symbol may be a frame of another recipe or pose source: `{ "recipe": "hero.poses.json", "frame": "idle-rest" }`. The CLI and MCP read the file (MCP: under the server root, or a saved revision); the frame becomes rows over its whole canvas, so the sprite keeps its coordinates, and its colours join the palette under their own keys or spare letters where the effect uses a key for another colour.
 - An emitter with `sprite: { symbol, pixels }` spawns on that sprite's pixels (all of them, its edge, or the outline just outside it), its top-left corner at `at`. Without shapes, each particle is its own pixel in its own colour. `release` takes every pixel once, in the order of a `sweep` across the sprite, while what is left stays drawn: death dissolves and teleports. `tint` stages may now be one colour each, turning a whole particle that colour.
 - An `aura` shape layer is a continuous glow hugging a sprite, reaching further upward, its edge licking up in flames as noise rises; spanning a looping effect, it loops without a jump. Random particles along an outline looked patchy; this does not.
 - `examples/hero-magic.fx.json` puts a teleport and a looping spirit aura on the rigged hero, read from `hero.poses.json`.
+- A symbol may be a whole animation (`{ recipe, animation }`): a sprite emitter or aura on it shows its frame *i* in the effect's frame *i*. A sprite emitter with `draw: true` and nothing to spawn only draws its sprite, so a character can sit under its effect.
+- A `trail` shape layer is the smear behind a moving point. `follow: { recipe, animation, point }` takes the point from each frame of a pose animation (`blade.tip`, in-between poses included), and a `pivot` such as `blade.anchor` bends it round the hilt: a crescent whose outer edge is where the tip went. `examples/swing-trail.fx.json` puts one on the sword of `swing.poses.json`.
 
 ### Effects that loop, and examples that follow their own advice
 
@@ -53,11 +62,6 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The export warns instead of guessing: a trimmed sheet gets no TileSet, a set missing masks is named, and an animation that wraps onto the next row of the sheet keeps its first frame and says to set `sheet.columns` to a multiple of the frame count. A bundle can now hold 9 support files, so 65,535 − 9 − frames animations fit (65,525 with one frame).
 - The CLI's `render`, MCP `pixel_render` and the studio's **Export assets** ZIP include it, and `pixel_render`'s `saveAs` takes `tileset`. A saved TileSet names the saved sheet relative to itself, keeps its sheet inside the Godot project, and replaces only another TileSet with `overwrite`.
 - `node scripts/verify-godot.mjs` now also loads a blob, a cardinal and an animated TileSet in headless Godot. It checks every tile's peering bits, region, pixels and frame times, then paints five maps with Godot's terrain painter: Godot 4.6.3 chooses Pixelbolt's tile in all 762 painted cells.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.9.2 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name 0.9.1 still open on 0.9.1.
 
 ### CI: slow downloads and a slow browser
 

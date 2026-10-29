@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
-import { readShapes, renderShapes, tween, sample } from './shapes.js';
+import { readShapes, renderShapes, tween, sample, sequenceFrame } from './shapes.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -66,37 +66,41 @@ const readRemap = (remap, path, palette) => {
   return remap;
 };
 
-// A sprite emitter spawns on a symbol's pixels, its top-left corner at the emitter's `at`: `cells` lists the pixels it
-// spawns from, each with its palette key (null outside the sprite), and `rows` the symbol for drawing what is left.
-function readSprite(sprite, path, symbols, [x, y]) {
+// A sprite emitter spawns on a symbol's pixels (for an animation, the pixels of the frame showing), its top-left corner at
+// the emitter's `at`. Each of `frames` lists the pixels it spawns from (`cells`, each with its palette key, null outside
+// the sprite) and the rows for drawing what is left; `frame(t)` is the one effect frame t shows.
+function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
   if (!isObject(sprite)) fail(path, 'expected { symbol, pixels, draw }: the symbol whose pixels the particles spawn from, its top-left corner at the emitter\'s at');
   fields(sprite, ['symbol', 'pixels', 'draw'], path);
-  if (typeof sprite.symbol !== 'string' || !Object.hasOwn(symbols, sprite.symbol)) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof sprite.symbol === 'string' ? `; there is none named ${JSON.stringify(sprite.symbol)}` : ''}`);
-  const rows = symbols[sprite.symbol], w = rows[0].length, h = rows.length;
+  const name = sprite.symbol, animated = typeof name === 'string' && Object.hasOwn(sequences, name);
+  if (typeof name !== 'string' || (!animated && !Object.hasOwn(symbols, name))) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
   const pixels = sprite.pixels ?? 'all';
   if (!SPRITE_PIXELS.includes(pixels)) fail(`${path}.pixels`, 'expected all (every visible pixel), edge (the visible pixels beside an empty one) or outline (the empty pixels just outside the sprite)');
-  const solid = (i, j) => i >= 0 && j >= 0 && i < w && j < h && !clear(rows[j][i]);
-  const beside = (i, j) => [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]];
-  const cells = [];
-  if (pixels === 'outline') {
-    for (let j = -1; j <= h; j++) for (let i = -1; i <= w; i++) if (!solid(i, j) && beside(i, j).some(([a, b]) => solid(a, b))) cells.push({ x: i, y: j, key: null });
-  } else {
-    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (solid(i, j) && (pixels === 'all' || beside(i, j).some(([a, b]) => !solid(a, b)))) cells.push({ x: i, y: j, key: rows[j][i] });
-  }
-  if (!cells.length) fail(`${path}.symbol`, `${sprite.symbol} has no visible pixels to spawn from`);
-  return { symbol: sprite.symbol, rows, w, h, x, y, pixels, cells, draw: sprite.draw === undefined ? null : flag(sprite.draw, `${path}.draw`) };
+  const frames = (animated ? sequences[name] : [symbols[name]]).map(rows => {
+    const w = rows[0].length, h = rows.length, cells = [];
+    const solid = (i, j) => i >= 0 && j >= 0 && i < w && j < h && !clear(rows[j][i]);
+    const beside = (i, j) => [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]];
+    if (pixels === 'outline') {
+      for (let j = -1; j <= h; j++) for (let i = -1; i <= w; i++) if (!solid(i, j) && beside(i, j).some(([a, b]) => solid(a, b))) cells.push({ x: i, y: j, key: null });
+    } else {
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (solid(i, j) && (pixels === 'all' || beside(i, j).some(([a, b]) => !solid(a, b)))) cells.push({ x: i, y: j, key: rows[j][i] });
+    }
+    return { rows, w, h, cells };
+  });
+  if (frames.every(frame => !frame.cells.length)) fail(`${path}.symbol`, `${name} has no visible pixels to spawn from`);
+  return { symbol: name, animated, frames, frame: t => sequenceFrame(frames, t, loop), x, y, pixels, draw: sprite.draw === undefined ? null : flag(sprite.draw, `${path}.draw`) };
 }
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
   fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release'], path);
-  const { frames, symbols, palette, loop, seed, looks } = context;
+  const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
   let sprite = null;
   if (emitter.sprite !== undefined) {
     if (emitter.at === undefined) fail(`${path}.at`, 'a sprite emitter needs at: where the sprite\'s top-left corner sits');
-    sprite = readSprite(emitter.sprite, `${path}.sprite`, symbols, pair(emitter.at, `${path}.at`, -4096, 4096).map((v, i) => integer(v, `${path}.at[${i}]`, -4096, 4096)));
+    sprite = readSprite(emitter.sprite, `${path}.sprite`, symbols, sequences, pair(emitter.at, `${path}.at`, -4096, 4096).map((v, i) => integer(v, `${path}.at[${i}]`, -4096, 4096)), loop);
   }
   let release = null;
   if (emitter.release !== undefined) {
@@ -110,6 +114,7 @@ function readEmitter(emitter, path, context, earlier) {
       share: number(emitter.release.share ?? 1, `${path}.release.share`, 0, 1)
     };
     if (emitter.release.jitter !== undefined && release.sweep === null) fail(`${path}.release.jitter`, 'jitter loosens a sweep; without sweep the order is already random');
+    if (sprite.animated) fail(`${path}.sprite.symbol`, `${sprite.symbol} is an animation; a release takes apart one frame, so take that frame ({ recipe, frame })`);
   }
   if (sprite) {
     if (sprite.draw === null) sprite.draw = release !== null;
@@ -129,7 +134,9 @@ function readEmitter(emitter, path, context, earlier) {
   }
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
   const schedules = ['burst', 'rate', 'release'].filter(key => emitter[key] !== undefined);
-  if (schedules.length !== 1) fail(path, sprite ? 'use exactly one of burst (particles at start), rate (particles per frame) or release (each pixel leaves once)' : 'use exactly one of burst (particles at start) or rate (particles per frame)');
+  // A sprite emitter with draw: true and no schedule only draws the sprite (an animation frame for frame, say).
+  const drawOnly = sprite !== null && sprite.draw === true && !schedules.length;
+  if (schedules.length !== 1 && !drawOnly) fail(path, sprite ? 'use exactly one of burst (particles at start), rate (particles per frame) or release (each pixel leaves once)' : 'use exactly one of burst (particles at start) or rate (particles per frame)');
   // A child spawns from the particles of an earlier emitter, at an event, instead of on a schedule of its own.
   let parent = null, when = null;
   if (emitter.from !== undefined) {
@@ -152,7 +159,7 @@ function readEmitter(emitter, path, context, earlier) {
   const end = integer(emitter.end ?? frames, `${path}.end`, start + 1, frames);
   // A child's at is an offset from its parent particle (default none); a sprite's cues sit at its middle; everyone
   // else's is the spawn centre.
-  const at = sprite ? [sprite.x + sprite.w / 2, sprite.y + sprite.h / 2] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
+  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
   const spawnShapes = ['area', 'ring', 'line'].filter(key => emitter[key] !== undefined);
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
@@ -176,7 +183,7 @@ function readEmitter(emitter, path, context, earlier) {
     const sp = nested ? `${path}.shapes[${v}]` : `${path}.shapes`;
     if (!Array.isArray(sequence) || !sequence.length || sequence.length > 64) fail(sp, 'expected a list of 1–64 symbol names');
     return sequence.map((name, i) => {
-      if (typeof name !== 'string' || !Object.hasOwn(symbols, name)) fail(`${sp}[${i}]`, `unknown symbol ${JSON.stringify(name)}`);
+      if (typeof name !== 'string' || !Object.hasOwn(symbols, name)) fail(`${sp}[${i}]`, Object.hasOwn(sequences, name) ? `${name} is an animation: a sprite or an aura can follow it, but a particle draws one symbol` : `unknown symbol ${JSON.stringify(name)}`);
       return name;
     });
   });
@@ -186,7 +193,7 @@ function readEmitter(emitter, path, context, earlier) {
   const play = emitter.play ?? 'life';
   if (!['life', 'loop', 'once'].includes(play)) fail(`${path}.play`, 'expected life (spread over the lifetime), loop (one per frame, cycling) or once (one per frame, holding the last)');
   const life = emitter.life === undefined ? null : range(emitter.life, `${path}.life`, 1, 256, true);
-  if (loop && !life) fail(`${path}.life`, 'looping effects need a finite life so the loop can repeat seamlessly');
+  if (loop && !life && !drawOnly) fail(`${path}.life`, 'looping effects need a finite life so the loop can repeat seamlessly');
   if (emitter.dissolve !== undefined && !life) fail(`${path}.dissolve`, 'dissolve needs a finite life');
   const remaps = emitter.remaps === undefined ? [] : emitter.remaps;
   if (!Array.isArray(remaps) || remaps.length > 64) fail(`${path}.remaps`, 'expected at most 64 remaps, one picked per particle');
@@ -233,7 +240,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, parent, when, cue, blob, sprite, release, pixel,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -269,12 +276,13 @@ function simulate(effect, context) {
   // by their own life), with spawns keyed by their frame within the cycle and children by their parent, so the particles
   // in flight at frame 0 are exactly those still alive at the end.
   const chain = [];
-  emitters.forEach((e, i) => { chain[i] = (e.life ? e.life[1] : Infinity) + (e.parent === null ? 0 : chain[e.parent]); });
+  // A sprite emitter that only draws has no particles to wait for.
+  emitters.forEach((e, i) => { chain[i] = e.drawOnly ? 0 : (e.life ? e.life[1] : Infinity) + (e.parent === null ? 0 : chain[e.parent]); });
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
   const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
   const alive = [], output = Array.from({ length: frames }, () => []), behind = Array.from({ length: frames }, () => []), blobs = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
-  const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0, ...(e.sprite && { pixels: e.sprite.cells.length }) }));
+  const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0, ...(e.sprite && { pixels: e.sprite.frames[0].cells.length }) }));
   let operations = 0, culled = 0;
   // A release gives each of the sprite's pixels the frame it leaves on: where the sweep's front reaches it between start
   // and end (loosened by jitter), or a seeded random frame without a sweep. `due` lists the pixels that spawn a particle
@@ -282,7 +290,7 @@ function simulate(effect, context) {
   // symbol, so the rest of the sprite is drawn without it.
   const releases = emitters.map((e, index) => {
     if (!e.release) return null;
-    const { cells, w } = e.sprite, { sweep, jitter, share } = e.release, span = e.end - e.start;
+    const { cells, w } = e.sprite.frames[0], { sweep, jitter, share } = e.release, span = e.end - e.start;
     const dx = sweep === null ? 0 : cosDeg(sweep), dy = sweep === null ? 0 : sinDeg(sweep), along = cells.map(c => c.x * dx + c.y * dy);
     let low = Infinity, high = -Infinity;
     for (const a of along) { if (a < low) low = a; if (a > high) high = a; }
@@ -298,7 +306,7 @@ function simulate(effect, context) {
   // What a sprite emitter draws of the sprite itself this frame (all of it, or what is left after a release), as
   // palette-key codes over the canvas; its pixel particles are added on top.
   const sheet = (e, index, t) => {
-    const chars = new Uint16Array(width * height), { rows, w, h, x, y, draw } = e.sprite, leaves = releases[index]?.leaves;
+    const chars = new Uint16Array(width * height), { rows, w, h } = e.sprite.frame(t % frames), { x, y, draw } = e.sprite, leaves = releases[index]?.leaves;
     let any = false;
     if (draw) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
       const X = x + i, Y = y + j;
@@ -318,8 +326,8 @@ function simulate(effect, context) {
   const launch = (e, index, cx, cy, k, count, r, tag, born, parent, cell = null) => {
     let x, y, out = null, key = null;
     if (e.sprite) {
-      // On one of the sprite's pixels: the released one, or a seeded pick.
-      const { cells } = e.sprite, c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
+      // On one of the sprite's pixels (of the frame showing): the released one, or a seeded pick.
+      const { cells } = e.sprite.frame(born % frames), c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
       x = e.sprite.x + c.x; y = e.sprite.y + c.y; key = c.key;
     } else if (e.ring) {
       const { radius, arc, even, outward } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring)), d = pick(radius, r(SALT.radius));
@@ -365,12 +373,14 @@ function simulate(effect, context) {
       if (e.release) {
         const due = releases[index].due[cycle];
         due.forEach((i, k) => {
-          add(launch(e, index, 0, 0, k, due.length, salt => random(seed, index, -1, i, salt), hash(seed, index, -1, i), t, null, e.sprite.cells[i]));
+          add(launch(e, index, 0, 0, k, due.length, salt => random(seed, index, -1, i, salt), hash(seed, index, -1, i), t, null, e.sprite.frames[0].cells[i]));
           if (drawing) stats[index].spawned++;
         });
         if (due.length) mark(e, t, e.at[0], e.at[1]);
         return;
       }
+      // A sprite that only draws spawns nothing, nor does one whose frame showing has no pixels to spawn from.
+      if ((e.burst === null && e.rate === null) || (e.sprite && !e.sprite.frame(cycle).cells.length)) return;
       let count = 0;
       if (e.burst !== null) count = cycle === e.start ? e.burst : 0;
       else if (cycle >= e.start && cycle < e.end) { const c = cycle - e.start; count = Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9); }
@@ -508,46 +518,105 @@ function curve(value, path, count) {
 // Letters first: JavaScript lists digit keys before all others, which would reorder the palette.
 const SPARE_KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&*+-/:;<=>?@^_~0123456789';
 const hexOf = rgba => '#' + [...rgba].slice(0, rgba[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('');
-/**
- * One frame of a recipe or pose source as symbol rows over its whole canvas, so the sprite keeps the source's
- * coordinates. Each colour drawn takes the source's own one-character key, unless `palette` (the effect's, extended in
- * place) already gives that key another colour; then it takes a spare key. Translucent overlaps become their own colour.
- */
-export function frameSymbol(entry, palette, path) {
-  if (!isObject(entry)) fail(path, 'expected rows, or { recipe, frame }: a frame of a recipe or pose source');
-  fields(entry, ['recipe', 'frame'], path);
-  const spec = entry.recipe;
-  if (typeof spec === 'string' || (isObject(spec) && spec.revision !== undefined && spec.version === undefined)) fail(`${path}.recipe`, 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
-  if (!isObject(spec)) fail(`${path}.recipe`, 'expected a recipe or a pixelforge-poses source, inline or as a file reference');
-  if (spec.format !== undefined && spec.format !== 'pixelforge-poses') fail(`${path}.recipe`, `expected a recipe or a pixelforge-poses source, not ${spec.format}`);
-  const recipe = spec.format === 'pixelforge-poses' ? compilePoses(spec).recipe : spec, project = renderProject(recipe);
+// An inline recipe or pose source (a pose source compiles first), rendered, with its poses' metadata when it has some.
+function loadSource(spec, path) {
+  if (typeof spec === 'string' || (isObject(spec) && spec.revision !== undefined && spec.version === undefined)) fail(path, 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
+  if (!isObject(spec)) fail(path, 'expected a recipe or a pixelforge-poses source, inline or as a file reference');
+  if (spec.format !== undefined && spec.format !== 'pixelforge-poses') fail(path, `expected a recipe or a pixelforge-poses source, not ${spec.format}`);
+  const compiled = spec.format === 'pixelforge-poses' ? compilePoses(spec) : null, recipe = compiled?.recipe ?? spec;
+  return { recipe, project: renderProject(recipe), poses: compiled?.metadata.poses ?? null };
+}
+// The frames `entry` names: one `frame` (default the first) or every frame of an `animation`, in playing order.
+function framesOf(entry, source, path) {
+  const { recipe, project } = source, list = (names, more) => `${names.slice(0, 12).join(', ')}${more > 12 ? ', …' : ''}`;
+  if (entry.frame !== undefined && entry.animation !== undefined) fail(`${path}.animation`, 'name a frame or an animation, not both');
+  if (entry.animation !== undefined) {
+    const animation = typeof entry.animation === 'string' && Object.hasOwn(project.animations, entry.animation) ? project.animations[entry.animation] : null;
+    if (!animation) fail(`${path}.animation`, `${recipe.name ?? 'the recipe'} has no animation named ${JSON.stringify(entry.animation)}; it has ${list(Object.keys(project.animations), Object.keys(project.animations).length)}`);
+    return animation.frames.map(index => project.frames[index]);
+  }
   const frame = entry.frame === undefined ? project.frames[0] : project.frames.find(f => f.name === entry.frame);
-  if (!frame) fail(`${path}.frame`, `${recipe.name ?? 'the recipe'} has no frame named ${JSON.stringify(entry.frame)}; it has ${project.frames.slice(0, 12).map(f => f.name).join(', ')}${project.frames.length > 12 ? ', …' : ''}`);
+  if (!frame) fail(`${path}.frame`, `${recipe.name ?? 'the recipe'} has no frame named ${JSON.stringify(entry.frame)}; it has ${list(project.frames.map(f => f.name), project.frames.length)}`);
+  return [frame];
+}
+/**
+ * A frame of a recipe or pose source, or every frame of one of its animations, as symbol rows over its whole canvas, so
+ * the sprite keeps the source's coordinates: { rows } or { frames: [rows, …] }. Each colour drawn takes the source's own
+ * one-character key, unless `palette` (the effect's, extended in place) already gives that key another colour; then it
+ * takes a spare key. Translucent overlaps become their own colour.
+ */
+export function recipeSprite(entry, palette, path) {
+  if (!isObject(entry)) fail(path, 'expected rows, or { recipe, frame } or { recipe, animation }: a frame or an animation of a recipe or pose source');
+  fields(entry, ['recipe', 'frame', 'animation'], path);
+  const source = loadSource(entry.recipe, `${path}.recipe`), { project } = source;
   if (project.height > 256) fail(`${path}.recipe`, `its canvas is ${project.width}×${project.height}; a symbol has at most 256 rows`);
   const ownKey = new Map();
   for (const [key, value] of Object.entries(project.palette)) if (key.length === 1) { const id = parseColor(value, project.palette).join(); if (!ownKey.has(id)) ownKey.set(id, key); }
-  const keyOf = new Map(), data = frame.data, rows = [];
-  for (let y = 0; y < project.height; y++) {
-    let row = '';
-    for (let x = 0; x < project.width; x++) {
-      const at = (y * project.width + x) * 4;
-      if (!data[at + 3]) { row += '.'; continue; }
-      const rgba = [data[at], data[at + 1], data[at + 2], data[at + 3]], id = rgba.join();
-      if (!keyOf.has(id)) {
-        const own = ownKey.get(id), same = key => Object.hasOwn(palette, key) && parseColor(palette[key], palette).join() === id;
-        let key = own !== undefined && (!Object.hasOwn(palette, own) || same(own)) ? own : [...Object.keys(palette)].find(k => k.length === 1 && same(k));
-        if (key === undefined) {
-          key = [...SPARE_KEYS].find(k => !Object.hasOwn(palette, k));
-          if (key === undefined) fail(path, 'the effect\'s palette has no free one-character key left for this frame\'s colours');
+  const keyOf = new Map();
+  const rowsOf = ({ data }) => {
+    const rows = [];
+    for (let y = 0; y < project.height; y++) {
+      let row = '';
+      for (let x = 0; x < project.width; x++) {
+        const at = (y * project.width + x) * 4;
+        if (!data[at + 3]) { row += '.'; continue; }
+        const rgba = [data[at], data[at + 1], data[at + 2], data[at + 3]], id = rgba.join();
+        if (!keyOf.has(id)) {
+          const own = ownKey.get(id), same = key => Object.hasOwn(palette, key) && parseColor(palette[key], palette).join() === id;
+          let key = own !== undefined && (!Object.hasOwn(palette, own) || same(own)) ? own : [...Object.keys(palette)].find(k => k.length === 1 && same(k));
+          if (key === undefined) {
+            key = [...SPARE_KEYS].find(k => !Object.hasOwn(palette, k));
+            if (key === undefined) fail(path, 'the effect\'s palette has no free one-character key left for this frame\'s colours');
+          }
+          if (!Object.hasOwn(palette, key)) palette[key] = hexOf(rgba);
+          keyOf.set(id, key);
         }
-        if (!Object.hasOwn(palette, key)) palette[key] = hexOf(rgba);
-        keyOf.set(id, key);
+        row += keyOf.get(id);
       }
-      row += keyOf.get(id);
+      rows.push(row);
     }
-    rows.push(row);
+    return rows;
+  };
+  const frames = framesOf(entry, source, path).map(rowsOf);
+  return entry.animation === undefined ? { rows: frames[0] } : { frames };
+}
+/**
+ * Where a named point is in each frame of an animation of a recipe or pose source, or null where it has none: a
+ * frame's named point (a pose source's markers), or `part.point` for a point of a part from the poses' metadata.
+ */
+export function recipePoints(entry, path, key = 'point') {
+  if (!isObject(entry)) fail(path, 'expected { recipe, animation, point }: the point to follow through an animation of a recipe or pose source');
+  fields(entry, ['recipe', 'animation', 'point', 'pivot'], path);
+  if (entry.animation === undefined) fail(`${path}.animation`, 'name the animation whose frames the trail follows');
+  const name = entry[key];
+  if (typeof name !== 'string' || !name) fail(`${path}.${key}`, 'name the point to follow: a frame\'s named point (a marker), or part.point for a point of a pose part, such as blade.tip (part.anchor is where the part is fixed, such as a hilt)');
+  const source = loadSource(entry.recipe, `${path}.recipe`), frames = framesOf(entry, source, path), dot = name.indexOf('.');
+  const at = frame => {
+    if (dot > 0) {
+      const part = source.poses?.[frame.name]?.parts?.[name.slice(0, dot)], point = name.slice(dot + 1), where = part?.points?.[point] ?? (point === 'anchor' ? part?.anchor : undefined);
+      return where ? [where[0], where[1]] : null;
+    }
+    const named = frame.points?.[name] ?? source.poses?.[frame.name]?.markers?.find(marker => marker.name === name)?.at;
+    return named ? [named[0], named[1]] : null;
+  };
+  const points = frames.map(at);
+  if (points.every(p => p === null)) {
+    const names = new Set(frames.flatMap(frame => [...Object.keys(frame.points ?? {}), ...Object.entries(source.poses?.[frame.name]?.parts ?? {}).flatMap(([part, info]) => Object.keys(info.points ?? {}).map(point => `${part}.${point}`))]));
+    fail(`${path}.${key}`, `no frame of ${entry.animation} has a point named ${JSON.stringify(name)}${names.size ? `; it has ${[...names].slice(0, 16).join(', ')}` : ''}`);
   }
-  return rows;
+  return points;
+}
+
+// A trail layer with follow: { recipe, animation, point } takes that point's place in each frame of the animation as its
+// points, frame for frame (null where the point is missing; the frames after the animation have none).
+function followed(layer, path, frames) {
+  if (!isObject(layer) || layer.kind !== 'trail' || layer.follow === undefined) return layer;
+  if (layer.points !== undefined) fail(`${path}.points`, 'a trail follows a point (follow) or takes its positions (points), not both');
+  if (layer.pivot !== undefined && isObject(layer.follow) && layer.follow.pivot !== undefined) fail(`${path}.pivot`, 'the trail already follows a pivot (follow.pivot); give one or the other');
+  const points = recipePoints(layer.follow, `${path}.follow`);
+  if (points.length > frames) fail(`${path}.follow.animation`, `${layer.follow.animation} has ${points.length} frames and the effect ${frames}; give the effect at least one frame for each of the animation's`);
+  const { follow, ...rest } = layer;
+  return { ...rest, points, ...(follow.pivot !== undefined && { pivot: recipePoints(follow, `${path}.follow`, 'pivot') }) };
 }
 
 export function compileEffects(source) {
@@ -558,11 +627,16 @@ export function compileEffects(source) {
   const palette = { ...source.palette };
   const width = integer(source.width, 'fx.width', 1, 256), height = integer(source.height, 'fx.height', 1, 256);
   if (source.symbols !== undefined && (!isObject(source.symbols) || !Object.keys(source.symbols).length)) fail('fx.symbols', 'expected named symbols for the particles to draw');
-  const symbols = { ...source.symbols };
+  // An animation's frames are a sequence for sprites and auras, never stamped, so they stay out of the recipe's symbols.
+  const symbols = { ...source.symbols }, sequences = {};
   for (const [name, rows] of Object.entries(symbols)) {
     identifier(name, `fx.symbols.${name}`);
-    if (isObject(rows)) { symbols[name] = frameSymbol(rows, palette, `fx.symbols.${name}`); continue; }
-    if (!Array.isArray(rows) || !rows.length || rows.length > 256 || typeof rows[0] !== 'string' || !rows[0].length || rows.some(row => typeof row !== 'string' || row.length !== rows[0].length)) fail(`fx.symbols.${name}`, 'expected 1–256 equal-width text rows, or { recipe, frame }: a frame of a recipe or pose source');
+    if (isObject(rows)) {
+      const sprite = recipeSprite(rows, palette, `fx.symbols.${name}`);
+      if (sprite.frames) { sequences[name] = sprite.frames; delete symbols[name]; } else symbols[name] = sprite.rows;
+      continue;
+    }
+    if (!Array.isArray(rows) || !rows.length || rows.length > 256 || typeof rows[0] !== 'string' || !rows[0].length || rows.some(row => typeof row !== 'string' || row.length !== rows[0].length)) fail(`fx.symbols.${name}`, 'expected 1–256 equal-width text rows, or { recipe, frame } or { recipe, animation }: a frame or an animation of a recipe or pose source');
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
   const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Set();
@@ -586,9 +660,10 @@ export function compileEffects(source) {
       ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
       : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
         : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-    const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, palette, width, height, path };
-    // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts) draw between `behind` particles and the rest.
-    const shapes = readShapes(effect, path, context);
+    const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path };
+    // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
+    // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
+    const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => followed(layer, `${path}.layers[${i}]`, count)) } : effect, path, context);
     context.looks = shapes ? shapes.looks.map(look => look.name) : [];
     const list = effect.emitters ?? (shapes ? [] : undefined);
     if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);

@@ -9,13 +9,14 @@ import { PixelError } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, hash, random, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
 
-export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream', 'aura'];
+export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream', 'aura', 'trail'];
 const LIMITS = { layers: 16, looks: 8, colors: 8 };
 const PI = 3.141592653589793;
-// Tilt and squash belong to the kinds drawn around a centre; bolts and streams run between points and auras hug a
-// sprite, so they take neither.
+// Tilt and squash belong to the kinds drawn around a centre; bolts, streams and trails run between points and auras hug
+// a sprite, so they take neither.
 const SPECIFIC = {
   aura: ['symbol', 'width', 'rise', 'noise', 'scale', 'boil'],
+  trail: ['points', 'pivot', 'length', 'width', 'taper', 'fade', 'noise', 'scale'],
   ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
   slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale', 'tilt', 'squash'],
   beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale', 'tilt', 'squash'],
@@ -46,6 +47,9 @@ const pair = (value, path, min, max) => {
   return [number(value[0], `${path}[0]`, min, max), number(value[1], `${path}[1]`, min, max)];
 };
 const clamp01 = x => (x < 0 ? 0 : x > 1 ? 1 : x);
+// The frame of an animation (a list of frames) that effect frame t shows: frame for frame, holding the last after the
+// animation ends, or round again in a loop.
+export const sequenceFrame = (list, t, loop) => list[loop ? t % list.length : Math.min(t, list.length - 1)];
 const round = x => Math.floor(x + 0.5);
 
 // The angle of (x, y) in degrees clockwise from +x (y points down), in [0, 360). Two half-angle steps bring the
@@ -132,7 +136,7 @@ function readLook(look, path, palette, seed) {
 }
 
 function readLayer(layer, path, context, index) {
-  const { frames, lookNames, seed, loop, symbols } = context;
+  const { frames, lookNames, seed, loop, symbols, sequences } = context;
   if (!isObject(layer)) fail(path, 'expected a layer object');
   if (!SHAPE_KINDS.includes(layer.kind)) fail(`${path}.kind`, `expected ${SHAPE_KINDS.join(', ')}`);
   const kind = layer.kind;
@@ -203,12 +207,27 @@ function readLayer(layer, path, context, index) {
     });
   }
   if (kind === 'aura') {
-    const name = required('symbol');
-    if (typeof name !== 'string' || !symbols || !Object.hasOwn(symbols, name)) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
+    const name = required('symbol'), animated = typeof name === 'string' && !!sequences && Object.hasOwn(sequences, name);
+    if (typeof name !== 'string' || (!animated && !(symbols && Object.hasOwn(symbols, name)))) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
     const width = t('width', 3, 0, 32), rise = number(layer.rise ?? 2, `${path}.rise`, 1, 4);
     const noise = number(layer.noise ?? 0.5, `${path}.noise`, 0, 1);
     // Noise stretches the reach by up to half its share, so the field is measured that far out.
-    Object.assign(out, { symbol: name, width, rise, noise, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), field: auraField(symbols[name], maxKey(width) * (1 + noise / 2), rise, path) });
+    Object.assign(out, { symbol: name, width, rise, noise, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
+      fields: (animated ? sequences[name] : [symbols[name]]).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated)) });
+    if (out.fields.every(field => !field)) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
+  }
+  if (kind === 'trail') {
+    if (!Array.isArray(layer.points) || !layer.points.length || layer.points.length > frames) fail(`${path}.points`, `expected 1–${frames} positions [x, y] (or null), one for each frame of the effect from the first, or follow: { recipe, animation, point }`);
+    const points = Array.from({ length: frames }, (_, i) => (layer.points[i] === null || layer.points[i] === undefined ? null : pair(layer.points[i], `${path}.points[${i}]`, -4096, 4096)));
+    if (points.every(p => p === null)) fail(`${path}.points`, 'expected at least one position to follow');
+    // A pivot (fixed, or one place per frame) bends the smear round it, as a blade sweeps round its hilt.
+    let pivots = null;
+    if (layer.pivot !== undefined) {
+      const each = Array.isArray(layer.pivot) && (Array.isArray(layer.pivot[0]) || layer.pivot[0] === null);
+      if (each && layer.pivot.length > frames) fail(`${path}.pivot`, `expected [x, y], or 1–${frames} of them (or null), one for each frame`);
+      pivots = each ? Array.from({ length: frames }, (_, i) => (layer.pivot[i] === null || layer.pivot[i] === undefined ? null : pair(layer.pivot[i], `${path}.pivot[${i}]`, -4096, 4096))) : Array(frames).fill(pair(layer.pivot, `${path}.pivot`, -4096, 4096));
+    }
+    Object.assign(out, { points, pivots, length: integer(layer.length ?? 3, `${path}.length`, 1, 16), width: t('width', 4, 0, 64), taper: tween(layer.taper ?? [0, 1], `${path}.taper`, 0, 2), fade: number(layer.fade ?? 0.5, `${path}.fade`, 0, 1) });
   }
   if (kind === 'ring' || kind === 'burst' || kind === 'aura') out.noiseAt = ditherThreshold('value', [0, 0], out.seed, out.scale);
   else {
@@ -225,11 +244,11 @@ function readLayer(layer, path, context, index) {
 // An aura's distance field around a sprite, measured once: for each pixel of the sprite's box widened by the reach,
 // the distance to the nearest visible pixel, with distances upward divided by `rise` so the glow reaches that much
 // higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity.
-function auraField(rows, reach, rise, path) {
+function auraField(rows, reach, rise, path, emptyOk = false) {
   const w = rows[0].length, h = rows.length, side = Math.ceil(reach), up = Math.ceil(reach * rise), W = w + 2 * side, H = h + up + side;
   const solid = [];
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (rows[j][i] !== '.' && rows[j][i] !== ' ') solid.push([i, j]);
-  if (!solid.length) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
+  if (!solid.length) { if (emptyOk) return null; fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug'); }
   if (solid.length * (2 * side + 1) * (up + side + 1) > 64_000_000) fail(`${path}.width`, 'this sprite with this width and rise would take too long to measure; lower width or rise');
   const d = new Float64Array(W * H).fill(Infinity);
   for (const [i, j] of solid) for (let b = -up; b <= side; b++) {
@@ -261,7 +280,7 @@ export function readShapes(effect, path, context) {
     for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
-  const { palette, seed, frames, loop, symbols } = context;
+  const { palette, seed, frames, loop, symbols, sequences } = context;
   if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
@@ -269,7 +288,7 @@ export function readShapes(effect, path, context) {
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
   if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, lookNames: looks.map(l => l.name) }, i));
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, sequences, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -517,8 +536,9 @@ const PAINTERS = {
   // seeded noise stretched upright and rising `boil` pixels over the window, so its edge licks up in flames. In a cycle
   // the noise rises steadily through the loop point (boilFields). `at` is the sprite's top-left corner.
   aura(layer, s, put) {
-    const reach = sample(layer.width, s.q), { left, top, W, H, d } = layer.field, n = layer.noise, boil = boilFields(layer, s);
-    if (reach <= 0) return;
+    const reach = sample(layer.width, s.q), field = sequenceFrame(layer.fields, s.f, layer.loop), n = layer.noise, boil = boilFields(layer, s);
+    if (reach <= 0 || !field) return;
+    const { left, top, W, H, d } = field;
     const ox = round(s.cx) + left, oy = round(s.cy) + top;
     const x0 = Math.max(0, ox), x1 = Math.min(put.width - 1, ox + W - 1), y0 = Math.max(0, oy), y1 = Math.min(put.bottom, oy + H - 1);
     if (x0 > x1 || y0 > y1) return;
@@ -549,18 +569,72 @@ const PAINTERS = {
       let x = a[0] + (b[0] - a[0]) * f + s.dx, y = a[1] + (b[1] - a[1]) * f + s.dy;
       if (layer.sway) { const off = layer.sway * (d / L) * sinDeg(360 * (d / layer.wavelength - layer.waves * s.p)); x -= ty * off; y += tx * off; }
       // Each step stamps a cone a little wider than its half width, so even a one-pixel tip keeps its pixels.
-      const hw = Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, reach = Math.ceil(hw);
-      // Only the part of the stamp on the canvas is visited: put drops the rest anyway.
-      const X = round(x), Y = round(y), i0 = Math.max(0, X - reach), i1 = Math.min(put.width - 1, X + reach), j0 = Math.max(0, Y - reach), j1 = Math.min(put.bottom, Y + reach);
-      if (i0 > i1 || j0 > j1) continue;
-      put.spend((i1 - i0 + 1) * (j1 - j0 + 1));
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-        const dx = i - x, dy = j - y, dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < hw) put(i, j, 1 - dist / hw);
-      }
+      cone(put, x, y, Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, 1);
+    }
+  },
+  // A smear behind a moving point (a sword tip): a stroke along a smooth curve through where the point was over the last
+  // `length` frames, tapered by `taper` from its oldest end to its newest and dimming by `fade` toward the oldest.
+  // `points` hold the point's place in each frame of the effect, relative to `at`; the frames before the layer's window
+  // count too, so a smear drawn from the strike on still shows the wind-up behind it.
+  // With pivots, each step between two frames is an arc round the pivot (angle and distance moving evenly), and the
+  // stroke lies inside the point's path, so its outer edge is where the tip went: a blade's crescent smear.
+  trail(layer, s, put) {
+    const path = [], centres = [];
+    for (let f = Math.max(0, s.f - layer.length); f <= s.f; f++) {
+      const p = layer.points[f];
+      if (!p) continue;
+      const x = p[0] + s.cx, y = p[1] + s.cy, last = path[path.length - 1], c = layer.pivots?.[f];
+      if (!last || last[0] !== x || last[1] !== y) { path.push([x, y]); centres.push(c ? [c[0] + s.cx, c[1] + s.cy] : null); }
+    }
+    const w = sample(layer.width, s.q) / 2;
+    if (path.length < 2 || w <= 0) return;
+    const curve = layer.pivots ? arcs(path, centres) : spline(path), { points, lengths } = curve, L = lengths[lengths.length - 1];
+    put.spend(Math.floor(L / 0.5) + 1);
+    let k = 0;
+    for (let d = 0; d <= L + 1e-9; d += 0.5) {
+      while (k < lengths.length - 2 && lengths[k + 1] < d) k++;
+      const a = points[k], b = points[k + 1], piece = lengths[k + 1] - lengths[k] || 1, f = (d - lengths[k]) / piece, share = d / L;
+      const hw = Math.max(0.6, w * sample(layer.taper, share)) + 0.5;
+      let x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f;
+      // Inward toward the pivot by all but half a pixel of the half width, so the outer edge stays on the path.
+      const c = curve.centres?.[k];
+      if (c) { const ux = x - c[0], uy = y - c[1], r = Math.sqrt(ux * ux + uy * uy); if (r > 1e-9) { x -= ux / r * (hw - 0.5); y -= uy / r * (hw - 0.5); } }
+      cone(put, x, y, hw, 1 - layer.fade * (1 - share));
     }
   }
 };
+
+// A trail's path through `points` with a pivot for each (or null): each step between two points runs round the average
+// of their pivots, angle and distance moving evenly (the shorter way round), or straight where either has none. About a
+// pixel per sample, with the distance along it and the pivot of the step each sample begins.
+function arcs(points, centres) {
+  const out = [points[0]], at = [];
+  for (let i = 0; i + 1 < points.length; i++) {
+    const [ax, ay] = points[i], [bx, by] = points[i + 1], ca = centres[i], cb = centres[i + 1];
+    if (!ca || !cb) { out.push([bx, by]); at.push(null); continue; }
+    const cx = (ca[0] + cb[0]) / 2, cy = (ca[1] + cb[1]) / 2, ra = Math.sqrt((ax - cx) ** 2 + (ay - cy) ** 2), rb = Math.sqrt((bx - cx) ** 2 + (by - cy) ** 2);
+    const from = atan2Deg(ay - cy, ax - cx);
+    let turn = atan2Deg(by - cy, bx - cx) - from;
+    if (turn > 180) turn -= 360; else if (turn <= -180) turn += 360;
+    const steps = Math.max(1, Math.ceil(Math.abs(turn) * PI / 180 * Math.max(ra, rb)));
+    for (let k = 1; k <= steps; k++) { const u = k / steps, r = ra + (rb - ra) * u, theta = from + turn * u; out.push([cx + cosDeg(theta) * r, cy + sinDeg(theta) * r]); at.push([cx, cy]); }
+  }
+  const lengths = [0];
+  for (let k = 1; k < out.length; k++) { const dx = out[k][0] - out[k - 1][0], dy = out[k][1] - out[k - 1][1]; lengths.push(lengths[k - 1] + Math.sqrt(dx * dx + dy * dy)); }
+  return { points: out, lengths, centres: at };
+}
+
+// One step of a brush: a cone `hw` pixels in radius at (x, y), 1 in its middle falling to 0 at its rim, times `scale`.
+// Only the part on the canvas is visited: put drops the rest anyway.
+function cone(put, x, y, hw, scale) {
+  const reach = Math.ceil(hw), X = round(x), Y = round(y), i0 = Math.max(0, X - reach), i1 = Math.min(put.width - 1, X + reach), j0 = Math.max(0, Y - reach), j1 = Math.min(put.bottom, Y + reach);
+  if (i0 > i1 || j0 > j1) return;
+  put.spend((i1 - i0 + 1) * (j1 - j0 + 1));
+  for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+    const dx = i - x, dy = j - y, dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < hw) put(i, j, (1 - dist / hw) * scale);
+  }
+}
 
 // The look's field at (x, y), between pixels, zero off the canvas.
 function between(field, width, height, x, y) {
@@ -603,7 +677,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         if (work.spent > SHAPE_WORK) fail(layer.path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
       };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
-      PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, frame: frameOf(layer, cx, cy) }, put, width, height);
+      PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, frame: frameOf(layer, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
         let value = scratch[c] * power;
         if (value <= 0) continue;

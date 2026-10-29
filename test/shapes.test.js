@@ -24,7 +24,8 @@ const LAYERS = {
   star: { kind: 'star', look: 'warm', at: [24, 24], radius: [16, 4], width: [3, 1], points: 8, power: [1.3, 0.6], jitter: 0.2 },
   burst: { kind: 'burst', look: 'warm', at: [24, 26], radius: [6, 18], hole: [0, 0.3], power: [1.4, 1] },
   stream: { kind: 'stream', look: 'cool', at: [6, 40], through: [[18, 14], [32, 30], [42, 8]], width: [4, 8, 5], head: [0.3, 1], tail: [0, 0.4], sway: 2, noise: 0.3, power: [1.3, 0.8] },
-  aura: { kind: 'aura', look: 'warm', symbol: 'man', at: [20, 24], width: 4, rise: 2, noise: 0.5 }
+  aura: { kind: 'aura', look: 'warm', symbol: 'man', at: [20, 24], width: 4, rise: 2, noise: 0.5 },
+  trail: { kind: 'trail', look: 'cool', at: [2, 2], points: [[4, 34], [8, 14], [20, 4], [34, 10], [40, 26], [36, 36], [30, 40], [26, 42]], width: [7, 5], length: 3 }
 };
 // The sprite an aura hugs: a head, a body and two legs, 6 × 12.
 const MAN = { man: ['..yy..', '..yy..', '.yyyy.', 'yyyyyy', 'y.yy.y', 'y.yy.y', '..yy..', '..yy..', '.y..y.', '.y..y.', '.y..y.', 'yy..yy'] };
@@ -64,8 +65,8 @@ test('every shape kind compiles alone into an ordinary recipe of one grid per fr
 });
 
 test('shape layers compile to golden recipes, the same every time', () => {
-  // The aura came later and needs its sprite, so it has a golden of its own and stays out of all.
-  const all = source({ cleanup: { corners: true, strays: true }, layers: Object.values(LAYERS).filter(layer => layer.kind !== 'aura').map((layer, i) => ({ ...layer, frames: [i % 3, 8] })) });
+  // The aura and the trail came later, so they have goldens of their own and stay out of all.
+  const all = source({ cleanup: { corners: true, strays: true }, layers: Object.values(LAYERS).filter(layer => !['aura', 'trail'].includes(layer.kind)).map((layer, i) => ({ ...layer, frames: [i % 3, 8] })) });
   const first = compileEffects(all), second = compileEffects(structuredClone(all));
   assert.deepEqual(first, second);
   // These change with any change to the shapes' pixels: regenerate them deliberately, after looking at the art.
@@ -77,7 +78,7 @@ test('shape layers compile to golden recipes, the same every time', () => {
     beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'd54bdf63f41345c64b9ab402feb72ebdf809f1fbde4a71a8e63a6b06f9a3acee',
     glyph: '69221282a0198e368d410b9398d735b0e7f1e5959bd21933693472c65b92c802', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
     burst: '4151bac6ad5f35c106bdfde17ea8ae0249eaaa4bdbd1599d57a93f414378ae2c', stream: '0ce67436fbd732efd96876017738fed1cae5a3c4bcd18cf843d8d7fab8b15e09',
-    aura: '45380c9b86ee656f4ed73b15478de8a64f7e8ebb35e32aa343bbf66a3b5aa9c8',
+    aura: '45380c9b86ee656f4ed73b15478de8a64f7e8ebb35e32aa343bbf66a3b5aa9c8', trail: 'a0c40eb6ff1f127b5562fd1c87fc52bf2fb375a8ca5c8f7ccd72eb03a171b96e',
     all:'d515b0d1c38a42b23eef630e048ee6dd9aeee9f6a16f8d06740b3ef82af15a8d'
   });
 });
