@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Every error in one reply
+
+- Validation names every broken drawing operation at once instead of stopping at the first: the error's `path` and message start with the first, the message names the rest, and the CLI's and MCP's error replies list each in `errors` (up to ten). Frame fields, animations and the sheet still stop at once.
+- A grid names every row whose width differs from row 0, with its width (`row 6 has 19, row 9 has 21`), and every unknown character with its row.
+
 ### Rigged figures that say what went wrong
 
 - `examples/hero.poses.json` is a complete rigged side-view figure to start from: bone limbs, a mass torso, a grid head and boots, far limbs a ramp step darker, and the idle, walk, run, jump, attack and hurt templates, each passing its own motion checks. Its origin is where the feet meet the ground, so every frame's atlas anchor is a ground point, and its torso stands there by `at`. The skill, quick start, workflow guide, README and llms.txt point to it.

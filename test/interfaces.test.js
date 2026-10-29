@@ -121,6 +121,11 @@ test('CLI consumes stdin, emits machine-readable diagnostics and handles unknown
   assert.equal(bad.status, 1); assert.equal(JSON.parse(bad.stderr).ok, false);
   const flags = quietCLI('pixelbolt', ['validate', '-', '--typo']);
   assert.equal(flags.status, 1); assert.match(JSON.parse(flags.stderr).error, /Unknown option/);
+  // Several broken operations come back together, each with its path.
+  const broken = { ...tiny, frames: [{ name: 'a', ops: [{ op: 'circle' }, { op: 'pixel', x: 0, y: 0, color: 'nope' }] }], animations: undefined };
+  const both = quietCLI('pixelbolt', ['validate', '-'], JSON.stringify(broken)), reply = JSON.parse(both.stderr);
+  assert.equal(both.status, 1); assert.equal(reply.path, 'project.frames[0].ops[0].op');
+  assert.deepEqual(reply.errors.map(item => item.path), ['project.frames[0].ops[0].op', 'project.frames[0].ops[1].color']);
 });
 
 test('CLI init protects an existing recipe with an actionable JSON error and honours --force', async t => {

@@ -33,7 +33,7 @@ Pixelbolt turns a small JSON recipe into exact pixels: sprites, sprite sheets, t
 - `symbols` are reusable grids that `stamp` draws. A frame is `{name, duration?, from?, translate?, flipX?, palette?, anchor?, points?, ops?, layers?, pixels?}`: `duration` in ms (default 100), `from` copies an earlier frame, a frame `palette` recolours keys for palette cycling, `layers` are `{name?, opacity?, x?, y?, palette?, sort?, ops}` (`sort: "ground"` draws them far to near by the row each operation stands on), and `pixels` are final `{x, y, color}` corrections.
 - `animations` map names to `{frames, direction?: forward | reverse | pingpong, loop?}`. Without them, one animation plays every frame.
 - `ramps` (optional) list palette keys from dark to light, one list per material, so `shade` and scene lighting move colours along them without leaving the palette.
-- Unknown fields are errors, and every error names its path, such as `project.frames[1].ops[0].rows[2]`.
+- Unknown fields are errors, and every error names its path, such as `project.frames[1].ops[0].rows[2]`. Broken operations are reported together, up to ten, in the reply's `errors`, so fix them all before validating again.
 
 ## Operations
 

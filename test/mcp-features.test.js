@@ -55,7 +55,10 @@ test('MCP keeps what an agent reads small: brief tool schemas, a quick start, an
     }
     // The tool schemas no longer describe the recipe in detail; the server still rejects a mistake with its path.
     const wrong = await mcp.call('pixel_validate', { project: { ...recipe, animations: undefined, frames: [{ name: 'a', ops: [{ op: 'circle' }] }] } });
-    assert.equal(wrong.result.isError, true); assert.equal(wrong.info.path, 'project.frames[0].ops[0].op');
+    assert.equal(wrong.result.isError, true); assert.equal(wrong.info.path, 'project.frames[0].ops[0].op'); assert.equal(wrong.info.errors, undefined);
+    // Every broken operation in one reply.
+    const twice = await mcp.call('pixel_validate', { project: { ...recipe, animations: undefined, frames: [{ name: 'a', ops: [{ op: 'circle' }, { op: 'rect', x: 0, y: 0, w: 0, h: 1, color: 'k' }] }] } });
+    assert.deepEqual(twice.info.errors.map(item => item.path), ['project.frames[0].ops[0].op', 'project.frames[0].ops[1].w']);
   } finally { mcp.input.end(); await mcp.running; }
 });
 

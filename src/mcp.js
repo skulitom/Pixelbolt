@@ -440,7 +440,7 @@ export function createToolRunner({ directory, root, version }) {
         const project = renderProject(imported.recipe), view = inspectProject(project, { maxCells: 256 });
         return { content: [textContent({ ok: true, revision: await remember(imported.recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, provenance: imported.provenance, preview: viewSummary(view) }), imageContent(view.sheet)] };
       }
-    } catch (cause) { return { isError: true, content: [textContent({ error: cause.message, ...(cause.path ? { path: cause.path } : {}) })] }; }
+    } catch (cause) { return { isError: true, content: [textContent({ error: cause.message, ...(cause.path ? { path: cause.path } : {}), ...(cause.errors && { errors: cause.errors }) })] }; }
   };
 }
 

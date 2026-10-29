@@ -182,7 +182,7 @@ Exports include a TexturePacker-style RGBA atlas, named sequences, exact duratio
 
 For Godot 4, use `name.tres` with `name.png` beside it (see [game integration](game-integration.md#godot-4)). For grid-based game engines, prefer padding 0. For atlas importers, use the exact frame rectangles. Atlas animations list **expanded playback order** (including reverse/pingpong) and a loop flag.
 
-At most 20,000 operations and 67,108,864 estimated drawing pixels are accepted. Animation exports across all sequences are also limited to 67,108,864 scaled pixels. CLI/MCP transport errors and render errors provide actionable paths; don't suppress them.
+At most 20,000 operations and 67,108,864 estimated drawing pixels are accepted. Animation exports across all sequences are also limited to 67,108,864 scaled pixels. CLI/MCP transport errors and render errors provide actionable paths; don't suppress them. An invalid drawing operation doesn't stop the check: the others are still checked, and the error names the first while `errors` lists each (up to ten) with its path and message. A grid names every row whose width differs from row 0, with its width, and every unknown character.
 
 Large `pixel_render` previews are automatically sampled to stay inside inspection bounds; all animation frames are still exported. The response explicitly includes `preview.sampling` and a `playback` HTML path when rendering. Use `pixel_inspect` with a narrower selection for omitted detail. Contact sheets are static, even when arranged in playback order.
 

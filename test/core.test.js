@@ -20,6 +20,27 @@ test('grid shape and color errors include the exact source path', () => {
   assert.throws(() => renderProject(make([{ op: 'grid', rows: ['rr', 'r'] }])), /project.frames\[0\].ops\[0\].rows\[1\]: all rows must be 2/);
   assert.throws(() => renderProject(make([{ op: 'grid', rows: ['z'] }])), /unknown palette character "z"/);
 });
+test('validation names every miscounted row, and every broken operation, in one error', () => {
+  // A grid gives each row that differs from row 0 with its own width, and every unknown character.
+  assert.throws(() => renderProject(make([{ op: 'grid', rows: ['rrrr', 'rrr', 'rr', 'rrrrr'] }])), error => error.path === 'project.frames[0].ops[0].rows[1]'
+    && error.message === 'project.frames[0].ops[0].rows[1]: all rows must be 4 characters wide, as row 0 is: row 1 has 3, row 2 has 2, row 3 has 5');
+  assert.throws(() => renderProject(make([{ op: 'grid', rows: ['rz', 'qr', 'zr'] }])), /rows\[0\]: unknown palette character "z"; also "q" in row 1$/);
+  // Broken operations in different frames and layers are each named; the first is the error's path.
+  const recipe = make([], {
+    frames: [{ name: 'a', ops: [{ op: 'grid', rows: ['rr', 'r'] }, { op: 'pixel', x: 0, y: 0, color: 'r' }] }, { name: 'b', layers: [{ ops: [{ op: 'rect', x: 0, y: 0, w: 0, h: 1, color: 'r' }, { op: 'pixel', x: 1, y: 1, color: 'nope' }] }] }] });
+  assert.throws(() => renderProject(recipe), error => {
+    assert.equal(error.path, 'project.frames[0].ops[0].rows[1]');
+    assert.deepEqual(error.errors.map(item => item.path), ['project.frames[0].ops[0].rows[1]', 'project.frames[1].layers[0].ops[0].w', 'project.frames[1].layers[0].ops[1].color']);
+    assert.match(error.message, /row 1 has 1; 2 more errors: project\.frames\[1\]\.layers\[0\]\.ops\[0\]\.w: .*; project\.frames\[1\]\.layers\[0\]\.ops\[1\]\.color: unknown color "nope"/);
+    return true;
+  });
+  // A later error outside any operation joins them; a single error stays as it was, with no list.
+  assert.throws(() => renderProject({ ...recipe, animations: { idle: { frames: ['missing'] } } }), error => error.errors.length === 4 && error.errors[3].path.startsWith('project.animations'));
+  assert.throws(() => renderProject(make([{ op: 'pixel', x: 0, y: 0, color: 'nope' }])), error => error.errors === undefined && error.path === 'project.frames[0].ops[0].color');
+  // Checking stops after ten.
+  const many = make(Array.from({ length: 30 }, () => ({ op: 'pixel', x: 0, y: 0, color: 'nope' })));
+  assert.throws(() => renderProject(many), error => error.errors.length === 10 && /9 more errors \(checking stopped at 10\)/.test(error.message));
+});
 test('non-square stamp rotates clockwise and flips before rotation', () => {
   const p = renderProject(make([{ op: 'stamp', symbol: 's', rotate: 90 }], { symbols: { s: ['rg', 'b.','r.'] } }));
   assert.deepEqual(pixel(p.frames[0], 0, 0), [255, 0, 0, 255]);

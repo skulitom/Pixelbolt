@@ -77,14 +77,22 @@ export function readRows(rows, path, palette) {
   if (!rows.length) fail(path, 'grid must contain at least one row');
   if (typeof rows[0] !== 'string' || rows[0].length < 1 || rows[0].length > 256) fail(`${path}[0]`, 'row must contain 1–256 characters');
   const width = rows[0].length;
+  rows.forEach((row, y) => { if (typeof row !== 'string') fail(`${path}[${y}]`, `all rows must be ${width} characters wide`); });
+  // Every miscounted row at once, with its own width, so a hand-typed grid is fixed in one pass.
+  const uneven = rows.flatMap((row, y) => row.length === width ? [] : [y]);
+  if (uneven.length) fail(`${path}[${uneven[0]}]`, `all rows must be ${width} characters wide, as row 0 is: ${uneven.slice(0, 8).map(y => `row ${y} has ${rows[y].length}`).join(', ')}${uneven.length > 8 ? ` and ${uneven.length - 8} more rows differ` : ''}`);
+  const unknown = new Map();
   rows.forEach((row, y) => {
-    if (typeof row !== 'string' || row.length !== width) fail(`${path}[${y}]`, `all rows must be ${width} characters wide`);
     for (const char of row) if (char !== '.' && char !== ' ') {
       // Rows are indexed by UTF-16 code unit, so an astral character (emoji) would split in two.
       if (char.length !== 1) fail(`${path}[${y}]`, `grid characters must be single UTF-16 code units, not ${JSON.stringify(char)}`);
-      if (!own(palette, char)) fail(`${path}[${y}]`, `unknown palette character ${JSON.stringify(char)}`);
+      if (!own(palette, char) && !unknown.has(char)) unknown.set(char, y);
     }
   });
+  if (unknown.size) {
+    const [[first, y], ...others] = unknown;
+    fail(`${path}[${y}]`, `unknown palette character ${JSON.stringify(first)}${others.length ? `; also ${others.slice(0, 8).map(([char, row]) => `${JSON.stringify(char)} in row ${row}`).join(', ')}` : ''}`);
+  }
   return { rows, width, height: rows.length };
 }
 const round6 = value => Math.round(value * 1e6) / 1e6;
@@ -182,6 +190,26 @@ export function renderProject(spec, options = {}) {
   const color = (value, path) => parseColor(value, activePalette, path);
   let work = 0, operationCount = 0, layerPixels = 0;
   const spend = amount => { work += amount; if (work > 67108864) fail('project', 'drawing work exceeds the 67-million-pixel budget; simplify repeated operations'); };
+  // An invalid drawing operation is noted and skipped while the rest are checked, so one reply names every broken
+  // operation (up to ten) instead of one per run. Operations don't depend on each other being valid, and a render that
+  // noted one returns no pixels. Anything else (a frame field, animations, the sheet, a budget) still stops at once.
+  const noted = [];
+  const note = (error, p) => {
+    const inside = error instanceof PixelError && !error.errors && (error.path === p || error.path.startsWith(`${p}.`) || error.path.startsWith(`${p}[`));
+    if (!inside) throw error;
+    noted.push(error);
+    if (noted.length === 10) throw together();
+  };
+  // The first error, naming the others in its message and listing every one in `errors`.
+  const together = (last = null) => {
+    const all = last && !last.errors && !noted.includes(last) ? [...noted, last] : noted;
+    if (all.length === 1) return all[0];
+    const [first, ...rest] = all;
+    const combined = new PixelError(first.path, `${first.message.slice(first.path.length + 2)}; ${rest.length} more error${rest.length === 1 ? '' : 's'}${noted.length === 10 ? ' (checking stopped at 10)' : ''}: ${rest.map(error => error.message).join('; ')}`);
+    combined.errors = all.map(error => ({ path: error.path, error: error.message }));
+    return combined;
+  };
+  const checked = run => { try { return run(); } catch (error) { throw noted.length && !error.errors ? together(error) : error; } };
   // Clipping is counted per source location so an agent can find the operation that overhangs.
   const clipped = new Map();
   const clip = (path, pixels = 1) => clipped.set(path, (clipped.get(path) ?? 0) + pixels);
@@ -232,7 +260,10 @@ export function renderProject(spec, options = {}) {
     }
     for (const index of order) {
       if (++operationCount > 20000) fail(path, 'project exceeds 20,000 drawing operations');
-      const op = ops[index], p = `${path}[${index}]`;
+      const p = `${path}[${index}]`;
+      try { drawOp(ops[index], p); } catch (error) { note(error, p); }
+    }
+    function drawOp(op, p) {
       object(op, p);
       const transform = ['scale', 'flipX', 'flipY', 'rotate'];
       const fields = {
@@ -599,7 +630,7 @@ export function renderProject(spec, options = {}) {
       }
     }
   }
-  const frames = spec.frames.map((frame, index) => {
+  const frames = checked(() => spec.frames.map((frame, index) => {
     const p = `project.frames[${index}]`;
     object(frame, p, ['name', 'duration', 'from', 'translate', 'wrap', 'flipX', 'flipY', 'palette', 'anchor', 'points', 'ops', 'layers', 'pixels']);
     const frameName = name(frame.name, `${p}.name`);
@@ -702,9 +733,10 @@ export function renderProject(spec, options = {}) {
     const result = { name: frameName, duration, data, ...(frameAnchor && { anchor: frameAnchor }), ...(points && { points }), ...(overrides && { palette: overrides }), ...(layerPalettes.length && { layerPalettes }) };
     rendered.set(frameName, result);
     return result;
-  });
-  const animations = readAnimations(spec, frames);
-  const sheet = readSheet(spec, frames, width, height);
+  }));
+  const animations = checked(() => readAnimations(spec, frames));
+  const sheet = checked(() => readSheet(spec, frames, width, height));
+  if (noted.length) throw together();
   const warnings = [], clipping = [...clipped].map(([path, pixels]) => ({ path, pixels }));
   if (clipping.length) warnings.push(`Some drawing falls outside the canvas and is clipped: ${clipping[0].path} (${clipping[0].pixels} px)${clipping.length > 1 ? ` and ${clipping.length - 1} more location${clipping.length > 2 ? 's' : ''}` : ''}.`);
   return {

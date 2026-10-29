@@ -356,5 +356,5 @@ try {
     }
   }
 } catch (error) {
-  console.error(JSON.stringify({ ok: false, error: error.message, ...(error.path ? { path: error.path } : {}) })); process.exitCode = 1;
+  console.error(JSON.stringify({ ok: false, error: error.message, ...(error.path ? { path: error.path } : {}), ...(error.errors && { errors: error.errors }) })); process.exitCode = 1;
 }
