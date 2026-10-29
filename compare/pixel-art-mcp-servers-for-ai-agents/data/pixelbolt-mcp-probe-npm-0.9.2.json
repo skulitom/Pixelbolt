@@ -1,0 +1,387 @@
+{
+ "commit": "npm pixelbolt@0.9.2",
+ "node": "v24.19.0",
+ "platform": "win32 x64 10.0.26200",
+ "cpu": "AMD Ryzen 9 7950X3D 16-Core Processor",
+ "startedAt": "2026-10-29T15:14:16.944Z",
+ "serverInfo": {
+  "name": "pixelbolt",
+  "version": "0.9.2"
+ },
+ "protocolVersion": "2025-06-18",
+ "tools": [
+  {
+   "name": "pixel_help",
+   "descriptionChars": 493,
+   "inputSchemaUtf8Bytes": 176,
+   "annotations": {
+    "title": "Pixelbolt guide and schema",
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_validate",
+   "descriptionChars": 167,
+   "inputSchemaUtf8Bytes": 635,
+   "annotations": {
+    "title": "Validate a pixel art recipe",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_inspect",
+   "descriptionChars": 414,
+   "inputSchemaUtf8Bytes": 3167,
+   "annotations": {
+    "title": "Inspect pixel art frames",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_patch",
+   "descriptionChars": 470,
+   "inputSchemaUtf8Bytes": 1853,
+   "annotations": {
+    "title": "Patch pixel art",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_render",
+   "descriptionChars": 480,
+   "inputSchemaUtf8Bytes": 3580,
+   "annotations": {
+    "title": "Export pixel art files",
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_compile",
+   "descriptionChars": 747,
+   "inputSchemaUtf8Bytes": 395,
+   "annotations": {
+    "title": "Compile poses, tilesets, effects or fluids",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_scene",
+   "descriptionChars": 484,
+   "inputSchemaUtf8Bytes": 661,
+   "annotations": {
+    "title": "Compose a pixel art scene",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_import",
+   "descriptionChars": 296,
+   "inputSchemaUtf8Bytes": 255,
+   "annotations": {
+    "title": "Import a PNG as a recipe",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  }
+ ],
+ "toolsListMs": 0.5938,
+ "toolsListUtf8Bytes": 15887,
+ "validate": {
+  "ms": 74.3224,
+  "isError": false,
+  "revision": "873911c436cc",
+  "summary": {
+   "width": 24,
+   "height": 24,
+   "frames": 6,
+   "animations": {
+    "spin": {
+     "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "loop": true,
+     "duration": 660
+    }
+   }
+  }
+ },
+ "inspect": {
+  "ms": 10.6509,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 2132
+   }
+  ],
+  "keys": [
+   "ok",
+   "revision",
+   "name",
+   "width",
+   "height",
+   "cells",
+   "region",
+   "sheet",
+   "warnings"
+  ]
+ },
+ "patch": {
+  "ms": 9.0255,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 708
+   }
+  ],
+  "response": {
+   "ok": true,
+   "revision": "eaa54abd9f73",
+   "base": "873911c436cc",
+   "edits": [
+    {
+     "paint": "frames[turn-0]",
+     "at": "frames[0]",
+     "pixels": 1
+    }
+   ],
+   "frames": {
+    "changed": [
+     {
+      "frame": "turn-0",
+      "pixels": 1,
+      "box": {
+       "x": 12,
+       "y": 12,
+       "w": 1,
+       "h": 1
+      },
+      "changes": [
+       {
+        "x": 12,
+        "y": 12,
+        "from": "3",
+        "to": "2"
+       }
+      ]
+     }
+    ],
+    "unchanged": [
+     "turn-1",
+     "turn-2",
+     "turn-3",
+     "turn-4",
+     "turn-5"
+    ]
+   },
+   "legend": {
+    "2": {
+     "color": "#ffe4a0",
+     "palette": "light"
+    },
+    "3": {
+     "color": "#c78a43",
+     "palette": "shade"
+    }
+   },
+   "image": {
+    "region": {
+     "x": 10,
+     "y": 10,
+     "w": 5,
+     "h": 5
+    },
+    "frames": [
+     {
+      "frame": "turn-0",
+      "status": "changed"
+     }
+    ],
+    "scale": 16
+   },
+   "warnings": []
+  }
+ },
+ "render": {
+  "ms": 55.5545,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 12340
+   }
+  ],
+  "response": {
+   "ok": true,
+   "revision": "eaa54abd9f73",
+   "directory": "<work>\\run-probe\\coin-K43Zy7",
+   "files": [
+    "coin.png",
+    "coin.atlas.json",
+    "coin.tres",
+    "coin.pixel.json",
+    "coin.css",
+    "frames/turn-0.png",
+    "frames/turn-1.png",
+    "frames/turn-2.png",
+    "frames/turn-3.png",
+    "frames/turn-4.png",
+    "frames/turn-5.png",
+    "animations/spin.png",
+    "player.js",
+    "preview.html",
+    "README.txt"
+   ],
+   "frames": {
+    "directory": "frames",
+    "count": 6
+   },
+   "animations": {
+    "directory": "animations",
+    "count": 1
+   },
+   "playback": "<work>\\run-probe\\coin-K43Zy7\\preview.html",
+   "check": {
+    "delivered": {
+     "size": [
+      24,
+      24
+     ],
+     "animations": {
+      "spin": {
+       "frames": 6,
+       "loop": true
+      }
+     },
+     "colors": 4,
+     "transparent": true
+    },
+    "hint": "Pass expect with what the user asked for (width, height, frames, colors, transparent, loop, gifScale) to check every file against it."
+   },
+   "preview": {
+    "cells": [
+     {
+      "frame": "turn-0",
+      "duration": 110
+     },
+     {
+      "frame": "turn-1",
+      "duration": 110
+     },
+     {
+      "frame": "turn-2",
+      "duration": 110
+     },
+     {
+      "frame": "turn-3",
+      "duration": 110
+     },
+     {
+      "frame": "turn-4",
+      "duration": 110
+     },
+     {
+      "frame": "turn-5",
+      "duration": 110
+     }
+    ],
+    "region": {
+     "x": 0,
+     "y": 0,
+     "w": 24,
+     "h": 24
+    },
+    "sheet": {
+     "columns": 3,
+     "rows": 2,
+     "scale": 10,
+     "gap": 10,
+     "width": 760,
+     "height": 510
+    }
+   },
+   "warnings": []
+  }
+ },
+ "renderBase": {
+  "ms": 45.0142,
+  "isError": false,
+  "directory": "<work>\\run-probe\\coin-85JNNo"
+ },
+ "frameDiff": [
+  {
+   "frame": "turn-0.png",
+   "size": "24x24",
+   "changedPixels": 1,
+   "changes": [
+    {
+     "x": 12,
+     "y": 12,
+     "from": "c78a43ff",
+     "to": "ffe4a0ff"
+    }
+   ]
+  },
+  {
+   "frame": "turn-1.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-2.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-3.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-4.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-5.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  }
+ ],
+ "outFiles": 32,
+ "stderr": ""
+}

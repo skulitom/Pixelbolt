@@ -2,9 +2,9 @@
 // tools/list, then validate -> inspect -> patch one pixel -> render the base and the patched revision, timing each
 // call. It then decodes every frame PNG of both renders with its own small PNG reader (not Pixelbolt's) and counts the
 // pixels that differ, so the patch's own report can be checked against the files.
-// Usage: node pixelbolt-probe.mjs <pixelbolt-clone> <fresh-out-dir> <result.json>
+// Usage: node pixelbolt-probe.mjs <pixelbolt-clone-or-unpacked-npm-package> <fresh-out-dir> <result.json>
 import { spawn, execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { cpus, release } from 'node:os';
 import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
@@ -42,6 +42,12 @@ function textOf(msg) {
   let json = null;
   try { json = JSON.parse(texts[0]); } catch { json = texts[0]; }
   return { json, images, isError: !!msg.result?.isError, error: msg.error ?? null };
+}
+function sourceId(dir) {
+  // A git clone is named by its commit; an unpacked npm package (no .git) by its name and version.
+  if (existsSync(join(dir, '.git'))) return execFileSync('git', ['-C', dir, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+  return `npm ${pkg.name}@${pkg.version}`;
 }
 function countFiles(dir) { let n = 0; for (const f of readdirSync(dir)) { const p = join(dir, f); n += statSync(p).isDirectory() ? countFiles(p) : 1; } return n; }
 
@@ -92,7 +98,7 @@ function diffFrames(dirA, dirB) {
   return out;
 }
 
-const result = { commit: execFileSync('git', ['-C', clone, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), node: process.version, platform: `${process.platform} ${process.arch} ${release()}`, cpu: cpus()[0]?.model?.trim(), startedAt: new Date().toISOString() };
+const result = { commit: sourceId(clone), node: process.version, platform: `${process.platform} ${process.arch} ${release()}`, cpu: cpus()[0]?.model?.trim(), startedAt: new Date().toISOString() };
 const init = await call('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'compare-probe', version: '1' } });
 result.serverInfo = init.msg.result?.serverInfo; result.protocolVersion = init.msg.result?.protocolVersion;
 child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
