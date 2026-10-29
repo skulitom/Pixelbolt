@@ -100,10 +100,16 @@ function parseArgs(args) {
   }
   return { positional, options };
 }
-// --expect and --guides take inline JSON or a file holding it.
+// --expect and --guides take inline JSON or a file holding it. Windows PowerShell 5.1 strips the double quotes from the
+// arguments it passes to a program, so '{"width":32}' arrives as {width:32}: with no quote left, quote the bare keys
+// back (no value either option takes is a string).
 async function readJSONOption(value, key = 'expect', example = '{"width":32,"height":32}') {
   if (!String(value).trimStart().startsWith('{')) return readProject(value);
-  try { return JSON.parse(value); } catch (error) { throw Object.assign(new Error(`--${key}: expected JSON such as ${example}: ${error.message}`), { path: key }); }
+  try { return JSON.parse(value); } catch (error) {
+    const stripped = !value.includes('"');
+    if (stripped) try { return JSON.parse(value.replace(/([{,]\s*)([A-Za-z_$][\w$]*)(\s*:)/g, '$1"$2"$3')); } catch {}
+    throw Object.assign(new Error(`--${key}: expected JSON such as ${example}: ${error.message}${stripped ? '. Windows PowerShell 5.1 drops the double quotes inside arguments: put the JSON in a .json file and pass its name, or use PowerShell 7, cmd or bash' : ''}`), { path: key });
+  }
 }
 const readExpectOption = value => readJSONOption(value);
 const readGuidesOption = value => readJSONOption(value, 'guides', '{"horizon":40,"vanish":[[64,40]]}');
