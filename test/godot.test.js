@@ -4,10 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { renderProject, buildAtlas, frameTag } from '../src/core.js';
 import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
-import { spriteFrames, godotTiming, GODOT_MAX_FPS, tileSet, retexture } from '../src/godot.js';
+import { spriteFrames, godotTiming, GODOT_MAX_FPS, tileSet, retexture, canvasTexture, normalsYUp } from '../src/godot.js';
 import { compileAutotile } from '../src/authoring.js';
 import { autotileFrames } from '../src/autotile.js';
-import { GODOT_FIXTURE, GODOT_TILE_SOURCES, replaySprite } from '../scripts/verify-godot.mjs';
+import { decodePNG } from '../src/import.js';
+import { GODOT_FIXTURE, GODOT_TILE_SOURCES, GODOT_LIT_SCENE, replaySprite } from '../scripts/verify-godot.mjs';
 
 const spirit = JSON.parse(await readFile(new URL('../examples/forest-spirit.json', import.meta.url), 'utf8'));
 const tiny = { version: 1, name: 'tiny', width: 2, height: 1, frames: [{ name: 'a', duration: 80, ops: [{ op: 'pixel', color: '#f00' }] }, { name: 'b', duration: 120, ops: [{ op: 'pixel', x: 1, color: '#00f8' }] }], animations: { once: { frames: ['a', 'b'], loop: false } }, sheet: { columns: 1, padding: 1 } };
@@ -179,6 +180,39 @@ test('a scene export gives each asset a SpriteFrames over its colour pass, named
   const atlas = JSON.parse(bundle.files.get('assets/0/atlas.json')), { ext, animations } = readTres(bundle.files.get('assets/0/sprite_frames.tres').toString());
   assert.deepEqual(ext, [{ type: 'Texture2D', path: 'color.png', id: '1_sheet' }]);
   assert.deepEqual(animations.map(animation => animation.name), Object.keys(atlas.animations));
+  // Without a normal pass there is nothing for a CanvasTexture to add.
+  assert.equal([...bundle.files.keys()].some(file => /canvas_texture|normal_y_up/.test(file)), false);
+  assert.equal(alignment.assets.hero.canvasTexture, undefined);
+});
+
+test('a lit scene asset gets its normal pass flipped to +Y up and a CanvasTexture its SpriteFrames draws through', async () => {
+  const bundle = await createSceneBundle(GODOT_LIT_SCENE), alignment = JSON.parse(bundle.files.get('alignment.json'));
+  assert.deepEqual(alignment.assets.orb, {
+    directory: 'assets/0', metadata: 'assets/0/atlas.json', godot: 'assets/0/sprite_frames.tres',
+    passes: { color: 'assets/0/color.png', normal: 'assets/0/normal.png', normalYUp: 'assets/0/normal_y_up.png' }, canvasTexture: 'assets/0/canvas_texture.tres'
+  });
+  assert.match(alignment.coordinates, /normalYUp flips green to \+Y up/);
+  // Laid out as Godot 4.6 saves a CanvasTexture, with nearest filtering.
+  assert.equal(bundle.files.get('assets/0/canvas_texture.tres').toString(), '[gd_resource type="CanvasTexture" format=3]\n\n[ext_resource type="Texture2D" path="color.png" id="1_diffuse"]\n[ext_resource type="Texture2D" path="normal_y_up.png" id="2_normal"]\n\n[resource]\ndiffuse_texture = ExtResource("1_diffuse")\nnormal_texture = ExtResource("2_normal")\ntexture_filter = 1\n');
+  assert.equal(bundle.files.get('assets/0/canvas_texture.tres').toString(), canvasTexture({ diffuse: 'color.png', normal: 'normal_y_up.png' }));
+  // The SpriteFrames names the CanvasTexture as its sheet; its frames and timing are unchanged.
+  const { ext, subs, animations } = readTres(bundle.files.get('assets/0/sprite_frames.tres').toString());
+  assert.deepEqual(ext, [{ type: 'Texture2D', path: 'canvas_texture.tres', id: '1_sheet' }]);
+  const atlas = JSON.parse(bundle.files.get('assets/0/atlas.json'));
+  assert.deepEqual(Object.values(subs).map(sub => sub.region), Object.values(atlas.frames).map(({ frame: { x, y, w, h } }) => [x, y, w, h]));
+  assert.deepEqual(animations, readTres(spriteFrames(atlas).text).animations);
+  // Every visible pixel keeps red, blue and alpha and flips green; transparent pixels are untouched.
+  const down = decodePNG(bundle.files.get('assets/0/normal.png')), up = decodePNG(bundle.files.get('assets/0/normal_y_up.png'));
+  assert.deepEqual([up.width, up.height], [down.width, down.height]);
+  let visible = 0;
+  for (let i = 0; i < down.data.length; i += 4) {
+    const want = down.data[i + 3] ? [down.data[i], 255 - down.data[i + 1], down.data[i + 2], down.data[i + 3]] : [...down.data.subarray(i, i + 4)];
+    assert.deepEqual([...up.data.subarray(i, i + 4)], want, `pixel ${i / 4}`);
+    if (down.data[i + 3]) visible++;
+  }
+  assert.ok(visible > 0);
+  // A pixel facing up (+Y down: y = −1, green 0) faces up in Godot's reading (green 255), and one facing the viewer stays.
+  assert.deepEqual([...normalsYUp(new Uint8ClampedArray([128, 0, 221, 255, 128, 128, 255, 255, 9, 9, 9, 0]))], [128, 255, 221, 255, 128, 127, 255, 255, 9, 9, 9, 0]);
 });
 
 test('the Godot playback replay matches Godot 4.6, which runs the rest of a step after a frame change at the old speed', () => {

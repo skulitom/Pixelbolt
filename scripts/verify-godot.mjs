@@ -3,7 +3,8 @@
 // each animation on an AnimatedSprite2D at a fixed 1000 frames per second, so every process step is 1 ms. Then loads
 // exported TileSets and paints maps with Godot's terrain painter, which must choose the tiles Pixelbolt would.
 // Independent developer check: Pixelbolt never needs Godot.
-//   node scripts/verify-godot.mjs [--godot <path to the Godot 4 executable>] [--keep]
+//   node scripts/verify-godot.mjs [--godot <path to the Godot 4 executable>] [--keep] [--render]
+// --render also lights a sprite in a Godot window (Godot can't render headless), so run it where a window may open.
 // Without --godot it uses $GODOT, then godot4 or godot on PATH, then a winget install of GodotEngine.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -13,7 +14,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createBundle } from '../src/export.js';
-import { compileAutotile } from '../src/authoring.js';
+import { createSceneBundle } from '../src/scene-export.js';
+import { compileAutotile, compileNormals } from '../src/authoring.js';
 import { neighbourMask } from '../src/autotile.js';
 
 // A trimmed, scaled, padded sheet with unequal frame times: a 1×1 cell for an empty frame, a half-transparent frame, a
@@ -246,8 +248,8 @@ export function findGodot(given = process.env.GODOT) {
   return null;
 }
 
-const godotRun = (godot, args) => {
-  const result = spawnSync(godot, ['--headless', ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 300_000 });
+const godotRun = (godot, args, { headless = true } = {}) => {
+  const result = spawnSync(godot, [...(headless ? ['--headless'] : []), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 300_000 });
   if (result.error) throw result.error;
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 };
@@ -379,6 +381,185 @@ export async function verifyGodot({ godot = findGodot(), keep = false, log = con
   }
 }
 
+// A lit scene asset: an orb with a normal pass derived from it, two frames so the SpriteFrames has a sequence.
+const ORB = { version: 1, name: 'orb', width: 16, height: 16, palette: { o: '#30285a', b: '#6a5acd', l: '#b8b0f0' },
+  frames: [{ name: 'a', duration: 200, ops: [{ op: 'ellipse', x: 1, y: 1, w: 14, h: 14, color: 'b', filled: true }, { op: 'ellipse', x: 1, y: 1, w: 14, h: 14, color: 'o' }, { op: 'rect', x: 5, y: 4, w: 2, h: 2, color: 'l' }] },
+    { name: 'b', duration: 200, from: 'a', ops: [{ op: 'pixel', x: 9, y: 9, color: 'l' }] }] };
+export const GODOT_LIT_SCENE = { format: 'pixelforge-scene', version: 1, name: 'lit-orb', width: 32, height: 24,
+  assets: { orb: { recipe: ORB, normal: compileNormals({ format: 'pixelforge-normals', version: 1, recipe: ORB }).recipe } },
+  instances: [{ asset: 'orb', at: [8, 4] }], lighting: { ambient: 0.4, lights: [{ at: [4, 2], height: 12, radius: 40 }] } };
+
+// Runs in Godot, headless: each frame of the lit asset's SpriteFrames must be drawn through its CanvasTexture, whose
+// normal map is the normal pass with green flipped.
+const LIT_CHECK = `extends SceneTree
+
+func _initialize():
+	var dir = "res://lit/assets/0/"
+	var frames = load(dir + "sprite_frames.tres")
+	var report := {"frames": []}
+	for anim in frames.get_animation_names():
+		for i in frames.get_frame_count(anim):
+			var texture = frames.get_frame_texture(anim, i)
+			var atlas = texture.atlas if texture is AtlasTexture else null
+			var entry := {"class": texture.get_class(), "atlas": atlas.get_class() if atlas else ""}
+			if atlas is CanvasTexture:
+				entry["diffuse"] = atlas.diffuse_texture.resource_path
+				entry["normal"] = atlas.normal_texture.resource_path
+				entry["filter"] = atlas.texture_filter
+			report["frames"].append(entry)
+	var up := (load(dir + "normal_y_up.png") as Texture2D).get_image()
+	var down := (load(dir + "normal.png") as Texture2D).get_image()
+	up.convert(Image.FORMAT_RGBA8)
+	down.convert(Image.FORMAT_RGBA8)
+	var flipped := 0
+	var wrong := 0
+	for y in down.get_height():
+		for x in down.get_width():
+			var a := up.get_pixel(x, y)
+			var b := down.get_pixel(x, y)
+			# Godot's importer bleeds edge colours into transparent pixels (fix_alpha_border), so those only stay transparent.
+			if b.a8 == 0:
+				if a.a8 != 0:
+					wrong += 1
+			elif a.r8 == b.r8 and a.g8 == 255 - b.g8 and a.b8 == b.b8 and a.a8 == b.a8:
+				flipped += 1
+			else:
+				wrong += 1
+	report["flipped"] = flipped
+	report["wrong"] = wrong
+	print("PIXELBOLT " + JSON.stringify(report))
+	quit()
+`;
+
+// Runs in Godot with a window (it renders): the orb drawn from the exported SpriteFrames, and as a control the same
+// frame through a CanvasTexture with the unflipped normal pass, each lit by a point light above, below, left and right
+// of it. Reports the brightness of each half of the sprite.
+const LIGHT_CHECK = `extends SceneTree
+
+const SIDES = {"above": Vector2(0, -150), "below": Vector2(0, 150), "left": Vector2(-150, 0), "right": Vector2(150, 0)}
+var plan := []
+var step := -1
+var wait := 0
+var report := {}
+var exported: AnimatedSprite2D
+var control: Sprite2D
+var light: PointLight2D
+
+func _initialize():
+	RenderingServer.set_default_clear_color(Color.BLACK)
+	var dir = "res://lit/assets/0/"
+	var frames = load(dir + "sprite_frames.tres")
+	var shade := CanvasModulate.new()
+	shade.color = Color(0.1, 0.1, 0.1)
+	root.add_child(shade)
+	exported = AnimatedSprite2D.new()
+	exported.sprite_frames = frames
+	exported.animation = frames.get_animation_names()[0]
+	exported.position = Vector2(128, 128)
+	exported.scale = Vector2(8, 8)
+	root.add_child(exported)
+	var raw := CanvasTexture.new()
+	raw.diffuse_texture = load(dir + "color.png")
+	raw.normal_texture = load(dir + "normal.png")
+	raw.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	control = Sprite2D.new()
+	control.texture = raw
+	control.region_enabled = true
+	control.region_rect = frames.get_frame_texture(exported.animation, 0).region
+	control.position = exported.position
+	control.scale = exported.scale
+	root.add_child(control)
+	var white := Image.create_empty(64, 64, false, Image.FORMAT_RGBA8)
+	white.fill(Color.WHITE)
+	light = PointLight2D.new()
+	light.texture = ImageTexture.create_from_image(white)
+	light.texture_scale = 16.0
+	light.height = 60.0
+	root.add_child(light)
+	for sprite in ["exported", "control"]:
+		for side in SIDES:
+			plan.append([sprite, side])
+
+func _process(_delta: float) -> bool:
+	if step >= 0 and wait < 4:
+		wait += 1
+		return false
+	if step >= 0:
+		var image := root.get_texture().get_image()
+		image.convert(Image.FORMAT_RGBA8)
+		var halves := {"top": 0.0, "bottom": 0.0, "left": 0.0, "right": 0.0}
+		for y in range(64, 192):
+			for x in range(64, 192):
+				var value := image.get_pixel(x, y).get_luminance()
+				halves["top" if y < 128 else "bottom"] += value
+				halves["left" if x < 128 else "right"] += value
+		report[plan[step][0] + " " + plan[step][1]] = halves
+	step += 1
+	if step >= plan.size():
+		print("PIXELBOLT " + JSON.stringify(report))
+		quit()
+		return true
+	exported.visible = plan[step][0] == "exported"
+	control.visible = plan[step][0] == "control"
+	light.position = exported.position + SIDES[plan[step][1]]
+	wait = 0
+	return false
+`;
+
+// Loads a lit scene asset's export in a real Godot 4: its SpriteFrames draws every frame through canvas_texture.tres,
+// whose normal map is normal_y_up.png, the normal pass with green flipped. With render (a window opens, so not
+// headless), it also lights the sprite from each side and checks the lit half faces the light, while the unflipped
+// normal pass lights it upside down.
+export async function verifyGodotLit({ godot = findGodot(), keep = false, log = console.log, render = false } = {}) {
+  if (!godot) throw new Error('Godot 4 was not found: pass --godot <path> or set GODOT');
+  const version = godotRun(godot, ['--version']).output.trim().split('\n')[0];
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-godot-lit-'));
+  try {
+    await writeFile(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\n\nconfig/name="Pixelbolt lit sprite check"\n');
+    const bundle = await createSceneBundle(GODOT_LIT_SCENE);
+    for (const [file, bytes] of bundle.files) if (file.startsWith('assets/')) {
+      await mkdir(path.dirname(path.join(dir, 'lit', file)), { recursive: true });
+      await writeFile(path.join(dir, 'lit', file), bytes);
+    }
+    await writeFile(path.join(dir, 'litcheck.gd'), LIT_CHECK);
+    await writeFile(path.join(dir, 'lightcheck.gd'), LIGHT_CHECK);
+    const imported = godotRun(godot, ['--path', dir, '--import']);
+    const problems = imported.output.split('\n').filter(line => /ERROR|WARNING/.test(line) && /lit\//.test(line));
+    assert.deepEqual(problems, [], `Godot reported problems while importing:\n${imported.output}`);
+    const report = godotReport(godotRun(godot, ['--path', dir, '--script', 'res://litcheck.gd']));
+    const atlas = JSON.parse(bundle.files.get('assets/0/atlas.json')), count = Object.values(atlas.animations).reduce((sum, a) => sum + a.frames.length, 0);
+    assert.equal(report.frames.length, count, 'frames in the SpriteFrames');
+    for (const [i, frame] of report.frames.entries()) assert.deepEqual(frame, { class: 'AtlasTexture', atlas: 'CanvasTexture', diffuse: 'res://lit/assets/0/color.png', normal: 'res://lit/assets/0/normal_y_up.png', filter: 1 }, `frame ${i}`);
+    assert.equal(report.wrong, 0, `${report.wrong} pixels of normal_y_up.png are not normal.png with green flipped`);
+    assert.ok(report.flipped > 0, 'the normal pass has visible pixels');
+    let lit = '';
+    if (render) {
+      const light = godotReport(godotRun(godot, ['--path', dir, '--rendering-method', 'gl_compatibility', '--audio-driver', 'Dummy', '--resolution', '256x256', '--script', 'res://lightcheck.gd'], { headless: false }));
+      const brighter = (halves, a, b) => halves[a] > halves[b] * 1.05;
+      const opposite = { above: ['top', 'bottom'], below: ['bottom', 'top'], left: ['left', 'right'], right: ['right', 'left'] };
+      for (const [side, [near, far]] of Object.entries(opposite)) {
+        assert.ok(brighter(light[`exported ${side}`], near, far), `lit from ${side}, the exported sprite's ${near} half should be brighter: ${JSON.stringify(light[`exported ${side}`])}`);
+        // The +Y down pass swaps above and below in Godot, and keeps left and right.
+        const [cNear, cFar] = side === 'above' || side === 'below' ? [far, near] : [near, far];
+        assert.ok(brighter(light[`control ${side}`], cNear, cFar), `lit from ${side}, the unflipped control's ${cNear} half should be brighter: ${JSON.stringify(light[`control ${side}`])}`);
+      }
+      lit = ' Lit from above, below, left and right, the half facing the light is brighter, and the unflipped normal pass lights it upside down.';
+    }
+    log(`${version}: the lit asset's SpriteFrames draws all ${count} frames through canvas_texture.tres (nearest filtering), whose normal map is normal.png with green flipped in all ${report.flipped} visible pixels.${lit}`);
+    return { version, report, dir: keep ? dir : null };
+  } finally {
+    if (!keep) await rm(dir, { recursive: true, force: true });
+  }
+}
+// The JSON a check script printed after PIXELBOLT, once Godot reported no errors.
+function godotReport(run) {
+  const line = run.output.split('\n').find(text => text.startsWith('PIXELBOLT '));
+  assert.ok(line, `Godot printed no report:\n${run.output}`);
+  const errors = run.output.split('\n').filter(text => /^\s*(ERROR|SCRIPT ERROR|WARNING)/.test(text));
+  assert.deepEqual(errors, [], `Godot reported problems:\n${run.output}`);
+  return JSON.parse(line.slice(10));
+}
+
 // Pixelbolt's mask bit for each of Godot's peering bits, written out here rather than taken from src/godot.js.
 const GODOT_PEERS = {
   blob: { top_side: 1, top_right_corner: 2, right_side: 4, bottom_right_corner: 8, bottom_side: 16, bottom_left_corner: 32, left_side: 64, top_left_corner: 128 },
@@ -483,8 +664,8 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const args = process.argv.slice(2), at = args.indexOf('--godot');
   try {
-    for (const verify of [verifyGodot, verifyGodotTiles]) {
-      const result = await verify({ ...(at >= 0 && { godot: args[at + 1] }), keep: args.includes('--keep') });
+    for (const verify of [verifyGodot, verifyGodotTiles, verifyGodotLit]) {
+      const result = await verify({ ...(at >= 0 && { godot: args[at + 1] }), keep: args.includes('--keep'), render: args.includes('--render') });
       if (result.dir) console.log(`Kept the Godot project at ${result.dir}`);
     }
   } catch (error) { console.error(error.message); process.exitCode = 1; }

@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Lit sprites in Godot
+
+- A scene export's asset with a normal pass also gets `normal_y_up.png`, the pass with green flipped to +Y up as Godot and Unity read a normal map, and `canvas_texture.tres`, a Godot 4 `CanvasTexture` pairing `color.png` with it at nearest filtering. Its `sprite_frames.tres` draws through that CanvasTexture, so an `AnimatedSprite2D` given it is lit by Light2D nodes such as `PointLight2D` with no import settings to change. `alignment.json` names both (`canvasTexture`, `passes.normalYUp`); `normal.png` keeps its +Y down convention.
+- `node scripts/verify-godot.mjs` checks the lit asset's frames draw through the CanvasTexture and its normal map is `normal.png` flipped. With `--render` it lights the sprite in a Godot window from four sides: in Godot 4.6.3 the half facing the light is brighter, and the unflipped `normal.png` lights it upside down.
+
 ### Godot TileSets for autotile sets
 
 - A recipe whose frames are an autotile set also exports `name.tileset.tres`, a Godot 4 `TileSet` for `TileMapLayer`. It has one atlas source on the sheet's grid (padding and scale as margins and separation) and one terrain: blob sets match corners and sides, cardinal sets sides only, and each tile's peering bits are its neighbour mask. Painting the terrain in Godot picks the tile Pixelbolt's tilemap would. Frames of one mask are alternatives Godot picks between at random. An animation that loops over one mask's frames, laid side by side in a row of the sheet, becomes an animated tile with each frame's time.

@@ -64,6 +64,22 @@ export function spriteFrames(atlas, { image = atlas.meta.image } = {}) {
 // A resource written here, with its sheet named by another path relative to the .tres (for a copy saved elsewhere).
 export const retexture = (text, image) => text.replace(/^(\[ext_resource type="Texture2D" path=)"(?:[^"\\]|\\.)*"( id="1_sheet"\])$/m, (_, start, end) => `${start}${quote(image)}${end}`);
 
+// ---- Lit sprites -------------------------------------------------------------------------------------------------
+// A Godot 4 CanvasTexture: a colour sheet with its normal map, both named relative to the .tres, drawn with nearest
+// filtering (smoothing would blend neighbouring normals). A sprite, an AtlasTexture or a tile drawn from it takes
+// normal-mapped light from Light2D nodes. Laid out as Godot 4.5+ saves one; a SpriteFrames names it as its sheet.
+export function canvasTexture({ diffuse, normal }) {
+  return ['[gd_resource type="CanvasTexture" format=3]', '', `[ext_resource type="Texture2D" path=${quote(diffuse)} id="1_diffuse"]`, `[ext_resource type="Texture2D" path=${quote(normal)} id="2_normal"]`, '',
+    '[resource]', 'diffuse_texture = ExtResource("1_diffuse")', 'normal_texture = ExtResource("2_normal")', 'texture_filter = 1', ''].join('\n');
+}
+// Normal pixels as Godot and Unity read a normal map, +Y up, from Pixelbolt's +Y down: green flipped (Godot's 2D
+// shader reads y as 1 − 2g). Fully transparent pixels stay as they are. Returns a new RGBA array.
+export function normalsYUp(data) {
+  const out = new Uint8ClampedArray(data);
+  for (let i = 0; i < out.length; i += 4) if (out[i + 3]) out[i + 1] = 255 - out[i + 1];
+  return out;
+}
+
 // ---- Tile sets ---------------------------------------------------------------------------------------------------
 // Godot's names for a tile's neighbours, in the order Godot writes them, with the Pixelbolt mask bit of each. A blob
 // set matches corners and sides (Godot terrain mode 0), a cardinal set sides only (mode 2).
