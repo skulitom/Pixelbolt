@@ -235,18 +235,22 @@ test('MCP render and scene tools write a sequence on request, beside what they a
     assert.deepEqual(replies.map(reply => reply.id), messages.map(message => message.id));
     return replies.slice(1).map(reply => reply.result);
   };
-  const call = (directory, name, args) => calls(directory, [[name, args]])[0];
-  const rendered = call(path.join(dir, 'recipe'), 'pixel_render', { project: recipe, animation: 'once', sequence: { fps: 10, scale: 3 } });
+  const scene = JSON.parse(await readFile(path.join(root, 'examples', 'quality', 'stride.scene.json'), 'utf8'));
+  // Each render writes its own folder, so the three that succeed share one server.
+  const [rendered, shotResult, coverResult] = calls(path.join(dir, 'written'), [
+    ['pixel_render', { project: recipe, animation: 'once', sequence: { fps: 10, scale: 3 } }],
+    ['pixel_scene', { scene, sequence: { fps: 4, seconds: 1 } }],
+    ['pixel_scene', { scene, sequence: { fps: 4, seconds: 0.5, size: '720p', fit: 'cover' } }],
+  ]);
   assert.ok(!rendered.isError, JSON.stringify(rendered));
   const info = JSON.parse(rendered.content[0].text);
   assert.deepEqual([info.sequence.directory, info.sequence.pattern, info.sequence.frames, info.sequence.fps, info.sequence.width, info.sequence.loop.plays], ['sequence', 'probe-once_%04d.png', 2, '10', 6, 'once']);
   assert.match(info.sequence.ffmpeg.prores4444, /probe-once_%04d\.png/);
   assert.equal(decodePNG(await readFile(path.join(info.directory, 'sequence', 'probe-once_0002.png'))).width, 6);
   await access(path.join(info.directory, 'sequence', 'sequence.json')); await access(path.join(info.directory, 'preview.html'));
-  const scene = JSON.parse(await readFile(path.join(root, 'examples', 'quality', 'stride.scene.json'), 'utf8'));
-  const shot = JSON.parse(call(path.join(dir, 'scene'), 'pixel_scene', { scene, sequence: { fps: 4, seconds: 1 } }).content[0].text);
+  const shot = JSON.parse(shotResult.content[0].text);
   assert.deepEqual([shot.sequence.frames, shot.sequence.width, (await readdir(path.join(shot.directory, 'sequence'))).length], [4, 192, 6]);
-  const cover = JSON.parse(call(path.join(dir, 'cover'), 'pixel_scene', { scene, sequence: { fps: 4, seconds: 0.5, size: '720p', fit: 'cover' } }).content[0].text);
+  const cover = JSON.parse(coverResult.content[0].text);
   assert.deepEqual([cover.sequence.frames, cover.sequence.width, cover.sequence.height, cover.sequence.placement.fit], [2, 1280, 720, 'cover']);
   for (const refused of calls(path.join(dir, 'refused'), [['pixel_render', { project: recipe, sequence: { fps: 0 } }], ['pixel_render', { project: recipe, sequence: { fps: 30, fit: 'cover' } }], ['pixel_render', { project: recipe, sequence: true }], ['pixel_scene', { scene, sequence: { fps: 30, step: 2 } }]])) {
     assert.equal(refused.isError, true, JSON.stringify(refused)); assert.match(JSON.parse(refused.content[0].text).path, /^sequence/);
