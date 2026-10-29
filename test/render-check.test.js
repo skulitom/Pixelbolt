@@ -240,3 +240,21 @@ test('MCP pixel_render and CLI render carry the check, and a bad expect or anima
   }
   await assert.rejects(readdir(path.join(dir, 'bad')));
 });
+
+test('a delivery with nothing visible fails the check, with or without expect; a few empty frames are only a note', () => {
+  const blank = { version: 1, name: 'blank', width: 4, height: 4, palette: { r: '#ff0000' }, frames: [{ name: 'a' }, { name: 'b' }] };
+  const plain = check(blank);
+  assert.equal(plain.ok, false); assert.equal(plain.notes, undefined); assert.match(plain.hint, /Pass expect/);
+  assert.deepEqual(plain.problems.map(problem => [problem.file, problem.asked, problem.got]), [['blank.png, frames/ and animations/', 'something visible', 'all 2 frames, fully transparent']]);
+  assert.match(plain.problems[0].fix, /compile warnings, fix the source \(a pose part without attach stands at the pose origin plus its at\)/);
+  // With expect, the specific mismatches come first, and the cap of 16 problems never drops nothing-visible.
+  assert.deepEqual(check(blank, { expect: { width: 8 } }).problems.map(problem => problem.asked), [{ width: 8 }, 'something visible']);
+  const many = { ...blank, animations: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`m${i}`, { frames: ['a'] }])) };
+  const capped = check(many, { expect: { frames: 2 } }).problems;
+  assert.equal(capped.length, 16); assert.equal(capped.at(-1).asked, 'something visible');
+  // small: "c" is empty while "a" and "b" are drawn, which is a note; its "gone" animation alone shows nothing.
+  const some = check(small);
+  assert.equal(some.ok, undefined); assert.equal(some.notes.length, 1);
+  const gone = check(small, { animation: 'gone' });
+  assert.deepEqual([gone.ok, gone.problems[0].file, gone.problems[0].got], [false, 'animations/gone.png', 'one frame, fully transparent']);
+});

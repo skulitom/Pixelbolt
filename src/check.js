@@ -197,11 +197,16 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     ...(seeThrough.length && { partlyTransparent: seeThrough.length === frames.length ? true : 'some frames' }),
     ...(gifs?.length && { gifs: [gifs[0].width, gifs[0].height] })
   };
-  const notes = empty.length ? [`Frame${empty.length === 1 ? '' : 's'} ${list(empty)} ${empty.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${empty.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${empty.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
+  const frameFiles = `${name}.png, frames/ and animations/`;
+  // Nothing visible at all is never a delivery, whatever was asked: it is a problem even without expect. A few empty
+  // frames (a blink-out, an effect that ends empty) are only a note.
+  const blank = empty.length === frames.length ? { file: animation === undefined ? frameFiles : `animations/${animation}.png`, asked: 'something visible', got: `${frames.length === 1 ? 'one frame' : `all ${frames.length} frames`}, fully transparent`,
+    fix: 'nothing is drawn inside the canvas. A recipe compiled from a source (poses, fx, fluid, wave) may place its drawing outside it: read the compile warnings, fix the source (a pose part without attach stands at the pose origin plus its at) and compile again. Otherwise pixel_inspect the frames and draw them (pixel_patch), then render again' } : null;
+  const notes = empty.length && !blank ? [`Frame${empty.length === 1 ? '' : 's'} ${list(empty)} ${empty.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${empty.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${empty.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
   const fields = gifs === undefined ? 'width, height, frames, colors, transparent, loop' : 'width, height, frames, colors, transparent, loop, gifScale';
-  if (!expect) return { delivered, ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };
+  if (!expect) return { ...(blank && { ok: false }), delivered, ...(blank && { problems: [blank] }), ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };
 
-  const problems = [], frameFiles = `${name}.png, frames/ and animations/`, named = recipe?.animations !== undefined;
+  const problems = [], named = recipe?.animations !== undefined;
   const asked = { ...(expect.width !== undefined && { width: expect.width }), ...(expect.height !== undefined && { height: expect.height }) };
   if ((expect.width !== undefined && expect.width !== width * scale) || (expect.height !== undefined && expect.height !== height * scale)) {
     const k = wholeScale([[expect.width, width], [expect.height, height]], 16);
@@ -261,5 +266,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
         : `the recipe has no animations field: pixel_patch set "animations" to { "${key}": { "frames": [every frame's name, in order], "loop": ${expect.loop} } }, then render again`;
     problems.push({ file: `animations/${key}.png`, asked: expect.loop ? 'a loop' : 'one play', got: animations[key].loop ? 'a loop' : 'one play', fix });
   }
-  return { ok: !problems.length, delivered, ...(problems.length && { problems: problems.slice(0, 16) }), ...(notes.length && { notes }) };
+  // The specific mismatches first, then nothing-visible, which the cap of 16 never cuts.
+  const listed = blank ? [...problems.slice(0, 15), blank] : problems.slice(0, 16);
+  return { ok: !listed.length, delivered, ...(listed.length && { problems: listed }), ...(notes.length && { notes }) };
 }
