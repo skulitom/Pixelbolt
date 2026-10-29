@@ -63,6 +63,19 @@ async function loadRecipe(entry, baseDir, context, where) {
   }
   return resolvePalette(entry, baseDir, context, where);
 }
+// A pixelforge-fx symbol may be a frame of a recipe or pose source ({ recipe, frame }): a file or saved revision named
+// there is inlined, and the compiler turns the frame into rows.
+async function resolveEffects(document, baseDir, context) {
+  document = await resolvePalette(document, baseDir, context, 'fx');
+  if (!isObject(document?.symbols)) return document;
+  let symbols = null;
+  for (const [name, value] of Object.entries(document.symbols)) {
+    if (!isObject(value) || value.recipe === undefined) continue;
+    symbols ??= { ...document.symbols };
+    symbols[name] = { ...value, recipe: await loadRecipe(value.recipe, baseDir, context, `fx.symbols.${name}.recipe`) };
+  }
+  return symbols ? { ...document, symbols } : document;
+}
 async function resolveScene(scene, baseDir, context) {
   if (!isObject(scene.assets)) return scene;
   // A theme: a palette file for the whole scene or for one asset overrides the keys the recipes share.
@@ -83,14 +96,15 @@ async function resolveScene(scene, baseDir, context) {
 /**
  * Returns the document with references inlined, plus the files it read. Works for recipes, pose sources,
  * autotile templates, effect and fluid sources, normal sources and scenes. `revisions(id)` supplies saved recipes for
- * `{ "revision": id }` scene assets and normal sources.
+ * `{ "revision": id }` scene assets, normal sources and effect symbols taken from a recipe's frame.
  */
 export async function resolveReferences(document, { baseDir = process.cwd(), root, revisions } = {}) {
   const context = { root, revisions, files: new Set(), palettes: [] };
   const sidecars = { 'pixelforge-poses': 'poses', 'pixelforge-autotile': 'autotile', 'pixelforge-fx': 'fx', 'pixelforge-fluid': 'fluid', 'pixelforge-wave': 'wave' };
   const resolved = document?.format === 'pixelforge-scene' ? await resolveScene(document, baseDir, context)
     : document?.format === 'pixelforge-normals' && document.recipe !== undefined ? { ...document, recipe: await loadRecipe(document.recipe, baseDir, context, 'normals.recipe') }
-      : await resolvePalette(document, baseDir, context, sidecars[document?.format] ?? 'project');
+      : document?.format === 'pixelforge-fx' ? await resolveEffects(document, baseDir, context)
+        : await resolvePalette(document, baseDir, context, sidecars[document?.format] ?? 'project');
   return { document: resolved, files: [...context.files], palettes: context.palettes };
 }
 /**

@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
-import { FX_EVENTS } from '../src/fx.js';
+import { FX_EVENTS, SPRITE_PIXELS } from '../src/fx.js';
 import { SHAPE_KINDS } from '../src/shapes.js';
 import { NORMAL_DIRECTIONS } from '../src/authoring.js';
 const NORMAL_KEYS = Object.keys(NORMAL_DIRECTIONS);
@@ -246,7 +246,7 @@ const range = (minimum, maximum, description) => ({ oneOf: [num(minimum, maximum
 const vector = (minimum, maximum, description) => ({ ...pairOf(num(minimum, maximum)), ...(description && { description }) });
 const evenly = { type: 'boolean', description: 'Space the particles spawned together evenly instead of at random.' };
 const emitter = { ...object({
-  name: id, at: vector(-4096, 4096, 'Spawn centre [x, y] in canvas pixels. For a child (from), an offset from the parent particle; default [0, 0].'),
+  name: id, at: vector(-4096, 4096, 'Spawn centre [x, y] in canvas pixels. For a child (from), an offset from the parent particle; default [0, 0]. For a sprite emitter, the sprite\'s top-left corner, in whole pixels.'),
   area: { ...pairOf(int(1, 256)), description: 'Spawn box [w, h] centred on at; default [1, 1]. Use one of area, ring and line.' },
   ring: { ...object({ radius: range(0, 256, 'Distance from at.'), arc: { ...pairOf(num(-3600, 3600)), description: '[from, to] degrees clockwise (0 right, 90 down) to spawn over, at most 360 apart; default [0, 360].' }, even: evenly,
     outward: { type: 'boolean', description: 'Measure angle from each particle\'s outward direction: 0 straight out (the default angle), 90 clockwise along the ring, 180 inward. Shockwaves and radial bursts.' } }, ['radius']),
@@ -264,7 +264,7 @@ const emitter = { ...object({
   face: { type: 'boolean', description: 'Pick the sequence by direction of travel instead of at random: shapes lists 2–16 sequences, the first facing right and the rest turning clockwise, evenly spaced (with 8: right, down-right, down, down-left, left, up-left, up, up-right). Streaking sparks and debris; a particle at rest keeps its last direction.' },
   play: { enum: ['life', 'loop', 'once'], description: 'life spreads the sequence over the lifetime (default); loop steps one symbol per frame from a random start; once steps and holds the last.' },
   remaps: { ...array(remap, 64), description: 'Colour variants; each particle picks one.' },
-  tint: { ...array(remap, 64), minItems: 1, description: 'Colour stages over each life, the first at birth, spread like play: life. Each overrides the particle\'s remap for the characters it names, so a spark cools from white to red without a symbol per colour.' },
+  tint: { ...array({ oneOf: [remap, color] }, 64), minItems: 1, description: 'Colour stages over each life, the first at birth, spread like play: life. A remap overrides the particle\'s remap for the characters it names, so a spark cools from white to red without a symbol per colour; one colour turns the whole particle that colour (a sprite\'s pixels flying off as light).' },
   trail: { ...object({ color, length: int(1, 16, 'Frames back the streak reaches; default 2.') }, ['color']), description: 'A one-pixel streak from an earlier position, drawn under the particle.' },
   dissolve: num(0, 1, 'Share of the life, at its end, during which the particle thins out through an ordered-dither pattern.'),
   pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dissolve pattern, as for the dither operation: bayer2, bayer4 (default), bayer8, noise (ordered by the effect\'s seed) or a matrix of ranks, e.g. [[0, 1, 2], [1, 2, 0], [2, 0, 1]] for diagonal stripes.' },
@@ -273,10 +273,16 @@ const emitter = { ...object({
   inherit: num(0, 2, 'For a child: the share of its parent particle\'s velocity it starts with, added to its own launch; default 0.'),
   behind: { type: 'boolean', description: 'Draw this emitter\'s particles under every other emitter\'s (smoke behind sparks, a trail behind its bolt).' },
   cue: { ...id, description: 'Name a point at the spawn centre in each frame this emitter spawns. Frames carry it as a named point, which atlases export for game code (a shake or a pause on impact); the metadata lists every cue.' },
+  sprite: { ...object({ symbol: { ...id, description: 'The symbol whose pixels the particles spawn from (it may be a frame of a recipe or pose source; see symbols).' },
+    pixels: { enum: SPRITE_PIXELS, description: 'all (default): every visible pixel; edge: the visible pixels beside an empty one; outline: the empty pixels just outside the sprite (particles from there need shapes or a blob).' },
+    draw: { type: 'boolean', description: 'Draw the sprite itself under its particles: what is left of it during a release (the default there), or all of it every frame with burst or rate (default false, for an overlay the game draws over its own sprite).' } }, ['symbol']),
+    description: 'Spawn on a symbol\'s pixels, its top-left corner at at, instead of around at. Without shapes or a blob each particle is its own pixel, in its colour: dissolves, teleports, sprites that shatter. With rate on the outline: sparkles round a figure.' },
+  release: { ...object({ sweep: num(-3600, 3600, 'Direction the release travels across the sprite, in degrees clockwise (270 up: the lowest pixels leave first). Default none: a seeded random order.'), jitter: num(0, 1, 'How much each pixel\'s turn strays from the sweep; default 0.3.'), share: num(0, 1, 'Share of the leaving pixels that become particles; the rest just vanish on their turn. Default 1.') }),
+    description: 'With a sprite, in place of burst or rate: every pixel leaves once, between start and end, while what is left of the sprite stays drawn. Not in a loop; reverse the animation to put a sprite together.' },
   blob: { ...object({ look: { ...id, description: 'The look it is drawn into; may be left out when the effect has one look.' },
     radius: { oneOf: [num(0, 64), { ...array(num(0, 64), 8), minItems: 2 }], description: 'Pixels: a number, or 2–8 keys spread over each particle\'s life (shrinking drops). Default 3.' } }),
     description: 'Draw each particle as a soft disc, (1 − d²/r²)², added to a look\'s field instead of stamping a symbol: touching drops merge into one body of water that stretches, pinches and splits, banded, lit and outlined by the look. Replaces shapes, face, play, remaps, tint, trail, dissolve, pattern and behind.' }
-}), allOf: [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { oneOf: [{ required: ['shapes'] }, { required: ['blob'] }] }] };
+}), allOf: [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { anyOf: [{ required: ['shapes'] }, { required: ['blob'] }, { required: ['sprite'] }] }, { not: { required: ['shapes', 'blob'] } }] };
 // Shape layers: each writes an intensity field inside its frame window; a look cuts the layers that name it into bands.
 const tween = (minimum, maximum, description) => ({ oneOf: [num(minimum, maximum), { ...array(num(minimum, maximum), 8), minItems: 2 }], description: `${description} A number, or 2–8 keys spread evenly over the layer's frames through its ease.` });
 const shading = object({ colors: { ...array({ type: 'string', minLength: 1, maxLength: 1 }, 8), minItems: 1, description: 'Palette keys, one per band.' }, thresholds: { ...array(num(0.001, 1), 8), minItems: 1, description: 'One rising share per colour, where its band begins.' } }, ['colors', 'thresholds']);
@@ -292,7 +298,7 @@ const shapeLook = object({
 }, ['colors', 'thresholds']);
 const layerCommon = {
   look: { ...id, description: 'The look that colours this layer; may be left out when the effect has one look.' },
-  at: vector(-4096, 4096, 'Centre [x, y] (a beam or bolt starts here).'),
+  at: vector(-4096, 4096, 'Centre [x, y] (a beam or bolt starts here; an aura\'s sprite has its top-left corner here).'),
   frames: { ...pairOf(int(0, 256)), description: '[first, end]: the first frame drawn and the frame after the last; default the whole effect. Progress runs from 0 at first toward 1.' },
   ease: { ...ease, description: 'How tweened values move across the window: out (default; linear for a layer spanning a looping effect), linear, in, inOut, hold, overshoot or bounce.' },
   power: tween(0, 8, 'Multiplies the field: bright bands shrink as it falls, so the shape erodes instead of fading; default 1.'),
@@ -308,7 +314,7 @@ const layerPlaced = {
 };
 const layerRefs = Object.fromEntries(Object.keys(layerCommon).map(key => [key, ref(`layer-${key}`)]));
 const placedRefs = Object.fromEntries(Object.keys(layerPlaced).map(key => [key, ref(`layer-${key}`)]));
-const shapeLayer = (kind, description, properties, required = []) => ({ ...object({ kind: { const: kind }, ...layerRefs, ...(!['bolt', 'stream'].includes(kind) && placedRefs), ...properties }, ['kind', 'at', ...required]), description });
+const shapeLayer = (kind, description, properties, required = []) => ({ ...object({ kind: { const: kind }, ...layerRefs, ...(!['bolt', 'stream', 'aura'].includes(kind) && placedRefs), ...properties }, ['kind', 'at', ...required]), description });
 const reveal = share => num(0, 0.95, `Share of the window the shape takes to draw on; default ${share}${share ? ' (0 for a layer spanning a looping effect)' : ''}.`);
 // Noise on the kinds without their own: smooth seeded noise in screen space that a falling power breaks the shape up through.
 const grain = { noise: num(0, 1, 'Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look\'s first threshold the shape breaks into pieces and drops. Default 0.'), scale: int(1, 64, 'Noise feature size in pixels; default 4.') };
@@ -324,13 +330,17 @@ const layer = { oneOf: [
     through: { ...array(vector(-4096, 4096), 7), minItems: 1, description: 'More [x, y] points; the curve passes through at and each of them.' },
     width: tween(0, 256, 'Pixels across at the widest; default 6.'), taper: { ...array(num(0, 2), 8), minItems: 2, description: 'Width shares spread along the drawn part, from tail to head; default [0, 1, 0], pointed at both ends.' },
     head: tween(0, 1, 'Share of the curve the front has reached; default 1. Counts to the end of each frame, as reveals do.'), tail: tween(0, 1, 'Share of the curve the back has left behind; default 0.'),
-    sway: num(-64, 64, 'Pixels it swings sideways at the far end, less toward at; default 0.'), wavelength: num(2, 512, 'Pixels between sway waves; default 16.'), waves: num(-64, 64, 'Sway waves that pass over the window; default 1.'), ...grain }, ['through'])
+    sway: num(-64, 64, 'Pixels it swings sideways at the far end, less toward at; default 0.'), wavelength: num(2, 512, 'Pixels between sway waves; default 16.'), waves: num(-64, 64, 'Sway waves that pass over the window; default 1.'), ...grain }, ['through']),
+  shapeLayer('aura', 'A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it.', {
+    symbol: { ...id, description: 'The symbol it hugs (it may be a frame of a recipe or pose source; see symbols).' }, width: tween(0, 32, 'Pixels the glow reaches beside and below the sprite; default 3.'),
+    rise: num(1, 4, 'How many times further it reaches upward; default 2.'), noise: num(0, 1, 'How far the noise moves the edge in and out and breaks up the bands; default 0.5.'), scale: int(1, 64, 'Noise feature size in pixels, stretched upright by rise; default 3.'),
+    boil: num(-512, 512, 'Pixels the noise rises over the window (each cycle, at a steady pace, for a layer spanning a looping effect); default 2 × width × rise.') }, ['symbol'])
 ] };
 const fx = {
   $schema: schema.$schema, title: 'Pixelbolt particle effects',
   description: 'Seeded particle emitters and shape layers (shockwave rings, slashes, beams, lightning, magic circles, impact stars, fireballs, streams of water) compiled into an ordinary recipe: one frame sequence and animation per effect (frames <effect>-0, <effect>-1…). Shapes draw as one grid per frame between behind particles and the rest; particles draw with stamp, grid and line operations on these symbols. Deterministic for a given seed.',
   ...object({ format: { const: 'pixelforge-fx' }, version: { const: 1 }, name: id, width: int(1, 256), height: int(1, 256), palette: schema.properties.palette,
-    symbols: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: ref('rows'), description: 'Particle drawings; may be left out when no effect has emitters.' }, anchor: schema.properties.anchor,
+    symbols: { type: 'object', minProperties: 1, propertyNames: id, additionalProperties: { oneOf: [ref('rows'), { ...object({ recipe: { oneOf: [{ type: 'string', minLength: 1, description: 'A recipe or pose source file, relative to this source (CLI and MCP).' }, { ...object({ revision: { type: 'string', minLength: 1 } }, ['revision']), description: 'A saved MCP revision.' }, { type: 'object', description: 'An inline recipe or pixelforge-poses source.' }] }, frame: { type: 'string', minLength: 1, description: 'The frame to take; default the first.' } }, ['recipe']), description: 'A frame of a recipe or pose source, over its whole canvas (so it keeps the source\'s coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour.' }] }, description: 'Particle drawings and sprites; may be left out when no effect has emitters or auras.' }, anchor: schema.properties.anchor,
     effects: { type: 'object', minProperties: 1, maxProperties: 64, propertyNames: id, additionalProperties: { ...object({ frames: int(1, 256), duration: { oneOf: [int(1, 60000), array(int(1, 60000), 256),
       object({ from: int(1, 60000, 'Milliseconds of the first frame.'), to: int(1, 60000, 'Milliseconds of the last frame.'), ease: { ...ease, description: 'How durations move from from to to: linear (default), in (quick frames, then a slow settle: impacts), out, inOut, hold, overshoot or bounce.' } }, ['from', 'to'])],
       description: 'Milliseconds per frame, one per frame, or {from, to, ease} eased across the frames; default 100.' },

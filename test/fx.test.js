@@ -209,15 +209,15 @@ test('fx emitter fields in the schema match the compiler', async () => {
   // Probe each listed field with a value of the right shape and check the compiler knows it (no "unknown field").
   const values = { name: 'p', at: [1, 1], area: [1, 1], ring: { radius: 1 }, line: { to: [2, 2] }, burst: 1, rate: 1, start: 0, end: 2, life: 2, angle: 0, speed: 0, gravity: [0, 0], drag: 0,
     attract: { at: [0, 0] }, sway: { amplitude: [1, 0] }, floor: 9, bounce: 0, shapes: ['dot'], face: false, play: 'life', remaps: [], tint: [{}], trail: { color: 'w' }, dissolve: 0.5, pattern: 'bayer4',
-    from: 'p', when: 'death', inherit: 0, behind: false, cue: 'hit' };
+    from: 'p', when: 'death', inherit: 0, behind: false, cue: 'hit', sprite: { symbol: 'chip' }, release: {} };
   const unknown = key => {
     const probe = { at: [1, 1], burst: 1, shapes: ['dot'], life: 2, [key]: values[key] ?? 0 };
     try { compileEffects(effects({ frames: 4, emitters: [{ name: 'p', at: [1, 1], burst: 1, shapes: ['dot'], life: 2 }, probe] })); return false; } catch (error) { return /unknown or null field/.test(error.message) && error.path.endsWith(`.${key}`); }
   };
   for (const key of Object.keys(emitter.properties)) assert.equal(unknown(key), false, `${key} is in the schema but the compiler rejects it`);
   assert.equal(unknown('notAField'), true);
-  // A spawn point (or a parent), and either symbols to draw or a blob drawn into a look.
-  assert.deepEqual(emitter.allOf, [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { oneOf: [{ required: ['shapes'] }, { required: ['blob'] }] }]);
+  // A spawn point (or a parent), and symbols to draw, a blob drawn into a look or a sprite's own pixels, not symbols and a blob.
+  assert.deepEqual(emitter.allOf, [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { anyOf: [{ required: ['shapes'] }, { required: ['blob'] }, { required: ['sprite'] }] }, { not: { required: ['shapes', 'blob'] } }]);
 });
 
 const armSource = poses => ({ format: 'pixelforge-poses', version: 1, name: 'arm', width: 16, height: 16, palette: { a: '#f00', b: '#00f', c: '#0f0' },
@@ -286,4 +286,102 @@ test('the CLI compiles effect sources and keeps their shared palette link', asyn
   const tiles = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'compile', path.join(dir, 'turf.autotile.json'), '--out', path.join(dir, 'out/turf.json')], { encoding: 'utf8' });
   assert.equal(tiles.status, 0, tiles.stderr);
   assert.equal(JSON.parse(await readFile(path.join(dir, 'out/turf.json'), 'utf8')).frames.length, 16);
+});
+
+// ---- Sprites: particles from a symbol's pixels, a release that takes it apart, and symbols from a recipe's frame -----
+const block = { block: ['yyy', 'yoy', 'yyy'], bar: ['y', 'y', 'o', 'o', 'y', 'y'] };
+const sprited = (effect, extra = {}) => effects(effect, { symbols: { ...effects({}).symbols, ...block }, ...extra });
+const gridIn = frame => (frame.ops ?? []).find(op => op.op === 'grid');
+const cellsOf = grid => (grid ? grid.rows.flatMap((row, j) => [...row].map((key, i) => ({ x: grid.x + i, y: grid.y + j, key }))).filter(c => c.key !== '.') : []);
+
+test('a sprite emitter spawns on the pixels it names: every one, its edge, or the outline just outside it', () => {
+  const count = pixels => compileEffects(sprited({ frames: 2, emitters: [{ sprite: { symbol: 'block', pixels }, at: [4, 4], burst: 1, life: 2, shapes: ['dot'] }] })).metadata.effects.burst.emitters[0].pixels;
+  assert.deepEqual(['all', 'edge', 'outline'].map(count), [9, 8, 12]);
+  // Without shapes, each particle is its own pixel, in its colour, at its place on the canvas (top-left at at).
+  const still = compileEffects(sprited({ frames: 2, seed: 3, emitters: [{ sprite: { symbol: 'block' }, at: [4, 4], burst: 30, life: 2 }] }));
+  const drawn = cellsOf(gridIn(still.recipe.frames[0]));
+  assert.ok(drawn.length > 1 && drawn.every(c => c.x >= 4 && c.x < 7 && c.y >= 4 && c.y < 7 && c.key === block.block[c.y - 4][c.x - 4]), JSON.stringify(drawn));
+  // draw: true keeps the whole sprite under its particles; outline particles start outside it.
+  const ringed = compileEffects(sprited({ frames: 2, emitters: [{ sprite: { symbol: 'block', pixels: 'outline', draw: true }, at: [4, 4], burst: 12, life: 2, shapes: ['dot'] }] }));
+  const [grid, ...stamps] = opsOf(ringed.recipe)[0];
+  assert.deepEqual(grid, { op: 'grid', x: 4, y: 4, rows: block.block });
+  assert.ok(stamps.length === 12 && stamps.every(op => op.op === 'stamp' && (op.x < 4 || op.x > 6 || op.y < 4 || op.y > 6)));
+});
+
+test('a release takes every pixel once in the order of its sweep and draws what is left of the sprite', () => {
+  const run = release => compileEffects(sprited({ frames: 6, emitters: [{ sprite: { symbol: 'bar' }, at: [5, 5], release, angle: 180, speed: 2, life: 2 }] }));
+  const { recipe, metadata } = run({ sweep: 270, jitter: 0 });
+  assert.equal(metadata.effects.burst.emitters[0].spawned, 6);
+  recipe.frames.forEach((frame, k) => {
+    // Bottom first: by frame k the lowest k pixels have gone, and the one leaving now still sits in its place.
+    const column = cellsOf(gridIn(frame)).filter(c => c.x === 5).map(c => c.y).sort((a, b) => a - b);
+    assert.deepEqual(column, Array.from({ length: 6 - k }, (_, i) => 5 + i), `frame ${k}`);
+  });
+  // Without a sweep the order is seeded at random; share: 0 spawns nothing, yet the sprite still empties.
+  assert.deepEqual(run({}), run({}));
+  const quiet = run({ share: 0 });
+  assert.equal(quiet.metadata.effects.burst.emitters[0].spawned, 0);
+  assert.equal(cellsOf(gridIn(quiet.recipe.frames[5])).length, 0);
+});
+
+test('pixel particles keep their colours, or take a tint: a stage of one colour turns a particle whole', () => {
+  const keys = tint => compileEffects(sprited({ frames: 4, emitters: [{ sprite: { symbol: 'block' }, at: [4, 4], burst: 20, life: 4, tint }] })).recipe.frames.map(f => [...new Set(cellsOf(gridIn(f)).map(c => c.key))].sort().join(''));
+  assert.deepEqual(keys([{}, 'w']), ['oy', 'oy', 'w', 'w']);
+  assert.deepEqual(keys([{ o: 'g' }]), ['gy', 'gy', 'gy', 'gy']);
+  // A one-colour stage remaps every character of a symbol particle.
+  const chip = compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, shapes: ['chip'], tint: [{}, 'w'] }] }));
+  assert.deepEqual(opsOf(chip.recipe).map(ops => ops[0].remap), [undefined, { y: 'w', o: 'w' }]);
+});
+
+test('sprite mistakes name the field to fix', () => {
+  const wrong = (emitter, extra = {}) => { try { compileEffects(sprited({ frames: 4, ...extra, emitters: [emitter] })); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  const base = { sprite: { symbol: 'block' }, at: [4, 4], burst: 1, life: 2 };
+  assert.match(wrong({ ...base, sprite: { symbol: 'nope' } }), /sprite\.symbol: .*none named "nope"/);
+  assert.match(wrong({ ...base, at: undefined }), /emitters\[0\]\.at: a sprite emitter needs at/);
+  assert.match(wrong({ ...base, area: [3, 3] }), /\.area: a sprite emitter spawns on the sprite's pixels/);
+  assert.match(wrong({ ...base, sprite: { symbol: 'block', pixels: 'outline' } }), /\.shapes: particles from a sprite's outline start on empty pixels/);
+  assert.match(wrong({ ...base, burst: undefined, release: { sweep: 90 } }, { loop: true }), /\.release: a sprite comes apart once/);
+  assert.match(wrong({ at: [4, 4], release: {}, life: 2, shapes: ['dot'] }), /\.release: release lets each pixel of a sprite leave once/);
+  assert.match(wrong({ ...base, release: {} }), /emitters\[0\]: use exactly one of burst .*, rate .* or release/);
+  assert.match(wrong({ ...base, tint: ['#fff'] }), /\.tint\[0\]: a sprite's pixel particles change to single-character palette keys/);
+  assert.match(wrong({ ...base, burst: undefined, release: { jitter: 0.5 } }), /release\.jitter: jitter loosens a sweep/);
+});
+
+test('a symbol can be a frame of a recipe or pose source, its colours joining the palette under free keys', async () => {
+  const recipe = { version: 1, name: 'man', width: 4, height: 3, palette: { y: '#000', q: '#123456' }, frames: [{ name: 'stand', ops: [{ op: 'grid', rows: ['.yq.', 'yyyy', '.q..'] }] }, { name: 'duck', ops: [{ op: 'grid', y: 1, rows: ['qqqq'] }] }] };
+  const plain = symbols => compileEffects(effects({ frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }] }, { symbols: { ...effects({}).symbols, ...symbols } }));
+  const compiled = plain({ man: { recipe, frame: 'stand' } });
+  // The effect's y is #fd6, so the recipe's y (#000) takes the first free letter; its q keeps its own key.
+  assert.deepEqual(compiled.recipe.symbols.man, ['.Aq.', 'AAAA', '.q..']);
+  assert.deepEqual([compiled.recipe.palette.A, compiled.recipe.palette.q, compiled.recipe.palette.y], ['#000000', '#123456', '#fd6']);
+  // The first frame by default; a pose source compiles first; a missing frame lists the ones there are.
+  assert.deepEqual(plain({ man: { recipe } }).recipe.symbols.man, compiled.recipe.symbols.man);
+  assert.equal(plain({ arm: { recipe: armSource([swing('rest', 0)]), frame: 'rest' } }).recipe.symbols.arm.length, 16);
+  const wrong = symbol => { try { plain({ man: symbol }); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ recipe, frame: 'jump' }), /symbols\.man\.frame: man has no frame named "jump"; it has stand, duck/);
+  assert.match(wrong({ recipe: 'man.json' }), /symbols\.man\.recipe: file and revision references are resolved by the CLI and MCP/);
+  assert.match(wrong({ recipe: { format: 'pixelforge-fx' } }), /symbols\.man\.recipe: expected a recipe or a pixelforge-poses source, not pixelforge-fx/);
+  // The CLI and MCP inline a file named there, relative to the source.
+  const { resolveReferences } = await import('../src/resolve.js');
+  const source = effects({ frames: 1, emitters: [{ sprite: { symbol: 'hero' }, at: [0, 0], burst: 1, life: 1 }] }, { width: 32, height: 36, symbols: { hero: { recipe: 'hero.poses.json', frame: 'idle-rest' } } });
+  const { document, files } = await resolveReferences(source, { baseDir: path.join(root, 'examples') });
+  assert.equal(document.symbols.hero.recipe.format, 'pixelforge-poses');
+  assert.ok(files.some(file => file.endsWith('hero.poses.json')));
+  assert.equal(compileEffects(document).recipe.symbols.hero.length, 36);
+});
+
+test('the hero magic example compiles from the hero\'s pose source to the pixels that were approved, its aura looping', async () => {
+  const { resolveReferences } = await import('../src/resolve.js');
+  const { createHash } = await import('node:crypto');
+  const written = JSON.parse(await readFile(path.join(root, 'examples/hero-magic.fx.json'), 'utf8'));
+  const { recipe } = compileEffects((await resolveReferences(written, { baseDir: path.join(root, 'examples') })).document);
+  const project = renderProject(recipe);
+  assert.deepEqual(project.warnings, []);
+  // This changes with any change to the sprite, aura or particle pixels: regenerate it only after the art is seen again.
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '20b2a333f54dfca726644909242d7060552fc2b0c870769468b86c9e18181e1f');
+  // The aura's last frame runs into its first no more than any two neighbouring frames differ.
+  const aura = project.frames.filter(frame => frame.name.startsWith('aura-')).map(frame => frame.data);
+  const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 3] !== b[i + 3] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) n++; return n; };
+  const inside = aura.slice(1).map((frame, k) => differ(aura[k], frame)), seam = differ(aura[aura.length - 1], aura[0]);
+  assert.ok(seam <= Math.max(...inside), `seam ${seam}, inside ${inside}`);
 });

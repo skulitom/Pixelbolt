@@ -9,11 +9,13 @@ import { PixelError } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, hash, random, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
 
-export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream'];
+export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream', 'aura'];
 const LIMITS = { layers: 16, looks: 8, colors: 8 };
 const PI = 3.141592653589793;
-// Tilt and squash belong to the kinds drawn around a centre; bolts and streams run between points and take neither.
+// Tilt and squash belong to the kinds drawn around a centre; bolts and streams run between points and auras hug a
+// sprite, so they take neither.
 const SPECIFIC = {
+  aura: ['symbol', 'width', 'rise', 'noise', 'scale', 'boil'],
   ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
   slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale', 'tilt', 'squash'],
   beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale', 'tilt', 'squash'],
@@ -130,7 +132,7 @@ function readLook(look, path, palette, seed) {
 }
 
 function readLayer(layer, path, context, index) {
-  const { frames, lookNames, seed, loop } = context;
+  const { frames, lookNames, seed, loop, symbols } = context;
   if (!isObject(layer)) fail(path, 'expected a layer object');
   if (!SHAPE_KINDS.includes(layer.kind)) fail(`${path}.kind`, `expected ${SHAPE_KINDS.join(', ')}`);
   const kind = layer.kind;
@@ -200,16 +202,56 @@ function readLayer(layer, path, context, index) {
       sway: number(layer.sway ?? 0, `${path}.sway`, -64, 64), wavelength: number(layer.wavelength ?? 16, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 1, `${path}.waves`, -64, 64)
     });
   }
-  if (kind === 'ring' || kind === 'burst') out.noiseAt = ditherThreshold('value', [0, 0], out.seed, out.scale);
+  if (kind === 'aura') {
+    const name = required('symbol');
+    if (typeof name !== 'string' || !symbols || !Object.hasOwn(symbols, name)) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
+    const width = t('width', 3, 0, 32), rise = number(layer.rise ?? 2, `${path}.rise`, 1, 4);
+    const noise = number(layer.noise ?? 0.5, `${path}.noise`, 0, 1);
+    // Noise stretches the reach by up to half its share, so the field is measured that far out.
+    Object.assign(out, { symbol: name, width, rise, noise, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), field: auraField(symbols[name], maxKey(width) * (1 + noise / 2), rise, path) });
+  }
+  if (kind === 'ring' || kind === 'burst' || kind === 'aura') out.noiseAt = ditherThreshold('value', [0, 0], out.seed, out.scale);
   else {
     // The other kinds take noise in screen space, moving with the layer, so a falling power breaks them up. Scales are
     // whole pixels, as the dither op's are: craft keeps one noise table per scale for the life of the process.
     Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
   }
-  // A cycling burst boils through a second, independent field half a cycle behind the first (see burst).
-  if (kind === 'burst' && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
+  // A cycling burst or aura boils through a second, independent field half a cycle behind the first (see boilFields).
+  if ((kind === 'burst' || kind === 'aura') && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
   return out;
+}
+
+// An aura's distance field around a sprite, measured once: for each pixel of the sprite's box widened by the reach,
+// the distance to the nearest visible pixel, with distances upward divided by `rise` so the glow reaches that much
+// higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity.
+function auraField(rows, reach, rise, path) {
+  const w = rows[0].length, h = rows.length, side = Math.ceil(reach), up = Math.ceil(reach * rise), W = w + 2 * side, H = h + up + side;
+  const solid = [];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (rows[j][i] !== '.' && rows[j][i] !== ' ') solid.push([i, j]);
+  if (!solid.length) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
+  if (solid.length * (2 * side + 1) * (up + side + 1) > 64_000_000) fail(`${path}.width`, 'this sprite with this width and rise would take too long to measure; lower width or rise');
+  const d = new Float64Array(W * H).fill(Infinity);
+  for (const [i, j] of solid) for (let b = -up; b <= side; b++) {
+    const dy = b < 0 ? b / rise : b, row = (j + b + up) * W + i + side;
+    for (let a = -side; a <= side; a++) { const dist = Math.sqrt(a * a + dy * dy); if (dist < d[row + a]) d[row + a] = dist; }
+  }
+  return { left: -side, top: -up, W, H, d };
+}
+
+// The noise a burst or aura reads this frame: one field moved `boil` pixels over a one-shot's window, or, in a cycle,
+// two independent fields half a cycle apart, each moving a steady `boil` pixels per cycle, fading out as its phase
+// wraps and in again after; the blend is scaled to keep the noise's spread, so the loop's last frame runs into its
+// first. `boiled` sums them for one pixel, given how to read a field moved by `by` pixels; the result centres on 0.
+function boilFields(layer, s) {
+  if (!layer.noiseLater) return { parts: [[layer.noiseAt, layer.boil * s.q, 1]], norm: 1 };
+  const a = s.p, b = a < 0.5 ? a + 0.5 : a - 0.5, wa = 1 - Math.abs(2 * a - 1), wb = 1 - wa;
+  return { parts: [[layer.noiseAt, layer.boil * a, wa], [layer.noiseLater, layer.boil * b, wb]].filter(part => part[2] > 0), norm: Math.sqrt(wa * wa + wb * wb) };
+}
+function boiled({ parts, norm }, read) {
+  let sum = 0;
+  for (const [field, by, weight] of parts) sum += weight * (read(field, by) - 0.5);
+  return sum / norm;
 }
 
 /** Reads an effect's looks, layers and cleanup; null when it has no layers. */
@@ -219,7 +261,7 @@ export function readShapes(effect, path, context) {
     for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
-  const { palette, seed, frames, loop } = context;
+  const { palette, seed, frames, loop, symbols } = context;
   if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
@@ -227,7 +269,7 @@ export function readShapes(effect, path, context) {
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
   if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, lookNames: looks.map(l => l.name) }, i));
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -458,24 +500,38 @@ const PAINTERS = {
     });
   },
   // A fireball: a disc whose edge and inside are broken by seeded smooth noise that boils outward over the frames, hot
-  // in the middle, with a hole that can open from the centre (`hole`, a share of the radius) as it burns out.
-  // In a cycle the noise boils outward at a steady `boil` pixels per cycle through two independent fields half a cycle
-  // apart. Each fades out as its phase wraps back to the start and in again after, and the blend is scaled to keep the
-  // noise's spread, so the last frame runs into the first with no jump.
+  // in the middle, with a hole that can open from the centre (`hole`, a share of the radius) as it burns out. In a
+  // cycle the noise boils on steadily through the loop point (boilFields).
   burst(layer, s, put, W, H) {
-    const R = sample(layer.radius, s.q), hole = sample(layer.hole, s.q) * R, shift = layer.boil * s.q, n = layer.noise;
+    const R = sample(layer.radius, s.q), hole = sample(layer.hole, s.q) * R, n = layer.noise, boil = boilFields(layer, s);
     if (R <= 0) return;
-    const later = layer.noiseLater, a = s.p, b = a < 0.5 ? a + 0.5 : a - 0.5, wa = 1 - Math.abs(2 * a - 1), wb = 1 - wa;
-    const norm = Math.sqrt(wa * wa + wb * wb), shiftA = layer.boil * a, shiftB = layer.boil * b;
-    const pulled = (field, u, v, d, by) => { const pull = d > 0 ? Math.max(0, d - by) / d : 0; return field(256 + u * pull, 256 + v * pull) - 0.5; };
     paintArea(put, W, H, s.cx, s.cy, R * (1 + n / 2) * s.frame.reach + 2, s.frame, (u, v) => {
       const d = Math.sqrt(u * u + v * v);
-      const noise = n <= 0 ? 0 : !later ? pulled(layer.noiseAt, u, v, d, shift)
-        : ((wa ? wa * pulled(layer.noiseAt, u, v, d, shiftA) : 0) + (wb ? wb * pulled(later, u, v, d, shiftB) : 0)) / norm;
+      const noise = n <= 0 ? 0 : boiled(boil, (field, by) => { const pull = d > 0 ? Math.max(0, d - by) / d : 0; return field(256 + u * pull, 256 + v * pull); });
       let value = 1 - d / (R * (1 + n * noise)) + n * 0.35 * noise;
       if (hole > 0) value *= clamp01((d - hole * (1 + n * noise)) / Math.max(1, 0.35 * R));
       return value;
     });
+  },
+  // A glow hugging a sprite: brightest on it, falling to nothing about `width` pixels out (`rise` times as far upward), with
+  // seeded noise stretched upright and rising `boil` pixels over the window, so its edge licks up in flames. In a cycle
+  // the noise rises steadily through the loop point (boilFields). `at` is the sprite's top-left corner.
+  aura(layer, s, put) {
+    const reach = sample(layer.width, s.q), { left, top, W, H, d } = layer.field, n = layer.noise, boil = boilFields(layer, s);
+    if (reach <= 0) return;
+    const ox = round(s.cx) + left, oy = round(s.cy) + top;
+    const x0 = Math.max(0, ox), x1 = Math.min(put.width - 1, ox + W - 1), y0 = Math.max(0, oy), y1 = Math.min(put.bottom, oy + H - 1);
+    if (x0 > x1 || y0 > y1) return;
+    put.spend((x1 - x0 + 1) * (y1 - y0 + 1));
+    for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
+      const dist = d[(j - oy) * W + i - ox];
+      if (!(dist < reach * (1 + n / 2))) continue;
+      // The noise is read in the layer's own frame, so a drifting sprite carries its flames along.
+      const u = i - ox + 256, v = j - oy + 256;
+      // As in a burst, the noise moves the edge in and out (tongues reach past the plain glow) and breaks up the bands.
+      const noise = n <= 0 ? 0 : boiled(boil, (field, by) => field(u, (v + by) / layer.rise));
+      put(i, j, 1 - dist / (reach * (1 + n * noise)) + 0.25 * n * noise);
+    }
   },
   // A tapered body of water (or anything that flows): the part of a smooth curve between `tail` and `head` (shares of
   // its length), `width` across at most, narrowing by `taper` from tail to head, brightest on its centre line, and

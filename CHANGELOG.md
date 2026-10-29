@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects on a sprite
+
+- A `pixelforge-fx` symbol may be a frame of another recipe or pose source: `{ "recipe": "hero.poses.json", "frame": "idle-rest" }`. The CLI and MCP read the file (MCP: under the server root, or a saved revision); the frame becomes rows over its whole canvas, so the sprite keeps its coordinates, and its colours join the palette under their own keys or spare letters where the effect uses a key for another colour.
+- An emitter with `sprite: { symbol, pixels }` spawns on that sprite's pixels (all of them, its edge, or the outline just outside it), its top-left corner at `at`. Without shapes, each particle is its own pixel in its own colour. `release` takes every pixel once, in the order of a `sweep` across the sprite, while what is left stays drawn: death dissolves and teleports. `tint` stages may now be one colour each, turning a whole particle that colour.
+- An `aura` shape layer is a continuous glow hugging a sprite, reaching further upward, its edge licking up in flames as noise rises; spanning a looping effect, it loops without a jump. Random particles along an outline looked patchy; this does not.
+- `examples/hero-magic.fx.json` puts a teleport and a looping spirit aura on the rigged hero, read from `hero.poses.json`.
+
 ### Effects that loop, and examples that follow their own advice
 
 - In a looping `pixelforge-fx` effect, a shape layer that spans every frame is a cycle: it moves at a steady pace (`ease` defaults to `linear`), is whole from frame 0 (`reveal` defaults to 0), and a `burst`'s noise boils outward by `boil` pixels every cycle without slowing. A looping fireball changed 158 pixels at the loop point against at most 59 between other frames; it now changes 49, inside the 29–60 of the others. One-shots and shorter windows in a loop draw exactly as before, so every earlier source keeps its pixels.

@@ -66,6 +66,27 @@ const effects = { format: 'pixelforge-fx', version: 1, name: 'effects', width: 4
       emit([24, 26], { area: [6, 4], burst: 9, angle: [205, 335], speed: [2, 3.5], gravity: [0, 0.45], drag: 0.02, life: 12, floor: 35, bounce: 0.3, shapes: [['chip-a'], ['chip-b'], ['chip-c'], ['chip-d']] })] }
   } };
 
+// Effects on the rigged hero, whose idle frame the CLI and MCP read from hero.poses.json: a teleport that takes him apart
+// from the feet up into light inside a pillar, and a looping spirit aura that hugs his outline, with sparkles.
+const heroAt = [4, 16];
+const heroMagic = { format: 'pixelforge-fx', version: 1, name: 'hero-magic', width: 40, height: 52,
+  palette: { W: '#ffffff', c: '#8fe9ff', b: '#4f7cff', v: '#6a3fb5' },
+  symbols: { hero: { recipe: 'hero.poses.json', frame: 'idle-rest' }, spark: ['W'], 'spark-dim': ['c'] },
+  anchor: [20, 51],
+  effects: {
+    teleport: { frames: 14, duration: 70, seed: 3,
+      looks: { light: { colors: ['v', 'b', 'c', 'W'], thresholds: [0.3, 0.5, 0.72, 0.9] } },
+      layers: [{ kind: 'beam', look: 'light', at: [20, 51], to: [20, 0], width: [1, 11, 9, 0], reveal: 0.2, wobble: 0.12, wavelength: 9, waves: -3, fade: 0.6,
+        power: [1.2, 1.1, 0.7, 0], ease: 'linear', noise: 0.35, scale: 3 }],
+      emitters: [{ sprite: { symbol: 'hero' }, at: heroAt, release: { sweep: 270, jitter: 0.35 }, start: 1, end: 10,
+        angle: [255, 285], speed: [0.6, 1.6], gravity: [0, -0.12], drag: 0.02, life: [5, 8], tint: [{}, 'W', 'c', 'b'], dissolve: 0.35 }] },
+    aura: { frames: 12, duration: 70, loop: true, seed: 5,
+      looks: { spirit: { colors: ['v', 'b', 'c', 'W'], thresholds: [0.1, 0.3, 0.55, 0.8] } },
+      cleanup: { corners: true, strays: true },
+      layers: [{ kind: 'aura', look: 'spirit', symbol: 'hero', at: heroAt, width: 4, rise: 3, noise: 0.8, scale: 3, floor: 51 }],
+      emitters: [{ sprite: { symbol: 'hero', pixels: 'outline', draw: true }, at: heroAt, rate: 0.6, angle: [255, 285], speed: [0.6, 1.2], life: [5, 8], shapes: ['spark', 'spark-dim'] }] }
+  } };
+
 // Dithered sky bands, a shading band limited to one colour, an inside rim light, grown cracks and moss, a drop line.
 const band = (y, h, color, density) => ({ op: 'dither', x: 0, y, w: 48, h, color, density });
 const shrine = { version: 1, name: 'shrine', width: 48, height: 40,
@@ -451,7 +472,7 @@ const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': ste
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
+const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.

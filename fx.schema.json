@@ -48,9 +48,55 @@
         "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
       },
       "additionalProperties": {
-        "$ref": "#/$defs/rows"
+        "oneOf": [
+          {
+            "$ref": "#/$defs/rows"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "recipe": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "A recipe or pose source file, relative to this source (CLI and MCP)."
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "revision": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "revision"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A saved MCP revision."
+                  },
+                  {
+                    "type": "object",
+                    "description": "An inline recipe or pixelforge-poses source."
+                  }
+                ]
+              },
+              "frame": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The frame to take; default the first."
+              }
+            },
+            "required": [
+              "recipe"
+            ],
+            "additionalProperties": false,
+            "description": "A frame of a recipe or pose source, over its whole canvas (so it keeps the source's coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour."
+          }
+        ]
       },
-      "description": "Particle drawings; may be left out when no effect has emitters."
+      "description": "Particle drawings and sprites; may be left out when no effect has emitters or auras."
     },
     "anchor": {
       "type": "array",
@@ -162,7 +208,7 @@
                   },
                   "maxItems": 2,
                   "minItems": 2,
-                  "description": "Spawn centre [x, y] in canvas pixels. For a child (from), an offset from the parent particle; default [0, 0]."
+                  "description": "Spawn centre [x, y] in canvas pixels. For a child (from), an offset from the parent particle; default [0, 0]. For a sprite emitter, the sprite's top-left corner, in whole pixels."
                 },
                 "area": {
                   "type": "array",
@@ -477,20 +523,28 @@
                 "tint": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "propertyNames": {
-                      "minLength": 1,
-                      "maxLength": 1
-                    },
-                    "additionalProperties": {
-                      "type": "string",
-                      "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
-                    },
-                    "description": "Recolor grid characters for this operation only: character → palette name or colour."
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "minLength": 1,
+                          "maxLength": 1
+                        },
+                        "additionalProperties": {
+                          "type": "string",
+                          "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+                        },
+                        "description": "Recolor grid characters for this operation only: character → palette name or colour."
+                      },
+                      {
+                        "type": "string",
+                        "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
+                      }
+                    ]
                   },
                   "maxItems": 64,
                   "minItems": 1,
-                  "description": "Colour stages over each life, the first at birth, spread like play: life. Each overrides the particle's remap for the characters it names, so a spark cools from white to red without a symbol per colour."
+                  "description": "Colour stages over each life, the first at birth, spread like play: life. A remap overrides the particle's remap for the characters it names, so a spark cools from white to red without a symbol per colour; one colour turns the whole particle that colour (a sprite's pixels flying off as light)."
                 },
                 "trail": {
                   "type": "object",
@@ -575,6 +629,59 @@
                   "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
                   "description": "Name a point at the spawn centre in each frame this emitter spawns. Frames carry it as a named point, which atlases export for game code (a shake or a pause on impact); the metadata lists every cue."
                 },
+                "sprite": {
+                  "type": "object",
+                  "properties": {
+                    "symbol": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                      "description": "The symbol whose pixels the particles spawn from (it may be a frame of a recipe or pose source; see symbols)."
+                    },
+                    "pixels": {
+                      "enum": [
+                        "all",
+                        "edge",
+                        "outline"
+                      ],
+                      "description": "all (default): every visible pixel; edge: the visible pixels beside an empty one; outline: the empty pixels just outside the sprite (particles from there need shapes or a blob)."
+                    },
+                    "draw": {
+                      "type": "boolean",
+                      "description": "Draw the sprite itself under its particles: what is left of it during a release (the default there), or all of it every frame with burst or rate (default false, for an overlay the game draws over its own sprite)."
+                    }
+                  },
+                  "required": [
+                    "symbol"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Spawn on a symbol's pixels, its top-left corner at at, instead of around at. Without shapes or a blob each particle is its own pixel, in its colour: dissolves, teleports, sprites that shatter. With rate on the outline: sparkles round a figure."
+                },
+                "release": {
+                  "type": "object",
+                  "properties": {
+                    "sweep": {
+                      "type": "number",
+                      "minimum": -3600,
+                      "maximum": 3600,
+                      "description": "Direction the release travels across the sprite, in degrees clockwise (270 up: the lowest pixels leave first). Default none: a seeded random order."
+                    },
+                    "jitter": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "How much each pixel's turn strays from the sweep; default 0.3."
+                    },
+                    "share": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Share of the leaving pixels that become particles; the rest just vanish on their turn. Default 1."
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false,
+                  "description": "With a sprite, in place of burst or rate: every pixel leaves once, between start and end, while what is left of the sprite stays drawn. Not in a loop; reverse the animation to put a sprite together."
+                },
                 "blob": {
                   "type": "object",
                   "properties": {
@@ -627,7 +734,7 @@
                   ]
                 },
                 {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "required": [
                         "shapes"
@@ -637,8 +744,21 @@
                       "required": [
                         "blob"
                       ]
+                    },
+                    {
+                      "required": [
+                        "sprite"
+                      ]
                     }
                   ]
+                },
+                {
+                  "not": {
+                    "required": [
+                      "shapes",
+                      "blob"
+                    ]
+                  }
                 }
               ]
             },
@@ -1808,12 +1928,109 @@
                   ],
                   "additionalProperties": false,
                   "description": "A tapered body of water (or anything that flows) along a smooth curve from at through 1–7 more points, brightest on its centre line: the part between tail and head is drawn, narrowing by taper, swaying in travelling waves. Geyser spikes, whips, spirals, wave curls."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "const": "aura"
+                    },
+                    "look": {
+                      "$ref": "#/$defs/layer-look"
+                    },
+                    "at": {
+                      "$ref": "#/$defs/layer-at"
+                    },
+                    "frames": {
+                      "$ref": "#/$defs/layer-frames"
+                    },
+                    "ease": {
+                      "$ref": "#/$defs/layer-ease"
+                    },
+                    "power": {
+                      "$ref": "#/$defs/layer-power"
+                    },
+                    "flicker": {
+                      "$ref": "#/$defs/layer-flicker"
+                    },
+                    "blend": {
+                      "$ref": "#/$defs/layer-blend"
+                    },
+                    "drift": {
+                      "$ref": "#/$defs/layer-drift"
+                    },
+                    "floor": {
+                      "$ref": "#/$defs/layer-floor"
+                    },
+                    "seed": {
+                      "$ref": "#/$defs/layer-seed"
+                    },
+                    "cue": {
+                      "$ref": "#/$defs/layer-cue"
+                    },
+                    "symbol": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                      "description": "The symbol it hugs (it may be a frame of a recipe or pose source; see symbols)."
+                    },
+                    "width": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 32
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 32
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Pixels the glow reaches beside and below the sprite; default 3. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
+                    },
+                    "rise": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 4,
+                      "description": "How many times further it reaches upward; default 2."
+                    },
+                    "noise": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "How far the noise moves the edge in and out and breaks up the bands; default 0.5."
+                    },
+                    "scale": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 64,
+                      "description": "Noise feature size in pixels, stretched upright by rise; default 3."
+                    },
+                    "boil": {
+                      "type": "number",
+                      "minimum": -512,
+                      "maximum": 512,
+                      "description": "Pixels the noise rises over the window (each cycle, at a steady pace, for a layer spanning a looping effect); default 2 × width × rise."
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "at",
+                    "symbol"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it."
                 }
               ]
             },
             "maxItems": 16,
             "minItems": 1,
-            "description": "Shape layers: ring, slash, beam, bolt, glyph, star, burst, stream. Needs looks."
+            "description": "Shape layers: ring, slash, beam, bolt, glyph, star, burst, stream, aura. Needs looks."
           },
           "cleanup": {
             "type": "object",
@@ -2061,7 +2278,7 @@
       },
       "maxItems": 2,
       "minItems": 2,
-      "description": "Centre [x, y] (a beam or bolt starts here)."
+      "description": "Centre [x, y] (a beam or bolt starts here; an aura's sprite has its top-left corner here)."
     },
     "layer-frames": {
       "type": "array",

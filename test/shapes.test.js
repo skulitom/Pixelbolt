@@ -23,8 +23,11 @@ const LAYERS = {
   glyph: { kind: 'glyph', look: 'cool', at: [24, 30], radius: 20, inner: 0.65, squash: [1, 0.45], points: 4, step: 1, runes: 8, double: true, spin: [0, 20], glow: 0, fill: [0, 0.2, 0] },
   star: { kind: 'star', look: 'warm', at: [24, 24], radius: [16, 4], width: [3, 1], points: 8, power: [1.3, 0.6], jitter: 0.2 },
   burst: { kind: 'burst', look: 'warm', at: [24, 26], radius: [6, 18], hole: [0, 0.3], power: [1.4, 1] },
-  stream: { kind: 'stream', look: 'cool', at: [6, 40], through: [[18, 14], [32, 30], [42, 8]], width: [4, 8, 5], head: [0.3, 1], tail: [0, 0.4], sway: 2, noise: 0.3, power: [1.3, 0.8] }
+  stream: { kind: 'stream', look: 'cool', at: [6, 40], through: [[18, 14], [32, 30], [42, 8]], width: [4, 8, 5], head: [0.3, 1], tail: [0, 0.4], sway: 2, noise: 0.3, power: [1.3, 0.8] },
+  aura: { kind: 'aura', look: 'warm', symbol: 'man', at: [20, 24], width: 4, rise: 2, noise: 0.5 }
 };
+// The sprite an aura hugs: a head, a body and two legs, 6 × 12.
+const MAN = { man: ['..yy..', '..yy..', '.yyyy.', 'yyyyyy', 'y.yy.y', 'y.yy.y', '..yy..', '..yy..', '.y..y.', '.y..y.', '.y..y.', 'yy..yy'] };
 const visible = rows => rows.join('').replace(/\./g, '').length;
 const gridOf = frame => (frame.ops ?? []).find(op => op.op === 'grid');
 
@@ -38,11 +41,11 @@ test('atan2Deg matches Math.atan2 to a billionth of a degree, clockwise from +x 
   }
 });
 
-test('every shape kind compiles alone into an ordinary recipe of one grid per frame in its window, without symbols or emitters', () => {
+test('every shape kind compiles alone into an ordinary recipe of one grid per frame in its window, without emitters (or symbols, but the sprite an aura hugs)', () => {
   assert.deepEqual(SHAPE_KINDS, Object.keys(LAYERS));
   for (const [kind, layer] of Object.entries(LAYERS)) {
-    const { recipe, metadata } = compileEffects(source({ layers: [{ ...layer, frames: [1, 7] }] }));
-    assert.equal(recipe.symbols, undefined, kind);
+    const { recipe, metadata } = compileEffects(source({ layers: [{ ...layer, frames: [1, 7] }] }, kind === 'aura' ? { symbols: MAN } : {}));
+    assert.deepEqual(recipe.symbols, kind === 'aura' ? MAN : undefined, kind);
     const project = renderProject(recipe);
     assert.deepEqual(project.warnings, [], kind);
     assert.deepEqual(metadata.effects.hit.layers, [{ kind, look: layer.look, frames: [1, 7] }]);
@@ -61,19 +64,21 @@ test('every shape kind compiles alone into an ordinary recipe of one grid per fr
 });
 
 test('shape layers compile to golden recipes, the same every time', () => {
-  const all = source({ cleanup: { corners: true, strays: true }, layers: Object.values(LAYERS).map((layer, i) => ({ ...layer, frames: [i % 3, 8] })) });
+  // The aura came later and needs its sprite, so it has a golden of its own and stays out of all.
+  const all = source({ cleanup: { corners: true, strays: true }, layers: Object.values(LAYERS).filter(layer => layer.kind !== 'aura').map((layer, i) => ({ ...layer, frames: [i % 3, 8] })) });
   const first = compileEffects(all), second = compileEffects(structuredClone(all));
   assert.deepEqual(first, second);
   // These change with any change to the shapes' pixels: regenerate them deliberately, after looking at the art.
   const golden = {};
-  for (const [kind, layer] of Object.entries(LAYERS)) golden[kind] = sha(compileEffects(source({ layers: [layer] })).recipe);
+  for (const [kind, layer] of Object.entries(LAYERS)) golden[kind] = sha(compileEffects(source({ layers: [layer] }, kind === 'aura' ? { symbols: MAN } : {})).recipe);
   golden.all = sha(first.recipe);
   assert.deepEqual(golden, {
     ring: '61b165d169c36d373c64f88e298539c008ece0b0c635b570d91e3d270037bb26', slash: 'd492d264e470aebe75138384c462467d31f879264e81c1074587e715d31a0ec6',
     beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'd54bdf63f41345c64b9ab402feb72ebdf809f1fbde4a71a8e63a6b06f9a3acee',
     glyph: '69221282a0198e368d410b9398d735b0e7f1e5959bd21933693472c65b92c802', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
     burst: '4151bac6ad5f35c106bdfde17ea8ae0249eaaa4bdbd1599d57a93f414378ae2c', stream: '0ce67436fbd732efd96876017738fed1cae5a3c4bcd18cf843d8d7fab8b15e09',
-    all: 'd515b0d1c38a42b23eef630e048ee6dd9aeee9f6a16f8d06740b3ef82af15a8d'
+    aura: '45380c9b86ee656f4ed73b15478de8a64f7e8ebb35e32aa343bbf66a3b5aa9c8',
+    all:'d515b0d1c38a42b23eef630e048ee6dd9aeee9f6a16f8d06740b3ef82af15a8d'
   });
 });
 
@@ -351,4 +356,23 @@ test('cycling layers move at a steady pace and draw without a reveal, so spins a
   const first = (loop, extra = {}) => visible(gridOf(compileEffects(source({ frames: 8, loop, layers: [{ ...circle, ...extra }] })).recipe.frames[0]).rows);
   assert.ok(first(true) > 1.5 * first(false), `${first(true)} against ${first(false)}`);
   assert.equal(first(true, { reveal: 0.3 }), first(false, { ease: 'linear' }));
+});
+
+// ---- Auras: a continuous glow hugging a sprite ---------------------------------------------------------------------------
+test('an aura hugs its whole sprite in one piece, reaches further up than down, and loops without a jump', () => {
+  const glow = (layer, effect = {}) => compileEffects(source({ layers: [{ ...LAYERS.aura, ...layer }], ...effect }, { symbols: MAN })).recipe;
+  const still = cells(gridOf(glow({ noise: 0 }).frames[0])), at = new Set(still.map(c => `${c.x},${c.y}`));
+  // Every pixel of the sprite (top-left at [20, 24]) is covered, and the glow is one piece around it.
+  MAN.man.forEach((row, j) => [...row].forEach((char, i) => { if (char !== '.') assert.ok(at.has(`${20 + i},${24 + j}`), `sprite pixel ${i},${j}`); }));
+  assert.equal(pieces(gridOf(glow({ noise: 0 }).frames[0])), 1);
+  // With rise 2, it reaches about twice as far above the head as below the feet or beside the body.
+  const ys = still.map(c => c.y), xs = still.map(c => c.x), above = 24 - Math.min(...ys), below = Math.max(...ys) - 35, beside = 20 - Math.min(...xs);
+  assert.ok(above >= 2 * below - 1 && above > beside + 2, `above ${above}, below ${below}, beside ${beside}`);
+  // Noise licks the edge up and down over the frames; in a loop it rises through the loop point without a jump.
+  const loop = changes(glow({ noise: 0.8 }, { frames: 12, loop: true }));
+  assert.ok(Math.min(...loop.inside) > 0 && loop.seam <= Math.max(...loop.inside), `seam ${loop.seam}, inside ${loop.inside}`);
+  const wrong = layer => { try { glow(layer); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
+  assert.match(wrong({ symbol: 'ghost' }), /layers\[0\]\.symbol: .*none named "ghost"/);
+  assert.match(wrong({ symbol: undefined }), /layers\[0\]\.symbol: a aura layer needs symbol/);
+  assert.match(wrong({ squash: [1, 0.5] }), /layers\[0\]: unknown or null field squash|squash/);
 });
