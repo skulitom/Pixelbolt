@@ -7,7 +7,7 @@
 // redraws exactly what the sender saw.
 
 // The engine release the toy loads by default. Keep it equal to the playground's PINNED_VERSION (a test checks).
-export const TOY_VERSION = '0.9.2';
+export const TOY_VERSION = '0.10.0';
 // Longest link, as for playground share links.
 export const LINK_LIMIT = 16384;
 // Pokes are recorded for this many frames after a start (about two minutes at 60–70 ms a frame); a link replays them.
