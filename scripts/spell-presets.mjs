@@ -1,6 +1,6 @@
-// Reviewed pixelforge-fx effects built from shape layers: five spells (the fireball a seamless loop) and a set of
-// cel-shaded water effects, written to examples/<name>.fx.json by scripts/generate-examples.js. Their compiled pixels
-// are pinned in test/shapes.test.js.
+// Reviewed pixelforge-fx effects built from shape layers: five spells (the fireball a seamless loop in eight directions)
+// and a set of cel-shaded water effects, written to examples/<name>.fx.json by scripts/generate-examples.js. Their
+// compiled pixels are pinned in test/shapes.test.js.
 export const spellPresets = {
   'slash-hit': {
     "format": "pixelforge-fx",
@@ -197,16 +197,18 @@ export const spellPresets = {
     "format": "pixelforge-fx",
     "version": 1,
     "name": "fireball",
-    "width": 64,
-    "height": 32,
+    "width": 56,
+    "height": 56,
     "palette": { "W": "#fffbe6", "y": "#ffd34d", "o": "#ff8a2b", "r": "#d6402b", "R": "#8f2a2e" },
     "symbols": { "ember-big": ["yW", "oy"], "ember": ["y"], "ember-dim": ["o"], "ember-end": ["r"] },
+    "anchor": [28, 28],
     "effects": {
       "fireball": {
         "frames": 8,
         "duration": 60,
         "loop": true,
         "seed": 4,
+        "turn": { "angles": [0, 45, 90, 135, 180, 225, 270, 315], "about": [28, 28] },
         "looks": {
           "fire": { "colors": ["R", "r", "o", "y", "W"], "thresholds": [0.12, 0.3, 0.5, 0.7, 0.88] }
         },
@@ -215,8 +217,8 @@ export const spellPresets = {
           {
             "kind": "beam",
             "look": "fire",
-            "at": [44, 16],
-            "to": [10, 16],
+            "at": [27, 28],
+            "to": [5, 28],
             "width": 14,
             "fade": 0.95,
             "wobble": 0.25,
@@ -228,7 +230,7 @@ export const spellPresets = {
           {
             "kind": "burst",
             "look": "fire",
-            "at": [45, 16],
+            "at": [29, 28],
             "radius": 8,
             "noise": 0.6,
             "boil": 6,
@@ -238,8 +240,8 @@ export const spellPresets = {
         ],
         "emitters": [
           {
-            "at": [30, 16],
-            "area": [18, 8],
+            "at": [17, 28],
+            "area": [14, 8],
             "rate": 0.7,
             "angle": [160, 200],
             "speed": [0.5, 1.3],

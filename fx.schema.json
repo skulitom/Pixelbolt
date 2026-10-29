@@ -2281,6 +2281,41 @@
             "required": [],
             "additionalProperties": false,
             "description": "Remove doubled corners and stray pixels from the shapes (not the particles)."
+          },
+          "turn": {
+            "type": "object",
+            "properties": {
+              "angles": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 359
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "uniqueItems": true,
+                "description": "Whole degrees clockwise from the direction the effect is drawn in: [0, 90, 180, 270] for four directions, every 45 for eight. Default [0]."
+              },
+              "about": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -4096,
+                  "maximum": 4096
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "The point the copies turn about (and mirror across); default the canvas centre."
+              },
+              "mirror": {
+                "type": "boolean",
+                "description": "Also make a mirrored copy of each angle, flipped left to right before it turns: a slash that sweeps the other way, an effect facing left."
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "description": "Compile a copy of the effect for each direction, named <effect>-<angle> (and <effect>-<angle>-mirror), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, slash arcs, beam and bolt ends, stream and trail points. Gravity, floors, sway and the looks' light stay as they are, so sparks still fall and highlights stay where the light is. Not with sprite emitters or auras, whose sprites can't turn. Use a canvas with room in every direction."
           }
         },
         "required": [

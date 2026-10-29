@@ -271,7 +271,11 @@ const evenAngle = ([from, to], k, count) => (to - from >= 360 ? from + 360 * k /
 
 // Simulates one effect and returns its frames' operations plus counts for the metadata.
 function simulate(effect, context) {
-  const { frames, loop, seed, emitters } = effect, { width, height, symbols } = context;
+  const { frames, loop, seed, emitters, view } = effect, { width, height, symbols } = context;
+  // The direction this copy of the effect is turned to (null as drawn): spawn places, spawn offsets, launch angles and
+  // attract points turn with it; gravity, drag, floors and sway stay as they are, so particles still fall down the canvas.
+  const offset = view ? (dx, dy) => view.vec(dx, dy) : (dx, dy) => [dx, dy], heading = view ? theta => view.dir(theta) : theta => theta;
+  const centre = e => (view ? view.point(e.at) : e.at), pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
   // A loop warms up for as many whole cycles as the longest chain of lives (a child's particles can outlive their parent's
   // by their own life), with spawns keyed by their frame within the cycle and children by their parent, so the particles
   // in flight at frame 0 are exactly those still alive at the end.
@@ -331,13 +335,15 @@ function simulate(effect, context) {
       x = e.sprite.x + c.x; y = e.sprite.y + c.y; key = c.key;
     } else if (e.ring) {
       const { radius, arc, even, outward } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring)), d = pick(radius, r(SALT.radius));
-      x = cx + cosDeg(theta) * d; y = cy + sinDeg(theta) * d;
+      const [ox, oy] = offset(cosDeg(theta) * d, sinDeg(theta) * d);
+      x = cx + ox; y = cy + oy;
       if (outward) out = theta;
     } else if (e.line) {
       const s = e.line.even ? (count === 1 ? 0.5 : k / (count - 1)) : r(SALT.along);
-      x = cx + e.line.dx * s; y = cy + e.line.dy * s;
-    } else { x = cx + (r(SALT.x) - 0.5) * (e.area[0] - 1); y = cy + (r(SALT.y) - 0.5) * (e.area[1] - 1); }
-    const angle = out === null ? pick(e.angle, r(SALT.angle)) : out + pick(e.angle, r(SALT.angle)), speed = pick(e.speed, r(SALT.speed));
+      const [ox, oy] = offset(e.line.dx * s, e.line.dy * s);
+      x = cx + ox; y = cy + oy;
+    } else { const [ox, oy] = offset((r(SALT.x) - 0.5) * (e.area[0] - 1), (r(SALT.y) - 0.5) * (e.area[1] - 1)); x = cx + ox; y = cy + oy; }
+    const angle = heading(out === null ? pick(e.angle, r(SALT.angle)) : out + pick(e.angle, r(SALT.angle))), speed = pick(e.speed, r(SALT.speed));
     const life = e.life ? pickWhole(e.life, r(SALT.life)) : Infinity, variant = e.face ? null : e.variants[Math.min(e.variants.length - 1, Math.floor(r(SALT.variant) * e.variants.length))];
     let vx = cosDeg(angle) * speed, vy = sinDeg(angle) * speed;
     if (parent && e.inherit) { vx += parent.vx * e.inherit; vy += parent.vy * e.inherit; }
@@ -357,12 +363,13 @@ function simulate(effect, context) {
   // children every cycle.
   const spawnChildren = (index, q, count, born) => {
     const e = emitters[index];
+    const [ox, oy] = offset(e.at[0], e.at[1]);
     for (let k = 0; k < count; k++) {
       const r = salt => random(q.tag, index, q.age, k, salt);
-      add(launch(e, index, q.x + e.at[0], q.y + e.at[1], k, count, r, hash(q.tag, index, q.age, k), born, q));
+      add(launch(e, index, q.x + ox, q.y + oy, k, count, r, hash(q.tag, index, q.age, k), born, q));
       if (born >= first) stats[index].spawned++;
     }
-    if (count) mark(e, born, q.x + e.at[0], q.y + e.at[1]);
+    if (count) mark(e, born, q.x + ox, q.y + oy);
   };
   const layered = emitters.some(e => e.behind);
   for (let t = 0; t < total; t++) {
@@ -386,10 +393,10 @@ function simulate(effect, context) {
       else if (cycle >= e.start && cycle < e.end) { const c = cycle - e.start; count = Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9); }
       const key = loop ? cycle : t;
       for (let k = 0; k < count; k++) {
-        add(launch(e, index, e.at[0], e.at[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
+        add(launch(e, index, centre(e)[0], centre(e)[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
         if (drawing) stats[index].spawned++;
       }
-      if (count) mark(e, t, e.at[0], e.at[1]);
+      if (count) mark(e, t, centre(e)[0], centre(e)[1]);
     });
     // Children that spawn while their parents live: `rate` per frame for each parent particle, from where it is.
     emitters.forEach((e, index) => {
@@ -487,7 +494,7 @@ function simulate(effect, context) {
       if (p.age >= p.life) { if (children[p.index].death.length) events.push([p, 'death']); alive.splice(i, 1); continue; }
       p.vx += e.gravity[0]; p.vy += e.gravity[1];
       if (e.attract) {
-        const dx = e.attract.at[0] - p.x, dy = e.attract.at[1] - p.y, distance = Math.sqrt(dx * dx + dy * dy);
+        const pull = pulls[p.index], dx = pull[0] - p.x, dy = pull[1] - p.y, distance = Math.sqrt(dx * dx + dy * dy);
         if (distance > 0.5) { p.vx += dx / distance * e.attract.strength; p.vy += dy / distance * e.attract.strength; }
       }
       p.vx *= 1 - e.drag; p.vy *= 1 - e.drag;
@@ -607,6 +614,62 @@ export function recipePoints(entry, path, key = 'point') {
   return points;
 }
 
+// Turned copies of an effect: `turn: { angles, about, mirror }` compiles one copy per angle (and a mirrored one of each),
+// named <effect>-<angle> and <effect>-<angle>-mirror, with its geometry turned about `about` (default the canvas centre)
+// instead of its pixels rotated, so every direction is drawn crisp. The copy at 0 unmirrored is the effect as drawn.
+const QUARTERS = { 0: [1, 0], 90: [0, 1], 180: [-1, 0], 270: [0, -1] };
+function turnsOf(effect, base, path, width, height) {
+  if (effect.turn === undefined) return [{ name: base }];
+  const turn = effect.turn;
+  if (!isObject(turn)) fail(`${path}.turn`, 'expected { angles, about, mirror }: the directions to compile copies of this effect in');
+  fields(turn, ['angles', 'about', 'mirror'], `${path}.turn`);
+  const angles = turn.angles ?? [0];
+  if (!Array.isArray(angles) || !angles.length || angles.length > 16) fail(`${path}.turn.angles`, 'expected 1–16 whole degrees, clockwise from the direction the effect is drawn in (0) to 359: [0, 90, 180, 270] for four directions');
+  angles.forEach((angle, i) => integer(angle, `${path}.turn.angles[${i}]`, 0, 359));
+  if (new Set(angles).size !== angles.length) fail(`${path}.turn.angles`, 'list each angle once');
+  const about = turn.about === undefined ? [width / 2, height / 2] : pair(turn.about, `${path}.turn.about`, -4096, 4096), mirror = flag(turn.mirror, `${path}.turn.mirror`);
+  // A sprite's pixels are drawn as they are, so an effect built on one can't turn.
+  if (Array.isArray(effect.emitters) && effect.emitters.some(e => isObject(e) && e.sprite !== undefined)) fail(`${path}.turn`, 'a sprite emitter can\'t turn: its sprite is drawn as it is; leave turn off this effect');
+  if (Array.isArray(effect.layers) && effect.layers.some(l => isObject(l) && l.kind === 'aura')) fail(`${path}.turn`, 'an aura can\'t turn: its sprite is drawn as it is; leave turn off this effect');
+  const copies = [];
+  for (const angle of angles) for (const flip of mirror ? [false, true] : [false]) {
+    const name = `${base}-${angle}${flip ? '-mirror' : ''}`;
+    if (name.length > 64) fail(`${path}.turn`, `${name} would be longer than 64 characters; shorten the effect's name`);
+    copies.push({ name, view: angle === 0 && !flip ? null : turnView(angle, flip, about) });
+  }
+  return copies;
+}
+// Mirroring flips across the upright line through `about`, then the turn goes clockwise; quarter turns are exact.
+function turnView(turn, mirror, [ax, ay]) {
+  const [c, s] = QUARTERS[turn] ?? [cosDeg(turn), sinDeg(turn)];
+  const vec = (dx, dy) => { const x = mirror ? -dx : dx; return [x * c - dy * s, x * s + dy * c]; };
+  return { turn, mirror, vec, point: ([x, y]) => { const [vx, vy] = vec(x - ax, y - ay); return [ax + vx, ay + vy]; }, dir: theta => (mirror ? 180 - theta : theta) + turn };
+}
+const isPair = value => Array.isArray(value) && value.length === 2 && value.every(v => typeof v === 'number' && Number.isFinite(v));
+const negated = value => (Array.isArray(value) ? value.map(v => (typeof v === 'number' ? -v : v)) : typeof value === 'number' ? -value : value);
+// A shape layer in a turned copy: its places turn about the copy's pivot and the kinds drawn round a centre take the
+// turn as tilt, so a slash keeps its crescent and a beam its caps; mirroring also reverses arcs and spins. Fields that
+// are not well formed are left for the layer reader to report. Floors and the looks' light stay as they are.
+function turnLayer(layer, view) {
+  if (!view || !isObject(layer)) return layer;
+  const out = { ...layer }, place = p => (isPair(p) ? view.point(p) : p), shift = p => (isPair(p) ? view.vec(p[0], p[1]) : p);
+  out.at = place(layer.at);
+  if (layer.kind === 'trail') {
+    if (Array.isArray(layer.points)) out.points = layer.points.map(shift);
+    if (layer.pivot !== undefined) out.pivot = isPair(layer.pivot) ? shift(layer.pivot) : Array.isArray(layer.pivot) ? layer.pivot.map(shift) : layer.pivot;
+  }
+  if (layer.to !== undefined) out.to = place(layer.to);
+  if (Array.isArray(layer.through)) out.through = layer.through.map(place);
+  if (layer.drift !== undefined) out.drift = shift(layer.drift);
+  if (['ring', 'slash', 'beam', 'glyph', 'star', 'burst'].includes(layer.kind)) { const tilt = typeof layer.tilt === 'number' ? layer.tilt : 0; out.tilt = view.turn + (view.mirror ? -tilt : tilt); }
+  if (view.mirror) {
+    if (layer.kind === 'slash' && isPair(layer.arc)) out.arc = [180 - layer.arc[0], 180 - layer.arc[1]];
+    if (layer.kind === 'star') out.angle = 180 - (typeof layer.angle === 'number' ? layer.angle : 0);
+    if ((layer.kind === 'star' || layer.kind === 'glyph') && layer.spin !== undefined) out.spin = negated(layer.spin);
+  }
+  return out;
+}
+
 // A trail layer with follow: { recipe, animation, point } takes that point's place in each frame of the animation as its
 // points, frame for frame (null where the point is missing; the frames after the animation have none).
 function followed(layer, path, frames) {
@@ -643,49 +706,51 @@ export function compileEffects(source) {
   // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
   const shapeWork = { spent: 0 };
   let totalFrames = 0;
-  for (const [name, effect] of Object.entries(source.effects)) {
-    const path = `fx.effects.${name}`;
-    identifier(name, path);
-    // Effect names become animation and frame names, which must be unique ignoring case for portable bundles.
-    if (seen.has(name.toLowerCase())) fail(path, 'effect names must be unique ignoring case; they name animations and frames');
-    seen.add(name.toLowerCase());
-    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup'], path);
-    const count = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop ?? false;
-    // The recipe's limits on frames, checked before anything is simulated or painted rather than after.
-    totalFrames += count;
-    if (totalFrames > 256) fail('fx.effects', `the effects make ${totalFrames} frames; a recipe holds at most 256`);
-    if (totalFrames * width * height > FRAME_AREA) fail('fx.effects', `the effects make ${totalFrames} frames of ${width}×${height}, more than the 4,194,304 pixels a recipe's frames share; use fewer frames or a smaller canvas`);
-    if (typeof loop !== 'boolean') fail(`${path}.loop`, 'expected a boolean');
-    const durations = Array.isArray(effect.duration)
-      ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
-      : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
-        : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-    const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path };
-    // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
-    // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
-    const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => followed(layer, `${path}.layers[${i}]`, count)) } : effect, path, context);
-    context.looks = shapes ? shapes.looks.map(look => look.name) : [];
-    const list = effect.emitters ?? (shapes ? [] : undefined);
-    if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
-    const emitters = [];
-    list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
-    const run = emitters.length ? simulate({ frames: count, loop, seed, emitters }, context)
-      : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), blobs: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
-    if (shapes) for (const layer of shapes.layers) if (layer.cue && !Object.hasOwn(run.cues[layer.t0], layer.cue)) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
-    const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
-    if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
-    // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
-    const cues = [];
-    const names = run.output.map((front, i) => {
-      const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork);
-      const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
-      const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
-      if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
-      frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
-      return `${name}-${i}`;
-    });
-    animations[name] = { frames: names, ...(!loop && { loop: false }) };
-    metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
+  for (const [base, effect] of Object.entries(source.effects)) {
+    const path = `fx.effects.${base}`;
+    identifier(base, path);
+    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup', 'turn'], path);
+    for (const { name, view } of turnsOf(effect, base, path, width, height)) {
+      // Effect names become animation and frame names, which must be unique ignoring case for portable bundles.
+      if (seen.has(name.toLowerCase())) fail(path, `effect names must be unique ignoring case; they name animations and frames${name === base ? '' : ` (${name} is a turned copy of ${base})`}`);
+      seen.add(name.toLowerCase());
+      const count = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop ?? false;
+      // The recipe's limits on frames, checked before anything is simulated or painted rather than after.
+      totalFrames += count;
+      if (totalFrames > 256) fail('fx.effects', `the effects make ${totalFrames} frames; a recipe holds at most 256`);
+      if (totalFrames * width * height > FRAME_AREA) fail('fx.effects', `the effects make ${totalFrames} frames of ${width}×${height}, more than the 4,194,304 pixels a recipe's frames share; use fewer frames or a smaller canvas`);
+      if (typeof loop !== 'boolean') fail(`${path}.loop`, 'expected a boolean');
+      const durations = Array.isArray(effect.duration)
+        ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
+        : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
+          : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
+      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path };
+      // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
+      // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
+      const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);
+      context.looks = shapes ? shapes.looks.map(look => look.name) : [];
+      const list = effect.emitters ?? (shapes ? [] : undefined);
+      if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
+      const emitters = [];
+      list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
+      const run = emitters.length ? simulate({ frames: count, loop, seed, emitters, view }, context)
+        : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), blobs: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
+      if (shapes) for (const layer of shapes.layers) if (layer.cue && !Object.hasOwn(run.cues[layer.t0], layer.cue)) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
+      const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
+      if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
+      // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
+      const cues = [];
+      const names = run.output.map((front, i) => {
+        const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork);
+        const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
+        const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
+        if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
+        frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
+        return `${name}-${i}`;
+      });
+      animations[name] = { frames: names, ...(!loop && { loop: false }) };
+      metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, ...(view !== undefined && name !== base && { turn: { of: base, angle: view?.turn ?? 0, mirror: view?.mirror ?? false } }), operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
+    }
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
   const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
