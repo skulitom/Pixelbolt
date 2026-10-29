@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### A lighter skill
+
+- The pixel art skill is 12 KB instead of 21 KB and starts from the quick start, which covers most tasks, instead of asking for the 50 KB authoring guide before the first recipe. The core loop, the art brief and work order, and the judgement rules for characters, tiles, scenes, effects and lighting stay; field-level details now link to the guide and workflow sections that already hold them.
+
 ### Smaller replies
 
 - The CLI's `render` and `scene` name their folder once (`directory`) and list files relative to it, leaving out each frame and, past 16, each animation, as MCP `pixel_render` does; `--list-files` lists every file. A 13-frame sprite's reply went from 3.9 KB to 0.8 KB. `removed` paths are relative too.
