@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "name": "props",
+  "width": 24,
+  "height": 30,
+  "palette": {
+    "O": "#1b1626",
+    "a": "#10302a",
+    "b": "#1c4e34",
+    "c": "#2e753c",
+    "e": "#4f9e42",
+    "f": "#8cc850",
+    "F": "#c8ec78",
+    "v": "#341c22",
+    "w": "#55302c",
+    "x": "#7a4a36",
+    "z": "#a06a44",
+    "Z": "#c49260",
+    "i": "#1e1c2c",
+    "j": "#36344a",
+    "l": "#55546e",
+    "m": "#7c7c98",
+    "n": "#a8a8c0",
+    "y": "#d89420",
+    "Y": "#f8c848",
+    "W": "#fff0a0",
+    "D": "#fbf8f0",
+    "s": "#fcd5a4"
+  },
+  "ramps": [["a", "b", "c", "e", "f", "F"], ["v", "w", "x", "z", "Z"], ["i", "j", "l", "m", "n"]],
+  "anchor": [12, 30],
+  "frames": [
+    {
+      "name": "lamp-off",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 5,
+          "rows": [
+            "..iiiii..",
+            ".ijjjjji.",
+            "ijlmmmlji",
+            ".jsssssj.",
+            ".jsYYYsj.",
+            ".jsYYYsj.",
+            ".jsssssj.",
+            "ijjjjjjji",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "...jlj...",
+            "..ijllj..",
+            ".ijjllmj.",
+            "iijjlllmi"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "lamp-on",
+      "duration": 100,
+      "layers": [
+        {
+          "name": "halo",
+          "ops": [
+            {
+              "op": "dither",
+              "x": 0,
+              "y": 0,
+              "w": 24,
+              "h": 20,
+              "color": "y",
+              "density": [0.55, 0],
+              "direction": "radial",
+              "pattern": "bayer4"
+            },
+            {
+              "op": "dither",
+              "x": 5,
+              "y": 3,
+              "w": 14,
+              "h": 13,
+              "color": "Y",
+              "density": [0.6, 0],
+              "direction": "radial",
+              "pattern": "bayer4"
+            }
+          ]
+        },
+        {
+          "name": "lamp",
+          "ops": [
+            {
+              "op": "grid",
+              "x": 7,
+              "y": 5,
+              "rows": [
+                "..iiiii..",
+                ".ijjjjji.",
+                "ijlmmmlji",
+                ".jWWDWYj.",
+                ".jWWDWYj.",
+                ".jWWDWYj.",
+                ".jWWDWYj.",
+                "ijjjjjjji",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "...jlj...",
+                "..ijllj..",
+                ".ijjllmj.",
+                "iijjlllmi"
+              ]
+            },
+            { "op": "outline", "color": "O" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "bush",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 19,
+          "rows": [
+            "......ccee..........",
+            "....cceeffe..eef....",
+            "...cceeeeffecceeff..",
+            "..ccceeeeeeeeeeefFf.",
+            ".bcccceeeeeeeeeeeff.",
+            ".bbccccceeeeeeeeeef.",
+            "abbbcccccceeeeeeeee.",
+            "abbbbcccccccceeeeee.",
+            ".aabbbbbcccccccccc..",
+            "..aaabbbbbbbbbbbb..."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "sign",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 6,
+          "y": 19,
+          "rows": [
+            "xxxxxxxxxxxx",
+            "xzzzzzzzzzzx",
+            "xzwwzwzwwzZx",
+            "xzzzzzzzzzzx",
+            "xxxxxxxxxxxx",
+            "....wx......",
+            "....wx......",
+            "....wx......",
+            "....wx......",
+            "...vwxv....."
+          ]
+        },
+        { "op": "text", "x": 8, "y": 22, "text": ">", "color": "Z" },
+        { "op": "outline", "color": "O" }
+      ]
+    }
+  ]
+}

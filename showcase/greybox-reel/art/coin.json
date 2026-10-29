@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "name": "coin",
+  "width": 12,
+  "height": 12,
+  "palette": {
+    "O": "#1b1626",
+    "a": "#9a5a18",
+    "b": "#d89420",
+    "c": "#f8c848",
+    "d": "#fff0a0",
+    "e": "#fbf8f0",
+    "g": "#d2d2d8",
+    "k": "#4b4b54"
+  },
+  "ramps": [["a", "b", "c", "d"]],
+  "anchor": [6, 6],
+  "frames": [
+    {
+      "name": "grey",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 3, "y": 2, "w": 6, "h": 8, "color": "g" },
+        { "op": "rect", "x": 3, "y": 2, "w": 6, "h": 8, "color": "k", "filled": false }
+      ]
+    },
+    {
+      "name": "spin-0",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 3,
+          "y": 2,
+          "rows": [
+            ".aaaa.",
+            "abbcca",
+            "abacda",
+            "abacda",
+            "abacda",
+            "abacda",
+            "abbcca",
+            ".aaaa."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "spin-1",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 2,
+          "rows": [
+            ".aa.",
+            "abca",
+            "abda",
+            "abda",
+            "abda",
+            "abda",
+            "abca",
+            ".aa."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "spin-2",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 5,
+          "y": 2,
+          "rows": [
+            "a",
+            "c",
+            "d",
+            "d",
+            "d",
+            "d",
+            "c",
+            "a"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "spin-3",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 2,
+          "rows": [
+            ".aa.",
+            "abca",
+            "abda",
+            "abda",
+            "abda",
+            "abda",
+            "abca",
+            ".aa."
+          ],
+          "flipX": true
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "spark-0",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 1,
+          "rows": [
+            "...........",
+            "...........",
+            ".....d.....",
+            ".....c.....",
+            "....cdc....",
+            "..dcdedcd..",
+            "....cdc....",
+            ".....c.....",
+            ".....d.....",
+            "...........",
+            "..........."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spark-1",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 1,
+          "rows": [
+            ".....d.....",
+            ".....c.....",
+            ".d...c...d.",
+            "..c..d..c..",
+            "...c...c...",
+            "dcd.....dcd",
+            "...c...c...",
+            "..c..d..c..",
+            ".d...c...d.",
+            ".....c.....",
+            ".....d....."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spark-2",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 1,
+          "rows": [
+            ".....c.....",
+            "...........",
+            ".c.......c.",
+            "...........",
+            "...........",
+            "c.........c",
+            "...........",
+            "...........",
+            ".c.......c.",
+            "...........",
+            ".....c....."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spark-3",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 1,
+          "rows": [
+            "...........",
+            "...........",
+            "...........",
+            "...........",
+            "...........",
+            ".....d.....",
+            "...........",
+            "...........",
+            "...........",
+            "...........",
+            "..........."
+          ]
+        }
+      ]
+    }
+  ],
+  "animations": {
+    "spin": { "frames": ["spin-0", "spin-1", "spin-2", "spin-3"] },
+    "collect": { "frames": ["spark-0", "spark-1", "spark-2", "spark-3"], "loop": false }
+  }
+}

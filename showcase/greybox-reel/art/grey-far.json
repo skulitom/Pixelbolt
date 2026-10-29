@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "name": "grey-far",
+  "width": 256,
+  "height": 112,
+  "palette": { "1": "#4b4b54", "2": "#64646e", "3": "#7f7f8a", "4": "#9c9ca6", "5": "#b8b8c1", "6": "#d2d2d8" },
+  "frames": [
+    {
+      "name": "far",
+      "ops": [
+        { "op": "rect", "x": 0, "y": 50, "w": 40, "h": 62, "color": "6" },
+        { "op": "rect", "x": 0, "y": 50, "w": 40, "h": 62, "color": "5", "filled": false },
+        { "op": "rect", "x": 36, "y": 70, "w": 50, "h": 42, "color": "6" },
+        { "op": "rect", "x": 36, "y": 70, "w": 50, "h": 42, "color": "5", "filled": false },
+        { "op": "rect", "x": 84, "y": 28, "w": 50, "h": 84, "color": "6" },
+        { "op": "rect", "x": 84, "y": 28, "w": 50, "h": 84, "color": "5", "filled": false },
+        { "op": "rect", "x": 130, "y": 60, "w": 46, "h": 52, "color": "6" },
+        { "op": "rect", "x": 130, "y": 60, "w": 46, "h": 52, "color": "5", "filled": false },
+        { "op": "rect", "x": 172, "y": 52, "w": 30, "h": 60, "color": "6" },
+        { "op": "rect", "x": 172, "y": 52, "w": 30, "h": 60, "color": "5", "filled": false },
+        { "op": "rect", "x": 198, "y": 40, "w": 58, "h": 72, "color": "6" },
+        { "op": "rect", "x": 198, "y": 40, "w": 58, "h": 72, "color": "5", "filled": false }
+      ]
+    }
+  ]
+}

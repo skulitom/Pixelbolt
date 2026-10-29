@@ -1,0 +1,894 @@
+{
+  "version": 1,
+  "name": "tiles",
+  "width": 16,
+  "height": 16,
+  "palette": {
+    "0": "#34343b",
+    "1": "#4b4b54",
+    "2": "#64646e",
+    "3": "#7f7f8a",
+    "4": "#9c9ca6",
+    "5": "#b8b8c1",
+    "6": "#d2d2d8",
+    "O": "#1b1626",
+    "a": "#10302a",
+    "b": "#1c4e34",
+    "c": "#2e753c",
+    "e": "#4f9e42",
+    "f": "#8cc850",
+    "F": "#c8ec78",
+    "u": "#1c1018",
+    "v": "#341c22",
+    "w": "#55302c",
+    "x": "#7a4a36",
+    "z": "#a06a44",
+    "Z": "#c49260",
+    "i": "#1e1c2c",
+    "j": "#36344a",
+    "l": "#55546e",
+    "m": "#7c7c98",
+    "n": "#a8a8c0",
+    "N": "#d4d4e2"
+  },
+  "ramps": [["a", "b", "c", "e", "f", "F"], ["u", "v", "w", "x", "z", "Z"], ["i", "j", "l", "m", "n", "N"]],
+  "symbols": {
+    "ground": [
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "..f..f..ff..f..ff.f..f..ff..f...",
+      "eeFeeeeeFeeeeeeFeeFeeeeeFeeeeeee",
+      "ccccccccccccccccccccccccccccccbe",
+      "bccbccccbbccccbccccbccccbbccccub",
+      "ubbubccbuubcbbubbcbubccbuubcbbwu",
+      "vuuuubbuwuubuuwuubuuubbuwuubuuwx",
+      "vuxwwuujwwuuwvwwwuxwwuujwwuuwvwx",
+      "vvwwwwwwwwwwwwwwwuwwwwwwwwwwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwwwwvwwwwwxwwwwwwwwwvwwwwwx",
+      "vvwwwwwwwwwwwwwwvwwwwwwwwwwwwwwx",
+      "vvwwxwwwwwwwwwwwwwwwxwwwwwwwwwwx",
+      "vvwwwwwwwwwwjlwwwwwwwwwwwwwwjlwx",
+      "vvwvwwwwwwwwwjwwwwwvwwwwwwwwwjwx",
+      "vvwwwwwwxwwwwwwwwwwwwwwwxwwwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwxwwwwwwwwvwwwwwwxwwwwwwwwvwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwwwwxxwwwwwwvwwwwwwwxxwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwjlwwwwwwwwwwwwwwjlwwwwwwwx",
+      "vvxwwwjjwwwwwvwwwwxwwwjjwwwwwvwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx",
+      "vvwwwwwwwvwwwwwxwwwwwwwwwvwwwwwx",
+      "vvwwwwwwwwwwwwwwvwwwwwwwwwwwwwwx",
+      "vvwwxwwwwwwwwwwwwwwwxwwwwwwwwwwx",
+      "vvwwwwwwwwwwjlwwwwwwwwwwwwwwjlwx",
+      "vvwvwwwwwwwwwjwwwwwvwwwwwwwwwjwx",
+      "vvwwwwwwxwwwwwwwwwwwwwwwxwwwwwwx",
+      "vvwwwwwwwwwwwwwwwwwwwwwwwwwwwwwx"
+    ],
+    "ground-grey": [
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "15555555555555555555555555555551",
+      "14444444444444444444444444444441",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "12222222222222222222222222222221",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331"
+    ],
+    "slab": [
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      ".NNNNNNNNNNNNNNNNNNNNNNNNNNNNNN.",
+      "mnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnN",
+      "jmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
+      "jllllllllllllllljllllllllllllllm",
+      "jllllllllllllllljmlllllllllllllm",
+      "jlllllllmllllmlljllllllllllllllm",
+      "jlmlllmllllllllljlllmlllllllmllm",
+      "jllllmlllllllllljlllllmllllllllm",
+      "jllllllllmlllllljlllllllllllmllm",
+      "jlllllllmmlllllljllmlllljlllmllm",
+      "jllmlllljllllllljllllllljllllllm",
+      "jlllllllmllllllljllllllljllmlllm",
+      "jllllllljllllllljllmllmljllllllm",
+      "jmlmlllljllllllljllmlllljllllllm",
+      "jlmllllljllllllljllllllljllllllm",
+      "jllllllljllllllljlllllllmllllllm",
+      "jllllllllllllllljllllllllllllllm",
+      "jlllllmllllllllljlmllllllllmlllm",
+      "jllllllllllllllljllllllllllllllm",
+      "jllllllllllllllljllllllllmlllllm",
+      "jllllllllllllllljlllmllllllllllm",
+      "jllllllllllllllljllllllllllllllm",
+      "jmlllllllllllllljllllllllllllllm",
+      "jllllllllllllllljlllmllllmlllllm",
+      "jmlmlllllllllllljlllmllllllllllm",
+      "jllllllljllllllmjmlllllljllllllm",
+      "jllllllljllllllmjllllllljllllllm",
+      "jllllllljllmlllmjllllllljlllllmm",
+      "jlllllmljllllllmjllllllljlmllllm",
+      "jllllllljllllllljllllllljllllllm",
+      "jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjm",
+      ".iiiiiiiiiiiiiiiiiiiiiiiiiiiiii."
+    ],
+    "slab-grey": [
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "................................",
+      "15555555555555555555555555555551",
+      "14444444444444444444444444444441",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "13333333333333332333333333333331",
+      "11111111111111111111111111111111"
+    ]
+  },
+  "frames": [
+    {
+      "name": "ground-0-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 0, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-0",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 0, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-0-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 0, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-0",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 0, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-1-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 1, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-1",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 1, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-1-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 1, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-1",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 1, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-2-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 2, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-2",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 2, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-2-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 2, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-2",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 2, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-3-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 3, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-3",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 3, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-3-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 3, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-3",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 3, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-4-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 4, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-4",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 4, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-4-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 4, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-4",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 4, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-5-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 5, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-5",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 5, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-5-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 5, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-5",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 5, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-6-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 6, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-6",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 6, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-6-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 6, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-6",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 6, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-7-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 7, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-7",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 7, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-7-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 7, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-7",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 7, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-8-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 8, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-8",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 8, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-8-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 8, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-8",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 8, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-9-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 9, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-9",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 9, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-9-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 9, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-9",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 9, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-10-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 10, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-10",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 10, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-10-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 10, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-10",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 10, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-11-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 11, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-11",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 11, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-11-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 11, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-11",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 11, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-12-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 12, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-12",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 12, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-12-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 12, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-12",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 12, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-13-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 13, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-13",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 13, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-13-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 13, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-13",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 13, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-14-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 14, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-14",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 14, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-14-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 14, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-14",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 14, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-15-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "ground-grey", "mask": 15, "mode": "cardinal" }]
+    },
+    {
+      "name": "ground-15",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "ground", "mask": 15, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-15-grey",
+      "duration": 2700,
+      "ops": [{ "op": "autotile", "symbol": "slab-grey", "mask": 15, "mode": "cardinal" }]
+    },
+    {
+      "name": "slab-15",
+      "duration": 100,
+      "ops": [{ "op": "autotile", "symbol": "slab", "mask": 15, "mode": "cardinal" }]
+    },
+    {
+      "name": "pit-top-grey",
+      "duration": 2700,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pit-top",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "vvvvvvvvvvvvvvuv",
+            "vvuvvvvuvuvvvvvv",
+            "vvvuvvvvvvuvvvvv",
+            "vvvvvvvvvvvvvvvv",
+            "vvvvvuvvvuvvuvvv",
+            "vvuvvvvvvvvvvvvv",
+            "vvvvvvvvuvvvvvvv",
+            "vvvvuvvvvvvvvvvv",
+            "vvvvvvvvvvvvuvvv",
+            "vvvvvvvvvvvvvvvv",
+            "vvvuuvvvvvvvuvvv",
+            "vvvvvvvvvvvvvvvv",
+            "vvvvvvvvvvvvvvvv",
+            "vvvvvvvvvvvvvvvv"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pit-deep-grey",
+      "duration": 2700,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pit-deep",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pit-stakes-grey",
+      "duration": 2700,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1111111111111111",
+            "1211121112111211",
+            "1221122112211221",
+            "1221122112211221",
+            "1221122112211221",
+            "0000000000000000",
+            "0000000000000000",
+            "0000000000000000",
+            "0000000000000000",
+            "0000000000000000",
+            "0000000000000000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pit-stakes",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "uuuuuuuuuuuuuuuu",
+            "umuuumuuumuuumuu",
+            "umluumluumluumlu",
+            "umluumluumluumlu",
+            "umluumluumluumlu",
+            "ijjjijjjijjjijjj",
+            "ijjjijjjijjjijjj",
+            "ijjjijjjijjjijjj",
+            "ijjjijjjijjjijjj",
+            "ijjjijjjijjjijjj",
+            "ijjjijjjijjjijjj"
+          ]
+        }
+      ]
+    },
+    { "name": "deco-tuft-grey", "duration": 2700, "ops": [] },
+    {
+      "name": "deco-tuft",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            ".....F..........",
+            "...f.ef.F.......",
+            "...efcef.f......",
+            "..ecfccecfe.....",
+            "..cccbcccbc....."
+          ]
+        }
+      ]
+    },
+    { "name": "deco-flower-grey", "duration": 2700, "ops": [] },
+    {
+      "name": "deco-flower",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "..........ZZ....",
+            ".........ZwwZ...",
+            "..........ZZ....",
+            "..........c.....",
+            ".........ece....",
+            "..........c.....",
+            ".........cec...."
+          ]
+        }
+      ]
+    },
+    { "name": "deco-stone-grey", "duration": 2700, "ops": [] },
+    {
+      "name": "deco-stone",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "......nnN.......",
+            "....lmmnnNm.....",
+            "...jllmmmnml....",
+            "...jjlllllmlj..."
+          ]
+        }
+      ]
+    },
+    { "name": "deco-mushroom-grey", "duration": 2700, "ops": [] },
+    {
+      "name": "deco-mushroom",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 0,
+          "rows": [
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            "................",
+            ".......xZZ......",
+            "......wxxZZ.....",
+            "......vwwxx.....",
+            "........NN......",
+            "........nN......",
+            "........nN......"
+          ]
+        }
+      ]
+    }
+  ],
+  "animations": {
+    "at-ground-0": { "frames": ["ground-0-grey", "ground-0"], "loop": false },
+    "at-slab-0": { "frames": ["slab-0-grey", "slab-0"], "loop": false },
+    "at-ground-1": { "frames": ["ground-1-grey", "ground-1"], "loop": false },
+    "at-slab-1": { "frames": ["slab-1-grey", "slab-1"], "loop": false },
+    "at-ground-2": { "frames": ["ground-2-grey", "ground-2"], "loop": false },
+    "at-slab-2": { "frames": ["slab-2-grey", "slab-2"], "loop": false },
+    "at-ground-3": { "frames": ["ground-3-grey", "ground-3"], "loop": false },
+    "at-slab-3": { "frames": ["slab-3-grey", "slab-3"], "loop": false },
+    "at-ground-4": { "frames": ["ground-4-grey", "ground-4"], "loop": false },
+    "at-slab-4": { "frames": ["slab-4-grey", "slab-4"], "loop": false },
+    "at-ground-5": { "frames": ["ground-5-grey", "ground-5"], "loop": false },
+    "at-slab-5": { "frames": ["slab-5-grey", "slab-5"], "loop": false },
+    "at-ground-6": { "frames": ["ground-6-grey", "ground-6"], "loop": false },
+    "at-slab-6": { "frames": ["slab-6-grey", "slab-6"], "loop": false },
+    "at-ground-7": { "frames": ["ground-7-grey", "ground-7"], "loop": false },
+    "at-slab-7": { "frames": ["slab-7-grey", "slab-7"], "loop": false },
+    "at-ground-8": { "frames": ["ground-8-grey", "ground-8"], "loop": false },
+    "at-slab-8": { "frames": ["slab-8-grey", "slab-8"], "loop": false },
+    "at-ground-9": { "frames": ["ground-9-grey", "ground-9"], "loop": false },
+    "at-slab-9": { "frames": ["slab-9-grey", "slab-9"], "loop": false },
+    "at-ground-10": { "frames": ["ground-10-grey", "ground-10"], "loop": false },
+    "at-slab-10": { "frames": ["slab-10-grey", "slab-10"], "loop": false },
+    "at-ground-11": { "frames": ["ground-11-grey", "ground-11"], "loop": false },
+    "at-slab-11": { "frames": ["slab-11-grey", "slab-11"], "loop": false },
+    "at-ground-12": { "frames": ["ground-12-grey", "ground-12"], "loop": false },
+    "at-slab-12": { "frames": ["slab-12-grey", "slab-12"], "loop": false },
+    "at-ground-13": { "frames": ["ground-13-grey", "ground-13"], "loop": false },
+    "at-slab-13": { "frames": ["slab-13-grey", "slab-13"], "loop": false },
+    "at-ground-14": { "frames": ["ground-14-grey", "ground-14"], "loop": false },
+    "at-slab-14": { "frames": ["slab-14-grey", "slab-14"], "loop": false },
+    "at-ground-15": { "frames": ["ground-15-grey", "ground-15"], "loop": false },
+    "at-slab-15": { "frames": ["slab-15-grey", "slab-15"], "loop": false },
+    "at-pit-top": { "frames": ["pit-top-grey", "pit-top"], "loop": false },
+    "at-pit-deep": { "frames": ["pit-deep-grey", "pit-deep"], "loop": false },
+    "at-pit-stakes": { "frames": ["pit-stakes-grey", "pit-stakes"], "loop": false },
+    "at-deco-tuft": { "frames": ["deco-tuft-grey", "deco-tuft"], "loop": false },
+    "at-deco-flower": { "frames": ["deco-flower-grey", "deco-flower"], "loop": false },
+    "at-deco-stone": { "frames": ["deco-stone-grey", "deco-stone"], "loop": false },
+    "at-deco-mushroom": { "frames": ["deco-mushroom-grey", "deco-mushroom"], "loop": false }
+  }
+}

@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "name": "near-glow",
+  "width": 256,
+  "height": 96,
+  "palette": { "a": "#d89420", "b": "#f8c848", "c": "#fff0a0" },
+  "frames": [
+    {
+      "name": "lit-1",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-2",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-3",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-4",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-5",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-6",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-7",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-8",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" },
+        { "op": "rect", "x": 130, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 130, "y": 70, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-9",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" },
+        { "op": "rect", "x": 130, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 130, "y": 70, "color": "c" },
+        { "op": "rect", "x": 189, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 56, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-10",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" },
+        { "op": "rect", "x": 130, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 130, "y": 70, "color": "c" },
+        { "op": "rect", "x": 189, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 56, "color": "c" },
+        { "op": "rect", "x": 181, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 181, "y": 56, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-11",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" },
+        { "op": "rect", "x": 130, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 130, "y": 70, "color": "c" },
+        { "op": "rect", "x": 189, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 56, "color": "c" },
+        { "op": "rect", "x": 181, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 181, "y": 56, "color": "c" },
+        { "op": "rect", "x": 189, "y": 57, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 57, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-12",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 43, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 43, "y": 58, "color": "c" },
+        { "op": "rect", "x": 51, "y": 58, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 51, "y": 58, "color": "c" },
+        { "op": "rect", "x": 44, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 44, "y": 59, "color": "c" },
+        { "op": "rect", "x": 52, "y": 59, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 52, "y": 59, "color": "c" },
+        { "op": "rect", "x": 121, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 121, "y": 69, "color": "c" },
+        { "op": "rect", "x": 129, "y": 69, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 129, "y": 69, "color": "c" },
+        { "op": "rect", "x": 122, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 122, "y": 70, "color": "c" },
+        { "op": "rect", "x": 130, "y": 70, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 130, "y": 70, "color": "c" },
+        { "op": "rect", "x": 189, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 56, "color": "c" },
+        { "op": "rect", "x": 181, "y": 56, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 181, "y": 56, "color": "c" },
+        { "op": "rect", "x": 189, "y": 57, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 189, "y": 57, "color": "c" },
+        { "op": "rect", "x": 181, "y": 57, "w": 2, "h": 2, "color": "b" },
+        { "op": "pixel", "x": 181, "y": 57, "color": "c" }
+      ]
+    }
+  ],
+  "animations": {
+    "on": {
+      "frames": [
+        "lit-1",
+        "lit-2",
+        "lit-3",
+        "lit-4",
+        "lit-5",
+        "lit-6",
+        "lit-7",
+        "lit-8",
+        "lit-9",
+        "lit-10",
+        "lit-11",
+        "lit-12"
+      ],
+      "loop": false
+    }
+  }
+}

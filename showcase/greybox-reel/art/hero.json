@@ -1,0 +1,624 @@
+{
+  "version": 1,
+  "name": "hero",
+  "width": 22,
+  "height": 27,
+  "palette": {
+    "O": "#1b1626",
+    "q": "#3c1028",
+    "r": "#6e1a34",
+    "R": "#a8283a",
+    "Q": "#d84a44",
+    "z": "#6a3030",
+    "s": "#b46a52",
+    "S": "#e8a47e",
+    "N": "#121a38",
+    "n": "#1c2c5c",
+    "b": "#2c4c8c",
+    "B": "#4278c4",
+    "T": "#7cb0e8",
+    "x": "#341c22",
+    "w": "#55302c",
+    "W": "#7a4a36",
+    "y": "#f8c848",
+    "G": "#ececf0",
+    "g": "#9c9ca6",
+    "k": "#4b4b54"
+  },
+  "ramps": [["q", "r", "R", "Q"], ["z", "s", "S"], ["N", "n", "b", "B", "T"], ["x", "w", "W"]],
+  "anchor": [11, 26],
+  "frames": [
+    {
+      "name": "grey",
+      "duration": 100,
+      "points": { "wisp": [3, 3] },
+      "ops": [
+        { "op": "rect", "x": 6, "y": 4, "w": 11, "h": 21, "color": "G" },
+        { "op": "rect", "x": 6, "y": 4, "w": 11, "h": 21, "color": "k", "filled": false },
+        { "op": "rect", "x": 13, "y": 8, "w": 2, "h": 2, "color": "k" }
+      ]
+    },
+    {
+      "name": "run-0",
+      "duration": 100,
+      "points": { "wisp": [3, 3] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 12,
+          "rows": [
+            "....qrr",
+            "..qqrrr",
+            ".qqrrr.",
+            "qqrr...",
+            "qq....."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........NNnnn.........",
+            ".......NNN.nnn........",
+            "......NNN...nnn.......",
+            ".....NNN.....nnn......",
+            "....xxN.......nnn.....",
+            "...xxx........wwWw....",
+            "..............wwww...."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 12,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 4,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 6,
+          "y": 13,
+          "rows": [
+            "...TB",
+            "..TB.",
+            "SSB.."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "run-1",
+      "duration": 100,
+      "points": { "wisp": [3, 4] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 13,
+          "rows": [
+            ".....rr",
+            "...qrrr",
+            ".qqrrrr",
+            "qqqrr..",
+            ".q....."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........NNnnn.........",
+            ".......NNNnnn.........",
+            "......NNN..nnn........",
+            ".....xxN...nnn........",
+            "....xxx...nnn.........",
+            "..........wwWw........",
+            "..........wwww........"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 13,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 5,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 10,
+          "y": 14,
+          "rows": [
+            "BT.",
+            ".BT",
+            ".SS"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "run-2",
+      "duration": 100,
+      "points": { "wisp": [3, 2] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 11,
+          "rows": [
+            "....qrr",
+            "...qrrr",
+            "..qqrr.",
+            ".qqrr..",
+            ".qq...."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........Nnnnn.........",
+            "........nnNNN.........",
+            ".......nn..NNN........",
+            ".......nn..xx.........",
+            ".......nn.............",
+            "......wwWw............",
+            "......wwww............"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 11,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 3,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 11,
+          "y": 12,
+          "rows": [
+            "BT...",
+            ".BT..",
+            "..BSS"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "run-3",
+      "duration": 100,
+      "points": { "wisp": [3, 3] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 12,
+          "rows": [
+            "....qrr",
+            "..qqrrr",
+            ".qqrrr.",
+            "qqrr...",
+            "qq....."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........nnNNN.........",
+            ".......nnn.NNN........",
+            "......nnn...NNN.......",
+            ".....nnn.....NNN......",
+            "....wwn.......NNN.....",
+            "...www........xxxx....",
+            "..............xxxx...."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 12,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 4,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 11,
+          "y": 13,
+          "rows": [
+            "BT...",
+            ".BT..",
+            "..BSS"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "run-4",
+      "duration": 100,
+      "points": { "wisp": [3, 4] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 13,
+          "rows": [
+            ".....rr",
+            "...qrrr",
+            ".qqrrrr",
+            "qqqrr..",
+            ".q....."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........nnNNN.........",
+            ".......nnnNNN.........",
+            "......nnn..NNN........",
+            ".....wwn...NNN........",
+            "....www...NNN.........",
+            "..........xxxx........",
+            "..........xxxx........"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 13,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 5,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 10,
+          "y": 14,
+          "rows": [
+            "BT.",
+            ".BT",
+            ".SS"
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "run-5",
+      "duration": 100,
+      "points": { "wisp": [3, 2] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 11,
+          "rows": [
+            "....qrr",
+            "...qrrr",
+            "..qqrr.",
+            ".qqrr..",
+            ".qq...."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........nNNNN.........",
+            "........NNnnn.........",
+            ".......NN..nnn........",
+            ".......NN..ww.........",
+            ".......NN.............",
+            "......xxxx............",
+            "......xxxx............"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 11,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 3,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 6,
+          "y": 12,
+          "rows": [
+            "...TB",
+            "..TB.",
+            "SSB.."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "rise",
+      "duration": 400,
+      "points": { "wisp": [3, 2] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 11,
+          "rows": [
+            "qq..qrr",
+            ".qqqrrr",
+            "..qrrr.",
+            "...r...",
+            "......."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........NNnnnn........",
+            ".......NNN.nnnn.......",
+            "......NNN....nn.......",
+            "......xx.....nn.......",
+            ".....xx.....wwWw......",
+            "............www.......",
+            "......................"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 11,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 3,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 13,
+          "y": 10,
+          "rows": [
+            "...SS",
+            "..TB.",
+            "BTB.."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "fall",
+      "duration": 400,
+      "points": { "wisp": [3, 3] },
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 12,
+          "rows": [
+            "qq..qrr",
+            ".qqqrrr",
+            "..qrrr.",
+            "...r...",
+            "......."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 0,
+          "y": 18,
+          "rows": [
+            "........NNnnn.........",
+            "........NN.nnn........",
+            ".......NN....nn.......",
+            ".......xx.....nn......",
+            "......xx......wwWw....",
+            "..............www.....",
+            "......................"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 7,
+          "y": 12,
+          "rows": [
+            "Nbbbbbbb",
+            "NbbbbbbB",
+            "NNbbbbbB",
+            "xxxxxyxx",
+            "Nbbbbbbb",
+            "NNNbbbbN"
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 4,
+          "rows": [
+            ".....rrrr...",
+            "...rrrrrRRR.",
+            "..rrrrrRRRQR",
+            "qrrrrrqqqqqR",
+            ".qqrrqsSSSSS",
+            "...rrqsSSOSS",
+            "...qrqssSSSs",
+            "....qqqssss."
+          ]
+        },
+        {
+          "op": "grid",
+          "x": 13,
+          "y": 11,
+          "rows": [
+            "...SS",
+            "..TB.",
+            "BTB.."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    }
+  ],
+  "animations": {
+    "grey": { "frames": ["grey"] },
+    "run": { "frames": ["run-0", "run-1", "run-2", "run-3", "run-4", "run-5"] },
+    "jump": { "frames": ["rise", "fall"], "loop": false },
+    "drop": { "frames": ["fall"], "loop": false }
+  }
+}

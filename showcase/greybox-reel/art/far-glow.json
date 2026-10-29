@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "name": "far-glow",
+  "width": 256,
+  "height": 112,
+  "palette": { "a": "#d89420", "b": "#f8c848", "c": "#fff0a0" },
+  "frames": [
+    {
+      "name": "lit-1",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-2",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" },
+        { "op": "rect", "x": 125, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 40, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-3",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" },
+        { "op": "rect", "x": 125, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 40, "color": "c" },
+        { "op": "rect", "x": 116, "y": 42, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 116, "y": 42, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-4",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" },
+        { "op": "rect", "x": 125, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 40, "color": "c" },
+        { "op": "rect", "x": 116, "y": 42, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 116, "y": 42, "color": "c" },
+        { "op": "rect", "x": 109, "y": 43, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 43, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-5",
+      "duration": 200,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" },
+        { "op": "rect", "x": 125, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 40, "color": "c" },
+        { "op": "rect", "x": 116, "y": 42, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 116, "y": 42, "color": "c" },
+        { "op": "rect", "x": 109, "y": 43, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 43, "color": "c" },
+        { "op": "rect", "x": 125, "y": 43, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 43, "color": "c" }
+      ]
+    },
+    {
+      "name": "lit-6",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 109, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 40, "color": "c" },
+        { "op": "rect", "x": 125, "y": 40, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 40, "color": "c" },
+        { "op": "rect", "x": 116, "y": 42, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 116, "y": 42, "color": "c" },
+        { "op": "rect", "x": 109, "y": 43, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 109, "y": 43, "color": "c" },
+        { "op": "rect", "x": 125, "y": 43, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 125, "y": 43, "color": "c" },
+        { "op": "rect", "x": 117, "y": 45, "w": 1, "h": 1, "color": "b" },
+        { "op": "pixel", "x": 117, "y": 45, "color": "c" }
+      ]
+    }
+  ],
+  "animations": { "on": { "frames": ["lit-1", "lit-2", "lit-3", "lit-4", "lit-5", "lit-6"], "loop": false } }
+}

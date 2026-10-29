@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "name": "slime",
+  "width": 20,
+  "height": 22,
+  "palette": {
+    "O": "#1b1626",
+    "q": "#24102e",
+    "p": "#4a1a5a",
+    "P": "#7a2c8a",
+    "Q": "#b050b8",
+    "h": "#e08ae0",
+    "H": "#fcd0f4",
+    "e": "#fbf8f0",
+    "g": "#7f7f8a",
+    "k": "#4b4b54"
+  },
+  "ramps": [["q", "p", "P", "Q", "h", "H"]],
+  "anchor": [10, 22],
+  "frames": [
+    {
+      "name": "grey",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 2, "y": 10, "w": 16, "h": 12, "color": "g" },
+        { "op": "rect", "x": 2, "y": 10, "w": 16, "h": 12, "color": "k", "filled": false },
+        { "op": "rect", "x": 4, "y": 13, "w": 2, "h": 2, "color": "k" }
+      ]
+    },
+    {
+      "name": "rest",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 9,
+          "rows": [
+            ".....pppppp.....",
+            "...ppPPPPPPpp...",
+            "..pPPPPPPPQhHp..",
+            ".pPPPPPPPPPQhQp.",
+            ".pPeeePPPPPPQQp.",
+            "pPPOeePPPPPPPPPp",
+            "pPPOeePPPPPPPPPp",
+            "pPPPPPPPPPPPPPPp",
+            "pPqqPPPPPPPPPPPp",
+            "qpPPPPPPPPPPPPpq",
+            "qqpppppppppppqqq",
+            ".qqqqqqqqqqqqqq."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "squash",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 12,
+          "rows": [
+            "......pppppp......",
+            "...pppPPPPPPppp...",
+            "..pPPPPPPPPPPQhHp.",
+            ".pPeeePPPPPPPPQQp.",
+            "pPPOeePPPPPPPPPPPp",
+            "pPPOeePPPPPPPPPPPp",
+            "pPqqPPPPPPPPPPPPPp",
+            "qqpppppppppppppqqq",
+            ".qqqqqqqqqqqqqqqq."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "stretch",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 4,
+          "y": 5,
+          "rows": [
+            "....pppp....",
+            "..ppPPPPpp..",
+            ".pPPPPPQhHp.",
+            ".pPPPPPPQhp.",
+            "pPPPPPPPPQQp",
+            "pPeeePPPPPPp",
+            "pPOeePPPPPPp",
+            "pPOeePPPPPPp",
+            "pPPPPPPPPPPp",
+            "pqqPPPPPPPPp",
+            "pPPPPPPPPPPp",
+            "qpPPPPPPPPpq",
+            "qqppppppppqq",
+            ".qqqqqqqqqq."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "air",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 2,
+          "y": 4,
+          "rows": [
+            ".....pppppp.....",
+            "...ppPPPPPPpp...",
+            "..pPPPPPPPQhHp..",
+            ".pPPPPPPPPPQhQp.",
+            ".pPeeePPPPPPQQp.",
+            "pPPOeePPPPPPPPPp",
+            "pPPOeePPPPPPPPPp",
+            "pPPPPPPPPPPPPPPp",
+            "pPqqPPPPPPPPPPPp",
+            "qpPPPPPPPPPPPPpq",
+            "qqpppppppppppqqq",
+            ".qqqqqqqqqqqqqq."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    },
+    {
+      "name": "land",
+      "duration": 100,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 12,
+          "rows": [
+            "......pppppp......",
+            "...pppPPPPPPppp...",
+            "..pPPPPPPPPPPQhHp.",
+            ".pPeeePPPPPPPPQQp.",
+            "pPPOeePPPPPPPPPPPp",
+            "pPPOeePPPPPPPPPPPp",
+            "pPqqPPPPPPPPPPPPPp",
+            "qqpppppppppppppqqq",
+            ".qqqqqqqqqqqqqqqq."
+          ]
+        },
+        { "op": "outline", "color": "O" }
+      ]
+    }
+  ],
+  "animations": { "hop": { "frames": ["rest", "squash", "stretch", "air", "land"] } }
+}

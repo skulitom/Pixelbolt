@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "name": "sky",
+  "width": 216,
+  "height": 216,
+  "palette": {
+    "A": "#1d2547",
+    "B": "#2b3c6e",
+    "D": "#3f5f9a",
+    "E": "#6189c0",
+    "F": "#92b6dc",
+    "G": "#c3dbea",
+    "a": "#6a3550",
+    "b": "#a8505e",
+    "c": "#dc7c6a",
+    "d": "#f4ab80",
+    "e": "#fcd5a4",
+    "f": "#fff1d2"
+  },
+  "ramps": [["A", "B", "D", "E", "F", "G"], ["a", "b", "c", "d", "e", "f"]],
+  "frames": [
+    {
+      "name": "day",
+      "ops": [
+        { "op": "rect", "x": 0, "y": 0, "w": 216, "h": 216, "color": "D" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 40,
+          "w": 216,
+          "h": 10,
+          "color": "E",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 50, "w": 216, "h": 166, "color": "E" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 78,
+          "w": 216,
+          "h": 10,
+          "color": "F",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 88, "w": 216, "h": 128, "color": "F" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 108,
+          "w": 216,
+          "h": 8,
+          "color": "G",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 116, "w": 216, "h": 100, "color": "G" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 130,
+          "w": 216,
+          "h": 8,
+          "color": "f",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 138, "w": 216, "h": 78, "color": "f" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 150,
+          "w": 216,
+          "h": 6,
+          "color": "e",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 156, "w": 216, "h": 60, "color": "e" }
+      ]
+    },
+    {
+      "name": "dusk",
+      "palette": {
+        "B": "#1d2547",
+        "D": "#2b3c6e",
+        "E": "#3f5f9a",
+        "F": "#6189c0",
+        "G": "#92b6dc",
+        "b": "#6a3550",
+        "c": "#a8505e",
+        "d": "#dc7c6a",
+        "e": "#f4ab80",
+        "f": "#fcd5a4"
+      },
+      "ops": [
+        { "op": "rect", "x": 0, "y": 0, "w": 216, "h": 216, "color": "D" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 40,
+          "w": 216,
+          "h": 10,
+          "color": "E",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 50, "w": 216, "h": 166, "color": "E" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 78,
+          "w": 216,
+          "h": 10,
+          "color": "F",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 88, "w": 216, "h": 128, "color": "F" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 108,
+          "w": 216,
+          "h": 8,
+          "color": "G",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 116, "w": 216, "h": 100, "color": "G" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 130,
+          "w": 216,
+          "h": 8,
+          "color": "f",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 138, "w": 216, "h": 78, "color": "f" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 150,
+          "w": 216,
+          "h": 6,
+          "color": "e",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 156, "w": 216, "h": 60, "color": "e" }
+      ]
+    },
+    {
+      "name": "night",
+      "palette": {
+        "B": "#1d2547",
+        "D": "#1d2547",
+        "E": "#2b3c6e",
+        "F": "#3f5f9a",
+        "G": "#6189c0",
+        "b": "#6a3550",
+        "c": "#6a3550",
+        "d": "#a8505e",
+        "e": "#dc7c6a",
+        "f": "#f4ab80"
+      },
+      "ops": [
+        { "op": "rect", "x": 0, "y": 0, "w": 216, "h": 216, "color": "D" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 40,
+          "w": 216,
+          "h": 10,
+          "color": "E",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 50, "w": 216, "h": 166, "color": "E" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 78,
+          "w": 216,
+          "h": 10,
+          "color": "F",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 88, "w": 216, "h": 128, "color": "F" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 108,
+          "w": 216,
+          "h": 8,
+          "color": "G",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 116, "w": 216, "h": 100, "color": "G" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 130,
+          "w": 216,
+          "h": 8,
+          "color": "f",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 138, "w": 216, "h": 78, "color": "f" },
+        {
+          "op": "dither",
+          "x": 0,
+          "y": 150,
+          "w": 216,
+          "h": 6,
+          "color": "e",
+          "density": [0.1, 0.9],
+          "direction": "down",
+          "pattern": "bayer4"
+        },
+        { "op": "rect", "x": 0, "y": 156, "w": 216, "h": 60, "color": "e" }
+      ]
+    }
+  ]
+}

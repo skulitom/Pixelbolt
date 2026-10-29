@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "name": "sun",
+  "width": 26,
+  "height": 26,
+  "palette": { "a": "#f4ab80", "b": "#fcd5a4", "c": "#fff1d2", "d": "#fbf8f0" },
+  "frames": [
+    {
+      "name": "day",
+      "ops": [
+        { "op": "ellipse", "x": 0, "y": 0, "w": 26, "h": 26, "color": "a" },
+        { "op": "ellipse", "x": 2, "y": 2, "w": 22, "h": 22, "color": "b" },
+        { "op": "ellipse", "x": 3, "y": 3, "w": 20, "h": 20, "color": "c" },
+        { "op": "ellipse", "x": 6, "y": 5, "w": 11, "h": 10, "color": "d" }
+      ]
+    },
+    {
+      "name": "setting",
+      "palette": { "a": "#a8505e", "b": "#dc7c6a", "c": "#f4ab80", "d": "#fcd5a4" },
+      "ops": [
+        { "op": "ellipse", "x": 0, "y": 0, "w": 26, "h": 26, "color": "a" },
+        { "op": "ellipse", "x": 2, "y": 2, "w": 22, "h": 22, "color": "b" },
+        { "op": "ellipse", "x": 3, "y": 3, "w": 20, "h": 20, "color": "c" },
+        { "op": "ellipse", "x": 6, "y": 5, "w": 11, "h": 10, "color": "d" }
+      ]
+    }
+  ]
+}

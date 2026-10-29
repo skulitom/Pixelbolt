@@ -1,0 +1,653 @@
+{
+  "format": "pixelforge-scene",
+  "version": 1,
+  "name": "greybox-reel",
+  "width": 216,
+  "height": 216,
+  "duration": 12000,
+  "background": "#ececf0",
+  "cues": { "player": 1400, "tiles": 2700, "sky": 4000, "far": 5300, "near": 6600, "actors": 7900, "light": 9200 },
+  "camera": [{ "time": 0, "at": [0, 0] }, { "time": 11999, "at": [360, 0] }],
+  "haze": { "color": "#b9bfe0" },
+  "lighting": {
+    "mode": "ramp",
+    "scope": "all",
+    "ambient": 0.25,
+    "bands": 5,
+    "steps": 3,
+    "lights": [
+      {
+        "sun": [0, 0],
+        "strength": 0.75,
+        "keys": [{ "time": "light", "strength": 0.75 }, { "time": "light+1000", "strength": 0 }]
+      },
+      {
+        "sun": [-1.2, 0.2],
+        "strength": 0,
+        "color": "#ffd8a8",
+        "keys": [{ "time": "light", "strength": 0 }, { "time": "light+1000", "strength": 0.3 }]
+      },
+      {
+        "follow": { "instance": "wisp" },
+        "at": [0, -26],
+        "height": 12,
+        "radius": 48,
+        "strength": 0,
+        "color": "#fff0c0",
+        "flicker": { "amount": 0.2, "every": 120, "seed": 3 },
+        "keys": [{ "time": "light+300", "strength": 0 }, { "time": "light+700", "strength": 1.8 }]
+      },
+      {
+        "follow": { "instance": "lamp-2" },
+        "at": [0, -21],
+        "height": 14,
+        "radius": 40,
+        "strength": 0,
+        "color": "#ffe0a0",
+        "flicker": { "amount": 0.15, "every": 100, "seed": 7 },
+        "keys": [{ "time": "light+460", "strength": 0 }, { "time": "light+560", "strength": 2 }]
+      },
+      {
+        "follow": { "instance": "lamp-5" },
+        "at": [0, -21],
+        "height": 14,
+        "radius": 40,
+        "strength": 0,
+        "color": "#ffe0a0",
+        "flicker": { "amount": 0.15, "every": 100, "seed": 8 },
+        "keys": [{ "time": "light+640", "strength": 0 }, { "time": "light+740", "strength": 2 }]
+      }
+    ]
+  },
+  "assets": {
+    "sky": "sky.json",
+    "stars": "stars.json",
+    "sun": "sun.json",
+    "clouds": "clouds.json",
+    "far": "far.json",
+    "far-glow": "far-glow.json",
+    "near": "near.json",
+    "near-glow": "near-glow.json",
+    "grey-far": "grey-far.json",
+    "grey-near": "grey-near.json",
+    "tiles": "tiles.json",
+    "props": "props.json",
+    "coin": "coin.json",
+    "slime": "slime.json",
+    "hero": "hero.json",
+    "wisp": "wisp.json",
+    "caption": "caption.json"
+  },
+  "instances": [
+    {
+      "name": "sky",
+      "asset": "sky",
+      "at": [0, 0],
+      "parallax": 0,
+      "hidden": true,
+      "lit": false,
+      "sequence": [
+        { "time": 4000, "frame": "day" },
+        { "time": 9500, "frame": "dusk" },
+        { "time": 10300, "frame": "night" }
+      ]
+    },
+    {
+      "name": "stars",
+      "asset": "stars",
+      "at": [0, 0],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 10700, "animation": "twinkle" }]
+    },
+    {
+      "name": "sun",
+      "asset": "sun",
+      "at": [94, 66],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 4000, "frame": "day" }, { "time": 9800, "frame": "setting" }],
+      "trajectory": [
+        { "time": 0, "at": [94, 66], "ease": "hold" },
+        { "time": 9200, "at": [94, 66], "ease": "in" },
+        { "time": 11800, "at": [94, 150] }
+      ]
+    },
+    {
+      "name": "clouds",
+      "asset": "clouds",
+      "at": [0, 40],
+      "parallax": 0.1,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "hidden": true,
+      "lit": false,
+      "sequence": [
+        { "time": 4000, "frame": "day" },
+        { "time": 9500, "frame": "dusk" },
+        { "time": 10300, "frame": "night" }
+      ]
+    },
+    {
+      "name": "grey-far",
+      "asset": "grey-far",
+      "at": [0, 58],
+      "parallax": 0.25,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "sequence": [{ "time": 5300, "hide": true }]
+    },
+    {
+      "name": "far",
+      "asset": "far",
+      "at": [0, 58],
+      "parallax": 0.25,
+      "haze": 0.35,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "hidden": true,
+      "lit": false,
+      "sequence": [
+        { "time": 5300, "frame": "day" },
+        { "time": 9500, "frame": "dusk" },
+        { "time": 10300, "frame": "night" }
+      ]
+    },
+    {
+      "name": "far-glow",
+      "asset": "far-glow",
+      "at": [0, 58],
+      "parallax": 0.25,
+      "haze": 0.2,
+      "lit": false,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "hidden": true,
+      "sequence": [{ "time": 10200, "animation": "on" }]
+    },
+    {
+      "name": "grey-near",
+      "asset": "grey-near",
+      "at": [0, 74],
+      "parallax": 0.5,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "sequence": [{ "time": 6600, "hide": true }]
+    },
+    {
+      "name": "near",
+      "asset": "near",
+      "at": [0, 74],
+      "parallax": 0.5,
+      "haze": 0.15,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "hidden": true,
+      "lit": false,
+      "sequence": [
+        { "time": 6600, "frame": "day" },
+        { "time": 9500, "frame": "dusk" },
+        { "time": 10300, "frame": "night" }
+      ]
+    },
+    {
+      "name": "near-glow",
+      "asset": "near-glow",
+      "at": [0, 74],
+      "parallax": 0.5,
+      "lit": false,
+      "repeat": [2, 1],
+      "step": [256, 0],
+      "hidden": true,
+      "sequence": [{ "time": 9700, "animation": "on" }]
+    },
+    {
+      "name": "level",
+      "asset": "tiles",
+      "at": [0, 72],
+      "tilemap": {
+        "rows": [
+          "....................................",
+          "....................................",
+          ".............................PPP....",
+          "......PPP..PPP......................",
+          "....................................",
+          "...............GGG..................",
+          "GGGGGGGGGvGGGGGGGGGGGGGGGvGGGGGGGGGG",
+          "GGGGGGGGGvGGGGGGGGGGGGGGGvGGGGGGGGGG",
+          "GGGGGGGGGdGGGGGGGGGGGGGGGdGGGGGGGGGG"
+        ],
+        "outside": "match",
+        "empty": "_",
+        "legend": {
+          "G": {
+            "rules": [
+              { "animation": "at-ground-{mask}", "autotile": "cardinal" },
+              {
+                "where": ["._.", "...", "..."],
+                "animations": ["at-deco-tuft", "at-deco-flower", "at-deco-stone", "at-deco-mushroom"],
+                "weights": [5, 2, 1, 1],
+                "chance": 0.35,
+                "offset": [0, -1]
+              }
+            ]
+          },
+          "P": { "animation": "at-slab-{mask}", "autotile": "cardinal" },
+          "v": {
+            "rules": [
+              { "where": ["._.", "...", "..."], "animation": "at-pit-top", "stop": true },
+              { "animation": "at-pit-deep" }
+            ]
+          },
+          "d": { "animation": "at-pit-stakes" }
+        }
+      }
+    },
+    {
+      "name": "bush-1",
+      "asset": "props",
+      "at": [56, 168],
+      "anchor": "frame",
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "bush" }]
+    },
+    {
+      "name": "lamp-2",
+      "asset": "props",
+      "at": [232, 168],
+      "anchor": "frame",
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "lamp-off" }, { "time": 9660, "frame": "lamp-on" }]
+    },
+    {
+      "name": "sign-3",
+      "asset": "props",
+      "at": [376, 168],
+      "anchor": "frame",
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "sign" }]
+    },
+    {
+      "name": "bush-4",
+      "asset": "props",
+      "at": [440, 168],
+      "anchor": "frame",
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "bush" }]
+    },
+    {
+      "name": "lamp-5",
+      "asset": "props",
+      "at": [504, 168],
+      "anchor": "frame",
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "lamp-off" }, { "time": 9840, "frame": "lamp-on" }]
+    },
+    {
+      "name": "coin-1",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [144, 137],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 2413, "hide": true }]
+    },
+    {
+      "name": "coin-2",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [158, 137],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 2853, "hide": true }]
+    },
+    {
+      "name": "coin-3",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [332, 132],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 8680, "animation": "collect" },
+        { "time": 9080, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-4",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [346, 132],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 9120, "animation": "collect" },
+        { "time": 9520, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-5",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [400, 137],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 10947, "animation": "collect" },
+        { "time": 11347, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-6",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [414, 137],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 11387, "animation": "collect" },
+        { "time": 11787, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-7",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [408, 155],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 11200, "animation": "collect" },
+        { "time": 11600, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-8",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [419, 155],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [
+        { "time": 7900, "animation": "spin" },
+        { "time": 11550, "animation": "collect" },
+        { "time": 11950, "hide": true }
+      ]
+    },
+    {
+      "name": "coin-9",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [104, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-10",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [120, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-11",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [136, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-12",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [184, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-13",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [200, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-14",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [216, 112],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-15",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [472, 96],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-16",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [488, 96],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "coin-17",
+      "asset": "coin",
+      "frame": "grey",
+      "at": [504, 96],
+      "anchor": "frame",
+      "lit": false,
+      "sequence": [{ "time": 7900, "animation": "spin" }]
+    },
+    {
+      "name": "slime",
+      "asset": "slime",
+      "frame": "grey",
+      "at": [446, 168],
+      "anchor": "frame",
+      "sequence": [{ "time": 7900, "animation": "hop" }],
+      "trajectory": [{ "time": 0, "at": [446, 168] }, { "time": 11999, "at": [302, 168] }]
+    },
+    {
+      "name": "slime-2",
+      "asset": "slime",
+      "frame": "grey",
+      "at": [120, 120],
+      "anchor": "frame",
+      "sequence": [{ "time": 7900, "animation": "hop" }]
+    },
+    {
+      "name": "hero",
+      "asset": "hero",
+      "frame": "grey",
+      "at": [72, 168],
+      "anchor": "frame",
+      "sequence": [
+        { "time": 1400, "animation": "run" },
+        { "time": 2233, "animation": "jump" },
+        { "time": 3033, "animation": "run" },
+        { "time": 5200, "animation": "jump" },
+        { "time": 6000, "animation": "run" },
+        { "time": 7300, "animation": "drop" },
+        { "time": 7600, "animation": "run" },
+        { "time": 8500, "animation": "jump" },
+        { "time": 9300, "animation": "run" },
+        { "time": 10767, "animation": "jump" },
+        { "time": 11567, "animation": "run" }
+      ],
+      "lift": [
+        { "time": 0, "height": 0 },
+        { "time": 2233, "height": 0, "ease": "out" },
+        { "time": 2633, "height": 22, "ease": "in" },
+        { "time": 3033, "height": 0 },
+        { "time": 5200, "height": 0, "ease": "out" },
+        { "time": 5600, "height": 30, "ease": "in" },
+        { "time": 6000, "height": 16 },
+        { "time": 7300, "height": 16, "ease": "in" },
+        { "time": 7600, "height": 0 },
+        { "time": 8500, "height": 0, "ease": "out" },
+        { "time": 8900, "height": 28, "ease": "in" },
+        { "time": 9300, "height": 0 },
+        { "time": 10767, "height": 0, "ease": "out" },
+        { "time": 11167, "height": 22, "ease": "in" },
+        { "time": 11567, "height": 0 }
+      ],
+      "trajectory": [{ "time": 0, "at": [72, 168] }, { "time": 11999, "at": [432, 168] }]
+    },
+    {
+      "name": "wisp",
+      "asset": "wisp",
+      "at": [-6, -4],
+      "anchor": "frame",
+      "lit": false,
+      "attach": { "instance": "hero", "point": "wisp" },
+      "hidden": true,
+      "sequence": [{ "time": 9500, "animation": "glow" }]
+    },
+    {
+      "name": "caption-greybox",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 0, "frame": "greybox" }, { "time": 1400, "hide": true }],
+      "trajectory": [{ "time": 0, "at": [0, -36], "ease": "out" }, { "time": 250, "at": [0, 4] }]
+    },
+    {
+      "name": "caption-player",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 1400, "frame": "player" }, { "time": 2700, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 1400, "at": [0, -36], "ease": "out" },
+        { "time": 1650, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-tiles",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 2700, "frame": "tiles" }, { "time": 4000, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 2700, "at": [0, -36], "ease": "out" },
+        { "time": 2950, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-sky",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 4000, "frame": "sky" }, { "time": 5300, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 4000, "at": [0, -36], "ease": "out" },
+        { "time": 4250, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-far",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 5300, "frame": "far" }, { "time": 6600, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 5300, "at": [0, -36], "ease": "out" },
+        { "time": 5550, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-near",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 6600, "frame": "near" }, { "time": 7900, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 6600, "at": [0, -36], "ease": "out" },
+        { "time": 6850, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-actors",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 7900, "frame": "actors" }, { "time": 9200, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 7900, "at": [0, -36], "ease": "out" },
+        { "time": 8150, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-light",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 9200, "frame": "light" }, { "time": 10800, "hide": true }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 9200, "at": [0, -36], "ease": "out" },
+        { "time": 9450, "at": [0, 4] }
+      ]
+    },
+    {
+      "name": "caption-credit",
+      "asset": "caption",
+      "at": [0, 4],
+      "parallax": 0,
+      "lit": false,
+      "hidden": true,
+      "sequence": [{ "time": 10800, "frame": "credit" }],
+      "trajectory": [
+        { "time": 0, "at": [0, -36], "ease": "hold" },
+        { "time": 10800, "at": [0, -36], "ease": "out" },
+        { "time": 11050, "at": [0, 4] }
+      ]
+    }
+  ]
+}

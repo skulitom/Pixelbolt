@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "name": "caption",
+  "width": 216,
+  "height": 33,
+  "palette": { "O": "#1b1626", "e": "#3a3452", "w": "#fbf8f0", "y": "#f8c848", "s": "#b8b8c1" },
+  "frames": [
+    {
+      "name": "greybox",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 23, "y": 0, "w": 169, "h": 33, "color": "O" },
+        { "op": "rect", "x": 24, "y": 1, "w": 167, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 23, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 191, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 23, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 191, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 55, "y": 8, "text": "1/8", "color": "y" },
+        { "op": "text", "x": 78, "y": 4, "text": "GREYBOX", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "every layer is a placeholder", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "player",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 49, "y": 0, "w": 118, "h": 33, "color": "O" },
+        { "op": "rect", "x": 50, "y": 1, "w": 116, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 49, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 166, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 49, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 166, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 61, "y": 8, "text": "2/8", "color": "y" },
+        { "op": "text", "x": 84, "y": 4, "text": "PLAYER", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "run and jump poses", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "tiles",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 52, "y": 0, "w": 111, "h": 33, "color": "O" },
+        { "op": "rect", "x": 53, "y": 1, "w": 109, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 52, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 162, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 52, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 162, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 69, "y": 8, "text": "3/8", "color": "y" },
+        { "op": "text", "x": 92, "y": 4, "text": "TILES", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "tilemap + autotile", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "sky",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 29, "y": 0, "w": 158, "h": 33, "color": "O" },
+        { "op": "rect", "x": 30, "y": 1, "w": 156, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 29, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 186, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 29, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 186, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 79, "y": 8, "text": "4/8", "color": "y" },
+        { "op": "text", "x": 102, "y": 4, "text": "SKY", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "dithered bands, parallax 0", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "far",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 36, "y": 0, "w": 143, "h": 33, "color": "O" },
+        { "op": "rect", "x": 37, "y": 1, "w": 141, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 36, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 178, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 36, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 178, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 45, "y": 8, "text": "5/8", "color": "y" },
+        { "op": "text", "x": 68, "y": 4, "text": "FAR PLANE", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "parallax 0.25 + haze", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "near",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 30, "y": 0, "w": 155, "h": 33, "color": "O" },
+        { "op": "rect", "x": 31, "y": 1, "w": 153, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 30, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 184, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 30, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 184, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 39, "y": 8, "text": "6/8", "color": "y" },
+        { "op": "text", "x": 62, "y": 4, "text": "NEAR PLANE", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "parallax 0.5 + haze", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "actors",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 18, "y": 0, "w": 179, "h": 33, "color": "O" },
+        { "op": "rect", "x": 19, "y": 1, "w": 177, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 18, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 196, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 18, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 196, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 27, "y": 8, "text": "7/8", "color": "y" },
+        { "op": "text", "x": 50, "y": 4, "text": "COINS & SLIME", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "pickups and an enemy", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "light",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 35, "y": 0, "w": 146, "h": 33, "color": "O" },
+        { "op": "rect", "x": 36, "y": 1, "w": 144, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 35, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 180, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 35, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 180, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 53, "y": 8, "text": "8/8", "color": "y" },
+        { "op": "text", "x": 76, "y": 4, "text": "LIGHTING", "color": "w", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "sunset, lamps and a wisp", "color": "s", "align": "center" }
+      ]
+    },
+    {
+      "name": "credit",
+      "duration": 100,
+      "ops": [
+        { "op": "rect", "x": 24, "y": 0, "w": 168, "h": 33, "color": "O" },
+        { "op": "rect", "x": 25, "y": 1, "w": 166, "h": 31, "color": "e", "filled": false },
+        { "op": "clear", "x": 24, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 191, "y": 0, "w": 1, "h": 1 },
+        { "op": "clear", "x": 24, "y": 32, "w": 1, "h": 1 },
+        { "op": "clear", "x": 191, "y": 32, "w": 1, "h": 1 },
+        { "op": "text", "x": 57, "y": 4, "text": "PIXELBOLT", "color": "y", "scale": 2 },
+        { "op": "text", "x": 108, "y": 22, "text": "text recipes, no image model", "color": "s", "align": "center" }
+      ]
+    }
+  ]
+}

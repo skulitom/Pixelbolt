@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "name": "wisp",
+  "width": 9,
+  "height": 11,
+  "palette": { "a": "#d89420", "b": "#f8c848", "c": "#fff0a0", "d": "#fbf8f0" },
+  "anchor": [4, 6],
+  "frames": [
+    {
+      "name": "glow-0",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 2,
+          "rows": [
+            "...a...",
+            "..aba..",
+            ".abcba.",
+            "abcdcba",
+            ".abcba.",
+            "..aba..",
+            "...a..."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "glow-1",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 1,
+          "rows": [
+            ".......",
+            "..aba..",
+            ".abcba.",
+            ".bcdcb.",
+            ".abcba.",
+            "..aba..",
+            "......."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "glow-2",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 2,
+          "rows": [
+            "...a...",
+            "...b...",
+            "..bcb..",
+            "abcdcba",
+            "..bcb..",
+            "...b...",
+            "...a..."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "glow-3",
+      "duration": 200,
+      "ops": [
+        {
+          "op": "grid",
+          "x": 1,
+          "y": 3,
+          "rows": [
+            ".......",
+            "..aba..",
+            ".abcba.",
+            ".bcdcb.",
+            ".abcba.",
+            "..aba..",
+            "......."
+          ]
+        }
+      ]
+    }
+  ],
+  "animations": { "glow": { "frames": ["glow-0", "glow-1", "glow-2", "glow-3"] } }
+}
