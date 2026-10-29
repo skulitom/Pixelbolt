@@ -6,7 +6,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Rigged figures that say what went wrong
 
+- `examples/hero.poses.json` is a complete rigged side-view figure to start from: bone limbs, a mass torso, a grid head and boots, far limbs a ramp step darker, and the idle, walk, run, jump, attack and hurt templates, each passing its own motion checks. Its origin is where the feet meet the ground, so every frame's atlas anchor is a ground point, and its torso stands there by `at`. The skill, quick start, workflow guide, README and llms.txt point to it.
+- Compiling poses warns when a pose draws outside the canvas: how many of its pixels are lost, the box its parts cover and its origin. A figure placed entirely off the canvas used to compile to empty frames with no word about it. The rest pose of a rig says once that the generated poses follow it.
+- Warnings on poses that motion templates generate point at what the author wrote. A reach warning is said once per motion and leg, naming the poses (`poses.motions.walk (farShin).reach: … in 8 of 8 poses …`), and once per leg when the rest pose already ends away from `rig.ground` (`poses.rig.legs[1] (farShin): … this leg ends at row 64 …`). They were one line per generated pose at a path such as `poses.poses[13].parts[3]`, which no source has. An authored pose that replaces a generated one keeps its own index in errors and warnings; the metadata keeps one entry per pose.
 - The render check fails a delivery with nothing visible (every checked frame fully transparent), with or without `expect`, and its fix points at the compile warnings and the source. It used to pass with `colors: 0` and a note.
+- `poses.schema.json` says a part's `at` is an offset from the pose origin (or the attached point), not a canvas position, and what `origin` is.
+- The plain humanoid figure fixture is 36 pixels tall instead of 32, so its jump apex keeps the top of its head (18 pixels were clipped); its figure golden is updated.
 
 ### Lit sprites in Godot
 

@@ -145,7 +145,7 @@ Grid parts can supply up to 16 `views`, keyed by whole degrees 0–359. Each vie
 
 `rig` assigns roles to instances in one authored rest pose: `body` (a root mass), optional `head`, `ground`, `rest`, `legs` and `arms` (arrays of two- or three-bone chains), and `tail` (up to sixteen instances). Chain children attach to a named `"end"` point with zero offset. In a three-bone leg, the first bone supplies the upper pose and the last two solve the foot target. Give each chain's final bone a named endpoint, such as `"points": {"end": "end"}`.
 
-`motions` maps animation names to templates. For example, `"run": {"template": "run", "speed": 48, "stride": 10, "lift": 5, "bob": 1, "lean": 8, "frames": 8, "duration": 40}` expands into named poses, contact markers and a looping animation. All positions and angles are deterministic integer samples. Mass squash rounds to 0.05 steps.
+[examples/hero.poses.json](../examples/hero.poses.json) is a complete rigged side-view figure with all six templates; start from it. `motions` maps animation names to templates. For example, `"run": {"template": "run", "speed": 48, "stride": 10, "lift": 5, "bob": 1, "lean": 8, "frames": 8, "duration": 40}` expands into named poses, contact markers and a looping animation. All positions and angles are deterministic integer samples. Mass squash rounds to 0.05 steps.
 
 | Template | Parameters and defaults | Frames |
 | --- | --- | --- |

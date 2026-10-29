@@ -193,6 +193,18 @@ test('every template at its defaults passes its own motion checks on a plain sid
   }
 });
 
+test('the rigged hero example compiles without warnings and draws the plain humanoid from an origin at its feet', async () => {
+  // The example places its torso with `at` from an origin where the feet meet the ground, so every frame's atlas
+  // anchor is a ground point; the pixels are exactly those of the plain fixture above, whose origin is its torso.
+  const hero = JSON.parse(await readFile(new URL('../examples/hero.poses.json', import.meta.url), 'utf8'));
+  const compiled = compilePoses(hero), plain = renderProject(compilePoses(plainRig()).recipe);
+  assert.equal(compiled.warnings, undefined);
+  const frames = renderProject(compiled.recipe).frames;
+  assert.deepEqual(frames.map(frame => frame.name), plain.frames.map(frame => frame.name));
+  frames.forEach((frame, i) => assert.ok(Buffer.from(frame.data).equals(Buffer.from(plain.frames[i].data)), frame.name));
+  assert.deepEqual(compiled.recipe.frames.find(frame => frame.name === 'stand').anchor, [15, 35]);
+});
+
 test('structural drawing has a deterministic work budget, and cached masses are copies', () => {
   // Many distinct large masses (each squash and angle is a new drawing) fail fast with a path instead of drawing
   // for seconds and blocking the MCP server or the studio thread.

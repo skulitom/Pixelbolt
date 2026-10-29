@@ -58,8 +58,49 @@ export function expandPoses(source) { return expandMotions(source, compilePoses,
 // a few percent of it; a source that would draw for seconds fails fast with a path instead of blocking the caller.
 export const RASTER_BUDGET = 8388608;
 
+// Where each pose of an expanded source was written: expansion appends generated poses and moves an authored pose that
+// replaces a generated one to the end, so an authored pose keeps its index in the input and a generated pose is named
+// by its motion. Paths in errors and warnings then point at something the author can edit.
+function writtenPoses(input, expanded) {
+  const found = new Map();
+  input.poses.forEach((pose, i) => found.set(pose?.name, { path: `poses.poses[${i}]` }));
+  for (const motion of Object.keys(expanded.motionInfo ?? {})) for (const name of expanded.animations[motion].frames)
+    if (!found.has(name)) found.set(name, { path: `poses.motions.${motion} (${name})`, motion });
+  return found;
+}
+
+// How many of each frame's stamped pixels fall outside the canvas, and the canvas box they cover. A symbol's opaque
+// pixels and their bounds are counted once; only a stamp that crosses an edge is counted pixel by pixel.
+function stampsOutside(frames, symbols, width, height) {
+  const inks = new Map(), inkOf = name => {
+    if (!inks.has(name)) {
+      const rows = symbols[name], ink = { rows, width: rows[0].length, count: 0, x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+      rows.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (row[x] !== '.' && row[x] !== ' ') { ink.count++; ink.x0 = Math.min(ink.x0, x); ink.x1 = Math.max(ink.x1, x); ink.y0 = Math.min(ink.y0, y); ink.y1 = Math.max(ink.y1, y); } });
+      inks.set(name, ink);
+    }
+    return inks.get(name);
+  };
+  return frames.map(frame => {
+    let total = 0, outside = 0, box = null;
+    for (const layer of frame.layers) for (const { symbol, x, y, flipX } of layer.ops) {
+      const ink = inkOf(symbol);
+      if (!ink.count) continue;
+      const column = c => x + (flipX ? ink.width - 1 - c : c), x0 = Math.min(column(ink.x0), column(ink.x1)), x1 = Math.max(column(ink.x0), column(ink.x1)), y0 = y + ink.y0, y1 = y + ink.y1;
+      total += ink.count;
+      box = box ? [Math.min(box[0], x0), Math.min(box[1], y0), Math.max(box[2], x1), Math.max(box[3], y1)] : [x0, y0, x1, y1];
+      if (x0 >= 0 && y0 >= 0 && x1 < width && y1 < height) continue;
+      if (x1 < 0 || y1 < 0 || x0 >= width || y0 >= height) { outside += ink.count; continue; }
+      ink.rows.forEach((row, r) => { for (let c = 0; c < row.length; c++) if (row[c] !== '.' && row[c] !== ' ') { const px = column(c), py = y + r; if (px < 0 || py < 0 || px >= width || py >= height) outside++; } });
+    }
+    return { name: frame.name, total, outside, box };
+  });
+}
+const nameList = (names, limit = 3) => names.slice(0, limit).join(', ') + (names.length > limit ? ` and ${names.length - limit} more` : '');
+const span = (low, high) => low === high ? `${low}` : `${low} to ${high}`;
+
 export function compilePoses(source, mode) {
-  if (source?.motions !== undefined) source = expandPoses(source);
+  let written = null;
+  if (source?.motions !== undefined) { const input = source; source = expandPoses(source); written = writtenPoses(input, source); }
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'rig', 'motionInfo', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   if (source.light !== undefined && (!Number.isInteger(source.light) || source.light < 0 || source.light > 359)) fail('poses.light', 'expected whole degrees from 0 to 359');
@@ -100,7 +141,8 @@ export function compilePoses(source, mode) {
   if (!Array.isArray(source.poses) || !source.poses.length || source.poses.length > 256) fail('poses.poses', 'expected 1–256 authored key poses');
   const metadata = { format: 'pixelforge-pose-metadata', version: 1, coordinates: 'unscaled source pixels; top-left origin; positive y down; marker times are milliseconds before playback-rate adjustment', poses: Object.create(null), animations: Object.create(null) };
   if (source.rig !== undefined) metadata.rig = { ...source.rig };
-  const compiled = Object.create(null), shapes = new Map(), warnings = [];
+  // generated: what a warning on a generated pose is about, so the text warnings can say it once per motion.
+  const compiled = Object.create(null), shapes = new Map(), warnings = [], generated = new WeakMap();
   let rasterWork = 0;
   // The drawn shape of a part instance. Flips alone stay a stamp flag; a rotation (after any flip) is baked into a new
   // editable symbol named <part>-r<degrees> (-fr when flipped, -raw without cleanup) around the part's anchor pixel.
@@ -161,7 +203,7 @@ export function compilePoses(source, mode) {
     })) };
   };
   const frames = source.poses.map((pose, index) => {
-    const path = `poses.poses[${index}]`;
+    const writtenAs = written?.get(pose?.name), path = writtenAs?.path ?? `poses.poses[${index}]`, motion = writtenAs?.motion;
     fields(pose, ['name', 'duration', 'origin', 'parts', 'markers', 'contacts', 'mirror', 'relight', 'tween'], path);
     identifier(pose.name, `${path}.name`);
     if (Object.hasOwn(compiled, pose.name)) fail(`${path}.name`, 'duplicate pose');
@@ -237,7 +279,7 @@ export function compilePoses(source, mode) {
       if (!Array.isArray(spec.parts) || spec.parts.length > 64) fail(partsPath, 'expected at most 64 parts in back-to-front order');
       inputs = { origin, parts: [] };
       const instances = new Map(), owners = new Map(), worldAngles = new Map(), solved = new Map(), resolvedShapes = new Map();
-      const instancePath = (instance, i) => spec === pose ? `${partsPath}[${i}]` : `${partsPath} (${instance.name})`;
+      const instancePath = (instance, i) => spec === pose && motion === undefined ? `${partsPath}[${i}]` : `${partsPath} (${instance.name})`;
       spec.parts.forEach((instance, i) => {
         const ip = instancePath(instance, i);
         fields(instance, ['name', 'part', 'at', 'attach', 'flipX', 'rotate', 'angle', 'reach', 'bend', 'cleanup', 'squash'], ip);
@@ -300,7 +342,11 @@ export function compilePoses(source, mode) {
           const solution = solveReach(definition.bone, source.parts[child.part].bone, child.reach.map((v, axis) => v - anchor[axis]),
             { rest: [rotate, 0], flip: [flipX, child.flipX === true], bend: child.bend ?? 'forward' });
           rotate = solution.angles[0]; solved.set(child.name, solution);
-          if (solution.unreachable) warnings.push({ path: `${instancePath(child, instances.get(child.name))}.reach`, message: `Target is out of reach by ${Math.round(solution.error * 1000) / 1000} px; the chain uses its closest ${solution.straightened ? 'straight' : 'folded'} pose.`, error: solution.error });
+          if (solution.unreachable) {
+            const warning = { path: `${instancePath(child, instances.get(child.name))}.reach`, message: `Target is out of reach by ${Math.round(solution.error * 1000) / 1000} px; the chain uses its closest ${solution.straightened ? 'straight' : 'folded'} pose.`, error: solution.error };
+            warnings.push(warning);
+            if (motion !== undefined) generated.set(warning, { kind: 'reach', motion, pose: pose.name, part: child.name, error: solution.error, straightened: solution.straightened });
+          }
         }
         if (solved.has(instance.name)) rotate = solved.get(instance.name).angles[1];
         worldAngles.set(instance.name, rotate);
@@ -410,10 +456,56 @@ export function compilePoses(source, mode) {
       start += frame.duration; return entry;
     }) };
   }
+  // Drawing outside the canvas is clipped from every export, and a figure placed off the canvas compiles to empty
+  // frames without an error; say so here, where the pose that does it can be named.
+  const { width, height } = recipe, canvas = `${width}x${height} canvas`, cover = box => `x ${span(box[0], box[2])}, y ${span(box[1], box[3])}`;
+  // Listed first: a pose off the canvas is usually also why its feet miss the ground. When the rest pose of a rig
+  // draws nothing inside the canvas, the poses the templates make from it follow it there, and its warning says so.
+  const rig = source.rig, rest = rig?.rest !== undefined ? compiled[rig.rest] : undefined, clipped = [];
+  let restGone = false;
+  stampsOutside(frames, recipe.symbols, width, height).forEach((clip, index) => {
+    if (!clip.outside) return;
+    const name = clip.name, writtenAs = written?.get(name), origin = compiled[name].origin, gone = clip.outside === clip.total;
+    if (gone && written && name === rig?.rest) restGone = true;
+    const message = `${gone ? `Pose "${name}" draws nothing inside the ${canvas}: all ${clip.total} of its pixels fall outside` : `Pose "${name}" draws ${clip.outside} of its ${clip.total} pixels outside the ${canvas}, where they are clipped`} (its parts cover ${cover(clip.box)}). A part without attach stands at the pose origin [${origin.join(', ')}] plus its at.${gone && written && name === rig?.rest ? ' The motion templates move this pose, so the poses they make fall outside too.' : ''}`;
+    const warning = { path: writtenAs?.path ?? `poses.poses[${index}]`, message, outside: clip.outside, pixels: clip.total };
+    clipped.push(warning);
+    if (writtenAs?.motion !== undefined) generated.set(warning, { kind: 'canvas', motion: writtenAs.motion, pose: name, outside: clip.outside, total: clip.total, box: clip.box });
+  });
+  warnings.unshift(...clipped);
   if (warnings.length) metadata.warnings = warnings;
   // Also as text at the top level, where every other compiler puts its warnings, so the CLI, MCP and the studio show
-  // a target out of reach without anyone asking for the metadata.
-  return plain({ recipe, metadata, ...(warnings.length && { warnings: warnings.map(warning => `${warning.path}: ${warning.message}`) }) });
+  // a target out of reach without anyone asking for the metadata. Warnings on generated poses are said once per
+  // motion and chain, naming the poses, instead of once per pose at a path the author never wrote. A leg that already
+  // ends away from rig.ground in the rest pose misses in every motion for that one reason, so it is said once per leg.
+  const restEnd = part => rig?.legs?.some(chain => chain.at(-1) === part) ? rest?.placed[part]?.joints?.end : undefined;
+  const offGround = part => { const end = restEnd(part); return end !== undefined && Math.abs(end[1] - rig.ground) > 1; };
+  const text = [], groups = new Map();
+  for (const warning of warnings) {
+    const about = generated.get(warning);
+    if (!about) { text.push(`${warning.path}: ${warning.message}`); continue; }
+    if (about.kind === 'canvas' && restGone) continue;
+    const key = about.kind === 'reach' && offGround(about.part) ? `leg\n${about.part}` : `${about.kind}\n${about.motion}\n${about.part ?? ''}`;
+    if (!groups.has(key)) { groups.set(key, []); text.push(groups.get(key)); }
+    groups.get(key).push(about);
+  }
+  const round = value => Math.round(value * 1000) / 1000;
+  const grouped = items => {
+    const { kind, motion, part } = items[0], one = items.length === 1, names = nameList(items.map(item => item.pose));
+    if (kind === 'reach') {
+      const errors = items.map(item => round(item.error)), by = `by ${span(Math.min(...errors), Math.max(...errors))} px`;
+      const shape = items.every(item => item.straightened) ? 'straight' : items.some(item => item.straightened) ? 'straight or folded' : 'folded';
+      if (offGround(part)) {
+        const motions = [...new Set(items.map(item => item.motion))], leg = rig.legs.findIndex(chain => chain.at(-1) === part);
+        return `poses.rig.legs[${leg}] (${part}): Motion templates aim the feet at rig.ground (row ${rig.ground}), but in the rest pose "${rig.rest}" this leg ends at row ${restEnd(part)[1]}, so its target is out of reach in ${items.length} generated pose${one ? '' : 's'} (${nameList(motions, 6)}) ${by} and the chain uses its closest ${shape} pose. Move the body or the pose origin until the leg ends near row ${rig.ground}, or set rig.ground to match.`;
+      }
+      return `poses.motions.${motion} (${part}).reach: Target is out of reach in ${items.length} of ${new Set(source.animations[motion].frames).size} poses (${names}) ${by}; the chain uses its closest ${shape} pose.${restEnd(part) ? ` In the rest pose "${rig.rest}" this leg ends on rig.ground (row ${rig.ground}), so the motion asks for more than it reaches: lower its stride, lift or bob, or lengthen the leg.` : ''}`;
+    }
+    const box = items.reduce((all, { box: b }) => [Math.min(all[0], b[0]), Math.min(all[1], b[1]), Math.max(all[2], b[2]), Math.max(all[3], b[3])], items[0].box);
+    const nothing = items.every(item => item.outside === item.total), poses = `${items.length} of ${new Set(source.animations[motion].frames).size} poses`;
+    return `poses.motions.${motion}: ${poses} ${nothing ? `draw${one ? 's' : ''} nothing inside` : `draw${one ? 's' : ''} up to ${Math.max(...items.map(item => item.outside))} pixels outside`} the ${canvas} (${names}; ${one ? 'its' : 'their'} parts cover ${cover(box)}). Generated poses move the rest pose${rig?.rest !== undefined ? ` "${rig.rest}"` : ''}: ${nothing ? 'place it inside the canvas first' : 'give it more room in the canvas, or change the motion\'s settings'}.`;
+  };
+  return plain({ recipe, metadata, ...(warnings.length && { warnings: text.map(item => typeof item === 'string' ? item : grouped(item)) }) });
 }
 
 // Compiles a small template into an autotile set. The template is two tiles wide and three tall:

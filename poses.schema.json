@@ -739,7 +739,7 @@
             },
             "maxItems": 2,
             "minItems": 2,
-            "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+            "description": "The canvas point the pose stands on (often where the feet meet the ground), exported as the frame anchor. Parts without attach are placed from it. Default [0, 0]."
           },
           "mirror": {
             "type": "string",
@@ -814,7 +814,7 @@
                   },
                   "maxItems": 2,
                   "minItems": 2,
-                  "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+                  "description": "Offset [x, y] of the part anchor from the pose origin, or with attach from the named point; not a canvas position. Default [0, 0]."
                 },
                 "attach": {
                   "type": "object",

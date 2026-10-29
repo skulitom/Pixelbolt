@@ -166,7 +166,7 @@ export function plainRig() {
     { name: `${label}Fore`, part: far ? 'farFore' : 'fore', attach: { part: `${label}Upper`, point: 'end' }, angle: -15 }
   ];
   return {
-    format: 'pixelforge-poses', version: 1, name: 'plain-walker', width: 32, height: 32,
+    format: 'pixelforge-poses', version: 1, name: 'plain-walker', width: 32, height: 36,
     palette: { k: '#1b1626', x: '#6e3f3a', y: '#c27b5c', z: '#f0b98e', r: '#3f1c2c', s: '#7f2b3d', t: '#b8463f', u: '#e07e52',
       p: '#222844', q: '#39476b', o: '#5a6f99', b: '#3a2421', c: '#6e4430', h: '#f2c14e', g: '#c08a2a' },
     ramps: [['x', 'y', 'z'], ['r', 's', 't', 'u'], ['p', 'q', 'o']],
@@ -180,9 +180,9 @@ export function plainRig() {
       farUpper: limb(4, [2, 2], 1, 1, ['round', 'round']), farFore: limb(4, [2, 2], 0, 0),
       boot: { rows: ['kcck.', 'kbcck', 'kkkkk'], anchor: [1, 2] }
     },
-    rig: { body: 'torso', head: 'head', ground: 30, rest: 'stand',
+    rig: { body: 'torso', head: 'head', ground: 34, rest: 'stand',
       legs: [['nearThigh', 'nearShin'], ['farThigh', 'farShin']], arms: [['nearUpper', 'nearFore'], ['farUpper', 'farFore']] },
-    poses: [{ name: 'stand', duration: 200, origin: [15, 16], parts: [
+    poses: [{ name: 'stand', duration: 200, origin: [15, 20], parts: [
       ...arm('far', true), ...side('far', true),
       { name: 'torso', part: 'torso' }, { name: 'head', part: 'head', attach: { part: 'torso', point: 'neck' } },
       ...side('near', false), ...arm('near', false)

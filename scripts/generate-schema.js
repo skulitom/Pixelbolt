@@ -167,11 +167,11 @@ const poses = {
       object({ bone: bonePart, points: { type: 'object', propertyNames: id, additionalProperties: { oneOf: [structuralPoint, { const: 'end' }] } } }, ['bone']),
       object({ mass: massPart, points: { type: 'object', propertyNames: id, additionalProperties: structuralPoint } }, ['mass'])
     ] } },
-    poses: { ...array({ ...object({ name: id, duration: int(1, 60000), origin: point,
+    poses: { ...array({ ...object({ name: id, duration: int(1, 60000), origin: { ...point, description: 'The canvas point the pose stands on (often where the feet meet the ground), exported as the frame anchor. Parts without attach are placed from it. Default [0, 0].' },
       mirror: { ...id, description: 'Reflect an earlier pose (parts, points and markers) around its origin corner: pixel column c becomes 2 × originX − 1 − c, as drawFrame\'s flipX does. Omit parts, markers and origin.' },
       relight: { type: 'boolean', description: 'Mirror poses only: redraw structural parts with the source light unchanged; false/omitted preserves exact runtime-flipped pixels.' },
       tween: { ...object({ from: id, to: id, t: num(0, 1, 'Position between the two poses.'), ease }, ['from', 'to', 't']), description: 'An in-between of two earlier authored or tweened poses with the same part instances: origin, offsets and angles interpolate and round; part definitions and flips switch at the eased halfway point. Omit parts and origin; markers are not inherited.' },
-      parts: array(object({ name: id, part: id, at: point, attach: object({ part: id, point: id }, ['part', 'point']), flipX: { type: 'boolean', description: 'Mirror this part, its anchor and its points inside the part.' },
+      parts: array(object({ name: id, part: id, at: { ...point, description: 'Offset [x, y] of the part anchor from the pose origin, or with attach from the named point; not a canvas position. Default [0, 0].' }, attach: object({ part: id, point: id }, ['part', 'point']), flipX: { type: 'boolean', description: 'Mirror this part, its anchor and its points inside the part.' },
         rotate: int(-360, 360, 'Whole degrees clockwise around the part anchor pixel, after any flip. The rotated grid is baked into an editable symbol named <part>-r<degrees> (-fr when flipped); points turn with it; right angles are exact.'),
         angle: int(-360, 360, 'Clockwise degrees relative to the parent world angle, or world degrees at a root. Mutually exclusive with rotate. Relative-angle tweens take the shorter arc.'),
         reach: { ...point, description: 'Canvas target [x, y] for the last bone of a two-bone chain. Replaces angle/rotate; attach to a named end point with zero at offset. Both bones are solved at whole degrees.' },

@@ -105,6 +105,45 @@ const swing = { format: 'pixelforge-poses', version: 1, name: 'swing', width: 40
   ],
   animations: { swing: { frames: ['raise', 'swing-1', 'swing-2', 'strike', 'follow'], loop: false } } };
 
+// A side-view figure rigged for the motion templates: bone limbs, a mass torso, a grid head and boots. The pose origin
+// is where the feet meet the ground, exported as each frame's anchor; the torso, the only part without attach, stands
+// 15 rows above it (its `at` is an offset from the origin, not a canvas position), and every other part hangs from it.
+// Far limbs are one ramp step darker, paired limbs share rest angles, and every motion passes its own checks.
+const limb = (length, width, ramp, base, caps = ['socket', 'round']) => ({ bone: { length, width, ramp, base, outline: 'k', caps }, points: { end: 'end' } });
+const leg = (side, far) => [
+  { name: `${side}Thigh`, part: far ? 'farThigh' : 'thigh', attach: { part: 'torso', point: 'hip' }, angle: 90 },
+  { name: `${side}Shin`, part: far ? 'farShin' : 'shin', attach: { part: `${side}Thigh`, point: 'end' }, angle: 0 },
+  { name: `${side}Boot`, part: 'boot', attach: { part: `${side}Shin`, point: 'end' } }
+];
+const arm = (side, far) => [
+  { name: `${side}Upper`, part: far ? 'farUpper' : 'upper', attach: { part: 'torso', point: 'shoulder' }, angle: 95 },
+  { name: `${side}Fore`, part: far ? 'farFore' : 'fore', attach: { part: `${side}Upper`, point: 'end' }, angle: -15 }
+];
+const hero = { format: 'pixelforge-poses', version: 1, name: 'hero', width: 32, height: 36,
+  palette: { k: '#1b1626', x: '#6e3f3a', y: '#c27b5c', z: '#f0b98e', r: '#3f1c2c', s: '#7f2b3d', t: '#b8463f', u: '#e07e52',
+    p: '#222844', q: '#39476b', o: '#5a6f99', b: '#3a2421', c: '#6e4430', h: '#f2c14e', g: '#c08a2a' },
+  ramps: [['x', 'y', 'z'], ['r', 's', 't', 'u'], ['p', 'q', 'o']],
+  light: 225,
+  parts: {
+    torso: { mass: { size: [7, 9], ramp: 1, base: 2, outline: 'k' }, points: { hip: [0, 4], shoulder: [1, -3], neck: [1, -4] } },
+    head: { rows: ['..kkkk..', '.kghhhk.', 'kgghhhhk', 'kghzzkzk', '.kgzzzzk', '.kyzzzyk', '..kyyyk.', '...kkk..'], anchor: [4, 7] },
+    thigh: limb(5, [3, 3], 2, 1, ['round', 'round']), shin: limb(5, [3, 2], 2, 1),
+    farThigh: limb(5, [3, 3], 2, 0, ['round', 'round']), farShin: limb(5, [3, 2], 2, 0),
+    upper: limb(4, [2, 2], 1, 2, ['round', 'round']), fore: limb(4, [2, 2], 0, 1),
+    farUpper: limb(4, [2, 2], 1, 1, ['round', 'round']), farFore: limb(4, [2, 2], 0, 0),
+    boot: { rows: ['kcck.', 'kbcck', 'kkkkk'], anchor: [1, 2] }
+  },
+  poses: [{ name: 'stand', duration: 200, origin: [15, 35], parts: [
+    ...arm('far', true), ...leg('far', true),
+    { name: 'torso', part: 'torso', at: [0, -15] }, { name: 'head', part: 'head', attach: { part: 'torso', point: 'neck' } },
+    ...leg('near', false), ...arm('near', false)
+  ] }],
+  rig: { body: 'torso', head: 'head', ground: 34, rest: 'stand',
+    legs: [['nearThigh', 'nearShin'], ['farThigh', 'farShin']], arms: [['nearUpper', 'nearFore'], ['farUpper', 'farFore']] },
+  motions: { idle: { template: 'idle' }, walk: { template: 'walk', speed: 24, stride: 10, lift: 2, bob: 1 },
+    run: { template: 'run', speed: 48, stride: 10, lift: 4, bob: 1, lean: 8 }, jump: { template: 'jump' }, attack: { template: 'attack' }, hurt: { template: 'hurt' } },
+  sheet: { columns: 8 } };
+
 // A lower third for video: 240 × 32 fills the width of a 1080p frame at scale 8. The panel opens, the title is typed
 // in, and the last pose holds. Every duration is a whole number of frames at 30 and at 60 frames per second.
 const panel = width => [{ op: 'rect', x: 0, y: 4, w: 3, h: 24, color: 'gold' }, ...(width ? [{ op: 'rect', x: 3, y: 4, w: width, h: 24, color: 'panel' }, { op: 'rect', x: 3, y: 27, w: width, h: 1, color: 'edge' }] : [])];
@@ -411,7 +450,7 @@ const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': ste
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'swing.poses': swing, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
+const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.
