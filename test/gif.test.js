@@ -302,8 +302,8 @@ test('MCP pixel_render writes GIFs on request and leaves nothing behind when one
     assert.deepEqual(replies.map(reply => reply.id), messages.map(message => message.id));
     return replies.slice(1).map(reply => reply.result);
   };
-  const call = (directory, args) => calls(directory, [args])[0];
-  const [rendered, native] = calls(path.join(dir, 'with'), [{ project, gif: { scale: 2 } }, { project, gif: {} }]);
+  // Each render writes its own folder, so the render without gif shares the server.
+  const [rendered, native, plain] = calls(path.join(dir, 'with'), [{ project, gif: { scale: 2 } }, { project, gif: {} }, { project }]);
   // Without a scale the GIFs keep the recipe's 24x24 frames (P-012).
   const nativeInfo = JSON.parse(native.content[0].text);
   assert.deepEqual([nativeInfo.gifs.scale, nativeInfo.gifs.width, nativeInfo.gifs.height], [1, 24, 24]);
@@ -315,7 +315,8 @@ test('MCP pixel_render writes GIFs on request and leaves nothing behind when one
   for (const file of info.gifs.files) assert.equal(decodeGIF(await readFile(path.join(info.directory, file))).width, 48);
   // The bundle itself is unchanged: GIFs sit beside it and are not counted as animations.
   assert.deepEqual([info.animations.count, info.files.filter(file => file.endsWith('.gif'))], [3, []]);
-  assert.equal(JSON.parse(call(path.join(dir, 'without'), { project }).content[0].text).gifs, undefined);
+  assert.ok(!plain.isError, JSON.stringify(plain));
+  assert.equal(JSON.parse(plain.content[0].text).gifs, undefined);
   for (const refused of calls(path.join(dir, 'refused'), [{ scale: 99 }, { background: 's' }, 'yes'].map(gif => ({ project, gif })))) {
     assert.equal(refused.isError, true); assert.match(JSON.parse(refused.content[0].text).path, /^gif/);
   }
