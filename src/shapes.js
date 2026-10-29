@@ -130,7 +130,7 @@ function readLook(look, path, palette, seed) {
 }
 
 function readLayer(layer, path, context, index) {
-  const { frames, lookNames, seed } = context;
+  const { frames, lookNames, seed, loop } = context;
   if (!isObject(layer)) fail(path, 'expected a layer object');
   if (!SHAPE_KINDS.includes(layer.kind)) fail(`${path}.kind`, `expected ${SHAPE_KINDS.join(', ')}`);
   const kind = layer.kind;
@@ -143,7 +143,11 @@ function readLayer(layer, path, context, index) {
   const window = layer.frames === undefined ? [0, frames] : layer.frames;
   if (!Array.isArray(window) || window.length !== 2) fail(`${path}.frames`, 'expected [first, end]: the first frame drawn and the frame after the last');
   const t0 = integer(window[0], `${path}.frames[0]`, 0, frames - 1), t1 = integer(window[1], `${path}.frames[1]`, t0 + 1, frames);
-  const name = layer.ease ?? 'out';
+  // A layer that spans a whole looping effect is a cycle: its frame after the last is its first again. It moves at a
+  // steady pace by default and draws without a reveal, so nothing restarts at the loop point, and a burst's noise boils
+  // on through it (see burst). A shorter window in a loop is an event that repeats each cycle, drawn as a one-shot.
+  const cycle = loop === true && t0 === 0 && t1 === frames;
+  const name = layer.ease ?? (cycle ? 'linear' : 'out');
   if (!EASINGS.includes(name)) fail(`${path}.ease`, `expected one of ${EASINGS.join(', ')}`);
   const blend = layer.blend ?? 'max';
   if (!['max', 'add'].includes(blend)) fail(`${path}.blend`, 'expected max (the brighter layer wins) or add (layers sum)');
@@ -153,7 +157,7 @@ function readLayer(layer, path, context, index) {
     cue = layer.cue;
   }
   const out = {
-    kind, look, t0, t1, ease: name, blend, cue, path,
+    kind, look, t0, t1, ease: name, blend, cue, path, cycle,
     at: pair(layer.at, `${path}.at`, -4096, 4096),
     power: tween(layer.power ?? 1, `${path}.power`, 0, 8),
     flicker: number(layer.flicker ?? 0, `${path}.flicker`, 0, 1),
@@ -165,21 +169,22 @@ function readLayer(layer, path, context, index) {
   };
   const t = (key, fallback, min, max) => tween(layer[key] ?? fallback, `${path}.${key}`, min, max);
   const required = key => { if (layer[key] === undefined) fail(`${path}.${key}`, `a ${kind} layer needs ${key}`); return layer[key]; };
+  const reveal = fallback => number(layer.reveal ?? (cycle ? 0 : fallback), `${path}.reveal`, 0, 0.95);
   if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64) });
   if (kind === 'slash') {
     const arc = pair(required('arc'), `${path}.arc`, -3600, 3600);
     if (arc[0] === arc[1] || Math.abs(arc[1] - arc[0]) > 360) fail(`${path}.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), at most 360 apart; the slash sweeps from the first to the second');
-    Object.assign(out, { radius: t('radius', required('radius'), 1, 512), width: t('width', 6, 0, 256), arc, reveal: number(layer.reveal ?? 0.35, `${path}.reveal`, 0, 0.95) });
+    Object.assign(out, { radius: t('radius', required('radius'), 1, 512), width: t('width', 6, 0, 256), arc, reveal: reveal(0.35) });
   }
-  if (kind === 'beam') Object.assign(out, { to: pair(required('to'), `${path}.to`, -4096, 4096), width: t('width', 5, 0, 256), reveal: number(layer.reveal ?? 0.15, `${path}.reveal`, 0, 0.95), wobble: number(layer.wobble ?? 0.15, `${path}.wobble`, 0, 1), wavelength: number(layer.wavelength ?? 12, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 3, `${path}.waves`, -64, 64), fade: number(layer.fade ?? 0, `${path}.fade`, 0, 1) });
-  if (kind === 'bolt') Object.assign(out, { to: pair(required('to'), `${path}.to`, -4096, 4096), width: t('width', 1, 1, 9), glow: t('glow', 1, 0, 4), jag: number(layer.jag ?? 0.35, `${path}.jag`, 0, 1), branches: integer(layer.branches ?? 2, `${path}.branches`, 0, 8), reroll: integer(layer.reroll ?? 2, `${path}.reroll`, 0, 256), segment: number(layer.segment ?? 4, `${path}.segment`, 2, 64), reveal: number(layer.reveal ?? 0, `${path}.reveal`, 0, 0.95) });
+  if (kind === 'beam') Object.assign(out, { to: pair(required('to'), `${path}.to`, -4096, 4096), width: t('width', 5, 0, 256), reveal: reveal(0.15), wobble: number(layer.wobble ?? 0.15, `${path}.wobble`, 0, 1), wavelength: number(layer.wavelength ?? 12, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 3, `${path}.waves`, -64, 64), fade: number(layer.fade ?? 0, `${path}.fade`, 0, 1) });
+  if (kind === 'bolt') Object.assign(out, { to: pair(required('to'), `${path}.to`, -4096, 4096), width: t('width', 1, 1, 9), glow: t('glow', 1, 0, 4), jag: number(layer.jag ?? 0.35, `${path}.jag`, 0, 1), branches: integer(layer.branches ?? 2, `${path}.branches`, 0, 8), reroll: integer(layer.reroll ?? 2, `${path}.reroll`, 0, 256), segment: number(layer.segment ?? 4, `${path}.segment`, 2, 64), reveal: reveal(0) });
   if (kind === 'glyph') {
     const points = integer(layer.points ?? 5, `${path}.points`, 0, 12);
     if (points && points < 3) fail(`${path}.points`, 'expected 0 (no star) or 3–12 star points');
     const step = integer(layer.step ?? Math.max(1, Math.floor((points - 1) / 2)), `${path}.step`, 1, 6);
     // A step of the corner count or more joins each corner to itself, drawing dots instead of lines.
     if (points && step >= points) fail(`${path}.step`, `expected fewer than the ${points} points: each line joins a corner to the one step corners on`);
-    Object.assign(out, { radius: t('radius', required('radius'), 2, 512), inner: number(layer.inner ?? 0.72, `${path}.inner`, 0.2, 0.95), points, step, runes: integer(layer.runes ?? 12, `${path}.runes`, 0, 48), double: layer.double === undefined ? false : (typeof layer.double === 'boolean' ? layer.double : fail(`${path}.double`, 'expected true or false')), spin: t('spin', 0, -3600, 3600), reveal: number(layer.reveal ?? 0.3, `${path}.reveal`, 0, 0.95), glow: t('glow', 1, 0, 4), fill: t('fill', 0, 0, 2) });
+    Object.assign(out, { radius: t('radius', required('radius'), 2, 512), inner: number(layer.inner ?? 0.72, `${path}.inner`, 0.2, 0.95), points, step, runes: integer(layer.runes ?? 12, `${path}.runes`, 0, 48), double: layer.double === undefined ? false : (typeof layer.double === 'boolean' ? layer.double : fail(`${path}.double`, 'expected true or false')), spin: t('spin', 0, -3600, 3600), reveal: reveal(0.3), glow: t('glow', 1, 0, 4), fill: t('fill', 0, 0, 2) });
   }
   if (kind === 'star') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), points: integer(layer.points ?? 8, `${path}.points`, 2, 16), ratio: number(layer.ratio ?? 0.55, `${path}.ratio`, 0.05, 1), width: t('width', 2.5, 0, 64), core: t('core', layer.width === undefined ? 3 : maxKey(tween(layer.width, `${path}.width`, 0, 64)) * 1.2, 0, 128), angle: number(layer.angle ?? 0, `${path}.angle`, -3600, 3600), spin: t('spin', 0, -3600, 3600), jitter: number(layer.jitter ?? 0, `${path}.jitter`, 0, 1) });
   if (kind === 'burst') {
@@ -202,6 +207,8 @@ function readLayer(layer, path, context, index) {
     Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
   }
+  // A cycling burst boils through a second, independent field half a cycle behind the first (see burst).
+  if (kind === 'burst' && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
   return out;
 }
 
@@ -212,7 +219,7 @@ export function readShapes(effect, path, context) {
     for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
-  const { palette, seed, frames } = context;
+  const { palette, seed, frames, loop } = context;
   if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
@@ -220,7 +227,7 @@ export function readShapes(effect, path, context) {
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
   if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, lookNames: looks.map(l => l.name) }, i));
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -452,12 +459,19 @@ const PAINTERS = {
   },
   // A fireball: a disc whose edge and inside are broken by seeded smooth noise that boils outward over the frames, hot
   // in the middle, with a hole that can open from the centre (`hole`, a share of the radius) as it burns out.
+  // In a cycle the noise boils outward at a steady `boil` pixels per cycle through two independent fields half a cycle
+  // apart. Each fades out as its phase wraps back to the start and in again after, and the blend is scaled to keep the
+  // noise's spread, so the last frame runs into the first with no jump.
   burst(layer, s, put, W, H) {
     const R = sample(layer.radius, s.q), hole = sample(layer.hole, s.q) * R, shift = layer.boil * s.q, n = layer.noise;
     if (R <= 0) return;
+    const later = layer.noiseLater, a = s.p, b = a < 0.5 ? a + 0.5 : a - 0.5, wa = 1 - Math.abs(2 * a - 1), wb = 1 - wa;
+    const norm = Math.sqrt(wa * wa + wb * wb), shiftA = layer.boil * a, shiftB = layer.boil * b;
+    const pulled = (field, u, v, d, by) => { const pull = d > 0 ? Math.max(0, d - by) / d : 0; return field(256 + u * pull, 256 + v * pull) - 0.5; };
     paintArea(put, W, H, s.cx, s.cy, R * (1 + n / 2) * s.frame.reach + 2, s.frame, (u, v) => {
-      const d = Math.sqrt(u * u + v * v), pull = d > 0 ? Math.max(0, d - shift) / d : 0;
-      const noise = n > 0 ? layer.noiseAt(256 + u * pull, 256 + v * pull) - 0.5 : 0;
+      const d = Math.sqrt(u * u + v * v);
+      const noise = n <= 0 ? 0 : !later ? pulled(layer.noiseAt, u, v, d, shift)
+        : ((wa ? wa * pulled(layer.noiseAt, u, v, d, shiftA) : 0) + (wb ? wb * pulled(later, u, v, d, shiftB) : 0)) / norm;
       let value = 1 - d / (R * (1 + n * noise)) + n * 0.35 * noise;
       if (hole > 0) value *= clamp01((d - hole * (1 + n * noise)) / Math.max(1, 0.35 * R));
       return value;

@@ -47,7 +47,7 @@ const emit = (at, extra) => ({ at, ...extra });
 const effects = { format: 'pixelforge-fx', version: 1, name: 'effects', width: 48, height: 40,
   palette: { W: '#fff4d6', y: '#ffd166', o: '#f4843c', r: '#c2413a', s: '#d8c7a8', S: '#a38d74', u: '#6f5d52', l: '#b8dc7a', g: '#79b15a', G: '#3f7a4a', q: '#a9a6c4', Q: '#6b6888' },
   symbols: { hot: ['W'], warm: ['y'], cool: ['o'], ash: ['r'], 'flash-0': ['..W..', '.WyW.', 'WyWyW', '.WyW.', '..W..'], 'flash-1': ['W...W', '..y..', '.y.y.', '..y..', 'W...W'],
-    'ember-big': ['yW', 'oy'], ember: ['y'], 'ember-dim': ['o'], 'ember-end': ['r'], 'puff-big': ['.sss.', 'ssssS', 'SSSSu'], puff: ['.sS', 'sSu'], 'puff-small': ['sS'],
+    'ember-big': ['yW', 'oy'], ember: ['y'], 'ember-dim': ['o'], 'ember-end': ['r'], 'puff-big': ['.ss..', 'sssS.', 'sSSSu', '.SSu.'], puff: ['.s.', 'sSS', '.Su'], 'puff-small': ['sS', 'Su'], 'puff-end': ['S'],
     'leaf-a': ['lg.', '.gG'], 'leaf-b': ['.l', 'gG'], 'leaf-c': ['gl', 'G.'], 'chip-a': ['qQ', 'Q.'], 'chip-b': ['q', 'Q'], 'chip-c': ['.q', 'qQ'], 'chip-d': ['q'] },
   anchor: [24, 36],
   effects: {
@@ -56,8 +56,9 @@ const effects = { format: 'pixelforge-fx', version: 1, name: 'effects', width: 4
       emit([24, 30], { name: 'burst', area: [3, 2], burst: 12, angle: [205, 335], speed: [1.8, 3.4], gravity: [0, 0.32], drag: 0.04, life: [6, 9], floor: 36, bounce: 0.35, shapes: ['hot', 'warm', 'cool', 'ash'], trail: { color: 'r', length: 1 } })] },
     embers: { frames: 16, duration: 70, loop: true, seed: 4, emitters: [
       emit([24, 35], { area: [12, 2], rate: 0.5, angle: [255, 285], speed: [0.6, 1.1], life: [12, 18], sway: { amplitude: [1, 0], period: 7 }, shapes: ['ember-big', 'ember', 'ember-dim', 'ember-end'], dissolve: 0.25 })] },
-    dust: { frames: 8, duration: 70, seed: 6, emitters: [[22, [178, 196], 'left'], [26, [344, 362], 'right']].map(([x, angle, name]) =>
-      emit([x, 35], { name, area: [4, 1], burst: 4, angle, speed: [1.2, 2.2], drag: 0.22, gravity: [0, -0.04], life: [7, 9], shapes: ['puff-big', 'puff', 'puff-small'], dissolve: 0.4 })) },
+    // Round puffs, lit from the upper left, that swell and then shrink away rather than dithering out.
+    dust: { frames: 11, duration: 70, seed: 6, emitters: [[22, [178, 196], 'left'], [26, [344, 362], 'right']].map(([x, angle, name]) =>
+      emit([x, 35], { name, area: [4, 1], burst: 6, angle, speed: [0.8, 3.2], drag: 0.13, gravity: [0, -0.04], life: [9, 12], shapes: ['puff', 'puff-big', 'puff-big', 'puff', 'puff-small', 'puff-end'] })) },
     leaves: { frames: 12, duration: 70, seed: 9, emitters: [
       emit([24, 18], { area: [10, 4], burst: 8, angle: [200, 340], speed: [1, 2.2], gravity: [0, 0.18], drag: 0.14, life: [10, 12], sway: { amplitude: [1.4, 0], period: 6 },
         shapes: [['leaf-a', 'leaf-b'], ['leaf-b', 'leaf-c'], ['leaf-c', 'leaf-a']], play: 'loop', remaps: [{}, { g: 'l' }, { G: 'g', g: 'l' }], dissolve: 0.25 })] },

@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects that loop, and examples that follow their own advice
+
+- In a looping `pixelforge-fx` effect, a shape layer that spans every frame is a cycle: it moves at a steady pace (`ease` defaults to `linear`), is whole from frame 0 (`reveal` defaults to 0), and a `burst`'s noise boils outward by `boil` pixels every cycle without slowing. A looping fireball changed 158 pixels at the loop point against at most 59 between other frames; it now changes 49, inside the 29–60 of the others. One-shots and shorter windows in a loop draw exactly as before, so every earlier source keeps its pixels.
+- `examples/fireball.fx.json` is a projectile in flight that loops seamlessly: a cycling burst, a beam tail with whole waves and looping embers.
+- The fire explosion's smoke is blob particles with lit and shade bands that swallow the dying fire and fade by breaking into shrinking puffs, instead of dithered grey; its shockwave breaks into pieces instead of thinning to a one-pixel ellipse, and its fire cools from the outside without leaving a dark ring.
+- The slash hit's and lightning strike's rings break up instead of ending as one-pixel outlines; the lightning bolt flickers out by frame 6 instead of lingering as a thin line. The healing circle's pillar has clean bands instead of dither speckle. The landing dust in `examples/effects.fx.json` is round, lit puffs that spread and shrink away instead of two flat slabs.
+
 ### A lighter skill
 
 - The pixel art skill is 12 KB instead of 21 KB and starts from the quick start, which covers most tasks, instead of asking for the 50 KB authoring guide before the first recipe. The core loop, the art brief and work order, and the judgement rules for characters, tiles, scenes, effects and lighting stay; field-level details now link to the guide and workflow sections that already hold them.

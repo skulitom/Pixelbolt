@@ -177,35 +177,47 @@
         },
         {
           "name": "dust-0",
-          "rgba": "709db457678a7d6585671e34bb4add184652c596a1dcccc74cd16b7778bc1ea6"
+          "rgba": "952d8446b70398f58b02cb9fcde5b9a5b74a063bae636422adff00c111c9a059"
         },
         {
           "name": "dust-1",
-          "rgba": "553113ef26a92da93fbe9b318143bb8d6606b524ecdcc4bcb58427135b4815d3"
+          "rgba": "fcb3d508446b32b1a3cd5e58292d6d9a708831eaa384e6069ed62c284d601cff"
         },
         {
           "name": "dust-2",
-          "rgba": "699dbd087599323dd7ecba6341f84e20af7063681a98416fff3a59ca8c4218cd"
+          "rgba": "7b690fe8a530cb0561f9f90e404a937d5a72877b7ec45967c09be7a06fc1cba5"
         },
         {
           "name": "dust-3",
-          "rgba": "546944ac53008927b0c930f934b477a5179bf83d2998c5cf298f1e0273ae672f"
+          "rgba": "6c876b4586b1751213e924de7cd37369cd91fe75d33df5ed84d10c75a409bebd"
         },
         {
           "name": "dust-4",
-          "rgba": "0ccc57f3a788514d2ae566c0f07b05606255688a0550dc87de89e68c10a7784a"
+          "rgba": "41034fb69f9fc500210cf777185943591a5663075e58c9fa18dd21d74f023830"
         },
         {
           "name": "dust-5",
-          "rgba": "7d39e8cfe73cebe1bef103377bf361e148eb833eef778e11adf2cde1f008f38f"
+          "rgba": "b736d90ccfedbdadb525c9ce21e32246e72c4cd7f28dfa930ca62c0655567d5b"
         },
         {
           "name": "dust-6",
-          "rgba": "ba1d1f3ab2248cca25646ce790ab11df942040d13c2e6c5ad4c9e858126a4ebd"
+          "rgba": "e02cc16cff2fbe2b26472d861c61e995826ffe25a7dddbfe0c71f4a3ecd4fbc9"
         },
         {
           "name": "dust-7",
-          "rgba": "cdb7f752a82e1520ec6557bad608d1c8496cc83cfe9b4326215efc3a8a5bc060"
+          "rgba": "9fc2bd2c067d5e256d3b8f4fadb2ee4d48b142c42599de4a5f0985649ae784de"
+        },
+        {
+          "name": "dust-8",
+          "rgba": "74dedb73e42682754f9487f24f706f6f618791aaa23eabb531f0a426082c4318"
+        },
+        {
+          "name": "dust-9",
+          "rgba": "f443ce48f61f04bb1ff64131e8278df499cbf730f41ed13496d5bdd1bd4388bb"
+        },
+        {
+          "name": "dust-10",
+          "rgba": "606bf8ecb6a0fc3022c878bb7292e99bda2712cb753ffd76003116998a9ddc57"
         },
         {
           "name": "leaves-0",
@@ -304,7 +316,7 @@
           "rgba": "fcf9b4eac00ad55de2c6ab0a65d3776e39e826aafd8949991d9e9c8a74ab97bc"
         }
       ],
-      "timing": "dee974440bada89a286040fe4553561a266d052ed2879a1a79e34d3003bc4b7b"
+      "timing": "7975594fa513f0a699fc5bad345454876b971b2dbe1a6fd5d105f01598b0d56b"
     },
     "examples/ember.json": {
       "width": 24,

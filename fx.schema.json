@@ -135,7 +135,7 @@
           },
           "loop": {
             "type": "boolean",
-            "description": "Seamless loop: the simulation warms up so particles in flight at frame 0 are those alive at the end. Needs a finite life."
+            "description": "Seamless loop: the simulation warms up so particles in flight at frame 0 are those alive at the end (needs a finite life), and layers spanning every frame cycle, so their last frame runs into their first."
           },
           "seed": {
             "type": "integer",
@@ -890,7 +890,7 @@
                       "type": "number",
                       "minimum": 0,
                       "maximum": 0.95,
-                      "description": "Share of the window the shape takes to draw on; default 0.35."
+                      "description": "Share of the window the shape takes to draw on; default 0.35 (0 for a layer spanning a looping effect)."
                     },
                     "noise": {
                       "type": "number",
@@ -994,7 +994,7 @@
                       "type": "number",
                       "minimum": 0,
                       "maximum": 0.95,
-                      "description": "Share of the window the shape takes to draw on; default 0.15."
+                      "description": "Share of the window the shape takes to draw on; default 0.15 (0 for a layer spanning a looping effect)."
                     },
                     "wobble": {
                       "type": "number",
@@ -1299,7 +1299,7 @@
                       "type": "number",
                       "minimum": 0,
                       "maximum": 0.95,
-                      "description": "Share of the window the shape takes to draw on; default 0.3."
+                      "description": "Share of the window the shape takes to draw on; default 0.3 (0 for a layer spanning a looping effect)."
                     },
                     "glow": {
                       "oneOf": [
@@ -1633,7 +1633,7 @@
                       "type": "number",
                       "minimum": -512,
                       "maximum": 512,
-                      "description": "Pixels the noise moves outward over the window; default half the largest radius."
+                      "description": "Pixels the noise moves outward over the window (each cycle, at a steady pace, for a layer spanning a looping effect); default half the largest radius."
                     }
                   },
                   "required": [
@@ -2084,7 +2084,7 @@
         "overshoot",
         "bounce"
       ],
-      "description": "How tweened values move across the window: out (default), linear, in, inOut, hold, overshoot or bounce."
+      "description": "How tweened values move across the window: out (default; linear for a layer spanning a looping effect), linear, in, inOut, hold, overshoot or bounce."
     },
     "layer-power": {
       "oneOf": [

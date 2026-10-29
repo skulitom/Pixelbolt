@@ -55,8 +55,10 @@
           "at": [64, 27],
           "frames": [2, 7],
           "radius": [4, 13],
-          "width": [4, 1],
-          "power": [1.1, 0.4]
+          "width": [4, 3, 2],
+          "noise": 0.85,
+          "scale": 4,
+          "power": [1.2, 0.9, 0.3]
         }
       ],
       "emitters": [

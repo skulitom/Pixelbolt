@@ -1,5 +1,6 @@
-// Reviewed pixelforge-fx effects built from shape layers: four spells and a set of cel-shaded water effects, written
-// to examples/<name>.fx.json by scripts/generate-examples.js. Their compiled pixels are pinned in test/shapes.test.js.
+// Reviewed pixelforge-fx effects built from shape layers: five spells (the fireball a seamless loop) and a set of
+// cel-shaded water effects, written to examples/<name>.fx.json by scripts/generate-examples.js. Their compiled pixels
+// are pinned in test/shapes.test.js.
 export const spellPresets = {
   'slash-hit': {
     "format": "pixelforge-fx",
@@ -58,8 +59,10 @@ export const spellPresets = {
             "at": [64, 27],
             "frames": [2, 7],
             "radius": [4, 13],
-            "width": [4, 1],
-            "power": [1.1, 0.4]
+            "width": [4, 3, 2],
+            "noise": 0.85,
+            "scale": 4,
+            "power": [1.2, 0.9, 0.3]
           }
         ],
         "emitters": [
@@ -93,7 +96,8 @@ export const spellPresets = {
       "R": "#8f2a2e",
       "s": "#b3a5ad",
       "S": "#867882",
-      "k": "#5a4e5b"
+      "k": "#5a4e5b",
+      "d": "#3b3140"
     },
     "symbols": {
       "ember-big": [
@@ -110,50 +114,29 @@ export const spellPresets = {
         "duration": { "from": 45, "to": 100, "ease": "in" },
         "seed": 7,
         "looks": {
-          "smoke": { "colors": ["k", "S"], "thresholds": [0.15, 0.5], "dither": 1 },
           "shock": { "colors": ["o", "y", "W"], "thresholds": [0.25, 0.5, 0.8] },
-          "fire": { "colors": ["R", "r", "o", "y", "W"], "thresholds": [0.08, 0.22, 0.4, 0.6, 0.8] }
+          "fire": { "colors": ["R", "r", "o", "y", "W"], "thresholds": [0.18, 0.32, 0.46, 0.64, 0.84] },
+          "smoke": {
+            "colors": ["k", "S"],
+            "thresholds": [0.3, 0.75],
+            "lit": { "colors": ["s"], "thresholds": [0.2] },
+            "shade": { "colors": ["k"], "thresholds": [0.15] },
+            "outline": "d"
+          }
         },
         "cleanup": { "corners": true, "strays": true },
         "layers": [
-          {
-            "kind": "burst",
-            "look": "smoke",
-            "at": [44, 50],
-            "frames": [4, 16],
-            "drift": [-3, -16],
-            "radius": [12, 20],
-            "noise": 0.8,
-            "scale": 6,
-            "boil": 6,
-            "power": [1, 0.6, 0],
-            "ease": "linear",
-            "seed": 21
-          },
-          {
-            "kind": "burst",
-            "look": "smoke",
-            "at": [54, 52],
-            "frames": [5, 16],
-            "drift": [4, -18],
-            "radius": [10, 17],
-            "noise": 0.8,
-            "scale": 6,
-            "boil": 6,
-            "power": [1, 0.55, 0],
-            "ease": "linear",
-            "seed": 22
-          },
           {
             "kind": "ring",
             "look": "shock",
             "at": [48, 62],
             "frames": [1, 8],
             "radius": [10, 46],
-            "width": [9, 4],
+            "width": [9, 5, 3],
             "squash": [1, 0.42],
-            "noise": 0.3,
-            "power": [1.3, 0.5]
+            "noise": 0.85,
+            "scale": 5,
+            "power": [1.3, 0.9, 0.3]
           },
           {
             "kind": "star",
@@ -171,15 +154,27 @@ export const spellPresets = {
             "kind": "burst",
             "look": "fire",
             "at": [48, 56],
-            "frames": [0, 12],
-            "radius": [10, 24, 28],
-            "hole": [0, 0, 0.25, 0.85],
-            "noise": 0.5,
+            "frames": [0, 9],
+            "radius": [10, 24, 26],
+            "noise": 0.75,
             "scale": 5,
-            "power": [1.5, 1.1, 0.5]
+            "power": [1.5, 1.15, 0.5, 0.2]
           }
         ],
         "emitters": [
+          {
+            "name": "smoke",
+            "at": [48, 48],
+            "area": [32, 14],
+            "burst": 18,
+            "start": 4,
+            "angle": [240, 300],
+            "speed": [0.3, 0.9],
+            "gravity": [0, -0.05],
+            "drag": 0.1,
+            "life": [10, 14],
+            "blob": { "look": "smoke", "radius": [4, 8, 7, 2.5] }
+          },
           {
             "at": [48, 56],
             "burst": 14,
@@ -193,6 +188,64 @@ export const spellPresets = {
             "bounce": 0.3,
             "shapes": ["ember-big", "ember", "ember-dim", "ember-end"],
             "trail": { "color": "r", "length": 1 }
+          }
+        ]
+      }
+    }
+  },
+  'fireball': {
+    "format": "pixelforge-fx",
+    "version": 1,
+    "name": "fireball",
+    "width": 64,
+    "height": 32,
+    "palette": { "W": "#fffbe6", "y": "#ffd34d", "o": "#ff8a2b", "r": "#d6402b", "R": "#8f2a2e" },
+    "symbols": { "ember-big": ["yW", "oy"], "ember": ["y"], "ember-dim": ["o"], "ember-end": ["r"] },
+    "effects": {
+      "fireball": {
+        "frames": 8,
+        "duration": 60,
+        "loop": true,
+        "seed": 4,
+        "looks": {
+          "fire": { "colors": ["R", "r", "o", "y", "W"], "thresholds": [0.12, 0.3, 0.5, 0.7, 0.88] }
+        },
+        "cleanup": { "corners": true, "strays": true },
+        "layers": [
+          {
+            "kind": "beam",
+            "look": "fire",
+            "at": [44, 16],
+            "to": [10, 16],
+            "width": 14,
+            "fade": 0.95,
+            "wobble": 0.25,
+            "wavelength": 7,
+            "waves": 2,
+            "noise": 0.6,
+            "scale": 3
+          },
+          {
+            "kind": "burst",
+            "look": "fire",
+            "at": [45, 16],
+            "radius": 8,
+            "noise": 0.6,
+            "boil": 6,
+            "power": 1.5,
+            "seed": 4
+          }
+        ],
+        "emitters": [
+          {
+            "at": [30, 16],
+            "area": [18, 8],
+            "rate": 0.7,
+            "angle": [160, 200],
+            "speed": [0.5, 1.3],
+            "drag": 0.04,
+            "life": [5, 8],
+            "shapes": ["ember-big", "ember", "ember-dim", "ember-end"]
           }
         ]
       }
@@ -234,24 +287,29 @@ export const spellPresets = {
             "look": "bolt",
             "at": [44, 0],
             "to": [40, 82],
-            "frames": [0, 7],
-            "width": [3, 1],
+            "frames": [0, 6],
+            "width": [3, 2, 1],
             "glow": [2, 1],
             "jag": 0.4,
             "branches": 3,
             "reroll": 2,
             "reveal": 0.25,
-            "flicker": 0.35
+            "flicker": 0.35,
+            "noise": 0.5,
+            "scale": 3,
+            "power": [1.4, 1.1, 0.45]
           },
           {
             "kind": "ring",
             "look": "bolt",
             "at": [40, 84],
-            "frames": [1, 9],
+            "frames": [1, 8],
             "radius": [3, 30],
-            "width": [4, 1],
+            "width": [5, 4, 3],
             "squash": [1, 0.35],
-            "power": [1.2, 0.3]
+            "noise": 0.85,
+            "scale": 4,
+            "power": [1.3, 0.8, 0.15]
           },
           {
             "kind": "star",
@@ -314,7 +372,7 @@ export const spellPresets = {
         "seed": 2,
         "looks": {
           "rune": { "colors": ["d", "g", "m", "l"], "thresholds": [0.1, 0.35, 0.6, 0.82], "dither": 0.8 },
-          "light": { "colors": ["g", "m", "l", "W"], "thresholds": [0.1, 0.35, 0.6, 0.85], "dither": 0.8 }
+          "light": { "colors": ["g", "m", "l", "W"], "thresholds": [0.1, 0.35, 0.6, 0.85], "dither": 0.3 }
         },
         "cleanup": { "corners": true },
         "layers": [

@@ -193,8 +193,9 @@ test('effects without shape layers keep their exact output', async () => {
 test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
   // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
   const golden = {
-    'slash-hit': 'c184a564e5c2c3bc461a43dc3b182ec4d6e11457e2a9502d12e8c7610f8b12aa', 'fire-explosion': 'd99620d5189a507b462f778c6a78d7091fa4767ab500f3998d0f1045130447b7',
-    'lightning-strike': '2da952dbcd93107cc51bddab14c3d54943c47b352fc37410f5f82e3efa2785fc', 'healing-circle': '6e40fdfe6ce5ebefa848adb3f6649bd9e0a93e8a2ebd1740583931fbf3e8a01a',
+    'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': 'ddbd1900e43b33a2f5d99bd86eb0be3e649f69f7661a42f3e078491961da3d4a',
+    fireball: 'bd9a9f095998e5f548cb99343020c60abedb6d0421e6b376e31861cdff4aed27',
+    'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
     water: 'aac0545cf5c4b8af98a8a32301bbc8c90732010e3f875355daa74b7df3395c9c'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
@@ -311,4 +312,43 @@ test('liquid shapes compile to golden recipes, the same every time', () => {
     emitters: [{ at: [40, 10], area: [6, 3], burst: 6, start: 3, angle: [200, 340], speed: [0.6, 1.4], gravity: [0, 0.25], floor: 38, life: [4, 6], blob: { radius: [2.5, 1.2] } }] });
   assert.deepEqual(compileEffects(liquid), compileEffects(structuredClone(liquid)));
   assert.equal(sha(compileEffects(liquid).recipe), 'cc84e2aebeb0789f8deb0126b55c11e267c3cd7c5519f9a761e5c3ebf64de1c2');
+});
+
+// ---- Looping shapes: a layer that spans a looping effect is a cycle ------------------------------------------------------
+const changes = recipe => {
+  const frames = renderProject(recipe).frames.map(frame => frame.data), differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
+  return { inside: frames.slice(1).map((frame, k) => differ(frames[k], frame)), seam: differ(frames[frames.length - 1], frames[0]) };
+};
+
+test('a burst spanning a looping effect boils on through the loop point instead of jumping back', () => {
+  const ball = { kind: 'burst', look: 'warm', at: [24, 24], radius: 12, noise: 0.5, boil: 8 };
+  const loop = changes(compileEffects(source({ frames: 12, loop: true, layers: [ball] })).recipe);
+  // The loop point changes no more than an ordinary step, and the noise keeps moving to the end instead of easing to a stop.
+  assert.ok(loop.seam <= Math.max(...loop.inside), `seam ${loop.seam}, inside ${loop.inside}`);
+  assert.ok(Math.min(...loop.inside) > Math.max(...loop.inside) / 4, `inside ${loop.inside}`);
+  // So does the shipped fireball, a burst with a rippling beam for a tail and embers.
+  const shipped = changes(compileEffects(spellPresets.fireball).recipe);
+  assert.ok(shipped.seam <= Math.max(...shipped.inside), `fireball seam ${shipped.seam}, inside ${shipped.inside}`);
+  // The same layer in a one-shot keeps its eased boil, so the jump back is there (and approved one-shots keep their pixels).
+  const once = changes(compileEffects(source({ frames: 12, layers: [ball] })).recipe);
+  assert.ok(once.seam > Math.max(...once.inside), `one-shot seam ${once.seam}, inside ${once.inside}`);
+  // boil: 0 keeps the noise still in a loop too; a window shorter than the loop is an event drawn as a one-shot.
+  assert.equal(changes(compileEffects(source({ frames: 12, loop: true, layers: [{ ...ball, boil: 0 }] })).recipe).seam, 0);
+  const event = { ...ball, frames: [2, 10] };
+  const inLoop = compileEffects(source({ frames: 12, loop: true, layers: [event] })).recipe, alone = compileEffects(source({ frames: 12, layers: [event] })).recipe;
+  assert.deepEqual(inLoop.frames, alone.frames);
+});
+
+test('cycling layers move at a steady pace and draw without a reveal, so spins and waves loop', () => {
+  // A glyph turning two rune steps per loop (its square the other way by a quarter turn), and a beam with whole waves,
+  // meet their first frame again.
+  const circle = { ...LAYERS.glyph, spin: [0, 90], fill: 0 }, beam = { ...LAYERS.beam, width: 6, waves: 2 };
+  for (const layer of [circle, beam]) {
+    const { inside, seam } = changes(compileEffects(source({ frames: 8, loop: true, layers: [layer] })).recipe);
+    assert.ok(inside.some(n => n > 0) && seam <= Math.max(...inside), `${layer.kind}: seam ${seam}, inside ${inside}`);
+  }
+  // Drawn whole from the first frame: a cycling glyph has no draw-on unless it asks for one, as a one-shot draws on.
+  const first = (loop, extra = {}) => visible(gridOf(compileEffects(source({ frames: 8, loop, layers: [{ ...circle, ...extra }] })).recipe.frames[0]).rows);
+  assert.ok(first(true) > 1.5 * first(false), `${first(true)} against ${first(false)}`);
+  assert.equal(first(true, { reveal: 0.3 }), first(false, { ease: 'linear' }));
 });
