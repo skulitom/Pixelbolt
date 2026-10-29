@@ -10,6 +10,8 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - An emitter with `sprite: { symbol, pixels }` spawns on that sprite's pixels (all of them, its edge, or the outline just outside it), its top-left corner at `at`. Without shapes, each particle is its own pixel in its own colour. `release` takes every pixel once, in the order of a `sweep` across the sprite, while what is left stays drawn: death dissolves and teleports. `tint` stages may now be one colour each, turning a whole particle that colour.
 - An `aura` shape layer is a continuous glow hugging a sprite, reaching further upward, its edge licking up in flames as noise rises; spanning a looping effect, it loops without a jump. Random particles along an outline looked patchy; this does not.
 - `examples/hero-magic.fx.json` puts a teleport and a looping spirit aura on the rigged hero, read from `hero.poses.json`.
+- A symbol may be a whole animation (`{ recipe, animation }`): a sprite emitter or aura on it shows its frame *i* in the effect's frame *i*. A sprite emitter with `draw: true` and nothing to spawn only draws its sprite, so a character can sit under its effect.
+- A `trail` shape layer is the smear behind a moving point. `follow: { recipe, animation, point }` takes the point from each frame of a pose animation (`blade.tip`, in-between poses included), and a `pivot` such as `blade.anchor` bends it round the hilt: a crescent whose outer edge is where the tip went. `examples/swing-trail.fx.json` puts one on the sword of `swing.poses.json`.
 
 ### Effects that loop, and examples that follow their own advice
 
