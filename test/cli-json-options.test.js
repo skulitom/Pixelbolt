@@ -20,12 +20,12 @@ test('--expect and --guides read inline JSON whose double quotes Windows PowerSh
     assert.equal(out.status, 0, out.stderr);
     return JSON.parse(out.stdout).check;
   };
-  // A size the sprite doesn't have, so the check has to read every field to report the mismatch.
-  const quoted = check('quoted', '{"width":48,"height":48,"transparent":true}');
-  assert.deepEqual(quoted.problems.map(problem => problem.asked), [{ width: 48, height: 48 }]);
-  assert.deepEqual(check('stripped', '{width:48,height:48,transparent:true}'), quoted);
+  // A size and an opaque background the sprite doesn't have, so the check reports a mismatch for every field read.
+  const quoted = check('quoted', '{"width":48,"height":48,"transparent":false}');
+  assert.deepEqual(quoted.problems.map(problem => problem.asked), [{ width: 48, height: 48 }, 'an opaque background']);
+  assert.deepEqual(check('stripped', '{width:48,height:48,transparent:false}'), quoted);
   // With a space PowerShell 5.1 wraps the argument in quotes of its own; Node still sees the keys bare.
-  assert.deepEqual(check('spaced', '{width: 48, height: 48, transparent: true}'), quoted);
+  assert.deepEqual(check('spaced', '{width: 48, height: 48, transparent: false}'), quoted);
   const guides = value => {
     const out = cli('inspect', 'examples/shrine.json', '--guides', value);
     assert.equal(out.status, 0, out.stderr);
