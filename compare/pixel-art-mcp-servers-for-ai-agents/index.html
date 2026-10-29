@@ -194,8 +194,9 @@ keeps full size); backgrounds and thumbnails stay at the model's size</td>
 <td>The MCP server makes no network calls. It reads asset files only under its root folder (<code>--root</code>: the
 working directory by default; in the Claude Desktop bundle, the workspace you choose, which defaults to your home
 folder) and writes under <code>--out</code>, or, with <code>saveAs</code>, PNG, GIF, JSON and <code>.tres</code> copies
-at paths inside the root that the agent names (never in hidden or app-settings folders, and replacing a file only when
-told). The studio listens on your own machine only</td>
+at paths inside the root that the agent names (never under a name that starts with a dot or in the home folder's AppData
+or Library; it replaces an existing file only when the agent passes <code>overwrite</code>, and a JSON or
+<code>.tres</code> file only if it holds sprite data). The studio listens on your own machine only</td>
 <td>No outbound calls found; <code>run_lua_script</code> runs any Lua on your machine, and its preview web server listens on all network interfaces</td>
 <td>No network code found</td>
 <td>Its <code>convert</code> tool downloads any public web address the agent gives it</td>
@@ -277,7 +278,7 @@ ms) and 10 fluid presets identical; a 225 KB bundle
 mode with a Lua script for each call. Its source registers 123 tools (its README's headline now says the same) across drawing, layers,
 frames and tags, tweening, palettes, tilemaps, slices, text and effects, and it reads and writes native
 <code>.aseprite</code> files. Its README has the agent check each pass with <code>view_sprite</code>, which returns
-the picture inside the MCP reply (zoomed, with a pixel grid and coordinate rulers, up to 16 frames a call, optionally zoomed into one region), and
+the picture inside the MCP reply (zoomed, with a pixel grid and coordinate rulers, up to 16 frames a call, optionally cropped to one region), and
 with <code>lint_sprite</code> for stray and detached pixels; it reads pixels back as JSON, or as rows of characters that
 <code>draw_rows</code> takes back. It has no releases, and its latest commit is from 22 October 2026. Two tools need care: <code>run_lua_script</code> runs any Lua code on your machine
 (its README says so), and <code>start_preview_server</code> starts Python's web server without binding it to your own
@@ -344,7 +345,7 @@ model providers, naming OpenAI, Google Gemini and xAI. Its server card lists 29 
 their animations, tilesets (with a Godot export tool), UI kits, projects and credits. Pricing, read on 29 October 2026: a
 free plan with 40 credits every 30 days and no card, whose generations appear in a public gallery; then from US$8 a
 month (excl. VAT) for 800 credits. An image costs 8 to 12 credits (12 with its default model), an animation 20 to 26,
-and its pricing page says higher resolutions and some models cost more. Its pricing page lists engine exports
+and its pricing page says higher resolutions and some models cost more. It lists engine exports
 (Unity, Godot, Phaser) and private assets as paid-plan features.</p>
 <p><strong>Choose it</strong> when you want finished, consistent art from prompts, characters with animation sets and UI
 kits, and are happy to pay per image. <strong>Choose Pixelbolt</strong> when you want no account or credits, art that
@@ -360,7 +361,8 @@ pixels in all. A single still may be up to 4,096 pixels a side within that total
 <code>.aseprite</code>.</li>
 <li>It is new to npm: <code>pixelbolt</code> has been there only since 0.9.0 (19 October 2026), and
 <code>npx -y pixelbolt@latest skill install</code> (0.9.2) sets up Claude Code without an MCP server. You can also
-install it with <code>git clone</code>, or open the MCPB bundle in Claude Desktop. It is in the official MCP Registry as
+install the Claude Code plugin, which brings the MCP server and the skill, install it with <code>git clone</code>, or
+open the MCPB bundle in Claude Desktop. It is in the official MCP Registry as
 <code>io.github.skulitom/pixelbolt</code>.</li>
 <li>It is young, with 13 GitHub stars on 29 October 2026. The fluid effects (fire, smoke, steam, water) shipped in
 0.9.0 on 18 October 2026.</li>
@@ -393,21 +395,23 @@ starred Aseprite MCP server we found.</li>
 <p>pixscii released 0.5.0 on npm on 28 October, and aseprite-mcp added tools on 21 and 22 October, so we re-read every
 tool and re-measured Pixelbolt. Corrections go both ways; we list them all.</p>
 <ul>
-<li><strong>aseprite-mcp:</strong> 123 tools (was 116; its README now says 123 too). Its new <code>view_sprite</code>
+<li><strong>aseprite-mcp:</strong> 123 tools (was 116; its README's headline now says 123 too). Its new <code>view_sprite</code>
 returns the picture inside the MCP reply, so we removed "want the image returned inside the MCP reply" from the reasons
 to choose Pixelbolt over it. 845 stars (was 707); latest commit 22 October.</li>
 <li><strong>pixscii:</strong> 25 tools (was 19): shapes with dithered fills, landscape, creature and being from a seed,
 and palettes and repalette, with 10 new 16-colour mood palettes. Its npm package (0.5.0) now matches its
-repository.</li>
-<li><strong>SpriteCook:</strong> an image now costs 8 to 12 credits (12 with its default model), not 8.</li>
+repository, and the table now notes that its tests check that a seed repeats.</li>
+<li><strong>SpriteCook:</strong> an image now costs 8 to 12 credits (12 with its default model), not 8, and an animation 20 to 26.</li>
 <li><strong>Pixelbolt:</strong> measured on its 0.9.2 npm release instead of <code>main</code> at <code>a2420d5</code>
 and 0.8.0. Its <code>tools/list</code> result fell from 135,519 to 15,887 bytes, so we dropped it from Pixelbolt's
 limits. It now exports a Godot 4 <code>.tres</code>, a single still may be up to 4,096 pixels a side, and
 <code>pixel_render</code> can write to paths inside its root folder that the agent names, so "writes only under
-<code>--out</code>" no longer held; the row now says how far that reaches in the Claude Desktop bundle. Some of its
-timings rose: the first validate call took 64 and 74 ms (7 ms on 0.8.0), render 42 and 56 ms (37), and each
-command-line render 101 to 173 ms (75 to 142); the Claude Desktop bundle grew from 225 KB to 438 KB. The table now
-also lists its Claude Code plugin, its fluid effects and the close-up image each patch returns (0.8.0 returned one too; our 17 October table
+<code>--out</code>" no longer held; the Network and files row now says how far that reaches in the Claude Desktop
+bundle. Some of its timings rose against 17 October: the first validate call took 74 and 64 ms (7 ms then), inspect 11
+ms (9), patch 9 ms (8), render 56 and 42 ms (37), and each command-line render 101 to 173 ms (75 to 142); the Claude
+Desktop bundle grew from 225 KB to 438 KB. The table now
+also lists its Claude Code plugin, its fluid effects, that its 17 fluid presets compiled twice to identical recipes,
+and the close-up image each patch returns (0.8.0 returned one too; our 17 October table
 left it out).</li>
 <li><strong>Stars:</strong> pixel-mcp 155 (was 152), pixelart-mcp 7 (5), SpriteCook's setup repository 6 (5),
 adrianoamaral/pixel-mcp 9 (7) and Pixelbolt 13 (7).</li>
@@ -424,10 +428,12 @@ agents MCP", "pixel art MCP server" and "best MCP server for pixel art and sprit
 directory pages filled most results, with Enterprise DNA, Sprite AI's own MCP page and a few mirrors. None of the
 results was a head-to-head comparison, and Pixelbolt appeared in none. We ran them again on 29 October, with three
 more wordings (a pixel art skill for Claude Code, an MCP server to make game sprites and animations locally, and this
-page's exact title): directory pages again filled most results, and neither Pixelbolt nor this page appeared. None
-was a head-to-head test; one, a fast.io list of seven pixel-art skills, we didn't open. They also surfaced servers we
-haven't reviewed: abobilly's LibreSprite MCP server (first for "pixel art MCP server"; its GitHub repository returned
-404 to us), jerryscription's mcp-pixel-paint, ComfyMCP Studio, PixelLabRat and SpriteFuse.</li>
+page's exact title): directory pages again filled most results, and neither Pixelbolt nor this page appeared.
+Going by their titles and the search summaries, none was a head-to-head comparison; we didn't open one, fast.io's list
+of seven OpenClaw skills for pixel art. They also surfaced servers we haven't reviewed, among them abobilly's
+pixel-mcp-server, listed on LobeHub, which the search summaries describe as a LibreSprite server (first for "pixel art
+MCP server"; we found no public GitHub repository for it), jerryscription's mcp-pixel-paint, ComfyMCP Studio,
+PixelLabRat and SpriteFuse.</li>
 <li><strong>Which tools:</strong> we started from the servers in the results of the first search when we ran it on
 16 October: pixel-mcp, pixscii, pixelsmith, pixelforge-mcp and SpriteCook, a hosted generator whose own blog post
 ranked that day (our note of that run names no URL, and SpriteCook didn't rank on 17 October). We dropped pixelsmith,
