@@ -2952,15 +2952,34 @@
       "description": "max (default): the brighter layer of a look wins; add: layers sum."
     },
     "layer-drift": {
-      "type": "array",
-      "items": {
-        "type": "number",
-        "minimum": -4096,
-        "maximum": 4096
-      },
-      "maxItems": 2,
-      "minItems": 2,
-      "description": "Move by [x, y] pixels over the window (smoke rising)."
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -4096,
+            "maximum": 4096
+          },
+          "maxItems": 2,
+          "minItems": 2
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": -4096,
+              "maximum": 4096
+            },
+            "maxItems": 2,
+            "minItems": 2
+          },
+          "maxItems": 8,
+          "minItems": 2
+        }
+      ],
+      "description": "Move by [x, y] pixels over the window (smoke rising), or 2–8 offsets [x, y] as keys spread over it through the ease, so the layer travels a curve (an orb that arcs)."
     },
     "layer-floor": {
       "type": "number",

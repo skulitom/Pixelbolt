@@ -53,6 +53,14 @@ function squashOf(value, path) {
   const keys = value.map((key, i) => pair(key, `${path}[${i}]`, 0.125, 8));
   return { squash: keys[0], squashKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
 }
+// drift: [x, y] moved over the window, or 2–8 offsets as keys spread over it, so a layer can travel a curve (an orb
+// that arcs, a flame that wanders) instead of a straight line.
+function driftOf(value, path) {
+  if (!Array.isArray(value) || !Array.isArray(value[0])) return { drift: pair(value ?? [0, 0], path, -4096, 4096), driftKeys: null };
+  if (value.length < 2 || value.length > 8) fail(path, 'expected [x, y], or 2–8 offsets [x, y] as keys spread over the layer\'s frames');
+  const keys = value.map((key, i) => pair(key, `${path}[${i}]`, -4096, 4096));
+  return { drift: keys.at(-1), driftKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
+}
 // The frame of an animation (a list of frames) that effect frame t shows: frame for frame, holding the last after the
 // animation ends, or round again in a loop.
 export const sequenceFrame = (list, t, loop) => list[loop ? t % list.length : Math.min(t, list.length - 1)];
@@ -181,7 +189,7 @@ function readLayer(layer, path, context, index) {
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
     // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
     ...squashOf(layer.squash, `${path}.squash`),
-    drift: pair(layer.drift ?? [0, 0], `${path}.drift`, -4096, 4096),
+    ...driftOf(layer.drift, `${path}.drift`),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };
@@ -726,7 +734,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       const k = f - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
       const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
-      const dx = layer.drift[0] * q, dy = layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
+      const dx = layer.driftKeys ? sample(layer.driftKeys[0], q) : layer.drift[0] * q, dy = layer.driftKeys ? sample(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
       // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.
       const bottom = layer.floor === null ? height - 1 : Math.min(height - 1, Math.floor(layer.floor));

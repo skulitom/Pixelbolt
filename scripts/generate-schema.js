@@ -309,7 +309,7 @@ const layerCommon = {
   power: tween(0, 8, 'Multiplies the field: bright bands shrink as it falls, so the shape erodes instead of fading; default 1.'),
   flicker: num(0, 1, 'Every other frame of the window, power drops by this share.'),
   blend: { enum: ['max', 'add'], description: 'max (default): the brighter layer of a look wins; add: layers sum.' },
-  drift: vector(-4096, 4096, 'Move by [x, y] pixels over the window (smoke rising).'), floor: num(-4096, 4096, 'Cut the layer off below this canvas row: a disc becomes a dome, a ring an arch.'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
+  drift: { oneOf: [vector(-4096, 4096), { ...array(vector(-4096, 4096), 8), minItems: 2 }], description: 'Move by [x, y] pixels over the window (smoke rising), or 2–8 offsets [x, y] as keys spread over it through the ease, so the layer travels a curve (an orb that arcs).' }, floor: num(-4096, 4096, 'Cut the layer off below this canvas row: a disc becomes a dome, a ring an arch.'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
   cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' }
 };
 // The fields every kind shares are defined once, under $defs, and referenced from each kind.

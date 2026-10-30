@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Keyed drift
+
+- A shape layer's `drift` takes 2–8 offsets as keys spread over its window, so an orb arcs or a flame wanders instead of sliding in a straight line. Turned copies turn the keys; a plain drift moves as before.
+
 ### Keyed emission rates
 
 - An emitter's `rate` takes 2–8 keys spread from `start` to `end`, such as `[4, 0]`: a spray that starts thick and tapers, or a fire that builds, from one emitter. A steady rate spawns exactly as before.

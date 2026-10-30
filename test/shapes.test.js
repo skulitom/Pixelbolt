@@ -464,3 +464,15 @@ test('a look with front: true draws over the symbol particles, and without it no
   assert.deepEqual(under.find(op => op.op === 'grid'), over.find(op => op.op === 'grid'));
   assert.throws(() => smoke('yes'), /looks\.cloud\.front: expected true or false/);
 });
+
+test('keyed drift carries a layer along a curve, and a plain drift moves as before', () => {
+  const orb = (drift, effect = {}) => compileEffects(source({ frames: 5, ...effect, layers: [{ kind: 'burst', look: 'warm', at: [8, 24], radius: 3, noise: 0, ease: 'linear', drift }] })).recipe;
+  const centres = recipe => recipe.frames.map(frame => { const all = cells(gridOf(frame)); return [Math.round(all.reduce((a, c) => a + c.x, 0) / all.length), Math.round(all.reduce((a, c) => a + c.y, 0) / all.length)]; });
+  assert.deepEqual(orb([[0, 0], [32, 0]]), orb([32, 0]));
+  // Up and over, through the keys: frame k sits at progress k / 5 along them.
+  const arc = centres(orb([[0, 0], [16, -16], [32, 0]]));
+  assert.deepEqual(arc, [[8, 24], [15, 18], [21, 11], [27, 11], [34, 18]]);
+  // A turned copy turns the keys.
+  const turned = orb([[0, 0], [16, -16], [32, 0]], { turn: { angles: [180], about: [24, 24] } });
+  centres(turned).forEach(([x, y], k) => assert.ok(Math.abs(48 - x - arc[k][0]) <= 1 && Math.abs(48 - y - arc[k][1]) <= 1, String(centres(turned))));
+});
