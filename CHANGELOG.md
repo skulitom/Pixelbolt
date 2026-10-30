@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Swirling attraction
+
+- An emitter's `attract` takes `swirl`: an acceleration across the line to its point, clockwise when positive, so particles spiral into a portal or circle a target. Mirrored turns swirl the other way. Without it, nothing changes.
+
 ### Looks in front of particles
 
 - A shape look takes `front: true`: it draws in a second grid over the effect's symbol particles instead of under them, so smoke can roll over sparks. Without it, nothing changes.

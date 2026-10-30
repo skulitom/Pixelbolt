@@ -225,8 +225,9 @@ function readEmitter(emitter, path, context, earlier) {
   }
   let attract = null;
   if (emitter.attract !== undefined) {
-    fields(emitter.attract, ['at', 'strength'], `${path}.attract`);
-    attract = { at: pair(emitter.attract.at, `${path}.attract.at`, -4096, 4096), strength: number(emitter.attract.strength ?? 0.5, `${path}.attract.strength`, -8, 8) };
+    fields(emitter.attract, ['at', 'strength', 'swirl'], `${path}.attract`);
+    // swirl pushes each particle across the line to the point (clockwise when positive), so it spirals in or circles.
+    attract = { at: pair(emitter.attract.at, `${path}.attract.at`, -4096, 4096), strength: number(emitter.attract.strength ?? 0.5, `${path}.attract.strength`, -8, 8), swirl: number(emitter.attract.swirl ?? 0, `${path}.attract.swirl`, -8, 8) };
   }
   let sway = null;
   if (emitter.sway !== undefined) {
@@ -497,7 +498,12 @@ function simulate(effect, context) {
       p.vx += e.gravity[0]; p.vy += e.gravity[1];
       if (e.attract) {
         const pull = pulls[p.index], dx = pull[0] - p.x, dy = pull[1] - p.y, distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > 0.5) { p.vx += dx / distance * e.attract.strength; p.vy += dy / distance * e.attract.strength; }
+        if (distance > 0.5) {
+          // A mirrored copy swirls the other way, as its mirror image would.
+          const swirl = view?.mirror ? -e.attract.swirl : e.attract.swirl;
+          p.vx += dx / distance * e.attract.strength; p.vy += dy / distance * e.attract.strength;
+          if (swirl) { p.vx += dy / distance * swirl; p.vy -= dx / distance * swirl; }
+        }
       }
       p.vx *= 1 - e.drag; p.vy *= 1 - e.drag;
       p.x += p.vx; p.y += p.vy;

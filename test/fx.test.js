@@ -566,3 +566,16 @@ test('light: true writes the light track into the frames as a point a scene ligh
   assert.deepEqual(at(0).map(light => light.at), [[10, 14]]);
   assert.ok(at(0)[0].strength > 0 && at(390).every(light => light.strength === 0), JSON.stringify(at(390)));
 });
+
+test('attract swirl turns particles round the point, clockwise when positive, the other way when mirrored', () => {
+  const orbit = (swirl, turn) => compileEffects(effects({ frames: 6, ...(turn && { turn }), emitters: [{ at: [10, 4], burst: 1, speed: 0, life: 12, shapes: ['dot'], attract: { at: [10, 14], strength: 0.4, ...(swirl !== undefined && { swirl }) } }] })).recipe;
+  const xs = (recipe, animation = 'burst') => recipe.animations[animation].frames.map(name => recipe.frames.find(f => f.name === name).ops[0].x);
+  // Without swirl the particle falls straight to the point; clockwise round a point below means moving right first.
+  const plain = xs(orbit(undefined)), right = xs(orbit(0.6)), left = xs(orbit(-0.6));
+  assert.deepEqual(xs(orbit(0)), plain);
+  assert.ok(plain.every(x => x === plain[0]), String(plain));
+  assert.ok(right.at(-1) > plain[0] && left.at(-1) < plain[0], `${right} / ${left}`);
+  // A mirrored copy, about a vertical line through the point, swirls the other way: right becomes left.
+  const turned = orbit(0.6, { angles: [0], mirror: true, about: [10, 14] });
+  assert.deepEqual(xs(turned, Object.keys(turned.animations).find(name => name.endsWith('mirror'))), left);
+});

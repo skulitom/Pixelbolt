@@ -425,6 +425,12 @@
                       "minimum": -8,
                       "maximum": 8,
                       "description": "Acceleration toward at (negative repels); default 0.5."
+                    },
+                    "swirl": {
+                      "type": "number",
+                      "minimum": -8,
+                      "maximum": 8,
+                      "description": "Acceleration across the line to at, clockwise when positive: particles spiral in or circle it (portals, whirlwinds, healing spirals). Default 0; a mirrored turn swirls the other way."
                     }
                   },
                   "required": [
