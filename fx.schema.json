@@ -284,6 +284,17 @@
                       "maxItems": 2,
                       "minItems": 2,
                       "description": "Scale [x, y] of the ring, as a ring layer's squash: [1, 0.4] lays it on the ground, so sparks rise from a magic circle's ellipse."
+                    },
+                    "grow": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 16
+                      },
+                      "maxItems": 8,
+                      "minItems": 2,
+                      "description": "2–8 keys scaling the radius over the emitter's window, start to end, timed as a layer's keys: [0.2, 1] spawns on a shockwave's edge as it spreads, [1, 0] closes in."
                     }
                   },
                   "required": [

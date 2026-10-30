@@ -6,6 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Spawn rings on the ground
 
+- An emitter's `ring` takes `grow`, 2–8 keys over its window that scale the radius, so sparks spawn on a shockwave's edge as it spreads (`[0.2, 1]`) or close in (`[1, 0]`).
 - An emitter's `ring` takes `squash`, as a ring layer does: `[1, 0.4]` lays the spawn ring on the ground, so sparks rise from a magic circle's ellipse instead of a circle standing upright. Without it, rings spawn as before.
 
 ### Paths for layers

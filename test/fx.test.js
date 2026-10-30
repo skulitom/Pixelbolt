@@ -672,3 +672,12 @@ test('a squashed spawn ring lies on the ground as an ellipse, and without squash
   assert.deepEqual([Math.min(...xs), Math.max(...xs)], [2, 22]);
   assert.deepEqual([Math.min(...ys), Math.max(...ys)], [8, 16]);
 });
+
+test('a spawn ring that grows spawns farther out over the emitter\'s window, in step with a ring layer\'s keys', () => {
+  const wave = grow => compileEffects(effects({ frames: 5, emitters: [{ at: [12, 12], ring: { radius: 10, even: true, ...(grow && { grow }) }, rate: 4, speed: 0, life: 1, shapes: ['dot'] }] })).recipe;
+  const reach = frame => Math.max(...frame.ops.map(op => Math.abs(op.x - 12)));
+  assert.deepEqual(wave(undefined).frames.map(reach), [10, 10, 10, 10, 10]);
+  // Keys [0, 1] over five frames: progress k / 5, so the spawn ring's radius is 0, 2, 4, 6 and 8.
+  assert.deepEqual(wave([0, 1]).frames.map(reach), [0, 2, 4, 6, 8]);
+  assert.throws(() => wave([1]), /expected 2–8 keys scaling the radius/);
+});
