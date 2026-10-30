@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground', 'kick'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -322,6 +322,9 @@ function readEmitter(emitter, path, context, earlier) {
     // ground: a floor that many pixels below where each particle was born, so particles thrown up from a ring laid on the
     // ground land back on their own patch of it.
     ground: emitter.ground === undefined ? null : number(emitter.ground, `${path}.ground`, -256, 256),
+    // kick: a velocity [x, y] added to every launch, whatever its angle: outward shards on a ring laid on the ground pop
+    // up as they fly out. It turns with a turned copy, as launch angles do.
+    kick: emitter.kick === undefined ? null : pair(emitter.kick, `${path}.kick`, -64, 64),
     bounce: number(emitter.bounce ?? 0, `${path}.bounce`, 0, 1),
     dissolve: emitter.dissolve === undefined ? 0 : number(emitter.dissolve, `${path}.dissolve`, 0, 1),
     threshold: ditherThreshold(pattern, [0, 0], seed)
@@ -468,6 +471,7 @@ function simulate(effect, context) {
     const angle = heading(out === null ? (e.sweep ? pick(e.angle, r(SALT.angle)) + turned : pick(e.angle, r(SALT.angle))) : e.sweep ? out + pick(e.angle, r(SALT.angle)) + turned : out + pick(e.angle, r(SALT.angle))), speed = e.throttle ? pick(e.speed, r(SALT.speed)) * sample(e.throttle, share) : pick(e.speed, r(SALT.speed));
     const life = e.life ? pickWhole(e.life, r(SALT.life)) : Infinity, variant = e.face ? null : e.variants[Math.min(e.variants.length - 1, Math.floor(r(SALT.variant) * e.variants.length))];
     let vx = cosDeg(angle) * speed, vy = sinDeg(angle) * speed;
+    if (e.kick) { const [kx, ky] = offset(e.kick[0], e.kick[1]); vx += kx; vy += ky; }
     if (parent && e.inherit) { vx += parent.vx * e.inherit; vy += parent.vy * e.inherit; }
     return {
       emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key,

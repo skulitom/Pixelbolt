@@ -764,3 +764,10 @@ test('ground lands each particle that many pixels below where it was born', () =
   assert.deepEqual(hop({ ground: 2 }).frames.at(-1).ops.map(op => op.y), born.map(y => y + 2));
   assert.throws(() => hop({ ground: 0, floor: 20 }), /not both/);
 });
+
+test('kick adds one velocity to every launch, whatever its angle', () => {
+  const fan = kick => compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], ring: { radius: 4, even: true, outward: true }, burst: 4, speed: 2, life: 4, shapes: ['dot'], ...(kick && { kick }) }] })).recipe.frames[1].ops.map(op => [op.x, op.y]);
+  const plain = fan(undefined), kicked = fan([0, -3]);
+  assert.deepEqual(kicked, plain.map(([x, y]) => [x, y - 3]));
+  assert.throws(() => fan([1]), /kick/);
+});

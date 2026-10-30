@@ -6,6 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes from a cold-agent test of the effect tools
 
+- Emitters take `kick: [x, y]`, a velocity added to every launch whatever its angle, so outward shards on a ring laid on the ground can pop up as they fly out.
 - Emitters take `ground`: a floor that many pixels below where each particle was born, so shards thrown up from a ring laid on the ground land back on their own patch of it. `bounce` and `when: "floor"` children work with it.
 - Paths, on emitters and layers, are travelled at a steady speed along their length, so unevenly spaced points no longer make the spawn centre or a layer lurch. Keyed `drift` still gives each key an equal share of the window.
 - `halo` reaches round: one pixel wide it is the four neighbours as before, wider it is a round glow instead of a diamond.
