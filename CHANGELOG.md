@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Cooling blobs
+
+- A blob emitter takes `power`, a number or 2–8 keys over each particle's life that scale its disc's field: embers and sparks of molten metal cool through their look's bands, white to yellow to red, as they fade. Without it, drops draw as before.
+
 ### Keyed drift
 
 - A shape layer's `drift` takes 2–8 offsets as keys spread over its window, so an orb arcs or a flame wanders instead of sliding in a straight line. Turned copies turn the keys; a plain drift moves as before.

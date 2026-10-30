@@ -128,10 +128,12 @@ function readEmitter(emitter, path, context, earlier) {
   let blob = null;
   if (emitter.blob !== undefined) {
     if (emitter.blob === null || typeof emitter.blob !== 'object' || Array.isArray(emitter.blob)) fail(`${path}.blob`, 'expected { look, radius }');
-    fields(emitter.blob, ['look', 'radius', 'size'], `${path}.blob`);
+    fields(emitter.blob, ['look', 'radius', 'size', 'power'], `${path}.blob`);
     const look = emitter.blob.look ?? (looks.length === 1 ? looks[0] : undefined);
     if (!looks.includes(look)) fail(`${path}.blob.look`, emitter.blob.look === undefined ? `name the look this blob is drawn into: ${looks.join(', ')}` : `no look is named ${JSON.stringify(emitter.blob.look)}`);
-    blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64), size: range(emitter.blob.size ?? 1, `${path}.blob.size`, 0.1, 8) };
+    // power scales each disc's field over the particle's life: a hot drop climbs no higher than the look's dimmer bands
+    // as it cools, from white through yellow to red, while its radius keys shrink it.
+    blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64), size: range(emitter.blob.size ?? 1, `${path}.blob.size`, 0.1, 8), power: emitter.blob.power === undefined ? null : tween(emitter.blob.power, `${path}.blob.power`, 0, 4) };
     for (const key of ['shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'behind']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to particles drawn as symbols; a blob particle is drawn into its look`);
   }
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
@@ -468,8 +470,8 @@ function simulate(effect, context) {
       const [X, Y] = places[i], ops = (pass === true ? behind : output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
       if (e.blob) {
         // Its radius moves through the keys over its life; the shape layers' grid draws it.
-        const radius = sample(e.blob.radius, Math.min(1, p.age / Math.max(1, span - 1))) * p.size, [, , x, y] = places[i];
-        if (radius > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius });
+        const age = Math.min(1, p.age / Math.max(1, span - 1)), radius = sample(e.blob.radius, age) * p.size, [, , x, y] = places[i], power = e.blob.power ? sample(e.blob.power, age) : 1;
+        if (radius > 0 && power > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius, ...(power !== 1 && { power }) });
         else culled++;
         return;
       }

@@ -718,7 +718,7 @@ function band(value, thresholds) {
 /**
  * The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. It holds the looks whose `front`
  * is `front`: the effect draws one grid under its particles and, when a look asks, one over them. `blobs` are this frame's blob
- * particles, { look, x, y, radius }: each adds a soft disc, (1 − d²/r²)², to its look's field, so drops that touch merge
+ * particles, { look, x, y, radius, power }: each adds a soft disc, (1 − d²/r²)² times its power (default 1), to its look's field, so drops that touch merge
  * into one body. `work` counts the pixels painting visits across one compile (pass the same object for every frame and
  * effect); past SHAPE_WORK the layer that crosses it is refused.
  */
@@ -770,7 +770,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         const dx = i - blob.x, dy = j - blob.y, d2 = dx * dx + dy * dy;
         if (d2 >= r2) continue;
         const k = 1 - d2 / r2;
-        field[j * width + i] += k * k;
+        field[j * width + i] += blob.power === undefined ? k * k : k * k * blob.power;
         any = true;
       }
     }

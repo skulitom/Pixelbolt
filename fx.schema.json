@@ -777,6 +777,26 @@
                       ],
                       "description": "Pixels: a number, or 2–8 keys spread over each particle's life (shrinking drops). Default 3."
                     },
+                    "power": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 4
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 4
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Scales the disc's field: a number, or 2–8 keys spread over each particle's life, so a hot drop cools through the look's bands (white, yellow, red) as it fades. Default 1."
+                    },
                     "size": {
                       "oneOf": [
                         {

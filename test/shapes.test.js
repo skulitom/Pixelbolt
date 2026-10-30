@@ -476,3 +476,14 @@ test('keyed drift carries a layer along a curve, and a plain drift moves as befo
   const turned = orb([[0, 0], [16, -16], [32, 0]], { turn: { angles: [180], about: [24, 24] } });
   centres(turned).forEach(([x, y], k) => assert.ok(Math.abs(48 - x - arc[k][0]) <= 1 && Math.abs(48 - y - arc[k][1]) <= 1, String(centres(turned))));
 });
+
+test('blob power cools a drop through its look\'s bands over its life, and without it drops draw as before', () => {
+  const ember = power => compileEffects(source({ frames: 6, emitters: [{ at: [24, 24], burst: 1, speed: 0, life: 6, blob: { look: 'warm', radius: 4, ...(power !== undefined && { power }) } }] })).recipe;
+  const brightest = frame => { const g = gridOf(frame); return ['W', 'y', 'o'].find(key => cells(g).some(c => c.key === key)) ?? null; };
+  assert.deepEqual(ember(1), ember(undefined));
+  // Steady, the drop's middle stays white; cooling, it steps down to yellow and then orange before it goes.
+  assert.ok(ember(undefined).frames.every(frame => brightest(frame) === 'W'));
+  const cooling = ember([1, 0.3]).frames.map(brightest);
+  assert.equal(cooling[0], 'W');
+  assert.ok(cooling.includes('y') && cooling.at(-1) === 'o', String(cooling));
+});

@@ -283,6 +283,7 @@ const emitter = { ...object({
     description: 'With a sprite, in place of burst or rate: every pixel leaves once, between start and end, while what is left of the sprite stays drawn. Not in a loop; reverse the animation to put a sprite together.' },
   blob: { ...object({ look: { ...id, description: 'The look it is drawn into; may be left out when the effect has one look.' },
     radius: { oneOf: [num(0, 64), { ...array(num(0, 64), 8), minItems: 2 }], description: 'Pixels: a number, or 2–8 keys spread over each particle\'s life (shrinking drops). Default 3.' },
+    power: { oneOf: [num(0, 4), { ...array(num(0, 4), 8), minItems: 2 }], description: 'Scales the disc\'s field: a number, or 2–8 keys spread over each particle\'s life, so a hot drop cools through the look\'s bands (white, yellow, red) as it fades. Default 1.' },
     size: range(0.1, 8, 'Scales the radius, picked per particle: [0.6, 1.4] mixes small and large puffs so smoke and gas billow instead of sitting as one smooth lump. Default 1.') }),
     description: 'Draw each particle as a soft disc, (1 − d²/r²)², added to a look\'s field instead of stamping a symbol: touching drops merge into one body of water that stretches, pinches and splits, banded, lit and outlined by the look. Replaces shapes, face, play, remaps, tint, trail, dissolve, pattern and behind.' }
 }), allOf: [{ anyOf: [{ required: ['at'] }, { required: ['from'] }, { required: ['path'] }] }, { anyOf: [{ required: ['shapes'] }, { required: ['blob'] }, { required: ['sprite'] }] }, { not: { required: ['shapes', 'blob'] } }] };
