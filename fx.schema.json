@@ -2617,6 +2617,12 @@
           "maxLength": 1,
           "description": "Palette key for a one-pixel outline on the empty pixels beside this look's own."
         },
+        "reach": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 8,
+          "description": "Pixels toward (and away from) the light over which lit and shade compare the field; default 2. 1 keeps a small drop's highlight to a thin rim, 3–4 spreads light over a large body. Needs lit or shade."
+        },
         "light": {
           "type": "array",
           "items": {

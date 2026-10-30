@@ -411,3 +411,10 @@ test('a stream with fade dims toward the far end of its curve, and without it dr
   assert.ok(Math.max(...faded.map(c => c.x)) < Math.max(...plain.map(c => c.x)) - 8, `${Math.max(...faded.map(c => c.x))} against ${Math.max(...plain.map(c => c.x))}`);
   assert.deepEqual(tail(0), tail());
 });
+
+test('a look\'s reach sizes its lit and shade bands: shorter keeps a small drop\'s highlight to a thin rim', () => {
+  const drop = reach => cells(gridOf(compileEffects(source({ frames: 1, looks: { cool: { ...water, ...(reach !== undefined && { reach }) } }, layers: [{ kind: 'burst', look: 'cool', at: [24, 24], radius: 5, noise: 0 }] })).recipe.frames[0])).filter(c => c.key === 'W').length;
+  assert.ok(drop(1) < drop(2) && drop(2) < drop(4), `${drop(1)} ${drop(2)} ${drop(4)}`);
+  assert.equal(drop(2), drop());
+  assert.throws(() => compileEffects(source({ frames: 1, looks: { cool: { colors: ['b'], thresholds: [0.2], reach: 1 } }, layers: [{ kind: 'burst', look: 'cool', at: [24, 24], radius: 5 }] })), /reach sizes the lit and shade bands/);
+});

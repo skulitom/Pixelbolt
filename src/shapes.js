@@ -111,7 +111,7 @@ function readShading(value, path, palette) {
 }
 
 function readLook(look, path, palette, seed) {
-  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'lit', 'shade'], path);
+  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'reach', 'lit', 'shade'], path);
   const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette);
   if (look.light !== undefined && !lit && !shade) fail(`${path}.light`, 'light points the lit and shade bands; add lit or shade too');
   const toward = look.light === undefined ? [-1, -1] : pair(look.light, `${path}.light`, -1, 1), reach = Math.sqrt(toward[0] * toward[0] + toward[1] * toward[1]);
@@ -131,7 +131,10 @@ function readLook(look, path, palette, seed) {
     codes: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)),
     dither: number(look.dither ?? 0, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed),
     outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0),
-    lit, shade, light: [toward[0] / reach, toward[1] / reach]
+    lit, shade, light: [toward[0] / reach, toward[1] / reach],
+    // How many pixels toward (and away from) the light the field is compared over: 1 keeps a small drop's highlight to
+    // a thin rim, 3–4 spreads light over a large body.
+    reach: (look.reach !== undefined && !lit && !shade) ? fail(`${path}.reach`, 'reach sizes the lit and shade bands; add lit or shade too') : number(look.reach ?? 2, `${path}.reach`, 0.5, 8)
   };
 }
 
@@ -710,7 +713,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       }
     }
     if (!any) return;
-    const { thresholds, gaps, codes, dither, threshold, lit, shade, light: [lx, ly] } = look;
+    const { thresholds, gaps, codes, dither, threshold, lit, shade, light: [lx, ly], reach } = look;
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
       if (value < thresholds[0] - dither * gaps[0]) continue;
@@ -721,8 +724,8 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       let code = codes[level - 1];
       // Lit and shade bands recolour the look's own pixels by how far its field falls two pixels toward the light
       // (and away from it): a highlight on the rim that faces the light, a shadow side opposite.
-      if (shade) { const s = band(1 - between(field, width, height, i - 2 * lx, j - 2 * ly) / value, shade.thresholds); if (s) code = shade.codes[s - 1]; }
-      if (lit) { const s = band(1 - between(field, width, height, i + 2 * lx, j + 2 * ly) / value, lit.thresholds); if (s) code = lit.codes[s - 1]; }
+      if (shade) { const s = band(1 - between(field, width, height, i - reach * lx, j - reach * ly) / value, shade.thresholds); if (s) code = shade.codes[s - 1]; }
+      if (lit) { const s = band(1 - between(field, width, height, i + reach * lx, j + reach * ly) / value, lit.thresholds); if (s) code = lit.codes[s - 1]; }
       chars[c] = code; owner[c] = lookIndex + 1; drawn = true;
     }
   });

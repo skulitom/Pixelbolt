@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Highlight reach
+
+- A look's `reach` (default 2, as before) sets how many pixels toward the light its `lit` and `shade` bands measure over: 1 keeps a small drop's highlight to a thin rim (small drops used to come out almost all highlight), 3–4 spreads light over a large body.
+
 ### Streams that fade
 
 - A `stream` takes `fade`, dimming it toward the far end of its curve as a beam's does: a tail that cools along its length, with no bright one-pixel tip. Default 0, as before.
