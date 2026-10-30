@@ -400,10 +400,11 @@ const PAINTERS = {
   },
   // A crescent whose outer edge is a crisp arc at `radius`: the head sweeps `arc` over the first `reveal` share of the
   // frames and the tail chases it over the rest, the band thickest mid-arc and pointed at both ends, brightest at the
-  // outer edge and dimming toward the tail.
+  // outer edge and dimming toward the tail. A cycling slash stays whole, since a sweep would vanish at the loop point and
+  // pop back (one that asks for a reveal still draws on).
   slash(layer, s, put, W, H) {
     const R = sample(layer.radius, s.q), w = sample(layer.width, s.q), [from, to] = layer.arc, span = Math.abs(to - from), clockwise = to > from;
-    const head = layer.reveal ? ease('out', clamp01(s.end / layer.reveal)) : 1, tail = layer.reveal < 1 ? clamp01((s.p - layer.reveal) / (1 - layer.reveal)) : 0;
+    const head = layer.reveal ? ease('out', clamp01(s.end / layer.reveal)) : 1, tail = layer.reveal < 1 && !(layer.cycle && !layer.reveal) ? clamp01((s.p - layer.reveal) / (1 - layer.reveal)) : 0;
     paintArea(put, W, H, s.cx, s.cy, R * s.frame.reach + 2, s.frame, (u, v) => {
       const d = Math.sqrt(u * u + v * v), inside = R - d;
       if (inside < -0.5 || inside > w + 0.5) return 0;
@@ -723,8 +724,9 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
   });
   if (!drawn) return null;
   if (shapes.cleanup.strays || shapes.cleanup.corners) for (const change of cleanupIds(chars, width, height, shapes.cleanup)) chars[change.index] = change.id;
-  // Each look's outline takes the empty pixels beside its own, in look order.
-  const filled = Uint8Array.from(owner);
+  // Each look's outline takes the empty pixels beside its own, in look order: only those still drawn after cleanup, so a
+  // stray it removed leaves no outline behind.
+  const filled = owner.map((look, c) => (chars[c] ? look : 0));
   shapes.looks.forEach((look, lookIndex) => {
     if (!look.outline) return;
     const mine = lookIndex + 1;

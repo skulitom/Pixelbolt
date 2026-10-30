@@ -199,10 +199,10 @@ test('effects without shape layers keep their exact output', async () => {
 test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
   // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
   const golden = {
-    'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': 'ddbd1900e43b33a2f5d99bd86eb0be3e649f69f7661a42f3e078491961da3d4a',
+    'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': '6a98f8e6e928da3247bb01795e45a714ad3f10bd6b09f2f4b2045ef25fe95171',
     fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
     'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
-    water: 'aac0545cf5c4b8af98a8a32301bbc8c90732010e3f875355daa74b7df3395c9c'
+    water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
   for (const [name, preset] of Object.entries(spellPresets)) {
@@ -317,7 +317,7 @@ test('liquid shapes compile to golden recipes, the same every time', () => {
       { ...LAYERS.slash, noise: 0.8, power: [1.4, 0.3] }],
     emitters: [{ at: [40, 10], area: [6, 3], burst: 6, start: 3, angle: [200, 340], speed: [0.6, 1.4], gravity: [0, 0.25], floor: 38, life: [4, 6], blob: { radius: [2.5, 1.2] } }] });
   assert.deepEqual(compileEffects(liquid), compileEffects(structuredClone(liquid)));
-  assert.equal(sha(compileEffects(liquid).recipe), 'cc84e2aebeb0789f8deb0126b55c11e267c3cd7c5519f9a761e5c3ebf64de1c2');
+  assert.equal(sha(compileEffects(liquid).recipe), '54ea5eeff8395e62eaa33007d77b370e9106c8527b146d51b7eddf551d41bb0b');
 });
 
 // ---- Looping shapes: a layer that spans a looping effect is a cycle ------------------------------------------------------
@@ -357,6 +357,10 @@ test('cycling layers move at a steady pace and draw without a reveal, so spins a
     const { inside, seam } = changes(compileEffects(source({ frames: 8, loop: true, layers: [layer] })).recipe);
     assert.ok(inside.some(n => n > 0) && seam <= Math.max(...inside), `${layer.kind}: seam ${seam}, inside ${inside}`);
   }
+  // A cycling slash stays whole in every frame: its tail no longer chases the head away and pops back at the loop point.
+  const crescent = compileEffects(source({ frames: 8, loop: true, layers: [{ ...LAYERS.slash, width: 6 }] })).recipe;
+  assert.ok(crescent.frames.every(frame => gridOf(frame) && visible(gridOf(frame).rows) === visible(gridOf(crescent.frames[0]).rows)));
+  assert.equal(changes(crescent).seam, 0);
   // Drawn whole from the first frame: a cycling glyph has no draw-on unless it asks for one, as a one-shot draws on.
   const first = (loop, extra = {}) => visible(gridOf(compileEffects(source({ frames: 8, loop, layers: [{ ...circle, ...extra }] })).recipe.frames[0]).rows);
   assert.ok(first(true) > 1.5 * first(false), `${first(true)} against ${first(false)}`);

@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Shape fixes
+
+- A look's outline is drawn only round pixels still there after `cleanup`: a stray it removed used to leave its outline behind as a small hollow dark diamond (422 such pixels in the water examples, one in the fire explosion).
+- A `slash` spanning a looping effect stays whole: its tail used to chase the head away over the cycle, so the crescent vanished and popped back at the loop point.
+
 ### Fluids inside an effect
 
 - A `pixelforge-fx` symbol's `recipe` may be a fluid or wave source as well as a recipe or pose source; its effects are its animations. Drawn by a sprite emitter, a simulated explosion plays frame for frame, pixel for pixel, under shape-layer flashes and shockwaves and particles, all in one recipe. `examples/fluid-blast.fx.json` puts `explosion.fluid.json` under a flash star, a breaking shockwave and embers.
