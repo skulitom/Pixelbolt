@@ -189,7 +189,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Bigger live fluids and finer steps
 
-- A live fluid run is held to the work budget (about 400 million cell updates) only for its warm-up, since it steps one frame at a time. A 72 × 128 slime with 256 frames at 4 substeps used to be refused by `createLiveFluid` because compiling all 256 frames would go over; it now runs, at about 3 million cell updates a frame. When the default warm-up (one cycle) is too long, the error says how many frames fit.
+- A live fluid run is held to the work budget (about 400 million cell updates) only for its warm-up, since it steps one frame at a time. A 72 × 128 slime with 256 frames at 4 substeps used to be refused by `createLiveFluid` because compiling all 256 frames would go over; it now runs with a warm-up of up to 132 frames, at about 3 million cell updates a frame (that source's 24 iterations, with yield stress). The default warm-up, a whole cycle, is too long for it, and the error says how many frames fit.
 - `substeps` goes up to 16 (it stopped at 4), for fast liquids that need finer steps. Time grows with it: the waterfall steps live in about 2 ms at 2 substeps, 7 ms at 8 and 17 ms at 16, and the work budget counts every step.
 
 ### Fixes

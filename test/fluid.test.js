@@ -1035,8 +1035,8 @@ test('a live run is held to the work budget only for its warm-up, since it steps
   const live = createLiveFluid(slime, { warmup: 2 });
   assert.equal(live.step().frame, 3);
   assert.ok(live.particles > 0 && live.render().keys.some(row => /[^.]/.test(row)));
-  // The most expensive source the schema allows (31,709 million cell updates to compile) builds a runner without
-  // warming up, and is still refused at once when its default warm-up would run past the budget.
+  // A source that would need 31,709 million cell updates to compile builds a runner without warming up, and is
+  // refused at once when its default warm-up would run past the budget.
   const torch = { ...gas({ frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 };
   assert.throws(() => createLiveFluid(torch), error => error.path === 'live.warmup' && /warm up at most 29 frames/.test(error.message));
   assert.equal(createLiveFluid(torch, { warmup: 0 }).frame, 0);
