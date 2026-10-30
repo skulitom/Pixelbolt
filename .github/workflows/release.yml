@@ -270,8 +270,9 @@ jobs:
           set -euo pipefail
           version="${RELEASE_TAG#v}"
           # From an empty folder, so npx installs the published package rather than finding a checkout. npm processes a
-          # new version before serving it (0.10.0: 77 s), and npm keeps a version list it read for five minutes (the
-          # registry's max-age), so every try asks the registry again (--prefer-online), for up to five minutes.
+          # new version before serving it (0.10.0: 77 s), and npm may reuse a cached version list without it for up to
+          # five minutes (the registry's max-age), so every try asks the registry again (--prefer-online), for up to five
+          # minutes.
           check="$RUNNER_TEMP/npx-check"
           mkdir -p "$check"
           for _ in $(seq 15); do

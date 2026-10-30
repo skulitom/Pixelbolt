@@ -16,7 +16,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Fixes
 
 - The CLI's inline `--expect` and `--guides` JSON works in Windows PowerShell 5.1, which strips the double quotes from arguments it passes to a program (`'{"width":32}'` arrives as `{width:32}`), so the pixel art skill's `render --expect` step works there. A value with no quotes left has its bare keys quoted back (neither option takes a string value); if it still isn't JSON, the error says to pass a .json file or use PowerShell 7, cmd or bash.
-- The release's npm check asks the registry again on every try (`--prefer-online`), for up to five minutes. 0.10.0's check failed: npm was still processing the new version at the first try, and npx kept that first version list for the rest of its two minutes. The package itself was fine; a rerun passed.
+- The release's npm check asks the registry again on every try (`--prefer-online`), for up to five minutes. 0.10.0's check failed: npm was still processing the new version at the first tries, and the later ones could reuse a cached version list without it. The package itself was fine; a rerun passed.
 
 ## 0.10.0 (2026-10-29)
 
