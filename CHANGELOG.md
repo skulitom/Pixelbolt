@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### A spell library
+
+- `examples/<element>-spells.fx.json` for fire, ice, lightning, water, poison, holy and shadow: each a looping projectile turned to eight directions, an impact, an area effect and a looping buff, on one 64 × 64 canvas anchored at [32, 40], the point a game places every effect at. 28 effects, each reviewed frame by frame; `test/spell-library.test.js` pins their pixels, keeps every loop seamless and every one-shot ending empty, and checks each impact and area cues its hit. The pixel art skill and the workflow guide point to them.
+
 ### Shape fixes
 
 - A look's outline is drawn only round pixels still there after `cleanup`: a stray it removed used to leave its outline behind as a small hollow dark diamond (422 such pixels in the water examples, one in the fire explosion).

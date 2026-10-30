@@ -403,6 +403,23 @@ A `trail` layer is the smear behind a moving point, such as a sword tip:
 Randomness is a seeded hash keyed by effect seed, emitter, spawn frame and particle, with a separate salt per property, so changing one range does not reshuffle the others, and the same source always compiles to the same recipe. A looping effect (`loop: true`, which needs a finite `life`) warms up for whole cycles with spawns keyed by their frame in the cycle, so the particles in flight at frame 0 are exactly those alive at the end. Particles partly off the canvas are cropped into grids and trails keep only on-canvas pixels, so compiled effects never clip. Metadata reports spawned particles, the most alive at once, operations and culled particles per effect, and the cues.
 
 The compiler makes behaviour cheap to try; it does not supply it. Give each material its own motion and shapes (fire rises and fades, stone chips arc and settle, leaves flutter), keep particle counts low enough to read at native size, and review playback. An impact reads when it has one strong shape before the scatter: a white flash for a frame or two, then a ring or a fan of streaks that cool as they slow, a few secondary bits where they land, and smoke behind, fading by shrinking (a symbol sequence over the life) or cooling (`tint`) rather than by dither speckle. Keep fire below its source and debris on its floor. [examples/effects.fx.json](../examples/effects.fx.json) holds sparks, looping embers, landing dust, falling leaves and stone shards.
+
+**Spell library.** `examples/<element>-spells.fx.json` holds a reviewed set of game spells for seven elements: fire, ice, lightning, water, poison, holy and shadow. Each file has the same four effects on one 64 × 64 canvas:
+- `projectile`: the spell in flight, a seamless 8-frame loop turned to eight directions (`projectile-0` … `projectile-315`).
+- `impact`: the hit, with a `hit` cue on the frame it lands.
+- `area`: a ground effect, with a `hit` cue at its onset.
+- `buff`: a seamless loop round a character about 16 × 34 standing there; the character is not drawn.
+
+Every effect is placed by the same point, the recipe's `anchor` at [32, 40]: a projectile's centre, an impact's hit point, an area's or a buff's spot on the ground. So a game can drop any of the 28 effects the same way. Each element moves like its material:
+- Fire flickers, cools and turns to lit smoke.
+- Ice is faceted and shatters into face-directed shards.
+- Lightning forks, re-flashes and scorches.
+- Water is cel-shaded and splashes into drops and ripples.
+- Poison splats and leaves green gas.
+- Holy is rays, halos and a glyph with a pillar of light.
+- Shadow implodes, opens a void pool and grows tendrils.
+
+Start from the nearest one and change only what is needed: a palette for a different tint, `turn` angles for fewer directions, timing for a slower cast. `test/spell-library.test.js` keeps every loop seamless and every one-shot ending empty.
 ## Fluid effects
 
 A `pixelforge-fluid` source ([fluid.schema.json](../fluid.schema.json)) runs a real fluid simulation and compiles it into an ordinary recipe: every frame becomes one palette `grid` operation (plus `stamp`s for obstacles), so inspect, patch, overlay and export work unchanged, and a colour outside the palette cannot appear. Use it where particles fall short: fire that rises and licks, smoke that curls and thins, steam, explosions, magic swirls, splashing and falling water, a bubbling potion. The grid has one cell per canvas pixel, up to 128 × 128.
