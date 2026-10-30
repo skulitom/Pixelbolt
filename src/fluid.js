@@ -179,7 +179,8 @@ function readLook(layer, path, context) {
   return { field: FLUID_FIELDS.indexOf(layer.field), colors: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)), dither: number(layer.dither ?? 0.5, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed) };
 }
 
-// A disc (at, radius), a box (x, y, w, h), or both: their overlap, such as the lower half of a round flask.
+// A disc (at, radius), an ellipse (at, radius [x, y]), a box (x, y, w, h), or both: their overlap, such as the lower
+// half of a round flask.
 function readShape(value, path, width, height) {
   const disc = value.at !== undefined || value.radius !== undefined, box = ['x', 'y', 'w', 'h'].some(key => value[key] !== undefined);
   if (!disc && !box) fail(path, 'expected at and radius (a disc, or an ellipse with radius [x, y]), x, y, w and h (a box), or both (their overlap)');
