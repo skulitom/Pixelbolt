@@ -755,3 +755,12 @@ test('spawn rings spread evenly: by perimeter when squashed, and a full even rin
   const spokes = compileEffects(effects({ frames: 3, emitters: [{ at: [12, 12], ring: { radius: 8, even: true }, rate: 4, speed: 0, life: 1, shapes: ['dot'] }] })).recipe.frames.map(frame => frame.ops.map(op => `${op.x},${op.y}`).sort().join(' '));
   assert.notEqual(spokes[0], spokes[1]);
 });
+
+test('ground lands each particle that many pixels below where it was born', () => {
+  const hop = extra => compileEffects(effects({ frames: 12, emitters: [{ at: [12, 12], ring: { radius: 8, even: true, squash: [1, 0.3] }, burst: 6, angle: 270, speed: 1.5, gravity: [0, 0.4], life: 12, shapes: ['dot'], ...extra }] })).recipe;
+  const born = hop({ ground: 0 }).frames[0].ops.map(op => op.y), landed = hop({ ground: 0 }).frames.at(-1).ops.map(op => op.y);
+  // Each lands back on the row it left, on its own part of the ellipse; with ground 2, two rows lower.
+  assert.deepEqual(landed, born);
+  assert.deepEqual(hop({ ground: 2 }).frames.at(-1).ops.map(op => op.y), born.map(y => y + 2));
+  assert.throws(() => hop({ ground: 0, floor: 20 }), /not both/);
+});

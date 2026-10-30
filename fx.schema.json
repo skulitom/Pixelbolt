@@ -606,11 +606,17 @@
                   "maximum": 4096,
                   "description": "Particles never go below this y, sway included."
                 },
+                "ground": {
+                  "type": "number",
+                  "minimum": -256,
+                  "maximum": 256,
+                  "description": "A floor this many pixels below where each particle was born, instead of floor: shards thrown up from a ring laid on the ground land back on their own patch of it."
+                },
                 "bounce": {
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1,
-                  "description": "Share of downward speed returned at the floor; default 0 (they settle)."
+                  "description": "Share of downward speed returned at the floor or ground; default 0 (they settle)."
                 },
                 "shapes": {
                   "oneOf": [

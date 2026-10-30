@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -153,7 +153,7 @@ function readEmitter(emitter, path, context, earlier) {
     if (!FX_EVENTS.includes(when)) fail(`${path}.when`, 'expected death (where a parent particle ends), floor (where it first lands) or life (every frame it lives)');
     if (when === 'life' && emitter.rate === undefined) fail(`${path}.burst`, 'a child spawning while its parent lives uses rate: particles per frame for each parent particle');
     if (when !== 'life' && emitter.burst === undefined) fail(`${path}.rate`, `a child spawning at its parent's ${when} uses burst: particles per event`);
-    if (when === 'floor' && earlier[parent].floor === null) fail(`${path}.when`, `emitter ${JSON.stringify(emitter.from)} has no floor to land on`);
+    if (when === 'floor' && earlier[parent].floor === null && earlier[parent].ground === null) fail(`${path}.when`, `emitter ${JSON.stringify(emitter.from)} has no floor to land on`);
     for (const key of ['start', 'end']) if (emitter[key] !== undefined) fail(`${path}.${key}`, 'a child spawns when its parent particles do; start and end apply to emitters with their own schedule');
   } else {
     // A moving emitter (one with a path) may inherit its own motion along the path; otherwise inherit is a child's.
@@ -288,7 +288,8 @@ function readEmitter(emitter, path, context, earlier) {
     fields(emitter.sway, ['amplitude', 'period'], `${path}.sway`);
     sway = { amplitude: pair(emitter.sway.amplitude, `${path}.sway.amplitude`, 0, 32), period: number(emitter.sway.period ?? 8, `${path}.sway.period`, 1, 256) };
   }
-  if (emitter.bounce !== undefined && emitter.floor === undefined) fail(`${path}.bounce`, 'bounce applies at a floor');
+  if (emitter.bounce !== undefined && emitter.floor === undefined && emitter.ground === undefined) fail(`${path}.bounce`, 'bounce applies at a floor or ground');
+  if (emitter.floor !== undefined && emitter.ground !== undefined) fail(`${path}.ground`, 'a particle lands on one floor: a canvas row (floor) or pixels below where it was born (ground), not both');
   // turbulence pushes each particle by a smooth seeded field that stays put, `scale` pixels to a swirl, so smoke and
   // embers wander organically instead of swinging in step. A still field keeps loops seamless.
   let turbulence = null;
@@ -318,6 +319,9 @@ function readEmitter(emitter, path, context, earlier) {
     gravity: emitter.gravity === undefined ? [0, 0] : pair(emitter.gravity, `${path}.gravity`, -8, 8),
     drag: number(emitter.drag ?? 0, `${path}.drag`, 0, 1),
     floor: emitter.floor === undefined ? null : integer(emitter.floor, `${path}.floor`, -4096, 4096),
+    // ground: a floor that many pixels below where each particle was born, so particles thrown up from a ring laid on the
+    // ground land back on their own patch of it.
+    ground: emitter.ground === undefined ? null : number(emitter.ground, `${path}.ground`, -256, 256),
     bounce: number(emitter.bounce ?? 0, `${path}.bounce`, 0, 1),
     dissolve: emitter.dissolve === undefined ? 0 : number(emitter.dissolve, `${path}.dissolve`, 0, 1),
     threshold: ditherThreshold(pattern, [0, 0], seed)
@@ -468,7 +472,7 @@ function simulate(effect, context) {
     return {
       emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key,
       remap: e.remaps.length ? e.remaps[Math.min(e.remaps.length - 1, Math.floor(r(SALT.remap) * e.remaps.length))] : null,
-      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1,
+      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1, floor: e.ground !== null ? y + e.ground : e.floor,
       ...(e.spin && { turn: r(SALT.turn) * 360, spin: pick(e.spin, r(SALT.spin)) })
     };
   };
@@ -542,7 +546,7 @@ function simulate(effect, context) {
     const places = alive.map(p => {
       const e = p.emitter, sway = e.sway;
       const sx = sway ? sway.amplitude[0] * sinDeg(360 * p.age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * p.age / sway.period + p.phase) : 0;
-      const x = p.x + sx, y = e.floor !== null && p.y + sy > e.floor ? e.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
+      const x = p.x + sx, y = p.floor !== null && p.y + sy > p.floor ? p.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
       p.trail.push([X, Y]);
       if (p.trail.length > 17) p.trail.shift();
       if (e.face) p.facing = facing(e, p.vx, p.vy, p.facing);
@@ -640,8 +644,8 @@ function simulate(effect, context) {
       p.vx *= 1 - e.drag; p.vy *= 1 - e.drag;
       p.px = p.x; p.py = p.y;
       p.x += p.vx; p.y += p.vy;
-      if (e.floor !== null && p.y > e.floor) {
-        p.y = e.floor;
+      if (p.floor !== null && p.y > p.floor) {
+        p.y = p.floor;
         if (p.vy > 0) p.vy = -p.vy * e.bounce;
         if (!p.landed) { p.landed = true; if (children[p.index].floor.length) events.push([p, 'floor']); }
       }
