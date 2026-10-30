@@ -709,3 +709,12 @@ test('sweep turns the launch angle by keys over the emitter\'s window, and witho
   assert.deepEqual(steps(nozzle([0, 90]).recipe), [[4, 0], [4, 1], [3, 2], [2, 3]]);
   assert.throws(() => nozzle([10]), /expected 2–8 keys in degrees/);
 });
+
+test('throttle scales the launch speed by keys over the emitter\'s window', () => {
+  const fountain = throttle => compileEffects(effects({ frames: 5, emitters: [{ at: [2, 12], rate: 1, angle: 0, speed: 5, life: 2, shapes: ['dot'], ...(throttle && { throttle }) }] })).recipe;
+  const steps = recipe => recipe.frames.slice(1).map(frame => frame.ops[0].x - 2);
+  assert.deepEqual(steps(fountain(undefined)), [5, 5, 5, 5]);
+  // Keys [1, 0] over five frames: speeds 5, 4, 3 and 2 for the particles born on frames 0 to 3.
+  assert.deepEqual(steps(fountain([1, 0])), [5, 4, 3, 2]);
+  assert.throws(() => fountain([1]), /expected 2–8 keys scaling the launch speed/);
+});

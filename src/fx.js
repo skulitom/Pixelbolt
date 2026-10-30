@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'spin', 'sweep'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'spin', 'sweep', 'throttle'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -234,6 +234,9 @@ function readEmitter(emitter, path, context, earlier) {
   // swings across or a fountain sways.
   const sweep = emitter.sweep === undefined ? null : Array.isArray(emitter.sweep) && emitter.sweep.length >= 2 && emitter.sweep.length <= 8 ? emitter.sweep.map((v, i) => number(v, `${path}.sweep[${i}]`, -3600, 3600)) : fail(`${path}.sweep`, 'expected 2–8 keys in degrees added to the launch angle from start to end, such as [-30, 30]');
   if (sweep && parent !== null) fail(`${path}.sweep`, 'a child launches from its parent particles; sweep turns an emitter with its own schedule');
+  // throttle: 2–8 keys scaling the launch speed over the window, so a fountain weakens or a flamethrower dies out.
+  const throttle = emitter.throttle === undefined ? null : Array.isArray(emitter.throttle) && emitter.throttle.length >= 2 && emitter.throttle.length <= 8 ? emitter.throttle.map((v, i) => number(v, `${path}.throttle[${i}]`, 0, 8)) : fail(`${path}.throttle`, 'expected 2–8 keys scaling the launch speed from start to end, such as [1, 0.3]');
+  if (throttle && parent !== null) fail(`${path}.throttle`, 'a child launches from its parent particles; throttle scales an emitter with its own schedule');
   const play = emitter.play ?? 'life';
   if (!['life', 'loop', 'once'].includes(play)) fail(`${path}.play`, 'expected life (spread over the lifetime), loop (one per frame, cycling) or once (one per frame, holding the last)');
   const life = emitter.life === undefined ? null : range(emitter.life, `${path}.life`, 1, 256, true);
@@ -295,7 +298,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, throttle, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -428,8 +431,8 @@ function simulate(effect, context) {
       const [ox, oy] = offset(e.line.dx * s, e.line.dy * s);
       x = cx + ox; y = cy + oy;
     } else { const [ox, oy] = offset((r(SALT.x) - 0.5) * (e.area[0] - 1), (r(SALT.y) - 0.5) * (e.area[1] - 1)); x = cx + ox; y = cy + oy; }
-    const turned = e.sweep ? sample(e.sweep, Math.min(1, Math.max(0, (born % frames - e.start) / (e.end - e.start)))) : 0;
-    const angle = heading(out === null ? (e.sweep ? pick(e.angle, r(SALT.angle)) + turned : pick(e.angle, r(SALT.angle))) : out + pick(e.angle, r(SALT.angle))), speed = pick(e.speed, r(SALT.speed));
+    const share = Math.min(1, Math.max(0, (born % frames - e.start) / (e.end - e.start))), turned = e.sweep ? sample(e.sweep, share) : 0;
+    const angle = heading(out === null ? (e.sweep ? pick(e.angle, r(SALT.angle)) + turned : pick(e.angle, r(SALT.angle))) : out + pick(e.angle, r(SALT.angle))), speed = e.throttle ? pick(e.speed, r(SALT.speed)) * sample(e.throttle, share) : pick(e.speed, r(SALT.speed));
     const life = e.life ? pickWhole(e.life, r(SALT.life)) : Infinity, variant = e.face ? null : e.variants[Math.min(e.variants.length - 1, Math.floor(r(SALT.variant) * e.variants.length))];
     let vx = cosDeg(angle) * speed, vy = sinDeg(angle) * speed;
     if (parent && e.inherit) { vx += parent.vx * e.inherit; vy += parent.vy * e.inherit; }

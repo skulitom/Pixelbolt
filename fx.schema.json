@@ -441,6 +441,17 @@
                   "minItems": 2,
                   "description": "2–8 keys in degrees added to angle over the emitter's window, start to end: a flamethrower that swings across ([-40, 40]), a fountain that sways. Not for child emitters."
                 },
+                "throttle": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 8
+                  },
+                  "maxItems": 8,
+                  "minItems": 2,
+                  "description": "2–8 keys scaling the launch speed over the emitter's window, start to end: a fountain that weakens ([1, 0.3]), a flamethrower dying out. Not for child emitters."
+                },
                 "gravity": {
                   "type": "array",
                   "items": {

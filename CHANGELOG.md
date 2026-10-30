@@ -6,6 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Sweeping emitters
 
+- Emitters take `throttle`, 2–8 keys scaling the launch speed over the same window: a fountain weakens, a flamethrower dies out.
 - Emitters take `sweep`, 2–8 keys in degrees added to the launch angle over the emitter's window from `start` to `end`: a flamethrower swings across, a fountain sways. Without it, angles are picked as before.
 
 ### Sparks that carry forward
