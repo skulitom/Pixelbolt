@@ -285,6 +285,10 @@
                       "minItems": 2,
                       "description": "Scale [x, y] of the ring, as a ring layer's squash: [1, 0.4] lays it on the ground, so sparks rise from a magic circle's ellipse."
                     },
+                    "fill": {
+                      "type": "boolean",
+                      "description": "Pick the distance in a radius range evenly by area, so radius [0, r] fills a disc evenly instead of crowding its middle."
+                    },
                     "grow": {
                       "type": "array",
                       "items": {

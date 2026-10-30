@@ -681,3 +681,11 @@ test('a spawn ring that grows spawns farther out over the emitter\'s window, in 
   assert.deepEqual(wave([0, 1]).frames.map(reach), [0, 2, 4, 6, 8]);
   assert.throws(() => wave([1]), /expected 2–8 keys scaling the radius/);
 });
+
+test('a filled spawn ring spreads particles evenly by area instead of crowding the middle', () => {
+  const disc = fill => compileEffects(effects({ frames: 1, emitters: [{ at: [24, 24], ring: { radius: [0, 20], ...(fill !== undefined && { fill }) }, burst: 400, speed: 0, life: 2, shapes: ['dot'] }] }, { width: 48, height: 48 })).recipe.frames[0].ops;
+  const inner = ops => ops.filter(op => Math.hypot(op.x - 24, op.y - 24) < 10).length / ops.length;
+  assert.deepEqual(disc(false), disc(undefined));
+  // Half the radius holds a quarter of the disc's area: about half the particles without fill, about a quarter with it.
+  assert.ok(inner(disc(undefined)) > 0.4 && inner(disc(true)) < 0.32, `${inner(disc(undefined))} / ${inner(disc(true))}`);
+});

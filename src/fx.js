@@ -192,12 +192,14 @@ function readEmitter(emitter, path, context, earlier) {
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
   if (emitter.ring !== undefined) {
-    fields(emitter.ring, ['radius', 'arc', 'even', 'outward', 'squash', 'grow'], `${path}.ring`);
+    fields(emitter.ring, ['radius', 'arc', 'even', 'outward', 'squash', 'grow', 'fill'], `${path}.ring`);
     const arc = emitter.ring.arc === undefined ? [0, 360] : pair(emitter.ring.arc, `${path}.ring.arc`, -3600, 3600);
     if (arc[1] < arc[0] || arc[1] - arc[0] > 360) fail(`${path}.ring.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), from no more than to and at most 360 apart');
     ring = { radius: range(emitter.ring.radius, `${path}.ring.radius`, 0, 256), arc, even: flag(emitter.ring.even, `${path}.ring.even`), outward: flag(emitter.ring.outward, `${path}.ring.outward`),
       // squash lays the ring on the ground as a ring layer's squash does: sparks rise from a magic circle's ellipse.
       squash: emitter.ring.squash === undefined ? null : pair(emitter.ring.squash, `${path}.ring.squash`, 0.125, 8),
+      // fill picks the distance in a radius range evenly by area, so a disc of motes isn't crowded at its middle.
+      fill: flag(emitter.ring.fill, `${path}.ring.fill`),
       // grow scales the radius by 2–8 keys over the emitter's window, start to end, so sparks ride a shockwave's edge out.
       grow: emitter.ring.grow === undefined ? null : Array.isArray(emitter.ring.grow) && emitter.ring.grow.length >= 2 && emitter.ring.grow.length <= 8 ? emitter.ring.grow.map((v, i) => number(v, `${path}.ring.grow[${i}]`, 0, 16)) : fail(`${path}.ring.grow`, 'expected 2–8 keys scaling the radius from start to end, such as [0.2, 1]') };
   }
@@ -403,8 +405,9 @@ function simulate(effect, context) {
       const { cells } = e.sprite.frame(born % frames), c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
       x = e.sprite.x + c.x; y = e.sprite.y + c.y; key = c.key;
     } else if (e.ring) {
-      const { radius, arc, even, outward, squash, grow } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring));
-      const d = grow ? pick(radius, r(SALT.radius)) * sample(grow, Math.min(1, Math.max(0, born % frames - e.start) / (e.end - e.start))) : pick(radius, r(SALT.radius));
+      const { radius, arc, even, outward, squash, grow, fill } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring));
+      const spread = fill ? Math.sqrt(radius[0] * radius[0] + r(SALT.radius) * (radius[1] * radius[1] - radius[0] * radius[0])) : pick(radius, r(SALT.radius));
+      const d = grow ? spread * sample(grow, Math.min(1, Math.max(0, born % frames - e.start) / (e.end - e.start))) : spread;
       const [ox, oy] = squash ? offset(cosDeg(theta) * d * squash[0], sinDeg(theta) * d * squash[1]) : offset(cosDeg(theta) * d, sinDeg(theta) * d);
       x = cx + ox; y = cy + oy;
       // Outward on a squashed ring points away from its middle, along the squashed offset.
