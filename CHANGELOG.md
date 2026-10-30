@@ -13,6 +13,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
 - The playground and the toy load 0.9.2 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name 0.9.1 still open on 0.9.1.
 
+### Fixes
+
+- The CLI's inline `--expect` and `--guides` JSON works in Windows PowerShell 5.1, which strips the double quotes from arguments it passes to a program (`'{"width":32}'` arrives as `{width:32}`), so the pixel art skill's `render --expect` step works there. A value with no quotes left has its bare keys quoted back (neither option takes a string value); if it still isn't JSON, the error says to pass a .json file or use PowerShell 7, cmd or bash.
+
 ## 0.10.0 (2026-10-29)
 
 ### Effects on a sprite
