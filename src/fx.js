@@ -754,6 +754,7 @@ function turnLayer(layer, view) {
   }
   if (layer.to !== undefined) out.to = place(layer.to);
   if (Array.isArray(layer.through)) out.through = layer.through.map(place);
+  if (Array.isArray(layer.path)) out.path = layer.path.map(place);
   if (layer.drift !== undefined) out.drift = isPair(layer.drift) ? shift(layer.drift) : Array.isArray(layer.drift) ? layer.drift.map(key => (isPair(key) ? shift(key) : key)) : layer.drift;
   if (['ring', 'slash', 'beam', 'glyph', 'star', 'burst'].includes(layer.kind)) { const tilt = typeof layer.tilt === 'number' ? layer.tilt : 0; out.tilt = view.turn + (view.mirror ? -tilt : tilt); }
   if (view.mirror) {

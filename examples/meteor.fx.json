@@ -48,12 +48,11 @@
         {
           "kind": "burst",
           "look": "fire",
-          "at": [6, 4],
+          "path": [[6, 4], [22, 26], [40, 54]],
           "frames": [0, 9],
           "radius": [4.5, 6],
           "noise": 0.3,
           "ease": "linear",
-          "drift": [[0, 0], [16, 22], [34, 50]],
           "power": 1.4
         },
         {

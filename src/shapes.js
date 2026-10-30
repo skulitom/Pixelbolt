@@ -26,7 +26,7 @@ const SPECIFIC = {
   burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
   stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale']
 };
-const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'curve', 'floor', 'seed', 'cue'];
+const COMMON = ['kind', 'look', 'at', 'path', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'curve', 'floor', 'seed', 'cue'];
 // Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
 // of running for hours. Area shapes visit each canvas pixel once a frame, so the recipe's frame-area limit keeps them
 // well under it. The shipped effects use under 0.1%; reaching it takes a few seconds.
@@ -200,17 +200,25 @@ function readLayer(layer, path, context, index) {
     if (typeof layer.cue !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(layer.cue) || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(layer.cue)) fail(`${path}.cue`, 'expected a portable name of letters, digits, hyphens or underscores');
     cue = layer.cue;
   }
+  // path: absolute points the layer moves through over its window, as an emitter's path does, so a projectile's head
+  // and the emitters trailing it share one list of points. It stands for at (its first point) and keyed drift.
+  let route = null;
+  if (layer.path !== undefined) {
+    if (layer.at !== undefined || layer.drift !== undefined) fail(`${path}.path`, 'a layer with a path starts at its first point and moves through the rest; leave at and drift out');
+    if (!Array.isArray(layer.path) || layer.path.length < 2 || layer.path.length > 8) fail(`${path}.path`, 'expected 2–8 points [x, y] for the layer to move through over its window');
+    route = layer.path.map((point, i) => pair(point, `${path}.path[${i}]`, -4096, 4096));
+  }
   const out = {
     kind, look, t0, t1, ease: name, blend, cue, path, cycle,
-    at: pair(layer.at, `${path}.at`, -4096, 4096),
+    at: route ? route[0] : pair(layer.at, `${path}.at`, -4096, 4096),
     power: tween(layer.power ?? 1, `${path}.power`, 0, 8),
     flicker: number(layer.flicker ?? 0, `${path}.flicker`, 0, 1),
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
     // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
     ...squashOf(layer.squash, `${path}.squash`),
-    ...driftOf(layer.drift, `${path}.drift`),
+    ...(route ? driftOf(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), `${path}.path`) : driftOf(layer.drift, `${path}.drift`)),
     // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
-    curve: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : !Array.isArray(layer.drift?.[0]) || layer.drift.length < 3 ? fail(`${path}.curve`, 'curve smooths drift keys; give drift three or more offsets') : layer.curve),
+    curve: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };

@@ -950,6 +950,9 @@
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
                     },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
+                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1063,10 +1066,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "radius"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A shockwave: a crisp leading edge at radius, fading inward over width."
                 },
                 {
@@ -1098,6 +1116,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1214,11 +1235,26 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "radius",
                     "arc"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A crescent: a crisp outer arc at radius, thickest mid-arc and pointed at both ends; the head sweeps arc during reveal and the tail chases it."
                 },
                 {
@@ -1250,6 +1286,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1370,10 +1409,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "to"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A straight beam from at to to, brightest on its axis, with travelling ripples."
                 },
                 {
@@ -1405,6 +1459,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1539,10 +1596,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "to"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "Lightning from at to to: a jagged one-pixel core with a glow and seeded branches, re-rolled every reroll frames."
                 },
                 {
@@ -1574,6 +1646,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1747,10 +1822,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "radius"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A magic circle in one-pixel ink: an outer ring (doubled on request), an inner ring, upright seeded runes between them and an optional star polygon; it draws on clockwise from the top."
                 },
                 {
@@ -1782,6 +1872,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1945,10 +2038,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "radius"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "An impact star: points spikes, every other one ratio as long, tapering to one-pixel tips around a bright core."
                 },
                 {
@@ -1980,6 +2088,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -2074,10 +2185,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "radius"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A fireball or puff: a disc broken by seeded smooth noise that boils outward, hottest in the middle, with an optional hole opening from the centre."
                 },
                 {
@@ -2109,6 +2235,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -2273,10 +2402,25 @@
                   },
                   "required": [
                     "kind",
-                    "at",
                     "through"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A tapered body of water (or anything that flows) along a smooth curve from at through 1–7 more points, brightest on its centre line: the part between tail and head is drawn, narrowing by taper, swaying in travelling waves. Geyser spikes, whips, spirals, wave curls."
                 },
                 {
@@ -2308,6 +2452,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -2401,10 +2548,25 @@
                     }
                   },
                   "required": [
-                    "kind",
-                    "at"
+                    "kind"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it.",
                   "anyOf": [
                     {
@@ -2448,6 +2610,9 @@
                     },
                     "curve": {
                       "$ref": "#/$defs/layer-curve"
+                    },
+                    "path": {
+                      "$ref": "#/$defs/layer-path"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -2666,10 +2831,25 @@
                     }
                   },
                   "required": [
-                    "kind",
-                    "at"
+                    "kind"
                   ],
                   "additionalProperties": false,
+                  "allOf": [
+                    {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "at"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "path"
+                          ]
+                        }
+                      ]
+                    }
+                  ],
                   "description": "A smear behind a moving point, such as a sword tip: a stroke along a smooth curve through where the point was over the last length frames, tapered from its oldest end to its newest and dimming toward the oldest. Points are relative to at (the followed sprite's top-left corner)."
                 }
               ]
@@ -3059,7 +3239,23 @@
     },
     "layer-curve": {
       "type": "boolean",
-      "description": "Run three or more drift keys through a smooth curve, so an arc has no corner at its middle key."
+      "description": "Run three or more path points or drift keys through a smooth curve, so an arc has no corner at its middle."
+    },
+    "layer-path": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number",
+          "minimum": -4096,
+          "maximum": 4096
+        },
+        "maxItems": 2,
+        "minItems": 2
+      },
+      "maxItems": 8,
+      "minItems": 2,
+      "description": "Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile's head the same path as the emitters trailing it."
     },
     "layer-drift": {
       "oneOf": [

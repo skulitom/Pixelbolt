@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Paths for layers
+
+- A shape layer may take a `path` of 2–8 absolute points instead of `at` and keyed `drift`, as an emitter does, so a projectile's head and the emitters trailing it share one list of points. `curve: true` smooths it.
+
 ### Curved paths
 
 - `curve: true` on an emitter with a path, or on a layer with keyed `drift`, runs three or more points through a smooth Catmull-Rom curve that still passes every point, so an arc has no corner at its middle. Without it, paths and drift stay straight between points.
@@ -26,7 +30,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Vortex and meteor examples
 
-- `examples/meteor.fx.json`: a one-shot meteor whose head's keyed `drift` shares a window with its trail emitters' `path`, so smoke, a tail of cooling fire blobs and embers keep pace with it, then an impact with fiery debris, rock chips that tumble (`spin`) and rising smoke from a keyed `rate`.
+- `examples/meteor.fx.json`: a one-shot meteor whose head shares its `path` and window with its trail emitters, so smoke, a tail of cooling fire blobs and embers keep pace with it, then an impact with fiery debris, rock chips that tumble (`spin`) and rising smoke from a keyed `rate`.
 - `examples/vortex.fx.json`: a seamless looping vortex that shows the newest effect tools together: motes that swirl in (`attract.swirl`), wisps that wander (`turbulence`) and cool as they fade (blob `power`), drawn in front of the motes (`front`).
 
 ### Cooling blobs

@@ -979,7 +979,7 @@ export const spellPresets = {
       }
     }
   },
-  // A one-shot meteor: a head whose drift keys share a window with the trail emitters' path, so smoke, a fire tail of
+  // A one-shot meteor: a head that shares its path and window with the trail emitters, so smoke, a fire tail of
   // cooling blobs (blob power) and embers keep pace with it, then an impact with fiery debris, rock chips that tumble
   // (spin) and rising smoke (keyed rate).
   'meteor': {
@@ -1077,9 +1077,19 @@ export const spellPresets = {
           {
             "kind": "burst",
             "look": "fire",
-            "at": [
-              6,
-              4
+            "path": [
+              [
+                6,
+                4
+              ],
+              [
+                22,
+                26
+              ],
+              [
+                40,
+                54
+              ]
             ],
             "frames": [
               0,
@@ -1091,20 +1101,6 @@ export const spellPresets = {
             ],
             "noise": 0.3,
             "ease": "linear",
-            "drift": [
-              [
-                0,
-                0
-              ],
-              [
-                16,
-                22
-              ],
-              [
-                34,
-                50
-              ]
-            ],
             "power": 1.4
           },
           {

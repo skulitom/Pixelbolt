@@ -522,5 +522,13 @@ test('curve smooths keyed drift through its keys, and needs three or more of the
   assert.equal(curved[0], straight[0]);
   assert.equal(curved[4], straight[4]);
   assert.ok(curved.every((y, k) => y <= straight[k]) && curved.some((y, k) => y < straight[k]), `${curved} / ${straight}`);
-  assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'burst', look: 'warm', at: [8, 30], radius: 2, drift: [4, 0], curve: true }] })), /give drift three or more offsets/);
+  assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'burst', look: 'warm', at: [8, 30], radius: 2, drift: [4, 0], curve: true }] })), /give three or more points/);
+});
+
+test('a layer with a path moves through absolute points, as at with keyed drift would', () => {
+  const orb = layer => compileEffects(source({ frames: 6, layers: [{ kind: 'burst', look: 'warm', radius: 3, noise: 0, ease: 'linear', ...layer }] })).recipe.frames;
+  assert.deepEqual(orb({ path: [[8, 30], [24, 10], [40, 30]] }), orb({ at: [8, 30], drift: [[0, 0], [16, -20], [32, 0]] }));
+  assert.deepEqual(orb({ path: [[8, 30], [24, 10], [40, 30]], curve: true }), orb({ at: [8, 30], drift: [[0, 0], [16, -20], [32, 0]], curve: true }));
+  assert.throws(() => orb({ at: [8, 30], path: [[8, 30], [40, 30]] }), /leave at and drift out/);
+  assert.throws(() => orb({ path: [[8, 30], [40, 30]], curve: true }), /give three or more points/);
 });
