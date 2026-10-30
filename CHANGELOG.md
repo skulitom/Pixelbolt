@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Sparks that carry forward
+
+- `inherit` also works on an emitter moving along a `path`: its particles get that share of the emitter's own velocity, so sparks thrown by a projectile carry forward instead of stopping where they were born.
+
 ### Spawn rings on the ground
 
 - An emitter's `ring` takes `fill`: distances in its radius range are picked evenly by area, so `radius: [0, r]` fills a disc evenly instead of crowding its middle.

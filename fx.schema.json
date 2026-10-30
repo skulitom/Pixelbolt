@@ -735,7 +735,7 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 2,
-                  "description": "For a child: the share of its parent particle's velocity it starts with, added to its own launch; default 0."
+                  "description": "For a child: the share of its parent particle's velocity it starts with, added to its own launch; on an emitter with a path, the share of its own motion along it, so sparks thrown by a projectile carry forward. Default 0."
                 },
                 "behind": {
                   "type": "boolean",

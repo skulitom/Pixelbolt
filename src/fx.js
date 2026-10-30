@@ -156,7 +156,8 @@ function readEmitter(emitter, path, context, earlier) {
     if (when === 'floor' && earlier[parent].floor === null) fail(`${path}.when`, `emitter ${JSON.stringify(emitter.from)} has no floor to land on`);
     for (const key of ['start', 'end']) if (emitter[key] !== undefined) fail(`${path}.${key}`, 'a child spawns when its parent particles do; start and end apply to emitters with their own schedule');
   } else {
-    for (const key of ['when', 'inherit']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to a child emitter; set from to the emitter it spawns from`);
+    // A moving emitter (one with a path) may inherit its own motion along the path; otherwise inherit is a child's.
+    for (const key of ['when', 'inherit']) if (emitter[key] !== undefined && !(key === 'inherit' && emitter.path !== undefined)) fail(`${path}.${key}`, `${key} applies to a child emitter or one moving along a path; set from to the emitter it spawns from`);
   }
   const start = integer(emitter.start ?? 0, `${path}.start`, 0, frames - 1);
   if (emitter.end !== undefined && emitter.rate === undefined && !release) fail(`${path}.end`, 'end applies to rate emitters and releases');
@@ -346,6 +347,12 @@ function simulate(effect, context) {
     const s = t * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
     return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
   };
+  const velocity = (e, at, cx, cy) => {
+    const [bx, by] = centre(e, at - 1);
+    if (bx !== cx || by !== cy) return { vx: cx - bx, vy: cy - by };
+    const [nx, ny] = centre(e, at + 1);
+    return { vx: nx - cx, vy: ny - cy };
+  };
   const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle, e) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
   // A loop warms up for as many whole cycles as the longest chain of lives (a child's particles can outlive their parent's
   // by their own life), with spawns keyed by their frame within the cycle and children by their parent, so the particles
@@ -476,8 +483,11 @@ function simulate(effect, context) {
       for (let k = 0; k < count; k++) {
         // A moving emitter spreads a frame's spawns along the stretch it travelled since the last frame, the last at its
         // place now, so a fast trail stays even instead of leaving one clump per frame.
-        const [cx, cy] = e.route ? centre(e, cycle - 1 + (k + 1) / count) : centre(e, cycle);
-        add(launch(e, index, cx, cy, k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
+        const at = cycle - 1 + (k + 1) / count, [cx, cy] = e.route ? centre(e, at) : centre(e, cycle);
+        // With inherit, a moving emitter hands its particles that share of its own velocity along the path.
+        // (At the start of the path, where nothing came before, its velocity is read a frame ahead.)
+        const moving = e.route && e.inherit ? velocity(e, at, cx, cy) : null;
+        add(launch(e, index, cx, cy, k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, moving));
         if (drawing) stats[index].spawned++;
       }
       if (count) mark(e, t, centre(e, cycle)[0], centre(e, cycle)[1]);

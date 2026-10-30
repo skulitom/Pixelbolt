@@ -689,3 +689,12 @@ test('a filled spawn ring spreads particles evenly by area instead of crowding t
   // Half the radius holds a quarter of the disc's area: about half the particles without fill, about a quarter with it.
   assert.ok(inner(disc(undefined)) > 0.4 && inner(disc(true)) < 0.32, `${inner(disc(undefined))} / ${inner(disc(true))}`);
 });
+
+test('a moving emitter\'s particles can inherit its motion along the path', () => {
+  const sparks = inherit => compileEffects(effects({ frames: 4, emitters: [{ path: [[2, 12], [18, 12]], rate: 1, speed: 0, life: 10, shapes: ['dot'], ...(inherit !== undefined && { inherit }) }] })).recipe.frames.at(-1).ops.map(op => op.x);
+  // The emitter moves 4 pixels a frame; without inherit its particles stay where they were born, with 0.5 they follow at 2.
+  assert.deepEqual(sparks(undefined), [2, 6, 10, 14]);
+  assert.deepEqual(sparks(0), sparks(undefined));
+  assert.deepEqual(sparks(0.5), [8, 10, 12, 14]);
+  assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [2, 12], rate: 1, life: 2, shapes: ['dot'], inherit: 1 }] })), /applies to a child emitter or one moving along a path/);
+});
