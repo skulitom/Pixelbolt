@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Spawn rings on the ground
+
+- An emitter's `ring` takes `squash`, as a ring layer does: `[1, 0.4]` lays the spawn ring on the ground, so sparks rise from a magic circle's ellipse instead of a circle standing upright. Without it, rings spawn as before.
+
 ### Paths for layers
 
 - A shape layer may take a `path` of 2–8 absolute points instead of `at` and keyed `drift`, as an emitter does, so a projectile's head and the emitters trailing it share one list of points. `curve: true` smooths it.

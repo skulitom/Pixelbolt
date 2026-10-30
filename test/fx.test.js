@@ -664,3 +664,11 @@ test('curve runs a path and keyed drift through a smooth curve that still passes
   assert.ok(curved.slice(1, -1).every((p, i) => p[1] <= straight[i + 1][1]) && curved.some((p, i) => p[1] < straight[i][1]), JSON.stringify(curved));
   assert.throws(() => arc(true, { path: [[2, 20], [22, 20]] }), /give path three or more points/);
 });
+
+test('a squashed spawn ring lies on the ground as an ellipse, and without squash it spawns as before', () => {
+  const circle = squash => compileEffects(effects({ frames: 1, emitters: [{ at: [12, 12], ring: { radius: 10, even: true, ...(squash && { squash }) }, burst: 16, speed: 0, life: 2, shapes: ['dot'] }] })).recipe.frames[0].ops.map(op => [op.x, op.y]);
+  assert.deepEqual(circle([1, 1]), circle(undefined));
+  const flat = circle([1, 0.4]), xs = flat.map(p => p[0]), ys = flat.map(p => p[1]);
+  assert.deepEqual([Math.min(...xs), Math.max(...xs)], [2, 22]);
+  assert.deepEqual([Math.min(...ys), Math.max(...ys)], [8, 16]);
+});

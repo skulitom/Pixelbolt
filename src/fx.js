@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS, rotateRows } from './craft.js';
-import { readShapes, renderShapes, tween, sample, curveSample, sequenceFrame } from './shapes.js';
+import { readShapes, renderShapes, tween, sample, curveSample, sequenceFrame, atan2Deg } from './shapes.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
 
@@ -192,10 +192,12 @@ function readEmitter(emitter, path, context, earlier) {
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
   if (emitter.ring !== undefined) {
-    fields(emitter.ring, ['radius', 'arc', 'even', 'outward'], `${path}.ring`);
+    fields(emitter.ring, ['radius', 'arc', 'even', 'outward', 'squash'], `${path}.ring`);
     const arc = emitter.ring.arc === undefined ? [0, 360] : pair(emitter.ring.arc, `${path}.ring.arc`, -3600, 3600);
     if (arc[1] < arc[0] || arc[1] - arc[0] > 360) fail(`${path}.ring.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), from no more than to and at most 360 apart');
-    ring = { radius: range(emitter.ring.radius, `${path}.ring.radius`, 0, 256), arc, even: flag(emitter.ring.even, `${path}.ring.even`), outward: flag(emitter.ring.outward, `${path}.ring.outward`) };
+    ring = { radius: range(emitter.ring.radius, `${path}.ring.radius`, 0, 256), arc, even: flag(emitter.ring.even, `${path}.ring.even`), outward: flag(emitter.ring.outward, `${path}.ring.outward`),
+      // squash lays the ring on the ground as a ring layer's squash does: sparks rise from a magic circle's ellipse.
+      squash: emitter.ring.squash === undefined ? null : pair(emitter.ring.squash, `${path}.ring.squash`, 0.125, 8) };
   }
   if (emitter.line !== undefined) {
     fields(emitter.line, ['to', 'even'], `${path}.line`);
@@ -399,10 +401,11 @@ function simulate(effect, context) {
       const { cells } = e.sprite.frame(born % frames), c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
       x = e.sprite.x + c.x; y = e.sprite.y + c.y; key = c.key;
     } else if (e.ring) {
-      const { radius, arc, even, outward } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring)), d = pick(radius, r(SALT.radius));
-      const [ox, oy] = offset(cosDeg(theta) * d, sinDeg(theta) * d);
+      const { radius, arc, even, outward, squash } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring)), d = pick(radius, r(SALT.radius));
+      const [ox, oy] = squash ? offset(cosDeg(theta) * d * squash[0], sinDeg(theta) * d * squash[1]) : offset(cosDeg(theta) * d, sinDeg(theta) * d);
       x = cx + ox; y = cy + oy;
-      if (outward) out = theta;
+      // Outward on a squashed ring points away from its middle, along the squashed offset.
+      if (outward) out = squash ? atan2Deg(sinDeg(theta) * squash[1], cosDeg(theta) * squash[0]) : theta;
     } else if (e.line) {
       const s = e.line.even ? (count === 1 ? 0.5 : k / (count - 1)) : r(SALT.along);
       const [ox, oy] = offset(e.line.dx * s, e.line.dy * s);
