@@ -312,7 +312,7 @@ const layerCommon = {
 // The fields every kind shares are defined once, under $defs, and referenced from each kind.
 // Tilt and squash, on the kinds drawn around a centre (not bolts and streams, which run between points).
 const layerPlaced = {
-  tilt: num(-3600, 3600, 'Rotate the shape clockwise by degrees.'), squash: { ...pairOf(num(0.125, 8)), description: 'Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground.' }
+  tilt: num(-3600, 3600, 'Rotate the shape clockwise by degrees.'), squash: { oneOf: [pairOf(num(0.125, 8)), { ...array(pairOf(num(0.125, 8)), 8), minItems: 2 }], description: '2–8 [x, y] pairs are keys spread over the layer\'s frames (a pool that rounds out as it shrinks). Scale [x, y] before tilt; [1, 0.4] lays a ring or circle on the ground. On a beam it shapes the round ends alone: give a pillar the squash of its circle so its foot lies on the same ground.' }
 };
 const layerRefs = Object.fromEntries(Object.keys(layerCommon).map(key => [key, ref(`layer-${key}`)]));
 const placedRefs = Object.fromEntries(Object.keys(layerPlaced).map(key => [key, ref(`layer-${key}`)]));

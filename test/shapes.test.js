@@ -418,3 +418,11 @@ test('a look\'s reach sizes its lit and shade bands: shorter keeps a small drop\
   assert.equal(drop(2), drop());
   assert.throws(() => compileEffects(source({ frames: 1, looks: { cool: { colors: ['b'], thresholds: [0.2], reach: 1 } }, layers: [{ kind: 'burst', look: 'cool', at: [24, 24], radius: 5 }] })), /reach sizes the lit and shade bands/);
 });
+
+test('a keyed squash changes over the window, and steady keys draw as the plain pair', () => {
+  const pool = squash => compileEffects(source({ frames: 4, layers: [{ kind: 'burst', look: 'warm', at: [24, 24], radius: 12, noise: 0, squash, ease: 'linear' }] })).recipe.frames.map(frame => gridOf(frame).rows.length);
+  const rounding = pool([[1, 0.25], [1, 1]]);
+  assert.ok(rounding.every((rows, k) => !k || rows > rounding[k - 1]), `${rounding}`);
+  assert.deepEqual(pool([[1, 0.5], [1, 0.5]]), pool([1, 0.5]));
+  assert.throws(() => pool([[1, 0.5]]), /squash: expected \[x, y\], or 2–8 of them/);
+});

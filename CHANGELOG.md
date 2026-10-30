@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Keyed squash
+
+- A shape layer's `squash` may be 2–8 `[x, y]` pairs, keys spread over its frames like its other fields: a ground pool can round out as it shrinks instead of thinning to a one-pixel sliver. A single pair draws as before.
+
 ### Highlight reach
 
 - A look's `reach` (default 2, as before) sets how many pixels toward the light its `lit` and `shade` bands measure over: 1 keeps a small drop's highlight to a thin rim (small drops used to come out almost all highlight), 3–4 spreads light over a large body.

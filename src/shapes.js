@@ -47,6 +47,12 @@ const pair = (value, path, min, max) => {
   return [number(value[0], `${path}[0]`, min, max), number(value[1], `${path}[1]`, min, max)];
 };
 const clamp01 = x => (x < 0 ? 0 : x > 1 ? 1 : x);
+function squashOf(value, path) {
+  if (!Array.isArray(value) || !Array.isArray(value[0])) return { squash: pair(value ?? [1, 1], path, 0.125, 8), squashKeys: null };
+  if (value.length < 2 || value.length > 8) fail(path, 'expected [x, y], or 2–8 of them as keys spread over the layer\'s frames');
+  const keys = value.map((key, i) => pair(key, `${path}[${i}]`, 0.125, 8));
+  return { squash: keys[0], squashKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
+}
 // The frame of an animation (a list of frames) that effect frame t shows: frame for frame, holding the last after the
 // animation ends, or round again in a loop.
 export const sequenceFrame = (list, t, loop) => list[loop ? t % list.length : Math.min(t, list.length - 1)];
@@ -171,7 +177,8 @@ function readLayer(layer, path, context, index) {
     power: tween(layer.power ?? 1, `${path}.power`, 0, 8),
     flicker: number(layer.flicker ?? 0, `${path}.flicker`, 0, 1),
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
-    squash: pair(layer.squash ?? [1, 1], `${path}.squash`, 0.125, 8),
+    // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
+    ...squashOf(layer.squash, `${path}.squash`),
     drift: pair(layer.drift ?? [0, 0], `${path}.drift`, -4096, 4096),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
@@ -687,7 +694,9 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         if (work.spent > SHAPE_WORK) fail(layer.path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
       };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
-      PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, noise, frame: frameOf(layer, cx, cy) }, put, width, height);
+      // A keyed squash draws this frame's squash through a copy of the layer, so painters read it as they always have.
+      const shaped = layer.squashKeys ? { ...layer, squash: [sample(layer.squashKeys[0], q), sample(layer.squashKeys[1], q)] } : layer;
+      PAINTERS[layer.kind](shaped, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, noise, frame: frameOf(shaped, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
         let value = scratch[c] * power;
         if (value <= 0) continue;
