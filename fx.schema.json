@@ -473,6 +473,18 @@
                   "type": "boolean",
                   "description": "Run a path of three or more points through a smooth curve, so an arc has no corner at its middle point."
                 },
+                "ease": {
+                  "enum": [
+                    "linear",
+                    "hold",
+                    "in",
+                    "out",
+                    "inOut",
+                    "overshoot",
+                    "bounce"
+                  ],
+                  "description": "How path, ring grow, sweep and throttle move over the emitter's window, as a layer's ease moves its keys: linear (default), in, out, inOut, hold, overshoot or bounce. Give a trail its head layer's ease to keep pace."
+                },
                 "path": {
                   "type": "array",
                   "items": {
@@ -3301,7 +3313,7 @@
         "maxItems": 2,
         "minItems": 2
       },
-      "maxItems": 8,
+      "maxItems": 16,
       "minItems": 2,
       "description": "Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile's head the same path as the emitters trailing it."
     },

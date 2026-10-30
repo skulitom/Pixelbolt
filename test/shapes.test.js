@@ -532,3 +532,12 @@ test('a layer with a path moves through absolute points, as at with keyed drift 
   assert.throws(() => orb({ at: [8, 30], path: [[8, 30], [40, 30]] }), /leave at and drift out/);
   assert.throws(() => orb({ path: [[8, 30], [40, 30]], curve: true }), /give three or more points/);
 });
+
+test('review fixes: a stream curves its drift only when asked, curve: false is always allowed, and layer paths take 16 points', () => {
+  const stream = curve => compileEffects(source({ frames: 6, layers: [{ kind: 'stream', look: 'cool', at: [6, 30], through: [[16, 24]], width: 3, ease: 'linear', drift: [[0, 0], [10, -14], [20, 0]], ...(curve !== undefined && { curve }) }] })).recipe;
+  assert.notDeepEqual(stream(true).frames, stream(undefined).frames);
+  assert.deepEqual(stream(false), stream(undefined));
+  assert.doesNotThrow(() => compileEffects(source({ frames: 2, layers: [{ kind: 'ring', look: 'cool', at: [24, 24], radius: 6, drift: [4, 0], curve: false }] })));
+  const long = Array.from({ length: 12 }, (_, i) => [4 + i * 3, 24 + (i % 2) * 4]);
+  assert.doesNotThrow(() => compileEffects(source({ frames: 12, layers: [{ kind: 'burst', look: 'warm', radius: 2, noise: 0, path: long }] })));
+});

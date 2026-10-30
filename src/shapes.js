@@ -53,11 +53,11 @@ function squashOf(value, path) {
   const keys = value.map((key, i) => pair(key, `${path}[${i}]`, 0.125, 8));
   return { squash: keys[0], squashKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
 }
-// drift: [x, y] moved over the window, or 2–8 offsets as keys spread over it, so a layer can travel a curve (an orb
+// drift: [x, y] moved over the window, or 2–8 offsets (a path's 2–16) as keys spread over it, so a layer can travel a curve (an orb
 // that arcs, a flame that wanders) instead of a straight line.
-function driftOf(value, path) {
+function driftOf(value, path, most = 8) {
   if (!Array.isArray(value) || !Array.isArray(value[0])) return { drift: pair(value ?? [0, 0], path, -4096, 4096), driftKeys: null };
-  if (value.length < 2 || value.length > 8) fail(path, 'expected [x, y], or 2–8 offsets [x, y] as keys spread over the layer\'s frames');
+  if (value.length < 2 || value.length > most) fail(path, `expected [x, y], or 2–${most} offsets [x, y] as keys spread over the layer's frames`);
   const keys = value.map((key, i) => pair(key, `${path}[${i}]`, -4096, 4096));
   return { drift: keys.at(-1), driftKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
 }
@@ -205,7 +205,7 @@ function readLayer(layer, path, context, index) {
   let route = null;
   if (layer.path !== undefined) {
     if (layer.at !== undefined || layer.drift !== undefined) fail(`${path}.path`, 'a layer with a path starts at its first point and moves through the rest; leave at and drift out');
-    if (!Array.isArray(layer.path) || layer.path.length < 2 || layer.path.length > 8) fail(`${path}.path`, 'expected 2–8 points [x, y] for the layer to move through over its window');
+    if (!Array.isArray(layer.path) || layer.path.length < 2 || layer.path.length > 16) fail(`${path}.path`, 'expected 2–16 points [x, y] for the layer to move through over its window');
     route = layer.path.map((point, i) => pair(point, `${path}.path[${i}]`, -4096, 4096));
   }
   const out = {
@@ -216,9 +216,9 @@ function readLayer(layer, path, context, index) {
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
     // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
     ...squashOf(layer.squash, `${path}.squash`),
-    ...(route ? driftOf(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), `${path}.path`) : driftOf(layer.drift, `${path}.drift`)),
+    ...(route ? driftOf(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), `${path}.path`, 16) : driftOf(layer.drift, `${path}.drift`)),
     // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
-    curve: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
+    curved: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : layer.curve && (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };
@@ -769,7 +769,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       const k = f - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
       const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
-      const along = layer.curve ? curveSample : sample;
+      const along = layer.curved ? curveSample : sample;
       const dx = layer.driftKeys ? along(layer.driftKeys[0], q) : layer.drift[0] * q, dy = layer.driftKeys ? along(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
       // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.

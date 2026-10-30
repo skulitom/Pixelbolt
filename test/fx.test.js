@@ -718,3 +718,30 @@ test('throttle scales the launch speed by keys over the emitter\'s window', () =
   assert.deepEqual(steps(fountain([1, 0])), [5, 4, 3, 2]);
   assert.throws(() => fountain([1]), /expected 2–8 keys scaling the launch speed/);
 });
+
+test('review fixes: even inherited speed, eased progress, private turned symbols and refused one-moment keys', async () => {
+  const { ease } = await import('../src/craft.js');
+  // Every particle a moving emitter spawns on its first frame inherits the same speed: 60 px over 4 frames is 15 a frame.
+  const thrown = compileEffects(effects({ frames: 4, emitters: [{ path: [[2, 16], [62, 16]], rate: 4, inherit: 1, speed: 0, life: 4, shapes: ['dot'] }] }, { width: 64 })).recipe;
+  assert.deepEqual(thrown.frames[1].ops.slice(0, 4).map(op => op.x), [17, 17, 17, 17]);
+  // A pause in the path inherits no speed.
+  const paused = compileEffects(effects({ frames: 4, emitters: [{ path: [[4, 12], [4, 12]], rate: 1, inherit: 1, speed: 0, life: 4, shapes: ['dot'] }] })).recipe;
+  assert.ok(paused.frames.at(-1).ops.every(op => op.x === 4));
+  // ease moves the path as a layer's ease moves its keys.
+  const eased = compileEffects(effects({ frames: 5, emitters: [{ path: [[2, 12], [22, 12]], ease: 'in', rate: 1, speed: 0, life: 9, shapes: ['dot'] }] })).recipe;
+  assert.deepEqual(eased.frames.at(-1).ops.map(op => op.x), [0, 1, 2, 3, 4].map(k => Math.floor(2 + 20 * ease('in', k / 5) + 0.5)));
+  assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [4, 4], rate: 1, life: 2, shapes: ['dot'], ease: 'in' }] })), /this emitter has none of them/);
+  // A turned symbol one effect makes can't be named by another, whichever comes first.
+  const two = order => ({ format: 'pixelforge-fx', version: 1, name: 'fx', width: 24, height: 24, palette: { w: '#fff', y: '#fd6', o: '#e83' }, symbols: { chip: ['yy', 'yo'] },
+    effects: Object.fromEntries(order.map(name => [name, name === 'a' ? { frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, speed: 0, spin: 90, shapes: ['chip'] }] } : { frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, speed: 0, shapes: ['chip_r90'] }] }])) });
+  assert.throws(() => compileEffects(two(['a', 'b'])), /unknown symbol "chip_r90"/);
+  assert.throws(() => compileEffects(two(['b', 'a'])), /unknown symbol "chip_r90"/);
+  // Keys a burst would only read at their first key are refused, and so is a keyed rate with one frame to ramp over.
+  for (const extra of [{ path: [[2, 2], [9, 9]] }, { sweep: [0, 90] }, { throttle: [1, 0] }, { ring: { radius: 4, grow: [0.2, 1] } }]) {
+    assert.throws(() => compileEffects(effects({ frames: 4, emitters: [{ ...(extra.path ? {} : { at: [12, 12] }), burst: 4, life: 2, shapes: ['dot'], ...extra }] })), /a burst spawns at one moment/);
+  }
+  assert.throws(() => compileEffects(effects({ frames: 4, emitters: [{ at: [12, 12], rate: [0, 8], start: 1, end: 2, life: 2, shapes: ['dot'] }] })), /window of two or more frames/);
+  // An outward ring's launches follow its sweep too.
+  const fan = sweep => compileEffects(effects({ frames: 4, emitters: [{ at: [12, 12], ring: { radius: 1, outward: true, arc: [0, 0] }, rate: 1, speed: 4, life: 2, shapes: ['dot'], ...(sweep && { sweep }) }] })).recipe;
+  assert.notDeepEqual(fan([0, 90]).frames[3].ops, fan(undefined).frames[3].ops);
+});

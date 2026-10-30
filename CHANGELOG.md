@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Emitter ease and fixes from a review of the new effect tools
+
+- Emitters take `ease`, which moves `path`, ring `grow`, `sweep` and `throttle` over the window as a layer's ease moves its keys (default linear), so a trail given its head's `ease` keeps pace with it.
+- A `stream` with drift keys or a path no longer always curves them; `curve: false` is accepted on any layer; a layer `path` takes up to 16 points, as an emitter's does.
+- Every particle a moving emitter spawns on its first frame inherits the same speed, and a pause in its path inherits none.
+- Symbols turned for `spin` are added to the recipe after every effect is read, so one effect can no longer name a turned symbol another happened to make.
+- Inputs that silently did nothing are refused: `path`, `sweep`, `throttle` and ring `grow` on a burst (which spawns at one moment), and a keyed `rate` over a one-frame window. `sweep` now turns an outward ring's launches too.
+
 ### Sweeping emitters
 
 - Emitters take `throttle`, 2–8 keys scaling the launch speed over the same window: a fountain weakens, a flamethrower dies out.

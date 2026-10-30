@@ -260,6 +260,7 @@ const emitter = { ...object({
   throttle: { ...array(num(0, 8), 8), minItems: 2, description: '2–8 keys scaling the launch speed over the emitter\'s window, start to end: a fountain that weakens ([1, 0.3]), a flamethrower dying out. Not for child emitters.' },
   gravity: vector(-8, 8, 'Acceleration [x, y] added each frame.'), drag: num(0, 1, 'Share of velocity lost each frame.'),
   curve: { type: 'boolean', description: 'Run a path of three or more points through a smooth curve, so an arc has no corner at its middle point.' },
+  ease: { enum: EASINGS, description: 'How path, ring grow, sweep and throttle move over the emitter\'s window, as a layer\'s ease moves its keys: linear (default), in, out, inOut, hold, overshoot or bounce. Give a trail its head layer\'s ease to keep pace.' },
   path: { ...array(vector(-4096, 4096), 16), minItems: 2, description: 'Move the spawn centre through 2–16 points [x, y] over the emitter\'s window from start to end, timed as a layer\'s keys are (round a whole loop: end where it starts), instead of at: a meteor shedding smoke, a spark tracing a circle. Not for sprite or child emitters.' },
   attract: { ...object({ at: vector(-4096, 4096), strength: num(-8, 8, 'Acceleration toward at (negative repels); default 0.5.'), swirl: num(-8, 8, 'Acceleration across the line to at, clockwise when positive: particles spiral in or circle it (portals, whirlwinds, healing spirals). Default 0; a mirrored turn swirls the other way.') }, ['at']), description: 'Pull every particle toward a point.' },
   sway: { ...object({ amplitude: vector(0, 32, 'Drawn offset [x, y]: x follows a sine and y a cosine, from a random phase.'), period: num(1, 256, 'Frames per cycle; default 8.') }, ['amplitude']), description: 'Wobble, added when drawing (drifting leaves, rising embers).' },
@@ -316,7 +317,7 @@ const layerCommon = {
   flicker: num(0, 1, 'Every other frame of the window, power drops by this share.'),
   blend: { enum: ['max', 'add'], description: 'max (default): the brighter layer of a look wins; add: layers sum.' },
   curve: { type: 'boolean', description: 'Run three or more path points or drift keys through a smooth curve, so an arc has no corner at its middle.' },
-  path: { ...array(vector(-4096, 4096), 8), minItems: 2, description: 'Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile\'s head the same path as the emitters trailing it.' },
+  path: { ...array(vector(-4096, 4096), 16), minItems: 2, description: 'Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile\'s head the same path as the emitters trailing it.' },
   drift: { oneOf: [vector(-4096, 4096), { ...array(vector(-4096, 4096), 8), minItems: 2 }], description: 'Move by [x, y] pixels over the window (smoke rising), or 2–8 offsets [x, y] as keys spread over it through the ease, so the layer travels a curve (an orb that arcs).' }, floor: num(-4096, 4096, 'Cut the layer off below this canvas row: a disc becomes a dome, a ring an arch.'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
   cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' }
 };

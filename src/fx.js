@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'spin', 'sweep', 'throttle'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -170,6 +170,7 @@ function readEmitter(emitter, path, context, earlier) {
     if (emitter.rate.length < 2 || emitter.rate.length > 8) fail(`${path}.rate`, 'expected particles per frame, or 2–8 of them as keys spread from start to end');
     const keys = emitter.rate.map((v, i) => number(v, `${path}.rate[${i}]`, 0, 64));
     if (!keys.some(v => v > 0)) fail(`${path}.rate`, 'every key is 0, so nothing would spawn');
+    if (end - start < 2) fail(`${path}.rate`, 'keys ramp the rate from start to end; give the emitter a window of two or more frames');
     rateTotals = [0];
     for (let c = 0; c < end - start; c++) rateTotals.push(rateTotals[c] + sample(keys, end - start > 1 ? c / (end - start - 1) : 0));
   }
@@ -237,6 +238,13 @@ function readEmitter(emitter, path, context, earlier) {
   // throttle: 2–8 keys scaling the launch speed over the window, so a fountain weakens or a flamethrower dies out.
   const throttle = emitter.throttle === undefined ? null : Array.isArray(emitter.throttle) && emitter.throttle.length >= 2 && emitter.throttle.length <= 8 ? emitter.throttle.map((v, i) => number(v, `${path}.throttle[${i}]`, 0, 8)) : fail(`${path}.throttle`, 'expected 2–8 keys scaling the launch speed from start to end, such as [1, 0.3]');
   if (throttle && parent !== null) fail(`${path}.throttle`, 'a child launches from its parent particles; throttle scales an emitter with its own schedule');
+  // A burst spawns at one moment, so it would only ever read the first key of these.
+  if (emitter.burst !== undefined && emitter.rate === undefined && !release) for (const [key, value] of [['path', emitter.path], ['sweep', emitter.sweep], ['throttle', emitter.throttle], ['ring.grow', emitter.ring?.grow]]) if (value !== undefined) fail(`${path}.${key}`, `a burst spawns at one moment, so ${key} would only use its first key; give the emitter a rate from start to end`);
+  if (emitter.ring?.grow !== undefined && parent !== null) fail(`${path}.ring.grow`, 'a child spawns on its parent particles; grow scales the ring of an emitter with its own schedule');
+  // ease shapes the emitter's progress over its window for path, ring grow, sweep and throttle, as a layer's ease does
+  // its keys (default linear), so a trail given its head's ease keeps pace with it.
+  const easing = emitter.ease === undefined ? null : EASINGS.includes(emitter.ease) ? emitter.ease : fail(`${path}.ease`, `expected ${EASINGS.join(', ')}`);
+  if (easing && emitter.path === undefined && emitter.ring?.grow === undefined && sweep === null && throttle === null) fail(`${path}.ease`, 'ease shapes path, ring grow, sweep and throttle over the window; this emitter has none of them');
   const play = emitter.play ?? 'life';
   if (!['life', 'loop', 'once'].includes(play)) fail(`${path}.play`, 'expected life (spread over the lifetime), loop (one per frame, cycling) or once (one per frame, holding the last)');
   const life = emitter.life === undefined ? null : range(emitter.life, `${path}.life`, 1, 256, true);
@@ -298,7 +306,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, throttle, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, throttle, ease: easing, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -330,18 +338,20 @@ const evenAngle = ([from, to], k, count) => (to - from >= 360 ? from + 360 * k /
 // Simulates one effect and returns its frames' operations plus counts for the metadata.
 function simulate(effect, context) {
   const { frames, loop, seed, emitters, view } = effect, { width, height, symbols } = context;
-  // A symbol turned k × 45°, made once per compile and added to the recipe's symbols.
+  // A symbol turned k × 45°, made once per compile and added to the recipe's symbols after every effect is read, so no
+  // effect can name one another effect happened to make.
   const spun = (name, k) => {
     const key = `${name}_r${k * 45}`;
     if (!context.spun.has(key)) {
       if (Object.hasOwn(symbols, key)) fail(`fx.symbols.${key}`, `a spinning particle names its turned ${name} ${key}; rename this symbol`);
       const rows = symbols[name], { rows: out, pivot } = rotateRows(rows, k * 45, [Math.floor(rows[0].length / 2), Math.floor(rows.length / 2)]);
-      symbols[key] = out; context.spun.set(key, { name: key, pivot });
+      context.spun.set(key, { name: key, pivot, rows: out });
     }
     return context.spun.get(key);
   };
   // The direction this copy of the effect is turned to (null as drawn): spawn places, spawn offsets, launch angles and
-  // attract points turn with it; gravity, drag, floors and sway stay as they are, so particles still fall down the canvas.
+  // attract points turn with it; gravity, drag, floors, sway and turbulence stay as they are, so particles still fall down
+  // the canvas.
   const offset = view ? (dx, dy) => view.vec(dx, dy) : (dx, dy) => [dx, dy], heading = view ? theta => view.dir(theta) : theta => theta;
   // A moving emitter's centre in frame `cycle`: along its path, spread over its window from start to end as a layer's
   // keys are over its frames (progress (cycle − start) / (end − start)), so a trail keeps pace with a layer that has the
@@ -349,16 +359,16 @@ function simulate(effect, context) {
   const along = (route, cycle, e) => {
     // A path round the whole loop wraps, so spawns spread back from frame 0 come from the end of the path.
     const x = (cycle - e.start) / (e.end - e.start), whole = loop && e.start === 0 && e.end === frames;
-    const t = whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x));
+    const share = whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x)), t = e.ease ? ease(e.ease, share) : share;
     if (route.curve) return [curveSample(route.curve[0], t), curveSample(route.curve[1], t)];
     const s = t * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
     return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
   };
-  const velocity = (e, at, cx, cy) => {
-    const [bx, by] = centre(e, at - 1);
-    if (bx !== cx || by !== cy) return { vx: cx - bx, vy: cy - by };
-    const [nx, ny] = centre(e, at + 1);
-    return { vx: nx - cx, vy: ny - cy };
+  // A moving emitter's velocity at spawn time `at`: its step over the frame before, read inside its window (before start
+  // the first frame's step, after end the last's), so every spawn of a frame inherits the same speed and a pause inherits 0.
+  const velocity = (e, at) => {
+    const b = loop && e.start === 0 && e.end === frames ? at : Math.min(e.end, Math.max(at, e.start + 1)), [ax, ay] = centre(e, b - 1), [bx, by] = centre(e, b);
+    return { vx: bx - ax, vy: by - ay };
   };
   const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle, e) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
   // A loop warms up for as many whole cycles as the longest chain of lives (a child's particles can outlive their parent's
@@ -414,6 +424,7 @@ function simulate(effect, context) {
   // identifies it to its own children. A child adds `inherit` times its parent's velocity.
   const launch = (e, index, cx, cy, k, count, r, tag, born, parent, cell = null) => {
     let x, y, out = null, key = null;
+    const raw = Math.min(1, Math.max(0, (born % frames - e.start) / (e.end - e.start))), share = e.ease ? ease(e.ease, raw) : raw;
     if (e.sprite) {
       // On one of the sprite's pixels (of the frame showing): the released one, or a seeded pick.
       const { cells } = e.sprite.frame(born % frames), c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
@@ -421,7 +432,7 @@ function simulate(effect, context) {
     } else if (e.ring) {
       const { radius, arc, even, outward, squash, grow, fill } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring));
       const spread = fill ? Math.sqrt(radius[0] * radius[0] + r(SALT.radius) * (radius[1] * radius[1] - radius[0] * radius[0])) : pick(radius, r(SALT.radius));
-      const d = grow ? spread * sample(grow, Math.min(1, Math.max(0, born % frames - e.start) / (e.end - e.start))) : spread;
+      const d = grow ? spread * sample(grow, share) : spread;
       const [ox, oy] = squash ? offset(cosDeg(theta) * d * squash[0], sinDeg(theta) * d * squash[1]) : offset(cosDeg(theta) * d, sinDeg(theta) * d);
       x = cx + ox; y = cy + oy;
       // Outward on a squashed ring points away from its middle, along the squashed offset.
@@ -431,8 +442,8 @@ function simulate(effect, context) {
       const [ox, oy] = offset(e.line.dx * s, e.line.dy * s);
       x = cx + ox; y = cy + oy;
     } else { const [ox, oy] = offset((r(SALT.x) - 0.5) * (e.area[0] - 1), (r(SALT.y) - 0.5) * (e.area[1] - 1)); x = cx + ox; y = cy + oy; }
-    const share = Math.min(1, Math.max(0, (born % frames - e.start) / (e.end - e.start))), turned = e.sweep ? sample(e.sweep, share) : 0;
-    const angle = heading(out === null ? (e.sweep ? pick(e.angle, r(SALT.angle)) + turned : pick(e.angle, r(SALT.angle))) : out + pick(e.angle, r(SALT.angle))), speed = e.throttle ? pick(e.speed, r(SALT.speed)) * sample(e.throttle, share) : pick(e.speed, r(SALT.speed));
+    const turned = e.sweep ? sample(e.sweep, share) : 0;
+    const angle = heading(out === null ? (e.sweep ? pick(e.angle, r(SALT.angle)) + turned : pick(e.angle, r(SALT.angle))) : e.sweep ? out + pick(e.angle, r(SALT.angle)) + turned : out + pick(e.angle, r(SALT.angle))), speed = e.throttle ? pick(e.speed, r(SALT.speed)) * sample(e.throttle, share) : pick(e.speed, r(SALT.speed));
     const life = e.life ? pickWhole(e.life, r(SALT.life)) : Infinity, variant = e.face ? null : e.variants[Math.min(e.variants.length - 1, Math.floor(r(SALT.variant) * e.variants.length))];
     let vx = cosDeg(angle) * speed, vy = sinDeg(angle) * speed;
     if (parent && e.inherit) { vx += parent.vx * e.inherit; vy += parent.vy * e.inherit; }
@@ -493,8 +504,7 @@ function simulate(effect, context) {
         // place now, so a fast trail stays even instead of leaving one clump per frame.
         const at = cycle - 1 + (k + 1) / count, [cx, cy] = e.route ? centre(e, at) : centre(e, cycle);
         // With inherit, a moving emitter hands its particles that share of its own velocity along the path.
-        // (At the start of the path, where nothing came before, its velocity is read a frame ahead.)
-        const moving = e.route && e.inherit ? velocity(e, at, cx, cy) : null;
+        const moving = e.route && e.inherit ? velocity(e, at) : null;
         add(launch(e, index, cx, cy, k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, moving));
         if (drawing) stats[index].spawned++;
       }
@@ -564,7 +574,7 @@ function simulate(effect, context) {
       // A spinning particle draws its symbol turned to the nearest 45° step (the other way in a mirrored copy), its middle
       // pixel kept on the particle.
       const k = e.spin ? (((Math.round((p.turn + p.spin * p.age) / 45) % 8) + 8) % 8) : 0, turned = k ? spun(sequence[step], view?.mirror ? 8 - k : k) : null;
-      const symbol = turned ? turned.name : sequence[step], rows = symbols[symbol], w = rows[0].length, h = rows.length;
+      const symbol = turned ? turned.name : sequence[step], rows = turned ? turned.rows : symbols[symbol], w = rows[0].length, h = rows.length;
       const left = X - (turned ? turned.pivot[0] : Math.floor(w / 2)), top = Y - (turned ? turned.pivot[1] : Math.floor(h / 2));
       if (left >= width || top >= height || left + w <= 0 || top + h <= 0) { culled++; return; }
       const recolour = whole ? { ...p.remap, ...Object.fromEntries([...new Set(rows.join(''))].filter(char => !clear(char)).map(char => [char, stage])) } : colours;
@@ -880,6 +890,7 @@ export function compileEffects(source) {
     }
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
+  for (const { name, rows } of spun.values()) symbols[name] = rows;
   const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
   // A light track for game code: in each frame, where the effect's bright pixels are (weighted by brightness), how much
   // light they make (glow, in full-white pixels) and their mean colour, or null where nothing bright is drawn.
