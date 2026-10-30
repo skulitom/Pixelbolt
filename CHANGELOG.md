@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects in every direction
+
+- `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
+
 ### Poke the pixels: a live fluid toy
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
