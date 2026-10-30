@@ -541,3 +541,14 @@ test('a compile reviews each animation: the seam of a loop against its largest s
   assert.ok(ring(false, 6).metadata.effects.burst.residue > 0);
   assert.equal(compileEffects(effects({ frames: 6, looks: { warm: { colors: ['y'], thresholds: [0.2] } }, layers: [{ kind: 'ring', at: [12, 12], radius: 6, power: [1, 0] }] })).metadata.effects.burst.residue, 0);
 });
+
+test('a compile gives each animation a light track: where its bright pixels are, how much light and what colour', () => {
+  const { metadata } = compileEffects(effects({ frames: 4, looks: { warm: { colors: ['o', 'y', 'w'], thresholds: [0.2, 0.5, 0.8] } }, layers: [{ kind: 'burst', at: [10, 14], frames: [0, 3], radius: [6, 2], noise: 0, power: [1.4, 0.3] }] }));
+  const light = metadata.effects.burst.light;
+  assert.equal(light.length, 4);
+  // Brightest on the first frame, centred on the burst, nothing bright once it has gone.
+  assert.ok(light[0].glow > light[1].glow && light[0].glow > 10, JSON.stringify(light));
+  assert.deepEqual(light[0].at, [10, 14]);
+  assert.match(light[0].color, /^#[0-9a-f]{6}$/);
+  assert.equal(light[3], null);
+});

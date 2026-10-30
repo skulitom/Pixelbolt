@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Light tracks
+
+- Every `pixelforge-fx` compile gives each animation a `light` track in its metadata: per frame, where the bright pixels are (`at`), how much light they make (`glow`, in full-white pixels) and their colour, or null. Game code can drive a point light from it; it is the first step toward effects that light a scene.
+
 ### Auras round rings and discs
 
 - An `aura` may hug an ellipse instead of a sprite: `around: [rx, ry]` centred on `at`, its ring or with `disc: true` the whole disc. A ring of flame licking up from the ground no longer needs an invisible ring symbol to hug (the fire helper's workaround).

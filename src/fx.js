@@ -764,6 +764,20 @@ export function compileEffects(source) {
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
   const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  // A light track for game code: in each frame, where the effect's bright pixels are (weighted by brightness), how much
+  // light they make (glow, in full-white pixels) and their mean colour, or null where nothing bright is drawn.
+  const lightOf = data => {
+    let sum = 0, sx = 0, sy = 0, r = 0, g = 0, bl = 0;
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const alpha = data[i + 3] / 255, lum = (0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]) / 255;
+      if (!alpha || lum < 0.5) continue;
+      const w = lum * alpha;
+      sum += w; sx += (p % width) * w; sy += Math.floor(p / width) * w; r += data[i] * w; g += data[i + 1] * w; bl += data[i + 2] * w;
+    }
+    if (!sum) return null;
+    const hex = v => Math.round(v / sum).toString(16).padStart(2, '0');
+    return { at: [Math.round(sx / sum), Math.round(sy / sum)], glow: Math.round(sum * 100) / 100, color: `#${hex(r)}${hex(g)}${hex(bl)}` };
+  };
   // A review of what each animation delivers: a loop's seam (the pixels that change from its last frame to its first)
   // against its largest ordinary step, warned about when the loop jumps; a one-shot's residue, the pixels its last
   // frame still draws (0 when it ends empty).
@@ -771,6 +785,7 @@ export function compileEffects(source) {
   const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
   for (const [name, animation] of Object.entries(animations)) {
     const data = animation.frames.map(frame => at.get(frame)), effect = metadata.effects[name];
+    effect.light = data.map(lightOf);
     if (animation.loop === false) { let n = 0; const last = data[data.length - 1]; for (let i = 3; i < last.length; i += 4) if (last[i]) n++; effect.residue = n; continue; }
     const steps = data.slice(1).map((frame, k) => differ(data[k], frame)), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = steps.length ? Math.max(...steps) : 0;
     effect.seam = { pixels: seam, largestStep: largest };
