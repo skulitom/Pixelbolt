@@ -623,3 +623,13 @@ test('a keyed rate ramps the emission from start to end, and a steady rate spawn
   assert.throws(() => spray([0, 0]), /every key is 0/);
   assert.throws(() => spray([1]), /2–8 of them as keys/);
 });
+
+test('children that spawn while a fast parent lives spread along the stretch it moved, so its trail stays even', () => {
+  const comet = rate => compileEffects(effects({ frames: 5, emitters: [
+    { name: 'head', at: [2, 12], burst: 1, angle: 0, speed: 4, life: 20, shapes: ['warm'] },
+    { from: 'head', when: 'life', rate, speed: 0, life: 20, shapes: ['dot'] }] })).recipe;
+  const xs = recipe => recipe.frames.at(-1).ops.filter(op => op.symbol === 'dot').map(op => op.x).sort((a, b) => a - b);
+  // One child a frame sits where the parent is; four a frame fill the four pixels it crossed.
+  assert.deepEqual(xs(comet(1)), [2, 6, 10, 14, 18]);
+  assert.deepEqual(xs(comet(4)), [2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+});

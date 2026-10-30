@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Even trails from fast parents
+
+- Children that spawn while a parent particle lives (`when: "life"`) spread a frame's spawns along the stretch the parent moved since the last frame, the last where it is now, so a fast projectile leaves an even trail instead of one clump per frame. One child a frame spawns where it did before.
+
 ### Boiling rings
 
 - A `ring` layer takes `boil`: its breaks churn over the window, or every cycle for a ring spanning a loop, through two fields that take turns so the loop stays seamless. A looping shield bubble or portal rim no longer stands still. Without it, rings draw as before.

@@ -405,12 +405,15 @@ function simulate(effect, context) {
   };
   // Children of particle q, born in frame `born`: keyed by the parent's tag and age, so a looping parent has the same
   // children every cycle.
-  const spawnChildren = (index, q, count, born) => {
+  // While a parent lives (spread), the children a frame spawns spread along the stretch it moved since the last frame,
+  // the last where it is now, so a fast parent leaves an even trail instead of one clump per frame.
+  const spawnChildren = (index, q, count, born, spread = false) => {
     const e = emitters[index];
     const [ox, oy] = offset(e.at[0], e.at[1]);
     for (let k = 0; k < count; k++) {
-      const r = salt => random(q.tag, index, q.age, k, salt);
-      add(launch(e, index, q.x + ox, q.y + oy, k, count, r, hash(q.tag, index, q.age, k), born, q));
+      const r = salt => random(q.tag, index, q.age, k, salt), back = spread && q.px !== undefined && k < count - 1;
+      const x = back ? q.px + (q.x - q.px) * (k + 1) / count : q.x, y = back ? q.py + (q.y - q.py) * (k + 1) / count : q.y;
+      add(launch(e, index, x + ox, y + oy, k, count, r, hash(q.tag, index, q.age, k), born, q));
       if (born >= first) stats[index].spawned++;
     }
     if (count) mark(e, born, q.x + ox, q.y + oy);
@@ -453,7 +456,7 @@ function simulate(effect, context) {
       if (e.when !== 'life') return;
       for (let i = 0, parents = alive.length; i < parents; i++) {
         const q = alive[i];
-        if (q.index === e.parent) spawnChildren(index, q, Math.floor((q.age + 1) * e.rate + 1e-9) - Math.floor(q.age * e.rate + 1e-9), t);
+        if (q.index === e.parent) spawnChildren(index, q, Math.floor((q.age + 1) * e.rate + 1e-9) - Math.floor(q.age * e.rate + 1e-9), t, true);
       }
     });
     if (drawing) emitters.forEach((e, index) => { stats[index].maxAlive = Math.max(stats[index].maxAlive, alive.filter(p => p.index === index).length); });
@@ -554,6 +557,7 @@ function simulate(effect, context) {
         }
       }
       p.vx *= 1 - e.drag; p.vy *= 1 - e.drag;
+      p.px = p.x; p.py = p.y;
       p.x += p.vx; p.y += p.vy;
       if (e.floor !== null && p.y > e.floor) {
         p.y = e.floor;
