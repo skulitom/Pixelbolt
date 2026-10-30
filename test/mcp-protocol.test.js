@@ -22,7 +22,7 @@ function session(options) {
   const call = (name, args) => request('tools/call', { name, arguments: args });
   const cancel = requestId => send({ method: 'notifications/cancelled', params: { requestId, reason: 'no longer needed' } });
   const init = () => request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
-  return { input, running, received, request, call, cancel, init, end: async () => { input.end(); await running; } };
+  return { received, request, call, cancel, init, end: async () => { input.end(); await running; } };
 }
 const strip = { version: 1, name: 'strip', width: 4, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 3, y: 1, color: 'k' }] }, { name: 'b', duration: 90 }] };
 // A thick liquid this size takes most of a minute to simulate, well inside the compiler's own work budget.

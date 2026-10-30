@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { performance } from 'node:perf_hooks';
 import { readFile } from 'node:fs/promises';
 import { rasterizeBone, rasterizeMass, cleanupIds, cosDeg, sinDeg } from '../src/craft.js';
 import { compilePoses } from '../src/authoring.js';
