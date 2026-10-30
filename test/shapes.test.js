@@ -202,7 +202,7 @@ test('the reviewed shape examples match their presets and compile to the pixels 
     'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': '6a98f8e6e928da3247bb01795e45a714ad3f10bd6b09f2f4b2045ef25fe95171',
     fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
     'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
-    water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57', portal: '30aec31990e2cca9c7c7996285756f0bae2a211915b80fa1853f7f90008afd09',
+    water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
     meteor: 'cd61811bf8fb0d4af0031326066b9759651bc2ed7f6a3294b93e97acd4769a89'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));

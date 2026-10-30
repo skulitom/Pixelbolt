@@ -742,12 +742,12 @@ export const spellPresets = {
       }
     }
   },
-  // A looping portal: a boiling aura ring round a dark core, motes that swirl in (attract swirl) and wisps that
+  // A looping vortex: a boiling aura ring round a dark core, motes that swirl in (attract swirl) and wisps that
   // wander inside it (turbulence) and cool as they fade (blob power), drawn over the motes (front).
-  'portal': {
+  'vortex': {
     "format": "pixelforge-fx",
     "version": 1,
-    "name": "portal",
+    "name": "vortex",
     "width": 64,
     "height": 64,
     "anchor": [
@@ -780,7 +780,7 @@ export const spellPresets = {
       ]
     },
     "effects": {
-      "portal": {
+      "vortex": {
         "frames": 16,
         "duration": 70,
         "loop": true,

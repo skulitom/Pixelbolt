@@ -12,10 +12,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - A `ring` layer takes `boil`: its breaks churn over the window, or every cycle for a ring spanning a loop, through two fields that take turns so the loop stays seamless. A looping shield bubble or portal rim no longer stands still. Without it, rings draw as before.
 
-### Portal and meteor examples
+### Vortex and meteor examples
 
 - `examples/meteor.fx.json`: a one-shot meteor whose head's keyed `drift` shares a window with its trail emitters' `path`, so smoke, a tail of cooling fire blobs and embers keep pace with it, then an impact with debris and rising smoke from a keyed `rate`.
-- `examples/portal.fx.json`: a seamless looping portal that shows the newest effect tools together: motes that swirl in (`attract.swirl`), wisps that wander (`turbulence`) and cool as they fade (blob `power`), drawn in front of the motes (`front`).
+- `examples/vortex.fx.json`: a seamless looping vortex that shows the newest effect tools together: motes that swirl in (`attract.swirl`), wisps that wander (`turbulence`) and cool as they fade (blob `power`), drawn in front of the motes (`front`).
 
 ### Cooling blobs
 

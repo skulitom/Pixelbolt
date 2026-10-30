@@ -1,7 +1,7 @@
 {
   "format": "pixelforge-fx",
   "version": 1,
-  "name": "portal",
+  "name": "vortex",
   "width": 64,
   "height": 64,
   "anchor": [32, 56],
@@ -25,7 +25,7 @@
     "fleck": ["m"]
   },
   "effects": {
-    "portal": {
+    "vortex": {
       "frames": 16,
       "duration": 70,
       "loop": true,
