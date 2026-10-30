@@ -60,7 +60,7 @@
                   {
                     "type": "string",
                     "minLength": 1,
-                    "description": "A recipe or pose source file, relative to this source (CLI and MCP)."
+                    "description": "A recipe, or a pose, fluid or wave source file, relative to this source (CLI and MCP)."
                   },
                   {
                     "type": "object",
@@ -78,7 +78,7 @@
                   },
                   {
                     "type": "object",
-                    "description": "An inline recipe or pixelforge-poses source."
+                    "description": "An inline recipe, or a pixelforge-poses, pixelforge-fluid or pixelforge-wave source."
                   }
                 ]
               },
@@ -103,7 +103,7 @@
                 "animation"
               ]
             },
-            "description": "A frame (or an animation) of a recipe or pose source, over its whole canvas (so it keeps the source's coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour."
+            "description": "A frame (or an animation) of a recipe, or of a pose, fluid or wave source compiled first (a fluid's or wave's effects are its animations, so a simulated explosion can play under shape layers and particles), over its whole canvas (so it keeps the source's coordinates). Its colours join the palette under their own keys, or spare letters where the effect already uses a key for another colour."
           }
         ]
       },
@@ -2107,7 +2107,7 @@
                             {
                               "type": "string",
                               "minLength": 1,
-                              "description": "A recipe or pose source file, relative to this source (CLI and MCP)."
+                              "description": "A recipe, or a pose, fluid or wave source file, relative to this source (CLI and MCP)."
                             },
                             {
                               "type": "object",
@@ -2125,7 +2125,7 @@
                             },
                             {
                               "type": "object",
-                              "description": "An inline recipe or pixelforge-poses source."
+                              "description": "An inline recipe, or a pixelforge-poses, pixelforge-fluid or pixelforge-wave source."
                             }
                           ]
                         },

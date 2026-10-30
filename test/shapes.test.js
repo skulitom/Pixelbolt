@@ -200,7 +200,7 @@ test('the reviewed shape examples match their presets and compile to the pixels 
   // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
   const golden = {
     'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': 'ddbd1900e43b33a2f5d99bd86eb0be3e649f69f7661a42f3e078491961da3d4a',
-    fireball: '70145d0da42211820125e6e6f4dee621e7c46b77b9b35d3f1fe4c1971c2430d8',
+    fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
     'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
     water: 'aac0545cf5c4b8af98a8a32301bbc8c90732010e3f875355daa74b7df3395c9c'
   };

@@ -4,9 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fluids inside an effect
+
+- A `pixelforge-fx` symbol's `recipe` may be a fluid or wave source as well as a recipe or pose source; its effects are its animations. Drawn by a sprite emitter, a simulated explosion plays frame for frame, pixel for pixel, under shape-layer flashes and shockwaves and particles, all in one recipe. `examples/fluid-blast.fx.json` puts `explosion.fluid.json` under a flash star, a breaking shockwave and embers.
+
 ### Effects in every direction
 
-- `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
+- `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. Layer noise turns with each copy, so a quarter turn is the drawn copy turned, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
+- The fireball reads as a comet: a smaller white-hot core inside yellow and orange bands, a round front with no scraps of flame ahead of it, and a tail that leaves the head orange and cools to red before breaking into wisps. Its head had been one big flat white disc that the tail's dark red met head-on.
 
 ### Poke the pixels: a live fluid toy
 

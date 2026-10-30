@@ -136,7 +136,7 @@ function readLook(look, path, palette, seed) {
 }
 
 function readLayer(layer, path, context, index) {
-  const { frames, lookNames, seed, loop, symbols, sequences } = context;
+  const { frames, lookNames, seed, loop, symbols, sequences, view } = context;
   if (!isObject(layer)) fail(path, 'expected a layer object');
   if (!SHAPE_KINDS.includes(layer.kind)) fail(`${path}.kind`, `expected ${SHAPE_KINDS.join(', ')}`);
   const kind = layer.kind;
@@ -235,6 +235,8 @@ function readLayer(layer, path, context, index) {
     // whole pixels, as the dither op's are: craft keeps one noise table per scale for the life of the process.
     Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
+    // A turned copy reads the grain where the drawn effect had that pixel.
+    if (out.noise && view) out.unturn = view.unpoint;
   }
   // A cycling burst or aura boils through a second, independent field half a cycle behind the first (see boilFields).
   if ((kind === 'burst' || kind === 'aura') && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
@@ -280,7 +282,7 @@ export function readShapes(effect, path, context) {
     for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
-  const { palette, seed, frames, loop, symbols, sequences } = context;
+  const { palette, seed, frames, loop, symbols, sequences, view } = context;
   if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
@@ -288,7 +290,7 @@ export function readShapes(effect, path, context) {
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
   if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, sequences, lookNames: looks.map(l => l.name) }, i));
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, sequences, view, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -681,7 +683,11 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       for (let c = 0; c < N; c++) {
         let value = scratch[c] * power;
         if (value <= 0) continue;
-        if (layer.grain) value *= 1 - layer.noise * layer.grain(256 + (c % width) - round(dx), 256 + Math.floor(c / width) - round(dy));
+        if (layer.grain) {
+          // In a turned copy the grain turns too, so every direction breaks up as the drawn one does.
+          const [gx, gy] = layer.unturn ? layer.unturn([c % width - dx, Math.floor(c / width) - dy]) : [c % width - round(dx), Math.floor(c / width) - round(dy)];
+          value *= 1 - layer.noise * layer.grain(256 + gx, 256 + gy);
+        }
         field[c] = layer.blend === 'add' ? field[c] + value : Math.max(field[c], value);
         any = true;
       }
