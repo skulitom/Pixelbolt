@@ -60,7 +60,7 @@ async function start(id, { version = TOY_VERSION, frames = 0, pokes = [] } = {})
     await new Promise(resolve => setTimeout(resolve, 0));
     if (mine !== generation) return;
     const live = engine.fluid.createLiveFluid(source), effect = Object.values(source.effects)[0];
-    run = { preset, version, engine, source, live, width: live.width, height: live.height, duration: effect.duration ?? 70,
+    run = { preset, version, engine, live, width: live.width, height: live.height, duration: effect.duration ?? 70,
       t: 0, pokes: pokes.slice(), replay: frames ? { at: 0, frames } : null, ring: [] };
     canvas.width = run.width; canvas.height = run.height;
     canvas.setAttribute('aria-label', `Live pixel-art ${preset.title.toLowerCase()}`);

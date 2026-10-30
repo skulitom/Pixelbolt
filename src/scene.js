@@ -692,21 +692,20 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
       const box = { x: left, y: top, w: tilemap.width * s, h: tilemap.height * s };
       if (item.cell !== undefined) {
         // The cells of a sorted tilemap that stand on one row are drawn one after another and share a depth entry.
-        const cell = tilemap.cells[item.cell], x = left + cell.x * s, y = top + cell.y * s, w = project.width * s, h = project.height * s;
+        const cell = tilemap.cells[item.cell], x = left + cell.x * s, y = top + cell.y * s, w = project.width * s;
         let entry = -1;
         if (owner && !instance.shade) {
           const last = entries.at(-1);
           if (last?.spans && last.instance === i && last.ground === item.ground) {
-            const right = Math.max(last.box.x + last.box.w, x + w);
-            last.spans.push([x, w]); last.tiles++; last.box.x = Math.min(last.box.x, x); last.box.w = right - last.box.x;
-          } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], box: { x, y, w, h }, shift, covers: false });
+            last.spans.push([x, w]); last.tiles++;
+          } else entries.push({ instance: i, label, sorted: true, ground: item.ground, tiles: 1, spans: [[x, w]], shift, covers: false });
           entry = entries.length - 1;
         }
         drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank);
         continue;
       }
       if (!item.record) {
-        const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, box, covers: false }) - 1 : -1;
+        const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, covers: false }) - 1 : -1;
         for (const cell of tilemap.cells) drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank);
       }
       placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s, ...(instance.haze && { haze: instance.haze }) });
