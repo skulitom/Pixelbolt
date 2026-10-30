@@ -389,7 +389,7 @@ function readEffect(effect, path, source) {
     kind, liquid, frames, durations, light: [light[0] / reachLight, light[1] / reachLight], loop, seed, emitters, look, whitewater, obstacles, moving, layout, solid, front, smooth, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), fills, cleanup,
     warmup: loop ? integer(effect.warmup ?? 2, `${path}.warmup`, 1, 8) : 0,
     blend: loop ? integer(effect.blend ?? Math.max(1, Math.min(8, Math.floor(frames / 3))), `${path}.blend`, 1, Math.floor(frames / 2)) : 0,
-    substeps: integer(effect.substeps ?? 2, `${path}.substeps`, 1, 4), iterations: integer(effect.iterations ?? (liquid ? 40 : 30), `${path}.iterations`, 1, 200),
+    substeps: integer(effect.substeps ?? 2, `${path}.substeps`, 1, 16), iterations: integer(effect.iterations ?? (liquid ? 40 : 30), `${path}.iterations`, 1, 200),
     buoyancy: number(effect.buoyancy ?? 0.15, `${path}.buoyancy`, -2, 2), weight: number(effect.weight ?? 0, `${path}.weight`, -2, 2),
     vorticity: number(effect.vorticity ?? 0.25, `${path}.vorticity`, 0, 2), dissipation: number(effect.dissipation ?? 0.03, `${path}.dissipation`, 0, 1),
     cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag: number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1),
@@ -2075,10 +2075,11 @@ function simulate(effect, context) {
   };
 }
 
-// Reads a whole source and checks it as compileFluid does. Each effect is read in turn, checked against the frame and
-// work limits, and passed to `each(name, effect, { width, height, path })`, which returns its frames' operations (or
-// null to leave them empty, as a live runner does). The renderer then checks the recipe, so a live runner gets every
-// check compileFluid makes before simulating, with the same paths and messages.
+// Reads a whole source and checks it as compileFluid does. Each effect is read in turn, checked against the frame
+// limit, and passed to `each(name, effect, { width, height, path })`, which returns its frames' operations (or null to
+// leave them empty, as a live runner does). The renderer then checks the recipe, so a live runner gets every check
+// compileFluid makes before simulating, with the same paths and messages, except the work budget: compileFluid counts
+// every frame of every effect before simulating it, while a live runner steps one frame at a time and bounds its warm-up.
 function buildRecipe(source, each) {
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'symbols', 'anchor', 'effects', 'sheet'], 'fluid');
   if (source.format !== 'pixelforge-fluid' || source.version !== 1) fail('fluid', 'expected version-1 pixelforge-fluid');
@@ -2093,7 +2094,6 @@ function buildRecipe(source, each) {
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fluid.effects', `expected 1–${LIMITS.effects} named effects`);
   const frames = [], animations = {}, seen = new Set();
-  let work = 0;
   for (const [name, value] of Object.entries(source.effects)) {
     const path = `fluid.effects.${name}`;
     identifier(name, path);
@@ -2102,9 +2102,6 @@ function buildRecipe(source, each) {
     seen.add(name.toLowerCase());
     const effect = readEffect(value, path, { width, height, palette, symbols });
     if (frames.length + effect.frames > 256) fail('fluid.effects', `the effects make more than 256 frames; a recipe holds at most 256`);
-    // Bounded work: about one update per cell per pressure sweep, per step. The presets need at most 60 million.
-    work += width * height * simulatedFrames(effect) * effect.substeps * stepWork(effect);
-    if (work > LIMITS.work) fail(path, `the simulations need about ${Math.round(work / 1e6)} million cell updates, more than ${LIMITS.work / 1e6} million; lower frames, warmup, substeps, iterations or the canvas size`);
     const ops = each(name, effect, { width, height, path });
     const names = effect.durations.map((duration, i) => {
       frames.push({ name: `${name}-${i}`, duration, ...(ops?.[i].length && { ops: ops[i] }) });
@@ -2121,7 +2118,12 @@ function buildRecipe(source, each) {
 // look stuck, each naming the field to change.
 export function compileFluid(source) {
   const metadata = { format: 'pixelforge-fluid-metadata', version: 1, effects: {} }, warnings = [];
+  let work = 0;
   const recipe = buildRecipe(source, (name, effect, context) => {
+    // Bounded work, checked before each effect is simulated: about one update per cell per pressure sweep, per step,
+    // summed over the source's effects. The presets need at most 60 million.
+    work += context.width * context.height * simulatedFrames(effect) * effect.substeps * stepWork(effect);
+    if (work > LIMITS.work) fail(context.path, `the simulations need about ${Math.round(work / 1e6)} million cell updates, more than ${LIMITS.work / 1e6} million; lower frames, warmup, substeps, iterations or the canvas size`);
     const run = simulate(effect, context);
     warnings.push(...effect.warnings);
     metadata.effects[name] = {
@@ -2172,7 +2174,9 @@ export function createLiveFluid(source, options = {}) {
   if (!chosen) fail('live.effect', `no effect named ${JSON.stringify(options.effect)}; the source has ${names.join(', ')}`);
   const { effect, width, height, path } = chosen, { emitters, liquid, seed } = effect, N = width * height;
   const warmup = options.warmup === undefined ? effect.frames : integer(options.warmup, 'live.warmup', 0, 2048);
-  if (N * warmup * effect.substeps * stepWork(effect) > LIMITS.work) fail('live.warmup', `warming up ${warmup} frames needs more than ${LIMITS.work / 1e6} million cell updates; warm up fewer frames`);
+  // The warm-up runs before the runner returns, so it keeps compileFluid's work budget; stepping afterwards has none.
+  const frameWork = N * effect.substeps * stepWork(effect);
+  if (warmup * frameWork > LIMITS.work) fail('live.warmup', `warming up ${warmup} frames${options.warmup === undefined ? ' (the default: one cycle)' : ''} needs about ${Math.round(warmup * frameWork / 1e6)} million cell updates, more than ${LIMITS.work / 1e6} million; warm up at most ${Math.floor(LIMITS.work / frameWork)} frames, or lower substeps or iterations`);
 
   // Colours by palette key, and the obstacles stamped under and over the fluid, composited in a compiled frame's order.
   const palette = {}, colours = new Map();
