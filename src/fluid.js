@@ -19,7 +19,7 @@ export const FLUID_KINDS = ['gas', 'liquid'];
 export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow'];
 export const FLUID_WALLS = ['left', 'right', 'top', 'bottom'];
 export const OBSTACLE_SURFACES = ['pixels', 'smooth'];
-const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 16, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, carriers: 8192, work: 400000000 };
+const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 64, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, carriers: 8192, work: 400000000 };
 // No flow moves faster than this many pixels per frame; it keeps extreme settings finite without touching normal ones.
 const MAX_SPEED = 32;
 // Liquid particles per full cell, and the density at which a cell counts as liquid for depth and bubbles.
@@ -179,14 +179,22 @@ function readLook(layer, path, context) {
   return { field: FLUID_FIELDS.indexOf(layer.field), colors: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)), dither: number(layer.dither ?? 0.5, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed) };
 }
 
-// A disc (at, radius), a box (x, y, w, h), or both: their overlap, such as the lower half of a round flask.
+// A disc (at, radius), an ellipse (at, radius [x, y]), a box (x, y, w, h), or both: their overlap, such as the lower
+// half of a round flask.
 function readShape(value, path, width, height) {
   const disc = value.at !== undefined || value.radius !== undefined, box = ['x', 'y', 'w', 'h'].some(key => value[key] !== undefined);
-  if (!disc && !box) fail(path, 'expected at and radius (a disc), x, y, w and h (a box), or both (their overlap)');
+  if (!disc && !box) fail(path, 'expected at and radius (a disc, or an ellipse with radius [x, y]), x, y, w and h (a box), or both (their overlap)');
   let inDisc = () => true, inBox = () => true;
   if (disc) {
-    const at = pair(value.at, `${path}.at`, -256, 512), radius = number(value.radius, `${path}.radius`, 0.5, 128);
-    inDisc = (x, y) => { const dx = x - at[0], dy = y - at[1]; return dx * dx + dy * dy <= radius * radius; };
+    const at = pair(value.at, `${path}.at`, -256, 512);
+    if (Array.isArray(value.radius)) {
+      // An ellipse with radii [rx, ry]: (dx / rx)² + (dy / ry)² ≤ 1, multiplied out so it needs no division.
+      const [rx, ry] = pair(value.radius, `${path}.radius`, 0.5, 128), rx2 = rx * rx, ry2 = ry * ry;
+      inDisc = (x, y) => { const dx = x - at[0], dy = y - at[1]; return dx * dx * ry2 + dy * dy * rx2 <= rx2 * ry2; };
+    } else {
+      const radius = number(value.radius, `${path}.radius`, 0.5, 128);
+      inDisc = (x, y) => { const dx = x - at[0], dy = y - at[1]; return dx * dx + dy * dy <= radius * radius; };
+    }
   }
   if (box) {
     const x = integer(value.x, `${path}.x`, 0, width - 1), y = integer(value.y, `${path}.y`, 0, height - 1);

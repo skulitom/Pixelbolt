@@ -1054,6 +1054,27 @@ test('substeps go up to 16 a frame, and the work budget counts every one', () =>
   assert.throws(() => compileFluid(plume), error => error.path === 'fluid.effects.plume' && /about 402 million cell updates/.test(error.message));
 });
 
+test('a liquid fill can be an ellipse, and a fill list holds 64 shapes', () => {
+  // P-037: a jelly dome wider than it is tall is one fill, an ellipse cut by a box, where it took 2-row strips.
+  // Four particles a cell, and nothing moves them in one frame without gravity.
+  const first = fill => compileFluid(goo({ frames: 1, gravity: [0, 0] }, fill)).metadata.effects.goo.figures;
+  const inside = (cx, cy, rx, ry, rows) => { let n = 0; for (let j = 0; j < rows; j++) for (let i = 0; i < 48; i++) n += ((i + 0.5 - cx) / rx) ** 2 + ((j + 0.5 - cy) / ry) ** 2 <= 1 ? 1 : 0; return n; };
+  const ellipse = first([{ at: [24, 16], radius: [12, 6] }]), dome = first([{ at: [24, 16], radius: [12, 6], x: 0, y: 0, w: 48, h: 16 }]);
+  assert.equal(ellipse.particles[0], 4 * inside(24, 16, 12, 6, 32));
+  assert.deepEqual(ellipse.box[0], [12, 10, 35, 21]);
+  assert.equal(dome.particles[0], 4 * inside(24, 16, 12, 6, 16));
+  assert.deepEqual(dome.box[0], [12, 10, 35, 15]);
+  // Equal radii are the disc a number gives.
+  assert.deepEqual(first([{ at: [24, 16], radius: [6, 6] }]), first([{ at: [24, 16], radius: 6 }]));
+  // Thirty one-row strips (a dome drawn row by row) fit; 65 entries don't.
+  const strip = j => ({ x: 2 + Math.abs(15 - j) % 8, y: 1 + j, w: 10, h: 1 });
+  assert.equal(first(Array.from({ length: 30 }, (_, j) => strip(j))).particles[0], 30 * 10 * 4);
+  const fails = (fill, where, message) => assert.throws(() => compileFluid(goo({}, fill)), error => error.path === where && message.test(error.message), where);
+  fails(Array.from({ length: 65 }, () => ({ x: 1, y: 1, w: 1, h: 1 })), 'fluid.effects.goo.fill', /at most 64 entries/);
+  fails([{ at: [24, 16], radius: [12] }], 'fluid.effects.goo.fill[0].radius', /expected \[x, y\]/);
+  fails([{ at: [24, 16], radius: [12, 0.25] }], 'fluid.effects.goo.fill[0].radius[1]', /0\.5 to 128/);
+});
+
 // Its speed (250 ms a frame at most, a few milliseconds in practice) is measured by `npm run bench -- --budgets`
 // (live/steam), which reports a case over budget without failing CI. The timing here is only a diagnostic.
 test('a live runner steps and draws a hero-sized steam plume while it is pushed', t => {
