@@ -9,7 +9,7 @@
 // trigonometry, no Math.random.
 import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
-import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
+import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS, rotateRows } from './craft.js';
 import { readShapes, renderShapes, tween, sample, sequenceFrame } from './shapes.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
@@ -47,7 +47,7 @@ const pair = (value, path, min, max) => {
 const pick = ([a, b], r) => a + (b - a) * r;
 const pickWhole = ([a, b], r) => a + Math.min(b - a, Math.floor(r * (b - a + 1)));
 // Salts keep each sampled property independent, so changing one range does not reshuffle the others.
-const SALT = { x: 1, y: 2, angle: 3, speed: 4, life: 5, variant: 6, remap: 7, phase: 8, offset: 9, ring: 10, radius: 11, along: 12, pixel: 13, release: 14, share: 15, size: 16 };
+const SALT = { x: 1, y: 2, angle: 3, speed: 4, life: 5, variant: 6, remap: 7, phase: 8, offset: 9, ring: 10, radius: 11, along: 12, pixel: 13, release: 14, share: 15, size: 16, turn: 17, spin: 18 };
 // Which of a sprite's pixels its emitter spawns from: every visible pixel, the visible pixels on its edge, or the empty
 // pixels just outside it (as a look's outline takes them).
 export const SPRITE_PIXELS = ['all', 'edge', 'outline'];
@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'spin'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -134,7 +134,7 @@ function readEmitter(emitter, path, context, earlier) {
     // power scales each disc's field over the particle's life: a hot drop climbs no higher than the look's dimmer bands
     // as it cools, from white through yellow to red, while its radius keys shrink it.
     blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64), size: range(emitter.blob.size ?? 1, `${path}.blob.size`, 0.1, 8), power: emitter.blob.power === undefined ? null : tween(emitter.blob.power, `${path}.blob.power`, 0, 4) };
-    for (const key of ['shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'behind']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to particles drawn as symbols; a blob particle is drawn into its look`);
+    for (const key of ['shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'behind', 'spin']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to particles drawn as symbols; a blob particle is drawn into its look`);
   }
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
   const schedules = ['burst', 'rate', 'release'].filter(key => emitter[key] !== undefined);
@@ -200,7 +200,7 @@ function readEmitter(emitter, path, context, earlier) {
   }
   // A sprite's particles without shapes are its own pixels, each drawn in its pixel's colour.
   const pixel = sprite !== null && !blob && emitter.shapes === undefined;
-  if (pixel) for (const key of ['face', 'play']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} picks among shapes; a sprite's particles without shapes are its own pixels`);
+  if (pixel) for (const key of ['face', 'play', 'spin']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} picks among shapes; a sprite's particles without shapes are its own pixels`);
   if (!blob && !pixel && (!Array.isArray(emitter.shapes) || !emitter.shapes.length || emitter.shapes.length > 64)) fail(`${path}.shapes`, 'expected 1–64 symbol names (one sequence) or lists of them (variants picked per particle), or a blob drawn into a look');
   const nested = !blob && !pixel && Array.isArray(emitter.shapes[0]);
   const variants = blob || pixel ? [] : (nested ? emitter.shapes : [emitter.shapes]).map((sequence, v) => {
@@ -214,6 +214,11 @@ function readEmitter(emitter, path, context, earlier) {
   // With face, the sequences are directions of travel: the first faces right and the rest turn clockwise, evenly.
   const face = flag(emitter.face, `${path}.face`);
   if (face && (!nested || variants.length < 2 || variants.length > 16)) fail(`${path}.shapes`, 'face picks a sequence by direction of travel: give 2–16 sequences, the first facing right (0°) and the rest turning clockwise, evenly spaced');
+  // spin turns each particle's symbol by that many degrees a frame, from a seeded start, in 45° RotSprite steps (debris
+  // that tumbles); the turned symbols join the recipe as <symbol>_r<degrees>.
+  const spinRange = emitter.spin === undefined ? null : range(emitter.spin, `${path}.spin`, -180, 180), spin = spinRange && (spinRange[0] || spinRange[1]) ? spinRange : null;
+  if (spin && face) fail(`${path}.spin`, 'face already turns the particle to its direction of travel; use one or the other');
+  if (spin) for (const name of variants.flat()) if (name.length > 59) fail(`${path}.spin`, `turned symbols are named <symbol>_r<degrees>; shorten ${name} to 59 characters or fewer`);
   const play = emitter.play ?? 'life';
   if (!['life', 'loop', 'once'].includes(play)) fail(`${path}.play`, 'expected life (spread over the lifetime), loop (one per frame, cycling) or once (one per frame, holding the last)');
   const life = emitter.life === undefined ? null : range(emitter.life, `${path}.life`, 1, 256, true);
@@ -275,7 +280,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -307,6 +312,16 @@ const evenAngle = ([from, to], k, count) => (to - from >= 360 ? from + 360 * k /
 // Simulates one effect and returns its frames' operations plus counts for the metadata.
 function simulate(effect, context) {
   const { frames, loop, seed, emitters, view } = effect, { width, height, symbols } = context;
+  // A symbol turned k × 45°, made once per compile and added to the recipe's symbols.
+  const spun = (name, k) => {
+    const key = `${name}_r${k * 45}`;
+    if (!context.spun.has(key)) {
+      if (Object.hasOwn(symbols, key)) fail(`fx.symbols.${key}`, `a spinning particle names its turned ${name} ${key}; rename this symbol`);
+      const rows = symbols[name], { rows: out, pivot } = rotateRows(rows, k * 45, [Math.floor(rows[0].length / 2), Math.floor(rows.length / 2)]);
+      symbols[key] = out; context.spun.set(key, { name: key, pivot });
+    }
+    return context.spun.get(key);
+  };
   // The direction this copy of the effect is turned to (null as drawn): spawn places, spawn offsets, launch angles and
   // attract points turn with it; gravity, drag, floors and sway stay as they are, so particles still fall down the canvas.
   const offset = view ? (dx, dy) => view.vec(dx, dy) : (dx, dy) => [dx, dy], heading = view ? theta => view.dir(theta) : theta => theta;
@@ -394,7 +409,8 @@ function simulate(effect, context) {
     return {
       emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key,
       remap: e.remaps.length ? e.remaps[Math.min(e.remaps.length - 1, Math.floor(r(SALT.remap) * e.remaps.length))] : null,
-      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1
+      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1,
+      ...(e.spin && { turn: r(SALT.turn) * 360, spin: pick(e.spin, r(SALT.spin)) })
     };
   };
   // Every new particle comes through here, so child emitters that multiply within one frame fail at the limit instead
@@ -512,7 +528,11 @@ function simulate(effect, context) {
       }
       const sequence = e.face ? e.variants[p.facing] : p.variant;
       const step = e.play === 'loop' ? (p.age + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
-      const symbol = sequence[step], rows = symbols[symbol], w = rows[0].length, h = rows.length, left = X - Math.floor(w / 2), top = Y - Math.floor(h / 2);
+      // A spinning particle draws its symbol turned to the nearest 45° step (the other way in a mirrored copy), its middle
+      // pixel kept on the particle.
+      const k = e.spin ? (((Math.round((p.turn + p.spin * p.age) / 45) % 8) + 8) % 8) : 0, turned = k ? spun(sequence[step], view?.mirror ? 8 - k : k) : null;
+      const symbol = turned ? turned.name : sequence[step], rows = symbols[symbol], w = rows[0].length, h = rows.length;
+      const left = X - (turned ? turned.pivot[0] : Math.floor(w / 2)), top = Y - (turned ? turned.pivot[1] : Math.floor(h / 2));
       if (left >= width || top >= height || left + w <= 0 || top + h <= 0) { culled++; return; }
       const recolour = whole ? { ...p.remap, ...Object.fromEntries([...new Set(rows.join(''))].filter(char => !clear(char)).map(char => [char, stage])) } : colours;
       const remap = recolour && Object.keys(recolour).length ? { remap: recolour } : {};
@@ -759,7 +779,7 @@ export function compileEffects(source) {
   const width = integer(source.width, 'fx.width', 1, 256), height = integer(source.height, 'fx.height', 1, 256);
   if (source.symbols !== undefined && (!isObject(source.symbols) || !Object.keys(source.symbols).length)) fail('fx.symbols', 'expected named symbols for the particles to draw');
   // An animation's frames are a sequence for sprites and auras, never stamped, so they stay out of the recipe's symbols.
-  const symbols = { ...source.symbols }, sequences = {};
+  const symbols = { ...source.symbols }, sequences = {}, spun = new Map();
   for (const [name, rows] of Object.entries(symbols)) {
     identifier(name, `fx.symbols.${name}`);
     if (isObject(rows)) {
@@ -795,7 +815,7 @@ export function compileEffects(source) {
         ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
         : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
           : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view };
+      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view, spun };
       // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
       // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
       const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);

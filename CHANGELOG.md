@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Tumbling particles
+
+- Emitters take `spin`, degrees a frame (a number or `[min, max]`): each particle's symbol turns from a seeded start in 45° RotSprite steps, so shards, rocks and leaves tumble instead of sliding. The turned symbols are added to the recipe as `<symbol>_r<degrees>`. Without it, nothing changes.
+
 ### Halos
 
 - A shape look takes `halo: { color, width, dither }`: a glow of one colour on the empty pixels within `width` steps of the look, beyond its outline, dithered when two or more pixels wide, so a bright orb or beam glows without a hard ring. Without it, nothing changes.

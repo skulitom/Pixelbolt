@@ -633,3 +633,17 @@ test('children that spawn while a fast parent lives spread along the stretch it 
   assert.deepEqual(xs(comet(1)), [2, 6, 10, 14, 18]);
   assert.deepEqual(xs(comet(4)), [2, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
 });
+
+test('spin turns each particle\'s symbol in 45° RotSprite steps from a seeded start, and without spin nothing changes', async () => {
+  const { rotateRows } = await import('../src/craft.js');
+  const tumble = spin => compileEffects(effects({ frames: 4, emitters: [{ at: [12, 12], burst: 1, speed: 0, life: 10, shapes: ['chip'], ...(spin !== undefined && { spin }) }] })).recipe;
+  const drawn = recipe => recipe.frames.map(frame => frame.ops[0].symbol);
+  assert.deepEqual(drawn(tumble(undefined)), ['chip', 'chip', 'chip', 'chip']);
+  assert.deepEqual(tumble(0), tumble(undefined));
+  // A quarter turn a frame steps two 45° stops a frame; each turned symbol is the RotSprite turn of the original.
+  const recipe = tumble(90), names = drawn(recipe);
+  const step = name => (name === 'chip' ? 0 : Number(name.split('_r')[1]) / 45);
+  names.slice(1).forEach((name, i) => assert.equal((step(name) - step(names[i]) + 8) % 8, 2, String(names)));
+  for (const name of names.filter(n => n !== 'chip')) assert.deepEqual(recipe.symbols[name], rotateRows(recipe.symbols.chip, Number(name.split('_r')[1]), [1, 1]).rows);
+  assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, shapes: [['dot'], ['warm']], face: true, spin: 10 }] })), /use one or the other/);
+});
