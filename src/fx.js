@@ -159,6 +159,17 @@ function readEmitter(emitter, path, context, earlier) {
   const start = integer(emitter.start ?? 0, `${path}.start`, 0, frames - 1);
   if (emitter.end !== undefined && emitter.rate === undefined && !release) fail(`${path}.end`, 'end applies to rate emitters and releases');
   const end = integer(emitter.end ?? frames, `${path}.end`, start + 1, frames);
+  // A keyed rate, 2–8 values spread from start to end, ramps the emission (thick at first and tapering, say); what each
+  // frame spawns is what the running total adds, so fractions carry over as with a steady rate.
+  let rateTotals = null;
+  if (Array.isArray(emitter.rate)) {
+    if (parent !== null) fail(`${path}.rate`, 'a child\'s rate is per frame for each parent particle; keys apply to emitters with their own schedule');
+    if (emitter.rate.length < 2 || emitter.rate.length > 8) fail(`${path}.rate`, 'expected particles per frame, or 2–8 of them as keys spread from start to end');
+    const keys = emitter.rate.map((v, i) => number(v, `${path}.rate[${i}]`, 0, 64));
+    if (!keys.some(v => v > 0)) fail(`${path}.rate`, 'every key is 0, so nothing would spawn');
+    rateTotals = [0];
+    for (let c = 0; c < end - start; c++) rateTotals.push(rateTotals[c] + sample(keys, end - start > 1 ? c / (end - start - 1) : 0));
+  }
   // A child's at is an offset from its parent particle (default none); a sprite's cues sit at its middle; everyone
   // else's is the spawn centre.
   // path moves the spawn centre along 2–16 points spread evenly over the effect (round a loop, back to its start if
@@ -266,7 +277,7 @@ function readEmitter(emitter, path, context, earlier) {
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
-    rate: emitter.rate === undefined ? null : number(emitter.rate, `${path}.rate`, 0.001, 64),
+    rate: emitter.rate === undefined ? null : rateTotals ? rateTotals.at(-1) / (end - start) : number(emitter.rate, `${path}.rate`, 0.001, 64), rateTotals,
     // Measured from each particle's outward direction on an outward ring, where it defaults to straight out.
     angle: range(emitter.angle ?? (ring?.outward ? 0 : [0, 360]), `${path}.angle`, -3600, 3600),
     speed: range(emitter.speed ?? 0, `${path}.speed`, 0, 64),
@@ -417,7 +428,10 @@ function simulate(effect, context) {
       if ((e.burst === null && e.rate === null) || (e.sprite && !e.sprite.frame(cycle).cells.length)) return;
       let count = 0;
       if (e.burst !== null) count = cycle === e.start ? e.burst : 0;
-      else if (cycle >= e.start && cycle < e.end) { const c = cycle - e.start; count = Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9); }
+      else if (cycle >= e.start && cycle < e.end) {
+        const c = cycle - e.start, totals = e.rateTotals;
+        count = totals ? Math.floor(totals[c + 1] + 1e-9) - Math.floor(totals[c] + 1e-9) : Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9);
+      }
       const key = loop ? cycle : t;
       for (let k = 0; k < count; k++) {
         add(launch(e, index, centre(e, cycle)[0], centre(e, cycle)[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));

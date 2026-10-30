@@ -313,10 +313,24 @@
                   "description": "Particles spawned at start (each cycle when looping); for a child, particles per event."
                 },
                 "rate": {
-                  "type": "number",
-                  "minimum": 0.001,
-                  "maximum": 64,
-                  "description": "Particles per frame from start until end; for a child with when: life, per frame for each parent particle."
+                  "oneOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0.001,
+                      "maximum": 64
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 64
+                      },
+                      "maxItems": 8,
+                      "minItems": 2
+                    }
+                  ],
+                  "description": "Particles per frame from start until end, or 2–8 keys spread from start to end that ramp it (thick at first and tapering, say); for a child with when: life, one number per frame for each parent particle."
                 },
                 "start": {
                   "type": "integer",

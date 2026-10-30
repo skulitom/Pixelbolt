@@ -607,3 +607,15 @@ test('an emitter with a path moves its spawn centre along it over the effect', (
   assert.throws(() => trail({ at: [2, 12], path: [[2, 12], [20, 12]] }), /leave at out/);
   assert.throws(() => trail({ path: [[2, 12]] }), /expected 2–16 points/);
 });
+
+test('a keyed rate ramps the emission from start to end, and a steady rate spawns as before', () => {
+  const spray = rate => compileEffects(effects({ frames: 8, emitters: [{ at: [12, 12], rate, speed: 0, life: 1, shapes: ['dot'] }] }));
+  const perFrame = rate => spray(rate).recipe.frames.map(frame => frame.ops?.length ?? 0);
+  assert.deepEqual(perFrame(2), Array(8).fill(2));
+  // Thick at first, tapering to nothing; the total is the running sum of the keys.
+  const ramp = perFrame([4, 0]);
+  assert.deepEqual(ramp, [4, 3, 3, 2, 2, 1, 1, 0]);
+  assert.equal(spray([4, 0]).metadata.effects.burst.emitters[0].spawned, ramp.reduce((a, b) => a + b, 0));
+  assert.throws(() => spray([0, 0]), /every key is 0/);
+  assert.throws(() => spray([1]), /2–8 of them as keys/);
+});

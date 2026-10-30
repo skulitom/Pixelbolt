@@ -252,7 +252,7 @@ const emitter = { ...object({
     outward: { type: 'boolean', description: 'Measure angle from each particle\'s outward direction: 0 straight out (the default angle), 90 clockwise along the ring, 180 inward. Shockwaves and radial bursts.' } }, ['radius']),
     description: 'Spawn on a circle or arc around at instead of in a box.' },
   line: { ...object({ to: vector(-4096, 4096, 'The other end of the segment (for a child, an offset from the parent particle).'), even: evenly }, ['to']), description: 'Spawn along the segment from at to to instead of in a box.' },
-  burst: int(1, 1024, 'Particles spawned at start (each cycle when looping); for a child, particles per event.'), rate: num(0.001, 64, 'Particles per frame from start until end; for a child with when: life, per frame for each parent particle.'),
+  burst: int(1, 1024, 'Particles spawned at start (each cycle when looping); for a child, particles per event.'), rate: { oneOf: [num(0.001, 64), { ...array(num(0, 64), 8), minItems: 2 }], description: 'Particles per frame from start until end, or 2–8 keys spread from start to end that ramp it (thick at first and tapering, say); for a child with when: life, one number per frame for each parent particle.' },
   start: int(0, 255, 'Frame of the burst or first spawn; default 0.'), end: int(1, 256, 'Frame where a rate emitter stops; default the last.'),
   life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames a particle lives; [min, max] picks per particle. Required to loop or dissolve; otherwise particles live to the end.' },
   angle: range(-3600, 3600, 'Launch direction in degrees, clockwise: 0 right, 90 down, 270 up. Default [0, 360].'), speed: range(0, 64, 'Launch speed in pixels per frame; default 0.'),
