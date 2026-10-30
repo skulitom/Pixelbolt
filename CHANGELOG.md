@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects that light a scene
+
+- `light: true` on a `pixelforge-fx` effect writes its light track into its frames as a point named `light`. A scene light that follows `{ instance, point: "light" }` rides the effect's light, lights the normal-mapped sprites around it and goes dark on frames with nothing bright; atlases export the point for game code.
+
 ### Light tracks
 
 - Every `pixelforge-fx` compile gives each animation a `light` track in its metadata: per frame, where the bright pixels are (`at`), how much light they make (`glow`, in full-white pixels) and their colour, or null. Game code can drive a point light from it; it is the first step toward effects that light a scene.

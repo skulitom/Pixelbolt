@@ -552,3 +552,17 @@ test('a compile gives each animation a light track: where its bright pixels are,
   assert.match(light[0].color, /^#[0-9a-f]{6}$/);
   assert.equal(light[3], null);
 });
+
+test('light: true writes the light track into the frames as a point a scene light can follow', async () => {
+  const { prepareScene, renderScene } = await import('../src/scene.js');
+  const flash = light => compileEffects(effects({ frames: 4, light, looks: { warm: { colors: ['o', 'y', 'w'], thresholds: [0.2, 0.5, 0.8] } }, layers: [{ kind: 'burst', at: [10, 14], frames: [0, 3], radius: [6, 2], noise: 0, power: [1.4, 0.3] }] }));
+  const { recipe, metadata } = flash(true);
+  assert.deepEqual(recipe.frames.map(f => f.points?.light ?? null), metadata.effects.burst.light.map(l => l?.at ?? null));
+  assert.equal(flash(undefined).recipe.frames.some(f => f.points), false, 'without light, frames carry no point');
+  // A scene light that follows the point sits on the flash and goes dark with it.
+  const scene = { format: 'pixelforge-scene', version: 1, name: 'lit', width: 24, height: 24, duration: 400, assets: { boom: recipe },
+    instances: [{ name: 'boom', asset: 'boom', at: [0, 0], animation: 'burst' }], lighting: { scope: 'all', lights: [{ follow: { instance: 'boom', point: 'light' }, radius: 20 }] } };
+  const prepared = prepareScene(scene), at = time => renderScene(prepared, { time }).lights ?? [];
+  assert.deepEqual(at(0).map(light => light.at), [[10, 14]]);
+  assert.ok(at(0)[0].strength > 0 && at(390).every(light => light.strength === 0), JSON.stringify(at(390)));
+});

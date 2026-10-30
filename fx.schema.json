@@ -2551,6 +2551,10 @@
             "additionalProperties": false,
             "description": "Remove doubled corners and stray pixels from the shapes (not the particles)."
           },
+          "light": {
+            "type": "boolean",
+            "description": "Write the light track into the frames as a point named light, where the effect's bright pixels are; frames with nothing bright have none. A scene light that follows { instance, point: \"light\" } then moves with the effect's light and goes dark when it does; atlases export the point for game code."
+          },
           "turn": {
             "type": "object",
             "properties": {

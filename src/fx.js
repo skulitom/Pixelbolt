@@ -714,13 +714,16 @@ export function compileEffects(source) {
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
   const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Set();
   // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
-  const shapeWork = { spent: 0 };
+  const shapeWork = { spent: 0 }, pointed = new Set();
   let totalFrames = 0;
   for (const [base, effect] of Object.entries(source.effects)) {
     const path = `fx.effects.${base}`;
     identifier(base, path);
-    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup', 'turn'], path);
+    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup', 'turn', 'light'], path);
+    // light: true writes the light track into the frames as a point named light, which scene lights can follow.
+    const lightPoint = flag(effect.light, `${path}.light`);
     for (const { name, view } of turnsOf(effect, base, path, width, height)) {
+    if (lightPoint) pointed.add(name);
       // Effect names become animation and frame names, which must be unique ignoring case for portable bundles.
       if (seen.has(name.toLowerCase())) fail(path, `effect names must be unique ignoring case; they name animations and frames${name === base ? '' : ` (${name} is a turned copy of ${base})`}`);
       seen.add(name.toLowerCase());
@@ -786,6 +789,11 @@ export function compileEffects(source) {
   for (const [name, animation] of Object.entries(animations)) {
     const data = animation.frames.map(frame => at.get(frame)), effect = metadata.effects[name];
     effect.light = data.map(lightOf);
+    // Frames are named per animation, so each frame takes its own light; a cue of the same name keeps its place.
+    if (pointed.has(name)) animation.frames.forEach((frameName, k) => {
+      const frame = recipe.frames.find(f => f.name === frameName);
+      if (effect.light[k] && !frame.points?.light) frame.points = { ...frame.points, light: effect.light[k].at };
+    });
     if (animation.loop === false) { let n = 0; const last = data[data.length - 1]; for (let i = 3; i < last.length; i += 4) if (last[i]) n++; effect.residue = n; continue; }
     const steps = data.slice(1).map((frame, k) => differ(data[k], frame)), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = steps.length ? Math.max(...steps) : 0;
     effect.seam = { pixels: seam, largestStep: largest };
