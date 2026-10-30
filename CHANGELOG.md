@@ -26,7 +26,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Moving emitters
 
-- An emitter may take a `path` of 2–16 points instead of `at`: its spawn centre moves through them evenly over the effect, round the whole cycle in a loop. A meteor sheds smoke as it falls and a spark traces a circle, without a parent particle to carry the emitter. Turned copies turn the path.
+- An emitter may take a `path` of 2–16 points instead of `at`: its spawn centre moves through them over the emitter's window from `start` to `end`, timed as a layer's keys are over its frames, so a trail keeps pace with a layer that has the same window. A meteor sheds smoke as it falls and a spark traces a circle, without a parent particle to carry the emitter. Turned copies turn the path.
 
 ### Turbulence
 

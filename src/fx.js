@@ -174,8 +174,8 @@ function readEmitter(emitter, path, context, earlier) {
   }
   // A child's at is an offset from its parent particle (default none); a sprite's cues sit at its middle; everyone
   // else's is the spawn centre.
-  // path moves the spawn centre along 2–16 points spread evenly over the effect (round a loop, back to its start if
-  // the path ends there): a meteor shedding smoke as it falls, a spark tracing a circle.
+  // path moves the spawn centre along 2–16 points spread over the emitter's window, start to end, as a layer's keys
+  // are over its frames: a meteor shedding smoke as it falls, a spark tracing a circle.
   let route = null;
   if (emitter.path !== undefined) {
     if (sprite || parent !== null) fail(`${path}.path`, sprite ? 'a sprite emitter spawns on its sprite, which stays put; path moves other emitters' : 'a child spawns on its parent particles; path moves an emitter with its own schedule');
@@ -310,12 +310,16 @@ function simulate(effect, context) {
   // The direction this copy of the effect is turned to (null as drawn): spawn places, spawn offsets, launch angles and
   // attract points turn with it; gravity, drag, floors and sway stay as they are, so particles still fall down the canvas.
   const offset = view ? (dx, dy) => view.vec(dx, dy) : (dx, dy) => [dx, dy], heading = view ? theta => view.dir(theta) : theta => theta;
-  // A moving emitter's centre in frame `cycle`: along its path, evenly over the effect (in a loop, the whole cycle).
-  const along = (route, cycle) => {
-    const s = (loop ? cycle / frames : frames > 1 ? cycle / (frames - 1) : 0) * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
+  // A moving emitter's centre in frame `cycle`: along its path, spread over its window from start to end as a layer's
+  // keys are over its frames (progress (cycle − start) / (end − start)), so a trail keeps pace with a layer that has the
+  // same window, and a loop's path closes on itself.
+  const along = (route, cycle, e) => {
+    // A path round the whole loop wraps, so spawns spread back from frame 0 come from the end of the path.
+    const x = (cycle - e.start) / (e.end - e.start), whole = loop && e.start === 0 && e.end === frames;
+    const s = (whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x))) * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
     return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
   };
-  const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
+  const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle, e) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
   // A loop warms up for as many whole cycles as the longest chain of lives (a child's particles can outlive their parent's
   // by their own life), with spawns keyed by their frame within the cycle and children by their parent, so the particles
   // in flight at frame 0 are exactly those still alive at the end.
@@ -436,7 +440,10 @@ function simulate(effect, context) {
       }
       const key = loop ? cycle : t;
       for (let k = 0; k < count; k++) {
-        add(launch(e, index, centre(e, cycle)[0], centre(e, cycle)[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
+        // A moving emitter spreads a frame's spawns along the stretch it travelled since the last frame, the last at its
+        // place now, so a fast trail stays even instead of leaving one clump per frame.
+        const [cx, cy] = e.route ? centre(e, cycle - 1 + (k + 1) / count) : centre(e, cycle);
+        add(launch(e, index, cx, cy, k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
         if (drawing) stats[index].spawned++;
       }
       if (count) mark(e, t, centre(e, cycle)[0], centre(e, cycle)[1]);

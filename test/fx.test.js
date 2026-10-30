@@ -594,16 +594,20 @@ test('turbulence pushes particles along a still seeded field: they wander apart,
   assert.throws(() => smoke({ strength: 0.4, swirl: 1 }), /turbulence\.swirl/);
 });
 
-test('an emitter with a path moves its spawn centre along it over the effect', () => {
+test('an emitter with a path moves its spawn centre along it over its window, in step with a layer of the same window', () => {
   const trail = (emitter, effect = {}) => compileEffects(effects({ frames: 7, ...effect, emitters: [{ rate: 1, speed: 0, life: 40, shapes: ['dot'], ...emitter }] })).recipe;
   const last = recipe => recipe.frames.at(-1).ops.map(op => [op.x, op.y]);
-  // Standing still, every particle sits on one pixel; moving, they lie along the path, one per frame, end to end.
+  // Standing still, every particle sits on one pixel; moving, frame k spawns at progress k / 7 along the path.
   assert.equal(new Set(last(trail({ at: [2, 12] })).map(String)).size, 1);
-  assert.deepEqual(last(trail({ path: [[2, 12], [20, 12]] })), [0, 3, 6, 9, 12, 15, 18].map(dx => [2 + dx, 12]));
-  // Through several points; a turned copy moves its path too.
-  assert.deepEqual(last(trail({ path: [[2, 2], [14, 2], [14, 14]] })).map(String), ['2,2', '6,2', '10,2', '14,2', '14,6', '14,10', '14,14']);
-  const turned = trail({ path: [[2, 12], [20, 12]] }, { turn: { angles: [180], about: [12, 12] } });
-  assert.deepEqual(turned.frames.at(-1).ops.map(op => [op.x, op.y]), [0, 3, 6, 9, 12, 15, 18].map(dx => [22 - dx, 12]));
+  assert.deepEqual(last(trail({ path: [[2, 12], [23, 12]] })), [0, 3, 6, 9, 12, 15, 18].map(dx => [2 + dx, 12]));
+  // Through several points, and over a window of its own: from start to end, then no more spawns.
+  assert.deepEqual(last(trail({ path: [[2, 2], [14, 2], [14, 14]] }, { frames: 6 })).map(String), ['2,2', '6,2', '10,2', '14,2', '14,6', '14,10']);
+  assert.deepEqual(last(trail({ path: [[2, 12], [14, 12]], start: 1, end: 5 })), [[2, 12], [5, 12], [8, 12], [11, 12]]);
+  // Several spawns in a frame spread along the stretch travelled since the last frame, so a fast trail stays even.
+  assert.deepEqual(last(trail({ path: [[2, 12], [23, 12]], rate: 3 })).map(([x]) => x), [2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+  // A turned copy moves its path too.
+  const turned = trail({ path: [[2, 12], [23, 12]] }, { turn: { angles: [180], about: [12, 12] } });
+  assert.deepEqual(last(turned), [0, 3, 6, 9, 12, 15, 18].map(dx => [22 - dx, 12]));
   assert.throws(() => trail({ at: [2, 12], path: [[2, 12], [20, 12]] }), /leave at out/);
   assert.throws(() => trail({ path: [[2, 12]] }), /expected 2–16 points/);
 });
