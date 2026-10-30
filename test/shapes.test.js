@@ -497,3 +497,18 @@ test('a ring with boil churns its breaks over the window, seamlessly in a loop, 
   assert.ok(churning.seam <= Math.max(...churning.inside), `seam ${churning.seam}, inside ${churning.inside}`);
   assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'ring', look: 'cool', at: [24, 24], radius: 8, boil: 4 }] })), /boil moves the noise; give the ring noise too/);
 });
+
+test('a look with a halo glows on the empty pixels round it, dithered, and without one nothing changes', () => {
+  const orb = (halo, outline) => gridOf(compileEffects(source({ frames: 1, looks: { glow: { colors: ['y', 'W'], thresholds: [0.3, 0.7], ...(outline && { outline }), ...(halo !== undefined && { halo }) } },
+    layers: [{ kind: 'burst', look: 'glow', at: [24, 24], radius: 6, noise: 0 }] })).recipe.frames[0]);
+  const plain = cells(orb(undefined)), keys = grid => cells(grid).map(c => c.key);
+  const thin = cells(orb({ color: 'o' })), soft = cells(orb({ color: 'o', width: 2 })), solid = cells(orb({ color: 'o', width: 2, dither: false }));
+  const glow = list => list.filter(c => c.key === 'o');
+  // The glow adds only its own colour, outside the orb: one pixel wide it is solid; from two, dithered, every other pixel.
+  assert.deepEqual(soft.filter(c => c.key !== 'o'), plain);
+  assert.ok(glow(soft).every(c => (c.x + c.y) % 2 === 0) && glow(solid).length > 1.6 * glow(soft).length, `${glow(soft).length} / ${glow(solid).length}`);
+  assert.ok(glow(thin).length > 0 && glow(thin).every(c => !plain.some(p => p.x === c.x && p.y === c.y)));
+  // Beyond an outline, not in its place.
+  assert.ok(keys(orb({ color: 'o', dither: false }, 'k')).filter(k => k === 'k').length === keys(orb(undefined, 'k')).filter(k => k === 'k').length);
+  assert.throws(() => orb({ width: 2 }), /name the palette key the glow is drawn in/);
+});

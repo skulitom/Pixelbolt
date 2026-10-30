@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Halos
+
+- A shape look takes `halo: { color, width, dither }`: a glow of one colour on the empty pixels within `width` steps of the look, beyond its outline, dithered when two or more pixels wide, so a bright orb or beam glows without a hard ring. Without it, nothing changes.
+
 ### Even trails from fast parents
 
 - Children that spawn while a parent particle lives (`when: "life"`) spread a frame's spawns along the stretch the parent moved since the last frame, the last where it is now, so a fast projectile leaves an even trail instead of one clump per frame. One child a frame spawns where it did before.

@@ -2811,6 +2811,32 @@
           "maxLength": 1,
           "description": "Palette key for a one-pixel outline on the empty pixels beside this look's own."
         },
+        "halo": {
+          "type": "object",
+          "properties": {
+            "color": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1,
+              "description": "Palette key of the glow."
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4,
+              "description": "Pixels it reaches beyond the look and its outline; default 1."
+            },
+            "dither": {
+              "type": "boolean",
+              "description": "Draw every other pixel, a soft glow (the default from width 2); false fills the band. A one-pixel band reads unevenly dithered."
+            }
+          },
+          "required": [
+            "color"
+          ],
+          "additionalProperties": false,
+          "description": "A glow round this look on empty pixels, dithered when two or more pixels wide, so a bright shape glows without a hard ring."
+        },
         "reach": {
           "type": "number",
           "minimum": 0.5,

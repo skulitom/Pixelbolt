@@ -125,7 +125,18 @@ function readShading(value, path, palette) {
 }
 
 function readLook(look, path, palette, seed) {
-  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'reach', 'lit', 'shade', 'front'], path);
+  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'halo', 'light', 'reach', 'lit', 'shade', 'front'], path);
+  // halo: a glow of one colour on the empty pixels within `width` steps of the look (beyond its outline), on every
+  // other pixel when dithered (the default from width 2: a checkerboard on a one-pixel ring would leave whole diagonal
+  // sides solid or empty), so a bright shape glows without a hard ring.
+  let halo = null;
+  if (look.halo !== undefined) {
+    if (look.halo === null || typeof look.halo !== 'object' || Array.isArray(look.halo)) fail(`${path}.halo`, 'expected { color, width, dither }');
+    fields(look.halo, ['color', 'width', 'dither'], `${path}.halo`);
+    if (look.halo.color === undefined) fail(`${path}.halo.color`, 'name the palette key the glow is drawn in');
+    halo = { color: paletteKey(look.halo.color, `${path}.halo.color`, palette).charCodeAt(0), width: integer(look.halo.width ?? 1, `${path}.halo.width`, 1, 4),
+      dither: look.halo.dither === undefined ? (look.halo.width ?? 1) > 1 : (typeof look.halo.dither === 'boolean' ? look.halo.dither : fail(`${path}.halo.dither`, 'expected true or false')) };
+  }
   const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette);
   if (look.light !== undefined && !lit && !shade) fail(`${path}.light`, 'light points the lit and shade bands; add lit or shade too');
   const toward = look.light === undefined ? [-1, -1] : pair(look.light, `${path}.light`, -1, 1), reach = Math.sqrt(toward[0] * toward[0] + toward[1] * toward[1]);
@@ -144,7 +155,7 @@ function readLook(look, path, palette, seed) {
   return {
     codes: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)),
     dither: number(look.dither ?? 0, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed),
-    outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0),
+    outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0), halo,
     lit, shade, light: [toward[0] / reach, toward[1] / reach],
     // front: drawn over the symbol particles (smoke over sparks) instead of under them.
     front: look.front === undefined ? false : (typeof look.front === 'boolean' ? look.front : fail(`${path}.front`, 'expected true or false')),
@@ -801,14 +812,30 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
   if (shapes.cleanup.strays || shapes.cleanup.corners) for (const change of cleanupIds(chars, width, height, shapes.cleanup)) chars[change.index] = change.id;
   // Each look's outline takes the empty pixels beside its own, in look order: only those still drawn after cleanup, so a
   // stray it removed leaves no outline behind.
-  const filled = owner.map((look, c) => (chars[c] ? look : 0));
+  const filled = owner.map((look, c) => (chars[c] ? look : 0)), haloed = shapes.looks.some(look => look.halo && look.front === front), rim = haloed ? new Uint8Array(N) : null;
   shapes.looks.forEach((look, lookIndex) => {
     if (!look.outline || look.front !== front) return;
     const mine = lookIndex + 1;
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i;
       if (chars[c]) continue;
-      if ((i > 0 && filled[c - 1] === mine) || (i < width - 1 && filled[c + 1] === mine) || (j > 0 && filled[c - width] === mine) || (j < height - 1 && filled[c + width] === mine)) chars[c] = look.outline;
+      if ((i > 0 && filled[c - 1] === mine) || (i < width - 1 && filled[c + 1] === mine) || (j > 0 && filled[c - width] === mine) || (j < height - 1 && filled[c + width] === mine)) { chars[c] = look.outline; if (rim) rim[c] = mine; }
+    }
+  });
+  // Halos grow from each look's pixels and outline over empty pixels, a step at a time, in look order.
+  if (haloed) shapes.looks.forEach((look, lookIndex) => {
+    if (!look.halo || look.front !== front) return;
+    const mine = lookIndex + 1, seen = new Uint8Array(N), { color, width: steps, dither } = look.halo;
+    let edge = [];
+    for (let c = 0; c < N; c++) if (filled[c] === mine || rim[c] === mine) { seen[c] = 1; edge.push(c); }
+    for (let step = 0; step < steps && edge.length; step++) {
+      const next = [];
+      for (const c of edge) {
+        const i = c % width, j = (c - i) / width;
+        for (const n of [i > 0 ? c - 1 : -1, i < width - 1 ? c + 1 : -1, j > 0 ? c - width : -1, j < height - 1 ? c + width : -1]) if (n >= 0 && !seen[n] && !chars[n]) { seen[n] = 1; next.push(n); }
+      }
+      for (const n of next) { const i = n % width, j = (n - i) / width; if (!dither || ((i + j) & 1) === 0) chars[n] = color; }
+      edge = next;
     }
   });
   let x0 = width, y0 = height, x1 = -1, y1 = -1;
