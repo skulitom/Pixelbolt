@@ -6,7 +6,8 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Effects in every direction
 
-- `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
+- `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. Layer noise turns with each copy, so a quarter turn is the drawn copy turned, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
+- The fireball reads as a comet: a smaller white-hot core inside yellow and orange bands, a round front with no scraps of flame ahead of it, and a tail that leaves the head orange and cools to red before breaking into wisps. Its head had been one big flat white disc that the tail's dark red met head-on.
 
 ### Poke the pixels: a live fluid toy
 

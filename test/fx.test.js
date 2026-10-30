@@ -477,6 +477,12 @@ test('turned copies draw an effect in each direction with its geometry turned, w
   }
   const box = name => { const g = gridIn(lit.recipe.frames.find(f => f.name === `${name}-0`)); return [g.rows[0].length, g.rows.length]; };
   assert.deepEqual(box('burst-90'), box('burst-0').reverse());
+  // The grain turns with its copy, so a quarter turn of a grainy beam is the drawn one turned, pixel for pixel.
+  const beam = compileEffects(effects({ frames: 2, turn: { angles: [0, 90], about: [12, 12] }, looks: { warm: { colors: ['o', 'y'], thresholds: [0.15, 0.5] } }, layers: [{ kind: 'beam', at: [12, 12], to: [2, 12], width: 7, noise: 0.6, scale: 3 }] }));
+  const drawn = name => cellsOf(gridIn(beam.recipe.frames.find(f => f.name === name))).map(c => `${c.x},${c.y},${c.key}`).sort();
+  const turned = cellsOf(gridIn(beam.recipe.frames.find(f => f.name === 'burst-0-1'))).map(c => `${24 - c.y},${c.x},${c.key}`).sort();
+  assert.ok(turned.length > 10);
+  assert.deepEqual(drawn('burst-90-1'), turned);
 });
 
 test('a turned slash keeps its crescent, a mirror sweeps it the other way, and turn mistakes name the field to fix', () => {

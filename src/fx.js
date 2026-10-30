@@ -643,7 +643,12 @@ function turnsOf(effect, base, path, width, height) {
 function turnView(turn, mirror, [ax, ay]) {
   const [c, s] = QUARTERS[turn] ?? [cosDeg(turn), sinDeg(turn)];
   const vec = (dx, dy) => { const x = mirror ? -dx : dx; return [x * c - dy * s, x * s + dy * c]; };
-  return { turn, mirror, vec, point: ([x, y]) => { const [vx, vy] = vec(x - ax, y - ay); return [ax + vx, ay + vy]; }, dir: theta => (mirror ? 180 - theta : theta) + turn };
+  // Back from the copy to the drawn effect: turned back, then flipped.
+  const unvec = (dx, dy) => { const x = dx * c + dy * s; return [mirror ? -x : x, -dx * s + dy * c]; };
+  return {
+    turn, mirror, vec, point: ([x, y]) => { const [vx, vy] = vec(x - ax, y - ay); return [ax + vx, ay + vy]; }, dir: theta => (mirror ? 180 - theta : theta) + turn,
+    unpoint: ([x, y]) => { const [ux, uy] = unvec(x - ax, y - ay); return [ax + ux, ay + uy]; }
+  };
 }
 const isPair = value => Array.isArray(value) && value.length === 2 && value.every(v => typeof v === 'number' && Number.isFinite(v));
 const negated = value => (Array.isArray(value) ? value.map(v => (typeof v === 'number' ? -v : v)) : typeof value === 'number' ? -value : value);
@@ -724,7 +729,7 @@ export function compileEffects(source) {
         ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
         : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
           : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path };
+      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view };
       // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
       // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
       const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);
