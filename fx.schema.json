@@ -466,6 +466,26 @@
                   "additionalProperties": false,
                   "description": "Wobble, added when drawing (drifting leaves, rising embers)."
                 },
+                "turbulence": {
+                  "type": "object",
+                  "properties": {
+                    "strength": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 4,
+                      "description": "Largest push per frame, in pixels per frame; default 0.3."
+                    },
+                    "scale": {
+                      "type": "number",
+                      "minimum": 2,
+                      "maximum": 64,
+                      "description": "Pixels across one swirl of the field; default 8."
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false,
+                  "description": "Push particles by a smooth seeded field that stays put, so smoke and embers wander organically. It stays put in turned copies too, as gravity does."
+                },
                 "floor": {
                   "type": "integer",
                   "minimum": -4096,

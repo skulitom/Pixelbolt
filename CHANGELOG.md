@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Turbulence
+
+- Emitters take `turbulence: { strength, scale }`: each particle is pushed by a smooth seeded field that stays put, so smoke and embers wander apart organically instead of swaying in step. The field never moves, so loops stay seamless. Without it, nothing changes.
+
 ### Swirling attraction
 
 - An emitter's `attract` takes `swirl`: an acceleration across the line to its point, clockwise when positive, so particles spiral into a portal or circle a target. Mirrored turns swirl the other way. Without it, nothing changes.

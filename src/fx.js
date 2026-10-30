@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -235,6 +235,16 @@ function readEmitter(emitter, path, context, earlier) {
     sway = { amplitude: pair(emitter.sway.amplitude, `${path}.sway.amplitude`, 0, 32), period: number(emitter.sway.period ?? 8, `${path}.sway.period`, 1, 256) };
   }
   if (emitter.bounce !== undefined && emitter.floor === undefined) fail(`${path}.bounce`, 'bounce applies at a floor');
+  // turbulence pushes each particle by a smooth seeded field that stays put, `scale` pixels to a swirl, so smoke and
+  // embers wander organically instead of swinging in step. A still field keeps loops seamless.
+  let turbulence = null;
+  if (emitter.turbulence !== undefined) {
+    if (!isObject(emitter.turbulence)) fail(`${path}.turbulence`, 'expected { strength, scale }');
+    fields(emitter.turbulence, ['strength', 'scale'], `${path}.turbulence`);
+    const strength = number(emitter.turbulence.strength ?? 0.3, `${path}.turbulence.strength`, 0, 4), scale = number(emitter.turbulence.scale ?? 8, `${path}.turbulence.scale`, 2, 64);
+    const salt = hash(context.seed, earlier.length, 0x7475);
+    if (strength) turbulence = { strength, x: ditherThreshold('value', [0, 0], hash(salt, 1), scale), y: ditherThreshold('value', [0, 0], hash(salt, 2), scale) };
+  }
   // The dissolve pattern takes the same forms as the dither operation: a Bayer name, noise (ordered by the effect's
   // seed) or a matrix of ranks.
   const pattern = emitter.pattern ?? 'bayer4', problem = patternProblem(pattern);
@@ -243,7 +253,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -496,6 +506,7 @@ function simulate(effect, context) {
       p.age++;
       if (p.age >= p.life) { if (children[p.index].death.length) events.push([p, 'death']); alive.splice(i, 1); continue; }
       p.vx += e.gravity[0]; p.vy += e.gravity[1];
+      if (e.turbulence) { const { strength, x, y } = e.turbulence; p.vx += (x(p.x, p.y) - 0.5) * 2 * strength; p.vy += (y(p.x, p.y) - 0.5) * 2 * strength; }
       if (e.attract) {
         const pull = pulls[p.index], dx = pull[0] - p.x, dy = pull[1] - p.y, distance = Math.sqrt(dx * dx + dy * dy);
         if (distance > 0.5) {

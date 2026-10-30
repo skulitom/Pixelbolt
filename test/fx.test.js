@@ -579,3 +579,17 @@ test('attract swirl turns particles round the point, clockwise when positive, th
   const turned = orbit(0.6, { angles: [0], mirror: true, about: [10, 14] });
   assert.deepEqual(xs(turned, Object.keys(turned.animations).find(name => name.endsWith('mirror'))), left);
 });
+
+test('turbulence pushes particles along a still seeded field: they wander apart, the same way every time', () => {
+  const smoke = turbulence => compileEffects(effects({ frames: 10, emitters: [{ at: [12, 22], area: [9, 1], burst: 8, angle: 270, speed: 0.6, life: 20, shapes: ['dot'], ...(turbulence !== undefined && { turbulence }) }] })).recipe;
+  const spread = recipe => { const xs = recipe.frames.at(-1).ops.map(op => op.x); return xs.reduce((sum, x) => sum + Math.abs(x - xs.reduce((a, b) => a + b, 0) / xs.length), 0); };
+  const plain = smoke(undefined);
+  assert.deepEqual(smoke({ strength: 0 }), plain);
+  const stirred = smoke({ strength: 0.4, scale: 6 });
+  assert.deepEqual(smoke({ strength: 0.4, scale: 6 }), stirred);
+  assert.notDeepEqual(stirred.frames.at(-1).ops, plain.frames.at(-1).ops);
+  // Rising straight, each particle keeps its column; stirred, they leave them.
+  const moved = stirred.frames.at(-1).ops.filter((op, i) => op.x !== plain.frames.at(-1).ops[i]?.x).length;
+  assert.ok(moved >= 4, `${moved} of 8 moved; spread ${spread(plain)} vs ${spread(stirred)}`);
+  assert.throws(() => smoke({ strength: 0.4, swirl: 1 }), /turbulence\.swirl/);
+});
