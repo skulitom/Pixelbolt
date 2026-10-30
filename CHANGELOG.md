@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### A portal example
+
+- `examples/portal.fx.json`: a seamless looping portal that shows the newest effect tools together: motes that swirl in (`attract.swirl`), wisps that wander (`turbulence`) and cool as they fade (blob `power`), drawn in front of the motes (`front`).
+
 ### Cooling blobs
 
 - A blob emitter takes `power`, a number or 2–8 keys over each particle's life that scale its disc's field: embers and sparks of molten metal cool through their look's bands, white to yellow to red, as they fade. Without it, drops draw as before.
