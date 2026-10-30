@@ -407,6 +407,22 @@
                   "maximum": 1,
                   "description": "Share of velocity lost each frame."
                 },
+                "path": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -4096,
+                      "maximum": 4096
+                    },
+                    "maxItems": 2,
+                    "minItems": 2
+                  },
+                  "maxItems": 16,
+                  "minItems": 2,
+                  "description": "Move the spawn centre through 2–16 points [x, y], spread evenly over the effect (round a loop: end where it starts for a seamless one), instead of at: a meteor shedding smoke, a spark tracing a circle. Not for sprite or child emitters."
+                },
                 "attract": {
                   "type": "object",
                   "properties": {
@@ -786,6 +802,11 @@
                     {
                       "required": [
                         "from"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "path"
                       ]
                     }
                   ]

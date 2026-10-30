@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Moving emitters
+
+- An emitter may take a `path` of 2–16 points instead of `at`: its spawn centre moves through them evenly over the effect, round the whole cycle in a loop. A meteor sheds smoke as it falls and a spark traces a circle, without a parent particle to carry the emitter. Turned copies turn the path.
+
 ### Turbulence
 
 - Emitters take `turbulence: { strength, scale }`: each particle is pushed by a smooth seeded field that stays put, so smoke and embers wander apart organically instead of swaying in step. The field never moves, so loops stay seamless. Without it, nothing changes.

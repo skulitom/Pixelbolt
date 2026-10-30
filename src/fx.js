@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -161,7 +161,16 @@ function readEmitter(emitter, path, context, earlier) {
   const end = integer(emitter.end ?? frames, `${path}.end`, start + 1, frames);
   // A child's at is an offset from its parent particle (default none); a sprite's cues sit at its middle; everyone
   // else's is the spawn centre.
-  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
+  // path moves the spawn centre along 2–16 points spread evenly over the effect (round a loop, back to its start if
+  // the path ends there): a meteor shedding smoke as it falls, a spark tracing a circle.
+  let route = null;
+  if (emitter.path !== undefined) {
+    if (sprite || parent !== null) fail(`${path}.path`, sprite ? 'a sprite emitter spawns on its sprite, which stays put; path moves other emitters' : 'a child spawns on its parent particles; path moves an emitter with its own schedule');
+    if (emitter.at !== undefined) fail(`${path}.at`, 'a moving emitter starts at its path\'s first point; leave at out');
+    if (!Array.isArray(emitter.path) || emitter.path.length < 2 || emitter.path.length > 16) fail(`${path}.path`, 'expected 2–16 points [x, y] for the spawn centre to move through');
+    route = emitter.path.map((p, i) => pair(p, `${path}.path[${i}]`, -4096, 4096));
+  }
+  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : route ? route[0] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
   const spawnShapes = ['area', 'ring', 'line'].filter(key => emitter[key] !== undefined);
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
@@ -253,7 +262,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, parent, when, cue, blob, sprite, release, pixel, drawOnly,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -288,7 +297,12 @@ function simulate(effect, context) {
   // The direction this copy of the effect is turned to (null as drawn): spawn places, spawn offsets, launch angles and
   // attract points turn with it; gravity, drag, floors and sway stay as they are, so particles still fall down the canvas.
   const offset = view ? (dx, dy) => view.vec(dx, dy) : (dx, dy) => [dx, dy], heading = view ? theta => view.dir(theta) : theta => theta;
-  const centre = e => (view ? view.point(e.at) : e.at), pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
+  // A moving emitter's centre in frame `cycle`: along its path, evenly over the effect (in a loop, the whole cycle).
+  const along = (route, cycle) => {
+    const s = (loop ? cycle / frames : frames > 1 ? cycle / (frames - 1) : 0) * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
+    return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
+  };
+  const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));
   // A loop warms up for as many whole cycles as the longest chain of lives (a child's particles can outlive their parent's
   // by their own life), with spawns keyed by their frame within the cycle and children by their parent, so the particles
   // in flight at frame 0 are exactly those still alive at the end.
@@ -406,10 +420,10 @@ function simulate(effect, context) {
       else if (cycle >= e.start && cycle < e.end) { const c = cycle - e.start; count = Math.floor((c + 1) * e.rate + 1e-9) - Math.floor(c * e.rate + 1e-9); }
       const key = loop ? cycle : t;
       for (let k = 0; k < count; k++) {
-        add(launch(e, index, centre(e)[0], centre(e)[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
+        add(launch(e, index, centre(e, cycle)[0], centre(e, cycle)[1], k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, null));
         if (drawing) stats[index].spawned++;
       }
-      if (count) mark(e, t, centre(e)[0], centre(e)[1]);
+      if (count) mark(e, t, centre(e, cycle)[0], centre(e, cycle)[1]);
     });
     // Children that spawn while their parents live: `rate` per frame for each parent particle, from where it is.
     emitters.forEach((e, index) => {

@@ -217,7 +217,7 @@ test('fx emitter fields in the schema match the compiler', async () => {
   for (const key of Object.keys(emitter.properties)) assert.equal(unknown(key), false, `${key} is in the schema but the compiler rejects it`);
   assert.equal(unknown('notAField'), true);
   // A spawn point (or a parent), and symbols to draw, a blob drawn into a look or a sprite's own pixels, not symbols and a blob.
-  assert.deepEqual(emitter.allOf, [{ anyOf: [{ required: ['at'] }, { required: ['from'] }] }, { anyOf: [{ required: ['shapes'] }, { required: ['blob'] }, { required: ['sprite'] }] }, { not: { required: ['shapes', 'blob'] } }]);
+  assert.deepEqual(emitter.allOf, [{ anyOf: [{ required: ['at'] }, { required: ['from'] }, { required: ['path'] }] }, { anyOf: [{ required: ['shapes'] }, { required: ['blob'] }, { required: ['sprite'] }] }, { not: { required: ['shapes', 'blob'] } }]);
 });
 
 const armSource = poses => ({ format: 'pixelforge-poses', version: 1, name: 'arm', width: 16, height: 16, palette: { a: '#f00', b: '#00f', c: '#0f0' },
@@ -592,4 +592,18 @@ test('turbulence pushes particles along a still seeded field: they wander apart,
   const moved = stirred.frames.at(-1).ops.filter((op, i) => op.x !== plain.frames.at(-1).ops[i]?.x).length;
   assert.ok(moved >= 4, `${moved} of 8 moved; spread ${spread(plain)} vs ${spread(stirred)}`);
   assert.throws(() => smoke({ strength: 0.4, swirl: 1 }), /turbulence\.swirl/);
+});
+
+test('an emitter with a path moves its spawn centre along it over the effect', () => {
+  const trail = (emitter, effect = {}) => compileEffects(effects({ frames: 7, ...effect, emitters: [{ rate: 1, speed: 0, life: 40, shapes: ['dot'], ...emitter }] })).recipe;
+  const last = recipe => recipe.frames.at(-1).ops.map(op => [op.x, op.y]);
+  // Standing still, every particle sits on one pixel; moving, they lie along the path, one per frame, end to end.
+  assert.equal(new Set(last(trail({ at: [2, 12] })).map(String)).size, 1);
+  assert.deepEqual(last(trail({ path: [[2, 12], [20, 12]] })), [0, 3, 6, 9, 12, 15, 18].map(dx => [2 + dx, 12]));
+  // Through several points; a turned copy moves its path too.
+  assert.deepEqual(last(trail({ path: [[2, 2], [14, 2], [14, 14]] })).map(String), ['2,2', '6,2', '10,2', '14,2', '14,6', '14,10', '14,14']);
+  const turned = trail({ path: [[2, 12], [20, 12]] }, { turn: { angles: [180], about: [12, 12] } });
+  assert.deepEqual(turned.frames.at(-1).ops.map(op => [op.x, op.y]), [0, 3, 6, 9, 12, 15, 18].map(dx => [22 - dx, 12]));
+  assert.throws(() => trail({ at: [2, 12], path: [[2, 12], [20, 12]] }), /leave at out/);
+  assert.throws(() => trail({ path: [[2, 12]] }), /expected 2–16 points/);
 });
