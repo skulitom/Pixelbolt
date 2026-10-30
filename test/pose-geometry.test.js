@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { performance } from 'node:perf_hooks';
 import { readFile } from 'node:fs/promises';
 import { solveReach, angleDelta } from '../src/pose-geometry.js';
 import { boneEnd, rasterizeBone, rasterizeMass } from '../src/craft.js';
