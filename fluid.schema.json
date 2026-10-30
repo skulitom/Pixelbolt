@@ -331,9 +331,24 @@
                   "minItems": 2
                 },
                 "radius": {
-                  "type": "number",
-                  "minimum": 0.5,
-                  "maximum": 128
+                  "oneOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0.5,
+                      "maximum": 128
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0.5,
+                        "maximum": 128
+                      },
+                      "maxItems": 2,
+                      "minItems": 2
+                    }
+                  ],
+                  "description": "Pixels from at, or [x, y] for an ellipse."
                 },
                 "velocity": {
                   "type": "array",
@@ -386,8 +401,8 @@
               "required": [],
               "additionalProperties": false
             },
-            "maxItems": 16,
-            "description": "Liquid: water at frame 0 in discs (at, radius), boxes (x, y, w, h) or their overlap (both)."
+            "maxItems": 64,
+            "description": "Liquid: water at frame 0 in discs or ellipses (at, radius), boxes (x, y, w, h) or their overlap (both): a disc cut by a box is a dome."
           },
           "walls": {
             "type": "array",
