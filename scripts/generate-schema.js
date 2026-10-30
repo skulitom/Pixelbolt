@@ -256,6 +256,7 @@ const emitter = { ...object({
   start: int(0, 255, 'Frame of the burst or first spawn; default 0.'), end: int(1, 256, 'Frame where a rate emitter stops; default the last.'),
   life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames a particle lives; [min, max] picks per particle. Required to loop or dissolve; otherwise particles live to the end.' },
   angle: range(-3600, 3600, 'Launch direction in degrees, clockwise: 0 right, 90 down, 270 up. Default [0, 360].'), speed: range(0, 64, 'Launch speed in pixels per frame; default 0.'),
+  sweep: { ...array(num(-3600, 3600), 8), minItems: 2, description: '2–8 keys in degrees added to angle over the emitter\'s window, start to end: a flamethrower that swings across ([-40, 40]), a fountain that sways. Not for child emitters.' },
   gravity: vector(-8, 8, 'Acceleration [x, y] added each frame.'), drag: num(0, 1, 'Share of velocity lost each frame.'),
   curve: { type: 'boolean', description: 'Run a path of three or more points through a smooth curve, so an arc has no corner at its middle point.' },
   path: { ...array(vector(-4096, 4096), 16), minItems: 2, description: 'Move the spawn centre through 2–16 points [x, y] over the emitter\'s window from start to end, timed as a layer\'s keys are (round a whole loop: end where it starts), instead of at: a meteor shedding smoke, a spark tracing a circle. Not for sprite or child emitters.' },

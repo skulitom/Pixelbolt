@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Sweeping emitters
+
+- Emitters take `sweep`, 2–8 keys in degrees added to the launch angle over the emitter's window from `start` to `end`: a flamethrower swings across, a fountain sways. Without it, angles are picked as before.
+
 ### Sparks that carry forward
 
 - `inherit` also works on an emitter moving along a `path`: its particles get that share of the emitter's own velocity, so sparks thrown by a projectile carry forward instead of stopping where they were born.

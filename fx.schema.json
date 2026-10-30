@@ -430,6 +430,17 @@
                   ],
                   "description": "Launch speed in pixels per frame; default 0. [min, max] picks per particle."
                 },
+                "sweep": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -3600,
+                    "maximum": 3600
+                  },
+                  "maxItems": 8,
+                  "minItems": 2,
+                  "description": "2–8 keys in degrees added to angle over the emitter's window, start to end: a flamethrower that swings across ([-40, 40]), a fountain that sways. Not for child emitters."
+                },
                 "gravity": {
                   "type": "array",
                   "items": {

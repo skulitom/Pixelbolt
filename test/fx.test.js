@@ -698,3 +698,14 @@ test('a moving emitter\'s particles can inherit its motion along the path', () =
   assert.deepEqual(sparks(0.5), [8, 10, 12, 14]);
   assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [2, 12], rate: 1, life: 2, shapes: ['dot'], inherit: 1 }] })), /applies to a child emitter or one moving along a path/);
 });
+
+test('sweep turns the launch angle by keys over the emitter\'s window, and without it nothing changes', () => {
+  const nozzle = sweep => compileEffects(effects({ frames: 5, emitters: [{ at: [12, 12], rate: 1, angle: 0, speed: 4, life: 2, shapes: ['dot'], ...(sweep && { sweep }) }] }));
+  // One particle a frame, drawn where it was born and then a frame later: read each one's step from frame to frame.
+  const steps = recipe => recipe.frames.slice(1).map(frame => { const [older] = frame.ops; return [older.x - 12, older.y - 12]; });
+  assert.deepEqual(nozzle(undefined).recipe, nozzle(undefined).recipe);
+  assert.deepEqual(steps(nozzle(undefined).recipe), [[4, 0], [4, 0], [4, 0], [4, 0]]);
+  // Keys [0, 90] over five frames: progress k / 5, so the particles launch at 0, 18, 36 and 54 degrees.
+  assert.deepEqual(steps(nozzle([0, 90]).recipe), [[4, 0], [4, 1], [3, 2], [2, 3]]);
+  assert.throws(() => nozzle([10]), /expected 2–8 keys in degrees/);
+});
