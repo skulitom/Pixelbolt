@@ -16,15 +16,15 @@ const PI = 3.141592653589793;
 // a sprite, so they take neither.
 const SPECIFIC = {
   aura: ['symbol', 'width', 'rise', 'noise', 'scale', 'boil'],
-  trail: ['points', 'pivot', 'length', 'width', 'taper', 'fade', 'noise', 'scale'],
+  trail: ['points', 'pivot', 'length', 'width', 'taper', 'fade', 'noise', 'flow', 'scale'],
   ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
-  slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'scale', 'tilt', 'squash'],
-  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'scale', 'tilt', 'squash'],
-  bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal', 'noise', 'scale'],
-  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'scale', 'tilt', 'squash'],
-  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'scale', 'tilt', 'squash'],
+  slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'flow', 'scale', 'tilt', 'squash'],
+  beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale', 'tilt', 'squash'],
+  bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal', 'noise', 'flow', 'scale'],
+  glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'flow', 'scale', 'tilt', 'squash'],
+  star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'flow', 'scale', 'tilt', 'squash'],
   burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
-  stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'scale']
+  stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale']
 };
 const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'floor', 'seed', 'cue'];
 // Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
@@ -248,6 +248,13 @@ function readLayer(layer, path, context, index) {
     // whole pixels, as the dither op's are: craft keeps one noise table per scale for the life of the process.
     Object.assign(out, { ...noisy(0), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
+    // flow moves the grain that many pixels over the window (each cycle, through two fields that take turns, when the
+    // layer spans a loop), so water runs along a stream and a beam's texture streams out.
+    if (layer.flow !== undefined) {
+      if (!out.noise) fail(`${path}.flow`, 'flow moves the noise; give the layer noise too');
+      out.flow = pair(layer.flow, `${path}.flow`, -512, 512);
+      if (cycle) out.grainLater = ditherThreshold('value', [0, 0], hash(out.seed, 2), out.scale);
+    }
     // A turned copy reads the grain where the drawn effect had that pixel.
     if (out.noise && view) out.unturn = view.unpoint;
   }
@@ -281,6 +288,19 @@ function boilFields(layer, s) {
   if (!layer.noiseLater) return { parts: [[layer.noiseAt, layer.boil * s.q, 1]], norm: 1 };
   const a = s.p, b = a < 0.5 ? a + 0.5 : a - 0.5, wa = 1 - Math.abs(2 * a - 1), wb = 1 - wa;
   return { parts: [[layer.noiseAt, layer.boil * a, wa], [layer.noiseLater, layer.boil * b, wb]].filter(part => part[2] > 0), norm: Math.sqrt(wa * wa + wb * wb) };
+}
+// The grain fields a flowing layer reads this frame: one moved by `flow` over a one-shot's window (through its easing),
+// or in a cycle two independent fields half a cycle apart, each moving steadily and fading out as it wraps.
+function flowFields(layer, p, q) {
+  const [fx, fy] = layer.flow;
+  if (!layer.grainLater) return { parts: [[layer.grain, fx * q, fy * q, 1]], norm: 1 };
+  const a = p, b = a < 0.5 ? a + 0.5 : a - 0.5, wa = 1 - Math.abs(2 * a - 1), wb = 1 - wa;
+  return { parts: [[layer.grain, fx * a, fy * a, wa], [layer.grainLater, fx * b, fy * b, wb]].filter(part => part[3] > 0), norm: Math.sqrt(wa * wa + wb * wb) };
+}
+function flowing({ parts, norm }, gx, gy) {
+  let sum = 0;
+  for (const [field, sx, sy, weight] of parts) sum += weight * (field(256 + gx - sx, 256 + gy - sy) - 0.5);
+  return clamp01(0.5 + sum / norm);
 }
 function boiled({ parts, norm }, read) {
   let sum = 0;
@@ -695,6 +715,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
       // A keyed squash draws this frame's squash through a copy of the layer, so painters read it as they always have.
+      const flow = layer.flow ? flowFields(layer, p, q) : null;
       const shaped = layer.squashKeys ? { ...layer, squash: [sample(layer.squashKeys[0], q), sample(layer.squashKeys[1], q)] } : layer;
       PAINTERS[layer.kind](shaped, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, noise, frame: frameOf(shaped, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
@@ -703,7 +724,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         if (layer.grain) {
           // In a turned copy the grain turns too, so every direction breaks up as the drawn one does.
           const [gx, gy] = layer.unturn ? layer.unturn([c % width - dx, Math.floor(c / width) - dy]) : [c % width - round(dx), Math.floor(c / width) - round(dy)];
-          value *= 1 - noise * layer.grain(256 + gx, 256 + gy);
+          value *= 1 - noise * (flow ? flowing(flow, gx, gy) : layer.grain(256 + gx, 256 + gy));
         }
         field[c] = layer.blend === 'add' ? field[c] + value : Math.max(field[c], value);
         any = true;

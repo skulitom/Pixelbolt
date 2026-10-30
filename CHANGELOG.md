@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Flowing noise
+
+- Slash, beam, bolt, glyph, star, stream and trail layers take `flow: [x, y]`: their noise moves that many pixels over the window, or every cycle for a layer spanning a loop, through two fields that take turns so the loop stays seamless. Water runs along a stream instead of its texture standing still. Without `flow`, nothing changes.
+
 ### Keyed squash
 
 - A shape layer's `squash` may be 2–8 `[x, y]` pairs, keys spread over its frames like its other fields: a ground pool can round out as it shrinks instead of thinning to a one-pixel sliver. A single pair draws as before.

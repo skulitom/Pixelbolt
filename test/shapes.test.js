@@ -426,3 +426,12 @@ test('a keyed squash changes over the window, and steady keys draw as the plain 
   assert.deepEqual(pool([[1, 0.5], [1, 0.5]]), pool([1, 0.5]));
   assert.throws(() => pool([[1, 0.5]]), /squash: expected \[x, y\], or 2–8 of them/);
 });
+
+test('flowing noise moves a layer\'s grain over the window, seamlessly in a loop, and without flow nothing changes', () => {
+  const beam = (flow, effect = {}) => compileEffects(source({ frames: 8, ...effect, layers: [{ kind: 'beam', look: 'cool', at: [4, 24], to: [44, 24], width: 10, wobble: 0, noise: 0.7, scale: 3, ...(flow && { flow }) }] })).recipe;
+  // Still grain draws the same frame every time; flowing grain changes from frame to frame.
+  const still = changes(beam(undefined, { loop: true })), moving = changes(beam([16, 0], { loop: true }));
+  assert.ok(still.inside.every(n => n === 0) && moving.inside.every(n => n > 0), `${still.inside} / ${moving.inside}`);
+  assert.ok(moving.seam <= Math.max(...moving.inside), `seam ${moving.seam}, inside ${moving.inside}`);
+  assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'beam', look: 'cool', at: [4, 24], to: [44, 24], flow: [4, 0] }] })), /flow moves the noise; give the layer noise too/);
+});
