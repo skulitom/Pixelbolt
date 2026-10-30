@@ -487,3 +487,12 @@ test('blob power cools a drop through its look\'s bands over its life, and witho
   assert.equal(cooling[0], 'W');
   assert.ok(cooling.includes('y') && cooling.at(-1) === 'o', String(cooling));
 });
+
+test('a ring with boil churns its breaks over the window, seamlessly in a loop, and without boil nothing changes', () => {
+  const shield = (boil, effect = {}) => compileEffects(source({ frames: 8, loop: true, ...effect, layers: [{ kind: 'ring', look: 'cool', at: [24, 24], radius: 14, width: 4, noise: 0.6, ...(boil !== undefined && { boil }) }] })).recipe;
+  const still = changes(shield(undefined)), churning = changes(shield(10));
+  assert.deepEqual(shield(0), shield(undefined));
+  assert.ok(still.inside.every(n => n === 0) && churning.inside.every(n => n > 0), `${still.inside} / ${churning.inside}`);
+  assert.ok(churning.seam <= Math.max(...churning.inside), `seam ${churning.seam}, inside ${churning.inside}`);
+  assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'ring', look: 'cool', at: [24, 24], radius: 8, boil: 4 }] })), /boil moves the noise; give the ring noise too/);
+});

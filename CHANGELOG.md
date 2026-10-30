@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Boiling rings
+
+- A `ring` layer takes `boil`: its breaks churn over the window, or every cycle for a ring spanning a loop, through two fields that take turns so the loop stays seamless. A looping shield bubble or portal rim no longer stands still. Without it, rings draw as before.
+
 ### A portal example
 
 - `examples/portal.fx.json`: a seamless looping portal that shows the newest effect tools together: motes that swirl in (`attract.swirl`), wisps that wander (`turbulence`) and cool as they fade (blob `power`), drawn in front of the motes (`front`).

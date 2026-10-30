@@ -17,7 +17,7 @@ const PI = 3.141592653589793;
 const SPECIFIC = {
   aura: ['symbol', 'around', 'disc', 'width', 'rise', 'noise', 'scale', 'boil'],
   trail: ['points', 'pivot', 'length', 'width', 'taper', 'fade', 'noise', 'flow', 'scale'],
-  ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
+  ring: ['radius', 'width', 'fill', 'noise', 'scale', 'boil', 'tilt', 'squash'],
   slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'flow', 'scale', 'tilt', 'squash'],
   beam: ['to', 'width', 'reveal', 'wobble', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale', 'tilt', 'squash'],
   bolt: ['to', 'width', 'glow', 'jag', 'branches', 'reroll', 'segment', 'reveal', 'noise', 'flow', 'scale'],
@@ -198,7 +198,10 @@ function readLayer(layer, path, context, index) {
   const reveal = fallback => number(layer.reveal ?? (cycle ? 0 : fallback), `${path}.reveal`, 0, 0.95);
   // Noise may be keyed like any other field, so a shape can stand solid and then shatter: `noise` is its strongest key.
   const noisy = fallback => { const noiseKeys = tween(layer.noise ?? fallback, `${path}.noise`, 0, 1); return { noise: maxKey(noiseKeys), noiseKeys }; };
-  if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), ...noisy(0), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64) });
+  if (kind === 'ring') {
+    Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), ...noisy(0), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 0, `${path}.boil`, -512, 512) });
+    if (layer.boil !== undefined && !out.noise) fail(`${path}.boil`, 'boil moves the noise; give the ring noise too');
+  }
   if (kind === 'slash') {
     const arc = pair(required('arc'), `${path}.arc`, -3600, 3600);
     if (arc[0] === arc[1] || Math.abs(arc[1] - arc[0]) > 360) fail(`${path}.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), at most 360 apart; the slash sweeps from the first to the second');
@@ -277,8 +280,8 @@ function readLayer(layer, path, context, index) {
     // A turned copy reads the grain where the drawn effect had that pixel.
     if (out.noise && view) out.unturn = view.unpoint;
   }
-  // A cycling burst or aura boils through a second, independent field half a cycle behind the first (see boilFields).
-  if ((kind === 'burst' || kind === 'aura') && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
+  // A cycling burst, aura or boiling ring boils through a second, independent field half a cycle behind the first (see boilFields).
+  if ((kind === 'burst' || kind === 'aura' || kind === 'ring') && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
   return out;
 }
 
@@ -448,6 +451,9 @@ const PAINTERS = {
   // and seeded angular noise that breaks the band up.
   ring(layer, s, put, W, H) {
     const R = sample(layer.radius, s.q), w = Math.max(0.5, sample(layer.width, s.q)), fill = sample(layer.fill, s.q), rn = maxKey(layer.radius);
+    // boil reads the angular noise farther out over the window, so the breaks churn instead of standing still (in a
+    // cycle through two fields that take turns, seamlessly).
+    const boil = layer.boil ? boilFields(layer, s) : null;
     paintArea(put, W, H, s.cx, s.cy, R * s.frame.reach + 2, s.frame, (u, v) => {
       const d = Math.sqrt(u * u + v * v);
       let value = 0;
@@ -457,7 +463,7 @@ const PAINTERS = {
         if (k <= 1) value = 1 - 0.85 * k;
         if (fill > 0 && R > w) value = Math.max(value, fill * (0.5 + 0.5 * d / (R - w)));
       }
-      if (s.noise > 0 && value > 0 && d > 0) value *= 1 - s.noise * layer.noiseAt(256 + u / d * rn, 256 + v / d * rn);
+      if (s.noise > 0 && value > 0 && d > 0) value *= 1 - s.noise * (boil ? clamp01(0.5 + boiled(boil, (field, by) => field(256 + u / d * (rn + by), 256 + v / d * (rn + by)))) : layer.noiseAt(256 + u / d * rn, 256 + v / d * rn));
       return value;
     });
   },

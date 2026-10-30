@@ -1026,6 +1026,12 @@
                       "minimum": 1,
                       "maximum": 64,
                       "description": "Noise feature size in pixels; default 6."
+                    },
+                    "boil": {
+                      "type": "number",
+                      "minimum": -512,
+                      "maximum": 512,
+                      "description": "Pixels the breaks churn through over the window (each cycle, seamlessly, for a ring spanning a looping effect), so a shield or portal rim never stands still; default 0. Needs noise."
                     }
                   },
                   "required": [
