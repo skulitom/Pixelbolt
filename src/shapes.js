@@ -97,6 +97,24 @@ export function curveSample(keys, q) {
   const p0 = keys[Math.max(0, i - 1)], p1 = keys[i], p2 = keys[i + 1], p3 = keys[Math.min(n, i + 2)];
   return 0.5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (3 * p1 - p0 - 3 * p2 + p3) * u * u * u);
 }
+// A point moving at a steady speed along a path of points, straight between them or through a smooth curve: `t` is the
+// share of the path's length travelled, so points far apart take longer to pass between than points close together.
+// A curve is measured along 16 straight pieces per span. Only + − × ÷ and sqrt, so every engine gives the same bits.
+export function pathWalker(points, curved = false) {
+  const xs = points.map(p => p[0]), ys = points.map(p => p[1]), steps = (points.length - 1) * (curved ? 16 : 1);
+  const marks = Array.from({ length: steps + 1 }, (_, k) => (curved ? [curveSample(xs, k / steps), curveSample(ys, k / steps)] : points[k]));
+  const lengths = [0];
+  for (let k = 1; k <= steps; k++) { const dx = marks[k][0] - marks[k - 1][0], dy = marks[k][1] - marks[k - 1][1]; lengths.push(lengths[k - 1] + Math.sqrt(dx * dx + dy * dy)); }
+  const total = lengths[steps];
+  return t => {
+    if (!(total > 0)) return [marks[0][0], marks[0][1]];
+    const d = Math.min(1, Math.max(0, t)) * total;
+    let low = 0, high = steps - 1;
+    while (low < high) { const mid = (low + high + 1) >> 1; if (lengths[mid] <= d) low = mid; else high = mid - 1; }
+    const span = lengths[low + 1] - lengths[low], u = span > 0 ? (d - lengths[low]) / span : 0;
+    return [marks[low][0] + (marks[low + 1][0] - marks[low][0]) * u, marks[low][1] + (marks[low + 1][1] - marks[low][1]) * u];
+  };
+}
 export function sample(keys, q) {
   if (keys.length === 1) return keys[0];
   const s = q * (keys.length - 1), i = Math.max(0, Math.min(keys.length - 2, Math.floor(s)));
@@ -216,7 +234,8 @@ function readLayer(layer, path, context, index) {
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
     // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
     ...squashOf(layer.squash, `${path}.squash`),
-    ...(route ? driftOf(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), `${path}.path`, 16) : driftOf(layer.drift, `${path}.drift`)),
+    // A path moves the layer at a steady speed along its length (pathWalker), offsets from its first point.
+    ...(route ? { drift: [route.at(-1)[0] - route[0][0], route.at(-1)[1] - route[0][1]], driftKeys: null, walk: pathWalker(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), layer.curve === true) } : driftOf(layer.drift, `${path}.drift`)),
     // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
     curved: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : layer.curve && (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
@@ -770,7 +789,8 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
       const along = layer.curved ? curveSample : sample;
-      const dx = layer.driftKeys ? along(layer.driftKeys[0], q) : layer.drift[0] * q, dy = layer.driftKeys ? along(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
+      const walked = layer.walk ? layer.walk(q) : null;
+      const dx = walked ? walked[0] : layer.driftKeys ? along(layer.driftKeys[0], q) : layer.drift[0] * q, dy = walked ? walked[1] : layer.driftKeys ? along(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
       // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.
       const bottom = layer.floor === null ? height - 1 : Math.min(height - 1, Math.floor(layer.floor));
@@ -841,21 +861,19 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       if ((i > 0 && filled[c - 1] === mine) || (i < width - 1 && filled[c + 1] === mine) || (j > 0 && filled[c - width] === mine) || (j < height - 1 && filled[c + width] === mine)) { chars[c] = look.outline; if (rim) rim[c] = mine; }
     }
   });
-  // Halos grow from each look's pixels and outline over empty pixels, a step at a time, in look order.
+  // Halos take the empty pixels within a round reach of each look's pixels and outline, in look order: an offset (dx, dy)
+  // reaches when dx² + dy² ≤ (width + 0.5)² − 1, so one pixel wide is the four neighbours and wider halos are round.
   if (haloed) shapes.looks.forEach((look, lookIndex) => {
     if (!look.halo || look.front !== front) return;
-    const mine = lookIndex + 1, seen = new Uint8Array(N), { color, width: steps, dither } = look.halo;
-    let edge = [];
-    for (let c = 0; c < N; c++) if (filled[c] === mine || rim[c] === mine) { seen[c] = 1; edge.push(c); }
-    for (let step = 0; step < steps && edge.length; step++) {
-      const next = [];
-      for (const c of edge) {
-        const i = c % width, j = (c - i) / width;
-        for (const n of [i > 0 ? c - 1 : -1, i < width - 1 ? c + 1 : -1, j > 0 ? c - width : -1, j < height - 1 ? c + width : -1]) if (n >= 0 && !seen[n] && !chars[n]) { seen[n] = 1; next.push(n); }
-      }
-      for (const n of next) { const i = n % width, j = (n - i) / width; if (!dither || ((i + j) & 1) === 0) chars[n] = color; }
-      edge = next;
+    const mine = lookIndex + 1, { color, width: reach, dither } = look.halo, limit = (reach + 0.5) * (reach + 0.5) - 1, offsets = [];
+    for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) if ((dx || dy) && dx * dx + dy * dy <= limit) offsets.push([dx, dy]);
+    const source = c => filled[c] === mine || rim[c] === mine, taken = [];
+    for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+      const c = j * width + i;
+      if (chars[c] || (dither && ((i + j) & 1))) continue;
+      if (offsets.some(([dx, dy]) => { const x = i + dx, y = j + dy; return x >= 0 && y >= 0 && x < width && y < height && source(y * width + x); })) taken.push(c);
     }
+    for (const c of taken) chars[c] = color;
   });
   let x0 = width, y0 = height, x1 = -1, y1 = -1;
   for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) if (chars[j * width + i]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }

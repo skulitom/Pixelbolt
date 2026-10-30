@@ -258,3 +258,14 @@ test('a delivery with nothing visible fails the check, with or without expect; a
   const gone = check(small, { animation: 'gone' });
   assert.deepEqual([gone.ok, gone.problems[0].file, gone.problems[0].got], [false, 'animations/gone.png', 'one frame, fully transparent']);
 });
+
+test('the render check does not note the empty frames that end a one-shot, only empty frames elsewhere', () => {
+  const recipe = { version: 1, name: 'puff', width: 2, height: 2, palette: { r: '#ff0000' },
+    frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }, { name: 'gap', ops: [] }, { name: 'end', ops: [] }],
+    animations: { puff: { frames: ['a', 'gap', 'a', 'end'], loop: false } } };
+  // 'end' only ends the one-shot; 'gap' sits between drawn frames.
+  assert.deepEqual(check(recipe).notes, ['Frame "gap" is fully transparent; if that is not intended, draw it (pixel_patch) or take it out of the animation.']);
+  // The same empty frame in a loop is still noted.
+  const looped = structuredClone(recipe); looped.animations.puff.loop = true;
+  assert.match(check(looped).notes[0], /Frames "gap" and "end" are fully transparent|"gap".*"end"/);
+});

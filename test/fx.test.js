@@ -674,7 +674,7 @@ test('a squashed spawn ring lies on the ground as an ellipse, and without squash
 });
 
 test('a spawn ring that grows spawns farther out over the emitter\'s window, in step with a ring layer\'s keys', () => {
-  const wave = grow => compileEffects(effects({ frames: 5, emitters: [{ at: [12, 12], ring: { radius: 10, even: true, ...(grow && { grow }) }, rate: 4, speed: 0, life: 1, shapes: ['dot'] }] })).recipe;
+  const wave = grow => compileEffects(effects({ frames: 5, emitters: [{ at: [12, 12], ring: { radius: 10, arc: [0, 0], ...(grow && { grow }) }, rate: 4, speed: 0, life: 1, shapes: ['dot'] }] })).recipe;
   const reach = frame => Math.max(...frame.ops.map(op => Math.abs(op.x - 12)));
   assert.deepEqual(wave(undefined).frames.map(reach), [10, 10, 10, 10, 10]);
   // Keys [0, 1] over five frames: progress k / 5, so the spawn ring's radius is 0, 2, 4, 6 and 8.
@@ -744,4 +744,14 @@ test('review fixes: even inherited speed, eased progress, private turned symbols
   // An outward ring's launches follow its sweep too.
   const fan = sweep => compileEffects(effects({ frames: 4, emitters: [{ at: [12, 12], ring: { radius: 1, outward: true, arc: [0, 0] }, rate: 1, speed: 4, life: 2, shapes: ['dot'], ...(sweep && { sweep }) }] })).recipe;
   assert.notDeepEqual(fan([0, 90]).frames[3].ops, fan(undefined).frames[3].ops);
+});
+
+test('spawn rings spread evenly: by perimeter when squashed, and a full even ring on a rate emitter turns each frame', () => {
+  const ring = (extra, frames = 1) => compileEffects(effects({ frames, emitters: [{ at: [12, 12], ring: { radius: 10, ...extra }, burst: 400, speed: 0, life: 1, shapes: ['dot'] }] })).recipe;
+  // On a ring squashed to [1, 0.3], random angles crowd its narrow ends; spread by perimeter, the far ends hold their share.
+  const ends = ops => ops.filter(op => Math.abs(op.x - 12) >= 8).length / ops.length;
+  assert.ok(ends(ring({ squash: [1, 0.3] }).frames[0].ops) < 0.34, String(ends(ring({ squash: [1, 0.3] }).frames[0].ops)));
+  // Even spokes on a rate emitter don't repeat from frame to frame; a burst's stay where they were.
+  const spokes = compileEffects(effects({ frames: 3, emitters: [{ at: [12, 12], ring: { radius: 8, even: true }, rate: 4, speed: 0, life: 1, shapes: ['dot'] }] })).recipe.frames.map(frame => frame.ops.map(op => `${op.x},${op.y}`).sort().join(' '));
+  assert.notEqual(spokes[0], spokes[1]);
 });

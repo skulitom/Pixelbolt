@@ -203,7 +203,7 @@ test('the reviewed shape examples match their presets and compile to the pixels 
     fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
     'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
     water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
-    meteor: '66a5be601cb267977c0e1d1e6c2dff1534768d7eb8bbc91a9c20829a49dee994', shield: '2c1d5417387b707381552f4f501216604e41688d4d14eb2be89e6a9a70220353'
+    meteor: 'd22fbfa456bcc5c16f19aca2f4f0a0bab06a1eff372a5d613216678db930058f', shield: 'ddf64b4a1b12c4c1f58535413b1e5ded024c86dd447f3dd7936e272b3f230b81'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
   for (const [name, preset] of Object.entries(spellPresets)) {
@@ -525,10 +525,17 @@ test('curve smooths keyed drift through its keys, and needs three or more of the
   assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'burst', look: 'warm', at: [8, 30], radius: 2, drift: [4, 0], curve: true }] })), /give three or more points/);
 });
 
-test('a layer with a path moves through absolute points, as at with keyed drift would', () => {
+test('a layer with a path moves through absolute points at a steady speed', () => {
   const orb = layer => compileEffects(source({ frames: 6, layers: [{ kind: 'burst', look: 'warm', radius: 3, noise: 0, ease: 'linear', ...layer }] })).recipe.frames;
+  // With equal legs a steady speed is the same as one key per point.
   assert.deepEqual(orb({ path: [[8, 30], [24, 10], [40, 30]] }), orb({ at: [8, 30], drift: [[0, 0], [16, -20], [32, 0]] }));
-  assert.deepEqual(orb({ path: [[8, 30], [24, 10], [40, 30]], curve: true }), orb({ at: [8, 30], drift: [[0, 0], [16, -20], [32, 0]], curve: true }));
+  // With unequal legs a steady speed keeps even steps.
+  const centreX = frame => { const all = cells(gridOf(frame)); return Math.round(all.reduce((a, c) => a + c.x, 0) / all.length); };
+  const uneven = orb({ path: [[4, 30], [8, 30], [44, 30]] }).map(centreX), keyed = orb({ at: [4, 30], drift: [[0, 0], [4, 0], [40, 0]] }).map(centreX);
+  assert.ok(uneven.slice(1).every((x, k) => x - uneven[k] >= 6 && x - uneven[k] <= 7), String(uneven));
+  // One key per point gives the short leg as long as the long one, so halfway the keyed layer lags far behind.
+  assert.ok(uneven[3] > keyed[3] + 4,`${keyed} / ${uneven}`);
+  assert.notDeepEqual(orb({ path: [[8, 30], [24, 10], [40, 30]], curve: true }), orb({ path: [[8, 30], [24, 10], [40, 30]] }));
   assert.throws(() => orb({ at: [8, 30], path: [[8, 30], [40, 30]] }), /leave at and drift out/);
   assert.throws(() => orb({ path: [[8, 30], [40, 30]], curve: true }), /give three or more points/);
 });

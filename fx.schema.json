@@ -3118,7 +3118,7 @@
               "type": "integer",
               "minimum": 1,
               "maximum": 4,
-              "description": "Pixels it reaches beyond the look and its outline; default 1."
+              "description": "Pixels it reaches beyond the look and its outline, measured round (one pixel is the four neighbours); default 1."
             },
             "dither": {
               "type": "boolean",

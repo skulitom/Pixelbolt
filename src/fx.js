@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS, rotateRows } from './craft.js';
-import { readShapes, renderShapes, tween, sample, curveSample, sequenceFrame, atan2Deg } from './shapes.js';
+import { readShapes, renderShapes, tween, sample, sequenceFrame, atan2Deg, pathWalker } from './shapes.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
 
@@ -188,8 +188,9 @@ function readEmitter(emitter, path, context, earlier) {
   // curve: true runs the path through a smooth curve, so a three-point arc has no corner at its middle point.
   const curve = flag(emitter.curve, `${path}.curve`);
   if (curve && (!route || route.length < 3)) fail(`${path}.curve`, 'curve smooths a path; give path three or more points');
-  if (curve) route = { curve: [route.map(p => p[0]), route.map(p => p[1])], points: route };
-  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : route ? (route.points ?? route)[0] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
+  // The spawn centre moves at a steady speed along the path's length (pathWalker).
+  if (route) route = { walk: pathWalker(route, curve), points: route };
+  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : route ? route.points[0] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
   const spawnShapes = ['area', 'ring', 'line'].filter(key => emitter[key] !== undefined);
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
@@ -333,6 +334,22 @@ function facing(e, vx, vy, previous) {
 }
 // The k-th of `count` angles spread evenly over an arc: a full circle has no repeat at its end; a shorter arc reaches
 // both ends (a single particle takes the middle).
+// A share of a squashed ring's perimeter as a parametric angle: random or even angles land evenly along the ellipse
+// instead of crowding its narrow ends. Angles in degrees; the table is built once per squash.
+const perimeters = new Map();
+function perimeterAngle(theta, [sx, sy]) {
+  const key = `${sx},${sy}`;
+  if (!perimeters.has(key)) {
+    const lengths = [0];
+    for (let k = 1; k <= 360; k++) { const dx = sx * (cosDeg(k) - cosDeg(k - 1)), dy = sy * (sinDeg(k) - sinDeg(k - 1)); lengths.push(lengths[k - 1] + Math.sqrt(dx * dx + dy * dy)); }
+    perimeters.set(key, lengths);
+  }
+  const lengths = perimeters.get(key), turns = Math.floor(theta / 360), d = (theta - turns * 360) / 360 * lengths[360];
+  let low = 0, high = 359;
+  while (low < high) { const mid = (low + high + 1) >> 1; if (lengths[mid] <= d) low = mid; else high = mid - 1; }
+  const span = lengths[low + 1] - lengths[low];
+  return turns * 360 + low + (span > 0 ? (d - lengths[low]) / span : 0);
+}
 const evenAngle = ([from, to], k, count) => (to - from >= 360 ? from + 360 * k / count : count === 1 ? (from + to) / 2 : from + (to - from) * k / (count - 1));
 
 // Simulates one effect and returns its frames' operations plus counts for the metadata.
@@ -360,9 +377,7 @@ function simulate(effect, context) {
     // A path round the whole loop wraps, so spawns spread back from frame 0 come from the end of the path.
     const x = (cycle - e.start) / (e.end - e.start), whole = loop && e.start === 0 && e.end === frames;
     const share = whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x)), t = e.ease ? ease(e.ease, share) : share;
-    if (route.curve) return [curveSample(route.curve[0], t), curveSample(route.curve[1], t)];
-    const s = t * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
-    return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
+    return route.walk(t);
   };
   // A moving emitter's velocity at spawn time `at`: its step over the frame before, read inside its window (before start
   // the first frame's step, after end the last's), so every spawn of a frame inherits the same speed and a pause inherits 0.
@@ -430,7 +445,10 @@ function simulate(effect, context) {
       const { cells } = e.sprite.frame(born % frames), c = cell ?? cells[Math.min(cells.length - 1, Math.floor(r(SALT.pixel) * cells.length))];
       x = e.sprite.x + c.x; y = e.sprite.y + c.y; key = c.key;
     } else if (e.ring) {
-      const { radius, arc, even, outward, squash, grow, fill } = e.ring, theta = even ? evenAngle(arc, k, count) : pick(arc, r(SALT.ring));
+      const { radius, arc, even, outward, squash, grow, fill } = e.ring;
+      // A full even ring on a rate emitter turns to a fresh seeded angle each frame, so its spokes don't repeat.
+      const turnBy = even && e.rate !== null && arc[1] - arc[0] >= 360 ? random(seed, index, loop ? born % frames : born, -SALT.ring) * 360 / count : 0, picked = even ? evenAngle(arc, k, count) + turnBy : pick(arc, r(SALT.ring));
+      const theta = squash ? perimeterAngle(picked, squash) : picked;
       const spread = fill ? Math.sqrt(radius[0] * radius[0] + r(SALT.radius) * (radius[1] * radius[1] - radius[0] * radius[0])) : pick(radius, r(SALT.radius));
       const d = grow ? spread * sample(grow, share) : spread;
       const [ox, oy] = squash ? offset(cosDeg(theta) * d * squash[0], sinDeg(theta) * d * squash[1]) : offset(cosDeg(theta) * d, sinDeg(theta) * d);
@@ -832,6 +850,8 @@ export function compileEffects(source) {
       continue;
     }
     if (!Array.isArray(rows) || !rows.length || rows.length > 256 || typeof rows[0] !== 'string' || !rows[0].length || rows.some(row => typeof row !== 'string' || row.length !== rows[0].length)) fail(`fx.symbols.${name}`, 'expected 1–256 equal-width text rows, or { recipe, frame } or { recipe, animation }: a frame or an animation of a recipe or pose source');
+    // Every character is a palette key or a clear one ('.' or a space), checked here so the error names the fx source.
+    rows.forEach((row, j) => { for (const char of row) if (char !== '.' && char !== ' ' && !Object.hasOwn(palette, char)) fail(`fx.symbols.${name}[${j}]`, `unknown palette character ${JSON.stringify(char)}; the palette has ${Object.keys(palette).join(' ')}, and . or a space is clear`); });
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
   const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Set();

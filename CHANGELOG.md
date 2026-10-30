@@ -4,6 +4,15 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fixes from a cold-agent test of the effect tools
+
+- Paths, on emitters and layers, are travelled at a steady speed along their length, so unevenly spaced points no longer make the spawn centre or a layer lurch. Keyed `drift` still gives each key an equal share of the window.
+- `halo` reaches round: one pixel wide it is the four neighbours as before, wider it is a round glow instead of a diamond.
+- A squashed spawn ring spreads particles evenly along its perimeter instead of crowding its narrow ends, and a full `even` ring on a rate emitter turns to a fresh angle each frame instead of repeating fixed spokes.
+- The render check no longer notes the empty frames that end a one-shot, which the effects guide asks for; empty frames elsewhere are still noted.
+- An fx source's symbol with an unknown palette character is reported at `fx.symbols.<name>[row]`, with the palette's keys, instead of at `project.symbols`.
+- The effects guide explains matching a spawn ring's `grow` to a ring layer (the same `start`/`end` numbers as its `frames`, `ease: "out"`, and ending keyed `rate` at 0 rather than shortening the window), and which symbols spin well.
+
 ### Effects lab
 
 - The studio has an **Effects lab** (`/effects.html`), like the Fluid lab: it compiles the seventeen self-contained `pixelforge-fx` presets (spell shapes, the spell library, cel water, particles) in the browser with the same compiler, plays any of a source's effects and turned copies, changes the chosen effect's strength, speed and seed, and downloads the GIF, sprite sheet, recipe or edited source beside the matching CLI and MCP calls. The studio walk checks that every preset compiles in the browser to the same recipe as Node.

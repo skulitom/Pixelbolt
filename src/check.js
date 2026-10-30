@@ -202,7 +202,16 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   // frames (a blink-out, an effect that ends empty) are only a note.
   const blank = empty.length === frames.length ? { file: animation === undefined ? frameFiles : `animations/${animation}.png`, asked: 'something visible', got: `${frames.length === 1 ? 'one frame' : `all ${frames.length} frames`}, fully transparent`,
     fix: 'nothing is drawn inside the canvas. A recipe compiled from a source (poses, fx, fluid, wave) may place its drawing outside it: read the compile warnings, fix the source (a pose part without attach stands at the pose origin plus its at) and compile again. Otherwise pixel_inspect the frames and draw them (pixel_patch), then render again' } : null;
-  const notes = empty.length && !blank ? [`Frame${empty.length === 1 ? '' : 's'} ${list(empty)} ${empty.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${empty.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${empty.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
+  // Empty frames that only end a one-shot (an effect that ends empty, as the effects guide asks) are intended.
+  const ending = new Map(), elsewhere = new Set(), blankFrames = new Set(empty);
+  for (const key of names) {
+    const order = animations[key].frames.map(index => project.frames[index].name);
+    let tail = order.length;
+    if (animations[key].loop === false) while (tail > 0 && blankFrames.has(order[tail - 1])) tail--;
+    order.forEach((frame, i) => { if (blankFrames.has(frame)) (i >= tail ? ending.set(frame, true) : elsewhere.add(frame)); });
+  }
+  const unexpected = empty.filter(frame => !(ending.has(frame) && !elsewhere.has(frame)));
+  const notes = unexpected.length && !blank ? [`Frame${unexpected.length === 1 ? '' : 's'} ${list(unexpected)} ${unexpected.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${unexpected.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${unexpected.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
   const fields = gifs === undefined ? 'width, height, frames, colors, transparent, loop' : 'width, height, frames, colors, transparent, loop, gifScale';
   if (!expect) return { ...(blank && { ok: false }), delivered, ...(blank && { problems: [blank] }), ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };
 
