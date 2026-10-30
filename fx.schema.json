@@ -2037,6 +2037,12 @@
                       "maximum": 64,
                       "description": "Sway waves that pass over the window; default 1."
                     },
+                    "fade": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "Share by which it dims toward the far end of its curve, as a beam's fade does: a tail that cools along its length, with no bright one-pixel tip. Default 0."
+                    },
                     "noise": {
                       "oneOf": [
                         {

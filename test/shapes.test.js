@@ -402,3 +402,12 @@ test('keyed noise lets one layer stand solid and then shatter, and blob sizes va
   assert.ok(new Set(areas(puffs([0.5, 1.5]))).size >= 4, JSON.stringify(areas(puffs([0.5, 1.5]))));
   assert.deepEqual(puffs(1), puffs(undefined));
 });
+
+test('a stream with fade dims toward the far end of its curve, and without it draws as before', () => {
+  const tail = fade => gridOf(compileEffects(source({ frames: 1, layers: [{ kind: 'stream', look: 'warm', at: [6, 24], through: [[42, 24]], width: 8, taper: [1, 0.2], ...(fade !== undefined && { fade }) }] })).recipe.frames[0]);
+  const bright = grid => cells(grid).filter(c => c.key === 'W');
+  // Faded, the white core stops short of the far end, and the far tip is no longer drawn white.
+  const plain = bright(tail()), faded = bright(tail(0.8));
+  assert.ok(Math.max(...faded.map(c => c.x)) < Math.max(...plain.map(c => c.x)) - 8, `${Math.max(...faded.map(c => c.x))} against ${Math.max(...plain.map(c => c.x))}`);
+  assert.deepEqual(tail(0), tail());
+});

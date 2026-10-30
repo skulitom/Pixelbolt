@@ -24,7 +24,7 @@ const SPECIFIC = {
   glyph: ['radius', 'inner', 'points', 'step', 'runes', 'double', 'spin', 'reveal', 'glow', 'fill', 'noise', 'scale', 'tilt', 'squash'],
   star: ['radius', 'points', 'ratio', 'width', 'core', 'angle', 'spin', 'jitter', 'noise', 'scale', 'tilt', 'squash'],
   burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
-  stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'noise', 'scale']
+  stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'scale']
 };
 const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'floor', 'seed', 'cue'];
 // Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
@@ -205,7 +205,8 @@ function readLayer(layer, path, context, index) {
     const points = [out.at, ...layer.through.map((point, i) => pair(point, `${path}.through[${i}]`, -4096, 4096))];
     Object.assign(out, {
       curve: spline(points), width: t('width', 6, 0, 256), taper: tween(layer.taper ?? [0, 1, 0], `${path}.taper`, 0, 2), head: t('head', 1, 0, 1), tail: t('tail', 0, 0, 1),
-      sway: number(layer.sway ?? 0, `${path}.sway`, -64, 64), wavelength: number(layer.wavelength ?? 16, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 1, `${path}.waves`, -64, 64)
+      sway: number(layer.sway ?? 0, `${path}.sway`, -64, 64), wavelength: number(layer.wavelength ?? 16, `${path}.wavelength`, 2, 512), waves: number(layer.waves ?? 1, `${path}.waves`, -64, 64),
+      fade: number(layer.fade ?? 0, `${path}.fade`, 0, 1)
     });
   }
   if (kind === 'aura') {
@@ -574,7 +575,8 @@ const PAINTERS = {
       let x = a[0] + (b[0] - a[0]) * f + s.dx, y = a[1] + (b[1] - a[1]) * f + s.dy;
       if (layer.sway) { const off = layer.sway * (d / L) * sinDeg(360 * (d / layer.wavelength - layer.waves * s.p)); x -= ty * off; y += tx * off; }
       // Each step stamps a cone a little wider than its half width, so even a one-pixel tip keeps its pixels.
-      cone(put, x, y, Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, 1);
+      // fade dims it toward the far end of its curve, as a beam's does, so a tail cools and its tip is not a bright line.
+      cone(put, x, y, Math.max(0.6, w * sample(layer.taper, (d - tail) / span)) + 0.5, layer.fade ? 1 - layer.fade * d / L : 1);
     }
   },
   // A smear behind a moving point (a sword tip): a stroke along a smooth curve through where the point was over the last

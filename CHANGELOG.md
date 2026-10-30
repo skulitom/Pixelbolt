@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Streams that fade
+
+- A `stream` takes `fade`, dimming it toward the far end of its curve as a beam's does: a tail that cools along its length, with no bright one-pixel tip. Default 0, as before.
+
 ### Keyed noise and blob sizes
 
 - A shape layer's `noise` takes keys like its other numeric fields, so one layer can stand solid and then shatter; before, that took two layers.
