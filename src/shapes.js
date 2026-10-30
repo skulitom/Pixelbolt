@@ -117,7 +117,7 @@ function readShading(value, path, palette) {
 }
 
 function readLook(look, path, palette, seed) {
-  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'reach', 'lit', 'shade'], path);
+  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'light', 'reach', 'lit', 'shade', 'front'], path);
   const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette);
   if (look.light !== undefined && !lit && !shade) fail(`${path}.light`, 'light points the lit and shade bands; add lit or shade too');
   const toward = look.light === undefined ? [-1, -1] : pair(look.light, `${path}.light`, -1, 1), reach = Math.sqrt(toward[0] * toward[0] + toward[1] * toward[1]);
@@ -138,6 +138,8 @@ function readLook(look, path, palette, seed) {
     dither: number(look.dither ?? 0, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed),
     outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0),
     lit, shade, light: [toward[0] / reach, toward[1] / reach],
+    // front: drawn over the symbol particles (smoke over sparks) instead of under them.
+    front: look.front === undefined ? false : (typeof look.front === 'boolean' ? look.front : fail(`${path}.front`, 'expected true or false')),
     // How many pixels toward (and away from) the light the field is compared over: 1 keeps a small drop's highlight to
     // a thin rim, 3–4 spreads light over a large body.
     reach: (look.reach !== undefined && !lit && !shade) ? fail(`${path}.reach`, 'reach sizes the lit and shade bands; add lit or shade too') : number(look.reach ?? 2, `${path}.reach`, 0.5, 8)
@@ -706,15 +708,17 @@ function band(value, thresholds) {
 }
 
 /**
- * The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. `blobs` are this frame's blob
+ * The shape grid for frame `f`: { x, y, rows } cropped to its drawn pixels, or null. It holds the looks whose `front`
+ * is `front`: the effect draws one grid under its particles and, when a look asks, one over them. `blobs` are this frame's blob
  * particles, { look, x, y, radius }: each adds a soft disc, (1 − d²/r²)², to its look's field, so drops that touch merge
  * into one body. `work` counts the pixels painting visits across one compile (pass the same object for every frame and
  * effect); past SHAPE_WORK the layer that crosses it is refused.
  */
-export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }) {
+export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false) {
   const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N);
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
+    if (look.front !== front) return;
     const field = new Float64Array(N), scratch = new Float64Array(N);
     let any = false;
     for (const layer of shapes.layers) {
@@ -785,7 +789,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
   // stray it removed leaves no outline behind.
   const filled = owner.map((look, c) => (chars[c] ? look : 0));
   shapes.looks.forEach((look, lookIndex) => {
-    if (!look.outline) return;
+    if (!look.outline || look.front !== front) return;
     const mine = lookIndex + 1;
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i;

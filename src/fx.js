@@ -755,7 +755,9 @@ export function compileEffects(source) {
       const cues = [];
       const names = run.output.map((front, i) => {
         const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork);
-        const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front];
+        // Looks with front: true draw a second grid over the particles.
+        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, true) : null;
+        const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front, ...(over ? [{ op: 'grid', x: over.x, y: over.y, rows: over.rows }] : [])];
         const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
         if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
         frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });

@@ -296,7 +296,8 @@ const shapeLook = object({
   reach: num(0.5, 8, 'Pixels toward (and away from) the light over which lit and shade compare the field; default 2. 1 keeps a small drop\'s highlight to a thin rim, 3–4 spreads light over a large body. Needs lit or shade.'),
   light: vector(-1, 1, 'Direction toward the light for lit and shade, such as [-1, -1] (the default) for the upper left.'),
   lit: { ...shading, description: 'Highlight bands: recolour this look\'s pixels by the share (0–1) by which its field falls two pixels toward the light, 1 on a rim that faces it and 0 inside. Cel water, ice, slime.' },
-  shade: { ...shading, description: 'Shadow bands, as lit but measured away from the light; lit wins where both apply.' }
+  shade: { ...shading, description: 'Shadow bands, as lit but measured away from the light; lit wins where both apply.' },
+  front: { type: 'boolean', description: 'Draw this look over the symbol particles instead of under them (smoke over sparks). Cleanup and outlines work within each of the two passes.' }
 }, ['colors', 'thresholds']);
 const layerCommon = {
   look: { ...id, description: 'The look that colours this layer; may be left out when the effect has one look.' },

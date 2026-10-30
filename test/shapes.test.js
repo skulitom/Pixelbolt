@@ -449,3 +449,18 @@ test('an aura can hug a ring or a disc instead of a sprite, rising from it', () 
   assert.ok(cells(glow({ around: [14, 4], disc: true })).length >= all.length);
   assert.throws(() => glow({ around: [14, 4], symbol: 'ring' }, { ring: rows }), /an aura hugs a symbol or an ellipse \(around\), not both/);
 });
+
+test('a look with front: true draws over the symbol particles, and without it nothing changes', () => {
+  const smoke = front => compileEffects(source({ frames: 1,
+    looks: { cloud: { colors: ['g'], thresholds: [0.3], ...(front !== undefined && { front }) } },
+    emitters: [{ at: [24, 24], burst: 6, shapes: ['spark'], speed: 0, life: 4 }],
+    layers: [{ kind: 'burst', look: 'cloud', at: [24, 24], radius: 8, noise: 0 }] }, { symbols: { spark: ['W'] } })).recipe.frames[0].ops;
+  const kinds = ops => ops.map(op => op.op);
+  const under = smoke(undefined), over = smoke(true);
+  assert.deepEqual(smoke(false), under);
+  // Under: the cloud's grid comes first and the sparks after it; over: the sparks first, the cloud's grid last.
+  assert.equal(kinds(under)[0], 'grid');
+  assert.equal(kinds(over).at(-1), 'grid');
+  assert.deepEqual(under.find(op => op.op === 'grid'), over.find(op => op.op === 'grid'));
+  assert.throws(() => smoke('yes'), /looks\.cloud\.front: expected true or false/);
+});

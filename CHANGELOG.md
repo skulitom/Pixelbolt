@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Looks in front of particles
+
+- A shape look takes `front: true`: it draws in a second grid over the effect's symbol particles instead of under them, so smoke can roll over sparks. Without it, nothing changes.
+
 ### Effects that light a scene
 
 - `light: true` on a `pixelforge-fx` effect writes its light track into its frames as a point named `light`. A scene light that follows `{ instance, point: "light" }` rides the effect's light, lights the normal-mapped sprites around it and goes dark on frames with nothing bright; atlases export the point for game code.

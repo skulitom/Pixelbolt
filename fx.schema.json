@@ -2806,6 +2806,10 @@
           ],
           "additionalProperties": false,
           "description": "Shadow bands, as lit but measured away from the light; lit wins where both apply."
+        },
+        "front": {
+          "type": "boolean",
+          "description": "Draw this look over the symbol particles instead of under them (smoke over sparks). Cleanup and outlines work within each of the two passes."
         }
       },
       "required": [
