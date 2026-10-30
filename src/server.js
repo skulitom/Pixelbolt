@@ -10,6 +10,7 @@ import { createSequence } from './sequence.js';
 import { prepareScene } from './scene.js';
 import { compilePoses } from './authoring.js';
 import { compileWaves } from './wave.js';
+import { EFFECT_PRESETS } from '../studio/effects-controls.js';
 
 const routes = new Map([
   ['/', ['../studio/index.html', 'text/html; charset=utf-8']],
@@ -35,6 +36,13 @@ const routes = new Map([
   ['/fluid-controls.js', ['../studio/fluid-controls.js', 'text/javascript; charset=utf-8']],
   ['/fluid.js', ['./fluid.js', 'text/javascript; charset=utf-8']],
   ['/wave.js', ['./wave.js', 'text/javascript; charset=utf-8']],
+  ['/effects.html', ['../studio/effects.html', 'text/html; charset=utf-8']],
+  ['/effects-lab.js', ['../studio/effects-lab.js', 'text/javascript; charset=utf-8']],
+  ['/effects-controls.js', ['../studio/effects-controls.js', 'text/javascript; charset=utf-8']],
+  ['/fx.js', ['./fx.js', 'text/javascript; charset=utf-8']],
+  ['/shapes.js', ['./shapes.js', 'text/javascript; charset=utf-8']],
+  // The effects lab compiles these sources in the browser.
+  ...EFFECT_PRESETS.map(({ file }) => [`/examples/${file}.fx.json`, [`../examples/${file}.fx.json`, 'application/json']]),
   ...['interference', 'portal'].map(name => [`/examples/${name}.wave.json`, [`../examples/${name}.wave.json`, 'application/json']]),
   ['/schema.json', ['../schema.json', 'application/json']],
   ...['forest-spirit', 'ember', 'coin', 'shrine', 'caption', 'swing', 'effects'].map(name => [`/examples/${name}.json`, [`../examples/${name}.json`, 'application/json']]),

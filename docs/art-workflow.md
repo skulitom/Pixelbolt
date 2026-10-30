@@ -304,6 +304,8 @@ node bin/pixelbolt.js compile examples/effects.fx.json --out output/effects.json
 node bin/pixelbolt.js preview examples/effects.fx.json   # the studio shows the compiled recipe
 ```
 
+The studio's **Effects lab** (`/effects.html`) compiles the reviewed spell and particle presets in the browser: pick one of a source's effects, change its strength (emitter rates and bursts), speed (frame timing) and seed, and download the GIF, sprite sheet, recipe or edited source, with the matching CLI and MCP calls beside them.
+
 Each effect becomes frames `<effect>-0`, `<effect>-1`… and an animation named after the effect. Each emitter says:
 
 - **When it spawns.** A `burst` at frame `start`, or a `rate` of particles per frame until `end`; 2–8 rate keys, such as `[4, 0]`, ramp it from `start` to `end` (a spray that starts thick and tapers).

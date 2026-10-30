@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { readZip } from './build-studio.mjs';
 import { FLUID_PRESETS } from '../studio/fluid-controls.js';
+import { EFFECT_PRESETS } from '../studio/effects-controls.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const options = { app: root, 'browser-arg': [] };
@@ -727,6 +728,46 @@ try {
     assert.equal(sheet.toString('latin1', 1, 4), 'PNG');
     await click('#reset'); await simulated();
     return `buoyancy 0.9 in the saved source; GIF with ${decoded} frames`;
+  });
+
+  // The effects lab compiles pixelforge-fx sources in the page with src/fx.js.
+  console.log('Effects lab');
+  const compiledFx = () => until(`document.getElementById('status').textContent.includes('compiled in')`, 'the effects lab to compile');
+  await check('the effects lab lists its presets, compiles the first in the browser and plays it', async () => {
+    await studio.size(1440, 900); await studio.goto(`${origin}/effects.html`); await compiledFx();
+    assert.deepEqual([await evaluate('document.title'), await evaluate(`document.querySelectorAll('#presets .example').length`), await evaluate(`document.getElementById('error').hidden`)], ['Pixelbolt · Effects lab', EFFECT_PRESETS.length, true]);
+    const first = await evaluate(labPixels);
+    await until(`${labPixels} !== ${first}`, 'the preview to play');
+    assert.match(await text('cli'), /^pixelbolt compile slash-hit\.fx\.json --out slash-hit\.json\n/);
+    await studio.shot('effects-lab');
+    return await text('status');
+  });
+  await check('every effects preset compiles in the browser without an error, to the same recipe as Node', async () => {
+    const names = await evaluate(`[...document.querySelectorAll('#presets .example')].map(button => button.dataset.file)`), seen = [];
+    const { compileEffects } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'fx.js')));
+    const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+    for (const name of names) {
+      await click(`#presets .example[data-file="${name}"]`);
+      await until(`location.hash === '#${name}' && document.getElementById('status').textContent.includes('compiled in')`, `${name} to compile`);
+      assert.equal(await evaluate(`document.getElementById('error').hidden`), true, name);
+      const browser = await evaluate(`(async () => { const { compileEffects } = await import('/fx.js'), source = await (await fetch('/examples/${name}.fx.json')).json(); const bytes = new TextEncoder().encode(JSON.stringify(compileEffects(source).recipe)); return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join(''); })()`);
+      assert.equal(browser, digest(compileEffects(JSON.parse(await readFile(path.join(path.resolve(options.app), 'examples', `${name}.fx.json`), 'utf8'))).recipe), `${name} compiles differently in the browser`);
+      seen.push(`${name} ${(await text('status')).match(/compiled in (\d+) ms/)[1]} ms`);
+    }
+    return seen.join(', ');
+  });
+  await check('Strength recompiles the chosen effect, and the edited source and GIF download', async () => {
+    await click('#presets .example[data-file="meteor"]');
+    await until(`location.hash === '#meteor' && document.getElementById('slider-strength') !== null && document.getElementById('status').textContent.includes('compiled in')`, 'the meteor to compile');
+    const particles = () => evaluate(`Number(document.getElementById('status').textContent.match(/(\\d+) particles/)[1])`), before = await particles();
+    await evaluate(`(() => { const input = document.getElementById('slider-strength'); input.value = '2'; input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+    await until(`document.getElementById('status').textContent.includes('compiled in') && Number(document.getElementById('status').textContent.match(/(\\d+) particles/)[1]) > ${before}`, 'the stronger meteor to compile');
+    const source = JSON.parse(await readFile(await download(() => click('#fx-source')), 'utf8'));
+    assert.equal(source.effects.meteor.emitters.find(emitter => emitter.burst !== undefined).burst, 28);
+    const gif = await readFile(await download(() => click('#gif')));
+    assert.equal(gif.toString('latin1', 0, 6), 'GIF89a');
+    await click('#reset'); await compiledFx();
+    return `${before} → ${await particles()} particles after reset; bursts doubled in the saved source`;
   });
 
   console.log('Afterwards');

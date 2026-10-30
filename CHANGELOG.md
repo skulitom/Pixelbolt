@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects lab
+
+- The studio has an **Effects lab** (`/effects.html`), like the Fluid lab: it compiles the seventeen self-contained `pixelforge-fx` presets (spell shapes, the spell library, cel water, particles) in the browser with the same compiler, plays any of a source's effects and turned copies, changes the chosen effect's strength, speed and seed, and downloads the GIF, sprite sheet, recipe or edited source beside the matching CLI and MCP calls. The studio walk checks that every preset compiles in the browser to the same recipe as Node.
+
 ### Emitter ease and fixes from a review of the new effect tools
 
 - Emitters take `ease`, which moves `path`, ring `grow`, `sweep` and `throttle` over the window as a layer's ease moves its keys (default linear), so a trail given its head's `ease` keeps pace with it.
