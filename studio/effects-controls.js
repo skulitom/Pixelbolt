@@ -36,7 +36,11 @@ function faster(duration, speed) {
   return { ...duration, from: ms(duration.from, speed), to: ms(duration.to, speed) };
 }
 // The animation an effect's controls apply to: a turned copy (fireball-45) edits the effect it was turned from.
-export const effectOf = (metadata, animation) => metadata.effects[animation]?.turn?.of ?? animation;
+// A part drawn behind or in front of a character (buff-back) edits the effect it is part of, which may itself be a turned copy.
+export const effectOf = (metadata, animation) => {
+  const effect = metadata.effects[animation];
+  return effect?.part ? effectOf(metadata, effect.part.of) : effect?.turn?.of ?? animation;
+};
 // The source with the controls and seed applied to one effect; settings left at rest are not written.
 export function editedEffects(original, name, values, seed) {
   const source = structuredClone(original), effect = source.effects[name], before = original.effects[name];

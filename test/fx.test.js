@@ -445,7 +445,7 @@ test('the swing trail example compiles from the swing\'s pose source to the pixe
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.swing.cues, [{ name: 'hit', frame: 3, at: [32, 31] }]);
   // This changes with any change to the trail, sprite or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '553f1d57519cdcb55dd5b64f88842e97bd2a86959a0bff5dfeac85ba86dc93b9');
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '8c7d31745a8dd336193ce1f60829e4ce384bf87b475764ce5ee43079c5f802ce');
 });
 
 test('a fluid or a wave can play inside an effect as a sprite, drawing exactly the pixels it draws on its own', async () => {
@@ -472,7 +472,7 @@ test('the fluid blast example compiles from the explosion fluid source to the pi
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.blast.cues.map(cue => cue.name), ['boom']);
   // This changes with any change to the fluid, shape or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '10784dad44b78f0752cb35d341765c4382032adbb1bc64ed74d84c9da58ec8b0');
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '57828df3f2378497fd07e365e26384cfdde62ea7fd42fd430afec9105f748fe9');
 });
 
 // ---- Turned copies: one effect drawn in several directions ---------------------------------------------------------------

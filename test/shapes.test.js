@@ -199,10 +199,10 @@ test('effects without shape layers keep their exact output', async () => {
 test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
   // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
   const golden = {
-    'slash-hit': 'ee88be08c01b53e36903ba3baf762a650731c738a0d894c8fe33a1e5fcb0ce75', 'fire-explosion': '6a98f8e6e928da3247bb01795e45a714ad3f10bd6b09f2f4b2045ef25fe95171',
+    'slash-hit': '0bb14ca1bc04f623b94d262c8d06d0b93dba92fd034af0a461471e0d9cc3461f', 'fire-explosion': '6a98f8e6e928da3247bb01795e45a714ad3f10bd6b09f2f4b2045ef25fe95171',
     fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
-    'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
-    water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
+    'lightning-strike': 'ab6ae2bdb6a78fc93ee43d9b3e249d5370ade084af293902370f6ecb581b4527', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
+    water: 'fa592cca7def467c308bcdfeff3a3f815abb451f17467f37078a419689913483', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
     meteor: 'd22fbfa456bcc5c16f19aca2f4f0a0bab06a1eff372a5d613216678db930058f', shield: 'ddf64b4a1b12c4c1f58535413b1e5ded024c86dd447f3dd7936e272b3f230b81'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));

@@ -55,6 +55,12 @@ const clear = char => char === '.' || char === ' ';
 const LIMITS = { effects: 64, emitters: 16, spawned: 4096, alive: 1024, operations: 20000 };
 // When a child emitter spawns: where a parent particle ends, where it first lands on its floor, or every frame it lives.
 export const FX_EVENTS = ['death', 'floor', 'life'];
+// Where an emitter's particles draw relative to a character standing in the effect: in front, behind, split by where
+// each is born (above its spawn centre behind, the rest in front), or `between`, a stand-in sprite drawn between the two.
+export const EMITTER_DEPTHS = ['front', 'back', 'split', 'between'];
+// The canvas sides, and the direction each faces in degrees clockwise (0 right, 90 down), for turning `edges`.
+export const EDGE_SIDES = ['left', 'right', 'top', 'bottom'];
+const SIDE_ANGLE = { right: 0, bottom: 90, left: 180, top: 270 };
 const flag = (value, path) => {
   if (value !== undefined && typeof value !== 'boolean') fail(path, 'expected true or false');
   return value === true;
@@ -95,7 +101,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground', 'kick'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground', 'kick', 'depth'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -141,6 +147,10 @@ function readEmitter(emitter, path, context, earlier) {
   // A sprite emitter with draw: true and no schedule only draws the sprite (an animation frame for frame, say).
   const drawOnly = sprite !== null && sprite.draw === true && !schedules.length;
   if (schedules.length !== 1 && !drawOnly) fail(path, sprite ? 'use exactly one of burst (particles at start), rate (particles per frame) or release (each pixel leaves once)' : 'use exactly one of burst (particles at start) or rate (particles per frame)');
+  // depth: null when unset, so a child takes its parent particle's side.
+  const depth = emitter.depth === undefined ? null : EMITTER_DEPTHS.includes(emitter.depth) ? emitter.depth : fail(`${path}.depth`, 'expected front, back, split (particles born above the spawn centre go behind a character, the rest in front) or between (a stand-in sprite drawn between the two, to review the effect on a character)');
+  if (depth === 'between' && !drawOnly) fail(`${path}.depth`, 'between is for a stand-in: a sprite emitter that only draws (sprite with draw: true, and no burst, rate or release); the game draws its own character there');
+  if (depth === 'split' && sprite) fail(`${path}.depth`, 'split goes by where each particle is born, above or below its spawn centre; a sprite emitter\'s pixels go to one side, so use back or front');
   // A child spawns from the particles of an earlier emitter, at an event, instead of on a schedule of its own.
   let parent = null, when = null;
   if (emitter.from !== undefined) {
@@ -308,7 +318,7 @@ function readEmitter(emitter, path, context, earlier) {
   const area = emitter.area === undefined ? [1, 1] : point(emitter.area, `${path}.area`);
   if (area.some(n => n < 1 || n > 256)) fail(`${path}.area`, 'expected a spawn box from 1 to 256 pixels per side');
   return {
-    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, throttle, ease: easing, parent, when, cue, blob, sprite, release, pixel, drawOnly,
+    name: emitter.name, at, area, ring, line, start, end, variants, face, play, life, remaps, tint, trail, attract, sway, turbulence, route, spin, sweep, throttle, ease: easing, parent, when, cue, blob, sprite, release, pixel, drawOnly, depth,
     directions: face ? variants.map((_, k) => [cosDeg(360 * k / variants.length), sinDeg(360 * k / variants.length)]) : null,
     inherit: number(emitter.inherit ?? 0, `${path}.inherit`, 0, 2), behind: flag(emitter.behind, `${path}.behind`),
     burst: emitter.burst === undefined ? null : integer(emitter.burst, `${path}.burst`, 1, 1024),
@@ -402,7 +412,11 @@ function simulate(effect, context) {
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
   const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
-  const alive = [], output = Array.from({ length: frames }, () => []), behind = Array.from({ length: frames }, () => []), blobs = Array.from({ length: frames }, () => []), cues = Array.from({ length: frames }, () => ({}));
+  const perFrame = () => Array.from({ length: frames }, () => []);
+  const alive = [], output = perFrame(), behind = perFrame(), blobs = perFrame(), cues = Array.from({ length: frames }, () => ({}));
+  // Behind a character: the back particles' own two passes; between: stand-in sprites. Both stay empty unless an emitter
+  // asks for them.
+  const back = { output: perFrame(), behind: perFrame() }, between = perFrame();
   const stats = emitters.map(e => ({ ...(e.name && { name: e.name }), spawned: 0, maxAlive: 0, ...(e.sprite && { pixels: e.sprite.frames[0].cells.length }) }));
   let operations = 0, culled = 0;
   // A release gives each of the sprite's pixels the frame it leaves on: where the sweep's front reaches it between start
@@ -473,8 +487,11 @@ function simulate(effect, context) {
     let vx = cosDeg(angle) * speed, vy = sinDeg(angle) * speed;
     if (e.kick) { const [kx, ky] = offset(e.kick[0], e.kick[1]); vx += kx; vy += ky; }
     if (parent && e.inherit) { vx += parent.vx * e.inherit; vy += parent.vy * e.inherit; }
+    // Behind a character: a back emitter's particles, a split one's born above its spawn centre, and a child with no
+    // depth of its own whose parent particle is behind.
+    const behindCharacter = e.depth === 'back' || (e.depth === 'split' && y < cy) || (e.depth === null && e.parent !== null && parent?.back === true);
     return {
-      emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key,
+      emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key, back: behindCharacter,
       remap: e.remaps.length ? e.remaps[Math.min(e.remaps.length - 1, Math.floor(r(SALT.remap) * e.remaps.length))] : null,
       phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1, floor: e.ground !== null ? y + e.ground : e.floor,
       ...(e.spin && { turn: r(SALT.turn) * 360, spin: pick(e.spin, r(SALT.spin)) })
@@ -562,11 +579,11 @@ function simulate(effect, context) {
     if (drawing) for (const pass of layered ? [true, false] : [null]) alive.forEach((p, i) => {
       const e = p.emitter;
       if (pass !== null && e.behind !== pass) return;
-      const [X, Y] = places[i], ops = (pass === true ? behind : output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
+      const [X, Y] = places[i], side = p.back ? back : { output, behind }, ops = (pass === true ? side.behind : side.output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
       if (e.blob) {
         // Its radius moves through the keys over its life; the shape layers' grid draws it.
         const age = Math.min(1, p.age / Math.max(1, span - 1)), radius = sample(e.blob.radius, age) * p.size, [, , x, y] = places[i], power = e.blob.power ? sample(e.blob.power, age) : 1;
-        if (radius > 0 && power > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius, ...(power !== 1 && { power }) });
+        if (radius > 0 && power > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius, ...(power !== 1 && { power }), ...(p.back && { back: true }) });
         else culled++;
         return;
       }
@@ -612,8 +629,9 @@ function simulate(effect, context) {
     });
     // Each sprite emitter's grid (what is left of its sprite, under its pixel particles, oldest first) is cropped to its
     // drawn pixels and goes first in its pass, in emitter order, under the particles drawn as symbols.
+    // A stand-in (depth between) draws only between the back and the front, never in either.
     if (drawing) {
-      const leading = { true: [], false: [] };
+      const leading = { true: [], false: [] }, leadingBack = { true: [], false: [] };
       emitters.forEach((e, index) => {
         const s = sheets[index];
         if (!s?.any) return;
@@ -621,11 +639,15 @@ function simulate(effect, context) {
         for (let c = 0; c < s.chars.length; c++) if (s.chars[c]) { const x = c % width, y = (c - x) / width; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         const rows = [];
         for (let y = y0; y <= y1; y++) { let row = ''; for (let x = x0; x <= x1; x++) { const code = s.chars[y * width + x]; row += code ? String.fromCharCode(code) : '.'; } rows.push(row); }
-        leading[e.behind].push({ op: 'grid', x: x0, y: y0, rows });
+        const grid = { op: 'grid', x: x0, y: y0, rows };
+        if (e.depth === 'between') between[t - first].push(grid);
+        else (e.depth === 'back' ? leadingBack : leading)[e.behind].push(grid);
         operations++;
       });
       output[t - first].unshift(...leading.false);
       behind[t - first].unshift(...leading.true);
+      back.output[t - first].unshift(...leadingBack.false);
+      back.behind[t - first].unshift(...leadingBack.true);
     }
     // Advance: velocity gains gravity and attraction, loses drag, moves the particle, then meets the floor. A particle
     // that ends or first lands hands the event to its children, which appear there in the next frame.
@@ -658,7 +680,7 @@ function simulate(effect, context) {
     for (let k = events.length - 1; k >= 0; k--) { const [q, when] = events[k]; for (const index of children[q.index][when]) spawnChildren(index, q, emitters[index].burst, t + 1); }
     if (operations > LIMITS.operations) fail(context.path, `the effect needs more than ${LIMITS.operations} drawing operations; lower counts or frames`);
   }
-  return { output, behind, blobs, operations, culled, stats, cues };
+  return { output, behind, back, between, blobs, operations, culled, stats, cues };
 }
 
 // Frame durations eased from `from` to `to` milliseconds across the effect: `in` stays quick and slows at the end,
@@ -862,26 +884,32 @@ export function compileEffects(source) {
     rows.forEach((row, j) => { for (const char of row) if (char !== '.' && char !== ' ' && !Object.hasOwn(palette, char)) fail(`fx.symbols.${name}[${j}]`, `unknown palette character ${JSON.stringify(char)}; the palette has ${Object.keys(palette).join(' ')}, and . or a space is clear`); });
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
-  const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Set();
+  const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Map();
   // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
-  const shapeWork = { spent: 0 }, pointed = new Set();
+  // touching: the canvas sides each animation may draw on (its effect's edges, turned with a turned copy).
+  const shapeWork = { spent: 0 }, pointed = new Set(), touching = new Map();
   let totalFrames = 0;
   for (const [base, effect] of Object.entries(source.effects)) {
     const path = `fx.effects.${base}`;
     identifier(base, path);
-    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup', 'turn', 'light'], path);
+    fields(effect, ['frames', 'duration', 'loop', 'seed', 'emitters', 'layers', 'looks', 'cleanup', 'turn', 'light', 'edges'], path);
     // light: true writes the light track into the frames as a point named light, which scene lights can follow.
-    const lightPoint = flag(effect.light, `${path}.light`);
+    const lightPoint = flag(effect.light, `${path}.light`), edges = readEdges(effect.edges, `${path}.edges`);
     for (const { name, view } of turnsOf(effect, base, path, width, height)) {
     if (lightPoint) pointed.add(name);
       // Effect names become animation and frame names, which must be unique ignoring case for portable bundles.
-      if (seen.has(name.toLowerCase())) fail(path, `effect names must be unique ignoring case; they name animations and frames${name === base ? '' : ` (${name} is a turned copy of ${base})`}`);
-      seen.add(name.toLowerCase());
+      // seen maps each name taken to the effect whose back or front part it is, or to null.
+      if (seen.has(name.toLowerCase())) fail(path, seen.get(name.toLowerCase()) ? `${seen.get(name.toLowerCase())} draws something behind a character, so it also makes the animation ${name}; rename one of the two effects` : `effect names must be unique ignoring case; they name animations and frames${name === base ? '' : ` (${name} is a turned copy of ${base})`}`);
+      seen.set(name.toLowerCase(), null);
+      touching.set(name, turnedEdges(edges, view));
       const count = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop ?? false;
       // The recipe's limits on frames, checked before anything is simulated or painted rather than after.
-      totalFrames += count;
-      if (totalFrames > 256) fail('fx.effects', `the effects make ${totalFrames} frames; a recipe holds at most 256`);
-      if (totalFrames * width * height > FRAME_AREA) fail('fx.effects', `the effects make ${totalFrames} frames of ${width}×${height}, more than the 4,194,304 pixels a recipe's frames share; use fewer frames or a smaller canvas`);
+      const budget = added => {
+        totalFrames += added;
+        if (totalFrames > 256) fail('fx.effects', `the effects make ${totalFrames} frames; a recipe holds at most 256`);
+        if (totalFrames * width * height > FRAME_AREA) fail('fx.effects', `the effects make ${totalFrames} frames of ${width}×${height}, more than the 4,194,304 pixels a recipe's frames share; use fewer frames or a smaller canvas`);
+      };
+      budget(count);
       if (typeof loop !== 'boolean') fail(`${path}.loop`, 'expected a boolean');
       const durations = Array.isArray(effect.duration)
         ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
@@ -896,25 +924,50 @@ export function compileEffects(source) {
       if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
       const emitters = [];
       list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
+      // An effect with anything behind a character (or a stand-in between) also compiles <name>-back and <name>-front:
+      // what a game draws under its character and over it. The whole effect draws the back, the stand-in, then the front.
+      const split = emitters.some(e => e.depth !== null && e.depth !== 'front') || (shapes?.layers.some(l => l.depth !== 'front') ?? false);
+      const parts = split ? { back: `${name}-back`, front: `${name}-front` } : null;
+      if (parts) {
+        for (const part of Object.values(parts)) {
+          if (seen.has(part.toLowerCase())) fail(path, `${name} draws something behind a character, so it also makes the animation ${part}; another effect has that name, so rename one`);
+          seen.set(part.toLowerCase(), name);
+        }
+        budget(count * 2);
+      }
+      const empty = () => Array.from({ length: count }, () => []);
       const run = emitters.length ? simulate({ frames: count, loop, seed, emitters, view }, context)
-        : { output: Array.from({ length: count }, () => []), behind: Array.from({ length: count }, () => []), blobs: Array.from({ length: count }, () => []), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
+        : { output: empty(), behind: empty(), back: { output: empty(), behind: empty() }, between: empty(), blobs: empty(), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
       if (shapes) for (const layer of shapes.layers) if (layer.cue && !Object.hasOwn(run.cues[layer.t0], layer.cue)) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
       const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
       if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
       // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
-      const cues = [];
+      const cues = [], partFrames = { back: [], front: [] };
+      const gridOp = grid => (grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []);
       const names = run.output.map((front, i) => {
-        const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork);
+        const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, false, split);
         // Looks with front: true draw a second grid over the particles.
-        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, true) : null;
-        const ops = [...run.behind[i], ...(grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []), ...front, ...(over ? [{ op: 'grid', x: over.x, y: over.y, rows: over.rows }] : [])];
+        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, true, split) : null;
         const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
         if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
+        let ops;
+        if (parts) {
+          // Each side keeps the usual order (behind particles, shapes, particles, front looks), and the back side goes first.
+          const backOps = [...run.back.behind[i], ...gridOp(grid?.parts.back), ...run.back.output[i], ...gridOp(over?.parts.back)];
+          const frontOps = [...run.behind[i], ...gridOp(grid?.parts.front), ...front, ...gridOp(over?.parts.front)];
+          ops = [...backOps, ...run.between[i], ...frontOps];
+          for (const [side, sideOps] of [['back', backOps], ['front', frontOps]]) partFrames[side].push({ name: `${parts[side]}-${i}`, duration: durations[i], ...(points && { points }), ...(sideOps.length && { ops: sideOps }) });
+        } else ops = [...run.behind[i], ...gridOp(grid), ...front, ...gridOp(over)];
         frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
         return `${name}-${i}`;
       });
       animations[name] = { frames: names, ...(!loop && { loop: false }) };
-      metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, ...(view !== undefined && name !== base && { turn: { of: base, angle: view?.turn ?? 0, mirror: view?.mirror ?? false } }), operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
+      metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, ...(view !== undefined && name !== base && { turn: { of: base, angle: view?.turn ?? 0, mirror: view?.mirror ?? false } }), ...(parts && { parts }), operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
+      if (parts) for (const side of ['back', 'front']) {
+        frames.push(...partFrames[side]);
+        animations[parts[side]] = { frames: partFrames[side].map(frame => frame.name), ...(!loop && { loop: false }) };
+        metadata.effects[parts[side]] = { frames: count, loop, seed: effect.seed ?? 1, part: { of: name, side } };
+      }
     }
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
@@ -939,18 +992,62 @@ export function compileEffects(source) {
   // frame still draws (0 when it ends empty).
   const project = renderProject(recipe), at = new Map(recipe.frames.map((frame, i) => [frame.name, project.frames[i].data])), warnings = [];
   const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
+  // The pixels a frame draws on each side's outermost row or column.
+  const onEdges = data => {
+    const drawn = (x, y) => data[(y * width + x) * 4 + 3] !== 0, count = { left: 0, right: 0, top: 0, bottom: 0 };
+    for (let x = 0; x < width; x++) { if (drawn(x, 0)) count.top++; if (drawn(x, height - 1)) count.bottom++; }
+    for (let y = 0; y < height; y++) { if (drawn(0, y)) count.left++; if (drawn(width - 1, y)) count.right++; }
+    return count;
+  };
+  const frameOf = new Map(recipe.frames.map(frame => [frame.name, frame]));
   for (const [name, animation] of Object.entries(animations)) {
-    const data = animation.frames.map(frame => at.get(frame)), effect = metadata.effects[name];
+    const data = animation.frames.map(frame => at.get(frame)), effect = metadata.effects[name], of = effect.turn?.of ?? name;
+    const residue = () => { let n = 0; const last = data[data.length - 1]; for (let i = 3; i < last.length; i += 4) if (last[i]) n++; return n; };
+    const steps = () => data.slice(1).map((frame, k) => differ(data[k], frame));
+    // A part (what goes behind a character, or in front) is reviewed with its whole effect; it gets its own residue or seam.
+    if (effect.part) {
+      if (animation.loop === false) effect.residue = residue();
+      else { const all = steps(); effect.seam = { pixels: data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largestStep: all.length ? Math.max(...all) : 0 }; }
+      continue;
+    }
     effect.light = data.map(lightOf);
-    // Frames are named per animation, so each frame takes its own light; a cue of the same name keeps its place.
+    // Frames are named per animation, so each frame takes its own light; a cue of the same name keeps its place. The
+    // parts' frames take the whole effect's light, so game code drawing them finds it too.
     if (pointed.has(name)) animation.frames.forEach((frameName, k) => {
-      const frame = recipe.frames.find(f => f.name === frameName);
-      if (effect.light[k] && !frame.points?.light) frame.points = { ...frame.points, light: effect.light[k].at };
+      if (!effect.light[k]) return;
+      for (const target of [frameName, ...(effect.parts ? [`${effect.parts.back}-${k}`, `${effect.parts.front}-${k}`] : [])]) {
+        const frame = frameOf.get(target);
+        if (!frame.points?.light) frame.points = { ...frame.points, light: effect.light[k].at };
+      }
     });
-    if (animation.loop === false) { let n = 0; const last = data[data.length - 1]; for (let i = 3; i < last.length; i += 4) if (last[i]) n++; effect.residue = n; continue; }
-    const steps = data.slice(1).map((frame, k) => differ(data[k], frame)), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = steps.length ? Math.max(...steps) : 0;
+    // What reaches a canvas edge is cut off there, unless the effect is meant to touch that side (its edges).
+    const edges = {};
+    data.forEach((frame, k) => {
+      const count = onEdges(frame);
+      for (const side of EDGE_SIDES) if (count[side]) { const e = (edges[side] ??= { pixels: 0, frames: [k, k] }); e.pixels = Math.max(e.pixels, count[side]); e.frames[1] = k; }
+    });
+    if (Object.keys(edges).length) effect.edges = edges;
+    const cut = EDGE_SIDES.filter(side => edges[side] && !touching.get(name).includes(side));
+    if (cut.length) {
+      const where = cut.map(side => `${side}: up to ${edges[side].pixels} pixel${edges[side].pixels === 1 ? '' : 's'} a frame, ${edges[side].frames[0] === edges[side].frames[1] ? `frame ${edges[side].frames[0]}` : `frames ${edges[side].frames[0]}–${edges[side].frames[1]}`}`).join('; ');
+      warnings.push(`fx.effects.${of}: ${name} draws on the canvas's ${cut.length === 1 ? `${cut[0]} edge` : `${cut.slice(0, -1).join(', ')} and ${cut.at(-1)} edges`} (${where}), so whatever reaches past it is cut off: keep it further inside or grow the canvas, or, if the effect is meant to touch that side (a bolt from the sky, a figure standing on the bottom row), list it in edges`);
+    }
+    if (animation.loop === false) { effect.residue = residue(); continue; }
+    const all = steps(), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = all.length ? Math.max(...all) : 0;
     effect.seam = { pixels: seam, largestStep: largest };
-    if (data.length > 2 && seam > largest) warnings.push(`fx.effects.${effect.turn?.of ?? name}: ${name} changes ${seam} pixels from its last frame to its first, more than the ${largest} between any two others, so the loop jumps: end keys where they start, spin and sway by whole turns, and give rate emitters a finite life`);
+    if (data.length > 2 && seam > largest) warnings.push(`fx.effects.${of}: ${name} changes ${seam} pixels from its last frame to its first, more than the ${largest} between any two others, so the loop jumps: end keys where they start, spin and sway by whole turns, and give rate emitters a finite life`);
   }
   return JSON.parse(JSON.stringify({ recipe, metadata, ...(warnings.length && { warnings }) }));
+}
+
+// The canvas sides an effect is meant to touch: each once.
+function readEdges(value, path) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 4 || value.some(side => !EDGE_SIDES.includes(side)) || new Set(value).size !== value.length) fail(path, 'expected the canvas sides the effect is meant to touch, each once: left, right, top or bottom (top for a bolt from the sky, bottom for a figure standing on the bottom row)');
+  return value;
+}
+// The sides a turned copy may touch: each listed side turned with the copy, and both sides of a corner it turns toward.
+function turnedEdges(sides, view) {
+  if (!view || !sides.length) return sides;
+  return EDGE_SIDES.filter(side => sides.some(listed => { const apart = (((view.dir(SIDE_ANGLE[listed]) - SIDE_ANGLE[side]) % 360) + 360) % 360; return apart <= 45 || apart >= 315; }));
 }

@@ -549,8 +549,44 @@ export const spellLibrary = {
     "name": "ice-spells",
     "width": 64,
     "height": 64,
-    "palette": { "W": "#ffffff", "p": "#d8f6ff", "c": "#8fe0ff", "b": "#4aa8e8", "B": "#2f5fb3", "n": "#1d2f6b" },
+    "palette": { "W": "#ffffff", "p": "#d8f6ff", "c": "#8fe0ff", "b": "#4aa8e8", "B": "#2f5fb3", "n": "#1d2f6b", "s": "#4a4e63" },
     "symbols": {
+      "stand-in": [
+        ".....ssssss.....",
+        "....ssssssss....",
+        "....ssssssss....",
+        "....ssssssss....",
+        "....ssssssss....",
+        ".....ssssss.....",
+        "......ssss......",
+        "...ssssssssss...",
+        "..ssssssssssss..",
+        "..ssssssssssss..",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".ss..ssssss..ss.",
+        ".ss..ssssss..ss.",
+        ".....ssssss.....",
+        ".....ssssss.....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "...ssss..ssss..."
+      ],
       "shard-0": [
         ".bpp..",
         "BbccpW",
@@ -879,7 +915,7 @@ export const spellLibrary = {
             "burst": 8,
             "start": 2,
             "angle": [-20, 20],
-            "speed": [3.2, 5],
+            "speed": [3.2, 4.3],
             "gravity": [0, 0.4],
             "drag": 0.08,
             "life": [7, 9],
@@ -903,7 +939,7 @@ export const spellLibrary = {
             "burst": 5,
             "start": 2,
             "angle": [-20, 20],
-            "speed": [2, 3],
+            "speed": [2, 2.7],
             "gravity": [0, 0.3],
             "drag": 0.12,
             "life": [6, 8],
@@ -1194,7 +1230,8 @@ export const spellLibrary = {
             "squash": [1, 0.33],
             "noise": 0.5,
             "scale": 3,
-            "power": [1.15, 1, 1.15]
+            "power": [1.15, 1, 1.15],
+            "depth": "split"
           },
           {
             "kind": "star",
@@ -1206,7 +1243,8 @@ export const spellLibrary = {
             "radius": 5,
             "width": 1.5,
             "core": 0,
-            "floor": 37
+            "floor": 37,
+            "depth": "back"
           },
           {
             "kind": "star",
@@ -1218,7 +1256,8 @@ export const spellLibrary = {
             "radius": 10,
             "width": 2.2,
             "core": 0,
-            "floor": 38
+            "floor": 38,
+            "depth": "back"
           },
           {
             "kind": "star",
@@ -1230,7 +1269,8 @@ export const spellLibrary = {
             "radius": 6,
             "width": 1.8,
             "core": 0,
-            "floor": 39
+            "floor": 39,
+            "depth": "back"
           },
           {
             "kind": "star",
@@ -1330,6 +1370,7 @@ export const spellLibrary = {
             "life": [24, 30],
             "sway": { "amplitude": [8, 2], "period": 16 },
             "behind": true,
+            "depth": "back",
             "shapes": [
               ["mote-dim", "flake-far", "flake-far", "flake-far", "flake-far", "mote", "mote-dim", "mote-dim"],
               ["mote", "mote", "mote", "mote-dim", "mote-dim"]
@@ -1356,6 +1397,12 @@ export const spellLibrary = {
             "rate": 0.3,
             "life": [4, 5],
             "shapes": ["glint-1", "glint-3", "glint-5", "glint-3", "glint-1"]
+          },
+          {
+            "name": "stand-in",
+            "sprite": { "symbol": "stand-in", "draw": true },
+            "at": [24, 6],
+            "depth": "between"
           }
         ]
       }
@@ -1848,6 +1895,7 @@ export const spellLibrary = {
         "frames": 20,
         "duration": { "from": 45, "to": 100, "ease": "in" },
         "seed": 21,
+        "edges": ["top"],
         "looks": {
           "scorch": { "colors": ["g", "v"], "thresholds": [0.2, 0.65] },
           "ground": { "colors": ["v", "b", "c"], "thresholds": [0.15, 0.4, 0.8] },
@@ -2832,9 +2880,9 @@ export const spellLibrary = {
       "k": "#2b1d33",
       "v": "#6b3a8f",
       "V": "#a463c9",
-      "b": "#d6ea8c",
-      "a": "#8db84a",
-      "A": "#4d7a3a"
+      "b": "#d6ea8ca6",
+      "a": "#8db84a80",
+      "A": "#4d7a3a59"
     },
     "symbols": {
       "gb3": [
@@ -2901,10 +2949,8 @@ export const spellLibrary = {
           "gas": {
             "colors": ["A", "a"],
             "thresholds": [0.3, 0.6],
-            "dither": 0.4,
             "light": [-0.5, -1],
-            "lit": { "colors": ["b"], "thresholds": [0.7] },
-            "shade": { "colors": ["A"], "thresholds": [0.3] }
+            "lit": { "colors": ["b"], "thresholds": [0.7] }
           },
           "slime": {
             "colors": ["g", "l"],
@@ -2973,10 +3019,8 @@ export const spellLibrary = {
           "gas": {
             "colors": ["A", "a"],
             "thresholds": [0.3, 0.6],
-            "dither": 0.4,
             "light": [-0.5, -1],
-            "lit": { "colors": ["b"], "thresholds": [0.7] },
-            "shade": { "colors": ["A"], "thresholds": [0.3] }
+            "lit": { "colors": ["b"], "thresholds": [0.7] }
           },
           "slime": {
             "colors": ["g", "l"],
@@ -3029,6 +3073,7 @@ export const spellLibrary = {
             "speed": [1.4, 3],
             "gravity": [0, 0.22],
             "drag": 0.1,
+            "floor": 58,
             "life": [5, 7],
             "blob": { "look": "slime", "radius": [3.6, 3.2, 2.6, 2] }
           },
@@ -3040,10 +3085,11 @@ export const spellLibrary = {
             "start": 1,
             "angle": [185, 290],
             "speed": [0.8, 1.6],
-            "gravity": [0, -0.05],
+            "gravity": [0, -0.08],
             "drag": 0.1,
+            "turbulence": { "strength": 0.12, "scale": 6 },
             "life": [9, 10],
-            "blob": { "look": "gas", "radius": [3, 6, 5, 2] }
+            "blob": { "look": "gas", "radius": [3, 6, 5, 2], "power": [1, 1, 0.8, 0.5] }
           },
           {
             "name": "bubbles",
@@ -3064,10 +3110,11 @@ export const spellLibrary = {
             "start": 1,
             "angle": [250, 355],
             "speed": [0.8, 1.6],
-            "gravity": [0, -0.05],
+            "gravity": [0, -0.08],
             "drag": 0.1,
+            "turbulence": { "strength": 0.12, "scale": 6 },
             "life": [9, 10],
-            "blob": { "look": "gas", "radius": [3, 6, 5, 2] }
+            "blob": { "look": "gas", "radius": [3, 6, 5, 2], "power": [1, 1, 0.8, 0.5] }
           }
         ]
       },
@@ -3087,10 +3134,8 @@ export const spellLibrary = {
           "gas": {
             "colors": ["A", "a"],
             "thresholds": [0.3, 0.6],
-            "dither": 0.4,
             "light": [-0.5, -1],
-            "lit": { "colors": ["b"], "thresholds": [0.7] },
-            "shade": { "colors": ["A"], "thresholds": [0.3] }
+            "lit": { "colors": ["b"], "thresholds": [0.7] }
           }
         },
         "cleanup": { "corners": true, "strays": true },
@@ -3280,8 +3325,44 @@ export const spellLibrary = {
     "name": "holy-spells",
     "width": 64,
     "height": 64,
-    "palette": { "W": "#fffef0", "Y": "#fff3b0", "y": "#ffd84d", "g": "#e0a83a", "o": "#b8742a" },
+    "palette": { "W": "#fffef0", "Y": "#fff3b0", "y": "#ffd84d", "g": "#e0a83a", "o": "#b8742a", "s": "#4a4e63" },
     "symbols": {
+      "stand-in": [
+        ".....ssssss.....",
+        "....ssssssss....",
+        "....ssssssss....",
+        "....ssssssss....",
+        "....ssssssss....",
+        ".....ssssss.....",
+        "......ssss......",
+        "...ssssssssss...",
+        "..ssssssssssss..",
+        "..ssssssssssss..",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".sss.ssssss.sss.",
+        ".ss..ssssss..ss.",
+        ".ss..ssssss..ss.",
+        ".....ssssss.....",
+        ".....ssssss.....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "....sss..sss....",
+        "...ssss..ssss..."
+      ],
       "twinkle": [
         "..y..",
         "..Y..",
@@ -3580,7 +3661,8 @@ export const spellLibrary = {
             "runes": 6,
             "spin": 60,
             "glow": 0,
-            "squash": [1, 0.45]
+            "squash": [1, 0.45],
+            "depth": "split"
           },
           {
             "kind": "ring",
@@ -3592,9 +3674,10 @@ export const spellLibrary = {
             "drift": [0, -22],
             "noise": 0.75,
             "scale": 4,
-            "power": [0, 1.3, 1.1, 0]
+            "power": [0, 1.3, 1.1, 0],
+            "depth": "split"
           },
-          { "kind": "ring", "look": "halo", "at": [32, 3], "radius": 6, "width": 1.5, "squash": [1, 0.35] }
+          { "kind": "ring", "look": "halo", "at": [32, 3], "radius": 6, "width": 1.5, "squash": [1, 0.35], "depth": "split" }
         ],
         "emitters": [
           {
@@ -3606,6 +3689,7 @@ export const spellLibrary = {
             "drag": 0.02,
             "sway": { "amplitude": [1, 0], "period": 8 },
             "life": [13, 17],
+            "depth": "split",
             "shapes": [
               ["twinkle", "mote-big", "mote-big", "mote-cross", "mote-cross", "mote-y"],
               ["mote-big", "mote-cross", "mote-cross", "mote-cross", "mote-y"]
@@ -3619,7 +3703,14 @@ export const spellLibrary = {
             "speed": [1.8, 2.4],
             "life": [8, 11],
             "shapes": [["mote", "mote-y", "mote-g"]],
-            "trail": { "color": "g", "length": 3 }
+            "trail": { "color": "g", "length": 3 },
+            "depth": "split"
+          },
+          {
+            "name": "stand-in",
+            "sprite": { "symbol": "stand-in", "draw": true },
+            "at": [24, 6],
+            "depth": "between"
           }
         ]
       }
@@ -3687,7 +3778,7 @@ export const spellLibrary = {
             "area": [4, 6],
             "rate": 0.8,
             "angle": [160, 200],
-            "speed": [1.2, 1.8],
+            "speed": [1.1, 1.6],
             "gravity": [0, 0.06],
             "drag": 0.1,
             "life": [7, 9],

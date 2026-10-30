@@ -792,6 +792,15 @@
                   "type": "boolean",
                   "description": "Draw this emitter's particles under every other emitter's (smoke behind sparks, a trail behind its bolt)."
                 },
+                "depth": {
+                  "enum": [
+                    "front",
+                    "back",
+                    "split",
+                    "between"
+                  ],
+                  "description": "Where its particles draw relative to a character standing in the effect: front (default; a child without depth takes its parent particle's side), back, split (born above the spawn centre: behind; the rest in front, as sparks rising round a circle on the ground) or between, for a sprite emitter that only draws: a stand-in character, drawn between the two in the whole effect and in neither part. Anything not in front also makes <effect>-back and <effect>-front."
+                },
                 "cue": {
                   "type": "string",
                   "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
@@ -1042,6 +1051,9 @@
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
                     },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
+                    },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
                     },
@@ -1208,6 +1220,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
@@ -1378,6 +1393,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
@@ -1551,6 +1569,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "to": {
                       "type": "array",
@@ -1738,6 +1759,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
@@ -1965,6 +1989,9 @@
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
                     },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
+                    },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
                     },
@@ -2181,6 +2208,9 @@
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
                     },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
+                    },
                     "tilt": {
                       "$ref": "#/$defs/layer-tilt"
                     },
@@ -2327,6 +2357,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "through": {
                       "type": "array",
@@ -2545,6 +2578,9 @@
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
                     },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
+                    },
                     "symbol": {
                       "type": "string",
                       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
@@ -2702,6 +2738,9 @@
                     },
                     "cue": {
                       "$ref": "#/$defs/layer-cue"
+                    },
+                    "depth": {
+                      "$ref": "#/$defs/layer-depth"
                     },
                     "points": {
                       "type": "array",
@@ -2948,6 +2987,20 @@
             "required": [],
             "additionalProperties": false,
             "description": "Remove doubled corners and stray pixels from the shapes (not the particles)."
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "left",
+                "right",
+                "top",
+                "bottom"
+              ]
+            },
+            "maxItems": 4,
+            "uniqueItems": true,
+            "description": "Canvas sides the effect is meant to touch: top for a bolt from the sky, bottom for a figure standing on the bottom row. Drawing on any other side's outermost row or column is warned about, since whatever reaches past it is cut off. Turned copies turn the sides with them."
           },
           "light": {
             "type": "boolean",
@@ -3380,6 +3433,14 @@
       "type": "string",
       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
       "description": "Name a point at at in the layer's first frame, as an emitter cue does (a shake on impact)."
+    },
+    "layer-depth": {
+      "enum": [
+        "front",
+        "back",
+        "split"
+      ],
+      "description": "Where the layer draws relative to a character standing in the effect: front (default), back, or split at its centre row (the far half above it behind, the near half in front: a ring or glyph lying round the feet). Anything not in front also makes <effect>-back and <effect>-front."
     },
     "layer-tilt": {
       "type": "number",

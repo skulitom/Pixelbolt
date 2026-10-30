@@ -485,6 +485,7 @@
       "frames": 20,
       "duration": { "from": 45, "to": 100, "ease": "in" },
       "seed": 21,
+      "edges": ["top"],
       "looks": {
         "scorch": { "colors": ["g", "v"], "thresholds": [0.2, 0.65] },
         "ground": { "colors": ["v", "b", "c"], "thresholds": [0.15, 0.4, 0.8] },

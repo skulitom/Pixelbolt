@@ -4,8 +4,44 @@
   "name": "holy-spells",
   "width": 64,
   "height": 64,
-  "palette": { "W": "#fffef0", "Y": "#fff3b0", "y": "#ffd84d", "g": "#e0a83a", "o": "#b8742a" },
+  "palette": { "W": "#fffef0", "Y": "#fff3b0", "y": "#ffd84d", "g": "#e0a83a", "o": "#b8742a", "s": "#4a4e63" },
   "symbols": {
+    "stand-in": [
+      ".....ssssss.....",
+      "....ssssssss....",
+      "....ssssssss....",
+      "....ssssssss....",
+      "....ssssssss....",
+      ".....ssssss.....",
+      "......ssss......",
+      "...ssssssssss...",
+      "..ssssssssssss..",
+      "..ssssssssssss..",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".sss.ssssss.sss.",
+      ".ss..ssssss..ss.",
+      ".ss..ssssss..ss.",
+      ".....ssssss.....",
+      ".....ssssss.....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "....sss..sss....",
+      "...ssss..ssss..."
+    ],
     "twinkle": [
       "..y..",
       "..Y..",
@@ -304,7 +340,8 @@
           "runes": 6,
           "spin": 60,
           "glow": 0,
-          "squash": [1, 0.45]
+          "squash": [1, 0.45],
+          "depth": "split"
         },
         {
           "kind": "ring",
@@ -316,9 +353,18 @@
           "drift": [0, -22],
           "noise": 0.75,
           "scale": 4,
-          "power": [0, 1.3, 1.1, 0]
+          "power": [0, 1.3, 1.1, 0],
+          "depth": "split"
         },
-        { "kind": "ring", "look": "halo", "at": [32, 3], "radius": 6, "width": 1.5, "squash": [1, 0.35] }
+        {
+          "kind": "ring",
+          "look": "halo",
+          "at": [32, 3],
+          "radius": 6,
+          "width": 1.5,
+          "squash": [1, 0.35],
+          "depth": "split"
+        }
       ],
       "emitters": [
         {
@@ -330,6 +376,7 @@
           "drag": 0.02,
           "sway": { "amplitude": [1, 0], "period": 8 },
           "life": [13, 17],
+          "depth": "split",
           "shapes": [
             ["twinkle", "mote-big", "mote-big", "mote-cross", "mote-cross", "mote-y"],
             ["mote-big", "mote-cross", "mote-cross", "mote-cross", "mote-y"]
@@ -343,8 +390,10 @@
           "speed": [1.8, 2.4],
           "life": [8, 11],
           "shapes": [["mote", "mote-y", "mote-g"]],
-          "trail": { "color": "g", "length": 3 }
-        }
+          "trail": { "color": "g", "length": 3 },
+          "depth": "split"
+        },
+        { "name": "stand-in", "sprite": { "symbol": "stand-in", "draw": true }, "at": [24, 6], "depth": "between" }
       ]
     }
   }

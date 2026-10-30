@@ -13,9 +13,9 @@
     "k": "#2b1d33",
     "v": "#6b3a8f",
     "V": "#a463c9",
-    "b": "#d6ea8c",
-    "a": "#8db84a",
-    "A": "#4d7a3a"
+    "b": "#d6ea8ca6",
+    "a": "#8db84a80",
+    "A": "#4d7a3a59"
   },
   "symbols": {
     "gb3": [
@@ -82,10 +82,8 @@
         "gas": {
           "colors": ["A", "a"],
           "thresholds": [0.3, 0.6],
-          "dither": 0.4,
           "light": [-0.5, -1],
-          "lit": { "colors": ["b"], "thresholds": [0.7] },
-          "shade": { "colors": ["A"], "thresholds": [0.3] }
+          "lit": { "colors": ["b"], "thresholds": [0.7] }
         },
         "slime": {
           "colors": ["g", "l"],
@@ -154,10 +152,8 @@
         "gas": {
           "colors": ["A", "a"],
           "thresholds": [0.3, 0.6],
-          "dither": 0.4,
           "light": [-0.5, -1],
-          "lit": { "colors": ["b"], "thresholds": [0.7] },
-          "shade": { "colors": ["A"], "thresholds": [0.3] }
+          "lit": { "colors": ["b"], "thresholds": [0.7] }
         },
         "slime": {
           "colors": ["g", "l"],
@@ -210,6 +206,7 @@
           "speed": [1.4, 3],
           "gravity": [0, 0.22],
           "drag": 0.1,
+          "floor": 58,
           "life": [5, 7],
           "blob": { "look": "slime", "radius": [3.6, 3.2, 2.6, 2] }
         },
@@ -221,10 +218,11 @@
           "start": 1,
           "angle": [185, 290],
           "speed": [0.8, 1.6],
-          "gravity": [0, -0.05],
+          "gravity": [0, -0.08],
           "drag": 0.1,
+          "turbulence": { "strength": 0.12, "scale": 6 },
           "life": [9, 10],
-          "blob": { "look": "gas", "radius": [3, 6, 5, 2] }
+          "blob": { "look": "gas", "radius": [3, 6, 5, 2], "power": [1, 1, 0.8, 0.5] }
         },
         {
           "name": "bubbles",
@@ -245,10 +243,11 @@
           "start": 1,
           "angle": [250, 355],
           "speed": [0.8, 1.6],
-          "gravity": [0, -0.05],
+          "gravity": [0, -0.08],
           "drag": 0.1,
+          "turbulence": { "strength": 0.12, "scale": 6 },
           "life": [9, 10],
-          "blob": { "look": "gas", "radius": [3, 6, 5, 2] }
+          "blob": { "look": "gas", "radius": [3, 6, 5, 2], "power": [1, 1, 0.8, 0.5] }
         }
       ]
     },
@@ -268,10 +267,8 @@
         "gas": {
           "colors": ["A", "a"],
           "thresholds": [0.3, 0.6],
-          "dither": 0.4,
           "light": [-0.5, -1],
-          "lit": { "colors": ["b"], "thresholds": [0.7] },
-          "shade": { "colors": ["A"], "thresholds": [0.3] }
+          "lit": { "colors": ["b"], "thresholds": [0.7] }
         }
       },
       "cleanup": { "corners": true, "strays": true },

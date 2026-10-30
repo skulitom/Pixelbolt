@@ -52,8 +52,8 @@ test('the spell library compiles to the pixels that were approved', () => {
   assert.deepEqual(golden, GOLDEN);
 });
 const GOLDEN = {
-  fire: '2f2401c06e516e6f38428e3313828a958f73abbf6852b70e0e7a34a0015532e9', ice: '849107c89afa38cbbcc90e407c6d63af409b6a65b2646374083118e8c77a9dfe',
+  fire: '2f2401c06e516e6f38428e3313828a958f73abbf6852b70e0e7a34a0015532e9', ice: '486851832f0b2f6ca2df9e05ff3ed0f254834fbe28dd9d6de76d21be66fee432',
   lightning: 'a0db113da3483bcafdf4e21ccdc2e0e9539137452cc8f6207542354fd1627a28', water: 'e9be238e0e57be6a18bb3732a95e7421209864e04db9acbc385e2d046352f73e',
-  poison: '8b4d0e00efe6c231a21e47a1e76d3361304665a89c5f30fb8cd9731ef35adf13', holy: '68977f3e517e08aa8817e96c9709091a56c857dc8f1b74eece9b96fd017eda51',
-  shadow: 'b2a6ea894f6bf2150bf1dd539ec997bc4e5bd32d180f7a0e1c966ee9cb512f5c'
+  poison: '86274e2560033e70b052edfa5ae38b74b0182e9e6fa896bf1fc016cce97b30b4', holy: '48f280a19abe8ba9de1b3bba0aadd601039eabbabd7b746173a3c7a82fe058a2',
+  shadow: 'd1e4995d2b33366759b0b8aa8babac2dd45af19ffd03caab576113b4fff65ead'
 };

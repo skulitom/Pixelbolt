@@ -49,6 +49,17 @@ $Ground.set_cells_terrain_connect(cells, 0, 0) # terrain set 0, terrain 0
 
 `node scripts/verify-godot.mjs` (with Godot 4 on `PATH`, in `GODOT` or passed as `--godot <path>`) imports the forest spirit and a trimmed, scaled sheet with unequal durations into a headless Godot project, and checks every frame's region, margin, size, pixels and time, and each animation's playback step by step. It then loads a blob, a cardinal and an animated TileSet, checks every tile's peering bits, region, pixels and frame times, and paints maps (islands, strips, inner corners, a ring, cells that touch only at a corner, a scatter) with Godot's terrain painter, which must choose Pixelbolt's tile in every cell. Last it loads a lit scene asset and checks that every frame draws through `canvas_texture.tres` and that its normal map is `normal.png` with green flipped. With `--render` it also lights the sprite in a Godot window (Godot can't render headless) from above, below, left and right: the half facing the light must be brighter, and a control drawn with the unflipped `normal.png` must come out upside down.
 
+### Effects round a character
+
+An effect with parts behind a character (a `depth` on its layers or emitters, see [effects round a character](art-workflow.md#particle-effects)) exports `<effect>-back` and `<effect>-front` beside `<effect>`, with the same frame count, timing and anchor. Give the character two `AnimatedSprite2D` siblings with the same Sprite Frames, one before it in the tree (or at a lower `z_index`) and one after, and start both together:
+
+```gdscript
+$BuffBack.play("buff-back")
+$BuffFront.play("buff-front")
+```
+
+Any engine does the same: draw the back part, then the character, then the front part, at the same place and frame. The whole `<effect>` is for previews and sharing; when the source draws a stand-in figure (`depth: "between"`), only the whole effect shows it.
+
 ## Unity and other grid importers
 
 Keep the default untrimmed layout and set `sheet.padding` to `0`. Cell dimensions are `project.width × sheet.scale` and `project.height × sheet.scale`. Set your importer to multiple sprites or a frame grid and use `sheet.columns` horizontal cells. A partially filled last row contains transparent unused cells; use only the number of frames in the JSON.

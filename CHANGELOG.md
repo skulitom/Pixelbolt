@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effects round a character, cut-off review and see-through gas
+
+- Layers and emitters take `depth`: `back`, `split` (a layer's rows above its centre, or the particles born above their spawn centre, go behind) or `front`, the default. An effect with anything behind also compiles `<effect>-back` and `<effect>-front`, with the same frames, timing, cues and anchor, for a game to draw under and over its character; the whole effect draws the back side under the front side, so the parts drawn together give exactly its pixels. A sprite emitter that only draws can be a stand-in (`depth: "between"`), drawn between the sides in the whole effect and in neither part. Child emitters take their parent particle's side.
+- The holy and ice buffs in the spell library use it, with a plain stand-in figure in `buff`.
+- The fx compile reviews each animation's `edges`: the canvas sides it draws on, with the most pixels a frame and the frames. It warns about a side, since whatever reaches past it is cut off, unless the effect lists it in its own `edges` (a bolt from the sky); turned copies turn the sides. The Effects lab shows the chosen effect's warnings under the preview, so a seed that throws a spark off the canvas says so.
+- Examples that were cut off are fixed: the water geyser's and dome's ripples (the canvas is 4 pixels taller), the lightning strike's flash (96 × 104, centred), the fluid blast's shockwave, the slash, swing and shatter flashes and shards, and the poison impact's drops; the lightning bolts and hero effects list the sides they touch on purpose. Every Effects lab preset stays off its edges at seeds 2, 3 and 7 too.
+- Poison gas is see-through: translucent colours lit on top, with no shade band or dither, drifting apart on turbulence and thinning as it swells. The effects guide explains when smoke and gas should be translucent rather than outlined.
+
 ### Fixes from a cold-agent test of the effect tools
 
 - Emitters take `kick: [x, y]`, a velocity added to every launch whatever its angle, so outward shards on a ring laid on the ground can pop up as they fly out.

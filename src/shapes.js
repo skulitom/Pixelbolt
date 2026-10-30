@@ -26,7 +26,10 @@ const SPECIFIC = {
   burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
   stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale']
 };
-const COMMON = ['kind', 'look', 'at', 'path', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'curve', 'floor', 'seed', 'cue'];
+const COMMON = ['kind', 'look', 'at', 'path', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'curve', 'floor', 'seed', 'cue', 'depth'];
+// Where a layer draws relative to a character standing in the effect: in front (the default), behind it, or split at
+// the layer's centre row, its far half (above) behind and its near half in front, as a ring lying round its feet.
+export const LAYER_DEPTHS = ['front', 'back', 'split'];
 // Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
 // of running for hours. Area shapes visit each canvas pixel once a frame, so the recipe's frame-area limit keeps them
 // well under it. The shipped effects use under 0.1%; reaching it takes a few seconds.
@@ -239,6 +242,7 @@ function readLayer(layer, path, context, index) {
     // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
     curved: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : layer.curve && (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
+    depth: layer.depth === undefined ? 'front' : LAYER_DEPTHS.includes(layer.depth) ? layer.depth : fail(`${path}.depth`, 'expected front, back, or split (the rows above the layer\'s centre go behind a character, the rest in front: a ring lying round its feet)'),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };
   const t = (key, fallback, min, max) => tween(layer[key] ?? fallback, `${path}.${key}`, min, max);
@@ -776,12 +780,16 @@ function band(value, thresholds) {
  * into one body. `work` counts the pixels painting visits across one compile (pass the same object for every frame and
  * effect); past SHAPE_WORK the layer that crosses it is refused.
  */
-export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false) {
-  const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N);
+// With `split`, each drawn pixel also gets a side, 1 behind a character and 2 in front: a look's pixel takes the side of
+// the layer or blob that gave it the most, cleanup's fills and outlines the side of the pixel beside them, and halos
+// that of the nearest pixel they glow from. The result then has `parts`, the back and front pixels as grids of their
+// own, which together are exactly the whole.
+export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false, split = false) {
+  const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N), side = split ? new Uint8Array(N) : null;
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
     if (look.front !== front) return;
-    const field = new Float64Array(N), scratch = new Float64Array(N);
+    const field = new Float64Array(N), scratch = new Float64Array(N), best = split ? new Float64Array(N) : null, from = split ? new Uint8Array(N) : null;
     let any = false;
     for (const layer of shapes.layers) {
       if (layer.look !== look.name || f < layer.t0 || f >= layer.t1) continue;
@@ -815,6 +823,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
           value *= 1 - noise * (flow ? flowing(flow, gx, gy) : layer.grain(256 + gx, 256 + gy));
         }
         field[c] = layer.blend === 'add' ? field[c] + value : Math.max(field[c], value);
+        if (split && value > best[c]) { best[c] = value; from[c] = layer.depth === 'back' || (layer.depth === 'split' && Math.floor(c / width) < cy) ? 1 : 2; }
         any = true;
       }
     }
@@ -825,8 +834,9 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) {
         const dx = i - blob.x, dy = j - blob.y, d2 = dx * dx + dy * dy;
         if (d2 >= r2) continue;
-        const k = 1 - d2 / r2;
-        field[j * width + i] += blob.power === undefined ? k * k : k * k * blob.power;
+        const k = 1 - d2 / r2, value = blob.power === undefined ? k * k : k * k * blob.power, c = j * width + i;
+        field[c] += value;
+        if (split && value > best[c]) { best[c] = value; from[c] = blob.back ? 1 : 2; }
         any = true;
       }
     }
@@ -845,10 +855,21 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       if (shade) { const s = band(1 - between(field, width, height, i - reach * lx, j - reach * ly) / value, shade.thresholds); if (s) code = shade.codes[s - 1]; }
       if (lit) { const s = band(1 - between(field, width, height, i + reach * lx, j + reach * ly) / value, lit.thresholds); if (s) code = lit.codes[s - 1]; }
       chars[c] = code; owner[c] = lookIndex + 1; drawn = true;
+      if (split) side[c] = from[c] || 2;
     }
   });
   if (!drawn) return null;
   if (shapes.cleanup.strays || shapes.cleanup.corners) for (const change of cleanupIds(chars, width, height, shapes.cleanup)) chars[change.index] = change.id;
+  // A hole cleanup filled takes the side of a drawn pixel beside it.
+  if (split) for (let c = 0; c < N; c++) {
+    if (!chars[c] || side[c]) continue;
+    const i = c % width, j = (c - i) / width;
+    for (let dy = -1; dy <= 1 && !side[c]; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const x = i + dx, y = j + dy, n = y * width + x;
+      if ((dx || dy) && x >= 0 && y >= 0 && x < width && y < height && chars[n] && side[n]) { side[c] = side[n]; break; }
+    }
+    if (!side[c]) side[c] = 2;
+  }
   // Each look's outline takes the empty pixels beside its own, in look order: only those still drawn after cleanup, so a
   // stray it removed leaves no outline behind.
   const filled = owner.map((look, c) => (chars[c] ? look : 0)), haloed = shapes.looks.some(look => look.halo && look.front === front), rim = haloed ? new Uint8Array(N) : null;
@@ -858,7 +879,8 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i;
       if (chars[c]) continue;
-      if ((i > 0 && filled[c - 1] === mine) || (i < width - 1 && filled[c + 1] === mine) || (j > 0 && filled[c - width] === mine) || (j < height - 1 && filled[c + width] === mine)) { chars[c] = look.outline; if (rim) rim[c] = mine; }
+      const beside = i > 0 && filled[c - 1] === mine ? c - 1 : i < width - 1 && filled[c + 1] === mine ? c + 1 : j > 0 && filled[c - width] === mine ? c - width : j < height - 1 && filled[c + width] === mine ? c + width : -1;
+      if (beside >= 0) { chars[c] = look.outline; if (rim) rim[c] = mine; if (split) side[c] = side[beside]; }
     }
   });
   // Halos take the empty pixels within a round reach of each look's pixels and outline, in look order: an offset (dx, dy)
@@ -867,22 +889,30 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
     if (!look.halo || look.front !== front) return;
     const mine = lookIndex + 1, { color, width: reach, dither } = look.halo, limit = (reach + 0.5) * (reach + 0.5) - 1, offsets = [];
     for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) if ((dx || dy) && dx * dx + dy * dy <= limit) offsets.push([dx, dy]);
-    const source = c => filled[c] === mine || rim[c] === mine, taken = [];
+    // Split, a halo pixel takes the side of the nearest pixel it glows from, so the offsets are searched nearest first.
+    const source = c => filled[c] === mine || rim[c] === mine, taken = [], near = split ? [...offsets].sort((a, b) => a[0] * a[0] + a[1] * a[1] - b[0] * b[0] - b[1] * b[1]) : offsets;
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i;
       if (chars[c] || (dither && ((i + j) & 1))) continue;
-      if (offsets.some(([dx, dy]) => { const x = i + dx, y = j + dy; return x >= 0 && y >= 0 && x < width && y < height && source(y * width + x); })) taken.push(c);
+      const hit = near.find(([dx, dy]) => { const x = i + dx, y = j + dy; return x >= 0 && y >= 0 && x < width && y < height && source(y * width + x); });
+      if (hit) taken.push([c, split ? side[c + hit[1] * width + hit[0]] : 0]);
     }
-    for (const c of taken) chars[c] = color;
+    for (const [c, s] of taken) { chars[c] = color; if (split) side[c] = s; }
   });
-  let x0 = width, y0 = height, x1 = -1, y1 = -1;
-  for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) if (chars[j * width + i]) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; }
-  if (x1 < 0) return null;
-  const rows = [];
-  for (let j = y0; j <= y1; j++) {
-    let row = '';
-    for (let i = x0; i <= x1; i++) { const code = chars[j * width + i]; row += code ? String.fromCharCode(code) : '.'; }
-    rows.push(row);
-  }
-  return { x: x0, y: y0, rows };
+  // The drawn pixels that pass `keep`, cropped to their bounds, or null.
+  const grid = keep => {
+    let x0 = width, y0 = height, x1 = -1, y1 = -1;
+    for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) { const c = j * width + i; if (chars[c] && keep(c)) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } }
+    if (x1 < 0) return null;
+    const rows = [];
+    for (let j = y0; j <= y1; j++) {
+      let row = '';
+      for (let i = x0; i <= x1; i++) { const c = j * width + i, code = chars[c]; row += code && keep(c) ? String.fromCharCode(code) : '.'; }
+      rows.push(row);
+    }
+    return { x: x0, y: y0, rows };
+  };
+  const whole = grid(() => true);
+  if (!whole || !split) return whole;
+  return { ...whole, parts: { back: grid(c => side[c] === 1), front: grid(c => side[c] !== 1) } };
 }

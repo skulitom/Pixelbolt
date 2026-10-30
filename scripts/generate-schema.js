@@ -1,8 +1,8 @@
 import { writeFile } from 'node:fs/promises';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
-import { FX_EVENTS, SPRITE_PIXELS } from '../src/fx.js';
-import { SHAPE_KINDS } from '../src/shapes.js';
+import { FX_EVENTS, SPRITE_PIXELS, EMITTER_DEPTHS, EDGE_SIDES } from '../src/fx.js';
+import { SHAPE_KINDS, LAYER_DEPTHS } from '../src/shapes.js';
 import { NORMAL_DIRECTIONS } from '../src/authoring.js';
 const NORMAL_KEYS = Object.keys(NORMAL_DIRECTIONS);
 const int = (minimum, maximum, description) => ({ type: 'integer', minimum, maximum, ...(description ? { description } : {}) });
@@ -279,6 +279,7 @@ const emitter = { ...object({
   when: { enum: FX_EVENTS, description: 'For a child: death (default; burst particles where a parent particle ends), floor (burst where it first lands on its floor) or life (rate particles per frame from each parent while it lives: trails).' },
   inherit: num(0, 2, 'For a child: the share of its parent particle\'s velocity it starts with, added to its own launch; on an emitter with a path, the share of its own motion along it, so sparks thrown by a projectile carry forward. Default 0.'),
   behind: { type: 'boolean', description: 'Draw this emitter\'s particles under every other emitter\'s (smoke behind sparks, a trail behind its bolt).' },
+  depth: { enum: EMITTER_DEPTHS, description: 'Where its particles draw relative to a character standing in the effect: front (default; a child without depth takes its parent particle\'s side), back, split (born above the spawn centre: behind; the rest in front, as sparks rising round a circle on the ground) or between, for a sprite emitter that only draws: a stand-in character, drawn between the two in the whole effect and in neither part. Anything not in front also makes <effect>-back and <effect>-front.' },
   cue: { ...id, description: 'Name a point at the spawn centre in each frame this emitter spawns. Frames carry it as a named point, which atlases export for game code (a shake or a pause on impact); the metadata lists every cue.' },
   sprite: { ...object({ symbol: { ...id, description: 'The symbol whose pixels the particles spawn from: rows, or a frame or animation of a recipe or pose source (see symbols); an animation shows its frame i in frame i.' },
     pixels: { enum: SPRITE_PIXELS, description: 'all (default): every visible pixel; edge: the visible pixels beside an empty one; outline: the empty pixels just outside the sprite (particles from there need shapes or a blob).' },
@@ -319,7 +320,8 @@ const layerCommon = {
   curve: { type: 'boolean', description: 'Run three or more path points or drift keys through a smooth curve, so an arc has no corner at its middle.' },
   path: { ...array(vector(-4096, 4096), 16), minItems: 2, description: 'Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile\'s head the same path as the emitters trailing it.' },
   drift: { oneOf: [vector(-4096, 4096), { ...array(vector(-4096, 4096), 8), minItems: 2 }], description: 'Move by [x, y] pixels over the window (smoke rising), or 2–8 offsets [x, y] as keys spread over it through the ease, so the layer travels a curve (an orb that arcs).' }, floor: num(-4096, 4096, 'Cut the layer off below this canvas row: a disc becomes a dome, a ring an arch.'), seed: int(0, 2147483647, 'Seeded detail (noise, runes, bolt paths); default the layer index.'),
-  cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' }
+  cue: { ...id, description: 'Name a point at at in the layer\'s first frame, as an emitter cue does (a shake on impact).' },
+  depth: { enum: LAYER_DEPTHS, description: 'Where the layer draws relative to a character standing in the effect: front (default), back, or split at its centre row (the far half above it behind, the near half in front: a ring or glyph lying round the feet). Anything not in front also makes <effect>-back and <effect>-front.' }
 };
 // The fields every kind shares are defined once, under $defs, and referenced from each kind.
 // Tilt and squash, on the kinds drawn around a centre (not bolts and streams, which run between points).
@@ -369,6 +371,7 @@ const fx = {
       looks: { type: 'object', minProperties: 1, maxProperties: 8, propertyNames: id, additionalProperties: ref('shape-look'), description: 'Named colour ramps for the layers and blob particles, drawn in this order (later over earlier).' },
       layers: { ...array(layer, 16), minItems: 1, description: `Shape layers: ${SHAPE_KINDS.join(', ')}. Needs looks.` },
       cleanup: { ...object({ corners: bool, strays: bool }), description: 'Remove doubled corners and stray pixels from the shapes (not the particles).' },
+      edges: { ...array({ enum: EDGE_SIDES }, 4), uniqueItems: true, description: 'Canvas sides the effect is meant to touch: top for a bolt from the sky, bottom for a figure standing on the bottom row. Drawing on any other side\'s outermost row or column is warned about, since whatever reaches past it is cut off. Turned copies turn the sides with them.' },
       light: { type: 'boolean', description: 'Write the light track into the frames as a point named light, where the effect\'s bright pixels are; frames with nothing bright have none. A scene light that follows { instance, point: "light" } then moves with the effect\'s light and goes dark when it does; atlases export the point for game code.' },
       turn: { ...object({ angles: { ...array(int(0, 359), 16), minItems: 1, uniqueItems: true, description: 'Whole degrees clockwise from the direction the effect is drawn in: [0, 90, 180, 270] for four directions, every 45 for eight. Default [0].' }, about: vector(-4096, 4096, 'The point the copies turn about (and mirror across); default the canvas centre.'), mirror: { type: 'boolean', description: 'Also make a mirrored copy of each angle, flipped left to right before it turns: a slash that sweeps the other way, an effect facing left.' } }),
         description: 'Compile a copy of the effect for each direction, named <effect>-<angle> (and <effect>-<angle>-mirror), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, slash arcs, beam and bolt ends, stream and trail points. Gravity, floors, sway and the looks\' light stay as they are, so sparks still fall and highlights stay where the light is. Not with sprite emitters or auras, whose sprites can\'t turn. Use a canvas with room in every direction.' } }, ['frames']), anyOf: [{ required: ['emitters'] }, { required: ['layers', 'looks'] }] } },

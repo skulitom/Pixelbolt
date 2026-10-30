@@ -10,7 +10,7 @@ const $ = id => document.getElementById(id);
 const canvas = $('canvas'), context = canvas.getContext('2d');
 const HOLD = 600, reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Settings belong to an effect of the chosen source: { strength, speed, seed } by effect name, kept while you switch.
-let preset = null, animation = '', settings = {}, metadata = null, project = null, recipe = null, frames = [], position = 0, nextAt = 0, playing = !reducedMotion, timer, toastTimer, version = 0;
+let preset = null, animation = '', settings = {}, metadata = null, project = null, recipe = null, warnings = [], frames = [], position = 0, nextAt = 0, playing = !reducedMotion, timer, toastTimer, version = 0;
 
 function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4000); }
 function download(data, filename, type) {
@@ -18,7 +18,7 @@ function download(data, filename, type) {
   const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
-// The effect the controls edit: the one chosen, or the effect a turned copy was made from.
+// The effect the controls edit: the one chosen, or the effect a turned copy or a back or front part was made from.
 const base = () => (metadata ? effectOf(metadata, animation) : Object.keys(preset.source.effects)[0]);
 const restOf = name => ({ strength: 1, speed: 1, seed: preset.source.effects[name].seed ?? 1 });
 const settingsOf = name => (settings[name] ??= restOf(name));
@@ -69,6 +69,9 @@ function showFrames() {
   for (const index of playback.frames) { const data = project.frames[index].data; for (let i = 0; i < data.length; i += 4) if (data[i + 3]) colors.add(data[i] << 16 | data[i + 1] << 8 | data[i + 2]); }
   $('status').dataset.effect = animation;
   $('status').textContent = `${frames.length} frames · ${playback.loop === false ? 'plays once' : 'loops'} · ${colors.size} palette colours · ${spawned ? `${spawned} particles · ` : ''}${effect.layers ? `${effect.layers.length} shape layers · ` : ''}compiled in ${$('status').dataset.ms} ms in this browser`;
+  // The compiler's review of the chosen effect: a loop that jumps, or drawing cut off at a canvas edge (another seed can do it).
+  const mine = warnings.filter(text => text.startsWith(`fx.effects.${base()}:`)).map(text => text.slice(text.indexOf(':') + 2));
+  $('warnings').textContent = mine.join('\n'); $('warnings').hidden = !mine.length;
   commands(); draw();
 }
 // Compiles the source with the current settings. It runs on this page's thread; the presets take well under a second.
@@ -78,13 +81,13 @@ function compile() {
   try {
     const compiled = compileEffects(source);
     $('status').dataset.ms = String(Math.round(performance.now() - started));
-    recipe = compiled.recipe; metadata = compiled.metadata; project = renderProject(recipe);
+    recipe = compiled.recipe; metadata = compiled.metadata; warnings = compiled.warnings ?? []; project = renderProject(recipe);
     if (!project.animations[animation]) animation = Object.keys(project.animations)[0];
     $('error').hidden = true;
     for (const id of ['gif', 'sheet', 'recipe']) $(id).disabled = false;
     showAnimations(); showFrames();
   } catch (error) {
-    $('error').textContent = error.message; $('error').hidden = false;
+    $('error').textContent = error.message; $('error').hidden = false; $('warnings').hidden = true;
     for (const id of ['gif', 'sheet', 'recipe']) $(id).disabled = true;
   }
 }

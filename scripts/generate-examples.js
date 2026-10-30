@@ -64,7 +64,7 @@ const effects = { format: 'pixelforge-fx', version: 1, name: 'effects', width: 4
       emit([24, 18], { area: [10, 4], burst: 8, angle: [200, 340], speed: [1, 2.2], gravity: [0, 0.18], drag: 0.14, life: [10, 12], sway: { amplitude: [1.4, 0], period: 6 },
         shapes: [['leaf-a', 'leaf-b'], ['leaf-b', 'leaf-c'], ['leaf-c', 'leaf-a']], play: 'loop', remaps: [{}, { g: 'l' }, { G: 'g', g: 'l' }], dissolve: 0.25 })] },
     shatter: { frames: 12, duration: 60, seed: 3, emitters: [
-      emit([24, 26], { area: [6, 4], burst: 9, angle: [205, 335], speed: [2, 3.5], gravity: [0, 0.45], drag: 0.02, life: 12, floor: 35, bounce: 0.3, shapes: [['chip-a'], ['chip-b'], ['chip-c'], ['chip-d']] })] }
+      emit([24, 26], { area: [6, 4], burst: 9, angle: [205, 335], speed: [2, 3.2], gravity: [0, 0.45], drag: 0.08, life: 12, floor: 35, bounce: 0.3, shapes: [['chip-a'], ['chip-b'], ['chip-c'], ['chip-d']] })] }
   } };
 
 // Effects on the rigged hero, whose idle frame the CLI and MCP read from hero.poses.json: a teleport that takes him apart
@@ -75,13 +75,13 @@ const heroMagic = { format: 'pixelforge-fx', version: 1, name: 'hero-magic', wid
   symbols: { hero: { recipe: 'hero.poses.json', frame: 'idle-rest' }, spark: ['W'], 'spark-dim': ['c'] },
   anchor: [20, 51],
   effects: {
-    teleport: { frames: 14, duration: 70, seed: 3,
+    teleport: { frames: 14, duration: 70, seed: 3, edges: ['top', 'bottom'],
       looks: { light: { colors: ['v', 'b', 'c', 'W'], thresholds: [0.3, 0.5, 0.72, 0.9] } },
       layers: [{ kind: 'beam', look: 'light', at: [20, 51], to: [20, 0], width: [1, 11, 9, 0], reveal: 0.2, wobble: 0.12, wavelength: 9, waves: -3, fade: 0.6,
         power: [1.2, 1.1, 0.7, 0], ease: 'linear', noise: 0.35, scale: 3 }],
       emitters: [{ sprite: { symbol: 'hero' }, at: heroAt, release: { sweep: 270, jitter: 0.35 }, start: 1, end: 10,
         angle: [255, 285], speed: [0.6, 1.6], gravity: [0, -0.12], drag: 0.02, life: [5, 8], tint: [{}, 'W', 'c', 'b'], dissolve: 0.35 }] },
-    aura: { frames: 12, duration: 70, loop: true, seed: 5,
+    aura: { frames: 12, duration: 70, loop: true, seed: 5, edges: ['bottom'],
       looks: { spirit: { colors: ['v', 'b', 'c', 'W'], thresholds: [0.1, 0.3, 0.55, 0.8] } },
       cleanup: { corners: true, strays: true },
       layers: [{ kind: 'aura', look: 'spirit', symbol: 'hero', at: heroAt, width: 4, rise: 3, noise: 0.8, scale: 3, floor: 51 }],
@@ -100,7 +100,7 @@ const fluidBlast = { format: 'pixelforge-fx', version: 1, name: 'fluid-blast', w
       cleanup: { corners: true, strays: true },
       layers: [
         { kind: 'star', look: 'flash', at: [48, 53], frames: [0, 3], radius: [28, 12], points: 8, width: [4, 2], ratio: 0.5, power: [1.3, 0.8], cue: 'boom' },
-        { kind: 'ring', look: 'flash', at: [48, 53], frames: [1, 9], radius: [10, 44], width: [7, 4, 3], noise: 0.85, scale: 5, power: [1.3, 0.9, 0.3] }],
+        { kind: 'ring', look: 'flash', at: [48, 53], frames: [1, 9], radius: [10, 40], width: [7, 4, 3], noise: 0.85, scale: 5, power: [1.3, 0.9, 0.3] }],
       emitters: [
         { sprite: { symbol: 'blast', draw: true }, at: [16, 16], behind: true },
         { at: [48, 53], burst: 9, start: 1, angle: [190, 350], speed: [1.4, 2.8], gravity: [0, 0.3], drag: 0.03, life: [6, 10], floor: 84, bounce: 0.3,
@@ -119,7 +119,7 @@ const swingTrail = { format: 'pixelforge-fx', version: 1, name: 'swing-trail', w
       cleanup: { corners: true, strays: true },
       layers: [
         { kind: 'trail', look: 'steel', at: [0, 0], follow: { recipe: 'swing.poses.json', animation: 'swing', point: 'blade.tip', pivot: 'blade.anchor' }, length: 3, width: 8, fade: 0.5 },
-        { kind: 'star', look: 'flash', at: [32, 31], frames: [3, 5], radius: [9, 3], width: [2, 1], points: 4, power: [1.3, 0.7], cue: 'hit' }],
+        { kind: 'star', look: 'flash', at: [32, 31], frames: [3, 5], radius: [7, 3], width: [2, 1], points: 4, power: [1.3, 0.7], cue: 'hit' }],
       emitters: [
         { sprite: { symbol: 'sword', draw: true }, at: [0, 0] },
         { at: [32, 31], burst: 6, start: 3, angle: [300, 420], speed: [1, 2.2], gravity: [0, 0.25], drag: 0.05, life: [3, 5], shapes: ['spark', 'spark-y', 'spark-o'] }] }

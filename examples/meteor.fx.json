@@ -32,6 +32,7 @@
   "effects": {
     "meteor": {
       "frames": 22,
+      "edges": ["top"],
       "duration": 60,
       "seed": 3,
       "looks": {

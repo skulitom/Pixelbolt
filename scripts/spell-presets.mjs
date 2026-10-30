@@ -46,7 +46,7 @@ export const spellPresets = {
             "look": "flash",
             "at": [64, 27],
             "frames": [1, 6],
-            "radius": [18, 5],
+            "radius": [14, 5],
             "width": [3, 1],
             "points": 8,
             "ratio": 0.5,
@@ -71,7 +71,7 @@ export const spellPresets = {
             "burst": 12,
             "start": 2,
             "angle": [150, 390],
-            "speed": [1.5, 3.2],
+            "speed": [1.5, 2.9],
             "gravity": [0, 0.25],
             "drag": 0.05,
             "life": [4, 7],
@@ -258,13 +258,14 @@ export const spellPresets = {
     "format": "pixelforge-fx",
     "version": 1,
     "name": "lightning-strike",
-    "width": 80,
-    "height": 96,
+    "width": 96,
+    "height": 104,
     "palette": { "g": "#2b2433", "v": "#3b2a8c", "b": "#4f7cff", "c": "#8fe9ff", "W": "#ffffff" },
     "symbols": { "spark": ["W"], "spark-c": ["c"], "spark-b": ["b"] },
     "effects": {
       "lightning-strike": {
         "frames": 12,
+        "edges": ["top"],
         "duration": { "from": 40, "to": 90, "ease": "in" },
         "seed": 5,
         "looks": {
@@ -276,7 +277,7 @@ export const spellPresets = {
           {
             "kind": "ring",
             "look": "scorch",
-            "at": [40, 85],
+            "at": [48, 85],
             "frames": [2, 12],
             "radius": 9,
             "width": 3,
@@ -288,8 +289,8 @@ export const spellPresets = {
           {
             "kind": "bolt",
             "look": "bolt",
-            "at": [44, 0],
-            "to": [40, 82],
+            "at": [52, 0],
+            "to": [48, 82],
             "frames": [0, 6],
             "width": [3, 2, 1],
             "glow": [2, 1],
@@ -305,7 +306,7 @@ export const spellPresets = {
           {
             "kind": "ring",
             "look": "bolt",
-            "at": [40, 84],
+            "at": [48, 84],
             "frames": [1, 8],
             "radius": [3, 30],
             "width": [5, 4, 3],
@@ -317,7 +318,7 @@ export const spellPresets = {
           {
             "kind": "star",
             "look": "bolt",
-            "at": [40, 82],
+            "at": [48, 82],
             "frames": [1, 5],
             "radius": [20, 6],
             "points": 8,
@@ -329,7 +330,7 @@ export const spellPresets = {
         ],
         "emitters": [
           {
-            "at": [40, 82],
+            "at": [48, 82],
             "burst": 12,
             "start": 1,
             "angle": [200, 340],
@@ -459,7 +460,7 @@ export const spellPresets = {
     "version": 1,
     "name": "water",
     "width": 64,
-    "height": 64,
+    "height": 68,
     "palette": { "o": "#123c40", "d": "#2a7f86", "m": "#4fb3b5", "b": "#9fe3e0", "h": "#e8fffb" },
     "effects": {
       "geyser": {
@@ -1025,6 +1026,7 @@ export const spellPresets = {
     "effects": {
       "meteor": {
         "frames": 22,
+        "edges": ["top"],
         "duration": 60,
         "seed": 3,
         "looks": {
