@@ -26,6 +26,7 @@ const routes = new Map([
   ['/motions.js', ['./motions.js', 'text/javascript; charset=utf-8']],
   ['/motion.js', ['./motion.js', 'text/javascript; charset=utf-8']],
   ['/autotile.js', ['./autotile.js', 'text/javascript; charset=utf-8']],
+  ['/terrain.js', ['./terrain.js', 'text/javascript; charset=utf-8']],
   ['/scene.js', ['./scene.js', 'text/javascript; charset=utf-8']],
   ['/scene-player.js', ['../studio/scene-player.js', 'text/javascript; charset=utf-8']],
   ['/scene.css', ['../studio/scene.css', 'text/css; charset=utf-8']],

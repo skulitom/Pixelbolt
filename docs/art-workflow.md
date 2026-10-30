@@ -271,17 +271,42 @@ A recipe or a scene is flat pixels drawn in order, and a scene's camera only pan
 
 ## Autotile templates
 
-A `pixelforge-autotile` source ([autotile.schema.json](../autotile.schema.json)) turns one small drawing into a complete terrain set. The template is two tiles wide and three tall:
+A `pixelforge-autotile` source ([autotile.schema.json](../autotile.schema.json)) turns one small drawing into a complete terrain set. `mode: "blob"` (default) builds 47 tiles from eight neighbours (N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128; a diagonal counts only when both adjacent sides match). `mode: "cardinal"` builds 16 tiles from four neighbours (N=1, E=2, S=4, W=8) without inner corners. `frame` names each tile with `{mask}`. Tiles are even, 2 to 84 pixels.
+
+The drawing is a template two tiles wide and three tall, laid out like an RPG Maker A2 autotile:
 
 ```text
-[ unused preview ][ inner corners  ]   each quadrant of the inner-corner tile is that quadrant's inner-corner piece
-[   2×2-tile island (outer corners, edges and fill)   ]
+[ preview (unused) ][ inner corners  ]   each quarter of the inner-corner tile is that quarter's inner corner
+[   2×2-tile island: outer corners, edges and fill   ]
 ```
 
-Draw it like a tiny island in the sea: the island's four corner quadrants are outer corners, the quadrants between them are edges, and its center is fill, all consistent at quadrant boundaries. `mode: "blob"` (default) builds the 47-tile set from eight neighbours (N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128; a diagonal counts only when both adjacent sides match). `mode: "cardinal"` builds 16 tiles from four neighbours (N=1, E=2, S=4, W=8) without inner corners. `frame` names each tile with `{mask}`. Optional `variants` (up to 16, each with a `name`, `duration` and frame `palette`) multiply the set for palette-cycled animation (surf, glowing lava), with `{variant}` in the frame name and an optional per-mask `animation`. A variant may also redraw the set from its own `template` of the same size, compiled as the symbol `template-<name>`: cracked or mossy stone that keeps the base set's edges. A tilemap legend then mixes the sets with `"frames": ["wall-{mask}-plain", "wall-{mask}-cracked"], "weights": [2, 1]`.
+Each tile is stitched from four quarters of it, and they are not neighbours in the template: a top-edge tile is the island's top-right quarter followed by its top-left one, and the fill tile is the island's middle with its quarters swapped. So the template has to repeat every tile: whatever leaves one quarter has to continue into the quarter that follows it in the island, and the notches of the inner-corner tile have to meet the island's edges. The island's middle lines (column `tile`, row `2 × tile`) become tile borders in a map, so detail may cross them; the quarter lines inside each tile may not.
+
+**Describe the terrain instead of typing the template.** A `terrain` draws the template from a description that cannot seam, and is the quickest way to a good set. Start from `examples/meadow.autotile.json` (grass over dirt, seen from above) or `examples/ground.autotile.json` (platformer ground seen from the side: a grass cap, lit walls, roots underneath):
+
+```json
+{ "format": "pixelforge-autotile", "version": 1, "name": "meadow", "tile": 16, "frame": "meadow-{mask}",
+  "palette": { "k": "#1e2b22", "D": "#2d4a2c", "d": "#3c6b35", "g": "#4f8a3f", "G": "#67a447", "s": "#20140c59", "u": "#7a5534" },
+  "terrain": { "seed": 4,
+    "fill": { "color": "g", "speckle": [{ "color": "d", "amount": 0.22, "size": 5 }, { "color": "G", "amount": 0.16, "size": 4 }] },
+    "edges": { "all": { "depth": 2, "jitter": 1, "bands": ["k", "d"] },
+               "n": { "bands": ["k", "G"], "tufts": { "colors": ["g", "G"], "amount": 0.4 } },
+               "s": { "depth": 3, "bands": ["k", "D"], "outside": ["s"] } },
+    "round": 2, "inner": 1 },
+  "preview": { "background": "u" } }
+```
+
+- `fill` is a palette key, `{ "color", "speckle" }` or `{ "pattern" }`, and repeats every tile. Each speckle layer colours exactly its `amount` of the tile in seeded clumps about `size` pixels across, in order; `pattern` is tile × tile rows. `fill.seed` (default the terrain's `seed`) reseeds only the speckle.
+- `edges` describes each side: `n` top, `e` right, `s` bottom, `w` left, with `all` for every side and a side's own fields over it. `depth` is the margin between the tile border and the terrain, and `jitter` lets the edge wander that many pixels further in (seeded, with a turn every `size` pixels). `bands` colour the terrain from the edge inward (an outline, then a rim light or a shade); `outside` colours the margin from the edge outward (a cast shadow, in a key with alpha); `tufts` grow seeded blades out of the edge into its margin, 1 to `colors.length` pixels long on `amount` of the columns (grass on a top edge, roots or drips under a bottom one). Decorations stay in their own side's margin and stop a pixel short of the tile border, so give a side with tufts enough `depth`.
+- Edges and fill repeat every tile, so keep `jitter` at 1 on long edges (2 shows a tile-wide rhythm) and use variants to vary the fill. Speckle clumps of `size` 2 read as grain; 3 can read as a repeated little cross, and 5 or more as soft patches.
+- `round` and `inner` round the outer and inner corners. Each edge's `depth + jitter + bands + round` has to fit in half a tile, the part of the tile its quarters know about; the error says by how much it does not.
+- `ops` draw over the template (rows or terrain) on its own canvas, two tiles wide and three tall, with the source's `symbols` and `ramps`: flowers, cracks, stones. Every colour drawn needs a one-character palette key. Keep each detail inside one quarter, or across the island's middle lines. A quarter of the island's middle (columns `tile / 2` to `3 × tile / 2`, rows `3 × tile / 2` to `5 × tile / 2`) is fill in every tile that uses it, edge tiles included, so a detail there turns up often: put it in a variant and weight that variant low in the map legend.
+- A variant's `terrain` merges into the set's field by field: `{ "fill": { "seed": 11 } }` redraws the fill and keeps every edge pixel, so variants mix in a map without seams. A variant's `ops` draw after the set's. A variant may instead bring its own `template` rows (cracked or mossy stone with the base set's edges), or only a frame `palette` and `duration` for palette-cycled animation (surf, glowing lava), with `{variant}` in the frame name and an optional per-mask `animation`. Variants with templates of their own compile to the symbols `template-<name>`, and a tilemap legend mixes them with `"frames": ["wall-{mask}-plain", "wall-{mask}-cracked"], "weights": [2, 1]`.
+
+**Review the set over its test map.** Compiling also draws every tile over a test map of 20 × 14 cells that holds all 47 (a block with holes in every arrangement of inner corners, strips and their ends, a lone tile, tiles that touch only at a corner, L and T shapes), on `preview.background` when given: pass `--preview <new.png>` to the CLI, while MCP `pixel_compile` returns it as a second image. Look at it for repetition, stray pixels and edges that read wrong. The compiler also checks every join a map can make: a `Seam` warning names template pixels where an outline or edge breaks and the pixel to copy to mend it, and one `Texture` warning counts fill that does not repeat (fine speckle hides that; lines and clumps break visibly). What a terrain draws is seamless by construction, so on a terrain only what `ops` change is checked. A cardinal set has no inner-corner tiles, so where two edges meet at an inner corner they stop at the tile border; it says so once. Use blob for outlined terrain, or cardinal with edges that run to the border (depth 0, no bands).
 
 ```sh
-node bin/pixelbolt.js autotile shore.autotile.json --out shore.json
+node bin/pixelbolt.js autotile examples/meadow.autotile.json --out meadow.json --preview meadow-map.png
 ```
 
 Every compiled frame is one `autotile` operation naming its neighbour mask, drawn from the `template` symbol, so a frame reads as `{"op": "autotile", "symbol": "template", "mask": 23}` and editing the template in the compiled recipe updates the whole set. Use the same masks in a scene `tilemap` legend (`"autotile": "blob"`) or in a game. Exporting the compiled set also writes `name.tileset.tres`, a Godot 4 TileSet whose terrain paints with these masks ([tile sets](game-integration.md#tile-sets)).

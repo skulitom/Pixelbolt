@@ -1,6 +1,7 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
 import { PixelError, CANVAS_SIDE, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
 import { BLOB_MASKS, CARDINAL_MASKS } from './autotile.js';
+import { terrainTemplate, mergeTerrain, normalTerrain, templateSeams, seamWarnings, testMapRecipe } from './terrain.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
 import { expandMotions, validateRig, MOTION_TEMPLATES } from './motions.js';
@@ -508,48 +509,127 @@ export function compilePoses(source, mode) {
   return plain({ recipe, metadata, ...(warnings.length && { warnings: text.map(item => typeof item === 'string' ? item : grouped(item)) }) });
 }
 
-// Compiles a small template into an autotile set. The template is two tiles wide and three tall:
-//   [ unused preview ][ inner corners ]
+// Template rows of the right size, naming every row that is not.
+function templateRows(rows, tile, path) {
+  const size = `${tile * 3} rows of ${tile * 2} characters (two tiles wide, three tall)`;
+  if (!Array.isArray(rows) || rows.some(row => typeof row !== 'string')) fail(path, `expected ${size}`);
+  const wrong = rows.flatMap((row, y) => (row.length === tile * 2 ? [] : [y]));
+  const problems = [...(rows.length === tile * 3 ? [] : [`it has ${rows.length} rows`]), ...(wrong.length ? [`${wrong.slice(0, 8).map(y => `row ${y} has ${rows[y].length}`).join(', ')}${wrong.length > 8 ? ` and ${wrong.length - 8} more rows differ` : ''}`] : [])];
+  if (problems.length) fail(path, `expected ${size}: ${problems.join('; ')}`);
+  return rows;
+}
+// Draws operations over template rows on a canvas two tiles wide and three tall and reads the result back as rows of
+// one-character palette keys. Errors name the source's own paths.
+function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rowsPath }) {
+  if (ops === undefined) return rows;
+  if (!Array.isArray(ops)) fail(path, 'expected a list of drawing operations');
+  if (!ops.length) return rows;
+  const width = tile * 2, height = tile * 3;
+  let project;
+  try {
+    project = renderProject({ version: 1, name: 'template', width, height, palette, ...(ramps !== undefined && { ramps }), symbols: { ...symbols, template: rows }, frames: [{ name: 'template', ops: [{ op: 'stamp', symbol: 'template' }, ...ops] }] });
+  } catch (error) {
+    if (!(error instanceof PixelError)) throw error;
+    const retarget = text => text.replace(/project\.frames\[0\]\.ops\[(\d+)\]/g, (_, i) => `${path}[${i - 1}]`).replace(/project\.symbols\.template/g, rowsPath).replace(/project\.(symbols|palette|ramps)/g, 'autotile.$1');
+    const moved = new PixelError(retarget(error.path), error.message.slice(error.path.length + 2).replace(/project\.[\w.[\]]+/g, retarget));
+    if (error.errors) moved.errors = error.errors.map(item => ({ path: retarget(item.path), error: retarget(item.error) }));
+    throw moved;
+  }
+  // The first one-character key of each colour, as rows are written.
+  const keys = new Map([[0, '.']]);
+  for (const key of Object.keys(palette)) {
+    if (key.length !== 1 || key === '.' || key === ' ') continue;
+    const [r, g, b, a] = parseColor(key, palette, `autotile.palette.${key}`), id = a ? (((r << 24) | (g << 16) | (b << 8) | a) >>> 0) : 0;
+    if (!keys.has(id)) keys.set(id, key);
+  }
+  const data = project.frames[0].data, out = [];
+  for (let y = 0; y < height; y++) {
+    let row = '';
+    for (let x = 0; x < width; x++) {
+      const at = (y * width + x) * 4, id = data[at + 3] ? (((data[at] << 24) | (data[at + 1] << 16) | (data[at + 2] << 8) | data[at + 3]) >>> 0) : 0;
+      if (!keys.has(id)) fail(path, `drew ${'#' + [0, 1, 2, 3].map(k => data[at + k].toString(16).padStart(2, '0')).join('')} at [${x}, ${y}], a colour no one-character palette key names; template rows hold palette keys, so give that colour a key (or draw with whole palette colours: partly transparent colours blend into new ones)`);
+      row += keys.get(id);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+// Compiles an autotile set from a template two tiles wide and three tall:
+//   [ preview (unused) ][ inner corners ]
 //   [ 2x2 island whose quadrants give outer corners, edges and fill ]
-// Every output frame is one `autotile` operation naming its neighbour mask, so editing the template updates the set.
+// The template is given as rows, or drawn from a `terrain` description (src/terrain.js), with optional `ops` drawn over
+// it. Every output frame is one `autotile` operation naming its neighbour mask, so editing the template updates the
+// set. The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
+// draws the set over a test map holding every tile.
 export function compileAutotile(source) {
-  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'template', 'frame', 'variants', 'animation', 'sheet'], 'autotile');
+  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'frame', 'variants', 'animation', 'preview', 'sheet'], 'autotile');
   if (source.format !== 'pixelforge-autotile' || source.version !== 1) fail('autotile', 'expected version-1 pixelforge-autotile');
   const tile = source.tile;
-  if (!Number.isInteger(tile) || tile < 2 || tile > 128 || tile % 2) fail('autotile.tile', 'expected an even tile size from 2 to 128');
+  // A template is three tiles tall and a symbol at most 256 rows, so tiles are at most 84 pixels.
+  if (!Number.isInteger(tile) || tile < 2 || tile > 84 || tile % 2) fail('autotile.tile', 'expected an even tile size from 2 to 84 (the template is three tiles tall, and a symbol holds at most 256 rows)');
   const mode = source.mode ?? 'blob';
   if (!['blob', 'cardinal'].includes(mode)) fail('autotile.mode', 'expected blob or cardinal');
-  const template = source.template;
-  if (!Array.isArray(template) || template.length !== tile * 3 || template.some(row => typeof row !== 'string' || row.length !== tile * 2)) fail('autotile.template', `expected ${tile * 3} rows of ${tile * 2} characters (two tiles wide, three tall)`);
+  const palette = source.palette ?? {};
+  if (source.symbols !== undefined) {
+    fields(source.symbols, Object.keys(source.symbols), 'autotile.symbols');
+    for (const name of Object.keys(source.symbols)) if (name === 'template' || name.startsWith('template-')) fail(`autotile.symbols.${name}`, 'template and template-<variant> name the compiled templates; choose another name');
+  }
+  if (source.template !== undefined && source.terrain !== undefined) fail('autotile.terrain', 'give template rows or a terrain to draw them, not both');
+  if (source.template === undefined && source.terrain === undefined && source.ops === undefined) fail('autotile.template', `give template rows (${tile * 3} rows of ${tile * 2} characters), a terrain to draw them, or ops`);
+  const drawing = { tile, palette, ramps: source.ramps, symbols: source.symbols ?? {} };
+  const terrain = source.terrain === undefined ? undefined : normalTerrain(source.terrain);
+  const blank = Array.from({ length: tile * 3 }, () => '.'.repeat(tile * 2));
+  const base = source.template !== undefined ? templateRows(source.template, tile, 'autotile.template') : terrain !== undefined ? terrainTemplate(terrain, { tile, palette, mode, path: 'autotile.terrain' }) : blank;
+  const template = drawOverTemplate(base, source.ops, { ...drawing, path: 'autotile.ops', rowsPath: source.template !== undefined ? 'autotile.template' : 'autotile.terrain' });
   if (typeof source.frame !== 'string' || !source.frame.includes('{mask}')) fail('autotile.frame', 'expected a frame name template containing {mask}');
   const variants = source.variants ?? [{ name: '' }];
   if (!Array.isArray(variants) || !variants.length || variants.length > 16) fail('autotile.variants', 'expected 1–16 variants');
   if (source.variants !== undefined && !source.frame.includes('{variant}')) fail('autotile.frame', 'with variants, the frame template must contain {variant}');
-  // A variant may recolour the set (palette), time it (duration) or redraw it from its own template of the same size:
-  // cracked or mossy stone, say, that keeps the base set's edge geometry. Its template becomes the symbol
-  // template-<variant>.
-  const symbols = { template };
+  // A variant may recolour the set (palette), time it (duration) or redraw it: from its own template rows (with its
+  // own ops over them), or from the set's terrain with the variant's `terrain` merged in, or from the set's template,
+  // with the set's ops and then its own drawn over. Cracked or mossy stone, say, or another fill seed, keeps the set's
+  // edges, so variants mix in a map. Its template becomes the symbol template-<variant>.
+  // `drawn` keeps what a terrain drew for each template before ops, which the seam check trusts.
+  const symbols = { template }, drawn = source.template === undefined && terrain !== undefined ? { template: base } : {};
   variants.forEach((variant, i) => {
-    fields(variant, ['name', 'duration', 'palette', 'template'], `autotile.variants[${i}]`);
-    if (typeof variant.name !== 'string' || (source.variants !== undefined && !/^[A-Za-z0-9_-]{1,16}$/.test(variant.name))) fail(`autotile.variants[${i}].name`, 'expected 1–16 letters, digits, hyphens or underscores');
-    if (variant.template === undefined) return;
-    if (!Array.isArray(variant.template) || variant.template.length !== tile * 3 || variant.template.some(row => typeof row !== 'string' || row.length !== tile * 2)) fail(`autotile.variants[${i}].template`, `expected ${tile * 3} rows of ${tile * 2} characters, the size of the base template`);
-    symbols[`template-${variant.name}`] = variant.template;
+    const vp = `autotile.variants[${i}]`;
+    fields(variant, ['name', 'duration', 'palette', 'template', 'terrain', 'ops'], vp);
+    if (typeof variant.name !== 'string' || (source.variants !== undefined && !/^[A-Za-z0-9_-]{1,16}$/.test(variant.name))) fail(`${vp}.name`, 'expected 1–16 letters, digits, hyphens or underscores');
+    if (variant.template === undefined && variant.terrain === undefined && variant.ops === undefined) return;
+    if (variant.template !== undefined && variant.terrain !== undefined) fail(`${vp}.terrain`, 'give template rows or a terrain, not both');
+    let rows;
+    if (variant.template !== undefined) rows = drawOverTemplate(templateRows(variant.template, tile, `${vp}.template`), variant.ops, { ...drawing, path: `${vp}.ops`, rowsPath: `${vp}.template` });
+    else {
+      if (variant.terrain !== undefined && terrain === undefined) fail(`${vp}.terrain`, 'a variant\'s terrain changes the set\'s terrain; give the set a terrain first');
+      const start = variant.terrain === undefined ? base : terrainTemplate(mergeTerrain(terrain, normalTerrain(variant.terrain)), { tile, palette, mode, path: `${vp}.terrain` });
+      rows = drawOverTemplate(drawOverTemplate(start, source.ops, { ...drawing, path: 'autotile.ops', rowsPath: `${vp}.terrain` }), variant.ops, { ...drawing, path: `${vp}.ops`, rowsPath: `${vp}.terrain` });
+      if (terrain !== undefined && source.template === undefined) drawn[`template-${variant.name}`] = start;
+    }
+    symbols[`template-${variant.name}`] = rows;
   });
   if (source.animation !== undefined && (typeof source.animation !== 'string' || !source.animation.includes('{mask}'))) fail('autotile.animation', 'expected an animation name template containing {mask}');
+  if (source.preview !== undefined) {
+    fields(source.preview, ['background'], 'autotile.preview');
+    if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
+  }
   const frames = [], animations = {};
   for (const mask of mode === 'cardinal' ? CARDINAL_MASKS : BLOB_MASKS) {
     const names = [];
     for (const variant of variants) {
-      const name = source.frame.replaceAll('{mask}', String(mask)).replaceAll('{variant}', variant.name);
+      const name = source.frame.replaceAll('{mask}', String(mask)).replaceAll('{variant}', variant.name), own = variant.name && Object.hasOwn(symbols, `template-${variant.name}`);
       names.push(name);
-      frames.push({ name, ...(variant.duration !== undefined && { duration: variant.duration }), ...(variant.palette !== undefined && { palette: variant.palette }), ops: [{ op: 'autotile', symbol: variant.template === undefined ? 'template' : `template-${variant.name}`, mask, ...(mode === 'cardinal' && { mode }) }] });
+      frames.push({ name, ...(variant.duration !== undefined && { duration: variant.duration }), ...(variant.palette !== undefined && { palette: variant.palette }), ops: [{ op: 'autotile', symbol: own ? `template-${variant.name}` : 'template', mask, ...(mode === 'cardinal' && { mode }) }] });
     }
     if (source.animation !== undefined) animations[source.animation.replaceAll('{mask}', String(mask))] = { frames: names };
   }
-  const recipe = { version: 1, name: source.name, width: tile, height: tile, palette: source.palette ?? {}, symbols, frames, ...(source.animation !== undefined && { animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  const recipe = { version: 1, name: source.name, width: tile, height: tile, palette, ...(source.ramps !== undefined && { ramps: source.ramps }), symbols, frames, ...(source.animation !== undefined && { animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
   renderProject(recipe);
-  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: mode === 'cardinal' ? [...CARDINAL_MASKS] : [...BLOB_MASKS], bits: mode === 'cardinal' ? { n: 1, e: 2, s: 4, w: 8 } : { n: 1, ne: 2, e: 4, se: 8, s: 16, sw: 32, w: 64, nw: 128 } } });
+  const report = templateSeams(symbols, tile, mode, drawn), warnings = seamWarnings(report, tile);
+  const count = kind => report.seams.reduce((sum, seam) => sum + seam.pixels.filter(p => (kind === 'corner' ? seam.corner : !seam.corner && (kind === 'shape') === p.shape)).length, 0);
+  // At 84 pixels a tile the test map is 1680 × 1176, inside the size of a still.
+  const preview = testMapRecipe(recipe, { templates: Object.keys(symbols), mode, background: source.preview?.background });
+  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: mode === 'cardinal' ? [...CARDINAL_MASKS] : [...BLOB_MASKS], bits: mode === 'cardinal' ? { n: 1, e: 2, s: 4, w: 8 } : { n: 1, ne: 2, e: 4, se: 8, s: 16, sw: 32, w: 64, nw: 128 }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) } }, ...(warnings.length && { warnings }), preview });
 }
 
 // Normal directions as palette keys (+X right, +Y down, +Z toward the viewer). Digits are laid out like a numeric

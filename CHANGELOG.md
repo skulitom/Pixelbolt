@@ -4,6 +4,16 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Tilesets from a terrain description, with a test map and seam check
+
+- An autotile source can draw its template from a `terrain` instead of typed rows: a `fill` that repeats every tile (a colour with seeded `speckle` clumps, or a `pattern`), an edge per side (`depth`, `jitter`, `bands` such as an outline and a rim light, `outside` colours such as a cast shadow, seeded `tufts`), and `round` and `inner` corners. A terrain is seamless by construction: its tiles, stitched into any map, are exactly the terrain drawn directly. Agents no longer have to hand-type a 2×3-tile template, which a cold test found they could not do reliably.
+- `ops` draw over a template (rows or terrain) with the source's `symbols` and `ramps`: flowers, cracks, stones. A variant's `terrain` merges into the set's field by field, so `{ "fill": { "seed": 11 } }` varies the fill and keeps every edge; a variant's `ops` draw after the set's.
+- Compiling checks every quarter join a map can make. `Seam` warnings name the template pixels where an outline or edge breaks and the pixel to copy to mend it; one `Texture` warning counts fill that does not repeat; a cardinal set says once that it cannot turn inner corners. On a terrain only what `ops` change is checked.
+- Compiling also draws every tile over a test map that holds all 47 (`--preview <new.png>` on `pixelbolt autotile` and `compile`; a second image from MCP `pixel_compile`), on `preview.background` when given. Metadata counts seams.
+- New reviewed examples: `examples/meadow.autotile.json` (grass over dirt from above, with fill and flower variants) and `examples/ground.autotile.json` (platformer ground from the side: grass cap, lit walls, roots).
+- A template of the wrong size names every row of the wrong width. Tiles are limited to 84 pixels, the largest whose template fits a symbol; larger ones used to fail with a message about symbols.
+- The art workflow explains how tiles are stitched from template quarters, why a template has to repeat every tile, and where detail may cross quarter lines.
+
 ### Loop review that measures real jumps
 
 - The fx compile no longer guesses at loop seams. It draws the frame that should follow a loop's last (the next cycle's first) and warns only when the loop's first frame differs from it, counted as `seam.jump`. The old test, a last-to-first change larger than every other step, also fired on seamless loops whose biggest change fell at the seam by chance: at seeds 2, 3 and 7 it flagged eighteen fireball, projectile and buff loops that loop exactly.
@@ -18,6 +28,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The fx compile reviews each animation's `edges`: the canvas sides it draws on, with the most pixels a frame and the frames. It warns about a side, since whatever reaches past it is cut off, unless the effect lists it in its own `edges` (a bolt from the sky); turned copies turn the sides. The Effects lab shows the chosen effect's warnings under the preview, so a seed that throws a spark off the canvas says so.
 - Examples that were cut off are fixed: the water geyser's and dome's ripples (the canvas is 4 pixels taller), the lightning strike's flash (96 × 104, centred), the fluid blast's shockwave, the slash, swing and shatter flashes and shards, and the poison impact's drops; the lightning bolts and hero effects list the sides they touch on purpose. Every Effects lab preset stays off its edges at seeds 2, 3 and 7 too.
 - Poison gas is see-through: translucent colours lit on top, with no shade band or dither, drifting apart on turbulence and thinning as it swells. The effects guide explains when smoke and gas should be translucent rather than outlined.
+
 
 ### Fixes from a cold-agent test of the effect tools
 

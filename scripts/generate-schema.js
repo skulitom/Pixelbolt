@@ -231,16 +231,44 @@ const scene = {
       }), anyOf: [{ required: ['at'] }, { required: ['follow'] }, { required: ['sun'] }] }, 8) })
   }, ['format', 'version', 'name', 'width', 'height', 'assets', 'instances']), $defs: { ...schema.$defs, recipe: sceneRecipe }
 };
+// A terrain draws an autotile template from a description: a fill repeated every tile and an edge per side.
+const paletteKey = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key (template rows hold one character per pixel).' };
+const keyList = description => ({ ...array(paletteKey, 64), description });
+const terrainSide = object({
+  depth: int(0, 63, 'Pixels between the tile border and the terrain on this side; the margin holds outside colours and tufts. Default 0.'),
+  jitter: int(0, 63, 'The edge wanders up to this many pixels further in, seeded and repeating every tile. Default 0.'),
+  size: int(1, 128, 'Pixels between the jitter\'s turns; default 4.'),
+  bands: keyList('Colours of the terrain from this edge inward: an outline, then a rim light or a shade.'),
+  outside: keyList('Colours of the margin from this edge outward, such as a cast shadow (a key with alpha).'),
+  tufts: { ...object({ colors: { ...keyList('Blade colours from the edge outward; each blade is 1 to this many pixels long.'), minItems: 1 }, amount: num(0, 1, 'Share of the columns with a blade; default 0.5.'), seed: int(0, 2147483647) }, ['colors']), description: 'Seeded blades growing out of this edge into its margin: grass on a top edge, roots or drips under a bottom one.' }
+});
+const terrain = { ...object({
+  seed: int(0, 2147483647, 'Seeds the edges, and the fill unless it has a seed of its own. Default 0.'),
+  fill: { oneOf: [paletteKey, object({ color: paletteKey, speckle: { ...array(object({ color: paletteKey, amount: num(0, 1, 'Exact share of the tile in this colour.'), size: int(1, 128, 'Clump size in pixels; default 4.'), seed: int(0, 2147483647) }, ['color', 'amount']), 8), description: 'Seeded clumps of other colours over the fill colour, in order; each covers exactly its amount of the tile.' }, pattern: { ...ref('rows'), description: 'tile × tile rows repeated across the terrain instead of a colour.' }, seed: int(0, 2147483647, 'Seeds the speckle; default the terrain\'s seed. Give a variant another to vary the fill and keep the edges.') }) ],
+    description: 'The inside of the terrain, repeated every tile so it never seams: a palette key, { color, speckle } or { pattern }.' },
+  edges: { ...object({ all: terrainSide, n: terrainSide, e: terrainSide, s: terrainSide, w: terrainSide }), description: 'Each side\'s edge: n top, e right, s bottom, w left. all applies to every side and a side\'s own fields override it. depth + jitter + bands + round must fit in half a tile.' },
+  round: int(0, 64, 'Round outer corners with this radius in pixels; default 0.'),
+  inner: int(0, 64, 'Round inner corners with this radius; default 0.')
+}, ['fill']), description: 'Draw the template from a description instead of rows: a fill that repeats every tile and an edge per side, which cannot seam. ops may draw over it.' };
 const autotile = {
   $schema: schema.$schema, title: 'Pixelbolt autotile template',
-  description: 'A template two tiles wide and three tall: row 0 holds an unused preview tile and an inner-corner tile; rows 1–2 hold a 2×2-tile island whose quadrants give outer corners, edges and fill. Compiles to a recipe whose frames copy four quarters each.',
-  ...object({ format: { const: 'pixelforge-autotile' }, version: { const: 1 }, name: id, tile: int(2, 128, 'Even tile size in pixels.'), mode: { enum: ['blob', 'cardinal'] }, palette: schema.properties.palette,
-    template: { ...ref('rows'), description: 'tile × 3 rows of tile × 2 characters.' },
+  description: 'A template two tiles wide and three tall: row 0 holds an unused preview tile and an inner-corner tile; rows 1–2 hold a 2×2-tile island whose quadrants give outer corners, edges and fill. Give it as rows, or describe a terrain and let the compiler draw it; ops draw over either. Compiles to a recipe whose frames each draw one tile, with seam warnings and a test map of every tile.',
+  ...object({ format: { const: 'pixelforge-autotile' }, version: { const: 1 }, name: id, tile: int(2, 84, 'Even tile size in pixels; the template is three tiles tall, at most 256 rows.'), mode: { enum: ['blob', 'cardinal'] }, palette: schema.properties.palette,
+    ramps: schema.properties.ramps, symbols: { ...schema.properties.symbols, description: 'Symbols the ops may stamp; not copied into the compiled recipe.' },
+    template: { ...ref('rows'), description: 'tile × 3 rows of tile × 2 characters. Tiles are stitched from its quarters, so it has to repeat every tile.' },
+    terrain,
+    ops: { ...array(ref('op')), description: 'Drawing operations over the template (rows or terrain) on a canvas two tiles wide and three tall: stamp a flower, a crack or a stone inside one quarter, or dither and shade. Every colour drawn needs a one-character palette key.' },
     frame: { type: 'string', pattern: '\\{mask\\}', description: 'Frame name template; {mask} is the neighbour mask and {variant} the variant name.' },
-    variants: { ...array(object({ name: { type: 'string', pattern: '^[A-Za-z0-9_-]{1,16}$' }, duration: int(1, 60000), palette: { type: 'object', additionalProperties: color }, template: { ...ref('rows'), description: 'Redraw this variant from its own template of the same size (compiled as the symbol template-<name>): cracked or mossy stone with the base set\'s edges.' } }, ['name']), 16), minItems: 1 },
+    variants: { ...array(object({ name: { type: 'string', pattern: '^[A-Za-z0-9_-]{1,16}$' }, duration: int(1, 60000), palette: { type: 'object', additionalProperties: color },
+      template: { ...ref('rows'), description: 'Redraw this variant from its own template of the same size (compiled as the symbol template-<name>): cracked or mossy stone with the base set\'s edges.' },
+      terrain: { type: 'object', description: 'Changes to the set\'s terrain, merged into it field by field: { "fill": { "seed": 2 } } varies the fill and keeps the edges, so variants mix in a map.' },
+      ops: { ...array(ref('op')), description: 'Drawn over this variant\'s template after the set\'s ops.' } }, ['name']), 16), minItems: 1 },
     animation: { type: 'string', pattern: '\\{mask\\}', description: 'Optional per-mask animation over the variants, in order.' },
+    preview: { ...object({ background: color }), description: 'The test map: background is drawn under it (the ground a transparent-edged set sits on).' },
     sheet: schema.properties.sheet
-  }, ['format', 'version', 'name', 'tile', 'template', 'frame']), $defs: { rows: schema.$defs.rows }
+  }, ['format', 'version', 'name', 'tile', 'frame']), anyOf: [{ required: ['template'] }, { required: ['terrain'] }, { required: ['ops'] }],
+  // The recipe's definitions that operations use; frames, layers and pixel corrections have no place here.
+  $defs: Object.fromEntries(Object.entries(schema.$defs).filter(([key]) => !['frame', 'layer', 'pixel'].includes(key)))
 };
 const range = (minimum, maximum, description) => ({ oneOf: [num(minimum, maximum), pairOf(num(minimum, maximum))], description: `${description} [min, max] picks per particle.` });
 const vector = (minimum, maximum, description) => ({ ...pairOf(num(minimum, maximum)), ...(description && { description }) });
