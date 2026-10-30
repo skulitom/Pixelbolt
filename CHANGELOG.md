@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Loop review that measures real jumps
+
+- The fx compile no longer guesses at loop seams. It draws the frame that should follow a loop's last (the next cycle's first) and warns only when the loop's first frame differs from it, counted as `seam.jump`. The old test, a last-to-first change larger than every other step, also fired on seamless loops whose biggest change fell at the seam by chance: at seeds 2, 3 and 7 it flagged eighteen fireball, projectile and buff loops that loop exactly.
+- A bolt `reroll` spanning a loop wraps round its cycle, and a stream's `head` and `tail` keys, read at the end of each frame, wrap with it.
+- Keys that only show in later frames are warned about by name: a stream's `head` or `tail` and a `reveal` on a layer spanning the loop, and an emitter spanning the loop whose `path`, `sweep`, `throttle`, keyed `rate` or ring `grow` doesn't end where it starts.
+- The Effects lab presets compile with no warnings at seeds 2, 3 and 7.
+
 ### Effects round a character, cut-off review and see-through gas
 
 - Layers and emitters take `depth`: `back`, `split` (a layer's rows above its centre, or the particles born above their spawn centre, go behind) or `front`, the default. An effect with anything behind also compiles `<effect>-back` and `<effect>-front`, with the same frames, timing, cues and anchor, for a game to draw under and over its character; the whole effect draws the back side under the front side, so the parts drawn together give exactly its pixels. A sprite emitter that only draws can be a stand-in (`depth: "between"`), drawn between the sides in the whole effect and in neither part. Child emitters take their parent particle's side.

@@ -334,6 +334,9 @@ function readLayer(layer, path, context, index) {
   }
   // A cycling burst, aura or boiling ring boils through a second, independent field half a cycle behind the first (see boilFields).
   if ((kind === 'burst' || kind === 'aura' || kind === 'ring') && cycle && out.noise && out.boil) out.noiseLater = ditherThreshold('value', [0, 0], hash(out.seed, 1), out.scale);
+  // A layer spanning a loop wraps what it reads at the end of each frame round the cycle: a stream's head and tail keys must
+  // end where they start, and a reveal would draw the shape on again every cycle. compileEffects warns about these.
+  if (cycle) out.seams = [...(kind === 'stream' ? ['head', 'tail'].filter(key => sample(out[key], 0) !== sample(out[key], 1)) : []), ...(out.reveal > 0 ? ['reveal'] : [])];
   return out;
 }
 
@@ -570,7 +573,8 @@ const PAINTERS = {
   // Lightning: a jagged one-pixel core from `at` to `to` with a glow, seeded branches that dim toward their ends, and
   // a new path every `reroll` frames.
   bolt(layer, s, put) {
-    const roll = layer.reroll ? Math.floor(s.k / layer.reroll) : 0, ax = s.cx, ay = s.cy, bx = layer.to[0] + s.dx, by = layer.to[1] + s.dy;
+    // A layer spanning a loop rerolls round its cycle, so the frame after the last draws frame 0's path again.
+    const rolls = layer.cycle && layer.reroll ? Math.ceil((layer.t1 - layer.t0) / layer.reroll) : 0, roll = layer.reroll ? Math.floor(s.k / layer.reroll) % (rolls || Infinity) : 0, ax = s.cx, ay = s.cy, bx = layer.to[0] + s.dx, by = layer.to[1] + s.dy;
     const core = (Math.max(1, sample(layer.width, s.q)) - 1) / 2, glow = sample(layer.glow, s.q);
     const main = zigzag(ax, ay, bx, by, layer.segment, layer.jag, hash(layer.seed, roll, 1));
     const shown = layer.reveal ? Math.max(1, Math.ceil(ease('out', clamp01(s.end / layer.reveal)) * (main.length - 1))) : main.length - 1;
@@ -784,7 +788,9 @@ function band(value, thresholds) {
 // the layer or blob that gave it the most, cleanup's fills and outlines the side of the pixel beside them, and halos
 // that of the nearest pixel they glow from. The result then has `parts`, the back and front pixels as grids of their
 // own, which together are exactly the whole.
-export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false, split = false) {
+// With `wrap`, a loop's frame count, frame `wrap` is the one after the loop's last, for reviewing its seam: a layer
+// spanning the loop goes on to the end of its cycle (progress 1), and any other draws as it does in frame 0.
+export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false, split = false, wrap = 0) {
   const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N), side = split ? new Uint8Array(N) : null;
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
@@ -792,8 +798,9 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
     const field = new Float64Array(N), scratch = new Float64Array(N), best = split ? new Float64Array(N) : null, from = split ? new Uint8Array(N) : null;
     let any = false;
     for (const layer of shapes.layers) {
-      if (layer.look !== look.name || f < layer.t0 || f >= layer.t1) continue;
-      const k = f - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
+      const g = wrap && f >= wrap && !layer.cycle ? f - wrap : f;
+      if (layer.look !== look.name || g < layer.t0 || g > layer.t1 || (g === layer.t1 && !(wrap && layer.cycle))) continue;
+      const k = g - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
       const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
       const along = layer.curved ? curveSample : sample;
@@ -813,7 +820,9 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       // A keyed squash draws this frame's squash through a copy of the layer, so painters read it as they always have.
       const flow = layer.flow ? flowFields(layer, p, q) : null;
       const shaped = layer.squashKeys ? { ...layer, squash: [sample(layer.squashKeys[0], q), sample(layer.squashKeys[1], q)] } : layer;
-      PAINTERS[layer.kind](shaped, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, noise, frame: frameOf(shaped, cx, cy) }, put, width, height);
+      // What a painter reads at the end of the frame (a stream's head and tail, a reveal) wraps round a cycle as well.
+      const end = (k + 1) / (layer.t1 - layer.t0);
+      PAINTERS[layer.kind](shaped, { k, p, end: wrap && layer.cycle && end > 1 ? end - 1 : end, q, cx, cy, dx, dy, f: g, noise, frame: frameOf(shaped, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
         let value = scratch[c] * power;
         if (value <= 0) continue;

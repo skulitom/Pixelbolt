@@ -112,7 +112,37 @@ test('a light point and cues reach the back and front parts too', () => {
   }
 });
 
-test('every effect example compiles without warnings, and the Effects lab presets stay off the canvas edges at seeds 2, 3 and 7', async () => {
+test('a loop is reviewed against the frame that should follow its last, so only a real jump is warned about', () => {
+  const looks = { warm: { colors: ['y', 'w'], thresholds: [0.2, 0.6] } };
+  const jumpOf = (effect, extra) => { const { metadata, warnings = [] } = compileEffects(source({ e: { frames: 8, loop: true, seed: 3, looks, ...effect } }, extra)); return { jump: metadata.effects.e.seam.jump, warnings }; };
+  const ring = layer => jumpOf({ layers: [{ kind: 'ring', at: [16, 16], radius: 8, width: 2, ...layer }] });
+  // Keys that close, a whole turn of rerolls and an even flicker loop cleanly; keys that don't, a reroll that doesn't divide
+  // the frames and an odd flicker jump.
+  assert.equal(ring({ radius: [6, 10, 6] }).jump, 0);
+  assert.ok(ring({ radius: [6, 10] }).jump > 0);
+  assert.equal(ring({ flicker: 0.5 }).jump, 0);
+  assert.ok(jumpOf({ frames: 7, layers: [{ kind: 'ring', at: [16, 16], radius: 8, width: 2, flicker: 0.5 }] }).jump > 0);
+  const bolt = reroll => jumpOf({ layers: [{ kind: 'bolt', at: [4, 16], to: [28, 16], reroll, branches: 1 }] });
+  assert.equal(bolt(2).jump, 0);
+  assert.ok(bolt(3).jump > 0);
+  // Particles in a loop are periodic whatever the seed: embers that wander and sway never jump.
+  for (const seed of [1, 2, 3, 7, 11]) {
+    const { metadata, warnings } = compileEffects(source({ e: { frames: 8, loop: true, seed, emitters: [{ at: [16, 26], area: [12, 2], rate: 1.5, angle: [260, 280], speed: [0.6, 1.2], life: [6, 11], drag: 0.05, turbulence: { strength: 0.2 }, sway: { amplitude: [1, 0], period: 4 }, shapes: ['dot', 'warm'], trail: { color: 'o', length: 1 } }] } }));
+    assert.equal(metadata.effects.e.seam.jump, 0, `seed ${seed}`);
+    assert.equal(warnings, undefined, `seed ${seed}`);
+  }
+  // A stream's head and tail, read at the end of each frame, wrap round the loop: closed keys are fine, open ones warned.
+  const stream = head => jumpOf({ layers: [{ kind: 'stream', at: [16, 28], through: [[16, 16], [17, 4]], width: 5, head, sway: 1, wavelength: 12, waves: 1 }] });
+  assert.deepEqual(stream([1, 0.6, 1]), { jump: 0, warnings: [] });
+  assert.match(stream([0.5, 1]).warnings[0], /^fx\.effects\.e\.layers\[0\]: this stream spans the loop, so its head keys must end where they start; otherwise the loop jumps/);
+  // So must an emitter's keys and path when it spans the loop.
+  const emitter = more => compileEffects(source({ e: { frames: 8, loop: true, emitters: [{ rate: 1, life: 4, speed: 1, shapes: ['dot'], ...more }] } })).warnings ?? [];
+  assert.deepEqual(emitter({ sweep: [-30, 30, -30], path: [[8, 16], [24, 16], [8, 16]] }), []);
+  assert.match(emitter({ at: [16, 16], sweep: [-30, 30], rate: [1, 2] })[0], /^fx\.effects\.e\.emitters\[0\]: this emitter spans the loop, so its sweep and rate must end where they start/);
+  assert.match(emitter({ path: [[8, 16], [24, 16]] })[0], /its path must end where it starts/);
+});
+
+test('every effect example compiles without warnings, and the Effects lab presets stay off the canvas edges and loop cleanly at seeds 2, 3 and 7', async () => {
   const lab = new Set(EFFECT_PRESETS.map(preset => preset.file));
   for (const file of (await readdir(path.join(root, 'examples'))).filter(name => name.endsWith('.fx.json'))) {
     const { document } = await resolveReferences(JSON.parse(await readFile(path.join(root, 'examples', file), 'utf8')), { baseDir: path.join(root, 'examples') });
@@ -121,7 +151,7 @@ test('every effect example compiles without warnings, and the Effects lab preset
     for (const seed of [2, 3, 7]) {
       const reseeded = structuredClone(document);
       for (const effect of Object.values(reseeded.effects)) effect.seed = seed;
-      assert.deepEqual((compileEffects(reseeded).warnings ?? []).filter(text => text.includes(' draws on the canvas')), [], `${file} at seed ${seed}`);
+      assert.equal(compileEffects(reseeded).warnings, undefined, `${file} at seed ${seed}`);
     }
   }
 });

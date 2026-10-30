@@ -412,7 +412,8 @@ function simulate(effect, context) {
   const warmup = loop ? Math.ceil(Math.max(...chain) / frames) : 0, total = (warmup + 1) * frames, first = warmup * frames;
   // The child emitters of each emitter, by the event they spawn at.
   const children = emitters.map((_, i) => Object.fromEntries(['death', 'floor'].map(when => [when, emitters.flatMap((e, j) => (e.parent === i && e.when === when ? [j] : []))])));
-  const perFrame = () => Array.from({ length: frames }, () => []);
+  // A loop draws one frame more, the next cycle's first, which the seam review compares with frame 0 (see `next`).
+  const perFrame = () => Array.from({ length: frames + (loop ? 1 : 0) }, () => []);
   const alive = [], output = perFrame(), behind = perFrame(), blobs = perFrame(), cues = Array.from({ length: frames }, () => ({}));
   // Behind a character: the back particles' own two passes; between: stand-in sprites. Both stay empty unless an emitter
   // asks for them.
@@ -514,13 +515,16 @@ function simulate(effect, context) {
       const r = salt => random(q.tag, index, q.age, k, salt), back = spread && q.px !== undefined && k < count - 1;
       const x = back ? q.px + (q.x - q.px) * (k + 1) / count : q.x, y = back ? q.py + (q.y - q.py) * (k + 1) / count : q.y;
       add(launch(e, index, x + ox, y + oy, k, count, r, hash(q.tag, index, q.age, k), born, q));
-      if (born >= first) stats[index].spawned++;
+      if (born >= first && born <= total) stats[index].spawned++;
     }
     if (count) mark(e, born, q.x + ox, q.y + oy);
   };
   const layered = emitters.some(e => e.behind);
-  for (let t = 0; t < total; t++) {
-    const cycle = t % frames, drawing = t >= first;
+  let counted = null;
+  for (let t = 0; t < total + (loop ? 1 : 0); t++) {
+    // recording: one of the effect's own frames; the frame after a loop's last is drawn but not counted.
+    const cycle = t % frames, drawing = t >= first, recording = drawing && t < total;
+    if (t === total) counted = { operations, culled };
     emitters.forEach((e, index) => {
       if (e.parent !== null) return;
       // A release spawns from the pixels leaving this frame, each keyed by its place in the sprite.
@@ -528,7 +532,7 @@ function simulate(effect, context) {
         const due = releases[index].due[cycle];
         due.forEach((i, k) => {
           add(launch(e, index, 0, 0, k, due.length, salt => random(seed, index, -1, i, salt), hash(seed, index, -1, i), t, null, e.sprite.frames[0].cells[i]));
-          if (drawing) stats[index].spawned++;
+          if (recording) stats[index].spawned++;
         });
         if (due.length) mark(e, t, e.at[0], e.at[1]);
         return;
@@ -549,7 +553,7 @@ function simulate(effect, context) {
         // With inherit, a moving emitter hands its particles that share of its own velocity along the path.
         const moving = e.route && e.inherit ? velocity(e, at) : null;
         add(launch(e, index, cx, cy, k, count, salt => random(seed, index, key, k, salt), hash(seed, index, key, k), t, moving));
-        if (drawing) stats[index].spawned++;
+        if (recording) stats[index].spawned++;
       }
       if (count) mark(e, t, centre(e, cycle)[0], centre(e, cycle)[1]);
     });
@@ -561,7 +565,7 @@ function simulate(effect, context) {
         if (q.index === e.parent) spawnChildren(index, q, Math.floor((q.age + 1) * e.rate + 1e-9) - Math.floor(q.age * e.rate + 1e-9), t, true);
       }
     });
-    if (drawing) emitters.forEach((e, index) => { stats[index].maxAlive = Math.max(stats[index].maxAlive, alive.filter(p => p.index === index).length); });
+    if (recording) emitters.forEach((e, index) => { stats[index].maxAlive = Math.max(stats[index].maxAlive, alive.filter(p => p.index === index).length); });
     // Every live particle's rounded (and swayed) position. Sway never carries a particle below its floor. A facing
     // particle turns with its velocity in every frame, warm-up included, so a loop's frame 0 continues its last frame.
     const places = alive.map(p => {
@@ -678,9 +682,12 @@ function simulate(effect, context) {
     }
     // In the parents' drawing order.
     for (let k = events.length - 1; k >= 0; k--) { const [q, when] = events[k]; for (const index of children[q.index][when]) spawnChildren(index, q, emitters[index].burst, t + 1); }
+    if (counted) ({ operations, culled } = counted);
     if (operations > LIMITS.operations) fail(context.path, `the effect needs more than ${LIMITS.operations} drawing operations; lower counts or frames`);
   }
-  return { output, behind, back, between, blobs, operations, culled, stats, cues };
+  // The next cycle's first frame, drawn as the recorded ones are, for the seam review only.
+  const next = loop ? { output: output.pop(), behind: behind.pop(), back: { output: back.output.pop(), behind: back.behind.pop() }, between: between.pop(), blobs: blobs.pop() } : null;
+  return { output, behind, back, between, blobs, next, operations, culled, stats, cues };
 }
 
 // Frame durations eased from `from` to `to` milliseconds across the effect: `in` stays quick and slows at the end,
@@ -884,7 +891,9 @@ export function compileEffects(source) {
     rows.forEach((row, j) => { for (const char of row) if (char !== '.' && char !== ' ' && !Object.hasOwn(palette, char)) fail(`fx.symbols.${name}[${j}]`, `unknown palette character ${JSON.stringify(char)}; the palette has ${Object.keys(palette).join(' ')}, and . or a space is clear`); });
   }
   if (!isObject(source.effects) || !Object.keys(source.effects).length || Object.keys(source.effects).length > LIMITS.effects) fail('fx.effects', `expected 1–${LIMITS.effects} named effects`);
-  const frames = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Map();
+  // nextFrames: for each loop, the frame that follows its last, rendered only to review the seam.
+  // loopNotes: warnings found while reading, such as a stream spanning a loop whose head keys don't close.
+  const frames = [], nextFrames = [], loopNotes = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Map();
   // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
   // touching: the canvas sides each animation may draw on (its effect's edges, turned with a turned copy).
   const shapeWork = { spent: 0 }, pointed = new Set(), touching = new Map();
@@ -920,10 +929,26 @@ export function compileEffects(source) {
       // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
       const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);
       context.looks = shapes ? shapes.looks.map(look => look.name) : [];
+      // Once per effect, not per turned copy: what a layer spanning the loop reads at the end of each frame must close.
+      if (shapes && name === turnsOf(effect, base, path, width, height)[0].name) shapes.layers.forEach((layer, i) => {
+        if (!layer.seams?.length) return;
+        const keys = layer.seams.filter(key => key !== 'reveal');
+        loopNotes.push(`${path}.layers[${i}]: this ${layer.kind} spans the loop, so ${[...(keys.length ? [`its ${keys.join(' and ')} keys must end where they start`] : []), ...(layer.seams.includes('reveal') ? ['a reveal draws it on again every cycle (leave reveal out)'] : [])].join(', and ')}; otherwise the loop jumps`);
+      });
       const list = effect.emitters ?? (shapes ? [] : undefined);
       if (!Array.isArray(list) || (!list.length && (!shapes || effect.emitters !== undefined)) || list.length > LIMITS.emitters) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters; leave emitters out for an effect of shape layers only`);
       const emitters = [];
       list.forEach((emitter, i) => emitters.push(readEmitter(emitter, `${path}.emitters[${i}]`, context, emitters)));
+      // An emitter spanning a loop goes round its keys every cycle, so a path, sweep, throttle, keyed rate or ring grow
+      // must end where it starts; otherwise new particles jump at the loop point. Once per effect, not per turned copy.
+      if (loop && name === turnsOf(effect, base, path, width, height)[0].name) emitters.forEach((e, i) => {
+        if (e.parent !== null || e.start !== 0 || e.end !== count) return;
+        const source = list[i], same = (a, b) => JSON.stringify(a) === JSON.stringify(b), open = [];
+        if (Array.isArray(source.path) && !same(source.path[0], source.path.at(-1))) open.push('path');
+        for (const key of ['sweep', 'throttle', 'rate']) if (Array.isArray(source[key]) && source[key][0] !== source[key].at(-1)) open.push(key);
+        if (Array.isArray(source.ring?.grow) && source.ring.grow[0] !== source.ring.grow.at(-1)) open.push('ring grow');
+        if (open.length) loopNotes.push(`${path}.emitters[${i}]: this emitter spans the loop, so its ${open.join(' and ')} must end where ${open.length === 1 ? 'it starts' : 'they start'}; otherwise its new particles jump at the loop point`);
+      });
       // An effect with anything behind a character (or a stand-in between) also compiles <name>-back and <name>-front:
       // what a game draws under its character and over it. The whole effect draws the back, the stand-in, then the front.
       const split = emitters.some(e => e.depth !== null && e.depth !== 'front') || (shapes?.layers.some(l => l.depth !== 'front') ?? false);
@@ -937,30 +962,38 @@ export function compileEffects(source) {
       }
       const empty = () => Array.from({ length: count }, () => []);
       const run = emitters.length ? simulate({ frames: count, loop, seed, emitters, view }, context)
-        : { output: empty(), behind: empty(), back: { output: empty(), behind: empty() }, between: empty(), blobs: empty(), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})) };
+        : { output: empty(), behind: empty(), back: { output: empty(), behind: empty() }, between: empty(), blobs: empty(), operations: 0, culled: 0, stats: [], cues: Array.from({ length: count }, () => ({})),
+          next: loop ? { output: [], behind: [], back: { output: [], behind: [] }, between: [], blobs: [] } : null };
       if (shapes) for (const layer of shapes.layers) if (layer.cue && !Object.hasOwn(run.cues[layer.t0], layer.cue)) run.cues[layer.t0][layer.cue] = [Math.floor(layer.at[0] + 0.5), Math.floor(layer.at[1] + 0.5)];
       const spawned = run.stats.reduce((sum, s) => sum + s.spawned, 0);
       if (spawned > LIMITS.spawned) fail(`${path}.emitters`, `more than ${LIMITS.spawned} particles; lower burst, rate or frames`);
       // Cues become named frame points, which atlases export for game code (a shake or a pause on the impact frame).
       const cues = [], partFrames = { back: [], front: [] };
       const gridOp = grid => (grid ? [{ op: 'grid', x: grid.x, y: grid.y, rows: grid.rows }] : []);
-      const names = run.output.map((front, i) => {
-        const grid = shapes && renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, false, split);
+      // Frame i's operations from what the particles drew in it (drawn: output, behind, back, between, blobs), split into
+      // the sides behind and in front of a character when the effect has parts. Frame `count` of a loop is the one after
+      // its last, which shapes draw through `wrap`.
+      const opsAt = (i, drawn, work) => {
+        const wrap = i === count ? count : 0;
+        const grid = shapes && renderShapes(shapes, i, width, height, drawn.blobs, work, false, split, wrap);
         // Looks with front: true draw a second grid over the particles.
-        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, run.blobs[i], shapeWork, true, split) : null;
+        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, drawn.blobs, work, true, split, wrap) : null;
+        if (!parts) return { ops: [...drawn.behind, ...gridOp(grid), ...drawn.output, ...gridOp(over)] };
+        // Each side keeps the usual order (behind particles, shapes, particles, front looks), and the back side goes first.
+        const back = [...drawn.back.behind, ...gridOp(grid?.parts.back), ...drawn.back.output, ...gridOp(over?.parts.back)];
+        const front = [...drawn.behind, ...gridOp(grid?.parts.front), ...drawn.output, ...gridOp(over?.parts.front)];
+        return { ops: [...back, ...drawn.between, ...front], back, front };
+      };
+      const names = run.output.map((output, i) => {
         const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
         if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
-        let ops;
-        if (parts) {
-          // Each side keeps the usual order (behind particles, shapes, particles, front looks), and the back side goes first.
-          const backOps = [...run.back.behind[i], ...gridOp(grid?.parts.back), ...run.back.output[i], ...gridOp(over?.parts.back)];
-          const frontOps = [...run.behind[i], ...gridOp(grid?.parts.front), ...front, ...gridOp(over?.parts.front)];
-          ops = [...backOps, ...run.between[i], ...frontOps];
-          for (const [side, sideOps] of [['back', backOps], ['front', frontOps]]) partFrames[side].push({ name: `${parts[side]}-${i}`, duration: durations[i], ...(points && { points }), ...(sideOps.length && { ops: sideOps }) });
-        } else ops = [...run.behind[i], ...gridOp(grid), ...front, ...gridOp(over)];
+        const { ops, back, front } = opsAt(i, { output, behind: run.behind[i], back: { output: run.back.output[i], behind: run.back.behind[i] }, between: run.between[i], blobs: run.blobs[i] }, shapeWork);
+        if (parts) for (const [side, sideOps] of [['back', back], ['front', front]]) partFrames[side].push({ name: `${parts[side]}-${i}`, duration: durations[i], ...(points && { points }), ...(sideOps.length && { ops: sideOps }) });
         frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
         return `${name}-${i}`;
       });
+      // The frame after a loop's last, for the seam review; it takes its own painting budget and joins no animation.
+      if (loop) nextFrames.push({ name: `${name}-next`, duration: 100, ...((ops => ops.length && { ops })(opsAt(count, run.next, { spent: 0 }).ops)) });
       animations[name] = { frames: names, ...(!loop && { loop: false }) };
       metadata.effects[name] = { frames: count, loop, seed: effect.seed ?? 1, ...(view !== undefined && name !== base && { turn: { of: base, angle: view?.turn ?? 0, mirror: view?.mirror ?? false } }), ...(parts && { parts }), operations: run.operations, culled: run.culled, emitters: run.stats, ...(shapes?.layers.length ? { layers: shapes.layers.map(l => ({ kind: l.kind, look: l.look, frames: [l.t0, l.t1] })) } : {}), ...(cues.length && { cues }) };
       if (parts) for (const side of ['back', 'front']) {
@@ -990,7 +1023,12 @@ export function compileEffects(source) {
   // A review of what each animation delivers: a loop's seam (the pixels that change from its last frame to its first)
   // against its largest ordinary step, warned about when the loop jumps; a one-shot's residue, the pixels its last
   // frame still draws (0 when it ends empty).
-  const project = renderProject(recipe), at = new Map(recipe.frames.map((frame, i) => [frame.name, project.frames[i].data])), warnings = [];
+  const project = renderProject(recipe), at = new Map(recipe.frames.map((frame, i) => [frame.name, project.frames[i].data])), warnings = [...loopNotes];
+  // The frame each loop should go on to after its last, drawn with the same palette and symbols.
+  if (nextFrames.length) {
+    const probe = renderProject({ ...recipe, frames: nextFrames, animations: { next: { frames: nextFrames.map(frame => frame.name) } } });
+    nextFrames.forEach((frame, i) => at.set(frame.name, probe.frames[i].data));
+  }
   const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
   // The pixels a frame draws on each side's outermost row or column.
   const onEdges = data => {
@@ -1033,9 +1071,12 @@ export function compileEffects(source) {
       warnings.push(`fx.effects.${of}: ${name} draws on the canvas's ${cut.length === 1 ? `${cut[0]} edge` : `${cut.slice(0, -1).join(', ')} and ${cut.at(-1)} edges`} (${where}), so whatever reaches past it is cut off: keep it further inside or grow the canvas, or, if the effect is meant to touch that side (a bolt from the sky, a figure standing on the bottom row), list it in edges`);
     }
     if (animation.loop === false) { effect.residue = residue(); continue; }
-    const all = steps(), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = all.length ? Math.max(...all) : 0;
-    effect.seam = { pixels: seam, largestStep: largest };
-    if (data.length > 2 && seam > largest) warnings.push(`fx.effects.${of}: ${name} changes ${seam} pixels from its last frame to its first, more than the ${largest} between any two others, so the loop jumps: end keys where they start, spin and sway by whole turns, and give rate emitters a finite life`);
+    // A seamless loop's first frame is exactly the frame that follows its last: jump counts the pixels where they differ.
+    // How much the last frame changes into the first (pixels) against the largest ordinary step is shown too, but a
+    // seamless loop can have its largest change there by chance, so only a jump is warned about.
+    const all = steps(), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = all.length ? Math.max(...all) : 0, jump = differ(at.get(`${name}-next`), data[0]);
+    effect.seam = { pixels: seam, largestStep: largest, jump };
+    if (jump) warnings.push(`fx.effects.${of}: ${name} jumps at its loop point: its first frame differs in ${jump} pixel${jump === 1 ? '' : 's'} from the frame that should follow its last, so end keys where they start, spin and sway by whole turns, close paths, and give flicker an even frame count`);
   }
   return JSON.parse(JSON.stringify({ recipe, metadata, ...(warnings.length && { warnings }) }));
 }
