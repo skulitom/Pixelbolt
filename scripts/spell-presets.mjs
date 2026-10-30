@@ -217,24 +217,25 @@ export const spellPresets = {
           {
             "kind": "beam",
             "look": "fire",
-            "at": [27, 28],
+            "at": [29, 28],
             "to": [5, 28],
-            "width": 14,
-            "fade": 0.95,
+            "width": 12,
+            "fade": 0.9,
             "wobble": 0.25,
             "wavelength": 7,
             "waves": 2,
-            "noise": 0.6,
-            "scale": 3
+            "noise": 0.5,
+            "scale": 3,
+            "power": 1.3
           },
           {
             "kind": "burst",
             "look": "fire",
             "at": [29, 28],
-            "radius": 8,
-            "noise": 0.6,
+            "radius": 7.5,
+            "noise": 0.3,
             "boil": 6,
-            "power": 1.5,
+            "power": 1.12,
             "seed": 4
           }
         ],

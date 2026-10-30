@@ -11,6 +11,8 @@ import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS } from './craft.js';
 import { readShapes, renderShapes, tween, sample, sequenceFrame } from './shapes.js';
+import { compileFluid } from './fluid.js';
+import { compileWaves } from './wave.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -525,13 +527,16 @@ function curve(value, path, count) {
 // Letters first: JavaScript lists digit keys before all others, which would reorder the palette.
 const SPARE_KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&*+-/:;<=>?@^_~0123456789';
 const hexOf = rgba => '#' + [...rgba].slice(0, rgba[3] === 255 ? 3 : 4).map(v => v.toString(16).padStart(2, '0')).join('');
-// An inline recipe or pose source (a pose source compiles first), rendered, with its poses' metadata when it has some.
+// The sources a symbol, sprite or trail may take frames from: a recipe, or a pose, fluid or wave source compiled first
+// (a fluid's or wave's effects are its animations, so a simulated explosion can sit inside an effect).
+const SOURCES = { 'pixelforge-poses': compilePoses, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves };
+// An inline recipe or source, compiled and rendered, with its poses' metadata when it has some.
 function loadSource(spec, path) {
   if (typeof spec === 'string' || (isObject(spec) && spec.revision !== undefined && spec.version === undefined)) fail(path, 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
-  if (!isObject(spec)) fail(path, 'expected a recipe or a pixelforge-poses source, inline or as a file reference');
-  if (spec.format !== undefined && spec.format !== 'pixelforge-poses') fail(path, `expected a recipe or a pixelforge-poses source, not ${spec.format}`);
-  const compiled = spec.format === 'pixelforge-poses' ? compilePoses(spec) : null, recipe = compiled?.recipe ?? spec;
-  return { recipe, project: renderProject(recipe), poses: compiled?.metadata.poses ?? null };
+  if (!isObject(spec)) fail(path, 'expected a recipe or a pixelforge-poses, pixelforge-fluid or pixelforge-wave source, inline or as a file reference');
+  if (spec.format !== undefined && !Object.hasOwn(SOURCES, spec.format)) fail(path, `expected a recipe or a pixelforge-poses, pixelforge-fluid or pixelforge-wave source, not ${spec.format}`);
+  const compiled = spec.format === undefined ? null : SOURCES[spec.format](spec), recipe = compiled?.recipe ?? spec;
+  return { recipe, project: renderProject(recipe), poses: spec.format === 'pixelforge-poses' ? compiled.metadata.poses : null };
 }
 // The frames `entry` names: one `frame` (default the first) or every frame of an `animation`, in playing order.
 function framesOf(entry, source, path) {
@@ -553,7 +558,7 @@ function framesOf(entry, source, path) {
  * takes a spare key. Translucent overlaps become their own colour.
  */
 export function recipeSprite(entry, palette, path) {
-  if (!isObject(entry)) fail(path, 'expected rows, or { recipe, frame } or { recipe, animation }: a frame or an animation of a recipe or pose source');
+  if (!isObject(entry)) fail(path, 'expected rows, or { recipe, frame } or { recipe, animation }: a frame or an animation of a recipe or a pose, fluid or wave source');
   fields(entry, ['recipe', 'frame', 'animation'], path);
   const source = loadSource(entry.recipe, `${path}.recipe`), { project } = source;
   if (project.height > 256) fail(`${path}.recipe`, `its canvas is ${project.width}×${project.height}; a symbol has at most 256 rows`);
@@ -643,7 +648,12 @@ function turnsOf(effect, base, path, width, height) {
 function turnView(turn, mirror, [ax, ay]) {
   const [c, s] = QUARTERS[turn] ?? [cosDeg(turn), sinDeg(turn)];
   const vec = (dx, dy) => { const x = mirror ? -dx : dx; return [x * c - dy * s, x * s + dy * c]; };
-  return { turn, mirror, vec, point: ([x, y]) => { const [vx, vy] = vec(x - ax, y - ay); return [ax + vx, ay + vy]; }, dir: theta => (mirror ? 180 - theta : theta) + turn };
+  // Back from the copy to the drawn effect: turned back, then flipped.
+  const unvec = (dx, dy) => { const x = dx * c + dy * s; return [mirror ? -x : x, -dx * s + dy * c]; };
+  return {
+    turn, mirror, vec, point: ([x, y]) => { const [vx, vy] = vec(x - ax, y - ay); return [ax + vx, ay + vy]; }, dir: theta => (mirror ? 180 - theta : theta) + turn,
+    unpoint: ([x, y]) => { const [ux, uy] = unvec(x - ax, y - ay); return [ax + ux, ay + uy]; }
+  };
 }
 const isPair = value => Array.isArray(value) && value.length === 2 && value.every(v => typeof v === 'number' && Number.isFinite(v));
 const negated = value => (Array.isArray(value) ? value.map(v => (typeof v === 'number' ? -v : v)) : typeof value === 'number' ? -value : value);
@@ -724,7 +734,7 @@ export function compileEffects(source) {
         ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
         : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
           : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path };
+      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view };
       // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
       // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
       const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);

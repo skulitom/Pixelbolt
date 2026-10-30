@@ -87,6 +87,25 @@ const heroMagic = { format: 'pixelforge-fx', version: 1, name: 'hero-magic', wid
       emitters: [{ sprite: { symbol: 'hero', pixels: 'outline', draw: true }, at: heroAt, rate: 0.6, angle: [255, 285], speed: [0.6, 1.2], life: [5, 8], shapes: ['spark', 'spark-dim'] }] }
   } };
 
+// The simulated explosion of explosion.fluid.json inside a particle effect: it plays frame for frame under a shape-layer
+// flash and a shockwave that breaks up as it spreads, with a few embers over it.
+const fluidBlast = { format: 'pixelforge-fx', version: 1, name: 'fluid-blast', width: 96, height: 96,
+  palette: { W: '#fffbe6', y: '#ffd34d', o: '#ff8a2b', r: '#d6402b' },
+  symbols: { blast: { recipe: 'explosion.fluid.json', animation: 'explosion' }, 'ember-big': ['yW', 'oy'], ember: ['y'], 'ember-dim': ['o'], 'ember-end': ['r'] },
+  anchor: [48, 53],
+  effects: {
+    blast: { frames: 32, duration: { from: 45, to: 80, ease: 'in' }, seed: 7,
+      looks: { flash: { colors: ['o', 'y', 'W'], thresholds: [0.25, 0.5, 0.8] } },
+      cleanup: { corners: true, strays: true },
+      layers: [
+        { kind: 'star', look: 'flash', at: [48, 53], frames: [0, 3], radius: [28, 12], points: 8, width: [4, 2], ratio: 0.5, power: [1.3, 0.8], cue: 'boom' },
+        { kind: 'ring', look: 'flash', at: [48, 53], frames: [1, 9], radius: [10, 44], width: [7, 4, 3], noise: 0.85, scale: 5, power: [1.3, 0.9, 0.3] }],
+      emitters: [
+        { sprite: { symbol: 'blast', draw: true }, at: [16, 16], behind: true },
+        { at: [48, 53], burst: 9, start: 1, angle: [190, 350], speed: [1.4, 2.8], gravity: [0, 0.3], drag: 0.03, life: [6, 10], floor: 84, bounce: 0.3,
+          shapes: ['ember-big', 'ember', 'ember-dim', 'ember-end'], trail: { color: 'r', length: 1 } }] }
+  } };
+
 // A crescent smear behind the sword of swing.poses.json: the trail follows the blade's tip round its hilt frame for frame,
 // the sword animation is drawn under the effect's particles, and a flash and sparks mark the strike. The durations are
 // the swing's own, then two frames for the smear to shrink away.
@@ -490,7 +509,7 @@ const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': ste
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
+const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])) };
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.

@@ -360,7 +360,7 @@ test('a symbol can be a frame of a recipe or pose source, its colours joining th
   const wrong = symbol => { try { plain({ man: symbol }); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
   assert.match(wrong({ recipe, frame: 'jump' }), /symbols\.man\.frame: man has no frame named "jump"; it has stand, duck/);
   assert.match(wrong({ recipe: 'man.json' }), /symbols\.man\.recipe: file and revision references are resolved by the CLI and MCP/);
-  assert.match(wrong({ recipe: { format: 'pixelforge-fx' } }), /symbols\.man\.recipe: expected a recipe or a pixelforge-poses source, not pixelforge-fx/);
+  assert.match(wrong({ recipe: { format: 'pixelforge-fx' } }), /symbols\.man\.recipe: expected a recipe or a pixelforge-poses, pixelforge-fluid or pixelforge-wave source, not pixelforge-fx/);
   // The CLI and MCP inline a file named there, relative to the source.
   const { resolveReferences } = await import('../src/resolve.js');
   const source = effects({ frames: 1, emitters: [{ sprite: { symbol: 'hero' }, at: [0, 0], burst: 1, life: 1 }] }, { width: 32, height: 36, symbols: { hero: { recipe: 'hero.poses.json', frame: 'idle-rest' } } });
@@ -448,6 +448,33 @@ test('the swing trail example compiles from the swing\'s pose source to the pixe
   assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '553f1d57519cdcb55dd5b64f88842e97bd2a86959a0bff5dfeac85ba86dc93b9');
 });
 
+test('a fluid or a wave can play inside an effect as a sprite, drawing exactly the pixels it draws on its own', async () => {
+  const { compileFluid } = await import('../src/fluid.js');
+  const { compileWaves } = await import('../src/wave.js');
+  const smoke = JSON.parse(await readFile(path.join(root, 'examples/smoke-puff.fluid.json'), 'utf8')), portal = JSON.parse(await readFile(path.join(root, 'examples/portal.wave.json'), 'utf8'));
+  for (const [kind, source, compile] of [['fluid', smoke, compileFluid], ['wave', portal, compileWaves]]) {
+    const alone = renderProject(compile(source).recipe), [name, animation] = Object.entries(alone.animations)[0];
+    const inside = compileEffects({ format: 'pixelforge-fx', version: 1, name: 'mix', width: alone.width, height: alone.height,
+      symbols: { play: { recipe: source, animation: name } }, effects: { mix: { frames: animation.frames.length, emitters: [{ sprite: { symbol: 'play', draw: true }, at: [0, 0] }] } } });
+    const drawn = renderProject(inside.recipe).frames;
+    animation.frames.forEach((index, i) => assert.deepEqual(drawn[i].data, alone.frames[index].data, `${kind} frame ${i}`));
+  }
+});
+
+test('the fluid blast example compiles from the explosion fluid source to the pixels that were approved', async () => {
+  const { resolveReferences } = await import('../src/resolve.js');
+  const { createHash } = await import('node:crypto');
+  const written = JSON.parse(await readFile(path.join(root, 'examples/fluid-blast.fx.json'), 'utf8'));
+  const { document, files } = await resolveReferences(written, { baseDir: path.join(root, 'examples') });
+  assert.equal(document.symbols.blast.recipe.format, 'pixelforge-fluid');
+  assert.ok(files.some(file => file.endsWith('explosion.fluid.json')));
+  const { recipe, metadata } = compileEffects(document);
+  assert.deepEqual(renderProject(recipe).warnings, []);
+  assert.deepEqual(metadata.effects.blast.cues.map(cue => cue.name), ['boom']);
+  // This changes with any change to the fluid, shape or particle pixels: regenerate it only after the art is seen again.
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '10784dad44b78f0752cb35d341765c4382032adbb1bc64ed74d84c9da58ec8b0');
+});
+
 // ---- Turned copies: one effect drawn in several directions ---------------------------------------------------------------
 test('turned copies draw an effect in each direction with its geometry turned, while gravity and light stay put', () => {
   const shot = (turn, extra = {}) => compileEffects(effects({ frames: 3, turn, emitters: [{ at: [12, 12], burst: 1, angle: 0, speed: 3, life: 3, shapes: ['dot'], ...extra }] }));
@@ -477,6 +504,12 @@ test('turned copies draw an effect in each direction with its geometry turned, w
   }
   const box = name => { const g = gridIn(lit.recipe.frames.find(f => f.name === `${name}-0`)); return [g.rows[0].length, g.rows.length]; };
   assert.deepEqual(box('burst-90'), box('burst-0').reverse());
+  // The grain turns with its copy, so a quarter turn of a grainy beam is the drawn one turned, pixel for pixel.
+  const beam = compileEffects(effects({ frames: 2, turn: { angles: [0, 90], about: [12, 12] }, looks: { warm: { colors: ['o', 'y'], thresholds: [0.15, 0.5] } }, layers: [{ kind: 'beam', at: [12, 12], to: [2, 12], width: 7, noise: 0.6, scale: 3 }] }));
+  const drawn = name => cellsOf(gridIn(beam.recipe.frames.find(f => f.name === name))).map(c => `${c.x},${c.y},${c.key}`).sort();
+  const turned = cellsOf(gridIn(beam.recipe.frames.find(f => f.name === 'burst-0-1'))).map(c => `${24 - c.y},${c.x},${c.key}`).sort();
+  assert.ok(turned.length > 10);
+  assert.deepEqual(drawn('burst-90-1'), turned);
 });
 
 test('a turned slash keeps its crescent, a mirror sweeps it the other way, and turn mistakes name the field to fix', () => {
