@@ -720,6 +720,26 @@
                         }
                       ],
                       "description": "Pixels: a number, or 2–8 keys spread over each particle's life (shrinking drops). Default 3."
+                    },
+                    "size": {
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0.1,
+                          "maximum": 8
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0.1,
+                            "maximum": 8
+                          },
+                          "maxItems": 2,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Scales the radius, picked per particle: [0.6, 1.4] mixes small and large puffs so smoke and gas billow instead of sitting as one smooth lump. Default 1. [min, max] picks per particle."
                     }
                   },
                   "required": [],
@@ -901,10 +921,24 @@
                       "description": "Glow inside the band, as a share; default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded breaks along the ring; default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded breaks along the ring; default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1024,10 +1058,24 @@
                       "description": "Share of the window the shape takes to draw on; default 0.35 (0 for a layer spanning a looping effect)."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1152,10 +1200,24 @@
                       "description": "Share by which it dims toward to (a pillar of light); default 0."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1293,10 +1355,24 @@
                       "description": "Share of the window the shape takes to draw on; default 0."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1473,10 +1549,24 @@
                       "description": "Glow inside the outer ring; default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1643,10 +1733,24 @@
                       "description": "Seeded variation in spike length; default 0."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1749,10 +1853,24 @@
                       "description": "Burnt-out centre as a share of radius; default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Default 0.4."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Default 0.4. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -1920,10 +2038,24 @@
                       "description": "Sway waves that pass over the window; default 1."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -2011,10 +2143,24 @@
                       "description": "How many times further it reaches upward; default 2."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "How far the noise moves the edge in and out and breaks up the bands; default 0.5."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "How far the noise moves the edge in and out and breaks up the bands; default 0.5. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",
@@ -2243,10 +2389,24 @@
                       "description": "Share by which it dims toward its oldest end; default 0.5."
                     },
                     "noise": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 1,
-                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops. Default 0."
+                      "oneOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1
+                          },
+                          "maxItems": 8,
+                          "minItems": 2
+                        }
+                      ],
+                      "description": "Seeded smooth noise: a pixel keeps value × power × (1 − noise × n), so as power falls toward the look's first threshold the shape breaks into pieces and drops; keyed, a shape can stand solid and then shatter. Default 0. A number, or 2–8 keys spread evenly over the layer's frames through its ease."
                     },
                     "scale": {
                       "type": "integer",

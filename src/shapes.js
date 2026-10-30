@@ -176,7 +176,9 @@ function readLayer(layer, path, context, index) {
   const t = (key, fallback, min, max) => tween(layer[key] ?? fallback, `${path}.${key}`, min, max);
   const required = key => { if (layer[key] === undefined) fail(`${path}.${key}`, `a ${kind} layer needs ${key}`); return layer[key]; };
   const reveal = fallback => number(layer.reveal ?? (cycle ? 0 : fallback), `${path}.reveal`, 0, 0.95);
-  if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64) });
+  // Noise may be keyed like any other field, so a shape can stand solid and then shatter: `noise` is its strongest key.
+  const noisy = fallback => { const noiseKeys = tween(layer.noise ?? fallback, `${path}.noise`, 0, 1); return { noise: maxKey(noiseKeys), noiseKeys }; };
+  if (kind === 'ring') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), width: t('width', 3, 0, 256), fill: t('fill', 0, 0, 2), ...noisy(0), scale: integer(layer.scale ?? 6, `${path}.scale`, 1, 64) });
   if (kind === 'slash') {
     const arc = pair(required('arc'), `${path}.arc`, -3600, 3600);
     if (arc[0] === arc[1] || Math.abs(arc[1] - arc[0]) > 360) fail(`${path}.arc`, 'expected [from, to] in degrees clockwise (0 right, 90 down), at most 360 apart; the slash sweeps from the first to the second');
@@ -195,7 +197,7 @@ function readLayer(layer, path, context, index) {
   if (kind === 'star') Object.assign(out, { radius: t('radius', required('radius'), 0, 512), points: integer(layer.points ?? 8, `${path}.points`, 2, 16), ratio: number(layer.ratio ?? 0.55, `${path}.ratio`, 0.05, 1), width: t('width', 2.5, 0, 64), core: t('core', layer.width === undefined ? 3 : maxKey(tween(layer.width, `${path}.width`, 0, 64)) * 1.2, 0, 128), angle: number(layer.angle ?? 0, `${path}.angle`, -3600, 3600), spin: t('spin', 0, -3600, 3600), jitter: number(layer.jitter ?? 0, `${path}.jitter`, 0, 1) });
   if (kind === 'burst') {
     const radius = t('radius', required('radius'), 0, 512);
-    Object.assign(out, { radius, hole: t('hole', 0, 0, 1), noise: number(layer.noise ?? 0.4, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64), boil: number(layer.boil ?? maxKey(radius) * 0.5, `${path}.boil`, -512, 512) });
+    Object.assign(out, { radius, hole: t('hole', 0, 0, 1), ...noisy(0.4), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64), boil: number(layer.boil ?? maxKey(radius) * 0.5, `${path}.boil`, -512, 512) });
   }
   if (kind === 'stream') {
     if (!Array.isArray(layer.through) || !layer.through.length || layer.through.length > 7) fail(`${path}.through`, 'expected 1–7 more [x, y] points: the stream runs from at through each of them on a smooth curve');
@@ -210,9 +212,9 @@ function readLayer(layer, path, context, index) {
     const name = required('symbol'), animated = typeof name === 'string' && !!sequences && Object.hasOwn(sequences, name);
     if (typeof name !== 'string' || (!animated && !(symbols && Object.hasOwn(symbols, name)))) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
     const width = t('width', 3, 0, 32), rise = number(layer.rise ?? 2, `${path}.rise`, 1, 4);
-    const noise = number(layer.noise ?? 0.5, `${path}.noise`, 0, 1);
+    const { noise, noiseKeys } = noisy(0.5);
     // Noise stretches the reach by up to half its share, so the field is measured that far out.
-    Object.assign(out, { symbol: name, width, rise, noise, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
+    Object.assign(out, { symbol: name, width, rise, noise, noiseKeys, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
       fields: (animated ? sequences[name] : [symbols[name]]).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated)) });
     if (out.fields.every(field => !field)) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
   }
@@ -233,7 +235,7 @@ function readLayer(layer, path, context, index) {
   else {
     // The other kinds take noise in screen space, moving with the layer, so a falling power breaks them up. Scales are
     // whole pixels, as the dither op's are: craft keeps one noise table per scale for the life of the process.
-    Object.assign(out, { noise: number(layer.noise ?? 0, `${path}.noise`, 0, 1), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
+    Object.assign(out, { ...noisy(0), scale: integer(layer.scale ?? 4, `${path}.scale`, 1, 64) });
     if (out.noise) out.grain = ditherThreshold('value', [0, 0], out.seed, out.scale);
     // A turned copy reads the grain where the drawn effect had that pixel.
     if (out.noise && view) out.unturn = view.unpoint;
@@ -394,7 +396,7 @@ const PAINTERS = {
         if (k <= 1) value = 1 - 0.85 * k;
         if (fill > 0 && R > w) value = Math.max(value, fill * (0.5 + 0.5 * d / (R - w)));
       }
-      if (layer.noise > 0 && value > 0 && d > 0) value *= 1 - layer.noise * layer.noiseAt(256 + u / d * rn, 256 + v / d * rn);
+      if (s.noise > 0 && value > 0 && d > 0) value *= 1 - s.noise * layer.noiseAt(256 + u / d * rn, 256 + v / d * rn);
       return value;
     });
   },
@@ -525,7 +527,7 @@ const PAINTERS = {
   // in the middle, with a hole that can open from the centre (`hole`, a share of the radius) as it burns out. In a
   // cycle the noise boils on steadily through the loop point (boilFields).
   burst(layer, s, put, W, H) {
-    const R = sample(layer.radius, s.q), hole = sample(layer.hole, s.q) * R, n = layer.noise, boil = boilFields(layer, s);
+    const R = sample(layer.radius, s.q), hole = sample(layer.hole, s.q) * R, n = s.noise, boil = boilFields(layer, s);
     if (R <= 0) return;
     paintArea(put, W, H, s.cx, s.cy, R * (1 + n / 2) * s.frame.reach + 2, s.frame, (u, v) => {
       const d = Math.sqrt(u * u + v * v);
@@ -539,7 +541,7 @@ const PAINTERS = {
   // seeded noise stretched upright and rising `boil` pixels over the window, so its edge licks up in flames. In a cycle
   // the noise rises steadily through the loop point (boilFields). `at` is the sprite's top-left corner.
   aura(layer, s, put) {
-    const reach = sample(layer.width, s.q), field = sequenceFrame(layer.fields, s.f, layer.loop), n = layer.noise, boil = boilFields(layer, s);
+    const reach = sample(layer.width, s.q), field = sequenceFrame(layer.fields, s.f, layer.loop), n = s.noise, boil = boilFields(layer, s);
     if (reach <= 0 || !field) return;
     const { left, top, W, H, d } = field;
     const ox = round(s.cx) + left, oy = round(s.cy) + top;
@@ -666,7 +668,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
     for (const layer of shapes.layers) {
       if (layer.look !== look.name || f < layer.t0 || f >= layer.t1) continue;
       const k = f - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
-      const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1);
+      const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
       const dx = layer.drift[0] * q, dy = layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
@@ -680,14 +682,14 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         if (work.spent > SHAPE_WORK) fail(layer.path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
       };
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
-      PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, frame: frameOf(layer, cx, cy) }, put, width, height);
+      PAINTERS[layer.kind](layer, { k, p, end: (k + 1) / (layer.t1 - layer.t0), q, cx, cy, dx, dy, f, noise, frame: frameOf(layer, cx, cy) }, put, width, height);
       for (let c = 0; c < N; c++) {
         let value = scratch[c] * power;
         if (value <= 0) continue;
         if (layer.grain) {
           // In a turned copy the grain turns too, so every direction breaks up as the drawn one does.
           const [gx, gy] = layer.unturn ? layer.unturn([c % width - dx, Math.floor(c / width) - dy]) : [c % width - round(dx), Math.floor(c / width) - round(dy)];
-          value *= 1 - layer.noise * layer.grain(256 + gx, 256 + gy);
+          value *= 1 - noise * layer.grain(256 + gx, 256 + gy);
         }
         field[c] = layer.blend === 'add' ? field[c] + value : Math.max(field[c], value);
         any = true;

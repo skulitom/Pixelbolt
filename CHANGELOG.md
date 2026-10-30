@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Keyed noise and blob sizes
+
+- A shape layer's `noise` takes keys like its other numeric fields, so one layer can stand solid and then shatter; before, that took two layers.
+- A blob emitter's `size` (a number or `[min, max]` picked per particle) scales its radius keys: mixed puff sizes give smoke and gas a bumpy, billowing outline. Both default to the old behaviour, pixel for pixel.
+
 ### Effect reviews
 
 - Every `pixelforge-fx` compile reviews its animations in the metadata: each loop's `seam` against its `largestStep`, and each one-shot's `residue`. A loop that jumps at its loop point is reported under `warnings` (CLI `compile`, MCP `pixel_compile`), naming the effect and the usual fixes. None of the shipped effects warns.

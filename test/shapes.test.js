@@ -385,3 +385,20 @@ test('an aura hugs its whole sprite in one piece, reaches further up than down, 
   assert.match(wrong({ symbol: undefined }), /layers\[0\]\.symbol: a aura layer needs symbol/);
   assert.match(wrong({ squash: [1, 0.5] }), /layers\[0\]: unknown or null field squash|squash/);
 });
+
+// ---- Keyed noise and blob sizes --------------------------------------------------------------------------------------------
+test('keyed noise lets one layer stand solid and then shatter, and blob sizes vary puff by puff', () => {
+  const disc = noise => compileEffects(source({ frames: 6, layers: [{ kind: 'burst', look: 'warm', at: [24, 24], radius: 12, noise, power: [1.3, 0.5] }] })).recipe.frames;
+  const solid = disc(0), keyed = disc([0, 0.9]);
+  // The first frame matches the solid disc; by the last the keyed one has broken into pieces the solid one has not.
+  assert.deepEqual(keyed[0], solid[0]);
+  assert.ok(pieces(gridOf(keyed[5])) > pieces(gridOf(solid[5])), `${pieces(gridOf(keyed[5]))} pieces against ${pieces(gridOf(solid[5]))}`);
+  // Keys that stay put are the plain number, pixel for pixel.
+  assert.deepEqual(disc([0.6, 0.6]), disc(0.6));
+  const puffs = size => compileEffects(source({ frames: 1, looks: { cool: water }, emitters: [{ at: [24, 24], ring: { radius: 14, even: true }, burst: 6, life: 2, blob: { radius: 4, size } }] })).recipe.frames[0];
+  // Even spacing, so only size tells the puffs apart: with a range their areas differ, with the default they match.
+  const areas = frame => { const g = gridOf(frame), all = cells(g); return [0, 60, 120, 180, 240, 300].map(a => all.filter(c => Math.hypot(c.x - (24 + 14 * Math.cos(a * Math.PI / 180)), c.y - (24 + 14 * Math.sin(a * Math.PI / 180))) < 7).length); };
+  assert.equal(new Set(areas(puffs(undefined))).size <= 2, true);
+  assert.ok(new Set(areas(puffs([0.5, 1.5]))).size >= 4, JSON.stringify(areas(puffs([0.5, 1.5]))));
+  assert.deepEqual(puffs(1), puffs(undefined));
+});

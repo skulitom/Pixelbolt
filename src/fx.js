@@ -47,7 +47,7 @@ const pair = (value, path, min, max) => {
 const pick = ([a, b], r) => a + (b - a) * r;
 const pickWhole = ([a, b], r) => a + Math.min(b - a, Math.floor(r * (b - a + 1)));
 // Salts keep each sampled property independent, so changing one range does not reshuffle the others.
-const SALT = { x: 1, y: 2, angle: 3, speed: 4, life: 5, variant: 6, remap: 7, phase: 8, offset: 9, ring: 10, radius: 11, along: 12, pixel: 13, release: 14, share: 15 };
+const SALT = { x: 1, y: 2, angle: 3, speed: 4, life: 5, variant: 6, remap: 7, phase: 8, offset: 9, ring: 10, radius: 11, along: 12, pixel: 13, release: 14, share: 15, size: 16 };
 // Which of a sprite's pixels its emitter spawns from: every visible pixel, the visible pixels on its edge, or the empty
 // pixels just outside it (as a look's outline takes them).
 export const SPRITE_PIXELS = ['all', 'edge', 'outline'];
@@ -128,10 +128,10 @@ function readEmitter(emitter, path, context, earlier) {
   let blob = null;
   if (emitter.blob !== undefined) {
     if (emitter.blob === null || typeof emitter.blob !== 'object' || Array.isArray(emitter.blob)) fail(`${path}.blob`, 'expected { look, radius }');
-    fields(emitter.blob, ['look', 'radius'], `${path}.blob`);
+    fields(emitter.blob, ['look', 'radius', 'size'], `${path}.blob`);
     const look = emitter.blob.look ?? (looks.length === 1 ? looks[0] : undefined);
     if (!looks.includes(look)) fail(`${path}.blob.look`, emitter.blob.look === undefined ? `name the look this blob is drawn into: ${looks.join(', ')}` : `no look is named ${JSON.stringify(emitter.blob.look)}`);
-    blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64) };
+    blob = { look, radius: tween(emitter.blob.radius ?? 3, `${path}.blob.radius`, 0, 64), size: range(emitter.blob.size ?? 1, `${path}.blob.size`, 0.1, 8) };
     for (const key of ['shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'behind']) if (emitter[key] !== undefined) fail(`${path}.${key}`, `${key} applies to particles drawn as symbols; a blob particle is drawn into its look`);
   }
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
@@ -352,7 +352,7 @@ function simulate(effect, context) {
     return {
       emitter: e, index, born, life, variant, age: 0, x, y, vx, vy, tag, key,
       remap: e.remaps.length ? e.remaps[Math.min(e.remaps.length - 1, Math.floor(r(SALT.remap) * e.remaps.length))] : null,
-      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0
+      phase: r(SALT.phase) * 360, offset: Math.floor(r(SALT.offset) * 64), trail: [], landed: false, facing: 0, size: e.blob ? pick(e.blob.size, r(SALT.size)) : 1
     };
   };
   // Every new particle comes through here, so child emitters that multiply within one frame fail at the limit instead
@@ -429,7 +429,7 @@ function simulate(effect, context) {
       const [X, Y] = places[i], ops = (pass === true ? behind : output)[t - first], span = Number.isFinite(p.life) ? p.life : frames - (p.born - first);
       if (e.blob) {
         // Its radius moves through the keys over its life; the shape layers' grid draws it.
-        const radius = sample(e.blob.radius, Math.min(1, p.age / Math.max(1, span - 1))), [, , x, y] = places[i];
+        const radius = sample(e.blob.radius, Math.min(1, p.age / Math.max(1, span - 1))) * p.size, [, , x, y] = places[i];
         if (radius > 0 && x + radius > 0 && y + radius > 0 && x - radius < width && y - radius < height) blobs[t - first].push({ look: e.blob.look, x, y, radius });
         else culled++;
         return;
