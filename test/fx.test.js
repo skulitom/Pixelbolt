@@ -528,3 +528,16 @@ test('a turned slash keeps its crescent, a mirror sweeps it the other way, and t
   assert.match(wrong({ angles: [90] }, { emitters: [{ sprite: { symbol: 'block' }, at: [4, 4], burst: 1, life: 2 }] }), /turn: a sprite emitter can't turn/);
   assert.match(compileEffectsError(() => compileEffects(effects({ frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }], turn: { angles: [90] } }, { effects: { burst: { frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }], turn: { angles: [90] } }, 'burst-90': { frames: 1, emitters: [{ at: [1, 1], burst: 1, shapes: ['dot'] }] } } }))), /burst-90: effect names must be unique ignoring case/);
 });
+
+test('a compile reviews each animation: the seam of a loop against its largest step, warned when it jumps, and the residue of a one-shot', () => {
+  const ring = (loop, radius) => compileEffects(effects({ frames: 6, loop, looks: { warm: { colors: ['y'], thresholds: [0.2] } }, layers: [{ kind: 'ring', at: [12, 12], radius }] }));
+  const steady = ring(true, 6);
+  assert.deepEqual(steady.metadata.effects.burst.seam, { pixels: 0, largestStep: 0 });
+  assert.equal(steady.warnings, undefined);
+  const jumping = ring(true, [1, 9]);
+  assert.ok(jumping.metadata.effects.burst.seam.pixels > jumping.metadata.effects.burst.seam.largestStep);
+  assert.match(jumping.warnings[0], /^fx\.effects\.burst: burst changes \d+ pixels from its last frame to its first, more than the \d+ between any two others, so the loop jumps/);
+  // A one-shot reports what its last frame still draws; a ring that fades to nothing ends empty.
+  assert.ok(ring(false, 6).metadata.effects.burst.residue > 0);
+  assert.equal(compileEffects(effects({ frames: 6, looks: { warm: { colors: ['y'], thresholds: [0.2] } }, layers: [{ kind: 'ring', at: [12, 12], radius: 6, power: [1, 0] }] })).metadata.effects.burst.residue, 0);
+});

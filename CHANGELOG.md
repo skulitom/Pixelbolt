@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Effect reviews
+
+- Every `pixelforge-fx` compile reviews its animations in the metadata: each loop's `seam` against its `largestStep`, and each one-shot's `residue`. A loop that jumps at its loop point is reported under `warnings` (CLI `compile`, MCP `pixel_compile`), naming the effect and the usual fixes. None of the shipped effects warns.
+
 ### A spell library
 
 - `examples/<element>-spells.fx.json` for fire, ice, lightning, water, poison, holy and shadow: each a looping projectile turned to eight directions, an impact, an area effect and a looping buff, on one 64 × 64 canvas anchored at [32, 40], the point a game places every effect at. 28 effects, each reviewed frame by frame; `test/spell-library.test.js` pins their pixels, keeps every loop seamless and every one-shot ending empty, and checks each impact and area cues its hit. The pixel art skill and the workflow guide point to them.

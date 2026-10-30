@@ -764,6 +764,17 @@ export function compileEffects(source) {
   }
   if (frames.length > 256) fail('fx.effects', `the effects make ${frames.length} frames; a recipe holds at most 256`);
   const recipe = { version: 1, name: source.name, width, height, palette, ...(Object.keys(symbols).length && { symbols }), ...(source.anchor !== undefined && { anchor: source.anchor }), frames, animations, ...(source.sheet !== undefined && { sheet: source.sheet }) };
-  renderProject(recipe);
-  return JSON.parse(JSON.stringify({ recipe, metadata }));
+  // A review of what each animation delivers: a loop's seam (the pixels that change from its last frame to its first)
+  // against its largest ordinary step, warned about when the loop jumps; a one-shot's residue, the pixels its last
+  // frame still draws (0 when it ends empty).
+  const project = renderProject(recipe), at = new Map(recipe.frames.map((frame, i) => [frame.name, project.frames[i].data])), warnings = [];
+  const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
+  for (const [name, animation] of Object.entries(animations)) {
+    const data = animation.frames.map(frame => at.get(frame)), effect = metadata.effects[name];
+    if (animation.loop === false) { let n = 0; const last = data[data.length - 1]; for (let i = 3; i < last.length; i += 4) if (last[i]) n++; effect.residue = n; continue; }
+    const steps = data.slice(1).map((frame, k) => differ(data[k], frame)), seam = data.length > 1 ? differ(data[data.length - 1], data[0]) : 0, largest = steps.length ? Math.max(...steps) : 0;
+    effect.seam = { pixels: seam, largestStep: largest };
+    if (data.length > 2 && seam > largest) warnings.push(`fx.effects.${effect.turn?.of ?? name}: ${name} changes ${seam} pixels from its last frame to its first, more than the ${largest} between any two others, so the loop jumps: end keys where they start, spin and sway by whole turns, and give rate emitters a finite life`);
+  }
+  return JSON.parse(JSON.stringify({ recipe, metadata, ...(warnings.length && { warnings }) }));
 }
