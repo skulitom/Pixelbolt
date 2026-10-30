@@ -203,7 +203,7 @@ test('the reviewed shape examples match their presets and compile to the pixels 
     fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
     'lightning-strike': 'faa749af1157a2ace4569082d13d631c5da762ae4ffa34484f237c3341d43baf', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
     water: '58416cfb88c16164f10911fa1e3e569a3e2c3947e3406b0774c2c8a7bf057a57', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
-    meteor: 'cd61811bf8fb0d4af0031326066b9759651bc2ed7f6a3294b93e97acd4769a89'
+    meteor: '66a5be601cb267977c0e1d1e6c2dff1534768d7eb8bbc91a9c20829a49dee994'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
   for (const [name, preset] of Object.entries(spellPresets)) {

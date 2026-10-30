@@ -15,7 +15,20 @@
     "l": "#b8b0b0",
     "k": "#3e3438"
   },
-  "symbols": { "ember": ["y"], "ember-dim": ["o"], "ember-out": ["r"] },
+  "symbols": {
+    "ember": ["y"],
+    "ember-dim": ["o"],
+    "ember-out": ["r"],
+    "chip": [
+      ".s",
+      "sg"
+    ],
+    "chip-big": [
+      ".ss",
+      "sgg",
+      "sg."
+    ]
+  },
   "effects": {
     "meteor": {
       "frames": 22,
@@ -110,6 +123,21 @@
           "floor": 56,
           "bounce": 0.3,
           "blob": { "look": "fire", "radius": 1.3, "power": [1.6, 0.5] }
+        },
+        {
+          "at": [40, 52],
+          "area": [8, 2],
+          "burst": 6,
+          "start": 9,
+          "angle": [200, 340],
+          "speed": [1.4, 2.4],
+          "life": [8, 11],
+          "gravity": [0, 0.25],
+          "floor": 57,
+          "bounce": 0.25,
+          "spin": [-90, 90],
+          "shapes": [["chip"], ["chip-big"]],
+          "dissolve": 0.4
         },
         {
           "at": [40, 52],

@@ -980,7 +980,8 @@ export const spellPresets = {
     }
   },
   // A one-shot meteor: a head whose drift keys share a window with the trail emitters' path, so smoke, a fire tail of
-  // cooling blobs (blob power) and embers keep pace with it, then an impact with debris and rising smoke (keyed rate).
+  // cooling blobs (blob power) and embers keep pace with it, then an impact with fiery debris, rock chips that tumble
+  // (spin) and rising smoke (keyed rate).
   'meteor': {
     "format": "pixelforge-fx",
     "version": 1,
@@ -1010,6 +1011,15 @@ export const spellPresets = {
       ],
       "ember-out": [
         "r"
+      ],
+      "chip": [
+        ".s",
+        "sg"
+      ],
+      "chip-big": [
+        ".ss",
+        "sgg",
+        "sg."
       ]
     },
     "effects": {
@@ -1327,6 +1337,49 @@ export const spellPresets = {
                 0.5
               ]
             }
+          },
+          {
+            "at": [
+              40,
+              52
+            ],
+            "area": [
+              8,
+              2
+            ],
+            "burst": 6,
+            "start": 9,
+            "angle": [
+              200,
+              340
+            ],
+            "speed": [
+              1.4,
+              2.4
+            ],
+            "life": [
+              8,
+              11
+            ],
+            "gravity": [
+              0,
+              0.25
+            ],
+            "floor": 57,
+            "bounce": 0.25,
+            "spin": [
+              -90,
+              90
+            ],
+            "shapes": [
+              [
+                "chip"
+              ],
+              [
+                "chip-big"
+              ]
+            ],
+            "dissolve": 0.4
           },
           {
             "at": [
