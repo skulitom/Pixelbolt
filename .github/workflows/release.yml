@@ -269,17 +269,19 @@ jobs:
         run: |
           set -euo pipefail
           version="${RELEASE_TAG#v}"
-          # From an empty folder, so npx installs the published package rather than finding a checkout. The registry
-          # can take a moment to serve a new version.
+          # From an empty folder, so npx installs the published package rather than finding a checkout. npm processes a
+          # new version before serving it (0.10.0: 77 s), and npm may reuse a cached version list without it for up to
+          # five minutes (the registry's max-age), so every try asks the registry again (--prefer-online), for up to five
+          # minutes.
           check="$RUNNER_TEMP/npx-check"
           mkdir -p "$check"
-          for _ in 1 2 3 4 5 6; do
-            if (cd "$check" && npx --yes "pixelbolt@$version" --help) > "$RUNNER_TEMP/help.txt"; then
+          for _ in $(seq 15); do
+            if (cd "$check" && npx --yes --prefer-online "pixelbolt@$version" --help) > "$RUNNER_TEMP/help.txt"; then
               grep -q 'pixelbolt render' "$RUNNER_TEMP/help.txt"
               echo "\`npx -y pixelbolt@$version --help\` runs." | tee -a "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 20
           done
-          echo "::error::pixelbolt@$version is on npm but npx could not run it within two minutes."
+          echo "::error::pixelbolt@$version is on npm but npx could not run it within five minutes."
           exit 1
