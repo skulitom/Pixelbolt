@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Curved paths
+
+- `curve: true` on an emitter with a path, or on a layer with keyed `drift`, runs three or more points through a smooth Catmull-Rom curve that still passes every point, so an arc has no corner at its middle. Without it, paths and drift stay straight between points.
+
 ### Tumbling particles
 
 - Emitters take `spin`, degrees a frame (a number or `[min, max]`): each particle's symbol turns from a seeded start in 45° RotSprite steps, so shards, rocks and leaves tumble instead of sliding. The turned symbols are added to the recipe as `<symbol>_r<degrees>`. Without it, nothing changes.

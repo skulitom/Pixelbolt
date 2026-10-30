@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject, FRAME_AREA } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS, rotateRows } from './craft.js';
-import { readShapes, renderShapes, tween, sample, sequenceFrame } from './shapes.js';
+import { readShapes, renderShapes, tween, sample, curveSample, sequenceFrame } from './shapes.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
 
@@ -95,7 +95,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'spin'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'spin'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -183,7 +183,11 @@ function readEmitter(emitter, path, context, earlier) {
     if (!Array.isArray(emitter.path) || emitter.path.length < 2 || emitter.path.length > 16) fail(`${path}.path`, 'expected 2–16 points [x, y] for the spawn centre to move through');
     route = emitter.path.map((p, i) => pair(p, `${path}.path[${i}]`, -4096, 4096));
   }
-  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : route ? route[0] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
+  // curve: true runs the path through a smooth curve, so a three-point arc has no corner at its middle point.
+  const curve = flag(emitter.curve, `${path}.curve`);
+  if (curve && (!route || route.length < 3)) fail(`${path}.curve`, 'curve smooths a path; give path three or more points');
+  if (curve) route = { curve: [route.map(p => p[0]), route.map(p => p[1])], points: route };
+  const at = sprite ? [sprite.x + sprite.frames[0].w / 2, sprite.y + sprite.frames[0].h / 2] : route ? (route.points ?? route)[0] : parent !== null && emitter.at === undefined ? [0, 0] : pair(emitter.at, `${path}.at`, -4096, 4096);
   const spawnShapes = ['area', 'ring', 'line'].filter(key => emitter[key] !== undefined);
   if (spawnShapes.length > 1) fail(`${path}.${spawnShapes[1]}`, `use one of area (a box), ring (a circle or arc) or line (a segment); this emitter already has ${spawnShapes[0]}`);
   let ring = null, line = null;
@@ -331,7 +335,9 @@ function simulate(effect, context) {
   const along = (route, cycle, e) => {
     // A path round the whole loop wraps, so spawns spread back from frame 0 come from the end of the path.
     const x = (cycle - e.start) / (e.end - e.start), whole = loop && e.start === 0 && e.end === frames;
-    const s = (whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x))) * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
+    const t = whole ? x - Math.floor(x) : Math.min(1, Math.max(0, x));
+    if (route.curve) return [curveSample(route.curve[0], t), curveSample(route.curve[1], t)];
+    const s = t * (route.length - 1), i = Math.min(route.length - 2, Math.floor(s)), u = s - i;
     return [route[i][0] + (route[i + 1][0] - route[i][0]) * u, route[i][1] + (route[i + 1][1] - route[i][1]) * u];
   };
   const centre = (e, cycle) => { const at = e.route ? along(e.route, cycle, e) : e.at; return view ? view.point(at) : at; }, pulls = emitters.map(e => (e.attract && view ? view.point(e.attract.at) : e.attract?.at));

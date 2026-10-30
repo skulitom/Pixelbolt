@@ -647,3 +647,20 @@ test('spin turns each particle\'s symbol in 45° RotSprite steps from a seeded s
   for (const name of names.filter(n => n !== 'chip')) assert.deepEqual(recipe.symbols[name], rotateRows(recipe.symbols.chip, Number(name.split('_r')[1]), [1, 1]).rows);
   assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, shapes: [['dot'], ['warm']], face: true, spin: 10 }] })), /use one or the other/);
 });
+
+test('curve runs a path and keyed drift through a smooth curve that still passes every point', async () => {
+  const { curveSample } = await import('../src/shapes.js');
+  // Through every key, and level with its neighbours at a symmetric peak instead of turning a corner there.
+  assert.equal(curveSample([0, 10, 0], 0), 0);
+  assert.equal(curveSample([0, 10, 0], 0.5), 10);
+  assert.equal(curveSample([0, 10, 0], 1), 0);
+  assert.ok(curveSample([0, 10, 0], 0.4) > 0.8 * 10 && curveSample([0, 10, 0], 0.4) < 10);
+  const arc = (curve, extra = {}) => compileEffects(effects({ frames: 8, emitters: [{ path: [[2, 20], [12, 4], [22, 20]], rate: 1, speed: 0, life: 40, shapes: ['dot'], ...(curve !== undefined && { curve }), ...extra }] })).recipe.frames.at(-1).ops.map(op => [op.x, op.y]);
+  const straight = arc(undefined), curved = arc(true);
+  assert.deepEqual(arc(false), straight);
+  // The same start and peak (frame 4 is halfway); the curve's sides bow outward, above the straight lines.
+  assert.deepEqual([curved[0], curved[4]], [straight[0], [12, 4]]);
+  assert.deepEqual(straight[4], [12, 4]);
+  assert.ok(curved.slice(1, -1).every((p, i) => p[1] <= straight[i + 1][1]) && curved.some((p, i) => p[1] < straight[i][1]), JSON.stringify(curved));
+  assert.throws(() => arc(true, { path: [[2, 20], [22, 20]] }), /give path three or more points/);
+});

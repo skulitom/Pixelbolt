@@ -512,3 +512,15 @@ test('a look with a halo glows on the empty pixels round it, dithered, and witho
   assert.ok(keys(orb({ color: 'o', dither: false }, 'k')).filter(k => k === 'k').length === keys(orb(undefined, 'k')).filter(k => k === 'k').length);
   assert.throws(() => orb({ width: 2 }), /name the palette key the glow is drawn in/);
 });
+
+test('curve smooths keyed drift through its keys, and needs three or more of them', () => {
+  const orb = curve => compileEffects(source({ frames: 8, layers: [{ kind: 'burst', look: 'warm', at: [8, 30], radius: 2, noise: 0, ease: 'linear', drift: [[0, 0], [16, -20], [32, 0]], ...(curve !== undefined && { curve }) }] })).recipe;
+  const tops = recipe => recipe.frames.map(frame => Math.min(...cells(gridOf(frame)).map(c => c.y)));
+  assert.deepEqual(orb(false), orb(undefined));
+  const straight = tops(orb(undefined)), curved = tops(orb(true));
+  // The same start and peak (frame 4 is halfway), higher between them.
+  assert.equal(curved[0], straight[0]);
+  assert.equal(curved[4], straight[4]);
+  assert.ok(curved.every((y, k) => y <= straight[k]) && curved.some((y, k) => y < straight[k]), `${curved} / ${straight}`);
+  assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'burst', look: 'warm', at: [8, 30], radius: 2, drift: [4, 0], curve: true }] })), /give drift three or more offsets/);
+});

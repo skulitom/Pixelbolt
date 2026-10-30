@@ -421,6 +421,10 @@
                   "maximum": 1,
                   "description": "Share of velocity lost each frame."
                 },
+                "curve": {
+                  "type": "boolean",
+                  "description": "Run a path of three or more points through a smooth curve, so an arc has no corner at its middle point."
+                },
                 "path": {
                   "type": "array",
                   "items": {
@@ -943,6 +947,9 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
+                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1088,6 +1095,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1237,6 +1247,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1389,6 +1402,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1555,6 +1571,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -1761,6 +1780,9 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
+                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -1956,6 +1978,9 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
+                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -2081,6 +2106,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -2278,6 +2306,9 @@
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
                     },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
+                    },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
                     },
@@ -2414,6 +2445,9 @@
                     },
                     "blend": {
                       "$ref": "#/$defs/layer-blend"
+                    },
+                    "curve": {
+                      "$ref": "#/$defs/layer-curve"
                     },
                     "drift": {
                       "$ref": "#/$defs/layer-drift"
@@ -3022,6 +3056,10 @@
         "add"
       ],
       "description": "max (default): the brighter layer of a look wins; add: layers sum."
+    },
+    "layer-curve": {
+      "type": "boolean",
+      "description": "Run three or more drift keys through a smooth curve, so an arc has no corner at its middle key."
     },
     "layer-drift": {
       "oneOf": [

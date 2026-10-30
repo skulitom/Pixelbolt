@@ -26,7 +26,7 @@ const SPECIFIC = {
   burst: ['radius', 'hole', 'noise', 'scale', 'boil', 'tilt', 'squash'],
   stream: ['through', 'width', 'taper', 'head', 'tail', 'sway', 'wavelength', 'waves', 'fade', 'noise', 'flow', 'scale']
 };
-const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'floor', 'seed', 'cue'];
+const COMMON = ['kind', 'look', 'at', 'frames', 'ease', 'power', 'flicker', 'blend', 'drift', 'curve', 'floor', 'seed', 'cue'];
 // Painting work across one compile, in pixels visited: very wide streams or ink over many frames are refused instead
 // of running for hours. Area shapes visit each canvas pixel once a frame, so the recipe's frame-area limit keeps them
 // well under it. The shipped effects use under 0.1%; reaching it takes a few seconds.
@@ -88,6 +88,14 @@ export function tween(value, path, min, max) {
   if (!Array.isArray(value)) return [number(value, path, min, max)];
   if (value.length < 2 || value.length > 8) fail(path, `expected a number from ${min} to ${max}, or 2–8 of them as keys spread over the layer's frames`);
   return value.map((v, i) => number(v, `${path}[${i}]`, min, max));
+}
+// Keys through a uniform Catmull-Rom curve instead of straight lines: it passes through every key with no corner at
+// the inner ones (the end keys' neighbours are themselves). Polynomial, so every engine computes the same bits.
+export function curveSample(keys, q) {
+  if (keys.length < 3) return sample(keys, q);
+  const n = keys.length - 1, s = q * n, i = Math.max(0, Math.min(n - 1, Math.floor(s))), u = s - i;
+  const p0 = keys[Math.max(0, i - 1)], p1 = keys[i], p2 = keys[i + 1], p3 = keys[Math.min(n, i + 2)];
+  return 0.5 * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (3 * p1 - p0 - 3 * p2 + p3) * u * u * u);
 }
 export function sample(keys, q) {
   if (keys.length === 1) return keys[0];
@@ -201,6 +209,8 @@ function readLayer(layer, path, context, index) {
     // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
     ...squashOf(layer.squash, `${path}.squash`),
     ...driftOf(layer.drift, `${path}.drift`),
+    // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
+    curve: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : !Array.isArray(layer.drift?.[0]) || layer.drift.length < 3 ? fail(`${path}.curve`, 'curve smooths drift keys; give drift three or more offsets') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
     seed: hash(seed, integer(layer.seed ?? index, `${path}.seed`, 0, 2147483647))
   };
@@ -751,7 +761,8 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       const k = f - layer.t0, p = k / (layer.t1 - layer.t0), q = ease(layer.ease, p);
       const power = sample(layer.power, q) * (layer.flicker && k % 2 ? 1 - layer.flicker : 1), noise = sample(layer.noiseKeys, q);
       if (power <= 0) continue;
-      const dx = layer.driftKeys ? sample(layer.driftKeys[0], q) : layer.drift[0] * q, dy = layer.driftKeys ? sample(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
+      const along = layer.curve ? curveSample : sample;
+      const dx = layer.driftKeys ? along(layer.driftKeys[0], q) : layer.drift[0] * q, dy = layer.driftKeys ? along(layer.driftKeys[1], q) : layer.drift[1] * q, cx = layer.at[0] + dx, cy = layer.at[1] + dy;
       scratch.fill(0);
       // A floor cuts the layer off below its row: a disc becomes a dome, a ring an arch.
       const bottom = layer.floor === null ? height - 1 : Math.min(height - 1, Math.floor(layer.floor));
