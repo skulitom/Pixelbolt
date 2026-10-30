@@ -2245,15 +2245,41 @@
                       "minimum": -512,
                       "maximum": 512,
                       "description": "Pixels the noise rises over the window (each cycle, at a steady pace, for a layer spanning a looping effect); default 2 × width × rise."
+                    },
+                    "around": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 64
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "description": "Hug an ellipse of radii [x, y] centred on at instead of a symbol: its one-pixel ring (flames rising from a ground ring), or with disc the whole disc."
+                    },
+                    "disc": {
+                      "type": "boolean",
+                      "description": "With around, hug the filled ellipse instead of its ring."
                     }
                   },
                   "required": [
                     "kind",
-                    "at",
-                    "symbol"
+                    "at"
                   ],
                   "additionalProperties": false,
-                  "description": "A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it."
+                  "description": "A glow hugging a sprite (its top-left corner at at): brightest on it, banded outward to nothing about width pixels away and rise times as far upward, its edge licking up in flames as seeded noise rises. Power-ups, spirit auras, burning, a holy glow; draw the sprite over it.",
+                  "anyOf": [
+                    {
+                      "required": [
+                        "symbol"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "around"
+                      ]
+                    }
+                  ]
                 },
                 {
                   "type": "object",

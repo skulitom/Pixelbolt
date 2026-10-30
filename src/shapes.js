@@ -15,7 +15,7 @@ const PI = 3.141592653589793;
 // Tilt and squash belong to the kinds drawn around a centre; bolts, streams and trails run between points and auras hug
 // a sprite, so they take neither.
 const SPECIFIC = {
-  aura: ['symbol', 'width', 'rise', 'noise', 'scale', 'boil'],
+  aura: ['symbol', 'around', 'disc', 'width', 'rise', 'noise', 'scale', 'boil'],
   trail: ['points', 'pivot', 'length', 'width', 'taper', 'fade', 'noise', 'flow', 'scale'],
   ring: ['radius', 'width', 'fill', 'noise', 'scale', 'tilt', 'squash'],
   slash: ['radius', 'width', 'arc', 'reveal', 'noise', 'flow', 'scale', 'tilt', 'squash'],
@@ -220,13 +220,22 @@ function readLayer(layer, path, context, index) {
     });
   }
   if (kind === 'aura') {
-    const name = required('symbol'), animated = typeof name === 'string' && !!sequences && Object.hasOwn(sequences, name);
-    if (typeof name !== 'string' || (!animated && !(symbols && Object.hasOwn(symbols, name)))) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
+    // An aura hugs a sprite (symbol, top-left at at) or an ellipse (around: [rx, ry], centred on at; its ring, or with
+    // disc the whole disc): flames licking up from a ground ring need no sprite.
+    let rings = null;
+    if (layer.around !== undefined) {
+      if (layer.symbol !== undefined) fail(`${path}.around`, 'an aura hugs a symbol or an ellipse (around), not both');
+      const [rx, ry] = pair(layer.around, `${path}.around`, 1, 64), disc = layer.disc === undefined ? false : (typeof layer.disc === 'boolean' ? layer.disc : fail(`${path}.disc`, 'expected true or false'));
+      rings = [ellipseRows(Math.round(rx), Math.round(ry), disc)];
+      out.at = [out.at[0] - Math.round(rx), out.at[1] - Math.round(ry)];
+    } else if (layer.disc !== undefined) fail(`${path}.disc`, 'disc fills the ellipse an aura hugs; give around too');
+    const name = rings ? null : required('symbol'), animated = typeof name === 'string' && !!sequences && Object.hasOwn(sequences, name);
+    if (!rings && (typeof name !== 'string' || (!animated && !(symbols && Object.hasOwn(symbols, name))))) fail(`${path}.symbol`, `expected the name of one of the source's symbols${typeof name === 'string' ? `; there is none named ${JSON.stringify(name)}` : ''}`);
     const width = t('width', 3, 0, 32), rise = number(layer.rise ?? 2, `${path}.rise`, 1, 4);
     const { noise, noiseKeys } = noisy(0.5);
     // Noise stretches the reach by up to half its share, so the field is measured that far out.
     Object.assign(out, { symbol: name, width, rise, noise, noiseKeys, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
-      fields: (animated ? sequences[name] : [symbols[name]]).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated)) });
+      fields: (rings ?? (animated ? sequences[name] : [symbols[name]])).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated)) });
     if (out.fields.every(field => !field)) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
   }
   if (kind === 'trail') {
@@ -263,6 +272,17 @@ function readLayer(layer, path, context, index) {
   return out;
 }
 
+// An ellipse of radii rx, ry as symbol rows: its one-pixel ring (the filled ellipse's pixels beside an empty one), or the
+// whole disc.
+function ellipseRows(rx, ry, disc) {
+  const inside = (x, y) => (x / (rx + 0.5)) ** 2 + (y / (ry + 0.5)) ** 2 <= 1, rows = [];
+  for (let y = -ry; y <= ry; y++) {
+    let row = '';
+    for (let x = -rx; x <= rx; x++) row += inside(x, y) && (disc || !inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) ? 'x' : '.';
+    rows.push(row);
+  }
+  return rows;
+}
 // An aura's distance field around a sprite, measured once: for each pixel of the sprite's box widened by the reach,
 // the distance to the nearest visible pixel, with distances upward divided by `rise` so the glow reaches that much
 // higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity.

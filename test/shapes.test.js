@@ -435,3 +435,17 @@ test('flowing noise moves a layer\'s grain over the window, seamlessly in a loop
   assert.ok(moving.seam <= Math.max(...moving.inside), `seam ${moving.seam}, inside ${moving.inside}`);
   assert.throws(() => compileEffects(source({ frames: 2, layers: [{ kind: 'beam', look: 'cool', at: [4, 24], to: [44, 24], flow: [4, 0] }] })), /flow moves the noise; give the layer noise too/);
 });
+
+test('an aura can hug a ring or a disc instead of a sprite, rising from it', () => {
+  const glow = (layer, symbols) => gridOf(compileEffects(source({ frames: 1, layers: [{ kind: 'aura', look: 'warm', at: [24, 32], width: 4, rise: 3, noise: 0, ...layer }] }, symbols ? { symbols } : {})).recipe.frames[0]);
+  const ring = glow({ around: [14, 4] }), all = cells(ring);
+  // Centred on at, reaching about rise times as far above the ring as below it, in one piece.
+  assert.ok(Math.abs((Math.min(...all.map(c => c.x)) + Math.max(...all.map(c => c.x))) / 2 - 24) <= 1);
+  assert.ok(32 - 4 - Math.min(...all.map(c => c.y)) > 2 * (Math.max(...all.map(c => c.y)) - 32 - 4));
+  assert.equal(pieces(ring), 1);
+  // A ring and the same ellipse drawn as a symbol hug alike; a disc fills its middle.
+  const rows = []; for (let y = -4; y <= 4; y++) { let row = ''; for (let x = -14; x <= 14; x++) { const inside = (a, b) => (a / 14.5) ** 2 + (b / 4.5) ** 2 <= 1; row += inside(x, y) && (!inside(x - 1, y) || !inside(x + 1, y) || !inside(x, y - 1) || !inside(x, y + 1)) ? 'y' : '.'; } rows.push(row); }
+  assert.deepEqual(glow({ symbol: 'ring', at: [10, 28] }, { ring: rows }), ring);
+  assert.ok(cells(glow({ around: [14, 4], disc: true })).length >= all.length);
+  assert.throws(() => glow({ around: [14, 4], symbol: 'ring' }, { ring: rows }), /an aura hugs a symbol or an ellipse \(around\), not both/);
+});

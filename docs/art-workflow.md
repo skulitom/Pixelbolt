@@ -390,6 +390,7 @@ An `aura` layer is the glow around a sprite, which particles draw badly: random 
 - Seeded noise, stretched upright, rises `boil` pixels over the window and moves the edge in and out, so it licks up in flames. Spanning a looping effect, it rises steadily through the loop point.
 - Cut it with a look of three or four colours, faintest outside, and give the effect `cleanup`. A `floor` at the feet keeps the glow off the ground.
 - Draw the sprite over it: a sprite emitter with `draw: true` in the front pass, its particles sparkles from the outline.
+- In place of a symbol, `around: [rx, ry]` hugs an ellipse centred on `at`: its one-pixel ring, or with `disc: true` the whole disc. Squashed flat, it is a ring of flame or frost licking up from the ground, with no sprite to draw.
 
 A `trail` layer is the smear behind a moving point, such as a sword tip:
 - `follow: { "recipe": "swing.poses.json", "animation": "swing", "point": "blade.tip" }` takes the point's place in each frame of the animation, frame for frame. `point` is a frame's named point (a pose marker) or `part.point` for a point of a pose part, from the poses' metadata, so the in-between poses count too. `part.anchor` is where the part is fixed.

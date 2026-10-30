@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Auras round rings and discs
+
+- An `aura` may hug an ellipse instead of a sprite: `around: [rx, ry]` centred on `at`, its ring or with `disc: true` the whole disc. A ring of flame licking up from the ground no longer needs an invisible ring symbol to hug (the fire helper's workaround).
+
 ### Flowing noise
 
 - Slash, beam, bolt, glyph, star, stream and trail layers take `flow: [x, y]`: their noise moves that many pixels over the window, or every cycle for a layer spanning a loop, through two fields that take turns so the loop stays seamless. Water runs along a stream instead of its texture standing still. Without `flow`, nothing changes.
