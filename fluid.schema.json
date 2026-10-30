@@ -131,8 +131,8 @@
           "substeps": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 4,
-            "description": "Simulation steps per frame; default 2. Raise for fast liquids."
+            "maximum": 16,
+            "description": "Simulation steps per frame; default 2. Raise for fast liquids; time grows with it (8 takes about twice as long as 4)."
           },
           "iterations": {
             "type": "integer",

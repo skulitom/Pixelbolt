@@ -473,7 +473,7 @@ const fluid = {
       loop: { type: 'boolean', description: 'Seamless loop: emitter timing, pulses, orbits and noise repeat every cycle; the simulation warms up and its closing frames blend toward the frames before frame 0.' },
       seed: int(0, 2147483647, 'Default 1.'), warmup: int(1, 8, 'Loops: whole cycles simulated before the recorded one; default 2. Raise it when a flow takes long to settle (a filling pool).'),
       blend: int(1, 128, 'Loops: closing frames blended toward the previous cycle\'s; default a third of the frames, at most 8.'),
-      substeps: int(1, 4, 'Simulation steps per frame; default 2. Raise for fast liquids.'), iterations: int(1, 200, 'Pressure solve sweeps per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid).'),
+      substeps: int(1, 16, 'Simulation steps per frame; default 2. Raise for fast liquids; time grows with it (8 takes about twice as long as 4).'), iterations: int(1, 200, 'Pressure solve sweeps per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid).'),
       buoyancy: num(-2, 2, 'Gas: upward acceleration per unit of temperature; default 0.15.'), weight: num(-2, 2, 'Gas: downward acceleration per unit of density (negative floats smoke); default 0.'),
       vorticity: num(0, 2, 'Gas: vorticity confinement, which keeps small swirls so smoke curls; default 0.25.'),
       dissipation: num(0, 1, 'Gas: share of density lost per frame; default 0.03.'), cooling: num(0, 1, 'Gas: share of temperature lost per frame; default 0.08.'),

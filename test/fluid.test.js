@@ -969,8 +969,7 @@ test('live runners check sources like compileFluid, and their own inputs with pa
     s => { s.name = 'con'; },
     s => { s.symbols.torch[0] = 'Q' + s.symbols.torch[0].slice(1); },
     s => { s.palette = { $ref: 'palette.json' }; },
-    s => { s.effects.torch.frames = 200; s.effects.extra = { ...s.effects.torch }; },
-    s => { s.width = 128; s.height = 128; Object.assign(s.effects.torch, { frames: 256, warmup: 8, substeps: 4, iterations: 200 }); s.effects.torch.emitters.forEach(e => { delete e.pulse; delete e.orbit; }); }
+    s => { s.effects.torch.frames = 200; s.effects.extra = { ...s.effects.torch }; }
   ];
   for (const breakIt of broken) {
     const source = structuredClone(torch);
@@ -1023,6 +1022,36 @@ test('live runners check sources like compileFluid, and their own inputs with pa
   fails(() => live.boost('flame', 2, -1), 'boost.frames', /0 to 65536/);
   fails(() => live.step(-1), 'step', /0 to 2048/);
   fails(() => live.step(1.5), 'step', /integer/);
+});
+
+test('a live run is held to the work budget only for its warm-up, since it steps one frame at a time', () => {
+  // The studio's 72 × 128 slime course (P-032): 256 frames at 4 substeps would be about 774 million cell updates to
+  // compile, over the 400 million budget, yet each live frame is about 3 million.
+  const slime = { ...gas(null), width: 72, height: 128, effects: { slime: { kind: 'liquid', frames: 256, substeps: 4, iterations: 24, yield: 0.15, walls: ['left', 'right', 'bottom'], fill: [{ x: 20, y: 96, w: 32, h: 24 }], emitters: [], look: smoke } } };
+  assert.throws(() => compileFluid(slime), error => error instanceof PixelError && error.path === 'fluid.effects.slime' && /about 774 million cell updates, more than 400 million/.test(error.message));
+  // The default warm-up, one whole cycle, does count, and the error says how many frames fit.
+  assert.throws(() => createLiveFluid(slime), error => error instanceof PixelError && error.path === 'live.warmup' && error.message === 'live.warmup: warming up 256 frames (the default: one cycle) needs about 774 million cell updates, more than 400 million; warm up at most 132 frames, or lower substeps or iterations');
+  assert.throws(() => createLiveFluid(slime, { warmup: 133 }), error => error.path === 'live.warmup' && /: warming up 133 frames needs about 402 million/.test(error.message));
+  const live = createLiveFluid(slime, { warmup: 2 });
+  assert.equal(live.step().frame, 3);
+  assert.ok(live.particles > 0 && live.render().keys.some(row => /[^.]/.test(row)));
+  // The most expensive source the schema allows (31,709 million cell updates to compile) builds a runner without
+  // warming up, and is still refused at once when its default warm-up would run past the budget.
+  const torch = { ...gas({ frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 200, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 };
+  assert.throws(() => createLiveFluid(torch), error => error.path === 'live.warmup' && /warm up at most 29 frames/.test(error.message));
+  assert.equal(createLiveFluid(torch, { warmup: 0 }).frame, 0);
+});
+
+test('substeps go up to 16 a frame, and the work budget counts every one', () => {
+  // P-022: a fast drop needs finer steps than 4. The steps the metadata reports are frames × substeps.
+  const drop = substeps => goo({ frames: 6, substeps, gravity: [0, 0.5] }, [{ x: 20, y: 2, w: 6, h: 6, velocity: [0, 4] }]);
+  for (const substeps of [8, 16]) assert.equal(compileFluid(drop(substeps)).metadata.effects.goo.steps, 6 * substeps);
+  assert.throws(() => compileFluid(drop(17)), error => error.path === 'fluid.effects.goo.substeps' && /integer from 1 to 16/.test(error.message));
+  assert.equal(createLiveFluid(drop(16), { warmup: 1 }).step().frame, 2);
+  // Four times the substeps is four times the work: 59 frames of a 128 × 128 gas with 16 sweeps are about 100 million
+  // cell updates at 4 substeps and about 402 million at 16, which is refused before anything is simulated.
+  const plume = { ...gas({ frames: 59, substeps: 16, iterations: 16, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), width: 128, height: 128 };
+  assert.throws(() => compileFluid(plume), error => error.path === 'fluid.effects.plume' && /about 402 million cell updates/.test(error.message));
 });
 
 // Its speed (250 ms a frame at most, a few milliseconds in practice) is measured by `npm run bench -- --budgets`
