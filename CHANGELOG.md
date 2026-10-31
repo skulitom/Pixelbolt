@@ -271,6 +271,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A live fluid run is held to the work budget (about 400 million cell updates) only for its warm-up, since it steps one frame at a time. A 72 × 128 slime with 256 frames at 4 substeps used to be refused by `createLiveFluid` because compiling all 256 frames would go over; it now runs with a warm-up of up to 132 frames, at about 3 million cell updates a frame (that source's 24 iterations, with yield stress). The default warm-up, a whole cycle, is too long for it, and the error says how many frames fit.
 - `substeps` goes up to 16 (it stopped at 4), for fast liquids that need finer steps. Time grows with it: the waterfall steps live in about 2 ms at 2 substeps, 7 ms at 8 and 17 ms at 16, and the work budget counts every step.
 - A liquid `fill` can be an ellipse (`radius: [x, y]` with `at`), and an effect may list 64 fills (it stopped at 16). A jelly dome wider than it is tall is one fill, an ellipse cut by a box, where it took a stack of 2-row strips with steps down its sides.
+- A live run's `render()` also returns `fluid`: one string per row, `#` where the look layers drew the fluid itself. An outline, a spark or a decoration drawn with the liquid's own key showed up in `keys` as liquid, so counting a pocket's slime by key counted them too.
 
 ### Fixes
 
