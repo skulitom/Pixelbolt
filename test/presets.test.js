@@ -72,7 +72,12 @@ test('the presets listing covers every source and looping recipe in examples/, m
   assert.match(guide, /pixel_compile \{"preset": "<name>"\}/);
   assert.deepEqual(presets.map(entry => entry.file.slice('examples/'.length)).sort(), [...sources, ...recipes].sort());
   assert.equal(new Set(presets.map(entry => entry.name.toLowerCase())).size, presets.length, 'names are unique');
-  for (const entry of presets) {
+  // A busy machine may pass the listing's time budget: the presets after that are named, not measured (the command
+  // line, with no budget, measures all of them; see presets-cli.test.js).
+  const measured = presets.filter(entry => !entry.unmeasured), skipped = presets.slice(measured.length);
+  assert.ok(measured.length > 0 && skipped.every(entry => entry.unmeasured && Object.keys(entry).join() === 'name,kind,file,unmeasured'));
+  if (skipped.length) t.diagnostic(`${skipped.length} presets listed past the time budget`);
+  for (const entry of measured) {
     assert.equal(entry.error, undefined, `${entry.name} compiles`);
     const { project, colors, liquid } = compiled.get(entry.file.slice('examples/'.length)), loops = Object.values(project.animations).map(item => item.loop);
     assert.deepEqual([entry.size, entry.frames, entry.colors, entry.plays], [`${project.width}x${project.height}`, project.frames.length, colors, loops.every(Boolean) ? 'loop' : loops.some(Boolean) ? 'loops and one-shots' : 'one-shot'], entry.name);

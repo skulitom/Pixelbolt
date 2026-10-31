@@ -215,7 +215,8 @@ try {
       console.log(JSON.stringify({ ok: true, file }));
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
     else if (command === 'presets') {
-      if (!positional.length) console.log(JSON.stringify(await listPresets(), null, 2));
+      // A shell has no time limit, so every preset is measured.
+      if (!positional.length) console.log(JSON.stringify(await listPresets({ budget: Infinity }), null, 2));
       else {
         const entry = await findPreset(positional[0], 'name'), { source, inlined } = await loadPreset(entry);
         console.log(JSON.stringify({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source }, null, 2));

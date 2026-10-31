@@ -15,7 +15,8 @@ test('pixelbolt presets lists every preset, and prints one preset\'s source', as
   const entries = await presetEntries(), { guide, presets } = JSON.parse((await run('presets')).stdout);
   assert.match(guide, /pixel_compile \{"preset": "<name>"\}/);
   assert.deepEqual(presets.map(entry => [entry.name, entry.file]), entries.map(entry => [entry.name, `examples/${entry.file}`]));
-  assert.ok(presets.every(entry => entry.size && entry.frames && entry.plays && entry.colors && entry.for && !entry.error));
+  // No time budget in a shell: every preset is measured.
+  assert.ok(presets.every(entry => entry.size && entry.frames && entry.plays && entry.colors && entry.for && !entry.error && !entry.unmeasured));
   const smoke = entries.find(entry => entry.file === 'smoke-puff.fluid.json');
   if (smoke) {
     const one = JSON.parse((await run('presets', smoke.name)).stdout);
