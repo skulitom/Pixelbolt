@@ -7,6 +7,7 @@ import { compileWaves } from '../src/wave.js';
 import { readExpect, checkDelivery } from '../src/check.js';
 import { embedBundleRecipe, sameFiles, outputSummary } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
+import { PRESET_FOLDER, listPresets, findPreset, loadPreset, compilePreset } from '../src/presets.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference, testMapScale } from '../src/index.js';
 
 const HELP = `Pixelbolt — text to pixels, without dependencies
@@ -37,6 +38,11 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            normals source (a lighting normal pass derived from a colour recipe)
   pixelbolt compile <source.json> --expand [--out expanded.poses.json]
                                            Print editable poses with motion templates expanded
+  pixelbolt compile --preset <name> --out recipe.json [--metadata meta.json]
+                                           Compile a shipped preset (smoke-puff, campfire, fire-spells, hero...) as
+                                           its examples/ file compiles; --expand works too
+  pixelbolt presets [name]                 List the presets (size, frames, loop, colours, what each is for), or print
+                                           one preset's source to edit
   pixelbolt autotile <template.json> --out recipe.json [--metadata masks.json] [--preview map.png]
                                            Build a 47-tile blob or 16-tile cardinal set from template rows or a
                                            terrain description; --preview draws every tile over a test map
@@ -92,7 +98,7 @@ function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
     if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded', '--project', '--list-files'].includes(args[i])) options[args[i].slice(2)] = true;
-    else if (['--out', '--dir', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time', '--preview'].includes(args[i])) {
+    else if (['--preset', '--out', '--dir', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time', '--preview'].includes(args[i])) {
       const key = args[i].slice(2);
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
       options[key] = args[++i];
@@ -184,13 +190,19 @@ try {
     if (positional.length > 1) throw new Error('Too many positional arguments');
     const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference', 'guides'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation', 'list-files'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root', 'time-limit'], schema: [], compile: ['out', 'metadata', 'preview', 'force'], autotile: ['out', 'metadata', 'preview', 'force'], scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
     allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
-    allowed.compile.push('expand');
+    allowed.compile.push('expand', 'preset');
+    allowed.presets = [];
     allowed.share = [];
     allowed.skill = ['project', 'dir', 'force'];
     allowed.render.push('embed-recipe'); allowed.scene.push('embed-recipe'); allowed.import.push('embedded');
     if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
     for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
+    // A preset compiles exactly as its file in examples/ does, so the compile command reads that file.
+    if (command === 'compile' && options.preset !== undefined) {
+      if (positional.length) throw new Error('compile takes a source file or --preset <name>, not both');
+      positional[0] = path.join(PRESET_FOLDER, (await findPreset(options.preset)).file);
+    }
     if (command === 'init') {
       const file = positional[0] ?? 'sprite.pixel.json';
       try {
@@ -201,7 +213,13 @@ try {
       }
       console.log(JSON.stringify({ ok: true, file }));
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
-    else if (command === 'skill') {
+    else if (command === 'presets') {
+      if (!positional.length) console.log(JSON.stringify(await listPresets(), null, 2));
+      else {
+        const entry = await findPreset(positional[0], 'name'), { source, inlined } = await loadPreset(entry);
+        console.log(JSON.stringify({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save source to a file, edit it and compile that.`, source }, null, 2));
+      }
+    } else if (command === 'skill') {
       if (positional[0] !== 'install') throw new Error('Usage: pixelbolt skill install [--project | --dir <skills folder>] [--force]');
       const { installSkill } = await import('../src/skill.js');
       console.log(JSON.stringify({ ok: true, ...await installSkill({ version: await engineVersion(), force: options.force, project: options.project, dir: options.dir }) }, null, 2));
@@ -255,7 +273,8 @@ try {
       let value, metadata, input, warnings, preview;
       if (command === 'compile' || command === 'autotile') {
         input = await readResolved(positional[0]);
-        const compile = command === 'autotile' ? compileAutotile : COMPILERS[input.document?.format] ?? compilePoses;
+        // A preset may be a plain recipe, which compiles to itself.
+        const compile = command === 'autotile' ? compileAutotile : options.preset !== undefined ? compilePreset : COMPILERS[input.document?.format] ?? compilePoses;
         const compiled = compile(input.document);
         value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata; warnings = compiled.warnings; preview = compiled.preview;
       } else if (command === 'overlay') {

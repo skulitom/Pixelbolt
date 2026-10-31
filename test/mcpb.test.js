@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { assembleMcpb, buildMcpb, registryEntry, root } from '../scripts/build-mcpb.mjs';
 import { readZip, writeZip, sha256 } from '../scripts/build-studio.mjs';
 import { verifyMcpb } from '../scripts/verify-mcpb.mjs';
@@ -115,6 +116,14 @@ test('MCPB builds are byte-identical, including across CRLF and LF checkouts', a
   assert.ok(files.has('bin/pixelforge.js'));
   assert.ok(files.has('studio/scene-player.js'));
   for (const excluded of ['src/server.js', 'studio/index.html', 'server.json', 'scripts/build-mcpb.mjs', 'docs/PUBLISHING.md']) assert.equal(files.has(excluded), false, excluded);
+});
+
+test('the bundle carries every preset, so its presets topics and pixel_compile preset work as installed', async () => {
+  const bundled = await import(pathToFileURL(path.join(base, 'src/presets.js')).href);
+  const shipped = await import('../src/presets.js');
+  assert.deepEqual((await bundled.presetEntries()).map(entry => entry.file), (await shipped.presetEntries()).map(entry => entry.file));
+  const smoke = await bundled.findPreset('smoke-puff');
+  assert.deepEqual(bundled.compilePreset((await bundled.loadPreset(smoke)).source).recipe, shipped.compilePreset((await shipped.loadPreset(await shipped.findPreset('smoke-puff'))).source).recipe);
 });
 
 test('the standalone verifier runs bundled MCP help, render, import and scene export', () => {
