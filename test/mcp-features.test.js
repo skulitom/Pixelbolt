@@ -42,7 +42,7 @@ test('MCP keeps what an agent reads small: brief tool schemas, a quick start, an
     assert.ok(Buffer.byteLength(quick) < 12288, `${Buffer.byteLength(quick)} bytes of quick start`);
     // Every topic the tool offers is named in the quick start and serves its document.
     const topics = listed.find(tool => tool.name === 'pixel_help').inputSchema.properties.topic.enum;
-    assert.deepEqual(topics, ['guide', 'workflow', 'schema', 'example', 'poses', 'scenes', 'autotile', 'fx', 'fluid', 'wave', 'normals']);
+    assert.deepEqual(topics, ['guide', 'workflow', 'schema', 'example', 'poses', 'scenes', 'autotile', 'fx', 'fluid', 'wave', 'normals', 'presets', 'preset']);
     for (const topic of topics) assert.ok(quick.includes(`\`${topic}\``), `the quick start names topic ${topic}`);
     assert.match((await help('guide'))[0], /^# Pixelbolt agent authoring guide/);
     assert.match((await help('workflow'))[0], /^# Deliberate pixel art/);
