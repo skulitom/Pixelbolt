@@ -378,6 +378,33 @@ export const TEST_MAP = Object.freeze([
   '.............#...#..',
   '....................'
 ]);
+// The test map of a layered set of n terrains (0 the bottom): the shapes of TEST_MAP in the top terrain over the bottom
+// one, so every top-over-bottom tile shows, and with three or four terrains the holes in its big block and rings round
+// the block in the terrains between, so each terrain also meets the ones beside it. Rows of layer indices.
+export function layeredTestMap(n) {
+  const pad = n - 2, [x0, y0, x1, y1] = [1 + pad, 1 + pad, 11 + pad, 11 + pad];
+  // TEST_MAP's columns 0–11 (the block) move right and down by pad, room for its rings; the shapes right of it move
+  // right by twice that, so the rings never reach them.
+  return Array.from({ length: TEST_MAP.length + pad * 2 }, (_, y) => Array.from({ length: TEST_MAP[0].length + pad * 2 }, (_, x) => {
+    const column = x <= x1 ? x - pad : x >= 12 + pad * 2 ? x - pad * 2 : -1;
+    if (TEST_MAP[y - pad]?.[column] === '#') return n - 1;
+    if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return n - 2;
+    const ring = Math.max(x0 - x, x - x1, y0 - y, y - y1);
+    return ring <= n - 2 ? n - 1 - ring : 0;
+  }));
+}
+// A one-frame recipe that draws a layered set over its test map, as its tiles draw it: one map per terrain, bottom
+// first, in which that terrain's cells draw its corner tiles counting every higher terrain's cells as its own. The
+// terrain goes on past the map's edge.
+export function layeredTestMapRecipe(recipe, layers, { background } = {}) {
+  const tile = recipe.width, rows = layeredTestMap(layers.length).map(row => row.map(i => layers[i].key).join(''));
+  const width = rows[0].length * tile, height = rows.length * tile;
+  const symbols = Object.fromEntries(layers.map(layer => [`template-${layer.name}`, recipe.symbols[`template-${layer.name}`]]));
+  const maps = layers.map((layer, i) => ({ op: 'tilemap', tile: [tile, tile], rows, outside: 'match',
+    legend: Object.fromEntries(layers.map((other, j) => [other.key, j === i ? { template: `template-${layer.name}`, autotile: 'corner', match: layers.slice(i).map(above => above.key).join('') } : null])) }));
+  return { version: 1, name: `${recipe.name}-test-map`, width, height, palette: recipe.palette, ...(recipe.ramps && { ramps: recipe.ramps }), symbols,
+    frames: [{ name: 'test-map', ops: [...(background !== undefined ? [{ op: 'rect', x: 0, y: 0, w: width, h: height, color: background }] : []), ...maps] }] };
+}
 // A one-frame recipe that draws a compiled set's templates over the test map (variants with templates of their own
 // mixed in by position, as often as `weights` say), on `background` when given.
 export function testMapRecipe(recipe, { templates, weights, mode = 'blob', background }) {

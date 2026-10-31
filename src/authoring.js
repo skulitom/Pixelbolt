@@ -1,7 +1,7 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
 import { PixelError, CANVAS_SIDE, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
 import { AUTOTILE_MODES, MODE_MASKS, MODE_BITS } from './autotile.js';
-import { terrainTemplate, mergeTerrain, normalTerrain, readTerrain, templateSeams, seamWarnings, testMapRecipe } from './terrain.js';
+import { terrainTemplate, mergeTerrain, normalTerrain, readTerrain, templateSeams, seamWarnings, testMapRecipe, layeredTestMapRecipe } from './terrain.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
 import { expandMotions, validateRig, MOTION_TEMPLATES } from './motions.js';
@@ -566,18 +566,19 @@ function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rows
 // set. The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
 // draws the set over a test map holding every tile.
 export function compileAutotile(source) {
-  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'collision', 'frame', 'variants', 'animation', 'preview', 'sheet'], 'autotile');
+  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'collision', 'frame', 'variants', 'animation', 'layers', 'preview', 'sheet'], 'autotile');
   if (source.format !== 'pixelforge-autotile' || source.version !== 1) fail('autotile', 'expected version-1 pixelforge-autotile');
   const tile = source.tile;
   // A template is three tiles tall and a symbol at most 256 rows, so tiles are at most 84 pixels.
   if (!Number.isInteger(tile) || tile < 2 || tile > 84 || tile % 2) fail('autotile.tile', 'expected an even tile size from 2 to 84 (the template is three tiles tall, and a symbol holds at most 256 rows)');
-  const mode = source.mode ?? 'blob';
+  const mode = source.mode ?? (source.layers !== undefined ? 'corner' : 'blob');
   if (!AUTOTILE_MODES.includes(mode)) fail('autotile.mode', 'expected blob (47 tiles), cardinal (16, no inner corners) or corner (16 tiles that sit where four cells meet)');
   const palette = source.palette ?? {};
   if (source.symbols !== undefined) {
     fields(source.symbols, Object.keys(source.symbols), 'autotile.symbols');
     for (const name of Object.keys(source.symbols)) if (name === 'template' || name.startsWith('template-')) fail(`autotile.symbols.${name}`, 'template and template-<variant> name the compiled templates; choose another name');
   }
+  if (source.layers !== undefined) return compileLayers(source, { tile, mode, palette });
   if (source.template !== undefined && source.terrain !== undefined) fail('autotile.terrain', 'give template rows or a terrain to draw them, not both');
   if (source.template === undefined && source.terrain === undefined && source.ops === undefined) fail('autotile.template', `give template rows (${tile * 3} rows of ${tile * 2} characters), a terrain to draw them, or ops`);
   const drawing = { tile, palette, ramps: source.ramps, symbols: source.symbols ?? {} };
@@ -642,6 +643,65 @@ export function compileAutotile(source) {
   const most = Math.max(...share.values()), weighted = variants.some(variant => (variant.weight ?? 1) !== 1);
   const preview = testMapRecipe(recipe, { templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background });
   return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: [...MODE_MASKS[mode]], bits: { ...MODE_BITS[mode] }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) } }, ...(warnings.length && { warnings }), preview });
+}
+
+// A layered corner set: 2–4 terrains stacked bottom first, each drawn from its own template (rows, or a terrain merged
+// over the set's), and a tile for every combination of terrains at its four corners (NW, NE, SW, SE), named by the
+// layers' keys there ({corners}). A tile is the lowest of its corners' terrains filling it and each higher one among
+// them drawn over it as a corner tile counting its own cells and every higher terrain's, so a terrain runs on under the
+// ones above it and a transition only shows between terrains that meet. Each frame's tile.corners names its corners'
+// terrains for engine tile sets. N layers make N^4 tiles.
+function compileLayers(source, { tile, mode, palette }) {
+  if (mode !== 'corner') fail('autotile.mode', 'layers are corner tiles: set mode to corner, or leave it out');
+  const not = { template: 'with layers, each layer brings its own template rows or terrain', ops: 'with layers, each layer brings its own ops', variants: 'a layered set has no variants yet: give each terrain a fill that repeats every tile', collision: 'a layered set has no collision boxes yet', animation: 'a layered set does not animate' };
+  for (const [key, message] of Object.entries(not)) if (source[key] !== undefined) fail(`autotile.${key}`, message);
+  const layers = source.layers;
+  if (!Array.isArray(layers) || layers.length < 2 || layers.length > 4) fail('autotile.layers', 'expected 2–4 layers, bottom first, each { name, key } with a terrain, template rows or ops');
+  if (typeof source.frame !== 'string' || !source.frame.includes('{corners}') || /\{(?:mask|variant)\}/.test(source.frame)) fail('autotile.frame', 'expected a frame name template containing {corners}, which becomes the keys of the layers at the tile\'s four corners (NW, NE, SW, SE); a layered set has no {mask} or {variant}');
+  const drawing = { tile, palette, ramps: source.ramps, symbols: source.symbols ?? {} };
+  const base = source.terrain === undefined ? undefined : normalTerrain(source.terrain);
+  const blank = Array.from({ length: tile * 3 }, () => '.'.repeat(tile * 2));
+  const symbols = {}, drawn = {}, read = [];
+  layers.forEach((layer, i) => {
+    const lp = `autotile.layers[${i}]`;
+    fields(layer, ['name', 'key', 'terrain', 'template', 'ops'], lp);
+    if (typeof layer.name !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,31}$/.test(layer.name) || read.some(other => other.name === layer.name)) fail(`${lp}.name`, 'expected 1–32 letters, digits, underscores or hyphens, starting with a letter, unique among the layers: the terrain\'s name in engines');
+    if (typeof layer.key !== 'string' || !/^[a-zA-Z0-9]$/.test(layer.key) || read.some(other => other.key === layer.key)) fail(`${lp}.key`, 'expected one letter or digit, unique among the layers: the terrain\'s character in maps and tile names');
+    if (layer.template !== undefined && layer.terrain !== undefined) fail(`${lp}.terrain`, 'give template rows or a terrain, not both');
+    let start = blank, rowsPath = `${lp}.ops`;
+    if (layer.template !== undefined) { start = templateRows(layer.template, tile, `${lp}.template`); rowsPath = `${lp}.template`; }
+    else if (layer.terrain !== undefined || base !== undefined) {
+      const terrain = layer.terrain === undefined ? base : base === undefined ? normalTerrain(layer.terrain) : mergeTerrain(base, normalTerrain(layer.terrain));
+      rowsPath = layer.terrain === undefined ? 'autotile.terrain' : `${lp}.terrain`;
+      start = terrainTemplate(terrain, { tile, palette, mode, path: rowsPath });
+      drawn[`template-${layer.name}`] = start;
+    } else if (layer.ops === undefined) fail(lp, 'give the layer a terrain, template rows or ops');
+    symbols[`template-${layer.name}`] = drawOverTemplate(start, layer.ops, { ...drawing, path: `${lp}.ops`, rowsPath });
+    read.push({ name: layer.name, key: layer.key });
+  });
+  if (source.preview !== undefined) {
+    fields(source.preview, ['background'], 'autotile.preview');
+    if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
+  }
+  // Codes count in base n, NW the lowest digit.
+  const n = read.length, places = [1, n, n * n, n * n * n], frames = [];
+  for (let code = 0; code < n * places[3]; code++) {
+    const corners = places.map(place => Math.floor(code / place) % n), ops = [];
+    for (let layer = 0; layer < n; layer++) if (corners.includes(layer)) ops.push({ op: 'autotile', symbol: `template-${read[layer].name}`, mask: corners.reduce((bits, c, k) => (c >= layer ? bits | (1 << k) : bits), 0), mode: 'corner' });
+    frames.push({ name: source.frame.replaceAll('{corners}', corners.map(c => read[c].key).join('')), tile: { corners: corners.map(c => read[c].name) }, ops });
+  }
+  const recipe = { version: 1, name: source.name, width: tile, height: tile, palette, ...(source.ramps !== undefined && { ramps: source.ramps }), symbols, frames, ...(source.sheet !== undefined && { sheet: source.sheet }) };
+  renderProject(recipe);
+  // Each layer is a corner set of its own over the ones below, so each template is checked as one.
+  const warnings = [], seams = { joins: 0, shape: 0, texture: 0 };
+  for (const layer of read) {
+    const symbol = `template-${layer.name}`, report = templateSeams({ [symbol]: symbols[symbol] }, tile, mode, drawn[symbol] ? { [symbol]: drawn[symbol] } : {});
+    warnings.push(...seamWarnings(report, tile).map(warning => `Layer ${layer.name}: ${warning}`));
+    seams.joins += report.checked;
+    for (const seam of report.seams) for (const pixel of seam.pixels) seams[pixel.shape ? 'shape' : 'texture']++;
+  }
+  const preview = layeredTestMapRecipe(recipe, read, { background: source.preview?.background });
+  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, layers: read, corners: ['nw', 'ne', 'sw', 'se'], tiles: frames.length, seams }, ...(warnings.length && { warnings }), preview });
 }
 
 // The collision box of each tile of a set, from the source's collision (true, or { inset, oneWay }): the whole tile,

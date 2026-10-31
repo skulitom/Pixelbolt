@@ -30,11 +30,14 @@ export async function assembleMcpb({ base = root } = {}) {
   if (typeof version !== 'string' || !VERSION.test(version)) throw new Error('package.json version must have the form X.Y.Z.');
   const manifest = { ...template, version };
   // The CLI imports index.js, including frame-folder.js. server.js serves the Studio and is not needed by MCP.
-  // pixel_help reads the quick start, two guides and one example. pixel_scene exports these three Studio player files as assets.
+  // pixel_help reads the quick start, two guides and one example, and its presets topics and pixel_compile's preset read
+  // every top-level example (presets.js, which also reads the Fluid and Effects labs' preset titles). pixel_scene
+  // exports these three Studio player files as assets.
   const names = [
     'package.json', 'bin/pixelbolt.js', 'bin/pixelforge.js', 'LICENSE', 'README.md', 'schema.json',
-    'docs/agent-quick-start.md', 'docs/agent-guide.md', 'docs/art-workflow.md', 'examples/forest-spirit.json',
-    'studio/scene.html', 'studio/scene-player.js', 'studio/scene.css',
+    'docs/agent-quick-start.md', 'docs/agent-guide.md', 'docs/art-workflow.md',
+    ...(await readdir(path.join(base, 'examples'), { withFileTypes: true })).filter(entry => entry.isFile() && entry.name.endsWith('.json')).map(entry => `examples/${entry.name}`),
+    'studio/scene.html', 'studio/scene-player.js', 'studio/scene.css', 'studio/effects-controls.js', 'studio/fluid-controls.js',
     ...(await readdir(base)).filter(file => file.endsWith('.schema.json')),
     ...(await readdir(path.join(base, 'src'))).filter(file => file.endsWith('.js') && file !== 'server.js').map(file => `src/${file}`)
   ];

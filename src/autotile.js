@@ -44,10 +44,11 @@ export const drawnMask = (mode, mask) => (mode === 'blob' ? reduceBlobMask(mask)
 // The frames of a validated recipe that are tiles of an autotile set, for engine tile sets: each frame whose own
 // operations draw `autotile` at the frame's corner, all with one mask and mode, as every compiled frame does. Masks
 // come back as drawn: blob masks reduced, cardinal ones 0–15. A frame whose tile names a terrain says which set it
-// belongs to.
+// belongs to. A tile of a layered set, whose tile names its corners' terrains, is not one: it belongs to those terrains.
 export function autotileFrames(recipe) {
   const tiles = [];
   for (const frame of recipe.frames) {
+    if (frame.tile?.corners !== undefined) continue;
     const ops = (frame.ops ?? []).filter(op => op.op === 'autotile');
     if (!ops.length || ops.some(op => (op.x ?? 0) !== 0 || (op.y ?? 0) !== 0)) continue;
     const mode = ops[0].mode ?? 'blob', mask = drawnMask(mode, ops[0].mask);
@@ -145,7 +146,8 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
       weights = spec.weights;
     }
     if (spec.autotile !== undefined && !AUTOTILE_MODES.includes(spec.autotile)) fail(`${where}.autotile`, 'expected blob, cardinal or corner');
-    if (spec.autotile && masked(kind) && list.some(n => !n.includes('{mask}'))) fail(`${where}.${key}`, 'autotile names must contain {mask}');
+    if (list.some(n => n.includes('{corners}')) && (spec.autotile !== 'corner' || !masked(kind))) fail(`${where}.${key}`, `{corners} names a layered set's tile by the characters of the four cells around it; it goes with autotile corner${masked(kind) ? '' : `, in a ${kinds.filter(masked).join(' or ')} name`}`);
+    if (spec.autotile && masked(kind) && list.some(n => !n.includes('{mask}') && !(spec.autotile === 'corner' && n.includes('{corners}')))) fail(`${where}.${key}`, spec.autotile === 'corner' ? 'corner names must contain {mask} or, for a layered set, {corners}' : 'autotile names must contain {mask}');
     if (!spec.autotile && !masked(kind)) fail(`${where}.autotile`, `a ${kind} draws the tile its neighbour mask selects; set autotile to blob, cardinal or corner`);
     if (spec.match !== undefined && (typeof spec.match !== 'string' || !spec.match.length)) fail(`${where}.match`, 'expected a string of matching characters');
     return { kind, names: list, weights, autotile: spec.autotile ?? null, match: spec.match ?? null };
@@ -203,13 +205,29 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
     return rule.names.at(-1);
   };
   const outputs = [], drawnCorners = new Set();
+  // The characters of the four cells around a corner tile (NW, NE, SW, SE), for {corners}: past the map's edge, the
+  // nearest cell in it, since a layered map's terrain goes on.
+  const cornerCells = (x, y) => [[-1, -1], [0, -1], [-1, 0], [0, 0]].map(([dx, dy]) => [Math.min(Math.max(x + dx, 0), width - 1), Math.min(Math.max(y + dy, 0), rows.length - 1)]);
   // What a rule draws at one place: x, y name the cell, or for a corner tile the cell whose top-left corner it sits on.
+  // A corner tile is drawn once at its point for each thing drawn there, however many of its cells ask for it.
   const emit = (rule, char, x, y, cp) => {
     const match = rule.match ?? char, corner = rule.autotile === 'corner';
     const mask = rule.autotile ? neighbourMask(rule.autotile, (dx, dy) => { const c = charAt(x + dx, y + dy); return c === undefined ? outside === 'match' : match.includes(c); }) : null;
-    const chosen = pick(rule, x, y), name = mask !== null && masked(rule.kind) ? chosen.replaceAll('{mask}', String(mask)) : chosen;
-    if (!exists(rule.kind, name)) fail(cp, `${rule.kind} ${JSON.stringify(name)} does not exist${mask === null ? '' : ` (${corner ? 'corner ' : ''}mask ${mask})`}`);
+    let name = pick(rule, x, y), corners = null;
+    if (mask !== null && masked(rule.kind)) name = name.replaceAll('{mask}', String(mask));
+    if (name.includes('{corners}')) {
+      const cells = cornerCells(x, y), blank = cells.find(([cx, cy]) => rows[cy][cx] === '.' || rows[cy][cx] === ' ');
+      if (blank) fail(`${path}.rows[${blank[1]}][${blank[0]}]`, 'is empty, but {corners} names a layered tile by the characters of the four cells around it; give every cell of a layered map one of its terrains\' keys');
+      corners = cells.map(([cx, cy]) => rows[cy][cx]);
+      name = name.replaceAll('{corners}', corners.join(''));
+    }
+    if (!exists(rule.kind, name)) fail(cp, `${rule.kind} ${JSON.stringify(name)} does not exist${corners ? ` (corners ${corners.join(' ')}: every cell around a layered tile is one of the set's keys)` : mask === null ? '' : ` (${corner ? 'corner ' : ''}mask ${mask})`}`);
     const [dx, dy] = rule.offset, moved = dx !== 0 || dy !== 0, half = corner ? 0.5 : 0;
+    if (corner) {
+      const key = `${x + dx},${y + dy}|${rule.kind}|${name}|${mask}`;
+      if (drawnCorners.has(key)) return;
+      drawnCorners.add(key);
+    }
     outputs.push({ x: x + dx - half, y: y + dy - half, kind: rule.kind, name, ...(mask !== null && !masked(rule.kind) && { mask, mode: rule.autotile }), ...(corner && masked(rule.kind) && { corner: true }), order: outputs.length, moved });
   };
   rows.forEach((row, y) => [...row].forEach((char, x) => {
@@ -220,13 +238,10 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
     for (const rule of rules) {
       if (rule.pattern && ![...rule.pattern].every((want, k) => fits(want, charAt(x + (k % 3) - 1, y + Math.floor(k / 3) - 1)))) continue;
       if (rule.chance < 1 && random(seed, x, y, rule.salt, 0x63) >= rule.chance) continue;
-      // A corner tile belongs to the point where four cells meet, so a cell draws the tiles at its four corners, each
-      // point once for each legend entry among its cells, with variants picked by the point.
+      // A corner tile belongs to the point where four cells meet, so a cell draws the tiles at its four corners, with
+      // variants picked by the point.
       if (rule.autotile !== 'corner') emit(rule, char, x, y, cp);
-      else for (const [cx, cy] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) {
-        const key = `${char}:${rule.salt}:${cx},${cy}`;
-        if (!drawnCorners.has(key)) { drawnCorners.add(key); emit(rule, char, cx, cy, cp); }
-      }
+      else for (const [cx, cy] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) emit(rule, char, cx, cy, cp);
       if (rule.stop) break;
     }
   }));

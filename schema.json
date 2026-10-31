@@ -284,6 +284,17 @@
               "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
               "description": "The autotile set this frame belongs to; default the recipe name. Each terrain is a Godot terrain set of its own."
             },
+            "corners": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                "description": "Portable name: do not use Windows device names (CON, PRN, AUX, NUL, COM1–9, LPT1–9). Frame/animation names must be unique ignoring case."
+              },
+              "maxItems": 4,
+              "minItems": 4,
+              "description": "A layered set's tile: the terrains at its NW, NE, SW and SE corners, instead of terrain. The recipe's layered tiles are one Godot corner terrain set, its terrains in order of first appearance, the first the ground under the others."
+            },
             "weight": {
               "type": "integer",
               "minimum": 1,
@@ -1655,7 +1666,7 @@
                           "cardinal",
                           "corner"
                         ],
-                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left)."
+                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
                       },
                       "match": {
                         "type": "string",
@@ -1719,7 +1730,7 @@
                                 "cardinal",
                                 "corner"
                               ],
-                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left)."
+                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
                             },
                             "match": {
                               "type": "string",
