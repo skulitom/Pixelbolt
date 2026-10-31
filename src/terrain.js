@@ -4,7 +4,7 @@
 // hashing and + − × ÷ only, as in craft.js, so a description always draws the same pixels. No I/O.
 import { PixelError } from './core.js';
 import { hash, random } from './craft.js';
-import { quadrantPieces, templatePiece, neighbourMask } from './autotile.js';
+import { tilePieces, templatePiece, neighbourMask } from './autotile.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -221,9 +221,9 @@ export function drawTerrain(spec, map, mode = 'blob') {
 
 // The template two tiles wide and three tall: a lone tile as the preview, the inner-corner tile (a cell whose four
 // sides are terrain and four diagonals empty) and the 2×2 island. Each comes from drawing that little map, so its
-// quarters are exactly what those cells look like anywhere.
-export function terrainTemplate(terrain, { tile, palette, mode = 'blob', path = 'terrain' }) {
-  const spec = readTerrain(terrain, { tile, palette, path });
+// quarters are exactly what those cells look like anywhere. A corner set turns inner corners as a blob set does.
+export function terrainTemplate(terrain, { tile, palette, mode: setMode = 'blob', path = 'terrain' }) {
+  const spec = readTerrain(terrain, { tile, palette, path }), mode = setMode === 'cardinal' ? 'cardinal' : 'blob';
   const crop = (rows, x, y) => rows.slice(y, y + tile).map(row => row.slice(x, x + tile));
   const lone = drawTerrain(spec, ['...', '.#.', '...'], mode), cross = drawTerrain(spec, ['.#.', '###', '.#.'], mode);
   const island = drawTerrain(spec, ['....', '.##.', '.##.', '....'], mode);
@@ -242,25 +242,25 @@ const SMALL = 4;
 function findJoins(mode) {
   const found = new Map();
   const add = (axis, first, second, across, mask) => {
+    if (!first || !second) return;
     const key = `${axis}:${first.join(',')}|${second.join(',')}|${across}`;
     if (!found.has(key)) found.set(key, { axis, first, second, across, masks: new Set() });
     found.get(key).masks.add(mask);
   };
   // A window of 4×3 cells (3×4 for joins down the page) holds every neighbour the examined joins depend on: those
-  // inside cell (1, 1), and those between it and the cell after it.
-  for (const axis of ['x', 'y']) for (let bits = 0; bits < 1 << 12; bits++) {
-    const filled = (cx, cy) => { const [i, j] = axis === 'x' ? [cx, cy] : [cy, cx]; return i >= 0 && i < 4 && j >= 0 && j < 3 && ((bits >> (j * 4 + i)) & 1) === 1; };
-    if (!filled(1, 1)) continue;
+  // inside cell (1, 1), and those between it and the cell after it. A corner tile depends on the four cells around
+  // it, so 3×2 cells hold the tile on the top-left corner of cell (1, 1) and the one after it.
+  const corner = mode === 'corner', [across, down] = corner ? [3, 2] : [4, 3];
+  for (const axis of ['x', 'y']) for (let bits = 0; bits < 1 << (across * down); bits++) {
+    const filled = (cx, cy) => { const [i, j] = axis === 'x' ? [cx, cy] : [cy, cx]; return i >= 0 && i < across && j >= 0 && j < down && ((bits >> (j * across + i)) & 1) === 1; };
+    if (!corner && !filled(1, 1)) continue;
     const maskOf = (cx, cy) => neighbourMask(mode, (dx, dy) => filled(cx + dx, cy + dy));
-    const source = (cx, cy, quarter) => templatePiece(SMALL, quarter, quadrantPieces(mode, maskOf(cx, cy))[quarter]);
-    const mask = maskOf(1, 1);
-    if (axis === 'x') {
-      for (const [left, right] of [['tl', 'tr'], ['bl', 'br']]) add('x', source(1, 1, left), source(1, 1, right), false, mask);
-      if (filled(2, 1)) for (const [left, right] of [['tr', 'tl'], ['br', 'bl']]) add('x', source(1, 1, left), source(2, 1, right), true, mask);
-    } else {
-      for (const [upper, lower] of [['tl', 'bl'], ['tr', 'br']]) add('y', source(1, 1, upper), source(1, 1, lower), false, mask);
-      if (filled(1, 2)) for (const [upper, lower] of [['bl', 'tl'], ['br', 'tr']]) add('y', source(1, 1, upper), source(1, 2, lower), true, mask);
-    }
+    // A quarter's template corner, or null for one that draws nothing.
+    const source = (cx, cy, quarter) => { const piece = tilePieces(mode, maskOf(cx, cy))[quarter]; return piece && templatePiece(SMALL, piece.from, piece.piece); };
+    const mask = maskOf(1, 1), next = axis === 'x' ? [2, 1] : [1, 2];
+    const pairs = axis === 'x' ? { within: [['tl', 'tr'], ['bl', 'br']], between: [['tr', 'tl'], ['br', 'bl']] } : { within: [['tl', 'bl'], ['tr', 'br']], between: [['bl', 'tl'], ['br', 'tr']] };
+    for (const [first, second] of pairs.within) add(axis, source(1, 1, first), source(1, 1, second), false, mask);
+    if (corner || filled(...next)) for (const [first, second] of pairs.between) add(axis, source(1, 1, first), source(...next, second), true, mask);
   }
   return [...found.values()].map(join => ({ ...join, masks: [...join.masks].sort((a, b) => a - b) }));
 }
@@ -268,7 +268,8 @@ const BLOB_JOINS = findJoins('blob'), joinKey = join => `${join.axis}:${join.fir
 const blobKeys = new Set(BLOB_JOINS.map(joinKey));
 // A cardinal set has no inner-corner tiles, so some of its joins put a fill quarter beside an edge quarter where a
 // blob set would turn the corner. Those joins (`corner`) can only be seamless when the edges run to the tile border.
-const JOINS = { blob: BLOB_JOINS, cardinal: findJoins('cardinal').map(join => ({ ...join, corner: !blobKeys.has(joinKey(join)) })) };
+// A corner set's tiles are a blob set's quarters, moved: its joins are the blob joins, with corner masks.
+export const JOINS = { blob: BLOB_JOINS, cardinal: findJoins('cardinal').map(join => ({ ...join, corner: !blobKeys.has(joinKey(join)) })), corner: findJoins('corner') };
 
 // The quarter that naturally lies on one side of the quarter at [x, y] (its top-left), as the template continues. In
 // the island the next quarter over, which repeats every tile (so past the island's right edge comes its middle). The
@@ -358,8 +359,9 @@ export function seamWarnings(report, tile, label = templateLabel) {
 }
 
 // ---- Test map ----------------------------------------------------------------------------------------------------
-// Every one of the 47 blob tiles (and so the 16 cardinal ones): a block with holes in all 16 arrangements of empty
-// diagonals, strips and their ends, a lone tile and tiles that touch only at a corner, L and T shapes and a 2×2 block.
+// Every one of the 47 blob tiles (and so the 16 cardinal and 16 corner ones): a block with holes in all 16 arrangements
+// of empty diagonals, strips and their ends, a lone tile and tiles that touch only at a corner, L and T shapes and a
+// 2×2 block.
 export const TEST_MAP = Object.freeze([
   '....................',
   '.###########.#.###..',
@@ -376,6 +378,33 @@ export const TEST_MAP = Object.freeze([
   '.............#...#..',
   '....................'
 ]);
+// The test map of a layered set of n terrains (0 the bottom): the shapes of TEST_MAP in the top terrain over the bottom
+// one, so every top-over-bottom tile shows, and with three or four terrains the holes in its big block and rings round
+// the block in the terrains between, so each terrain also meets the ones beside it. Rows of layer indices.
+export function layeredTestMap(n) {
+  const pad = n - 2, [x0, y0, x1, y1] = [1 + pad, 1 + pad, 11 + pad, 11 + pad];
+  // TEST_MAP's columns 0–11 (the block) move right and down by pad, room for its rings; the shapes right of it move
+  // right by twice that, so the rings never reach them.
+  return Array.from({ length: TEST_MAP.length + pad * 2 }, (_, y) => Array.from({ length: TEST_MAP[0].length + pad * 2 }, (_, x) => {
+    const column = x <= x1 ? x - pad : x >= 12 + pad * 2 ? x - pad * 2 : -1;
+    if (TEST_MAP[y - pad]?.[column] === '#') return n - 1;
+    if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return n - 2;
+    const ring = Math.max(x0 - x, x - x1, y0 - y, y - y1);
+    return ring <= n - 2 ? n - 1 - ring : 0;
+  }));
+}
+// A one-frame recipe that draws a layered set over its test map, as its tiles draw it: one map per terrain, bottom
+// first, in which that terrain's cells draw its corner tiles counting every higher terrain's cells as its own. The
+// terrain goes on past the map's edge.
+export function layeredTestMapRecipe(recipe, layers, { background } = {}) {
+  const tile = recipe.width, rows = layeredTestMap(layers.length).map(row => row.map(i => layers[i].key).join(''));
+  const width = rows[0].length * tile, height = rows.length * tile;
+  const symbols = Object.fromEntries(layers.map(layer => [`template-${layer.name}`, recipe.symbols[`template-${layer.name}`]]));
+  const maps = layers.map((layer, i) => ({ op: 'tilemap', tile: [tile, tile], rows, outside: 'match',
+    legend: Object.fromEntries(layers.map((other, j) => [other.key, j === i ? { template: `template-${layer.name}`, autotile: 'corner', match: layers.slice(i).map(above => above.key).join('') } : null])) }));
+  return { version: 1, name: `${recipe.name}-test-map`, width, height, palette: recipe.palette, ...(recipe.ramps && { ramps: recipe.ramps }), symbols,
+    frames: [{ name: 'test-map', ops: [...(background !== undefined ? [{ op: 'rect', x: 0, y: 0, w: width, h: height, color: background }] : []), ...maps] }] };
+}
 // A one-frame recipe that draws a compiled set's templates over the test map (variants with templates of their own
 // mixed in by position, as often as `weights` say), on `background` when given.
 export function testMapRecipe(recipe, { templates, weights, mode = 'blob', background }) {

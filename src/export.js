@@ -100,7 +100,8 @@ export async function createBundle(spec) {
 // draws something, or has a tile field, is a plain tile. Each terrain's editor colour is the commonest opaque colour of
 // its fullest tile. A recipe without animations of its own has only the flipbook of every frame, so no tile animates.
 export function tileSource(spec, project, atlas, { name = project.name, terrain = name, image } = {}) {
-  const tiles = autotileFrames(spec), tiled = new Set(tiles.map(tile => tile.frame));
+  const tiles = autotileFrames(spec), layered = project.frames.filter(frame => frame.tile?.corners).map(frame => ({ frame: frame.name, corners: frame.tile.corners }));
+  const tiled = new Set([...tiles, ...layered].map(tile => tile.frame));
   if (new Set(tiles.map(tile => tile.mask)).size < 2 && !project.frames.some(frame => frame.tile)) return null;
   const drawn = frame => { for (let i = 3; i < frame.data.length; i += 4) if (frame.data[i]) return true; return false; };
   const plain = project.frames.filter(frame => !tiled.has(frame.name) && (frame.tile || drawn(frame))).map(frame => frame.name);
@@ -109,6 +110,8 @@ export function tileSource(spec, project, atlas, { name = project.name, terrain 
     const key = tile.terrain ?? terrain, best = fullest.get(key);
     if (!best || popcount(tile.mask) > popcount(best.mask)) fullest.set(key, tile);
   }
+  // A layered terrain's tile is the one with it at every corner.
+  for (const tile of layered) if (new Set(tile.corners).size === 1) fullest.set(tile.corners[0], tile);
   for (const [key, tile] of fullest) {
     const data = project.frames.find(frame => frame.name === tile.frame).data, counts = new Map();
     for (let i = 0; i < data.length; i += 4) if (data[i + 3] === 255) { const id = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]; counts.set(id, (counts.get(id) ?? 0) + 1); }
@@ -116,7 +119,7 @@ export function tileSource(spec, project, atlas, { name = project.name, terrain 
     colors[key] = [top >> 16, (top >> 8) & 255, top & 255];
   }
   const { sheet } = project;
-  return { atlas: spec.animations === undefined ? { ...atlas.metadata, animations: {} } : atlas.metadata, tiles, plain, colors, name, terrain, margin: sheet.padding * sheet.scale, separation: sheet.padding * 2 * sheet.scale, ...(image && { image }) };
+  return { atlas: spec.animations === undefined ? { ...atlas.metadata, animations: {} } : atlas.metadata, tiles, layered, plain, colors, name, terrain, margin: sheet.padding * sheet.scale, separation: sheet.padding * 2 * sheet.scale, ...(image && { image }) };
 }
 // The bundle's TileSet ({ text, terrains, collision }), or null. Its warnings join the project's.
 function godotTiles(spec, project, atlas) {
@@ -129,8 +132,9 @@ function godotTiles(spec, project, atlas) {
   const result = tileSets([source]);
   project.warnings.push(...result.warnings.map(warning => `${name}.tileset.tres: ${warning}`));
   if (result.text === null) return null;
-  const terrains = [...new Set(source.tiles.map(tile => tile.terrain ?? name))];
-  return { text: result.text, terrains, collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
+  const terrains = [...new Set(source.tiles.map(tile => tile.terrain ?? name))], layers = [];
+  for (const tile of source.layered) for (const corner of tile.corners) if (!layers.includes(corner)) layers.push(corner);
+  return { text: result.text, terrains, layers, corner: source.tiles.some(tile => tile.mode === 'corner'), collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
 }
 function spriteReadme(project) {
   const { name } = project, first = Object.keys(project.animations)[0];
@@ -139,14 +143,15 @@ function spriteReadme(project) {
 function tilesetReadme(project, tiles, still) {
   const { name } = project, first = Object.keys(project.animations)[0], list = items => items.length === 1 ? items[0] : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
   const terrains = tiles.terrains.length ? `the terrain${tiles.terrains.length === 1 ? '' : 's'} ${list(tiles.terrains)}` : '';
-  const holds = [terrains, tiles.plain ? `${tiles.plain} plain tile${tiles.plain === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
+  const layered = tiles.layers.length ? `the layered terrains ${list(tiles.layers)} and their transitions` : '';
+  const holds = [terrains, layered, tiles.plain ? `${tiles.plain} plain tile${tiles.plain === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
   const lines = [`${name} — Pixelbolt tile set`, '',
     `${name}.png: transparent RGBA tile sheet`,
     `${name}.tileset.tres: Godot 4 TileSet with ${holds}${tiles.collision ? ', and collision shapes on physics layer 0' : ''}; it finds ${name}.png in its own folder, so keep the two together`,
-    `${name}.atlas.json: TexturePacker-style frames${tiles.facts ? ', with each tile\'s terrain, weight and collision polygon (in exported pixels) where the recipe gives them' : ''}`,
+    `${name}.atlas.json: TexturePacker-style frames${tiles.facts ? ', with each tile\'s terrain, weight and collision polygons (in exported pixels) where the recipe gives them' : ''}`,
     ...(still ? [] : [`${name}.tres: Godot 4 SpriteFrames of the animations`, `${name}.css: CSS classes with per-frame timing`, 'animations/: animated PNGs (APNG)', 'player.js: dependency-free Canvas player']),
     'frames/: one PNG per tile', `${name}.pixel.json: editable source`, `preview.html: ${still ? 'the tile sheet' : 'the animations'}; open it directly in a browser`, '',
-    `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
+    `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.${tiles.corner ? ' A corner terrain is drawn where four painted cells meet, so its ground ends half a cell inside what you paint: 3×3 painted cells draw 2×2 cells of ground, centred.' : ''}` : ''}${tiles.layers.length ? ` For the layered terrains, paint bottom-up, each terrain over its own cells and those of every terrain above it: ${tiles.layers[0]} over the whole area, ${tiles.layers.slice(1).map((layer, i) => `then ${layer} over the ${list(tiles.layers.slice(i + 1))}`).join(', ')}. Godot puts a terrain where four cells painted with it meet, so each ends half a cell inside what you paint, and the transitions between terrains appear on their own.` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
   if (!still) lines.push('', `Animations: give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${first}").`);
   return lines.join('\n') + '\n';
 }

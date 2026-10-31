@@ -1,6 +1,6 @@
 // Browser-compatible, deterministic rasterizer. No I/O and no dependencies.
 import { patternProblem, ditherThreshold, traceLine, pixelId, colorOf, idsOf, cleanupIds, ruleVariants, rewriteIds } from './craft.js';
-import { reduceBlobMask, quadrantPieces, templatePiece, expandTilemap, isoLayout } from './autotile.js';
+import { AUTOTILE_MODES, tilePieces, templatePiece, expandTilemap, isoLayout } from './autotile.js';
 import { layoutText } from './font.js';
 export class PixelError extends Error {
   constructor(path, message) { super(`${path}: ${message}`); this.name = 'PixelError'; this.path = path; }
@@ -40,33 +40,25 @@ function point(value, path) {
   return [integer(value[0], `${path}[0]`), integer(value[1], `${path}[1]`)];
 }
 // A frame's facts as a tile, for engine tile sets: the terrain an autotile frame belongs to (frames of one set share
-// it), its weight against the other frames that could fill the same cell, and a collision polygon around its solid
-// part in canvas pixels (pixel corners, from 0 to the width and height), one-way when oneWay: bodies pass up through
-// it and land on top. Exports turn the polygon into the engine's own; the renderer draws nothing from it.
+// it), its weight against the other frames that could fill the same cell, and collision polygons around its solid
+// parts in canvas pixels (pixel corners, from 0 to the width and height), one-way when oneWay: bodies pass up through
+// them and land on top. Exports turn the polygons into the engine's own; the renderer draws nothing from them. One
+// polygon, or a list of up to 8 for a tile with separate solid parts, is kept as a list.
 function tileFacts(value, path, width, height) {
-  object(value, path, ['terrain', 'weight', 'collision', 'oneWay']);
+  object(value, path, ['terrain', 'corners', 'weight', 'collision', 'oneWay']);
   const tile = {};
   if (value.terrain !== undefined) tile.terrain = name(value.terrain, `${path}.terrain`);
+  // A tile of a layered set names the terrains at its four corners (NW, NE, SW, SE) instead of one terrain.
+  if (value.corners !== undefined) {
+    if (!Array.isArray(value.corners) || value.corners.length !== 4) fail(`${path}.corners`, 'expected the terrains at the tile\'s four corners, [NW, NE, SW, SE], each a terrain name');
+    if (value.terrain !== undefined) fail(`${path}.terrain`, 'a tile with corners belongs to the terrains they name; leave terrain out');
+    tile.corners = value.corners.map((corner, i) => name(corner, `${path}.corners[${i}]`));
+  }
   if (value.weight !== undefined) tile.weight = integer(value.weight, `${path}.weight`, 1, 1000);
   if (value.collision !== undefined) {
-    const where = `${path}.collision`;
-    if (!Array.isArray(value.collision) || value.collision.length < 3 || value.collision.length > 32) fail(where, 'expected 3–32 points [x, y] around the solid part of the tile, in canvas pixels: [[0, 0], [16, 0], [16, 16], [0, 16]] is a whole 16-pixel tile');
-    const points = value.collision.map((at, i) => {
-      const [x, y] = point(at, `${where}[${i}]`);
-      if (x < 0 || y < 0 || x > width || y > height) fail(`${where}[${i}]`, `[${x}, ${y}] is outside the ${width}×${height} canvas; points are pixel corners from [0, 0] to [${width}, ${height}]`);
-      return [x, y];
-    });
-    const n = points.length, side = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
-    // Collinear c on segment ab.
-    const on = (a, b, c) => Math.min(a[0], b[0]) <= c[0] && c[0] <= Math.max(a[0], b[0]) && Math.min(a[1], b[1]) <= c[1] && c[1] <= Math.max(a[1], b[1]);
-    const meet = (a, b, c, d) => { const s1 = side(a, b, c), s2 = side(a, b, d), s3 = side(c, d, a), s4 = side(c, d, b); return (s1 !== s2 && s3 !== s4 && s1 * s2 <= 0 && s3 * s4 <= 0) || (!s1 && on(a, b, c)) || (!s2 && on(a, b, d)) || (!s3 && on(c, d, a)) || (!s4 && on(c, d, b)); };
-    for (let i = 0; i < n; i++) if (points[i][0] === points[(i + 1) % n][0] && points[i][1] === points[(i + 1) % n][1]) fail(`${where}[${(i + 1) % n}]`, 'repeats the point before it; list each corner once');
-    for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
-      if (i === 0 && j === n - 1) continue;
-      if (meet(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])) fail(where, `the edge from point ${i} to ${(i + 1) % n} crosses or touches the edge from point ${j} to ${(j + 1) % n}; list the corners in order around the shape`);
-    }
-    if (!points.reduce((sum, [x, y], i) => sum + x * points[(i + 1) % n][1] - points[(i + 1) % n][0] * y, 0)) fail(where, 'the points enclose no area');
-    tile.collision = points;
+    const where = `${path}.collision`, several = Array.isArray(value.collision) && Array.isArray(value.collision[0]?.[0]);
+    if (several && value.collision.length > 8) fail(where, 'expected up to 8 polygons');
+    tile.collision = several ? value.collision.map((polygon, k) => collisionPolygon(polygon, `${where}[${k}]`, width, height)) : [collisionPolygon(value.collision, where, width, height)];
   }
   if (value.oneWay !== undefined) {
     boolean(value.oneWay, `${path}.oneWay`);
@@ -74,6 +66,25 @@ function tileFacts(value, path, width, height) {
     tile.oneWay = value.oneWay;
   }
   return tile;
+}
+function collisionPolygon(polygon, where, width, height) {
+  if (!Array.isArray(polygon) || polygon.length < 3 || polygon.length > 32) fail(where, 'expected 3–32 points [x, y] around the solid part of the tile, in canvas pixels: [[0, 0], [16, 0], [16, 16], [0, 16]] is a whole 16-pixel tile; a tile with separate solid parts takes a list of polygons');
+  const points = polygon.map((at, i) => {
+    const [x, y] = point(at, `${where}[${i}]`);
+    if (x < 0 || y < 0 || x > width || y > height) fail(`${where}[${i}]`, `[${x}, ${y}] is outside the ${width}×${height} canvas; points are pixel corners from [0, 0] to [${width}, ${height}]`);
+    return [x, y];
+  });
+  const n = points.length, side = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+  // Collinear c on segment ab.
+  const on = (a, b, c) => Math.min(a[0], b[0]) <= c[0] && c[0] <= Math.max(a[0], b[0]) && Math.min(a[1], b[1]) <= c[1] && c[1] <= Math.max(a[1], b[1]);
+  const meet = (a, b, c, d) => { const s1 = side(a, b, c), s2 = side(a, b, d), s3 = side(c, d, a), s4 = side(c, d, b); return (s1 !== s2 && s3 !== s4 && s1 * s2 <= 0 && s3 * s4 <= 0) || (!s1 && on(a, b, c)) || (!s2 && on(a, b, d)) || (!s3 && on(c, d, a)) || (!s4 && on(c, d, b)); };
+  for (let i = 0; i < n; i++) if (points[i][0] === points[(i + 1) % n][0] && points[i][1] === points[(i + 1) % n][1]) fail(`${where}[${(i + 1) % n}]`, 'repeats the point before it; list each corner once');
+  for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+    if (i === 0 && j === n - 1) continue;
+    if (meet(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])) fail(where, `the edge from point ${i} to ${(i + 1) % n} crosses or touches the edge from point ${j} to ${(j + 1) % n}; list the corners in order around the shape`);
+  }
+  if (!points.reduce((sum, [x, y], i) => sum + x * points[(i + 1) % n][1] - points[(i + 1) % n][0] * y, 0)) fail(where, 'the points enclose no area');
+  return points;
 }
 export function parseColor(value, palette = {}, path = 'color') {
   if (typeof value !== 'string') fail(path, 'expected a palette name or hex color');
@@ -399,14 +410,16 @@ export function renderProject(spec, options = {}) {
       // `over`: only pixels whose exact current colour is listed.
       const overSet = () => op.over === undefined ? null : new Set((typeof op.over === 'string' ? [op.over] : list(op.over, `${p}.over`, 64)).map((value, i) => pixelId(color(value, typeof op.over === 'string' ? `${p}.over` : `${p}.over[${i}]`), 0)));
       // One autotile tile at left/top: the four quarters that a neighbour mask selects from a template symbol two tiles
-      // wide and three tall (see autotile.js). Blob masks are reduced (a diagonal counts only with both of its sides).
+      // wide and three tall (see autotile.js). Blob masks are reduced (a diagonal counts only with both of its sides); a
+      // corner tile's quarters are the inner quarters of the four cells it sits between.
       const drawTemplate = (grid, mask, mode, left, top, sample, where) => {
         const tile = grid.width / 2;
         if (!Number.isInteger(tile) || tile % 2 || grid.height !== tile * 3) fail(where, 'an autotile template is two tiles wide and three tall, with an even tile size');
-        const pieces = quadrantPieces(mode, mode === 'cardinal' ? mask : reduceBlobMask(mask)), q = tile / 2;
+        const pieces = tilePieces(mode, mask), q = tile / 2;
         spend(tile * tile);
         for (const [position, [ox, oy]] of [['tl', [0, 0]], ['tr', [q, 0]], ['bl', [0, q]], ['br', [q, q]]]) {
-          const [sx, sy] = templatePiece(tile, position, pieces[position]);
+          if (!pieces[position]) continue;
+          const [sx, sy] = templatePiece(tile, pieces[position].from, pieces[position].piece);
           for (let gy = 0; gy < q; gy++) for (let gx = 0; gx < q; gx++) { const c = sample(grid.rows[sy + gy][sx + gx]); if (c) put(left + ox + gx, top + oy + gy, c); }
         }
       };
@@ -487,8 +500,8 @@ export function renderProject(spec, options = {}) {
         const grid = symbols[op.symbol];
         if (!grid) fail(`${p}.symbol`, `unknown symbol ${JSON.stringify(op.symbol)}`);
         const mode = op.mode ?? 'blob';
-        if (!['blob', 'cardinal'].includes(mode)) fail(`${p}.mode`, 'expected blob or cardinal');
-        drawTemplate(grid, integer(op.mask, `${p}.mask`, 0, mode === 'cardinal' ? 15 : 255), mode, x, y, paletteSampler(), `${p}.symbol`);
+        if (!AUTOTILE_MODES.includes(mode)) fail(`${p}.mode`, 'expected blob, cardinal or corner');
+        drawTemplate(grid, integer(op.mask, `${p}.mask`, 0, mode === 'blob' ? 255 : 15), mode, x, y, paletteSampler(), `${p}.symbol`);
       } else if (op.op === 'box') {
         // An isometric box from the top-left of its bounds: a 2:1 top face whose right edge runs `w` pixels across and
         // left edge `d`, over a left and a right face `h` pixels tall. Each pixel belongs to the face its centre lies in
@@ -528,6 +541,11 @@ export function renderProject(spec, options = {}) {
         const iso = op.layout === 'iso';
         if (iso && tile.some(n => n % 2)) fail(`${p}.tile`, 'an iso tile has an even width and height');
         const expanded = expandTilemap(op, { path: p, fail, kinds: ['symbol', 'template'], text: 'symbol', masked: kind => kind !== 'template', exists: (kind, key) => own(symbols, key) });
+        // Corner tiles sit half a cell up and left of the cell they were found from.
+        if (expanded.cells.some(cell => cell.mode === 'corner')) {
+          if (iso) fail(`${p}.legend`, 'corner tiles sit where four square cells meet; an iso map takes symbols');
+          if (tile.some(n => n % 2)) fail(`${p}.tile`, 'corner tiles sit where four cells meet, half a cell up and left of one; use an even cell width and height');
+        }
         const sample = paletteSampler();
         const cells = iso ? isoLayout(expanded.cells, expanded.rows, tile) : expanded.cells.map(cell => ({ ...cell, left: cell.x * tile[0], top: cell.y * tile[1] }));
         for (const cell of cells) {
@@ -1018,7 +1036,7 @@ export function buildAtlas(project, { trim } = {}) {
   const extras = frame => ({
     ...(frame.anchor && { pivot: { x: round6(frame.anchor[0] / width), y: round6(frame.anchor[1] / height) }, anchor: { x: frame.anchor[0] * s, y: frame.anchor[1] * s } }),
     ...(frame.points && { points: Object.fromEntries(Object.entries(frame.points).map(([key, [x, y]]) => [key, { x: x * s, y: y * s }])) }),
-    ...(frame.tile && { tile: { ...frame.tile, ...(frame.tile.collision && { collision: frame.tile.collision.map(([x, y]) => ({ x: x * s, y: y * s })) }) } })
+    ...(frame.tile && { tile: { ...frame.tile, ...(frame.tile.collision && { collision: frame.tile.collision.map(polygon => polygon.map(([x, y]) => ({ x: x * s, y: y * s }))) }) } })
   });
   frames.forEach((frame, i) => {
     const pixels = scalePixels(frame.data, width, height, s), rowBytes = width * s * 4;

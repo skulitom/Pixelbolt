@@ -4,6 +4,22 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Transitions between terrains
+
+- An autotile source's `layers` stacks 2–4 terrains bottom first (water, sand, grass) into one corner set with a tile for every mix of them at a tile's four corners: 16, 81 or 256 tiles, named by the layers' keys at the corners (`{corners}`, so `shore-wsgw`). Each layer is drawn from its own terrain (merged over the set's), template rows or ops. A tile is the lowest terrain among its corners filling it and each higher one among them drawn over it, counting the cells of every terrain above it as its own, so sand runs on under grass and grass straight on water draws no sand. Each frame's `tile.corners` names its corners' terrains.
+- New reviewed example `examples/shore.autotile.json`: water, sand meeting it with a line of foam, and the meadow's grass. The test map puts the top terrain's shapes over the bottom one and rings of the terrains between round its block.
+- Scene and recipe tilemaps name a layered tile with `{corners}`, the characters of the four cells around a corner tile (past the map's edge, the nearest cell). A scene drawn from the compiled tiles and a recipe drawing one map per layer give the same pixels.
+- The Godot TileSet makes a layered set one terrain set matching corners with a terrain per layer, so Godot's painter draws the transitions. The bottom terrain is an unset corner, so cells at the edge of the painted area keep their tiles, and each tile is there once per terrain as its centre (alternative tiles). Painted bottom-up, as the export's README says, Godot picks Pixelbolt's tile and centre in every cell; `scripts/verify-godot.mjs` paints a three-terrain set over five maps to prove it.
+- A corner tile drawn by several legend entries at one point is drawn once when they would draw the same thing.
+
+### Corner (dual-grid) tile sets
+
+- Autotile sources take `mode: "corner"`: 16 tiles that sit where four map cells meet, each mask naming which of those cells are terrain (NW=1, NE=2, SW=4, SE=8). Every quarter of a corner tile is the inner quarter of one of the four cells, cut from the same template, so any terrain or template gives a corner set, and a corner map draws exactly the pixels a blob map of the same cells draws, from a third of the tiles. Variants are picked per tile. The empty tile (mask 0) is compiled once.
+- Recipe and scene tilemap legends take `autotile: "corner"`: the tiles are drawn half a cell up and left of the cells, one more row and column than the map, each point once per legend entry among its cells. Corner maps need an even cell size and square layout.
+- The Godot TileSet gives a corner set a terrain that matches corners (mode 1). Godot's painter puts the terrain where four painted cells meet and picks Pixelbolt's corner tile on every painted cell, the empty tile where a cell has no terrain point; without that tile Godot would erase the cell and its terrain. The export's README says that ground ends half a cell inside what is painted.
+- `collision` on a corner set boxes each tile's terrain quarters, kept from their cells' open sides, so the shapes join into the blob boxes of the same map; two cells that touch only at a tile's middle give two polygons. A frame's `tile.collision` takes a list of up to 8 polygons, the atlas always holds a list, and the TileSet writes `polygon_0`, `polygon_1` and so on.
+- The seam check, test map and `expect.transparent` handle corner sets, and the delivery check does not call the empty tile an accident. `scripts/verify-godot.mjs` loads a weighted corner set with collision on its own and in the scene's TileSet, with three sets painted on one layer.
+
 ### Godot TileSets with weights, collision, plain tiles and several sets
 
 - Autotile variants take `weight` (1–1000): the test map mixes variants by weight, and the Godot TileSet gives each tile its probability against the heaviest of its terrain. The meadow example's flowers now show a quarter as often as each plain fill.

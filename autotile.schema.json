@@ -24,8 +24,10 @@
     "mode": {
       "enum": [
         "blob",
-        "cardinal"
-      ]
+        "cardinal",
+        "corner"
+      ],
+      "description": "blob (default; corner with layers): 47 tiles; cardinal: 16 without inner corners; corner: 16 tiles that sit where four cells meet (a dual grid), drawing what blob does."
     },
     "palette": {
       "type": "object",
@@ -590,8 +592,50 @@
     },
     "frame": {
       "type": "string",
-      "pattern": "\\{mask\\}",
-      "description": "Frame name template; {mask} is the neighbour mask and {variant} the variant name."
+      "pattern": "\\{(?:mask|corners)\\}",
+      "description": "Frame name template; {mask} is the neighbour mask and {variant} the variant name. A layered set uses {corners}: the layers' keys at the tile's NW, NE, SW and SE corners."
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,31}$",
+            "description": "The terrain's name, in engines."
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9]$",
+            "description": "One letter or digit: the terrain's character in maps and tile names."
+          },
+          "terrain": {
+            "type": "object",
+            "description": "This layer's terrain, merged into the set's terrain (if any) field by field."
+          },
+          "template": {
+            "$ref": "#/$defs/rows",
+            "description": "This layer's template rows instead of a terrain."
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/op"
+            },
+            "maxItems": 2048,
+            "description": "Drawn over this layer's template."
+          }
+        },
+        "required": [
+          "name",
+          "key"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 4,
+      "minItems": 2,
+      "description": "A layered corner set of 2–4 terrains, bottom first (water, sand, grass): a tile for every mix of them at its four corners, n^4 in all, the lowest filling it and each higher one among them drawn over it. Not with template, ops, variants, collision or animation."
     },
     "collision": {
       "oneOf": [
@@ -647,7 +691,7 @@
           "additionalProperties": false
         }
       ],
-      "description": "Give every tile a collision box (true, or { inset, oneWay }): the whole tile, kept inset from its open sides. Exported to the Godot TileSet."
+      "description": "Give every tile a collision box (true, or { inset, oneWay }): the whole tile, kept inset from its open sides (a corner tile: its terrain quarters). Exported to the Godot TileSet."
     },
     "variants": {
       "type": "array",
@@ -1389,14 +1433,15 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 255,
-              "description": "Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8."
+              "description": "Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8. Corner: the terrain cells among the four the tile sits between, NW=1, NE=2, SW=4, SE=8."
             },
             "mode": {
               "enum": [
                 "blob",
-                "cardinal"
+                "cardinal",
+                "corner"
               ],
-              "description": "blob (default) or cardinal."
+              "description": "blob (default), cardinal or corner."
             },
             "remap": {
               "type": "object",
@@ -1987,9 +2032,10 @@
                       "autotile": {
                         "enum": [
                           "blob",
-                          "cardinal"
+                          "cardinal",
+                          "corner"
                         ],
-                        "description": "Pick by neighbour mask: 47-value blob or 16-value cardinal."
+                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
                       },
                       "match": {
                         "type": "string",
@@ -2050,9 +2096,10 @@
                             "autotile": {
                               "enum": [
                                 "blob",
-                                "cardinal"
+                                "cardinal",
+                                "corner"
                               ],
-                              "description": "Pick by neighbour mask: 47-value blob or 16-value cardinal."
+                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
                             },
                             "match": {
                               "type": "string",

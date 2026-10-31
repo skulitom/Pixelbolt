@@ -48,7 +48,7 @@ test('a terrain draws a template whose tiles, stitched into any map, are the ter
 
 test('the example terrains compile without seam warnings to their reviewed pixels', async () => {
   // Regenerate these deliberately: they change with any change to what a terrain draws.
-  const golden = { meadow: ['50d70244be8c4db2', 188], ground: ['dee3cfbdbc75e79e', 141] };
+  const golden = { meadow: ['50d70244be8c4db2', 188], ground: ['dee3cfbdbc75e79e', 141], shore: ['d786415b63da514c', 81] };
   for (const [name, [hash, frames]] of Object.entries(golden)) {
     const compiled = compileAutotile(await example(name));
     assert.equal(compiled.warnings, undefined, name);
