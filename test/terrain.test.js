@@ -48,7 +48,7 @@ test('a terrain draws a template whose tiles, stitched into any map, are the ter
 
 test('the example terrains compile without seam warnings to their reviewed pixels', async () => {
   // Regenerate these deliberately: they change with any change to what a terrain draws.
-  const golden = { meadow: ['50d70244be8c4db2', 188], ground: ['dee3cfbdbc75e79e', 141], shore: ['19cff9f62a9373a5', 90] };
+  const golden = { meadow: ['50d70244be8c4db2', 188], ground: ['4e050580ed95fcb4', 151], shore: ['19cff9f62a9373a5', 90] };
   for (const [name, [hash, frames]] of Object.entries(golden)) {
     const compiled = compileAutotile(await example(name));
     assert.equal(compiled.warnings, undefined, name);
@@ -187,7 +187,7 @@ test('MCP pixel_compile returns an autotile set with its test map', async t => {
   await request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
   const compiled = (await request('tools/call', { name: 'pixel_compile', arguments: { source: await example('ground'), metadata: true } })).result;
   const info = JSON.parse(compiled.content[0].text);
-  assert.deepEqual([info.ok, info.frames, info.warnings, info.metadata.seams.shape], [true, 141, [], 0]);
+  assert.deepEqual([info.ok, info.frames, info.warnings, info.metadata.seams.shape], [true, 151, [], 0]);
   assert.match(info.testMap, /second image/);
   assert.deepEqual(compiled.content.map(item => item.type), ['text', 'image', 'image']);
   // Other sources keep one image.

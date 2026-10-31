@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Slopes for side-view tile sets
+
+- An autotile source's `slopes: { "frame": "ground-{slope}" }` gives a side-view blob or cardinal set slopes: `up` and `down` at 45°, and gentle slopes a cell up over two (`gentle-up-low`, `gentle-up-high`, `gentle-down-high`, `gentle-down-low`), cut from its own top edge and fill. Each column is the flat ground's top edge moved down the slope over the fill drawn in place, so slopes meet flat ground and the fill texture without a seam, for terrain descriptions and hand-drawn templates alike.
+- A slope whose top edge runs into the cell under its low end has a foot tile (`<slope>-foot`) for that cell.
+- With `collision`, each slope and foot is solid under the slope's line, the top edge's depth below it, one-way when the set is.
+- `metadata.slopes` gives a scene legend (`#` terrain, a foot under each slope's low end, `/` `\` 45°, `u U` and `D d` gentle) and a map of both hills; the test map draws them below the set, and a scene with that legend draws the same pixels.
+- `examples/ground.autotile.json` has slopes (151 tiles). Godot and Tiled get slopes as plain tiles with their polygons; both verifiers load a sloped set.
+
 ### Scenes as Tiled maps
 
 - A scene export adds `scene.tmx`, a Tiled map of the scene at its start, unlit, in Pixelbolt's drawing order. A tilemap becomes a tile layer, painted with its asset's tiles and Wang sets, when Tiled's grid holds it (square cells of the map's grid, one frame per cell, 1× from a 1× sheet, not ground-sorted), offset half a cell for corner maps and by the difference for frames taller than their cells. Everything else becomes tile objects drawn in list order: placements and repeat copies at their frame and position at that time, sorted, iso and scaled maps. Shade placements are left out and haze is dropped, with warnings; lights, the camera and parallax stay in the scene.

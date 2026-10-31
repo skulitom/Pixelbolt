@@ -282,6 +282,8 @@ const autotile = {
       terrain: { type: 'object', description: 'Changes to the set\'s terrain, merged into it field by field: { "fill": { "seed": 2 } } varies the fill and keeps the edges, so variants mix in a map.' },
       ops: { ...array(ref('op')), description: 'Drawn over this variant\'s template after the set\'s ops.' } }, ['name']), 16), minItems: 1 },
     animation: { type: 'string', pattern: '\\{mask\\}', description: 'Optional per-mask animation over the variants, in order.' },
+    slopes: { ...object({ frame: { type: 'string', pattern: '\\{slope\\}', description: 'Frame name template; {slope} becomes up, down, gentle-up-low, gentle-up-high, gentle-down-high, gentle-down-low, and <slope>-foot for the tile under a slope\'s low end.' } }, ['frame']),
+      description: 'A side-view blob or cardinal set\'s slopes, 45° and gentle (a cell up over two), cut from its top edge and fill so they meet its flat ground; solid under their line with collision. metadata.slopes gives a scene legend for them.' },
     preview: { ...object({ background: color }), description: 'The test map: background is drawn under it (the ground a transparent-edged set sits on).' },
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'tile', 'frame']), anyOf: [{ required: ['template'] }, { required: ['terrain'] }, { required: ['ops'] }],

@@ -31,7 +31,8 @@ const meadow = {
 };
 
 // Ground seen from the side for a platformer: a flat walkable grass cap with tufts, dirt walls lit from the left,
-// a dark underside with roots hanging from it, and a pebbled fill. A stony variant breaks up large walls.
+// a dark underside with roots hanging from it, and a pebbled fill. A stony variant breaks up large walls. Slopes at 45°
+// and gently (one cell up over two) are cut from its grass cap, solid under their line.
 const ground = {
   format: 'pixelforge-autotile', version: 1, name: 'ground', tile: 16,
   palette: { k: '#1a1418', G: '#9bdc5e', g: '#5ea842', d: '#3b7a36', b: '#a0704a', u: '#7c5136', U: '#5b3a29', p: '#8a8078', P: '#5f5852', R: '#4a2f22', S: '#9ccfe6' },
@@ -50,6 +51,7 @@ const ground = {
   // A box per tile from the walkable grass top down: the insets are each edge's depth.
   collision: true,
   frame: 'ground-{mask}-{variant}',
+  slopes: { frame: 'ground-{slope}' },
   variants: [
     { name: 'a', weight: 3 },
     { name: 'b', weight: 3, terrain: { fill: { seed: 9 } } },

@@ -155,7 +155,9 @@ export const GODOT_TILE_SOURCES = [
   { ...TILE_SOURCE, name: 'ledge', frame: 'ledge-{mask}-{variant}', collision: { inset: { n: 1, e: 1, w: 1 }, oneWay: true }, sheet: { padding: 1, scale: 3, columns: 9 },
     variants: [{ name: 'a', weight: 6 }, { name: 'b', weight: 2, palette: { g: '#78b850' } }, { name: 'c', palette: { d: '#2c5878' } }] },
   { ...TILE_SOURCE, name: 'moss', mode: 'corner', frame: 'moss-{mask}-{variant}', collision: { inset: 1 }, sheet: { padding: 1, scale: 3, columns: 4 },
-    variants: [{ name: 'a', weight: 3 }, { name: 'b', palette: { g: '#8ab838' } }] }
+    variants: [{ name: 'a', weight: 3 }, { name: 'b', palette: { g: '#8ab838' } }] },
+  // Slopes cut from the template's top edge, plain tiles solid under their line, a pixel below it.
+  { ...TILE_SOURCE, name: 'hill', frame: 'hill-{mask}', collision: { inset: { n: 1 } }, slopes: { frame: 'hill-{slope}' }, sheet: { padding: 1, scale: 2, columns: 8 } }
 ];
 // A layered set of three terrains, water under sand under grass, each the tile template in its own colours, on a padded,
 // scaled sheet; painted bottom-up over maps of their keys. Water and sand have variants of their plain tiles, which

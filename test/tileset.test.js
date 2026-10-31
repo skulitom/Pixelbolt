@@ -98,7 +98,7 @@ test('a tile set without animations of its own exports no flipbook of its tiles;
   assert.equal(tiles[cellOf(atlas, bundle.project.sheet, 'meadow-255-b')]['0/probability'], undefined);
   // The ground set's collision is its README's too.
   const ground = await createBundle(compileAutotile(groundSource).recipe);
-  assert.match(ground.files.get('README.txt').toString(), /with the terrain ground, and collision shapes on physics layer 0;/);
+  assert.match(ground.files.get('README.txt').toString(), /with the terrain ground and 10 plain tiles, and collision shapes on physics layer 0;/);
   // Animated tiles keep their SpriteFrames, APNGs, CSS and player.
   const surf = await createBundle(compileAutotile(GODOT_TILE_SOURCES[2]).recipe), files = [...surf.files.keys()];
   for (const file of ['surf.tres', 'surf.css', 'player.js', 'surf.tileset.tres']) assert.ok(files.includes(file), file);
@@ -152,7 +152,7 @@ test('autotile collision and weights are checked, and the test map mixes variant
   const ground = compileAutotile(groundSource);
   assert.deepEqual(ground.recipe.frames.find(frame => frame.name === 'ground-0-a').tile, { weight: 3, collision: [[1, 3], [15, 3], [15, 14], [1, 14]] });
   // Variants that draw one template share its weight in the test map.
-  assert.deepEqual(ground.preview.frames[0].ops.at(-1).legend['#'], { templates: ['template', 'template-b', 'template-stones'], weights: [3, 3, 1], autotile: 'blob' });
+  assert.deepEqual(ground.preview.frames[0].ops.find(op => op.op === 'tilemap').legend['#'], { templates: ['template', 'template-b', 'template-stones'], weights: [3, 3, 1], autotile: 'blob' });
   const shared = compileAutotile({ ...ledgeSource }).preview.frames[0].ops.at(-1).legend['#'];
   assert.deepEqual(shared, { template: 'template', autotile: 'blob' }, 'palette variants all draw the one template');
 });

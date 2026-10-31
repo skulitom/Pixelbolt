@@ -2,6 +2,7 @@
 import { PixelError, CANVAS_SIDE, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
 import { AUTOTILE_MODES, MODE_MASKS, MODE_BITS, tilePieces, templatePiece } from './autotile.js';
 import { terrainTemplate, mergeTerrain, normalTerrain, readTerrain, templateSeams, seamWarnings, testMapRecipe, layeredTestMapRecipe } from './terrain.js';
+import { slopeTiles, slopeCollision, slopeLegend, SLOPE_MAP } from './slopes.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
 import { expandMotions, validateRig, MOTION_TEMPLATES } from './motions.js';
@@ -566,7 +567,7 @@ function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rows
 // set. The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
 // draws the set over a test map holding every tile.
 export function compileAutotile(source) {
-  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'collision', 'frame', 'variants', 'animation', 'layers', 'preview', 'sheet'], 'autotile');
+  fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'collision', 'frame', 'variants', 'animation', 'slopes', 'layers', 'preview', 'sheet'], 'autotile');
   if (source.format !== 'pixelforge-autotile' || source.version !== 1) fail('autotile', 'expected version-1 pixelforge-autotile');
   const tile = source.tile;
   // A template is three tiles tall and a symbol at most 256 rows, so tiles are at most 84 pixels.
@@ -618,7 +619,7 @@ export function compileAutotile(source) {
     fields(source.preview, ['background'], 'autotile.preview');
     if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
   }
-  const box = collisionBox(source.collision, { tile, mode, terrain: terrain === undefined ? undefined : readTerrain(terrain, { tile, palette, path: 'autotile.terrain' }) });
+  const shape = terrain === undefined ? undefined : readTerrain(terrain, { tile, palette, path: 'autotile.terrain' }), box = collisionBox(source.collision, { tile, mode, terrain: shape });
   const symbolOf = variant => (variant.name && Object.hasOwn(symbols, `template-${variant.name}`) ? `template-${variant.name}` : 'template');
   const frames = [], animations = {};
   for (const mask of MODE_MASKS[mode]) {
@@ -632,17 +633,39 @@ export function compileAutotile(source) {
     }
     if (source.animation !== undefined) animations[source.animation.replaceAll('{mask}', String(mask))] = { frames: names };
   }
+  // Slopes, cut from the set's template, after its tiles: each a symbol slope-<slope> and a frame that stamps it, solid
+  // under its line when the set has collision. Engines get them as plain tiles to place by hand.
+  const templates = { ...symbols };
+  let slopes = null;
+  if (source.slopes !== undefined) {
+    fields(source.slopes, ['frame'], 'autotile.slopes');
+    if (mode === 'corner') fail('autotile.slopes', 'slopes are cut from the top-edge tile of a side-view blob or cardinal set; set mode to blob or cardinal');
+    const { frame } = source.slopes;
+    if (typeof frame !== 'string' || !frame.includes('{slope}') || /\{(?:mask|variant|corners)\}/.test(frame)) fail('autotile.slopes.frame', 'expected a frame name template containing {slope} (up, down, gentle-up-low, … and <slope>-foot for the tile under a slope\'s low end); a slope has no {mask} or {variant}');
+    const options = collisionOptions(source.collision, { tile, terrain: shape, path: 'autotile.collision' });
+    slopes = slopeTiles(symbols.template, { tile, mode });
+    for (const slope of slopes) for (const [key, rows, foot] of [[slope.key, slope.rows, false], ...(slope.foot ? [[`${slope.key}-foot`, slope.foot, true]] : [])]) {
+      const polygon = options && slopeCollision(slope.key, tile, options.inset.n, foot);
+      symbols[`slope-${key}`] = rows;
+      frames.push({ name: frame.replaceAll('{slope}', key), ...(polygon && { tile: { collision: polygon, ...(options.oneWay && { oneWay: true }) } }), ops: [{ op: 'stamp', symbol: `slope-${key}` }] });
+    }
+  }
   const recipe = { version: 1, name: source.name, width: tile, height: tile, palette, ...(source.ramps !== undefined && { ramps: source.ramps }), symbols, frames, ...(source.animation !== undefined && { animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
   renderProject(recipe);
-  const report = templateSeams(symbols, tile, mode, drawn), warnings = seamWarnings(report, tile);
+  const report = templateSeams(templates, tile, mode, drawn), warnings = seamWarnings(report, tile);
   const count = kind => report.seams.reduce((sum, seam) => sum + seam.pixels.filter(p => (kind === 'corner' ? seam.corner : !seam.corner && (kind === 'shape') === p.shape)).length, 0);
   // At 84 pixels a tile the test map is 1680 × 1176, inside the size of a still. It mixes the templates the frames draw,
   // each as often as the variants that draw it.
   const share = new Map();
   for (const variant of variants) share.set(symbolOf(variant), (share.get(symbolOf(variant)) ?? 0) + (variant.weight ?? 1));
   const most = Math.max(...share.values()), weighted = variants.some(variant => (variant.weight ?? 1) !== 1);
-  const preview = testMapRecipe(recipe, { templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background });
-  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: [...MODE_MASKS[mode]], bits: { ...MODE_BITS[mode] }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) } }, ...(warnings.length && { warnings }), preview });
+  const preview = testMapRecipe(recipe, { templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background, ...(slopes && { slopes }) });
+  // For maps with slopes: a scene legend that draws the set (# its terrain, a foot under each slope that has one) and the
+  // slopes by their characters, and a map holding every slope.
+  const setEntry = source.variants === undefined ? { frame: source.frame } : { frames: variants.map(variant => source.frame.replaceAll('{variant}', variant.name)), ...(variants.some(variant => (variant.weight ?? 1) !== 1) && { weights: variants.map(variant => variant.weight ?? 1) }) };
+  const slopeFacts = slopes && { tiles: Object.fromEntries(slopes.flatMap(slope => [[slope.key, source.slopes.frame.replaceAll('{slope}', slope.key)], ...(slope.foot ? [[`${slope.key}-foot`, source.slopes.frame.replaceAll('{slope}', `${slope.key}-foot`)]] : [])])),
+    legend: slopeLegend(slopes, { ...setEntry, autotile: mode }, key => ({ frame: source.slopes.frame.replaceAll('{slope}', key) })), map: [...SLOPE_MAP] };
+  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: [...MODE_MASKS[mode]], bits: { ...MODE_BITS[mode] }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) }, ...(slopeFacts && { slopes: slopeFacts }) }, ...(warnings.length && { warnings }), preview });
 }
 
 // A layered corner set: 2–4 terrains stacked bottom first, each drawn from its own template (rows, or a terrain merged
@@ -655,7 +678,7 @@ export function compileAutotile(source) {
 // shows.
 function compileLayers(source, { tile, mode, palette }) {
   if (mode !== 'corner') fail('autotile.mode', 'layers are corner tiles: set mode to corner, or leave it out');
-  const not = { template: 'with layers, each layer brings its own template rows or terrain', ops: 'with layers, each layer brings its own ops', variants: 'a layered set\'s variants belong to its layers: give a layer variants of its plain tile', collision: 'a layered set\'s collision belongs to its layers: give each solid layer collision', animation: 'a layered set does not animate' };
+  const not = { template: 'with layers, each layer brings its own template rows or terrain', ops: 'with layers, each layer brings its own ops', variants: 'a layered set\'s variants belong to its layers: give a layer variants of its plain tile', collision: 'a layered set\'s collision belongs to its layers: give each solid layer collision', animation: 'a layered set does not animate', slopes: 'slopes are cut from a side-view blob or cardinal set, not a layered one' };
   for (const [key, message] of Object.entries(not)) if (source[key] !== undefined) fail(`autotile.${key}`, message);
   const layers = source.layers;
   if (!Array.isArray(layers) || layers.length < 2 || layers.length > 4) fail('autotile.layers', 'expected 2–4 layers, bottom first, each { name, key } with a terrain, template rows or ops');

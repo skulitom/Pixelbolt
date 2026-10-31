@@ -50,6 +50,7 @@
   },
   "collision": true,
   "frame": "ground-{mask}-{variant}",
+  "slopes": { "frame": "ground-{slope}" },
   "variants": [
     { "name": "a", "weight": 3 },
     { "name": "b", "weight": 3, "terrain": { "fill": { "seed": 9 } } },

@@ -66,7 +66,7 @@ export async function createSceneBundle(source) {
   }
   files.set('alignment.json', Buffer.from(JSON.stringify(alignment, null, 2) + '\n'));
   files.set('review.json', Buffer.from(JSON.stringify({ placements: view.placements, warnings: [...view.warnings, ...tileWarnings] }, null, 2) + '\n'));
-  for (const file of ['core.js', 'craft.js', 'font.js', 'authoring.js', 'pose-geometry.js', 'motions.js', 'autotile.js', 'terrain.js', 'scene.js']) files.set(file, await readFile(new URL(file, import.meta.url)));
+  for (const file of ['core.js', 'craft.js', 'font.js', 'authoring.js', 'pose-geometry.js', 'motions.js', 'autotile.js', 'terrain.js', 'slopes.js', 'scene.js']) files.set(file, await readFile(new URL(file, import.meta.url)));
   for (const [file, source] of [['preview.html', '../studio/scene.html'], ['scene-player.js', '../studio/scene-player.js'], ['scene.css', '../studio/scene.css']]) files.set(file, await readFile(new URL(source, import.meta.url)));
   return { files, scene, warnings: [...view.warnings, ...tileWarnings] };
 }

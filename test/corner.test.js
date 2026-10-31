@@ -16,7 +16,7 @@ import { tileSets } from '../src/godot.js';
 const meadow = JSON.parse(await readFile(new URL('../examples/meadow.autotile.json', import.meta.url), 'utf8'));
 const ground = JSON.parse(await readFile(new URL('../examples/ground.autotile.json', import.meta.url), 'utf8'));
 // One template, no variants, so a map's tiles depend only on its cells.
-const single = (source, mode) => compileAutotile({ ...source, mode, variants: undefined, frame: `${source.name}-{mask}` }).recipe;
+const single = (source, mode) => compileAutotile({ ...source, mode, variants: undefined, slopes: undefined, frame: `${source.name}-{mask}` }).recipe;
 const fail = (where, message) => { throw new Error(`${where}: ${message}`); };
 const expand = (rows, mode, extra = {}) => expandTilemap({ rows, legend: { '#': { frame: 't-{mask}', autotile: mode } }, ...extra }, { path: 'map', fail, kinds: ['frame'], text: 'frame', masked: () => true, exists: () => true }).cells;
 
@@ -53,7 +53,7 @@ test('a corner map draws exactly what a blob map of the same cells draws', () =>
 });
 
 test('a corner set compiles 16 masks with the empty tile once, collision from its terrain quarters, and no seams', () => {
-  const { recipe, metadata, warnings } = compileAutotile({ ...ground, mode: 'corner' });
+  const { recipe, metadata, warnings } = compileAutotile({ ...ground, mode: 'corner', slopes: undefined });
   assert.equal(warnings, undefined);
   assert.deepEqual(metadata.masks, [...CORNER_MASKS]);
   assert.deepEqual(metadata.bits, { nw: 1, ne: 2, sw: 4, se: 8 });
@@ -76,7 +76,7 @@ test('a corner set compiles 16 masks with the empty tile once, collision from it
 });
 
 test('a corner set exports a Godot terrain that matches corners, with two polygons where cells touch at a corner', async () => {
-  const recipe = compileAutotile({ ...ground, mode: 'corner' }).recipe, bundle = await createBundle(recipe);
+  const recipe = compileAutotile({ ...ground, mode: 'corner', slopes: undefined }).recipe, bundle = await createBundle(recipe);
   const text = bundle.files.get('ground.tileset.tres').toString(), atlas = JSON.parse(bundle.files.get('ground.atlas.json'));
   assert.match(text, /terrain_set_0\/mode = 1\n/);
   const cell = name => { const { x, y } = atlas.frames[name].frame; return `${x / 16}:${y / 16}`; };

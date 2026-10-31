@@ -849,6 +849,21 @@
       "pattern": "\\{mask\\}",
       "description": "Optional per-mask animation over the variants, in order."
     },
+    "slopes": {
+      "type": "object",
+      "properties": {
+        "frame": {
+          "type": "string",
+          "pattern": "\\{slope\\}",
+          "description": "Frame name template; {slope} becomes up, down, gentle-up-low, gentle-up-high, gentle-down-high, gentle-down-low, and <slope>-foot for the tile under a slope's low end."
+        }
+      },
+      "required": [
+        "frame"
+      ],
+      "additionalProperties": false,
+      "description": "A side-view blob or cardinal set's slopes, 45° and gentle (a cell up over two), cut from its top edge and fill so they meet its flat ground; solid under their line with collision. metadata.slopes gives a scene legend for them."
+    },
     "preview": {
       "type": "object",
       "properties": {
