@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Indexed and greyscale PNG import
+
+- `pixelbolt import`, MCP `pixel_import` and `gif-frames` read every PNG colour type at up to 8 bits per channel: indexed (1, 2, 4 or 8 bits per pixel), greyscale (1, 2, 4 or 8 bits), greyscale with alpha, RGB and RGBA, with `tRNS` transparency, an alpha for each palette entry or one key colour. Pixels are exact: palette entries and their alpha are copied as stored, and greyscale below 8 bits takes the PNG specification's 8-bit values.
+- Under `tRNS`, a fully transparent pixel imports as plain transparency, without a hidden-RGB correction for the colour of its palette entry or key; `provenance.encoding` names the colour type and bit depth, and `provenance.hiddenRGB` says when such colours were left out.
+- 16-bit and interlaced PNGs are still refused, now each with its own reason, as are malformed palettes and `tRNS` chunks (a pixel past the palette, `tRNS` longer than `PLTE`, `tRNS` in a PNG with an alpha channel).
+- Checked against Pillow and Godot (libpng) on 32 files from both Pillow and a hand-written encoder: every pixel matches Godot. Pillow and ffmpeg ignore a key colour in greyscale below 8 bits, which Pixelbolt and libpng apply.
+
 ### Slopes for side-view tile sets
 
 - An autotile source's `slopes: { "frame": "ground-{slope}" }` gives a side-view blob or cardinal set slopes: `up` and `down` at 45°, and gentle slopes a cell up over two (`gentle-up-low`, `gentle-up-high`, `gentle-down-high`, `gentle-down-low`), cut from its own top edge and fill. Each column is the flat ground's top edge moved down the slope over the fill drawn in place, so slopes meet flat ground and the fill texture without a seam, for terrain descriptions and hand-drawn templates alike.
