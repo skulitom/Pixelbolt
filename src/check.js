@@ -167,6 +167,111 @@ function framesFix(key, want, named, direction, project, recipe, total) {
     : `one animation lists at most ${NAMES} names: set animations.${key}.direction to "pingpong" and list ${pingpong} names, which play ${want}`;
 }
 
+// Motion: the silhouettes of loops that look wrong in play: a body that leaves its ground row, frames that hop
+// unevenly or jump at the loop, and frames that hold on (nearly) the same picture. Advisory only, since a hop, a
+// flicker or a puff may move that way on purpose: it adds notes and never a problem. One-shots (bursts that grow
+// and fade, fluids that settle) and scattered particles change unevenly by design, so only loops are judged, and
+// the ground and steps only where every frame is a body: its drawn pixels cover at least SOLID of its box. A recipe
+// without animations (an icon or item sheet) plays its frames as one loop only by default, so it gets no notes.
+const MOTION_ENTRIES = 64, MOTION_NOTES = 8, MOTION_PAIRS = 6, SOLID = 0.4;
+const median = values => { const sorted = [...values].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
+const largestStep = steps => steps.reduce((most, item) => Math.max(most, item.step), 0);
+const series = (items, limit) => items.length > limit ? `${items.slice(0, limit).join(', ')} and ${items.length - limit} more` : items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : items[0];
+
+// Whether two source frames hold the same pixels (fully transparent pixels are equal whatever their colour): each
+// frame is hashed once, and compared in full only with earlier frames of the same hash.
+function samePixels(frames) {
+  const kinds = new Map(), buckets = new Map();
+  const equal = (a, b) => { for (let i = 0; i < a.length; i += 4) if ((a[i + 3] || b[i + 3]) && (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3])) return false; return true; };
+  const kind = index => {
+    if (kinds.has(index)) return kinds.get(index);
+    const { data } = frames[index];
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < data.length; i += 4) hash = Math.imul(hash ^ (data[i + 3] && (data[i] | data[i + 1] << 8 | data[i + 2] << 16 | data[i + 3] << 24)), 16777619);
+    const bucket = buckets.get(hash) ?? [], match = bucket.find(other => equal(frames[other].data, data)) ?? index;
+    if (match === index) buckets.set(hash, [...bucket, index]);
+    kinds.set(index, match); return match;
+  };
+  return (a, b) => kind(a) === kind(b);
+}
+
+// boxes: frame -> silhouette, and drawn: frame -> its count of pixels with alpha > 0, both from the scan in
+// checkDelivery, so each source frame is measured once. recipe: whether it names its animations and sets loop.
+function reviewMotion(project, names, boxes, drawn, recipe) {
+  const motion = {}, notes = [], same = samePixels(project.frames), named = recipe?.animations !== undefined;
+  for (const key of names) {
+    const { frames: order, loop } = project.animations[key];
+    if (order.length < 2) continue;
+    const box = order.map(index => boxes.get(project.frames[index])), lowest = box.map(item => item && item[1] + item[3] - 1);
+    motion[key] = { box: box.slice(0, MOTION_ENTRIES), lowest: lowest.slice(0, MOTION_ENTRIES), ...(order.length > MOTION_ENTRIES && { omitted: order.length - MOTION_ENTRIES }) };
+    if (!named || !loop) continue;
+    const label = i => JSON.stringify(project.frames[order[i]].name), own = [];
+    // Neighbouring played frames, and for a loop the wrap from the last back to the first. A pair that shows one
+    // source frame twice is a hold on purpose (an attack hold, a pingpong turn), and an empty frame has no outline.
+    const steps = [];
+    for (let i = 0; i < order.length; i++) {
+      const j = (i + 1) % order.length, a = box[i], b = box[j];
+      if (!a || !b || order[i] === order[j]) continue;
+      const step = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[0] + a[2] - b[0] - b[2]), Math.abs(a[1] + a[3] - b[1] - b[3]));
+      steps.push({ from: i, to: j, wrap: j === 0, step, sources: [order[i], order[j]].sort((x, y) => x - y).join() });
+    }
+    // Pingpong plays a pair both ways; it is named once.
+    const once = list => { const seen = new Set(); return list.filter(item => !seen.has(item.sources) && seen.add(item.sources)); };
+    const inner = steps.filter(item => !item.wrap), wrap = steps.find(item => item.wrap), most = largestStep(inner);
+    const solid = box.every((item, i) => !item || drawn.get(project.frames[order[i]]) >= SOLID * item[2] * item[3]);
+    // The ground is the lowest row at least half the frames stand on (on a tie, the one lower on screen). A body whose
+    // frames leave it by 2 rows or more lifts or sinks; a wobble of one row, or no common row at all (a projectile, a
+    // swirl), is left alone.
+    const rows = lowest.filter(row => row !== null), counts = new Map();
+    for (const row of rows) counts.set(row, (counts.get(row) ?? 0) + 1);
+    const [ground, standing] = [...counts].reduce((best, entry) => (entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best), [null, 0]);
+    const away = lowest.reduce((far, row, i) => (row !== null && Math.abs(row - ground) > (far === null ? 1 : Math.abs(lowest[far] - ground)) ? i : far), null);
+    // A loop by default may be a one-shot whose recipe leaves out loop: false; a jump or a fast strike is then intended. It goes on the animation's first lift, uneven or join note.
+    let hint = recipe.animations[key]?.loop === undefined ? ` If it should play once, set animations.${key}.loop to false.` : '';
+    if (solid && rows.length && standing * 2 >= rows.length && away !== null) own.push(`"${key}" loops, but its lowest visible row leaves row ${ground} (where ${standing} of its ${rows.length}${rows.length === order.length ? '' : ' drawn'} frames stand) for row ${lowest[away]}${lowest[away] > ground ? ' below it' : ''} (${label(away)}): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run's flight frames or something that floats may leave the ground on purpose.`);
+    if (own.length) { own[0] += hint; hint = ''; }
+    const typical = inner.length ? median(steps.map(item => item.step)) : 0, uneven = solid && inner.length > 0 && most >= 3 && most >= 2 * typical;
+    if (uneven) {
+      const top = once(inner.filter(item => item.step === most)).map(item => `from ${label(item.from)} to ${label(item.to)}`);
+      own.push(`"${key}" moves unevenly: ${series(top, 3)} the silhouette moves ${most} px, while the median step is ${typical} px. Space the frames so each step changes the silhouette by a similar amount, or add in-between frames.${hint}`);
+      hint = '';
+    }
+    // A pingpong's wrap plays its first step backwards (the turn), which the uneven note already weighs.
+    const turn = wrap !== undefined && inner.some(item => item.sources === wrap.sources);
+    const within = inner.length ? median(inner.map(item => item.step)) : 0, joins = solid && wrap !== undefined && !turn && inner.length > 0 && wrap.step >= 3 && wrap.step >= 2 * within;
+    if (joins) own.push(`"${key}" jumps when it loops: from ${label(wrap.from)} back to ${label(wrap.to)} the silhouette moves ${wrap.step} px, while the median step is ${within} px. Make the last frame lead into the first.${hint}`);
+    // Pixel-identical frames share a silhouette, so only neighbours that don't move are compared. With another
+    // duration, an identical frame changes the timing on purpose: a hold, like a repeated frame name.
+    const identical = steps.filter(item => item.step === 0 && same(order[item.from], order[item.to]));
+    const duration = i => project.frames[order[i]].duration, twins = once(identical.filter(item => duration(item.from) === duration(item.to)));
+    if (twins.length) {
+      // Runs of identical neighbours read as one hold: "a" = "b" = "c".
+      const runs = [];
+      for (const item of twins) {
+        const last = runs.at(-1);
+        if (last?.to === item.from) { last.names.push(label(item.to)); last.to = item.to; } else runs.push({ to: item.to, names: [label(item.from), label(item.to)] });
+      }
+      own.push(runs.length === 1 && runs[0].names.length === 2 ? `"${key}": ${runs[0].names.join(' and ')} are identical; drop one (and add its duration to the other) or change it.`
+        : `"${key}" has identical neighbouring frames: ${series(runs.map(run => run.names.join(' = ')), MOTION_PAIRS)}; keep one of each (with their durations added up) or change the others.`);
+    }
+    // When the motion jumps somewhere, the steps that barely move are where it holds instead (identical frames are
+    // named above or are holds).
+    if (uneven || joins) {
+      const biggest = largestStep(steps), small = Math.max(1, Math.floor(biggest / 4)), held = new Set(identical.map(item => item.sources));
+      const still = once(steps.filter(item => item.step <= small && !held.has(item.sources)));
+      if (still.length) {
+        const moved = largestStep(still), pairs = still.map(item => `${label(item.from)} → ${label(item.to)}`);
+        own.push(`In "${key}", ${series(pairs, MOTION_PAIRS)} ${still.length === 1 ? 'is' : 'are'} nearly the same (${moved ? `the silhouette moves at most ${moved} px` : 'the silhouette does not move'}) while another step moves ${biggest} px: the motion holds, then jumps.`);
+      }
+    }
+    if (own.length && !notes.length) own[0] += ` pixel_inspect with view: "motion" and animation: "${key}" shows its frames in play order.`;
+    notes.push(...own);
+  }
+  // Every animation is reviewed, so the cut is counted; the count is a note of its own, outside the cap.
+  const cut = notes.length - MOTION_NOTES;
+  return { motion: Object.keys(motion).length ? motion : undefined, notes: cut > 0 ? [...notes.slice(0, MOTION_NOTES), `${cut} more motion note${cut === 1 ? '' : 's'} not shown: pass animation to check one animation at a time.`] : notes };
+}
+
 // project: the rendered project; recipe: its source (for animation directions and whether it names animations);
 // gifs: the animationGIF results written beside it, or undefined when the command writes no GIFs (the CLI's render);
 // animation: check only that animation and its frames.
@@ -176,19 +281,29 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   const names = animation === undefined ? Object.keys(animations) : [animation];
   const frames = animation === undefined ? project.frames : [...new Set(animations[animation].frames)].sort((a, b) => a - b).map(index => project.frames[index]);
   // clear: frames with a fully transparent pixel; seeThrough: with a partly transparent one; solid: fully opaque.
-  const colors = new Set(), empty = [], clear = [], seeThrough = [], solid = [];
+  // boxes: each frame's silhouette [x, y, w, h] (alpha > 0), null when empty, and drawn: its pixels with alpha > 0,
+  // for the motion review.
+  const colors = new Set(), empty = [], clear = [], seeThrough = [], solid = [], boxes = new Map(), drawn = new Map();
   for (const frame of frames) {
-    let transparent = 0, opaque = 0;
+    let transparent = 0, opaque = 0, left = width, right = -1, top = -1, bottom = -1;
     const { data } = frame, pixels = data.length >> 2;
-    for (let i = 0; i < data.length; i += 4) {
-      const alpha = data[i + 3];
-      if (alpha === 0) transparent++;
-      else { colors.add(((data[i] << 24) | (data[i + 1] << 16) | (data[i + 2] << 8) | alpha) >>> 0); if (alpha === 255) opaque++; }
+    for (let y = 0, i = 0; y < height; y++) {
+      let row = false;
+      for (let x = 0; x < width; x++, i += 4) {
+        const alpha = data[i + 3];
+        if (alpha === 0) { transparent++; continue; }
+        colors.add(((data[i] << 24) | (data[i + 1] << 16) | (data[i + 2] << 8) | alpha) >>> 0); if (alpha === 255) opaque++;
+        if (x < left) left = x;
+        if (x > right) right = x;
+        row = true;
+      }
+      if (row) { if (top < 0) top = y; bottom = y; }
     }
     if (transparent === pixels) empty.push(frame.name);
     if (transparent) clear.push(frame.name);
     if (transparent + opaque !== pixels) seeThrough.push(frame.name);
     if (opaque === pixels) solid.push(frame.name);
+    boxes.set(frame, top < 0 ? null : [left, top, right - left + 1, bottom - top + 1]); drawn.set(frame, pixels - transparent);
   }
   // A tile set's inner tiles, with its terrain on all four sides, are solid by design: its background shows on the
   // tiles with an open side, so only those are judged for transparency. A corner set's empty tile draws nothing by
@@ -220,8 +335,12 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   }
   const unexpected = empty.filter(frame => !emptyTiles.has(frame) && !(ending.has(frame) && !elsewhere.has(frame)));
   const notes = unexpected.length && !blank ? [`Frame${unexpected.length === 1 ? '' : 's'} ${list(unexpected)} ${unexpected.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${unexpected.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${unexpected.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
+  // A tile set without animations of its own only flips through its tiles, which the export treats as no animation.
+  const tileSet = recipe?.animations === undefined && (set || project.frames.some(frame => frame.tile));
+  const { motion, notes: moves } = tileSet ? { notes: [] } : reviewMotion(project, names.slice(0, 16), boxes, drawn, recipe);
+  notes.push(...moves);
   const fields = gifs === undefined ? 'width, height, frames, colors, transparent, loop' : 'width, height, frames, colors, transparent, loop, gifScale';
-  if (!expect) return { ...(blank && { ok: false }), delivered, ...(blank && { problems: [blank] }), ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };
+  if (!expect) return { ...(blank && { ok: false }), delivered, ...(motion && { motion }), ...(blank && { problems: [blank] }), ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };
 
   const problems = [], named = recipe?.animations !== undefined;
   const asked = { ...(expect.width !== undefined && { width: expect.width }), ...(expect.height !== undefined && { height: expect.height }) };
@@ -285,5 +404,5 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
   }
   // The specific mismatches first, then nothing-visible, which the cap of 16 never cuts.
   const listed = blank ? [...problems.slice(0, 15), blank] : problems.slice(0, 16);
-  return { ok: !listed.length, delivered, ...(listed.length && { problems: listed }), ...(notes.length && { notes }) };
+  return { ok: !listed.length, delivered, ...(motion && { motion }), ...(listed.length && { problems: listed }), ...(notes.length && { notes }) };
 }
