@@ -22,11 +22,16 @@ const TITLES = new Map([...FLUID_PRESETS.map(entry => [`fluid:${entry.file}`, en
 
 // How to use the listing, and the one way to get fewer frames: a source's own `frames` is its simulation or timeline
 // length, so lowering it cuts the effect off before it ends instead of sampling it.
-export const PRESET_GUIDE = 'Start fire, smoke, explosions, splashes, spells and other effects from one of these rather than drawing them: pixel_compile {"preset": "<name>"} compiles one as it ships (pixelbolt compile --preset <name> --out <new.json> from a shell), and pixel_help {"topic": "preset", "name": "<name>"} returns its source to edit and compile. Fluid presets are simulations: a liquid preset (honey, slime, water) is liquid falling, pouring or splashing, not a character; for a character\'s squash, stretch or breathing idle, compile a pixelforge-poses source with one mass body and motions.idle. For fewer frames, never lower the source\'s frames (that stops the effect before it ends): compile the preset, then keep N evenly spaced frames with one pixel_patch call that removes the others and lists the kept ones in the animation (of F frames, keep frame floor(i x F / N) for i = 0 to N - 1; the quick start has the call for 8 of smoke-puff\'s 19).';
+export const PRESET_GUIDE = 'Start fire, smoke, explosions, splashes, spells and other effects from one of these rather than drawing them: pixel_compile {"preset": "<name>"} compiles one as it ships (pixelbolt compile --preset <name> --out <new.json> from a shell), and pixel_help {"topic": "preset", "name": "<name>"} returns its source to edit and compile (a recipe preset is already a recipe: edit it and send it as project). Fluid presets are simulations: a liquid preset (honey, slime, water) is liquid falling, pouring or splashing, not a character; for a character\'s squash, stretch or breathing idle, compile a pixelforge-poses source with one mass body and motions.idle. For fewer frames, never lower the source\'s frames (that stops the effect before it ends): compile the preset, then, per animation, keep N evenly spaced frames with one pixel_patch call that removes the others and lists the kept ones in the animation. Of an animation\'s F frames (its entry under animations), keep frame floor(i x F / N) for i = 0 to N - 1; for a one-shot that must end on its last frame, keep round(i x (F - 1) / (N - 1)) instead. The quick start has the call for 8 of smoke-puff\'s 19.';
+
+// What to do with a preset's source: a source compiles; a plain recipe already is one.
+export const presetNext = (entry, shell = false) => entry.kind === 'recipe'
+  ? (shell ? `It is already a recipe: save source to a file, edit it, then validate, inspect or render that file (pixelbolt compile --preset ${entry.name} --out <new.json> saves it as it ships).` : `It is already a recipe: edit source and send it as project to pixel_validate, pixel_inspect or pixel_render, or use pixel_compile {"preset": "${entry.name}"} for a revision of it as it ships.`)
+  : (shell ? `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save source to a file, edit it and compile that.` : `Compile it as it ships with pixel_compile {"preset": "${entry.name}"}, or edit source and send it as pixel_compile's source.`);
 
 // The plain recipes are only known once read; each file is read once per call.
 async function readJSON(file) {
-  try { return JSON.parse(await readFile(path.join(PRESET_FOLDER, file), 'utf8')); } catch { return null; }
+  try { return JSON.parse((await readFile(path.join(PRESET_FOLDER, file), 'utf8')).replace(/^\uFEFF/, '')); } catch { return null; }
 }
 const loops = recipe => {
   if (!recipe || typeof recipe !== 'object' || recipe.format !== undefined || !Array.isArray(recipe.frames) || recipe.frames.length < 2) return false;
@@ -46,16 +51,17 @@ export async function presetEntries() {
     if (loops(document)) recipes.push({ file, base: file.slice(0, -5), kind: 'recipe', document });
   }
   const entries = [...sources, ...recipes].sort((a, b) => (a.base < b.base ? -1 : a.base > b.base ? 1 : a.kind < b.kind ? -1 : 1));
-  const count = new Map();
-  for (const entry of entries) count.set(entry.base, (count.get(entry.base) ?? 0) + 1);
-  return entries.map(entry => ({ ...entry, name: count.get(entry.base) > 1 ? `${entry.base}.${entry.kind}` : entry.base }));
+  // Names are matched ignoring case, so two bases that differ only in case share a name too.
+  const count = new Map(), key = entry => entry.base.toLowerCase();
+  for (const entry of entries) count.set(key(entry), (count.get(key(entry)) ?? 0) + 1);
+  return entries.map(entry => ({ ...entry, name: count.get(key(entry)) > 1 ? `${entry.base}.${entry.kind}` : entry.base }));
 }
 
-// The preset a name means: its name, `<name>.<kind>` or its file name, ignoring case. Names are matched against the
-// folder's own listing, never used as a path.
+// The preset a name means: its name, `<name>.<kind>` or its file name (as the listing gives it, examples/ and all),
+// ignoring case. Names are matched against the folder's own listing, never used as a path.
 export async function findPreset(name, where = 'preset') {
   if (typeof name !== 'string' || !name.trim()) throw new PixelError(where, 'expected a preset name such as "smoke-puff"; pixel_help {"topic": "presets"} lists them');
-  const wanted = name.trim().toLowerCase(), entries = await presetEntries();
+  const wanted = name.trim().toLowerCase().replace(/^examples\//, ''), entries = await presetEntries();
   const found = entries.filter(entry => [entry.name, `${entry.base}.${entry.kind}`, entry.file].some(alias => alias.toLowerCase() === wanted));
   if (found.length === 1) return found[0];
   const shared = entries.filter(entry => entry.base.toLowerCase() === wanted);

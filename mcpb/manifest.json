@@ -24,7 +24,7 @@
     }
   },
   "tools": [
-    { "name": "pixel_help", "description": "Start here before drawing pixel art: a short quick start, with the full guide, schemas and a complete editable example as topics." },
+    { "name": "pixel_help", "description": "Start here before drawing pixel art: a short quick start, with the full guide, schemas, a complete editable example and the ready-made presets as topics." },
     { "name": "pixel_validate", "description": "Check a pixel art recipe for mistakes, report dimensions and timing, and save an immutable revision." },
     { "name": "pixel_inspect", "description": "Look at a sprite or animation frame by frame: contact sheets, palette-key grids and optional diagnostics." },
     { "name": "pixel_patch", "description": "Fix one pixel, a colour or a frame with targeted edits, corrections or overlays, and compare the result." },

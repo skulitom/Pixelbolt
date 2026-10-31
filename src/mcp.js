@@ -24,7 +24,7 @@ import { createSceneBundle } from './scene-export.js';
 import { importPNG } from './import.js';
 import { applyOverlay } from './overlays.js';
 import { resolveReferences, assertInside } from './resolve.js';
-import { listPresets, findPreset, loadPreset, compilePreset } from './presets.js';
+import { listPresets, findPreset, loadPreset, compilePreset, presetNext } from './presets.js';
 
 const versions = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const textContent = value => ({ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) });
@@ -333,7 +333,7 @@ export function createToolRunner({ directory, root, version }) {
         if (args.topic === 'presets') return { content: [textContent(await listPresets())] };
         if (args.topic === 'preset') {
           const entry = await findPreset(args.name, 'name'), { source, inlined } = await loadPreset(entry);
-          return { content: [textContent({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: `Compile it as it ships with pixel_compile {"preset": "${entry.name}"}, or edit source and send it as pixel_compile's source.`, source })] };
+          return { content: [textContent({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry), source })] };
         }
         const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
         return { content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] };

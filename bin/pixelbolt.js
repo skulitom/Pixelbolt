@@ -7,7 +7,7 @@ import { compileWaves } from '../src/wave.js';
 import { readExpect, checkDelivery } from '../src/check.js';
 import { embedBundleRecipe, sameFiles, outputSummary } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
-import { PRESET_FOLDER, listPresets, findPreset, loadPreset, compilePreset } from '../src/presets.js';
+import { PRESET_FOLDER, listPresets, findPreset, loadPreset, compilePreset, presetNext } from '../src/presets.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference, testMapScale } from '../src/index.js';
 
 const HELP = `Pixelbolt — text to pixels, without dependencies
@@ -40,7 +40,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            Print editable poses with motion templates expanded
   pixelbolt compile --preset <name> --out recipe.json [--metadata meta.json]
                                            Compile a shipped preset (smoke-puff, campfire, fire-spells, hero...) as
-                                           its examples/ file compiles; --expand works too
+                                           its examples/ file compiles; --expand for a poses preset
   pixelbolt presets [name]                 List the presets (size, frames, loop, colours, what each is for), or print
                                            one preset's source to edit
   pixelbolt autotile <template.json> --out recipe.json [--metadata masks.json] [--preview map.png]
@@ -217,7 +217,7 @@ try {
       if (!positional.length) console.log(JSON.stringify(await listPresets(), null, 2));
       else {
         const entry = await findPreset(positional[0], 'name'), { source, inlined } = await loadPreset(entry);
-        console.log(JSON.stringify({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save source to a file, edit it and compile that.`, source }, null, 2));
+        console.log(JSON.stringify({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source }, null, 2));
       }
     } else if (command === 'skill') {
       if (positional[0] !== 'install') throw new Error('Usage: pixelbolt skill install [--project | --dir <skills folder>] [--force]');
@@ -276,6 +276,8 @@ try {
         // A preset may be a plain recipe, which compiles to itself.
         const compile = command === 'autotile' ? compileAutotile : options.preset !== undefined ? compilePreset : COMPILERS[input.document?.format] ?? compilePoses;
         const compiled = compile(input.document);
+        // A plain recipe preset compiles to itself and has no metadata to save.
+        if (options.metadata && compiled.metadata === undefined) throw new Error(`${options.preset} is a plain recipe preset, which has no metadata; omit --metadata`);
         value = linkPalette(compiled.recipe, input, options.out); metadata = compiled.metadata; warnings = compiled.warnings; preview = compiled.preview;
       } else if (command === 'overlay') {
         if (!options.changes) throw new Error('overlay requires --changes <edits.json>');

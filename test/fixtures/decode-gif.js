@@ -1,4 +1,4 @@
-// The GIF reader from test/gif.test.js, shared by the tests that compare an exported GIF with its sheet: a separate,
+// A copy of the GIF reader in test/gif.test.js, for the tests that compare an exported GIF with its sheet: a separate,
 // plain reading of the GIF89a structure and its LZW stream that shares no code with the encoder.
 import assert from 'node:assert/strict';
 

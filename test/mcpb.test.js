@@ -122,8 +122,15 @@ test('the bundle carries every preset, so its presets topics and pixel_compile p
   const bundled = await import(pathToFileURL(path.join(base, 'src/presets.js')).href);
   const shipped = await import('../src/presets.js');
   assert.deepEqual((await bundled.presetEntries()).map(entry => entry.file), (await shipped.presetEntries()).map(entry => entry.file));
-  const smoke = await bundled.findPreset('smoke-puff');
-  assert.deepEqual(bundled.compilePreset((await bundled.loadPreset(smoke)).source).recipe, shipped.compilePreset((await shipped.loadPreset(await shipped.findPreset('smoke-puff'))).source).recipe);
+  // Every preset that names another file compiles from the bundle as it does here (the bundle ships only top-level
+  // examples), and so does a self-contained one.
+  for (const entry of await shipped.presetEntries()) {
+    const here = await shipped.loadPreset(entry);
+    if (!here.inlined.length && entry.file !== 'smoke-puff.fluid.json') continue;
+    const there = await bundled.loadPreset(await bundled.findPreset(entry.name));
+    assert.deepEqual(there.inlined, here.inlined, entry.name);
+    assert.deepEqual(bundled.compilePreset(there.source).recipe, shipped.compilePreset(here.source).recipe, entry.name);
+  }
 });
 
 test('the standalone verifier runs bundled MCP help, render, import and scene export', () => {
