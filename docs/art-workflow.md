@@ -477,7 +477,7 @@ Every effect is placed by the same point, the recipe's `anchor` at [32, 40]: a p
 Start from the nearest one and change only what is needed: a palette for a different tint, `turn` angles for fewer directions, timing for a slower cast. `test/spell-library.test.js` keeps every loop seamless and every one-shot ending empty.
 ## Fluid effects
 
-A `pixelforge-fluid` source ([fluid.schema.json](../fluid.schema.json)) runs a real fluid simulation and compiles it into an ordinary recipe: every frame becomes one palette `grid` operation (plus `stamp`s for obstacles), so inspect, patch, overlay and export work unchanged, and a colour outside the palette cannot appear. Use it where particles fall short: fire that rises and licks, smoke that curls and thins, steam, explosions, magic swirls, splashing and falling water, a bubbling potion. The grid has one cell per canvas pixel, up to 128 × 128.
+A `pixelforge-fluid` source ([fluid.schema.json](../fluid.schema.json)) runs a real fluid simulation and compiles it into an ordinary recipe: every frame becomes one palette `grid` operation (plus `stamp`s for obstacles, or a `copy` of the part on the canvas of one that hangs off it), so inspect, patch, overlay and export work unchanged, and a colour outside the palette cannot appear. Use it where particles fall short: fire that rises and licks, smoke that curls and thins, steam, explosions, magic swirls, splashing and falling water, a bubbling potion. The grid has one cell per canvas pixel, up to 128 × 128.
 
 ```json
 { "format": "pixelforge-fluid", "version": 1, "name": "torch", "width": 16, "height": 32,

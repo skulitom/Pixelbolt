@@ -430,7 +430,7 @@
                 },
                 "x": {
                   "type": "integer",
-                  "minimum": -128,
+                  "minimum": -256,
                   "maximum": 128,
                   "description": "Left edge; it may hang off the canvas by up to the symbol's width, and what hangs off is clipped."
                 },
@@ -478,7 +478,7 @@
                       },
                       "x": {
                         "type": "integer",
-                        "minimum": -128,
+                        "minimum": -256,
                         "maximum": 128
                       },
                       "y": {

@@ -249,6 +249,11 @@ function onCanvas(rows, x, y, width, height) {
   const sx = Math.max(0, -x), sy = Math.max(0, -y), w = Math.min(rows[0].length, width - x) - sx, h = Math.min(rows.length, height - y) - sy;
   return w > 0 && h > 0 ? { sx, sy, w, h } : null;
 }
+// Whether any visible pixel of the symbol at (x, y) lies on the canvas.
+function showsOnCanvas(rows, x, y, width, height) {
+  const part = onCanvas(rows, x, y, width, height);
+  return !!part && rows.slice(part.sy, part.sy + part.h).some(row => /[^. ]/.test(row.slice(part.sx, part.sx + part.w)));
+}
 // Where every obstacle is on frame `cycle` of the effect's cycle.
 const placementsAt = (obstacles, cycle) => obstacles.map(o => (o.track ? o.track[cycle] : { x: o.x, y: o.y, show: true }));
 const layoutKey = places => places.map(p => (p.show ? `${p.x},${p.y}` : '-')).join(';');
@@ -393,10 +398,10 @@ function readEffect(effect, path, source) {
   const pull = schedule ? (schedule.find(now => now.gravity[0] || now.gravity[1])?.gravity ?? gravity) : gravity;
   const layouts = new Map(), layoutAt = moving ? cycle => { const places = placementsAt(obstacles, cycle), key = layoutKey(places); if (!layouts.has(key)) layouts.set(key, buildLayout(obstacles, width, height, places)); return layouts.get(key); } : null;
   const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity: pull, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), layoutAt, adhesive: most.adhesion > 0 });
-  // An obstacle that shows but is wholly off the canvas whenever it does blocks and draws nothing.
+  // An obstacle that shows but has no visible pixel on the canvas whenever it does blocks and draws nothing.
   obstacles.forEach((o, i) => {
     const shown = (o.track ?? [{ x: o.x, y: o.y, show: true }]).filter(at => at.show);
-    if (shown.length && !shown.some(at => onCanvas(o.rows, at.x, at.y, width, height))) warnings.push(`${path}.obstacles[${i}] lies outside the canvas whenever it shows, so it ${!o.blocks ? 'draws' : o.draw === 'none' ? 'blocks' : 'blocks and draws'} nothing: move its x and y (or its keys) onto the ${width} × ${height} canvas`);
+    if (shown.length && !shown.some(at => showsOnCanvas(o.rows, at.x, at.y, width, height))) warnings.push(`${path}.obstacles[${i}] has no visible pixel on the canvas whenever it shows, so it ${!o.blocks ? 'draws' : o.draw === 'none' ? 'blocks' : 'blocks and draws'} nothing: move its x and y (or its keys) onto the ${width} × ${height} canvas`);
   });
   return {
     warnings,

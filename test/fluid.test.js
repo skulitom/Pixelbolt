@@ -518,10 +518,12 @@ test('an obstacle may hang off the canvas or leave it: what hangs off is clipped
   bad({ symbol: 'slab', x: -5 }, 'fluid.effects.plume.obstacles[0].x', /from -4 to 16/);
   bad({ symbol: 'slab', y: 17 }, 'fluid.effects.plume.obstacles[0].y', /from -1 to 16/);
   bad({ symbol: 'slab', keys: [{ frame: 2, x: 17 }] }, 'fluid.effects.plume.obstacles[0].keys[0].x', /from -4 to 16/);
-  const hidden = compileFluid(gas({ frames: 6, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke, obstacles: [{ symbol: 'slab', x: 16, keys: [{ frame: 3, show: false }] }, { symbol: 'slab', y: -1, solid: false }] }, { symbols: { slab: ['kkkk'] } }));
+  const hidden = compileFluid(gas({ frames: 6, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke, obstacles: [{ symbol: 'slab', x: 16, keys: [{ frame: 3, show: false }] }, { symbol: 'slab', y: -1, solid: false }, { symbol: 'tip', x: -1 }, { symbol: 'tip', x: -1, draw: 'none' }] }, { symbols: { slab: ['kkkk'], tip: ['k...'] } }));
   assert.deepEqual(hidden.warnings, [
-    'fluid.effects.plume.obstacles[0] lies outside the canvas whenever it shows, so it blocks and draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
-    'fluid.effects.plume.obstacles[1] lies outside the canvas whenever it shows, so it draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas'
+    'fluid.effects.plume.obstacles[0] has no visible pixel on the canvas whenever it shows, so it blocks and draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[1] has no visible pixel on the canvas whenever it shows, so it draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[2] has no visible pixel on the canvas whenever it shows, so it blocks and draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[3] has no visible pixel on the canvas whenever it shows, so it blocks nothing: move its x and y (or its keys) onto the 16 × 16 canvas'
   ]);
 });
 
