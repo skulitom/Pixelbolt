@@ -223,3 +223,15 @@ test('MCP pixel_render replies carry the motion and its notes in the check', asy
     assert.deepEqual(kinds(result.notes), ['lift', 'uneven', 'nearly']);
   } finally { input.end(); await running; }
 });
+
+test('the play-once hint goes on a default loop\'s first note, a lift note included', () => {
+  // A jump drawn as frames but left as a default loop: even 3 px steps up and down, so only the lift note fires.
+  const jump = ellipses('jump', 32, [[8, 14, 24, 28], [8, 14, 24, 28], [8, 14, 24, 28], [8, 11, 24, 25], [8, 8, 24, 22], [8, 11, 24, 25]]);
+  delete jump.animations.idle.loop;
+  const notes = check(jump).notes.filter(note => /lowest visible row|moves unevenly|jumps when it loops/.test(note));
+  assert.ok(notes.length >= 1 && /lowest visible row/.test(notes[0]), JSON.stringify(notes));
+  assert.ok(notes[0].includes('on purpose. If it should play once, set animations.idle.loop to false.'), notes[0]);
+  assert.equal(notes.filter(note => note.includes('If it should play once')).length, 1);
+  // Set explicitly, the loop is the author's choice: no hint.
+  assert.ok(!check({ ...jump, animations: { idle: { ...jump.animations.idle, loop: true } } }).notes.some(note => note.includes('If it should play once')));
+});

@@ -226,9 +226,10 @@ function reviewMotion(project, names, boxes, drawn, recipe) {
     for (const row of rows) counts.set(row, (counts.get(row) ?? 0) + 1);
     const [ground, standing] = [...counts].reduce((best, entry) => (entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best), [null, 0]);
     const away = lowest.reduce((far, row, i) => (row !== null && Math.abs(row - ground) > (far === null ? 1 : Math.abs(lowest[far] - ground)) ? i : far), null);
-    if (solid && rows.length && standing * 2 >= rows.length && away !== null) own.push(`"${key}" loops, but its lowest visible row leaves row ${ground} (where ${standing} of its ${rows.length}${rows.length === order.length ? '' : ' drawn'} frames stand) for row ${lowest[away]}${lowest[away] > ground ? ' below it' : ''} (${label(away)}): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run's flight frames or something that floats may leave the ground on purpose.`);
-    // A loop by default may be a one-shot whose recipe leaves out loop: false; a jump or a fast strike is then intended.
+    // A loop by default may be a one-shot whose recipe leaves out loop: false; a jump or a fast strike is then intended. It goes on the animation's first lift, uneven or join note.
     let hint = recipe.animations[key]?.loop === undefined ? ` If it should play once, set animations.${key}.loop to false.` : '';
+    if (solid && rows.length && standing * 2 >= rows.length && away !== null) own.push(`"${key}" loops, but its lowest visible row leaves row ${ground} (where ${standing} of its ${rows.length}${rows.length === order.length ? '' : ' drawn'} frames stand) for row ${lowest[away]}${lowest[away] > ground ? ' below it' : ''} (${label(away)}): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run's flight frames or something that floats may leave the ground on purpose.`);
+    if (own.length) { own[0] += hint; hint = ''; }
     const typical = inner.length ? median(steps.map(item => item.step)) : 0, uneven = solid && inner.length > 0 && most >= 3 && most >= 2 * typical;
     if (uneven) {
       const top = once(inner.filter(item => item.step === most)).map(item => `from ${label(item.from)} to ${label(item.to)}`);
