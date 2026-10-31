@@ -430,13 +430,15 @@
                 },
                 "x": {
                   "type": "integer",
-                  "minimum": 0,
-                  "maximum": 127
+                  "minimum": -128,
+                  "maximum": 128,
+                  "description": "Left edge; it may hang off the canvas by up to the symbol's width, and what hangs off is clipped."
                 },
                 "y": {
                   "type": "integer",
-                  "minimum": 0,
-                  "maximum": 127
+                  "minimum": -128,
+                  "maximum": 128,
+                  "description": "Top edge; it may hang off the canvas by up to the symbol's height, and what hangs off is clipped."
                 },
                 "draw": {
                   "enum": [
@@ -476,13 +478,13 @@
                       },
                       "x": {
                         "type": "integer",
-                        "minimum": 0,
-                        "maximum": 127
+                        "minimum": -128,
+                        "maximum": 128
                       },
                       "y": {
                         "type": "integer",
-                        "minimum": 0,
-                        "maximum": 127
+                        "minimum": -128,
+                        "maximum": 128
                       },
                       "show": {
                         "type": "boolean",
@@ -496,7 +498,7 @@
                   },
                   "maxItems": 16,
                   "minItems": 1,
-                  "description": "Move the obstacle or take it away on cue: a dam that vanishes, a gate that lifts, a plunger, a paddle. Each key starts from where the obstacle is on its frame; the symbol must stay inside the canvas on every frame it shows. While a key's over runs, the obstacle pushes the fluid ahead of it (its faces carry its speed) and shoves fluid in cells it now covers to the first open cell, never through another solid. A key with no over is a cut: the obstacle is simply elsewhere, pushes nothing, and fluid where it lands (or where an obstacle appears) is taken away. A loop repeats the keys every cycle."
+                  "description": "Move the obstacle or take it away on cue: a dam that vanishes, a gate that lifts, a plunger, a paddle. Each key starts from where the obstacle is on its frame, and may take it partly or wholly off the canvas (up to its own size past an edge), where it is clipped: a rod reaching in, a load leaving. While a key's over runs, the obstacle pushes the fluid ahead of it (its faces carry its speed) and shoves fluid in cells it now covers to the first open cell, never through another solid. A key with no over is a cut: the obstacle is simply elsewhere, pushes nothing, and fluid where it lands (or where an obstacle appears) is taken away. A loop repeats the keys every cycle."
                 }
               },
               "required": [
@@ -505,7 +507,7 @@
               "additionalProperties": false
             },
             "maxItems": 32,
-            "description": "Solid shapes from symbols: their visible pixels block the flow (decorations with solid: false only draw). They must fit the canvas."
+            "description": "Solid shapes from symbols: their visible pixels block the flow (decorations with solid: false only draw). One may hang off the canvas by up to its own size; what hangs off is clipped, as the edge clips the fluid."
           },
           "emitters": {
             "type": "array",
