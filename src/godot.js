@@ -109,6 +109,8 @@ const PEERS = {
   corner: [['bottom_right_corner', 8], ['bottom_left_corner', 4], ['top_left_corner', 1], ['top_right_corner', 2]]
 };
 const TERRAIN_MODES = { blob: 0, cardinal: 2, corner: 1 };
+// A corner bit's place in a layered tile's corners (NW, NE, SW, SE).
+const CORNER_INDEX = { 1: 0, 2: 1, 4: 2, 8: 3 };
 // How many distinct masks a complete set has. A corner set's count includes its empty tile: without one, Godot's
 // painter erases a cell painted with no terrain point of its own, and the cell loses its terrain.
 const TILE_MASKS = { blob: 47, cardinal: 16, corner: 16 };
@@ -124,6 +126,12 @@ const channel = value => String(Number((value / 255).toFixed(6)));
 //   Godot's terrain painter picks the tile Pixelbolt's tilemap would. Every terrain is a terrain set of its own, so its
 //   edges open onto any other terrain, as they do in Pixelbolt's tilemaps. Frames of one terrain and mask are
 //   alternatives Godot picks between at random.
+// - layered: tiles of a layered set ({ frame, corners }, corners the terrain names at NW, NE, SW and SE), one terrain set
+//   matching corners whose terrains come in order of first appearance, the first the ground under the others. Godot
+//   paints a terrain where four cells painted with it meet, and keeps a point's terrain otherwise, so the ground is an
+//   unset corner: a cell painted alone, or at the edge of the painted area, still finds its tile. Every tile is there
+//   once per terrain as its centre (alternative tiles on one sheet cell), since the painter puts each painted cell's
+//   terrain in its centre whatever its corners are.
 // - plain: other frames that are tiles without a terrain (props, decorations).
 // - colors: each terrain's colour in Godot's editor, { [terrain]: [r, g, b] } from 0 to 255 (default white).
 // - margin and separation: the sheet's padding and twice it, in exported pixels.
@@ -132,7 +140,7 @@ const channel = value => String(Number((value / 255).toFixed(6)));
 // loops over frames of one terrain and mask, or plain frames, laid side by side in a row of the sheet becomes an
 // animated tile. Returns { text, warnings }; text is null when a terrain mixes blob, cardinal or corner masks.
 export function tileSets(sources) {
-  const warnings = [], size = source => { const { w, h } = source.atlas.frames[source.tiles[0]?.frame ?? source.plain[0]].frame; return [w, h]; };
+  const warnings = [], size = source => { const { w, h } = source.atlas.frames[source.tiles[0]?.frame ?? source.layered?.[0]?.frame ?? source.plain[0]].frame; return [w, h]; };
   const [w, h] = size(sources[0]);
   const kept = sources.filter(source => {
     const [sw, sh] = size(source);
@@ -154,13 +162,24 @@ export function tileSets(sources) {
     const kinds = [...new Set(mixed.flatMap(name => [...modes.get(name)]))].sort(), listed = kinds.length === 2 ? kinds.join(' and ') : `${kinds.slice(0, -1).join(', ')} and ${kinds.at(-1)}`;
     return { text: null, warnings: [`not written: ${mixed.length === 1 ? `terrain ${mixed[0]} mixes` : `terrains ${mixed.join(', ')} mix`} ${listed} masks, and a Godot terrain matches one way; give one set's frames another tile.terrain, or export each set from its own recipe`] };
   }
+  // Layered sets come after the single terrains, one terrain set each.
+  let next = terrains.size;
+  const layeredSets = kept.map(source => {
+    if (!source.layered?.length) return null;
+    const names = [];
+    for (const tile of source.layered) for (const corner of tile.corners) if (!names.includes(corner)) names.push(corner);
+    const combinations = names.length * names.length * names.length * names.length, missing = combinations - new Set(source.layered.map(tile => tile.corners.join())).size;
+    if (missing > 0) warnings.push(`${kept.length > 1 ? `${source.name}: ` : ''}${missing} of the ${combinations} combinations of ${names.join(', ')} at a tile's corners have no tile, so Godot draws its nearest match where one is needed`);
+    return { index: next++, names, colors: names.map(name => source.colors?.[name] ?? [255, 255, 255]) };
+  });
   const named = keys => `animation${keys.length === 1 ? '' : 's'} ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''} became still tiles of ${keys.length === 1 ? 'its' : 'their'} first frame`;
   const prepared = kept.map(source => {
     const { atlas, margin = 0, separation = 0 } = source, plain = new Set(source.plain ?? []);
     const byFrame = new Map(source.tiles.map(tile => [tile.frame, { ...tile, terrain: tile.terrain ?? source.terrain ?? source.name }]));
+    const cornered = new Map((source.layered ?? []).map(tile => [tile.frame, tile.corners]));
     const coords = frame => { const { x, y } = atlas.frames[frame].frame; return [(x - margin) / (w + separation), (y - margin) / (h + separation)]; };
-    // What a frame is as a tile: its terrain and mask, '' for a plain tile, or null for no tile.
-    const kind = frame => (byFrame.has(frame) ? `${byFrame.get(frame).terrain} ${byFrame.get(frame).mask}` : plain.has(frame) ? '' : null);
+    // What a frame is as a tile: its terrain and mask, its corners' terrains, '' for a plain tile, or null for no tile.
+    const kind = frame => (byFrame.has(frame) ? `${byFrame.get(frame).terrain} ${byFrame.get(frame).mask}` : cornered.has(frame) ? `corners ${cornered.get(frame).join()}` : plain.has(frame) ? '' : null);
     // Animated tiles: Godot plays a tile's frames from its own cell rightwards along the row, always looping.
     const animated = new Map(), covered = new Set(), wrapped = [], unplayable = [];
     for (const [key, animation] of Object.entries(atlas.animations)) {
@@ -181,12 +200,13 @@ export function tileSets(sources) {
     }
     if (unplayable.length) warnings.push(`${prefix}${named(unplayable)}: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`);
     const frames = Object.keys(atlas.frames).filter(frame => kind(frame) !== null && !covered.has(frame));
-    return { source, byFrame, coords, animated, frames };
+    return { source, byFrame, cornered, coords, animated, frames };
   });
-  // Probabilities: each frame's weight against the heaviest of its terrain, or of the plain tiles.
+  // Probabilities: each frame's weight against the heaviest of its terrain, its layered set, or the plain tiles.
   const weight = (atlas, frame) => atlas.frames[frame].tile?.weight ?? 1, heaviest = new Map();
-  for (const { source, byFrame, frames } of prepared) for (const frame of frames) {
-    const group = byFrame.get(frame)?.terrain ?? '';
+  const groupOf = (byFrame, cornered, frame, i) => byFrame.get(frame)?.terrain ?? (cornered.has(frame) ? `\u0000layers ${i}` : '');
+  for (const [i, { source, byFrame, cornered, frames }] of prepared.entries()) for (const frame of frames) {
+    const group = groupOf(byFrame, cornered, frame, i);
     heaviest.set(group, Math.max(heaviest.get(group) ?? 1, weight(source.atlas, frame)));
   }
   for (const [name, terrain] of terrains) {
@@ -196,34 +216,50 @@ export function tileSets(sources) {
   let solid = false;
   const lines = ['[gd_resource type="TileSet" format=3]', '', ...kept.map((source, i) => `[ext_resource type="Texture2D" path=${quote(source.image ?? source.atlas.meta.image)} id="${i + 1}_sheet"]`), ''];
   const ids = kept.map((_, i) => `TileSetAtlasSource_tiles${i ? i + 1 : ''}`);
-  prepared.forEach(({ source, byFrame, coords, animated, frames }, i) => {
+  prepared.forEach(({ source, byFrame, cornered, coords, animated, frames }, i) => {
     const { atlas, margin = 0, separation = 0 } = source;
     lines.push(`[sub_resource type="TileSetAtlasSource" id="${ids[i]}"]`, `resource_name = ${quote(source.name)}`, `texture = ExtResource("${i + 1}_sheet")`);
     if (margin) lines.push(`margins = Vector2i(${margin}, ${margin})`);
     if (separation) lines.push(`separation = Vector2i(${separation}, ${separation})`);
-    lines.push(`texture_region_size = Vector2i(${w}, ${h})`);
+    // Godot leaves out its default 16 × 16, here and in tile_size.
+    if (w !== 16 || h !== 16) lines.push(`texture_region_size = Vector2i(${w}, ${h})`);
+    const set = layeredSets[i];
     for (const frame of frames) {
-      const tile = byFrame.get(frame), facts = atlas.frames[frame].tile ?? {}, cell = coords(frame).join(':');
+      const tile = byFrame.get(frame), corners = cornered.get(frame), facts = atlas.frames[frame].tile ?? {}, cell = coords(frame).join(':');
       animated.get(frame)?.forEach((ms, k) => lines.push(`${cell}/animation_frame_${k}/duration = ${real(ms / 1000)}`));
-      lines.push(`${cell}/0 = 0`);
-      if (tile) lines.push(`${cell}/0/terrain_set = ${terrains.get(tile.terrain).index}`, `${cell}/0/terrain = 0`);
-      const probability = weight(atlas, frame) / heaviest.get(tile?.terrain ?? '');
-      if (probability !== 1) lines.push(`${cell}/0/probability = ${Number(probability.toFixed(6))}`);
-      // Godot places a tile's polygons around the tile's centre.
-      (facts.collision ?? []).forEach((polygon, k) => {
-        solid = true;
-        lines.push(`${cell}/0/physics_layer_0/polygon_${k}/points = PackedVector2Array(${polygon.flatMap(({ x, y }) => [x - w / 2, y - h / 2]).join(', ')})`);
-        if (facts.oneWay) lines.push(`${cell}/0/physics_layer_0/polygon_${k}/one_way = true`);
-      });
-      if (tile) for (const [peer, bit] of PEERS[tile.mode]) if (tile.mask & bit) lines.push(`${cell}/0/terrains_peering_bit/${peer} = 0`);
+      // A layered tile once for each terrain as its centre; any other tile once.
+      const centres = corners ? set.names.length : 1;
+      if (centres > 1) lines.push(`${cell}/next_alternative_id = ${centres}`);
+      const probability = weight(atlas, frame) / heaviest.get(groupOf(byFrame, cornered, frame, i));
+      for (let alt = 0; alt < centres; alt++) {
+        const at = `${cell}/${alt}`;
+        lines.push(`${at} = ${alt}`);
+        if (tile) lines.push(`${at}/terrain_set = ${terrains.get(tile.terrain).index}`, `${at}/terrain = 0`);
+        if (corners) lines.push(`${at}/terrain_set = ${set.index}`, `${at}/terrain = ${alt}`);
+        if (probability !== 1) lines.push(`${at}/probability = ${Number(probability.toFixed(6))}`);
+        // Godot places a tile's polygons around the tile's centre.
+        (facts.collision ?? []).forEach((polygon, k) => {
+          solid = true;
+          lines.push(`${at}/physics_layer_0/polygon_${k}/points = PackedVector2Array(${polygon.flatMap(({ x, y }) => [x - w / 2, y - h / 2]).join(', ')})`);
+          if (facts.oneWay) lines.push(`${at}/physics_layer_0/polygon_${k}/one_way = true`);
+        });
+        if (tile) for (const [peer, bit] of PEERS[tile.mode]) if (tile.mask & bit) lines.push(`${at}/terrains_peering_bit/${peer} = 0`);
+        // The ground (the set's first terrain) is an unset corner.
+        if (corners) for (const [peer, bit] of PEERS.corner) { const terrain = set.names.indexOf(corners[CORNER_INDEX[bit]]); if (terrain > 0) lines.push(`${at}/terrains_peering_bit/${peer} = ${terrain}`); }
+      }
     }
     lines.push('');
   });
-  lines.push('[resource]', `tile_size = Vector2i(${w}, ${h})`);
+  lines.push('[resource]', ...(w !== 16 || h !== 16 ? [`tile_size = Vector2i(${w}, ${h})`] : []));
   if (solid) lines.push('physics_layer_0/collision_layer = 1');
   for (const [name, terrain] of terrains) {
     const set = `terrain_set_${terrain.index}`;
     lines.push(`${set}/mode = ${TERRAIN_MODES[terrain.mode]}`, `${set}/terrain_0/name = ${quote(name)}`, `${set}/terrain_0/color = Color(${terrain.color.map(channel).join(', ')}, 1)`);
+  }
+  for (const layered of layeredSets.filter(Boolean)) {
+    const set = `terrain_set_${layered.index}`;
+    lines.push(`${set}/mode = ${TERRAIN_MODES.corner}`);
+    layered.names.forEach((name, t) => lines.push(`${set}/terrain_${t}/name = ${quote(name)}`, `${set}/terrain_${t}/color = Color(${layered.colors[t].map(channel).join(', ')}, 1)`));
   }
   lines.push(...ids.map((id, i) => `sources/${i} = SubResource("${id}")`), '');
   return { text: lines.join('\n'), warnings };

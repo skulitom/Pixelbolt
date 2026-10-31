@@ -45,9 +45,15 @@ function point(value, path) {
 // them and land on top. Exports turn the polygons into the engine's own; the renderer draws nothing from them. One
 // polygon, or a list of up to 8 for a tile with separate solid parts, is kept as a list.
 function tileFacts(value, path, width, height) {
-  object(value, path, ['terrain', 'weight', 'collision', 'oneWay']);
+  object(value, path, ['terrain', 'corners', 'weight', 'collision', 'oneWay']);
   const tile = {};
   if (value.terrain !== undefined) tile.terrain = name(value.terrain, `${path}.terrain`);
+  // A tile of a layered set names the terrains at its four corners (NW, NE, SW, SE) instead of one terrain.
+  if (value.corners !== undefined) {
+    if (!Array.isArray(value.corners) || value.corners.length !== 4) fail(`${path}.corners`, 'expected the terrains at the tile\'s four corners, [NW, NE, SW, SE], each a terrain name');
+    if (value.terrain !== undefined) fail(`${path}.terrain`, 'a tile with corners belongs to the terrains they name; leave terrain out');
+    tile.corners = value.corners.map((corner, i) => name(corner, `${path}.corners[${i}]`));
+  }
   if (value.weight !== undefined) tile.weight = integer(value.weight, `${path}.weight`, 1, 1000);
   if (value.collision !== undefined) {
     const where = `${path}.collision`, several = Array.isArray(value.collision) && Array.isArray(value.collision[0]?.[0]);

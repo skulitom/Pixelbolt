@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Transitions between terrains
+
+- An autotile source's `layers` stacks 2–4 terrains bottom first (water, sand, grass) into one corner set with a tile for every mix of them at a tile's four corners: 16, 81 or 256 tiles, named by the layers' keys at the corners (`{corners}`, so `shore-wsgw`). Each layer is drawn from its own terrain (merged over the set's), template rows or ops. A tile is the lowest terrain among its corners filling it and each higher one among them drawn over it, counting the cells of every terrain above it as its own, so sand runs on under grass and grass straight on water draws no sand. Each frame's `tile.corners` names its corners' terrains.
+- New reviewed example `examples/shore.autotile.json`: water, sand meeting it with a line of foam, and the meadow's grass. The test map puts the top terrain's shapes over the bottom one and rings of the terrains between round its block.
+- Scene and recipe tilemaps name a layered tile with `{corners}`, the characters of the four cells around a corner tile (past the map's edge, the nearest cell). A scene drawn from the compiled tiles and a recipe drawing one map per layer give the same pixels.
+- The Godot TileSet makes a layered set one terrain set matching corners with a terrain per layer, so Godot's painter draws the transitions. The bottom terrain is an unset corner, so cells at the edge of the painted area keep their tiles, and each tile is there once per terrain as its centre (alternative tiles). Painted bottom-up, as the export's README says, Godot picks Pixelbolt's tile and centre in every cell; `scripts/verify-godot.mjs` paints a three-terrain set over five maps to prove it.
+- A corner tile drawn by several legend entries at one point is drawn once when they would draw the same thing.
+
 ### Corner (dual-grid) tile sets
 
 - Autotile sources take `mode: "corner"`: 16 tiles that sit where four map cells meet, each mask naming which of those cells are terrain (NW=1, NE=2, SW=4, SE=8). Every quarter of a corner tile is the inner quarter of one of the four cells, cut from the same template, so any terrain or template gives a corner set, and a corner map draws exactly the pixels a blob map of the same cells draws, from a third of the tiles. Variants are picked per tile. The empty tile (mask 0) is compiled once.

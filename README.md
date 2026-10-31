@@ -218,7 +218,7 @@ Each text-grid character selects a palette color; `.` and space leave pixels unt
 | `name.png` | RGBA PNG sprite sheet, with configurable columns, padding and integer scale, or packed by visible bounds with `sheet.trim` |
 | `name.atlas.json` | TexturePacker-style JSON hash: rectangles, trim offsets, source sizes, pivots/anchors, named points, frame durations, named animations and Aseprite-style frame tags |
 | `name.tres` | Godot 4 `SpriteFrames` for `AnimatedSprite2D`: one atlas texture per frame (trimmed frames keep their place on the canvas) and every animation with its loop and exact frame times; keep it next to `name.png` |
-| `name.tileset.tres` | Only for a tile set (an autotile set, or frames with `tile`): a Godot 4 `TileSet` for `TileMapLayer` with a terrain per set (blob, cardinal or corner), so Godot's terrain painter picks the tile Pixelbolt's tilemap would, plus each tile's probability and collision; keep it next to `name.png`. A tile set without animations of its own skips the SpriteFrames, APNGs, CSS and player |
+| `name.tileset.tres` | Only for a tile set (an autotile set, or frames with `tile`): a Godot 4 `TileSet` for `TileMapLayer` with a terrain per set (blob, cardinal or corner, or a corner set of layered terrains whose transitions Godot paints), so Godot's terrain painter picks the tile Pixelbolt's tilemap would, plus each tile's probability and collision; keep it next to `name.png`. A tile set without animations of its own skips the SpriteFrames, APNGs, CSS and player |
 | `frames/*.png` | Each frame as a transparent PNG |
 | `animations/*.png` | APNG for each animation, retaining transparency, frame timing and loop behavior |
 | `name.css` | CSS animation classes; supports multi-row sheets and unequal frame durations |
