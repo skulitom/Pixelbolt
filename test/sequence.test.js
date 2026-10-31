@@ -160,7 +160,7 @@ test('a scene becomes a shot: each frame is the scene at that moment, and still 
   assert.deepEqual([pixel(decodePNG(clear.files.get('skink-stride-study_0001.png')), 0, 0), clear.info.alpha, clear.info.notes[0].startsWith('The scene covers 1920×720 of the 1920×1080 canvas. Use fit cover')], [[0, 0, 0, 0], 'straight (unpremultiplied)', true]);
   assert.deepEqual(pixel(decodePNG(createSceneSequence(scene, source.name, { fps: 1, size: '1080p', seconds: 1, background: '#ff0000' }).files.get('skink-stride-study_0001.png')), 0, 0), [255, 0, 0, 255]);
   // Cover fills 1080p with the 192 × 72 scene at scale 15 and keeps its middle 128 columns. Only its first frame is
-  // read too.
+  // read, so this shot is a single frame as well.
   const filled = createSceneSequence(scene, source.name, { fps: 1, size: '1080p', seconds: 1, fit: 'cover' });
   assert.deepEqual([filled.info.placement, filled.info.notes], [{ scale: 15, x: -480, y: 0, width: 2880, height: 1080, source: [192, 72], fit: 'cover', cropped: true, visible: [32, 0, 128, 72] }, ['The scene is enlarged 15 times to 2880×1080 and cropped to the 1920×1080 canvas: columns 32 to 159 and rows 0 to 71 of the scene stay in view.']]);
   const shot = decodePNG(filled.files.get('skink-stride-study_0001.png')), whole = renderScene(scene, { time: 0 });
