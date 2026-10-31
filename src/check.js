@@ -191,9 +191,11 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     if (opaque === pixels) solid.push(frame.name);
   }
   // A tile set's inner tiles, with its terrain on all four sides, are solid by design: its background shows on the
-  // tiles with an open side, so only those are judged for transparency.
-  const tiles = Array.isArray(recipe?.frames) ? autotileFrames(recipe) : [];
-  const inner = new Set(new Set(tiles.map(tile => tile.mask)).size < 2 ? [] : tiles.filter(tile => (tile.mode === 'cardinal' ? tile.mask === 15 : (tile.mask & 85) === 85)).map(tile => tile.frame));
+  // tiles with an open side, so only those are judged for transparency. A corner set's empty tile draws nothing by
+  // design.
+  const tiles = Array.isArray(recipe?.frames) ? autotileFrames(recipe) : [], set = new Set(tiles.map(tile => tile.mask)).size > 1;
+  const inner = new Set(set ? tiles.filter(tile => (tile.mode === 'blob' ? (tile.mask & 85) === 85 : tile.mask === 15)).map(tile => tile.frame) : []);
+  const emptyTiles = new Set(set ? tiles.filter(tile => tile.mode === 'corner' && tile.mask === 0).map(tile => tile.frame) : []);
   const judged = frames.filter(frame => !inner.has(frame.name)), open = judged.length ? judged : frames, clearOpen = clear.filter(frameName => open.some(frame => frame.name === frameName));
   const played = Object.fromEntries(names.slice(0, 16).map(key => [key, { frames: animations[key].frames.length, loop: animations[key].loop }]));
   const delivered = {
@@ -216,7 +218,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     if (animations[key].loop === false) while (tail > 0 && blankFrames.has(order[tail - 1])) tail--;
     order.forEach((frame, i) => { if (blankFrames.has(frame)) (i >= tail ? ending.set(frame, true) : elsewhere.add(frame)); });
   }
-  const unexpected = empty.filter(frame => !(ending.has(frame) && !elsewhere.has(frame)));
+  const unexpected = empty.filter(frame => !emptyTiles.has(frame) && !(ending.has(frame) && !elsewhere.has(frame)));
   const notes = unexpected.length && !blank ? [`Frame${unexpected.length === 1 ? '' : 's'} ${list(unexpected)} ${unexpected.length === 1 ? 'is' : 'are'} fully transparent; if that is not intended, draw ${unexpected.length === 1 ? 'it' : 'them'} (pixel_patch) or take ${unexpected.length === 1 ? 'it' : 'them'} out of the animation.`] : [];
   const fields = gifs === undefined ? 'width, height, frames, colors, transparent, loop' : 'width, height, frames, colors, transparent, loop, gifScale';
   if (!expect) return { ...(blank && { ok: false }), delivered, ...(blank && { problems: [blank] }), ...(notes.length && { notes }), hint: `Pass expect with what the user asked for (${fields}) to check every file against it.` };

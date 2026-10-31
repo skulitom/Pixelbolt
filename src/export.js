@@ -130,7 +130,7 @@ function godotTiles(spec, project, atlas) {
   project.warnings.push(...result.warnings.map(warning => `${name}.tileset.tres: ${warning}`));
   if (result.text === null) return null;
   const terrains = [...new Set(source.tiles.map(tile => tile.terrain ?? name))];
-  return { text: result.text, terrains, collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
+  return { text: result.text, terrains, corner: source.tiles.some(tile => tile.mode === 'corner'), collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
 }
 function spriteReadme(project) {
   const { name } = project, first = Object.keys(project.animations)[0];
@@ -143,10 +143,10 @@ function tilesetReadme(project, tiles, still) {
   const lines = [`${name} — Pixelbolt tile set`, '',
     `${name}.png: transparent RGBA tile sheet`,
     `${name}.tileset.tres: Godot 4 TileSet with ${holds}${tiles.collision ? ', and collision shapes on physics layer 0' : ''}; it finds ${name}.png in its own folder, so keep the two together`,
-    `${name}.atlas.json: TexturePacker-style frames${tiles.facts ? ', with each tile\'s terrain, weight and collision polygon (in exported pixels) where the recipe gives them' : ''}`,
+    `${name}.atlas.json: TexturePacker-style frames${tiles.facts ? ', with each tile\'s terrain, weight and collision polygons (in exported pixels) where the recipe gives them' : ''}`,
     ...(still ? [] : [`${name}.tres: Godot 4 SpriteFrames of the animations`, `${name}.css: CSS classes with per-frame timing`, 'animations/: animated PNGs (APNG)', 'player.js: dependency-free Canvas player']),
     'frames/: one PNG per tile', `${name}.pixel.json: editable source`, `preview.html: ${still ? 'the tile sheet' : 'the animations'}; open it directly in a browser`, '',
-    `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
+    `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.${tiles.corner ? ' A corner terrain is drawn where four painted cells meet, so its ground ends half a cell inside what you paint: 3×3 painted cells draw 2×2 cells of ground, centred.' : ''}` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
   if (!still) lines.push('', `Animations: give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${first}").`);
   return lines.join('\n') + '\n';
 }

@@ -1,6 +1,6 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
 import { PixelError, CANVAS_SIDE, parseColor, renderProject, describeStampRecipe, readRows } from './core.js';
-import { BLOB_MASKS, CARDINAL_MASKS } from './autotile.js';
+import { AUTOTILE_MODES, MODE_MASKS, MODE_BITS } from './autotile.js';
 import { terrainTemplate, mergeTerrain, normalTerrain, readTerrain, templateSeams, seamWarnings, testMapRecipe } from './terrain.js';
 import { EASINGS, ease, rotateRows, rasterizeBone, rasterizeMass } from './craft.js';
 import { turn, angleDelta, solveReach } from './pose-geometry.js';
@@ -558,6 +558,9 @@ function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rows
 // Compiles an autotile set from a template two tiles wide and three tall:
 //   [ preview (unused) ][ inner corners ]
 //   [ 2x2 island whose quadrants give outer corners, edges and fill ]
+// as 47 blob tiles, 16 cardinal ones or 16 corner ones (tiles that sit where four cells meet; mask 0, which draws
+// nothing, once: Godot's painter puts it on a painted cell with no terrain point, which would otherwise lose its
+// terrain).
 // The template is given as rows, or drawn from a `terrain` description (src/terrain.js), with optional `ops` drawn over
 // it. Every output frame is one `autotile` operation naming its neighbour mask, so editing the template updates the
 // set. The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
@@ -569,7 +572,7 @@ export function compileAutotile(source) {
   // A template is three tiles tall and a symbol at most 256 rows, so tiles are at most 84 pixels.
   if (!Number.isInteger(tile) || tile < 2 || tile > 84 || tile % 2) fail('autotile.tile', 'expected an even tile size from 2 to 84 (the template is three tiles tall, and a symbol holds at most 256 rows)');
   const mode = source.mode ?? 'blob';
-  if (!['blob', 'cardinal'].includes(mode)) fail('autotile.mode', 'expected blob or cardinal');
+  if (!AUTOTILE_MODES.includes(mode)) fail('autotile.mode', 'expected blob (47 tiles), cardinal (16, no inner corners) or corner (16 tiles that sit where four cells meet)');
   const palette = source.palette ?? {};
   if (source.symbols !== undefined) {
     fields(source.symbols, Object.keys(source.symbols), 'autotile.symbols');
@@ -617,14 +620,14 @@ export function compileAutotile(source) {
   const box = collisionBox(source.collision, { tile, mode, terrain: terrain === undefined ? undefined : readTerrain(terrain, { tile, palette, path: 'autotile.terrain' }) });
   const symbolOf = variant => (variant.name && Object.hasOwn(symbols, `template-${variant.name}`) ? `template-${variant.name}` : 'template');
   const frames = [], animations = {};
-  for (const mask of mode === 'cardinal' ? CARDINAL_MASKS : BLOB_MASKS) {
+  for (const mask of MODE_MASKS[mode]) {
     const names = [];
-    for (const variant of variants) {
+    for (const variant of mode === 'corner' && mask === 0 ? variants.slice(0, 1) : variants) {
       const name = source.frame.replaceAll('{mask}', String(mask)).replaceAll('{variant}', variant.name);
       // Engine facts for the TileSet: how often this variant is picked, and the collision box for this mask.
       const facts = { ...(variant.weight !== undefined && variant.weight !== 1 && { weight: variant.weight }), ...(box && box(mask)) };
       names.push(name);
-      frames.push({ name, ...(variant.duration !== undefined && { duration: variant.duration }), ...(variant.palette !== undefined && { palette: variant.palette }), ...(Object.keys(facts).length && { tile: facts }), ops: [{ op: 'autotile', symbol: symbolOf(variant), mask, ...(mode === 'cardinal' && { mode }) }] });
+      frames.push({ name, ...(variant.duration !== undefined && { duration: variant.duration }), ...(variant.palette !== undefined && { palette: variant.palette }), ...(Object.keys(facts).length && { tile: facts }), ops: [{ op: 'autotile', symbol: symbolOf(variant), mask, ...(mode !== 'blob' && { mode }) }] });
     }
     if (source.animation !== undefined) animations[source.animation.replaceAll('{mask}', String(mask))] = { frames: names };
   }
@@ -638,12 +641,14 @@ export function compileAutotile(source) {
   for (const variant of variants) share.set(symbolOf(variant), (share.get(symbolOf(variant)) ?? 0) + (variant.weight ?? 1));
   const most = Math.max(...share.values()), weighted = variants.some(variant => (variant.weight ?? 1) !== 1);
   const preview = testMapRecipe(recipe, { templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background });
-  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: mode === 'cardinal' ? [...CARDINAL_MASKS] : [...BLOB_MASKS], bits: mode === 'cardinal' ? { n: 1, e: 2, s: 4, w: 8 } : { n: 1, ne: 2, e: 4, se: 8, s: 16, sw: 32, w: 64, nw: 128 }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) } }, ...(warnings.length && { warnings }), preview });
+  return plain({ recipe, metadata: { format: 'pixelforge-autotile-metadata', version: 1, mode, masks: [...MODE_MASKS[mode]], bits: { ...MODE_BITS[mode] }, seams: { joins: report.checked, shape: count('shape'), texture: count('texture'), ...(mode === 'cardinal' && { corners: count('corner') }) } }, ...(warnings.length && { warnings }), preview });
 }
 
 // The collision box of each tile of a set, from the source's collision (true, or { inset, oneWay }): the whole tile,
 // kept `inset` pixels from each open side, so a body stands on the drawn ground rather than on the tufts or margin
-// above it. Insets default to each terrain edge's depth, or 0. Returns mask => { collision, oneWay? }, or null.
+// above it. Insets default to each terrain edge's depth, or 0. A corner tile is solid in the quarters of its terrain
+// cells, each kept from that cell's open sides, so its shapes are the blob boxes of the same map; two cells that
+// touch only at a corner give two polygons. Returns mask => { collision, oneWay? } (none for an empty tile), or null.
 function collisionBox(spec, { tile, mode, terrain }) {
   if (spec === undefined || spec === false) return null;
   if (spec !== true && (spec === null || typeof spec !== 'object' || Array.isArray(spec))) fail('autotile.collision', 'expected true, or { inset, oneWay }');
@@ -660,12 +665,59 @@ function collisionBox(spec, { tile, mode, terrain }) {
     fields(options.inset, ['n', 'e', 's', 'w'], 'autotile.collision.inset');
     inset = Object.fromEntries(['n', 'e', 's', 'w'].map(side => [side, options.inset[side] === undefined ? depth(side) : whole(options.inset[side], `autotile.collision.inset.${side}`)]));
   }
+  if (mode === 'corner') return mask => {
+    const has = corner => (mask & MODE_BITS.corner[corner]) !== 0, q = tile / 2, rects = [];
+    if (has('nw')) rects.push([0, 0, q - (has('ne') ? 0 : inset.e), q - (has('sw') ? 0 : inset.s)]);
+    if (has('ne')) rects.push([q + (has('nw') ? 0 : inset.w), 0, tile, q - (has('se') ? 0 : inset.s)]);
+    if (has('sw')) rects.push([0, q + (has('nw') ? 0 : inset.n), q - (has('se') ? 0 : inset.e), tile]);
+    if (has('se')) rects.push([q + (has('sw') ? 0 : inset.w), q + (has('ne') ? 0 : inset.n), tile, tile]);
+    if (!rects.length) return {};
+    const polygons = outlineRects(rects);
+    return { collision: polygons.length === 1 ? polygons[0] : polygons, ...(options.oneWay && { oneWay: true }) };
+  };
   const bits = mode === 'cardinal' ? { n: 1, e: 2, s: 4, w: 8 } : { n: 1, e: 4, s: 16, w: 64 };
   return mask => {
     const open = side => !(mask & bits[side]);
     const x0 = open('w') ? inset.w : 0, x1 = open('e') ? tile - inset.e : tile, y0 = open('n') ? inset.n : 0, y1 = open('s') ? tile - inset.s : tile;
     return { collision: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], ...(options.oneWay && { oneWay: true }) };
   };
+}
+
+// The outline of a union of rectangles [x0, y0, x1, y1] on whole pixels, as polygons of corner points, one per
+// separate part: where two parts touch only at a corner, the walk turns toward the part it is following.
+function outlineRects(rects) {
+  const xs = [...new Set(rects.flatMap(r => [r[0], r[2]]))].sort((a, b) => a - b), ys = [...new Set(rects.flatMap(r => [r[1], r[3]]))].sort((a, b) => a - b);
+  const inside = (i, j) => i >= 0 && j >= 0 && i < xs.length - 1 && j < ys.length - 1 && rects.some(([x0, y0, x1, y1]) => xs[i] >= x0 && xs[i + 1] <= x1 && ys[j] >= y0 && ys[j + 1] <= y1);
+  // Boundary edges between grid points, clockwise on screen: the solid part is on each edge's right.
+  const edges = new Map(), add = (a, b) => { const key = a.join(); if (!edges.has(key)) edges.set(key, []); edges.get(key).push(b); };
+  for (let j = 0; j < ys.length - 1; j++) for (let i = 0; i < xs.length - 1; i++) {
+    if (!inside(i, j)) continue;
+    if (!inside(i, j - 1)) add([i, j], [i + 1, j]);
+    if (!inside(i + 1, j)) add([i + 1, j], [i + 1, j + 1]);
+    if (!inside(i, j + 1)) add([i + 1, j + 1], [i, j + 1]);
+    if (!inside(i - 1, j)) add([i, j + 1], [i, j]);
+  }
+  const polygons = [];
+  while (edges.size) {
+    const start = edges.keys().next().value, loop = [];
+    let at = start.split(',').map(Number), heading = null;
+    do {
+      const key = at.join(), outs = edges.get(key);
+      const ways = outs.map(([i, j]) => [Math.sign(i - at[0]), Math.sign(j - at[1])]);
+      // A right turn on screen takes (dx, dy) to (-dy, dx); then straight on, then left.
+      const rank = ([dx, dy]) => (!heading ? 0 : dx === -heading[1] && dy === heading[0] ? 0 : dx === heading[0] && dy === heading[1] ? 1 : 2);
+      const k = ways.reduce((best, way, i) => (rank(way) < rank(ways[best]) ? i : best), 0), next = outs.splice(k, 1)[0];
+      if (!outs.length) edges.delete(key);
+      if (!heading || ways[k][0] !== heading[0] || ways[k][1] !== heading[1]) loop.push(at);
+      heading = ways[k];
+      at = next;
+    } while (at.join() !== start);
+    // The start point stays only where the walk turns there.
+    const last = loop.at(-1), [first, second] = loop;
+    if (loop.length > 2 && Math.sign(first[0] - last[0]) === Math.sign(second[0] - first[0]) && Math.sign(first[1] - last[1]) === Math.sign(second[1] - first[1])) loop.shift();
+    polygons.push(loop.map(([i, j]) => [xs[i], ys[j]]));
+  }
+  return polygons;
 }
 
 // Normal directions as palette keys (+X right, +Y down, +Z toward the viewer). Digits are laid out like a numeric
