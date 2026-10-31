@@ -89,7 +89,8 @@ test('the longest recording a visitor can make still fits a link', async () => {
 });
 
 test('a recording too long for a link is cut at a poke, and the cut link replays what it keeps', async () => {
-  const source = await sourceOf(presetById('campfire')), live = createLiveFluid(source), pokes = session(live, 200);
+  // Only the pokes matter here, and they depend on the effect's size and kind alone, so nothing is simulated.
+  const pokes = busyPokes(createLiveFluid(await sourceOf(presetById('campfire')), { warmup: 0 }), 200);
   const whole = (await toyLink(BASE, { preset: 'campfire', frames: 200, pokes })).length, limit = Math.floor(whole / 2);
   const { link, frames, cut } = await fitLink(BASE, { preset: 'campfire', frames: 200, pokes }, limit);
   assert.equal(cut, true); assert.ok(link.length <= limit);
