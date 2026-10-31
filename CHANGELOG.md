@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Renders note loops that lift, jump or repeat a frame
+
+- The render `check` (MCP `pixel_render`, CLI `render`) reports `motion`: each animation's silhouette box and lowest row for every played frame, in play order.
+- Its `notes` point out loop motion that tends to look wrong: frames that mostly stand on one ground row while some leave it by 2 rows or more, a solid body that moves unevenly (one step of 3 px or more and at least twice the median) or jumps back at the loop, with the steps that barely move beside it, and identical neighbouring frames of equal duration. One-shots and tile sets get none. The notes are advice and never change `check.ok`; on the shipped examples they stay quiet on 46 of 57 animated presets.
+
 ### Corner (dual-grid) tile sets
 
 - Autotile sources take `mode: "corner"`: 16 tiles that sit where four map cells meet, each mask naming which of those cells are terrain (NW=1, NE=2, SW=4, SE=8). Every quarter of a corner tile is the inner quarter of one of the four cells, cut from the same template, so any terrain or template gives a corner set, and a corner map draws exactly the pixels a blob map of the same cells draws, from a third of the tiles. Variants are picked per tile. The empty tile (mask 0) is compiled once.

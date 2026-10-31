@@ -63,7 +63,7 @@ From a shell, the same commands are `node bin/pixelbolt.js validate | inspect | 
 - Build one good resting frame, then make the others with `from` and small changes. Give holds and impacts their own durations; 80–200 ms per frame is a good start.
 - Inspect every frame, including at native size (`native: true`), and read a `grid` of a region before changing exact pixels. Check that each patch changed only what you meant.
 - A valid recipe can still look bad. Judge the image and the playback, not the absence of errors.
-- Work in a loop: inspect, patch, render with `expect`, then read the reply's `check` and fix every problem it lists before you hand the files on.
+- Work in a loop: inspect, patch, render with `expect`, then read the reply's `check` and fix every problem it lists before you hand the files on; its `notes` also point out loops that lift off the ground, jump unevenly or repeat a frame.
 - For a character that walks, runs, jumps or attacks, start from Pixelbolt's `examples/hero.poses.json`: a rigged figure whose motion templates generate the poses when compiled. A part without `attach` stands at the pose `origin` plus its `at`.
 - For a ready-made effect (campfire, torch, smoke, explosion, splash, waterfall, potion, honey, slime, dam break, dust wave), start from a fluid preset in Pixelbolt's `examples/*.fluid.json` and compile it rather than drawing fire by hand.
 
