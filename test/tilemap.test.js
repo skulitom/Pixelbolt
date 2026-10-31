@@ -97,7 +97,7 @@ test('a recipe tilemap composes symbols and autotile templates, and later operat
   const moved = recipe([{ op: 'tilemap', x: 1, y: 1, tile: [2, 2], rows: ['F'], legend: { F: { rules: [{ symbol: 'floor' }, { symbol: 'floor', offset: [1, 0] }] } } }]);
   assert.deepEqual([pixel(moved, 1, 1)[3], pixel(moved, 4, 2)[3], pixel(moved, 5, 2)[3]], [255, 255, 0]);
   assert.throws(() => recipe([{ op: 'tilemap', rows, legend: { W: 'floor', F: 'floor' } }]), /ops\[0\]\.tile: expected \[width, height\]/);
-  assert.throws(() => recipe([{ op: 'tilemap', tile: [2, 2], rows, legend: { W: { template: 'wall' }, F: 'floor' } }]), /a template draws the tile its neighbour mask selects; set autotile to blob or cardinal/);
+  assert.throws(() => recipe([{ op: 'tilemap', tile: [2, 2], rows, legend: { W: { template: 'wall' }, F: 'floor' } }]), /a template draws the tile its neighbour mask selects; set autotile to blob, cardinal or corner/);
   assert.throws(() => recipe([{ op: 'tilemap', tile: [2, 2], rows, legend: { W: { template: 'floor', autotile: 'blob' }, F: 'floor' } }]), /template "floor": an autotile template is two tiles wide and three tall/);
   assert.throws(() => recipe([{ op: 'tilemap', tile: [2, 2], rows, legend: { W: 'stone', F: 'floor' } }]), /ops\[0\]\.rows\[0\]\[0\]: symbol "stone" does not exist/);
 });

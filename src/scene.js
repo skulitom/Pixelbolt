@@ -76,6 +76,11 @@ function sceneTilemap(tilemap, project, path) {
   const expanded = expandTilemap(tilemap, { path, fail, kinds: ['frame', 'animation'], text: 'frame', masked: () => true,
     exists: (kind, name) => kind === 'frame' ? frames.has(name) : Object.hasOwn(project.animations, name) });
   const { columns, rows } = expanded, [w, h] = tile;
+  // Corner tiles sit half a cell up and left of the cell they were found from.
+  if (expanded.cells.some(cell => cell.corner)) {
+    if (iso) fail(`${path}.legend`, 'corner tiles sit where four square cells meet; an iso map takes frames and animations without autotile corner');
+    if (w % 2 || h % 2) fail(`${path}.tile`, 'corner tiles sit where four cells meet, half a cell up and left of one; use an even cell width and height');
+  }
   if (!iso) return { tile, width: columns * w, height: rows * h, cells: expanded.cells.map(cell => ({ x: cell.x * w, y: cell.y * h, bottom: cell.y * h + project.height, [cell.kind]: cell.name })), columns, rows };
   const cells = isoLayout(expanded.cells, rows, tile).map(cell => ({ x: cell.left + Math.floor((w - project.width) / 2), y: cell.top + h - project.height, bottom: cell.top + h / 2, [cell.kind]: cell.name }));
   return { tile, width: (columns + rows) * w / 2, height: (columns + rows) * h / 2, cells, columns, rows, iso };

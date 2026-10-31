@@ -24,8 +24,10 @@
     "mode": {
       "enum": [
         "blob",
-        "cardinal"
-      ]
+        "cardinal",
+        "corner"
+      ],
+      "description": "blob (default): 47 tiles; cardinal: 16 without inner corners; corner: 16 tiles that sit where four cells meet (a dual grid), drawing what blob does."
     },
     "palette": {
       "type": "object",
@@ -647,7 +649,7 @@
           "additionalProperties": false
         }
       ],
-      "description": "Give every tile a collision box (true, or { inset, oneWay }): the whole tile, kept inset from its open sides. Exported to the Godot TileSet."
+      "description": "Give every tile a collision box (true, or { inset, oneWay }): the whole tile, kept inset from its open sides (a corner tile: its terrain quarters). Exported to the Godot TileSet."
     },
     "variants": {
       "type": "array",
@@ -1389,14 +1391,15 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 255,
-              "description": "Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8."
+              "description": "Neighbour mask. Blob: N=1, NE=2, E=4, SE=8, S=16, SW=32, W=64, NW=128, reduced so a diagonal counts only with both of its sides. Cardinal: N=1, E=2, S=4, W=8. Corner: the terrain cells among the four the tile sits between, NW=1, NE=2, SW=4, SE=8."
             },
             "mode": {
               "enum": [
                 "blob",
-                "cardinal"
+                "cardinal",
+                "corner"
               ],
-              "description": "blob (default) or cardinal."
+              "description": "blob (default), cardinal or corner."
             },
             "remap": {
               "type": "object",
@@ -1987,9 +1990,10 @@
                       "autotile": {
                         "enum": [
                           "blob",
-                          "cardinal"
+                          "cardinal",
+                          "corner"
                         ],
-                        "description": "Pick by neighbour mask: 47-value blob or 16-value cardinal."
+                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left)."
                       },
                       "match": {
                         "type": "string",
@@ -2050,9 +2054,10 @@
                             "autotile": {
                               "enum": [
                                 "blob",
-                                "cardinal"
+                                "cardinal",
+                                "corner"
                               ],
-                              "description": "Pick by neighbour mask: 47-value blob or 16-value cardinal."
+                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left)."
                             },
                             "match": {
                               "type": "string",

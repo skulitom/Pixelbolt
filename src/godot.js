@@ -101,14 +101,17 @@ export function normalsYUp(data) {
 
 // ---- Tile sets ---------------------------------------------------------------------------------------------------
 // Godot's names for a tile's neighbours, in the order Godot writes them, with the Pixelbolt mask bit of each. A blob
-// set matches corners and sides (Godot terrain mode 0), a cardinal set sides only (mode 2).
+// set matches corners and sides (Godot terrain mode 0), a cardinal set sides only (mode 2) and a corner set corners
+// only (mode 1): a corner tile's corners are the four cells it sits between in Pixelbolt's tilemaps.
 const PEERS = {
   blob: [['right_side', 4], ['bottom_right_corner', 8], ['bottom_side', 16], ['bottom_left_corner', 32], ['left_side', 64], ['top_left_corner', 128], ['top_side', 1], ['top_right_corner', 2]],
-  cardinal: [['right_side', 2], ['bottom_side', 4], ['left_side', 8], ['top_side', 1]]
+  cardinal: [['right_side', 2], ['bottom_side', 4], ['left_side', 8], ['top_side', 1]],
+  corner: [['bottom_right_corner', 8], ['bottom_left_corner', 4], ['top_left_corner', 1], ['top_right_corner', 2]]
 };
-const TERRAIN_MODES = { blob: 0, cardinal: 2 };
-// How many distinct masks a complete set has.
-const TILE_MASKS = { blob: 47, cardinal: 16 };
+const TERRAIN_MODES = { blob: 0, cardinal: 2, corner: 1 };
+// How many distinct masks a complete set has. A corner set's count includes its empty tile: without one, Godot's
+// painter erases a cell painted with no terrain point of its own, and the cell loses its terrain.
+const TILE_MASKS = { blob: 47, cardinal: 16, corner: 16 };
 // Godot writes colour components without a forced decimal point: Color(0.25, 0.5, 0.75, 1).
 const channel = value => String(Number((value / 255).toFixed(6)));
 
@@ -125,9 +128,9 @@ const channel = value => String(Number((value / 255).toFixed(6)));
 // - colors: each terrain's colour in Godot's editor, { [terrain]: [r, g, b] } from 0 to 255 (default white).
 // - margin and separation: the sheet's padding and twice it, in exported pixels.
 // A frame's tile.weight (in the atlas) becomes its probability, relative to the heaviest frame of its terrain or of the
-// plain tiles, and its tile.collision a polygon on physics layer 0, one-way with tile.oneWay. An atlas animation that
+// plain tiles, and its tile.collision polygons on physics layer 0, one-way with tile.oneWay. An atlas animation that
 // loops over frames of one terrain and mask, or plain frames, laid side by side in a row of the sheet becomes an
-// animated tile. Returns { text, warnings }; text is null when a terrain mixes blob and cardinal masks.
+// animated tile. Returns { text, warnings }; text is null when a terrain mixes blob, cardinal or corner masks.
 export function tileSets(sources) {
   const warnings = [], size = source => { const { w, h } = source.atlas.frames[source.tiles[0]?.frame ?? source.plain[0]].frame; return [w, h]; };
   const [w, h] = size(sources[0]);
@@ -147,7 +150,10 @@ export function tileSets(sources) {
     modes.get(name).add(tile.mode);
   }
   const mixed = [...modes].filter(([, set]) => set.size > 1).map(([name]) => name);
-  if (mixed.length) return { text: null, warnings: [`not written: ${mixed.length === 1 ? `terrain ${mixed[0]} mixes` : `terrains ${mixed.join(', ')} mix`} blob and cardinal masks, and a Godot terrain matches one way; give one set's frames another tile.terrain, or export each set from its own recipe`] };
+  if (mixed.length) {
+    const kinds = [...new Set(mixed.flatMap(name => [...modes.get(name)]))].sort(), listed = kinds.length === 2 ? kinds.join(' and ') : `${kinds.slice(0, -1).join(', ')} and ${kinds.at(-1)}`;
+    return { text: null, warnings: [`not written: ${mixed.length === 1 ? `terrain ${mixed[0]} mixes` : `terrains ${mixed.join(', ')} mix`} ${listed} masks, and a Godot terrain matches one way; give one set's frames another tile.terrain, or export each set from its own recipe`] };
+  }
   const named = keys => `animation${keys.length === 1 ? '' : 's'} ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''} became still tiles of ${keys.length === 1 ? 'its' : 'their'} first frame`;
   const prepared = kept.map(source => {
     const { atlas, margin = 0, separation = 0 } = source, plain = new Set(source.plain ?? []);
@@ -203,12 +209,12 @@ export function tileSets(sources) {
       if (tile) lines.push(`${cell}/0/terrain_set = ${terrains.get(tile.terrain).index}`, `${cell}/0/terrain = 0`);
       const probability = weight(atlas, frame) / heaviest.get(tile?.terrain ?? '');
       if (probability !== 1) lines.push(`${cell}/0/probability = ${Number(probability.toFixed(6))}`);
-      if (facts.collision) {
-        // Godot places a tile's polygon around the tile's centre.
+      // Godot places a tile's polygons around the tile's centre.
+      (facts.collision ?? []).forEach((polygon, k) => {
         solid = true;
-        lines.push(`${cell}/0/physics_layer_0/polygon_0/points = PackedVector2Array(${facts.collision.flatMap(({ x, y }) => [x - w / 2, y - h / 2]).join(', ')})`);
-        if (facts.oneWay) lines.push(`${cell}/0/physics_layer_0/polygon_0/one_way = true`);
-      }
+        lines.push(`${cell}/0/physics_layer_0/polygon_${k}/points = PackedVector2Array(${polygon.flatMap(({ x, y }) => [x - w / 2, y - h / 2]).join(', ')})`);
+        if (facts.oneWay) lines.push(`${cell}/0/physics_layer_0/polygon_${k}/one_way = true`);
+      });
       if (tile) for (const [peer, bit] of PEERS[tile.mode]) if (tile.mask & bit) lines.push(`${cell}/0/terrains_peering_bit/${peer} = 0`);
     }
     lines.push('');

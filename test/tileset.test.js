@@ -37,8 +37,11 @@ const cellOf = (atlas, sheet, name) => { const { x, y, w } = atlas.frames[name].
 test('a frame\'s tile facts are checked and travel to the atlas in exported pixels', () => {
   const make = tile => ({ version: 1, name: 't', width: 4, height: 4, sheet: { scale: 2 }, frames: [{ name: 'a', tile, ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color: '#fff' }] }] });
   const project = renderProject(make({ terrain: 'stone', weight: 5, collision: [[0, 1], [4, 1], [4, 4], [0, 4]], oneWay: true }));
-  assert.deepEqual(project.frames[0].tile, { terrain: 'stone', weight: 5, collision: [[0, 1], [4, 1], [4, 4], [0, 4]], oneWay: true });
-  assert.deepEqual(buildAtlas(project).metadata.frames.a.tile, { terrain: 'stone', weight: 5, collision: [{ x: 0, y: 2 }, { x: 8, y: 2 }, { x: 8, y: 8 }, { x: 0, y: 8 }], oneWay: true });
+  // One polygon is kept as a list of one; a list holds a tile's separate solid parts.
+  assert.deepEqual(project.frames[0].tile, { terrain: 'stone', weight: 5, collision: [[[0, 1], [4, 1], [4, 4], [0, 4]]], oneWay: true });
+  assert.deepEqual(buildAtlas(project).metadata.frames.a.tile, { terrain: 'stone', weight: 5, collision: [[{ x: 0, y: 2 }, { x: 8, y: 2 }, { x: 8, y: 8 }, { x: 0, y: 8 }]], oneWay: true });
+  const parts = renderProject(make({ collision: [[[0, 0], [2, 0], [2, 2]], [[2, 2], [4, 2], [4, 4], [2, 4]]] }));
+  assert.deepEqual(buildAtlas(parts).metadata.frames.a.tile.collision, [[{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 4 }], [{ x: 4, y: 4 }, { x: 8, y: 4 }, { x: 8, y: 8 }, { x: 4, y: 8 }]]);
   for (const [tile, message] of [
     [{ weight: 0 }, /tile\.weight: expected an integer from 1 to 1000/],
     [{ weight: 2.5 }, /tile\.weight: expected an integer from 1 to 1000/],
@@ -48,6 +51,8 @@ test('a frame\'s tile facts are checked and travel to the atlas in exported pixe
     [{ collision: [[0, 0], [0, 0], [4, 4]] }, /tile\.collision\[1\]: repeats the point before it/],
     [{ collision: [[0, 0], [4, 4], [4, 0], [0, 4]] }, /tile\.collision: the edge from point 0 to 1 crosses or touches the edge from point 2 to 3/],
     [{ collision: [[0, 0], [2, 2], [4, 4]] }, /tile\.collision: the points enclose no area/],
+    [{ collision: [[[0, 0], [4, 0], [4, 4]], [[0, 0], [5, 0], [0, 4]]] }, /tile\.collision\[1\]\[1\]: \[5, 0\] is outside the 4×4 canvas/],
+    [{ collision: Array.from({ length: 9 }, () => [[0, 0], [4, 0], [4, 4]]) }, /tile\.collision: expected up to 8 polygons/],
     [{ oneWay: true }, /tile\.oneWay: oneWay makes the collision polygon one-way; give the tile a collision polygon/],
     [{ solid: true }, /tile\.solid: unknown field/]
   ]) assert.throws(() => renderProject(make(tile)), message, JSON.stringify(tile));

@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Corner (dual-grid) tile sets
+
+- Autotile sources take `mode: "corner"`: 16 tiles that sit where four map cells meet, each mask naming which of those cells are terrain (NW=1, NE=2, SW=4, SE=8). Every quarter of a corner tile is the inner quarter of one of the four cells, cut from the same template, so any terrain or template gives a corner set, and a corner map draws exactly the pixels a blob map of the same cells draws, from a third of the tiles. Variants are picked per tile. The empty tile (mask 0) is compiled once.
+- Recipe and scene tilemap legends take `autotile: "corner"`: the tiles are drawn half a cell up and left of the cells, one more row and column than the map, each point once per legend entry among its cells. Corner maps need an even cell size and square layout.
+- The Godot TileSet gives a corner set a terrain that matches corners (mode 1). Godot's painter puts the terrain where four painted cells meet and picks Pixelbolt's corner tile on every painted cell, the empty tile where a cell has no terrain point; without that tile Godot would erase the cell and its terrain. The export's README says that ground ends half a cell inside what is painted.
+- `collision` on a corner set boxes each tile's terrain quarters, kept from their cells' open sides, so the shapes join into the blob boxes of the same map; two cells that touch only at a tile's middle give two polygons. A frame's `tile.collision` takes a list of up to 8 polygons, the atlas always holds a list, and the TileSet writes `polygon_0`, `polygon_1` and so on.
+- The seam check, test map and `expect.transparent` handle corner sets, and the delivery check does not call the empty tile an accident. `scripts/verify-godot.mjs` loads a weighted corner set with collision on its own and in the scene's TileSet, with three sets painted on one layer.
+
 ### Presets over MCP and the command line
 
 - `pixel_help` topic `presets` lists every shipped fluid, fx, wave and poses source and each looping plain recipe in `examples/` (the coin spin, the ember), read from the folder when asked: each with its name, file, size, frames, loop or one-shot, colours, animations and a line on what it is for, with the Fluid and Effects labs' titles where they have one. Topic `preset` with a `name` returns one preset's source, any file it names inlined, ready to edit.

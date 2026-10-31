@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
 import { compileAutotile, compileNormals } from '../src/authoring.js';
-import { neighbourMask } from '../src/autotile.js';
+import { neighbourMask, expandTilemap } from '../src/autotile.js';
 import { renderProject } from '../src/core.js';
 
 // A trimmed, scaled, padded sheet with unequal frame times: a 1×1 cell for an empty frame, a half-transparent frame, a
@@ -143,7 +143,8 @@ func _process(delta: float) -> bool:
 
 // Tile sets: a blob set on a scaled, padded sheet, a cardinal set with two variants of every tile (Godot picks one at
 // random), a blob set whose three palette variants animate each tile (six columns, so every tile's frames sit side by
-// side in one row), and a one-way ledge on a scaled sheet whose variants are weighted, with plain tiles added.
+// side in one row), a one-way ledge on a scaled sheet whose variants are weighted, with plain tiles added, and a
+// weighted corner set with collision, whose diagonal tiles have two polygons.
 const TILE_TEMPLATE = ['....oggo', '....gddg', '....gddg', '....oggo', 'oooooooo', 'oggggggo', 'ogddddgo', 'ogdggdgo', 'ogdggdgo', 'ogddddgo', 'oggggggo', 'oooooooo'];
 const TILE_SOURCE = { format: 'pixelforge-autotile', version: 1, tile: 4, palette: { o: '#203018', g: '#58a040', d: '#3c7830' }, template: TILE_TEMPLATE };
 export const GODOT_TILE_SOURCES = [
@@ -152,7 +153,9 @@ export const GODOT_TILE_SOURCES = [
   { ...TILE_SOURCE, name: 'surf', frame: 'surf-{mask}-{variant}', animation: 'surf-{mask}', sheet: { columns: 6 },
     variants: [{ name: 'a', duration: 120 }, { name: 'b', duration: 250, palette: { g: '#60b0e0' } }, { name: 'c', duration: 90, palette: { d: '#2c5878' } }] },
   { ...TILE_SOURCE, name: 'ledge', frame: 'ledge-{mask}-{variant}', collision: { inset: { n: 1, e: 1, w: 1 }, oneWay: true }, sheet: { padding: 1, scale: 3, columns: 9 },
-    variants: [{ name: 'a', weight: 6 }, { name: 'b', weight: 2, palette: { g: '#78b850' } }, { name: 'c', palette: { d: '#2c5878' } }] }
+    variants: [{ name: 'a', weight: 6 }, { name: 'b', weight: 2, palette: { g: '#78b850' } }, { name: 'c', palette: { d: '#2c5878' } }] },
+  { ...TILE_SOURCE, name: 'moss', mode: 'corner', frame: 'moss-{mask}-{variant}', collision: { inset: 1 }, sheet: { padding: 1, scale: 3, columns: 4 },
+    variants: [{ name: 'a', weight: 3 }, { name: 'b', palette: { g: '#8ab838' } }] }
 ];
 // Frames added to a compiled set before it is exported: plain tiles, one weighted with a diamond collision polygon, and
 // an empty frame, which is no tile.
@@ -602,8 +605,10 @@ function godotReport(run) {
 // Pixelbolt's mask bit for each of Godot's peering bits, written out here rather than taken from src/godot.js.
 const GODOT_PEERS = {
   blob: { top_side: 1, top_right_corner: 2, right_side: 4, bottom_right_corner: 8, bottom_side: 16, bottom_left_corner: 32, left_side: 64, top_left_corner: 128 },
-  cardinal: { top_side: 1, right_side: 2, bottom_side: 4, left_side: 8 }
+  cardinal: { top_side: 1, right_side: 2, bottom_side: 4, left_side: 8 },
+  corner: { top_left_corner: 1, top_right_corner: 2, bottom_left_corner: 4, bottom_right_corner: 8 }
 };
+const GODOT_MODES = { blob: 0, corner: 1, cardinal: 2 };
 
 // What Godot should find for one atlas source: a recipe's tiles on its sheet. `id` is the source id, `terrainSet` the
 // terrain set its autotile frames join, `texture` the sheet Godot loads and `frameFile` each frame's PNG for pixels.
@@ -625,7 +630,9 @@ function tileModel(recipe, atlas, { id, terrainSet, texture, frameFile }) {
   const facts = Object.fromEntries(recipe.frames.map(frame => [frame.name, frame.tile ?? {}]));
   const heaviest = group => Math.max(...tiles.filter(frame => (frame in masks) === group).map(frame => facts[frame].weight ?? 1));
   const probability = frame => (facts[frame].weight ?? 1) / heaviest(frame in masks);
-  const polygons = frame => (facts[frame].collision ? [{ points: facts[frame].collision.map(([x, y]) => [x * s - size[0] / 2, y * s - size[1] / 2]), one_way: Boolean(facts[frame].oneWay) }] : []);
+  // One polygon, or a list of them.
+  const shapes = collision => (collision === undefined ? [] : Array.isArray(collision[0][0]) ? collision : [collision]);
+  const polygons = frame => shapes(facts[frame].collision).map(points => ({ points: points.map(([x, y]) => [x * s - size[0] / 2, y * s - size[1] / 2]), one_way: Boolean(facts[frame].oneWay) }));
   const files = Object.fromEntries(Object.entries(frameAt).map(([cell, frame]) => [`${id}:${cell}`, frameFile(frame)]));
   return { id, terrainSet, texture, name: recipe.name, mode, atlas, size, margin, step, cells, frameAt, masks, plain, tiles, sequences, probability, polygons, files, solid: tiles.some(frame => facts[frame].collision) };
 }
@@ -651,22 +658,23 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
       cases.push({ key: name, tres: `res://${folder}/${name}.tileset.tres`, files: model.files, maps });
       expected[name] = { models: [model], maps, chars: { '#': model } };
     }
-    // The scene: the cardinal fence and the weighted one-way ledge, about every fourth cell of each map the ledge's.
-    // The fence at the ledge's scale, since one TileSet has one tile size.
-    const [fence, ledge] = [{ ...GODOT_TILE_SOURCES[1], sheet: { scale: 3 } }, GODOT_TILE_SOURCES[3]].map(godotTileRecipe);
-    const scene = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'tiles', width: 16, height: 16, assets: { fence, ledge }, instances: [] });
+    // The scene: the cardinal fence, the weighted one-way ledge on about every fourth cell of each map, and the corner
+    // moss on the cells of a band of rows. The fence at the others' scale and padding, since one TileSet has one tile
+    // size.
+    const [fence, ledge, moss] = [{ ...GODOT_TILE_SOURCES[1], sheet: { scale: 3 } }, GODOT_TILE_SOURCES[3], GODOT_TILE_SOURCES[4]].map(godotTileRecipe);
+    const scene = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'tiles', width: 16, height: 16, assets: { fence, ledge, moss }, instances: [] });
     assert.ok(scene.files.has('tileset.tres'), 'the scene export has no tileset.tres');
     assert.deepEqual(scene.warnings, [], 'scene export warnings');
     const sceneModels = [];
-    for (const [i, recipe] of [fence, ledge].entries()) {
+    for (const [i, recipe] of [fence, ledge, moss].entries()) {
       for (const [file, bytes] of scene.files) if (file.startsWith(`assets/${i}/`) && file.endsWith('.png')) await put(`scene/${file}`, bytes);
       for (const [file, bytes] of (await createBundle(recipe)).files) if (file.startsWith('frames/')) await put(`scene/${recipe.name}/${file}`, bytes);
       sceneModels.push(tileModel(recipe, JSON.parse(scene.files.get(`assets/${i}/atlas.json`)), { id: i, terrainSet: i, texture: `res://scene/assets/${i}/color.png`, frameFile: frame => `res://scene/${recipe.name}/frames/${frame}.png` }));
     }
     await put('scene/tileset.tres', scene.files.get('tileset.tres'));
-    const mixed = GODOT_TILE_MAPS.map(rows => ({ rows: rows.map((row, y) => [...row].map((char, x) => (char === '#' && (x * 3 + y * 5) % 4 === 0 ? '%' : char)).join('')), sets: { '#': 0, '%': 1 } }));
+    const mixed = GODOT_TILE_MAPS.map(rows => ({ rows: rows.map((row, y) => [...row].map((char, x) => (char !== '#' ? char : y >= 2 && y <= 3 ? '&' : (x * 3 + y * 5) % 4 === 0 ? '%' : char)).join('')), sets: { '#': 0, '%': 1, '&': 2 } }));
     cases.push({ key: 'scene', tres: 'res://scene/tileset.tres', files: Object.assign({}, ...sceneModels.map(model => model.files)), maps: mixed });
-    expected.scene = { models: sceneModels.map((model, i) => ({ ...model, name: ['fence', 'ledge'][i] })), maps: mixed, chars: { '#': sceneModels[0], '%': sceneModels[1] } };
+    expected.scene = { models: sceneModels.map((model, i) => ({ ...model, name: ['fence', 'ledge', 'moss'][i] })), maps: mixed, chars: { '#': sceneModels[0], '%': sceneModels[1], '&': sceneModels[2] } };
 
     await writeFile(path.join(dir, 'tilecases.json'), JSON.stringify(cases));
     await writeFile(path.join(dir, 'tilecheck.gd'), TILE_CHECK);
@@ -686,7 +694,7 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
       assert.ok(got && !got.error, `${key}: ${got?.error ?? 'missing from the report'}`);
       assert.deepEqual(got.tile_size, want.models[0].size, `${key}: tile size`);
       assert.deepEqual(got.physics, want.models.some(model => model.solid) ? [1] : [], `${key}: physics layers`);
-      assert.deepEqual(got.sets, want.models.filter(model => Object.keys(model.masks).length).map(model => ({ mode: model.mode === 'cardinal' ? 2 : 0, terrains: [model.name] })), `${key}: terrain sets`);
+      assert.deepEqual(got.sets, want.models.filter(model => Object.keys(model.masks).length).map(model => ({ mode: GODOT_MODES[model.mode], terrains: [model.name] })), `${key}: terrain sets`);
       assert.equal(got.sources.length, want.models.length, `${key}: sources`);
       want.models.forEach((model, s) => {
         const source = got.sources[s], where = `${key} source ${s}`;
@@ -720,14 +728,23 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
         }
       });
       // Godot's terrain painter against Pixelbolt's tilemap masks, each character's cells a terrain of their own, empty
-      // outside the map.
+      // outside the map. Godot's corner terrains are terrain where four painted cells meet, and every painted cell holds
+      // the tile whose corners are those points: Pixelbolt's corner tilemap of the map of those points, whose tiles sit
+      // on the painted cells (and the empty tile on a painted cell it draws nothing on).
       want.maps.forEach(({ rows }, m) => {
         let count = 0;
+        const corners = new Map();
+        for (const [char, model] of Object.entries(want.chars)) {
+          if (model.mode !== 'corner') continue;
+          const at = (x, y) => rows[y]?.[x] === char, points = rows.slice(1).map((row, y) => [...row.slice(1)].map((_, x) => (at(x, y) && at(x + 1, y) && at(x, y + 1) && at(x + 1, y + 1) ? '#' : '.')).join(''));
+          const drawn = points.length && points[0].length ? expandTilemap({ rows: points, legend: { '#': { frame: 'tile-{mask}', autotile: 'corner' } } }, { path: 'map', fail: (where, message) => { throw new Error(`${where}: ${message}`); }, kinds: ['frame'], text: 'frame', masked: () => true, exists: () => true }).cells : [];
+          corners.set(char, new Map(drawn.map(cell => [`${cell.x + 0.5},${cell.y + 0.5}`, Number(cell.name.slice(5))])));
+        }
         rows.forEach((row, y) => [...row].forEach((char, x) => {
           const model = want.chars[char];
           if (!model) return;
           count++;
-          const pixelbolt = neighbourMask(model.mode, (dx, dy) => rows[y + dy]?.[x + dx] === char), cell = got.painted[m][`${x},${y}`];
+          const pixelbolt = model.mode === 'corner' ? corners.get(char).get(`${x},${y}`) ?? 0 : neighbourMask(model.mode, (dx, dy) => rows[y + dy]?.[x + dx] === char), cell = got.painted[m][`${x},${y}`];
           const [id, ...at] = cell === undefined ? [] : cell.split(':'), mask = Number(id) === model.id ? model.masks[model.frameAt[at.join(':')]] : null;
           if (mask !== pixelbolt) differ.push(`${key} map ${m} cell ${x},${y}: Godot drew ${cell === undefined ? 'nothing' : `source ${id} mask ${mask}`}, Pixelbolt ${model.name} mask ${pixelbolt}`);
           painted++;
