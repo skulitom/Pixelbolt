@@ -39,6 +39,42 @@ function point(value, path) {
   if (!Array.isArray(value) || value.length !== 2) fail(path, 'expected [x, y]');
   return [integer(value[0], `${path}[0]`), integer(value[1], `${path}[1]`)];
 }
+// A frame's facts as a tile, for engine tile sets: the terrain an autotile frame belongs to (frames of one set share
+// it), its weight against the other frames that could fill the same cell, and a collision polygon around its solid
+// part in canvas pixels (pixel corners, from 0 to the width and height), one-way when oneWay: bodies pass up through
+// it and land on top. Exports turn the polygon into the engine's own; the renderer draws nothing from it.
+function tileFacts(value, path, width, height) {
+  object(value, path, ['terrain', 'weight', 'collision', 'oneWay']);
+  const tile = {};
+  if (value.terrain !== undefined) tile.terrain = name(value.terrain, `${path}.terrain`);
+  if (value.weight !== undefined) tile.weight = integer(value.weight, `${path}.weight`, 1, 1000);
+  if (value.collision !== undefined) {
+    const where = `${path}.collision`;
+    if (!Array.isArray(value.collision) || value.collision.length < 3 || value.collision.length > 32) fail(where, 'expected 3–32 points [x, y] around the solid part of the tile, in canvas pixels: [[0, 0], [16, 0], [16, 16], [0, 16]] is a whole 16-pixel tile');
+    const points = value.collision.map((at, i) => {
+      const [x, y] = point(at, `${where}[${i}]`);
+      if (x < 0 || y < 0 || x > width || y > height) fail(`${where}[${i}]`, `[${x}, ${y}] is outside the ${width}×${height} canvas; points are pixel corners from [0, 0] to [${width}, ${height}]`);
+      return [x, y];
+    });
+    const n = points.length, side = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+    // Collinear c on segment ab.
+    const on = (a, b, c) => Math.min(a[0], b[0]) <= c[0] && c[0] <= Math.max(a[0], b[0]) && Math.min(a[1], b[1]) <= c[1] && c[1] <= Math.max(a[1], b[1]);
+    const meet = (a, b, c, d) => { const s1 = side(a, b, c), s2 = side(a, b, d), s3 = side(c, d, a), s4 = side(c, d, b); return (s1 !== s2 && s3 !== s4 && s1 * s2 <= 0 && s3 * s4 <= 0) || (!s1 && on(a, b, c)) || (!s2 && on(a, b, d)) || (!s3 && on(c, d, a)) || (!s4 && on(c, d, b)); };
+    for (let i = 0; i < n; i++) if (points[i][0] === points[(i + 1) % n][0] && points[i][1] === points[(i + 1) % n][1]) fail(`${where}[${(i + 1) % n}]`, 'repeats the point before it; list each corner once');
+    for (let i = 0; i < n; i++) for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      if (meet(points[i], points[(i + 1) % n], points[j], points[(j + 1) % n])) fail(where, `the edge from point ${i} to ${(i + 1) % n} crosses or touches the edge from point ${j} to ${(j + 1) % n}; list the corners in order around the shape`);
+    }
+    if (!points.reduce((sum, [x, y], i) => sum + x * points[(i + 1) % n][1] - points[(i + 1) % n][0] * y, 0)) fail(where, 'the points enclose no area');
+    tile.collision = points;
+  }
+  if (value.oneWay !== undefined) {
+    boolean(value.oneWay, `${path}.oneWay`);
+    if (tile.collision === undefined) fail(`${path}.oneWay`, 'oneWay makes the collision polygon one-way; give the tile a collision polygon');
+    tile.oneWay = value.oneWay;
+  }
+  return tile;
+}
 export function parseColor(value, palette = {}, path = 'color') {
   if (typeof value !== 'string') fail(path, 'expected a palette name or hex color');
   if (own(palette, value)) value = palette[value];
@@ -632,7 +668,7 @@ export function renderProject(spec, options = {}) {
   }
   const frames = checked(() => spec.frames.map((frame, index) => {
     const p = `project.frames[${index}]`;
-    object(frame, p, ['name', 'duration', 'from', 'translate', 'wrap', 'flipX', 'flipY', 'palette', 'anchor', 'points', 'ops', 'layers', 'pixels']);
+    object(frame, p, ['name', 'duration', 'from', 'translate', 'wrap', 'flipX', 'flipY', 'palette', 'anchor', 'points', 'tile', 'ops', 'layers', 'pixels']);
     const frameName = name(frame.name, `${p}.name`);
     if (frameNames.has(frameName.toLowerCase())) fail(`${p}.name`, `duplicate frame ${frameName}; names must also be unique ignoring case`);
     frameNames.add(frameName.toLowerCase());
@@ -654,6 +690,7 @@ export function renderProject(spec, options = {}) {
       if (Object.keys(frame.points).length > 64) fail(`${p}.points`, 'at most 64 named points per frame');
       points = Object.fromEntries(Object.entries(frame.points).map(([key, value]) => [name(key, `${p}.points.${key}`), point(value, `${p}.points.${key}`)]));
     }
+    const tile = frame.tile === undefined ? null : tileFacts(frame.tile, `${p}.tile`, width, height);
     let data = new Uint8ClampedArray(width * height * 4);
     if (frame.from !== undefined) {
       if (typeof frame.from !== 'string' || !rendered.has(frame.from)) fail(`${p}.from`, 'must name an earlier frame');
@@ -730,7 +767,7 @@ export function renderProject(spec, options = {}) {
       data.set(color(pixel.color, `${pp}.color`), (y * width + x) * 4);
     }
     activePalette = palette;
-    const result = { name: frameName, duration, data, ...(frameAnchor && { anchor: frameAnchor }), ...(points && { points }), ...(overrides && { palette: overrides }), ...(layerPalettes.length && { layerPalettes }) };
+    const result = { name: frameName, duration, data, ...(frameAnchor && { anchor: frameAnchor }), ...(points && { points }), ...(tile && { tile }), ...(overrides && { palette: overrides }), ...(layerPalettes.length && { layerPalettes }) };
     rendered.set(frameName, result);
     return result;
   }));
@@ -980,7 +1017,8 @@ export function buildAtlas(project, { trim } = {}) {
   const entries = Object.create(null);
   const extras = frame => ({
     ...(frame.anchor && { pivot: { x: round6(frame.anchor[0] / width), y: round6(frame.anchor[1] / height) }, anchor: { x: frame.anchor[0] * s, y: frame.anchor[1] * s } }),
-    ...(frame.points && { points: Object.fromEntries(Object.entries(frame.points).map(([key, [x, y]]) => [key, { x: x * s, y: y * s }])) })
+    ...(frame.points && { points: Object.fromEntries(Object.entries(frame.points).map(([key, [x, y]]) => [key, { x: x * s, y: y * s }])) }),
+    ...(frame.tile && { tile: { ...frame.tile, ...(frame.tile.collision && { collision: frame.tile.collision.map(([x, y]) => ({ x: x * s, y: y * s })) }) } })
   });
   frames.forEach((frame, i) => {
     const pixels = scalePixels(frame.data, width, height, s), rowBytes = width * s * 4;

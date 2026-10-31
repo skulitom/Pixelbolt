@@ -2,6 +2,7 @@
 // and the call that fixes it, so an agent can correct an export before handing it on. Read-only: it never changes
 // the bundle.
 import { PixelError, renderProject, STILL_SIDE } from './core.js';
+import { autotileFrames } from './autotile.js';
 
 // The format's limits, as core.js enforces them, so no fix asks for a recipe the renderer refuses: canvas sides,
 // sheet.scale, source frames, their total area, and the names one animation lists. A pingpong of n names (n > 2)
@@ -189,11 +190,16 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     if (transparent + opaque !== pixels) seeThrough.push(frame.name);
     if (opaque === pixels) solid.push(frame.name);
   }
+  // A tile set's inner tiles, with its terrain on all four sides, are solid by design: its background shows on the
+  // tiles with an open side, so only those are judged for transparency.
+  const tiles = Array.isArray(recipe?.frames) ? autotileFrames(recipe) : [];
+  const inner = new Set(new Set(tiles.map(tile => tile.mask)).size < 2 ? [] : tiles.filter(tile => (tile.mode === 'cardinal' ? tile.mask === 15 : (tile.mask & 85) === 85)).map(tile => tile.frame));
+  const judged = frames.filter(frame => !inner.has(frame.name)), open = judged.length ? judged : frames, clearOpen = clear.filter(frameName => open.some(frame => frame.name === frameName));
   const played = Object.fromEntries(names.slice(0, 16).map(key => [key, { frames: animations[key].frames.length, loop: animations[key].loop }]));
   const delivered = {
     size: [width * scale, height * scale], ...(scale !== 1 && { canvas: [width, height], scale }),
     animations: played, ...(names.length > 16 && { animationsOmitted: names.length - 16 }),
-    colors: colors.size, transparent: clear.length === frames.length ? true : clear.length ? 'some frames' : false,
+    colors: colors.size, transparent: clearOpen.length === open.length ? true : clearOpen.length ? 'some frames' : false,
     ...(seeThrough.length && { partlyTransparent: seeThrough.length === frames.length ? true : 'some frames' }),
     ...(gifs?.length && { gifs: [gifs[0].width, gifs[0].height] })
   };
@@ -245,7 +251,7 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     if (wrong.length) problems.push({ file: gifFiles(wrong), asked: { width: wantW, height: wantH }, got: { width: wrong[0].width, height: wrong[0].height }, fix: gifFix });
     // A GIF background blends every pixel onto one colour, so GIFs can miss a request the frames meet. (Opaque frames
     // always make an opaque GIF, so only the transparent side needs a GIF check.)
-    const opaque = expect.transparent === true && clear.length === frames.length ? scoped.filter(gif => !gif.transparent) : [];
+    const opaque = expect.transparent === true && clearOpen.length === open.length ? scoped.filter(gif => !gif.transparent) : [];
     if (opaque.length) problems.push({ file: gifFiles(opaque), asked: 'a transparent background', got: 'an opaque GIF', fix: 'render again without a "background" in "gif" (GIFs keep 1-bit transparency by default)' });
     const many = expect.colors !== undefined && colors.size <= expect.colors ? scoped.filter(gif => gif.colors > expect.colors) : [];
     if (many.length) problems.push({ file: gifFiles(many), asked: `at most ${expect.colors} colours`, got: many[0].colors, fix: 'a GIF background adds its colour and blends soft edges into new ones: render again without it, or with a background from the palette' });
@@ -258,8 +264,8 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     problems.push({ file: `animations/${key}.png`, asked: expect.frames, got: count, fix: framesFix(key, expect.frames, named, recipe?.animations?.[key]?.direction, project, recipe, total) });
   }
   if (expect.colors !== undefined && colors.size > expect.colors) problems.push({ file: frameFiles, asked: `at most ${expect.colors} colours`, got: colors.size, fix: 'merge similar colours with pixel_patch recolor (or fewer palette entries), check with pixel_inspect diagnostics, then render again' });
-  if (expect.transparent === true && clear.length !== frames.length) {
-    const filled = frames.map(frame => frame.name).filter(frameName => !clear.includes(frameName));
+  if (expect.transparent === true && clearOpen.length !== open.length) {
+    const filled = open.map(frame => frame.name).filter(frameName => !clear.includes(frameName));
     problems.push({ file: frameFiles, asked: 'a transparent background', got: `no transparent pixel in ${list(filled)}`, fix: 'pixel_patch { "set": "background", "value": "transparent" } and remove any fill that covers the whole canvas, then render again' });
   }
   if (expect.transparent === false && solid.length !== frames.length) {

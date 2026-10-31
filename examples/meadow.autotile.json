@@ -46,11 +46,12 @@
   },
   "frame": "meadow-{mask}-{variant}",
   "variants": [
-    { "name": "a" },
-    { "name": "b", "terrain": { "fill": { "seed": 11 } } },
-    { "name": "c", "terrain": { "fill": { "seed": 23 } } },
+    { "name": "a", "weight": 4 },
+    { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+    { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
     {
       "name": "flowers",
+      "weight": 1,
       "terrain": { "fill": { "seed": 37 } },
       "ops": [
         { "op": "stamp", "symbol": "daisy", "x": 9, "y": 25 },

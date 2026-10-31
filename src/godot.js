@@ -112,55 +112,115 @@ const TILE_MASKS = { blob: 47, cardinal: 16 };
 // Godot writes colour components without a forced decimal point: Color(0.25, 0.5, 0.75, 1).
 const channel = value => String(Number((value / 255).toFixed(6)));
 
-// A Godot 4 TileSet over an untrimmed atlas: one atlas source on the sheet's grid and one terrain whose peering bits
-// come from each tile's neighbour mask, so Godot's terrain painter picks the tile Pixelbolt's tilemap would. `tiles`
-// lists the atlas frames that are tiles ({ frame, mask, mode }, blob masks reduced; see autotileFrames). Frames of one
-// mask are alternatives Godot picks between at random, except an atlas animation that loops over frames of one mask
-// laid side by side in a row of the sheet, which becomes an animated tile. `margin` and `separation` are the sheet's
-// padding and twice it, in exported pixels; `color` is the terrain's colour in Godot's editor, [r, g, b] from 0 to
-// 255. Returns { text, warnings }; text is null when the frames can't make one terrain.
-export function tileSet(atlas, tiles, { image = atlas.meta.image, name, color = [255, 255, 255], margin = 0, separation = 0 } = {}) {
-  const warnings = [], byFrame = new Map(tiles.map(tile => [tile.frame, tile]));
-  const modes = [...new Set(tiles.map(tile => tile.mode))];
-  if (modes.length !== 1) return { text: null, warnings: [`not written: the tiles mix ${modes.join(' and ')} masks, and a Godot terrain matches one way; export each set from its own recipe`] };
-  const mode = modes[0], { w, h } = atlas.frames[tiles[0].frame].frame;
-  const coords = frame => { const { x, y } = atlas.frames[frame].frame; return [(x - margin) / (w + separation), (y - margin) / (h + separation)]; };
-  // Animated tiles: Godot plays a tile's frames from its own cell rightwards along the row, always looping.
-  const animated = new Map(), covered = new Set(), wrapped = [], unplayable = [];
-  for (const [key, animation] of Object.entries(atlas.animations)) {
-    const frames = animation.frames, first = byFrame.get(frames[0]);
-    if (frames.length < 2 || !first || frames.some(frame => covered.has(frame))) continue;
-    if (!frames.every(frame => byFrame.get(frame)?.mask === first.mask && byFrame.get(frame).mode === first.mode)) continue;
-    // Its later frames are never tiles of their own, so a set whose animation can't play doesn't flicker between them.
-    for (const frame of frames.slice(1)) covered.add(frame);
-    const cells = frames.map(coords), [col, row] = cells[0];
-    if (animation.loop && cells.every(([c, r], i) => c === col + i && r === row)) animated.set(frames[0], frames.map(frame => atlas.frames[frame].duration));
-    // In sheet order but running onto the next row: more columns fix it.
-    else if (animation.loop && cells.every(([c, r], i) => i === 0 || (c === cells[i - 1][0] + 1 && r === cells[i - 1][1]) || (c === 0 && r === cells[i - 1][1] + 1))) wrapped.push(key);
-    else unplayable.push(key);
+// A Godot 4 TileSet with one atlas source per sheet, each on its sheet's grid. `sources` lists the sheets, each
+// { atlas, tiles, plain, image, name, terrain, colors, margin, separation }:
+// - atlas: Pixelbolt atlas metadata of an untrimmed sheet; image: the sheet's path relative to the .tres (default
+//   meta.image, the sheet beside it); name: the source's name in Godot's editor.
+// - tiles: its autotile frames ({ frame, mask, mode, terrain? }, blob masks reduced; see autotileFrames). Each joins
+//   the terrain it names, or the source's `terrain` (default its name), with peering bits from its neighbour mask, so
+//   Godot's terrain painter picks the tile Pixelbolt's tilemap would. Every terrain is a terrain set of its own, so its
+//   edges open onto any other terrain, as they do in Pixelbolt's tilemaps. Frames of one terrain and mask are
+//   alternatives Godot picks between at random.
+// - plain: other frames that are tiles without a terrain (props, decorations).
+// - colors: each terrain's colour in Godot's editor, { [terrain]: [r, g, b] } from 0 to 255 (default white).
+// - margin and separation: the sheet's padding and twice it, in exported pixels.
+// A frame's tile.weight (in the atlas) becomes its probability, relative to the heaviest frame of its terrain or of the
+// plain tiles, and its tile.collision a polygon on physics layer 0, one-way with tile.oneWay. An atlas animation that
+// loops over frames of one terrain and mask, or plain frames, laid side by side in a row of the sheet becomes an
+// animated tile. Returns { text, warnings }; text is null when a terrain mixes blob and cardinal masks.
+export function tileSets(sources) {
+  const warnings = [], size = source => { const { w, h } = source.atlas.frames[source.tiles[0]?.frame ?? source.plain[0]].frame; return [w, h]; };
+  const [w, h] = size(sources[0]);
+  const kept = sources.filter(source => {
+    const [sw, sh] = size(source);
+    if (sw === w && sh === h) return true;
+    warnings.push(`${source.name}: left out: its tiles are ${sw}×${sh} and the TileSet's are ${w}×${h}; export it on its own`);
+    return false;
+  });
+  // Terrains in order of first appearance, one terrain set each.
+  const terrains = new Map(), modes = new Map();
+  for (const source of kept) for (const tile of source.tiles) {
+    const name = tile.terrain ?? source.terrain ?? source.name;
+    if (!terrains.has(name)) terrains.set(name, { index: terrains.size, mode: tile.mode, color: source.colors?.[name] ?? [255, 255, 255], masks: new Set() });
+    terrains.get(name).masks.add(tile.mask);
+    if (!modes.has(name)) modes.set(name, new Set());
+    modes.get(name).add(tile.mode);
   }
+  const mixed = [...modes].filter(([, set]) => set.size > 1).map(([name]) => name);
+  if (mixed.length) return { text: null, warnings: [`not written: ${mixed.length === 1 ? `terrain ${mixed[0]} mixes` : `terrains ${mixed.join(', ')} mix`} blob and cardinal masks, and a Godot terrain matches one way; give one set's frames another tile.terrain, or export each set from its own recipe`] };
   const named = keys => `animation${keys.length === 1 ? '' : 's'} ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''} became still tiles of ${keys.length === 1 ? 'its' : 'their'} first frame`;
-  if (wrapped.length) {
-    const counts = [...new Set(wrapped.map(key => atlas.animations[key].frames.length))];
-    warnings.push(`${named(wrapped)}: ${wrapped.length === 1 ? 'its frames run' : 'their frames run'} onto the next row of the sheet, and Godot animates a tile only through frames side by side in one row. Set sheet.columns to a multiple of ${counts.length === 1 ? counts[0] : 'each animation\'s frame count'}`);
+  const prepared = kept.map(source => {
+    const { atlas, margin = 0, separation = 0 } = source, plain = new Set(source.plain ?? []);
+    const byFrame = new Map(source.tiles.map(tile => [tile.frame, { ...tile, terrain: tile.terrain ?? source.terrain ?? source.name }]));
+    const coords = frame => { const { x, y } = atlas.frames[frame].frame; return [(x - margin) / (w + separation), (y - margin) / (h + separation)]; };
+    // What a frame is as a tile: its terrain and mask, '' for a plain tile, or null for no tile.
+    const kind = frame => (byFrame.has(frame) ? `${byFrame.get(frame).terrain} ${byFrame.get(frame).mask}` : plain.has(frame) ? '' : null);
+    // Animated tiles: Godot plays a tile's frames from its own cell rightwards along the row, always looping.
+    const animated = new Map(), covered = new Set(), wrapped = [], unplayable = [];
+    for (const [key, animation] of Object.entries(atlas.animations)) {
+      const frames = animation.frames, first = kind(frames[0]);
+      if (frames.length < 2 || first === null || frames.some(frame => covered.has(frame) || kind(frame) !== first)) continue;
+      // Its later frames are never tiles of their own, so a set whose animation can't play doesn't flicker between them.
+      for (const frame of frames.slice(1)) covered.add(frame);
+      const cells = frames.map(coords), [col, row] = cells[0];
+      if (animation.loop && cells.every(([c, r], i) => c === col + i && r === row)) animated.set(frames[0], frames.map(frame => atlas.frames[frame].duration));
+      // In sheet order but running onto the next row: more columns fix it.
+      else if (animation.loop && cells.every(([c, r], i) => i === 0 || (c === cells[i - 1][0] + 1 && r === cells[i - 1][1]) || (c === 0 && r === cells[i - 1][1] + 1))) wrapped.push(key);
+      else unplayable.push(key);
+    }
+    const prefix = kept.length > 1 ? `${source.name}: ` : '';
+    if (wrapped.length) {
+      const counts = [...new Set(wrapped.map(key => atlas.animations[key].frames.length))];
+      warnings.push(`${prefix}${named(wrapped)}: ${wrapped.length === 1 ? 'its frames run' : 'their frames run'} onto the next row of the sheet, and Godot animates a tile only through frames side by side in one row. Set sheet.columns to a multiple of ${counts.length === 1 ? counts[0] : 'each animation\'s frame count'}`);
+    }
+    if (unplayable.length) warnings.push(`${prefix}${named(unplayable)}: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`);
+    const frames = Object.keys(atlas.frames).filter(frame => kind(frame) !== null && !covered.has(frame));
+    return { source, byFrame, coords, animated, frames };
+  });
+  // Probabilities: each frame's weight against the heaviest of its terrain, or of the plain tiles.
+  const weight = (atlas, frame) => atlas.frames[frame].tile?.weight ?? 1, heaviest = new Map();
+  for (const { source, byFrame, frames } of prepared) for (const frame of frames) {
+    const group = byFrame.get(frame)?.terrain ?? '';
+    heaviest.set(group, Math.max(heaviest.get(group) ?? 1, weight(source.atlas, frame)));
   }
-  if (unplayable.length) warnings.push(`${named(unplayable)}: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`);
-  const masks = new Set(tiles.map(tile => tile.mask));
-  if (masks.size < TILE_MASKS[mode]) warnings.push(`${TILE_MASKS[mode] - masks.size} of the ${TILE_MASKS[mode]} ${mode} masks have no tile, so Godot draws its nearest match where one is needed`);
-  const lines = ['[gd_resource type="TileSet" format=3]', '', `[ext_resource type="Texture2D" path=${quote(image)} id="1_sheet"]`, ''];
-  lines.push('[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tiles"]', `resource_name = ${quote(name)}`, 'texture = ExtResource("1_sheet")');
-  if (margin) lines.push(`margins = Vector2i(${margin}, ${margin})`);
-  if (separation) lines.push(`separation = Vector2i(${separation}, ${separation})`);
-  lines.push(`texture_region_size = Vector2i(${w}, ${h})`);
-  for (const frame of Object.keys(atlas.frames)) {
-    const tile = byFrame.get(frame);
-    if (!tile || covered.has(frame)) continue;
-    const cell = coords(frame).join(':');
-    animated.get(frame)?.forEach((ms, i) => lines.push(`${cell}/animation_frame_${i}/duration = ${real(ms / 1000)}`));
-    lines.push(`${cell}/0 = 0`, `${cell}/0/terrain_set = 0`, `${cell}/0/terrain = 0`);
-    for (const [peer, bit] of PEERS[mode]) if (tile.mask & bit) lines.push(`${cell}/0/terrains_peering_bit/${peer} = 0`);
+  for (const [name, terrain] of terrains) {
+    const missing = TILE_MASKS[terrain.mode] - terrain.masks.size;
+    if (missing > 0) warnings.push(`${terrains.size > 1 ? `terrain ${name}: ` : ''}${missing} of the ${TILE_MASKS[terrain.mode]} ${terrain.mode} masks have no tile, so Godot draws its nearest match where one is needed`);
   }
-  lines.push('', '[resource]', `tile_size = Vector2i(${w}, ${h})`, `terrain_set_0/mode = ${TERRAIN_MODES[mode]}`, `terrain_set_0/terrain_0/name = ${quote(name)}`);
-  lines.push(`terrain_set_0/terrain_0/color = Color(${color.map(channel).join(', ')}, 1)`, 'sources/0 = SubResource("TileSetAtlasSource_tiles")', '');
+  let solid = false;
+  const lines = ['[gd_resource type="TileSet" format=3]', '', ...kept.map((source, i) => `[ext_resource type="Texture2D" path=${quote(source.image ?? source.atlas.meta.image)} id="${i + 1}_sheet"]`), ''];
+  const ids = kept.map((_, i) => `TileSetAtlasSource_tiles${i ? i + 1 : ''}`);
+  prepared.forEach(({ source, byFrame, coords, animated, frames }, i) => {
+    const { atlas, margin = 0, separation = 0 } = source;
+    lines.push(`[sub_resource type="TileSetAtlasSource" id="${ids[i]}"]`, `resource_name = ${quote(source.name)}`, `texture = ExtResource("${i + 1}_sheet")`);
+    if (margin) lines.push(`margins = Vector2i(${margin}, ${margin})`);
+    if (separation) lines.push(`separation = Vector2i(${separation}, ${separation})`);
+    lines.push(`texture_region_size = Vector2i(${w}, ${h})`);
+    for (const frame of frames) {
+      const tile = byFrame.get(frame), facts = atlas.frames[frame].tile ?? {}, cell = coords(frame).join(':');
+      animated.get(frame)?.forEach((ms, k) => lines.push(`${cell}/animation_frame_${k}/duration = ${real(ms / 1000)}`));
+      lines.push(`${cell}/0 = 0`);
+      if (tile) lines.push(`${cell}/0/terrain_set = ${terrains.get(tile.terrain).index}`, `${cell}/0/terrain = 0`);
+      const probability = weight(atlas, frame) / heaviest.get(tile?.terrain ?? '');
+      if (probability !== 1) lines.push(`${cell}/0/probability = ${Number(probability.toFixed(6))}`);
+      if (facts.collision) {
+        // Godot places a tile's polygon around the tile's centre.
+        solid = true;
+        lines.push(`${cell}/0/physics_layer_0/polygon_0/points = PackedVector2Array(${facts.collision.flatMap(({ x, y }) => [x - w / 2, y - h / 2]).join(', ')})`);
+        if (facts.oneWay) lines.push(`${cell}/0/physics_layer_0/polygon_0/one_way = true`);
+      }
+      if (tile) for (const [peer, bit] of PEERS[tile.mode]) if (tile.mask & bit) lines.push(`${cell}/0/terrains_peering_bit/${peer} = 0`);
+    }
+    lines.push('');
+  });
+  lines.push('[resource]', `tile_size = Vector2i(${w}, ${h})`);
+  if (solid) lines.push('physics_layer_0/collision_layer = 1');
+  for (const [name, terrain] of terrains) {
+    const set = `terrain_set_${terrain.index}`;
+    lines.push(`${set}/mode = ${TERRAIN_MODES[terrain.mode]}`, `${set}/terrain_0/name = ${quote(name)}`, `${set}/terrain_0/color = Color(${terrain.color.map(channel).join(', ')}, 1)`);
+  }
+  lines.push(...ids.map((id, i) => `sources/${i} = SubResource("${id}")`), '');
   return { text: lines.join('\n'), warnings };
 }
+// One sheet's TileSet: tileSets([{ atlas, tiles, ...options }]); options.color is its terrain's editor colour.
+export const tileSet = (atlas, tiles, { color, ...options } = {}) => tileSets([{ atlas, tiles, plain: [], ...options, ...(color && { colors: { [options.terrain ?? options.name]: color } }) }]);

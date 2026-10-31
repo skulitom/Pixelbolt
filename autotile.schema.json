@@ -593,6 +593,62 @@
       "pattern": "\\{mask\\}",
       "description": "Frame name template; {mask} is the neighbour mask and {variant} the variant name."
     },
+    "collision": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "inset": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 41
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "n": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 41
+                    },
+                    "e": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 41
+                    },
+                    "s": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 41
+                    },
+                    "w": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 41
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "Pixels the collision box keeps from each open side of a tile, under half a tile; default each terrain edge's depth, or 0."
+            },
+            "oneWay": {
+              "type": "boolean",
+              "description": "One-way platforms: bodies pass up through and land on top."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Give every tile a collision box (true, or { inset, oneWay }): the whole tile, kept inset from its open sides. Exported to the Godot TileSet."
+    },
     "variants": {
       "type": "array",
       "items": {
@@ -613,6 +669,12 @@
               "type": "string",
               "description": "Palette name, transparent, or #RGB/#RGBA/#RRGGBB/#RRGGBBAA."
             }
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "How often this variant is picked against the others for a cell, in the test map and Godot; default 1. Give common variants 10 and a rare one 1."
           },
           "template": {
             "$ref": "#/$defs/rows",

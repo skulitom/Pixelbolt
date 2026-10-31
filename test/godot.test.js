@@ -330,11 +330,17 @@ test('only an autotile set on a grid gets a TileSet, and what can\'t be one is s
   let bundle = await createBundle({ ...recipe, sheet: { trim: true } });
   assert.equal(bundle.files.has('turf.tileset.tres'), false);
   assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: not written: a Godot TileSet needs the sheet\'s grid, and sheet.trim packs frames without one. Remove sheet.trim to get it']);
-  // Blob and cardinal tiles can't share one terrain.
+  // Blob and cardinal tiles can't share one terrain; named apart, each is a terrain set of its own.
   const fence = compileAutotile(fenceSource).recipe;
   bundle = await createBundle({ ...recipe, frames: [...recipe.frames.slice(0, 3), ...fence.frames.slice(0, 3).map(frame => ({ ...frame, name: `c${frame.name}` }))] });
   assert.equal(bundle.files.has('turf.tileset.tres'), false);
-  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: not written: the tiles mix blob and cardinal masks, and a Godot terrain matches one way; export each set from its own recipe']);
+  assert.deepEqual(bundle.project.warnings, ["turf.tileset.tres: not written: terrain turf mixes blob and cardinal masks, and a Godot terrain matches one way; give one set's frames another tile.terrain, or export each set from its own recipe"]);
+  bundle = await createBundle({ ...recipe, frames: [...recipe.frames, ...fence.frames.filter(frame => frame.name.endsWith('-plain')).map(frame => ({ ...frame, name: `c${frame.name}`, tile: { terrain: 'fence' } }))] });
+  const two = readTileSet(bundle.files.get('turf.tileset.tres').toString());
+  assert.deepEqual(Object.entries(two.resource).filter(([key]) => key.startsWith('terrain_set_')), [['terrain_set_0/mode', '0'], ['terrain_set_0/terrain_0/name', '"turf"'], ['terrain_set_0/terrain_0/color', 'Color(0.235294, 0.470588, 0.188235, 1)'], ['terrain_set_1/mode', '2'], ['terrain_set_1/terrain_0/name', '"fence"'], ['terrain_set_1/terrain_0/color', 'Color(0.235294, 0.470588, 0.188235, 1)']]);
+  assert.deepEqual([...new Set(Object.values(two.tiles).map(tile => tile['0/terrain_set']))], ['0', '1']);
+  assert.equal(Object.keys(two.tiles).length, 47 + 16);
+  assert.deepEqual(bundle.project.warnings, []);
   // A partial set is written, with the masks it lacks counted.
   bundle = await createBundle({ ...recipe, frames: recipe.frames.slice(0, 40) });
   assert.equal(readTileSet(bundle.files.get('turf.tileset.tres').toString()).tiles['0:0']['0'], '0');

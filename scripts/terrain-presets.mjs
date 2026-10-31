@@ -1,6 +1,7 @@
 // Reviewed autotile sources drawn from terrain descriptions, written to examples/ by generate-examples.js: a top-down
-// meadow over dirt and a side-view platformer ground. Both compile without seam warnings; their test maps are the
-// review (pixelbolt autotile examples/meadow.autotile.json --out <new.json> --preview <new.png>).
+// meadow over dirt with rare flowers and a side-view platformer ground with collision boxes. Both compile without seam
+// warnings; their test maps are the review (pixelbolt autotile examples/meadow.autotile.json --out <new.json>
+// --preview <new.png>).
 
 // Grass seen from above, over dirt: jittered edges with a dark outline, a lit top rim with tufts, a shaded lip and a
 // cast shadow at the bottom. Two more fills and a flowered one hide the tile repeat when mixed by weight in a map.
@@ -20,10 +21,10 @@ const meadow = {
   },
   frame: 'meadow-{mask}-{variant}',
   variants: [
-    { name: 'a' },
-    { name: 'b', terrain: { fill: { seed: 11 } } },
-    { name: 'c', terrain: { fill: { seed: 23 } } },
-    { name: 'flowers', terrain: { fill: { seed: 37 } }, ops: [{ op: 'stamp', symbol: 'daisy', x: 9, y: 25 }, { op: 'stamp', symbol: 'buttercup', x: 18, y: 34 }, { op: 'stamp', symbol: 'daisy', x: 19, y: 3 }] }
+    { name: 'a', weight: 4 },
+    { name: 'b', weight: 4, terrain: { fill: { seed: 11 } } },
+    { name: 'c', weight: 4, terrain: { fill: { seed: 23 } } },
+    { name: 'flowers', weight: 1, terrain: { fill: { seed: 37 } }, ops: [{ op: 'stamp', symbol: 'daisy', x: 9, y: 25 }, { op: 'stamp', symbol: 'buttercup', x: 18, y: 34 }, { op: 'stamp', symbol: 'daisy', x: 19, y: 3 }] }
   ],
   preview: { background: 'u' },
   sheet: { columns: 16 }
@@ -46,11 +47,13 @@ const ground = {
     },
     round: 1, inner: 1
   },
+  // A box per tile from the walkable grass top down: the insets are each edge's depth.
+  collision: true,
   frame: 'ground-{mask}-{variant}',
   variants: [
-    { name: 'a' },
-    { name: 'b', terrain: { fill: { seed: 9 } } },
-    { name: 'stones', terrain: { fill: { seed: 17 } }, ops: [{ op: 'stamp', symbol: 'stone', x: 10, y: 26 }, { op: 'stamp', symbol: 'pebble', x: 19, y: 36 }] }
+    { name: 'a', weight: 3 },
+    { name: 'b', weight: 3, terrain: { fill: { seed: 9 } } },
+    { name: 'stones', weight: 1, terrain: { fill: { seed: 17 } }, ops: [{ op: 'stamp', symbol: 'stone', x: 10, y: 26 }, { op: 'stamp', symbol: 'pebble', x: 19, y: 36 }] }
   ],
   preview: { background: 'S' },
   sheet: { columns: 16 }

@@ -48,12 +48,14 @@
     "round": 1,
     "inner": 1
   },
+  "collision": true,
   "frame": "ground-{mask}-{variant}",
   "variants": [
-    { "name": "a" },
-    { "name": "b", "terrain": { "fill": { "seed": 9 } } },
+    { "name": "a", "weight": 3 },
+    { "name": "b", "weight": 3, "terrain": { "fill": { "seed": 9 } } },
     {
       "name": "stones",
+      "weight": 1,
       "terrain": { "fill": { "seed": 17 } },
       "ops": [
         { "op": "stamp", "symbol": "stone", "x": 10, "y": 26 },

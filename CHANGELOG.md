@@ -4,6 +4,17 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Godot TileSets with weights, collision, plain tiles and several sets
+
+- Autotile variants take `weight` (1–1000): the test map mixes variants by weight, and the Godot TileSet gives each tile its probability against the heaviest of its terrain. The meadow example's flowers now show a quarter as often as each plain fill.
+- An autotile source's `collision` gives every tile a collision box on physics layer 0: `true` keeps it from each open side by that edge's depth, so a body stands on the drawn ground, `inset` sets the margins and `oneWay` makes one-way platforms. The ground example has collision.
+- Recipe frames take `tile`: `terrain`, `weight`, a `collision` polygon in canvas pixels and `oneWay`, checked when rendered (points inside the canvas, in order, enclosing an area) and exported in the atlas in exported pixels. Any frame with `tile` makes the export write a TileSet.
+- Frames that are not autotile tiles but draw something become plain tiles in the TileSet instead of being left out; empty frames are no tiles.
+- Each terrain is a terrain set of its own, so two sets in one recipe (named apart with `tile.terrain`) export together, blob and cardinal alike, and a scene export writes `tileset.tres` holding every tile-set asset as its own atlas source, painted by one `TileMapLayer`. Godot's terrain painter picks Pixelbolt's tile with both sets on one layer.
+- A tile set without animations of its own exports no SpriteFrames, APNGs, CSS or player (its only animation flipped through every tile), its preview shows the sheet, and its README says how to paint it in Godot. MCP `saveAs` `godot` points at `tileset` there.
+- `expect.transparent` no longer fails every tile set: inner tiles, with the terrain on all four sides, are solid by design, so only tiles with an open side are judged.
+- `scripts/verify-godot.mjs` also checks probabilities, collision polygons, plain tiles and a scene's two-set TileSet in a real Godot (4.7.2), which re-saves the exported TileSets unchanged apart from resource ids.
+
 ### Tilesets from a terrain description, with a test map and seam check
 
 - An autotile source can draw its template from a `terrain` instead of typed rows: a `fill` that repeats every tile (a colour with seeded `speckle` clumps, or a `pattern`), an edge per side (`depth`, `jitter`, `bands` such as an outline and a rim light, `outside` colours such as a cast shadow, seeded `tufts`), and `round` and `inner` corners. A terrain is seamless by construction: its tiles, stitched into any map, are exactly the terrain drawn directly. Agents no longer have to hand-type a 2×3-tile template, which a cold test found they could not do reliably.

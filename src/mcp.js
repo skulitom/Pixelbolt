@@ -202,7 +202,8 @@ export function createToolRunner({ directory, root, version }) {
       if ((key === 'gif' || key === 'apng') && only === undefined) throw new PixelError(where, `the project has ${names.length} animations: pass animation, or name the file, such as ${key === 'gif' ? `gifs/${names[0]}.gif` : `animations/${names[0]}.png`}`);
       const file = Object.hasOwn(aliases, key) ? aliases[key] : key;
       const bytes = file.startsWith('gifs/') ? gifs.find(item => `gifs/${item.animation}.gif` === file)?.data : file.startsWith('sequence/') ? sequence?.files.get(file.slice(9)) : bundle.files.get(file);
-      if (!bytes && key === 'tileset') throw new PixelError(where, 'this export has no Godot TileSet: only a recipe whose frames are an autotile set (compiled from a pixelforge-autotile source) has one');
+      if (!bytes && key === 'tileset') throw new PixelError(where, 'this export has no Godot TileSet: only a recipe whose frames are an autotile set (compiled from a pixelforge-autotile source) or whose frames have a tile field has one');
+      if (!bytes && (key === 'godot' || key === 'apng') && bundle.files.has(`${project.name}.tileset.tres`)) throw new PixelError(where, 'this export is a tile set with no animations of its own, so it has no SpriteFrames or animated PNGs: save tileset, the Godot TileSet, and sheet');
       if (!bytes) throw new PixelError(where, `this export has no ${file}; use sheet, atlas, godot, tileset, recipe, gif, apng or a file it lists, such as frames/${project.frames[0].name}.png`);
       if (/\.(css|html)$/i.test(file)) throw new PixelError(where, `${file} loads other export files by relative path, so a copy elsewhere would show nothing: save the files it uses (sheet, atlas, animations) instead, and keep ${file} in the export folder`);
       const type = path.extname(file).toLowerCase();

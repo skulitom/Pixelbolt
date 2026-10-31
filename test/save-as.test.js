@@ -442,7 +442,11 @@ test('pixel_render saveAs writes an autotile set\'s Godot TileSet naming its she
   await writeFile(path.join(project, 'game', 'tiles', 'frames.tileset.tres'), '[gd_resource type="SpriteFrames" format=3]\n');
   ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', tileset: 'game/tiles/frames.tileset.tres' } }));
   assert.equal(isError, true); assert.match(info.error, /frames\.tileset\.tres is not a Godot TileSet resource, so overwrite won't replace it/);
-  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', godot: 'game/tiles/turf.tileset.tres' } }));
+  // A tile set with no animations of its own has no SpriteFrames to save; one with animations has one, which can't
+  // replace a TileSet.
+  ({ isError, info } = await mcp.render({ project: recipe, saveAs: { godot: 'game/tiles/turf.tres' } }));
+  assert.equal(isError, true); assert.match(info.error, /^saveAs\.godot: this export is a tile set with no animations of its own, so it has no SpriteFrames or animated PNGs: save tileset/);
+  ({ isError, info } = await mcp.render({ project: { ...recipe, animations: { first: { frames: [recipe.frames[0].name] } } }, overwrite: true, saveAs: { sheet: 'game/tiles/turf.png', godot: 'game/tiles/turf.tileset.tres' } }));
   assert.equal(isError, true); assert.match(info.error, /turf\.tileset\.tres is not a Godot SpriteFrames resource/);
   assert.equal(await readFile(path.join(project, 'game', 'tiles', 'turf.tileset.tres'), 'utf8'), text);
   // A recipe that isn't an autotile set has none to save.

@@ -377,11 +377,11 @@ export const TEST_MAP = Object.freeze([
   '....................'
 ]);
 // A one-frame recipe that draws a compiled set's templates over the test map (variants with templates of their own
-// mixed in by position), on `background` when given.
-export function testMapRecipe(recipe, { templates, mode = 'blob', background }) {
+// mixed in by position, as often as `weights` say), on `background` when given.
+export function testMapRecipe(recipe, { templates, weights, mode = 'blob', background }) {
   const tile = recipe.width, width = TEST_MAP[0].length * tile, height = TEST_MAP.length * tile;
   const symbols = Object.fromEntries(templates.map(name => [name, recipe.symbols[name]]));
-  const legend = { '#': templates.length === 1 ? { template: templates[0], autotile: mode } : { templates, autotile: mode } };
+  const legend = { '#': templates.length === 1 ? { template: templates[0], autotile: mode } : { templates, ...(weights && { weights }), autotile: mode } };
   return { version: 1, name: `${recipe.name}-test-map`, width, height, palette: recipe.palette, ...(recipe.ramps && { ramps: recipe.ramps }), symbols,
     frames: [{ name: 'test-map', ops: [...(background !== undefined ? [{ op: 'rect', x: 0, y: 0, w: width, h: height, color: background }] : []), { op: 'tilemap', tile: [tile, tile], rows: [...TEST_MAP], legend }] }] };
 }

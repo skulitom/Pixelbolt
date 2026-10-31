@@ -177,6 +177,46 @@
           },
           "description": "Named frame positions (hands, hit points, glyph advance), exported in the atlas in exported pixels."
         },
+        "tile": {
+          "type": "object",
+          "properties": {
+            "terrain": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+              "description": "The autotile set this frame belongs to; default the recipe name. Each terrain is a Godot terrain set of its own."
+            },
+            "weight": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "description": "How often this frame is picked against the other frames for the same cell; default 1."
+            },
+            "collision": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -4096,
+                  "maximum": 4096
+                },
+                "maxItems": 2,
+                "minItems": 2,
+                "description": "[x, y] in unscaled canvas pixels; the top-left corner of that pixel."
+              },
+              "maxItems": 32,
+              "minItems": 3,
+              "description": "Polygon around the solid part in canvas pixels (pixel corners from [0, 0] to [width, height]), in order around the shape."
+            },
+            "oneWay": {
+              "type": "boolean",
+              "description": "Bodies pass up through the collision polygon and land on top (a platform)."
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "This frame as a tile in the Godot TileSet: its terrain, weight and collision. A frame with tile makes the export write a TileSet."
+        },
         "ops": {
           "type": "array",
           "items": {
