@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Grounded squash and stretch for slimes and blobs
+
+- Masses take `flat: true`: the top half of an ellipse, a dome with a flat base anchored at the middle of its base row, which squash and rotation keep in place.
+- The idle template takes 2–16 frames (from five, poses are numbered `idle-0`…) and `squash` (0.05–0.5): the body stretches and squashes along a sine while its lowest drawn pixel stays on `rig.ground` in every frame. Not with `breath` or legs. Past four frames the key poses are the quarter phases, so the motion review's pose spread passes gentle loops.
+- New example `examples/slime-idle.poses.json`: the quick start's slime, eight frames at 32 × 32.
+- Idles and masses without the new fields compile byte-identically.
+
 ### Transitions between terrains
 
 - An autotile source's `layers` stacks 2–4 terrains bottom first (water, sand, grass) into one corner set with a tile for every mix of them at a tile's four corners: 16, 81 or 256 tiles, named by the layers' keys at the corners (`{corners}`, so `shore-wsgw`). Each layer is drawn from its own terrain (merged over the set's), template rows or ops. A tile is the lowest terrain among its corners filling it and each higher one among them drawn over it, counting the cells of every terrain above it as its own, so sand runs on under grass and grass straight on water draws no sand. Each frame's `tile.corners` names its corners' terrains.
