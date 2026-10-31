@@ -9,6 +9,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The render `check` (MCP `pixel_render`, CLI `render`) reports `motion`: each animation's silhouette box and lowest row for every played frame, in play order.
 - When the recipe names its animations, its `notes` point out loop motion that tends to look wrong: a solid body of which at least half the frames stand on one ground row while one leaves it by 2 rows or more, moves unevenly (one step of 3 px or more and at least twice the median) or jumps back at the loop, with the steps that barely move beside it (and, for a loop that only loops by default, how to make it play once, on its first such note), and identical neighbouring frames of equal duration. One-shots, recipes without animations and tile sets without animations of their own get none. The notes are advice, at most eight motion notes a check plus a count of the rest, and never change `check.ok`; on the shipped examples they stay quiet on 49 of 57 animated presets.
 
+### Grounded squash and stretch for slimes and blobs
+
+- Masses take `flat: true`: the top half of an ellipse, a dome with a flat base anchored at the middle of its base row, which squash and rotation keep in place.
+- The idle template takes 2–16 frames (from five, poses are numbered `idle-0`…) and `squash` (0.05–0.5): the body stretches and squashes along a sine while its lowest drawn pixel stays on `rig.ground` in every frame. Not with `breath` or legs. Past four frames the key poses are the quarter phases, so the motion review's pose spread passes gentle loops.
+- New example `examples/slime-idle.poses.json`: the quick start's slime, eight frames at 32 × 32.
+- Idles and masses without the new fields compile byte-identically.
+
 ### Transitions between terrains
 
 - An autotile source's `layers` stacks 2–4 terrains bottom first (water, sand, grass) into one corner set with a tile for every mix of them at a tile's four corners: 16, 81 or 256 tiles, named by the layers' keys at the corners (`{corners}`, so `shore-wsgw`). Each layer is drawn from its own terrain (merged over the set's), template rows or ops. A tile is the lowest terrain among its corners filling it and each higher one among them drawn over it, counting the cells of every terrain above it as its own, so sand runs on under grass and grass straight on water draws no sand. Each frame's `tile.corners` names its corners' terrains.
