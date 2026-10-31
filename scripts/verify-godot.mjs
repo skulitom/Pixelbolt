@@ -20,7 +20,8 @@ import { neighbourMask } from '../src/autotile.js';
 
 // A trimmed, scaled, padded sheet with unequal frame times: a 1×1 cell for an empty frame, a half-transparent frame, a
 // frame that fills the canvas, a 5 ms flash (Godot's 120 FPS ceiling), 33 and 34 ms frames (fractional durations),
-// reverse and ping-pong runs, and a sequence with a hold, which has no Aseprite tag.
+// reverse and ping-pong runs, and a sequence with a hold, which has no Aseprite tag. Two frame names have hyphens,
+// which a Godot resource id can't (Godot 4.7 logs an error for each), as compiled effects and autotile sets have.
 export const GODOT_FIXTURE = {
   version: 1, name: 'godot-trim', width: 12, height: 10,
   palette: { r: '#e04040', g: '#40c060', b: '#4060e0', y: '#f0d040', h: '#4060e080' },
@@ -28,14 +29,14 @@ export const GODOT_FIXTURE = {
     { name: 'dot', duration: 100, ops: [{ op: 'rect', x: 1, y: 2, w: 2, h: 3, color: 'r' }] },
     { name: 'bar', duration: 150, ops: [{ op: 'rect', x: 5, y: 7, w: 6, h: 2, color: 'g' }, { op: 'pixel', x: 11, y: 9, color: 'y' }] },
     { name: 'gap', duration: 250 },
-    { name: 'half', duration: 33, ops: [{ op: 'rect', x: 3, y: 0, w: 4, h: 10, color: 'h' }] },
+    { name: 'half-alpha', duration: 33, ops: [{ op: 'rect', x: 3, y: 0, w: 4, h: 10, color: 'h' }] },
     { name: 'full', duration: 34, ops: [{ op: 'rect', x: 0, y: 0, w: 12, h: 10, color: 'b' }] },
-    { name: 'flash', duration: 5, ops: [{ op: 'pixel', x: 6, y: 5, color: 'y' }] }
+    { name: 'flash-5ms', duration: 5, ops: [{ op: 'pixel', x: 6, y: 5, color: 'y' }] }
   ],
   animations: {
     walk: { frames: ['dot', 'bar', 'gap'] },
-    flicker: { frames: ['half', 'full'] },
-    strobe: { frames: ['flash', 'dot'], loop: false },
+    flicker: { frames: ['half-alpha', 'full'] },
+    strobe: { frames: ['flash-5ms', 'dot'], loop: false },
     back: { frames: ['dot', 'bar', 'gap'], direction: 'reverse' },
     sway: { frames: ['dot', 'bar', 'gap'], direction: 'pingpong' },
     hold: { frames: ['dot', 'dot', 'full'] }
@@ -364,7 +365,7 @@ export async function verifyGodot({ godot = findGodot(), keep = false, log = con
         const relative = played.frames.map(frame => frame.duration);
         const stale = differences(events, replaySprite(played.speed, relative, played.loop, steps), 1);
         const fixed = differences(events, replaySprite(played.speed, relative, played.loop, steps, { stale: false }), 1);
-        assert.ok(!stale.length || !fixed.length, [`${where}: playback matches neither Godot 4.6's AnimatedSprite2D nor the fixed one:`, ...stale.slice(0, 4), ...fixed.slice(0, 4)].join('\n'));
+        assert.ok(!stale.length || !fixed.length, [`${where}: playback matches neither Godot 4.6 and 4.7's AnimatedSprite2D nor the fixed one:`, ...stale.slice(0, 4), ...fixed.slice(0, 4)].join('\n'));
         behaviour.add(stale.length ? 'fixed' : 'stale');
         // How far that is from the recipe: Godot 4.6's carried-over speed moves a frame change after a shorter frame.
         const ideal = idealEvents(animation.frames.map(name => atlas.frames[name].duration), animation.loop, steps, time);
@@ -373,7 +374,7 @@ export async function verifyGodot({ godot = findGodot(), keep = false, log = con
         changes += events.length;
       }
     }
-    log(`${version}: ${Object.keys(expected).length} SpriteFrames loaded; ${frames} frames match their regions, margins, sizes, pixels and times; ${changes} playback events match a replay of AnimatedSprite2D${behaviour.has('stale') ? " as Godot 4.6 runs it (the rest of a step after a frame change at the previous frame's speed, godotengine/godot#123572)" : ' with each frame at its own speed'}.`);
+    log(`${version}: ${Object.keys(expected).length} SpriteFrames loaded; ${frames} frames match their regions, margins, sizes, pixels and times; ${changes} playback events match a replay of AnimatedSprite2D${behaviour.has('stale') ? " as Godot 4.6 and 4.7 run it (the rest of a step after a frame change at the previous frame's speed, godotengine/godot#123572)" : ' with each frame at its own speed'}.`);
     if (shifted.length) log(`AnimatedSprite2D moves frame changes away from the recipe's times in ${shifted.join(', ')} (1 ms process steps); the SpriteFrames' times are exact.`);
     return { version, report, expected, behaviour: [...behaviour], shifted, dir: keep ? dir : null };
   } finally {

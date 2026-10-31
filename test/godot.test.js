@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { renderProject, buildAtlas, frameTag } from '../src/core.js';
 import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
-import { spriteFrames, godotTiming, GODOT_MAX_FPS, tileSet, retexture, canvasTexture, normalsYUp } from '../src/godot.js';
+import { spriteFrames, godotTiming, GODOT_MAX_FPS, tileSet, retexture, canvasTexture, normalsYUp, resourceIds } from '../src/godot.js';
 import { compileAutotile } from '../src/authoring.js';
 import { autotileFrames } from '../src/autotile.js';
 import { decodePNG } from '../src/import.js';
@@ -148,7 +148,7 @@ test('a trimmed sheet keeps every frame the canvas size: margins put the visible
   // A frame that fills the canvas is trimmed to nothing and needs no margin.
   assert.equal(subs.AtlasTexture_full.margin, undefined);
   for (const [name, frame] of Object.entries(atlas.frames)) {
-    const { region, margin = [0, 0, 0, 0] } = subs[`AtlasTexture_${name}`];
+    const { region, margin = [0, 0, 0, 0] } = subs[`AtlasTexture_${name.replace(/-/g, '_')}`];
     assert.equal(frame.trimmed, true);
     assert.deepEqual(region, [frame.frame.x, frame.frame.y, frame.frame.w, frame.frame.h], name);
     assert.deepEqual([margin[0], margin[1]], [frame.spriteSourceSize.x, frame.spriteSourceSize.y], name);
@@ -163,6 +163,29 @@ test('a trimmed sheet keeps every frame the canvas size: margins put the visible
   assert.deepEqual([byName.strobe.speed, byName.strobe.loop, byName.strobe.frames.map(frame => frame.duration)], [120, false, [0.6, 12]]);
   // The fractional durations are reported once, naming the animations.
   assert.deepEqual(bundle.project.warnings.filter(text => text.startsWith('godot-trim.tres')), ['godot-trim.tres: the frame times of animations flicker, strobe, hold share no step of 9 ms or more, so Godot gets fractional frame durations, kept as 32-bit floats: each frame plays within a ten-millionth of its length. Frame times in multiples of 10 ms are exact.']);
+});
+
+test('sub-resource ids are what Godot accepts: hyphens become underscores, a clash gets a number, valid names keep theirs', async () => {
+  assert.deepEqual(Object.fromEntries(resourceIds(['rest', 'fireball-0-1', 'a-b', 'a_b', 'a_b_2', 'A-b'], 'AtlasTexture')), {
+    rest: 'AtlasTexture_rest', 'fireball-0-1': 'AtlasTexture_fireball_0_1', 'a-b': 'AtlasTexture_a_b_3',
+    a_b: 'AtlasTexture_a_b', a_b_2: 'AtlasTexture_a_b_2', 'A-b': 'AtlasTexture_A_b'
+  });
+  // A recipe whose frames clash once hyphens are underscores: every id is valid and unique, and every animation frame
+  // still names its own frame's rectangle.
+  const clash = { version: 1, name: 'clash', width: 2, height: 2, palette: { r: '#f00', b: '#00f' },
+    frames: [{ name: 'hit-1', duration: 50, ops: [{ op: 'pixel', color: 'r' }] }, { name: 'hit_1', duration: 50, ops: [{ op: 'pixel', x: 1, color: 'b' }] }, { name: 'hit-2', duration: 100, ops: [{ op: 'pixel', y: 1, color: 'r' }] }],
+    animations: { hit: { frames: ['hit-1', 'hit_1', 'hit-2', 'hit-1'] } } };
+  const bundle = await createBundle(clash), atlas = JSON.parse(bundle.files.get('clash.atlas.json'));
+  const { subs, animations } = readTres(bundle.files.get('clash.tres').toString());
+  assert.deepEqual(Object.keys(subs), ['AtlasTexture_hit_1_2', 'AtlasTexture_hit_1', 'AtlasTexture_hit_2']);
+  assert.ok(Object.keys(subs).every(id => /^[A-Za-z0-9_]+$/.test(id)));
+  const regionOf = name => { const { x, y, w, h } = atlas.frames[name].frame; return [x, y, w, h]; };
+  assert.deepEqual(animations[0].frames.map(frame => subs[frame.texture].region), clash.animations.hit.frames.map(regionOf));
+  // The effects and autotile sets Pixelbolt compiles name frames with hyphens.
+  for (const recipe of [GODOT_FIXTURE, spirit]) {
+    const text = (await createBundle(recipe)).files.get(`${recipe.name}.tres`).toString();
+    assert.deepEqual([...text.matchAll(/ id="([^"]*)"/g)].map(([, id]) => id).filter(id => !/^[A-Za-z0-9_]+$/.test(id)), [], recipe.name);
+  }
 });
 
 test('the sheet path is quoted for Godot, and the same atlas always gives the same bytes', async () => {

@@ -197,6 +197,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - The CLI's inline `--expect` and `--guides` JSON works in Windows PowerShell 5.1, which strips the double quotes from arguments it passes to a program (`'{"width":32}'` arrives as `{width:32}`), so the pixel art skill's `render --expect` step works there. A value with no quotes left has its bare keys quoted back (neither option takes a string value); if it still isn't JSON, the error says to pass a .json file or use PowerShell 7, cmd or bash.
 - The release's npm check asks the registry again on every try (`--prefer-online`), for up to five minutes. 0.10.0's check failed: npm was still processing the new version at the first tries, and the later ones could reuse a cached version list without it. The package itself was fine; a rerun passed.
+- Godot SpriteFrames (`name.tres`, a scene's `sprite_frames.tres`, MCP `saveAs.godot`) give each frame's AtlasTexture an id Godot accepts. The id was `AtlasTexture_` and the frame name, and Godot takes only letters, digits and underscores, so Godot 4.7 logged "The scene unique ID must contain only letters, numbers, and underscores" for every frame with a hyphen in its name: every compiled effect and autotile set. The frames still loaded. Hyphens now become underscores, with a number when that id is taken (`hit-1` beside `hit_1`); names without hyphens keep their ids, so those files are unchanged. `node scripts/verify-godot.mjs` loads frames with hyphenated names and passes in Godot 4.7.2.
 
 ## 0.10.0 (2026-10-29)
 

@@ -29,6 +29,25 @@ export function godotTiming(durations) {
 const real = value => (Number.isInteger(value) ? value.toFixed(1) : String(value));
 const quote = text => `"${String(text).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
 
+// Sub-resource ids for names, `${prefix}_${name}`. Godot takes only ASCII letters, digits and underscores in an id
+// (4.7 logs an error for every other one, though it still loads the resource), and frame names may have hyphens. A
+// name Godot accepts keeps its id; the others have an underscore for each other character, numbered from 2 when that
+// id is already taken (a-b beside a_b). Returns a Map from name to id.
+export function resourceIds(names, prefix) {
+  const ids = new Map(), taken = new Set();
+  const valid = name => /^[A-Za-z0-9_]*$/.test(name);
+  for (const name of names) if (valid(name)) { ids.set(name, `${prefix}_${name}`); taken.add(`${prefix}_${name}`); }
+  for (const name of names) {
+    if (ids.has(name)) continue;
+    const base = `${prefix}_${name.replace(/[^A-Za-z0-9_]/gu, '_')}`;
+    let id = base;
+    for (let n = 2; taken.has(id); n++) id = `${base}_${n}`;
+    ids.set(name, id);
+    taken.add(id);
+  }
+  return ids;
+}
+
 // `atlas` is Pixelbolt atlas metadata ({ frames, animations, meta }); `image` is the sheet's path relative to the
 // .tres (default: meta.image, the sheet beside it). Animations keep the atlas's order, so the first one is the one an
 // AnimatedSprite2D shows when the resource is assigned. Returns the text and the animations whose durations are not
@@ -38,7 +57,7 @@ export function spriteFrames(atlas, { image = atlas.meta.image } = {}) {
   // Only frames an animation plays become textures, in recipe order.
   const used = new Set(animations.flatMap(([, animation]) => animation.frames));
   const names = Object.keys(atlas.frames).filter(name => used.has(name));
-  const id = name => `AtlasTexture_${name}`;
+  const ids = resourceIds(names, 'AtlasTexture'), id = name => ids.get(name);
   // Laid out as Godot 4.5 and later save it (no load_steps; earlier 4.x versions read it the same).
   const lines = ['[gd_resource type="SpriteFrames" format=3]', '', `[ext_resource type="Texture2D" path=${quote(image)} id="1_sheet"]`, ''];
   for (const name of names) {
