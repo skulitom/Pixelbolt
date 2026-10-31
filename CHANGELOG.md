@@ -20,6 +20,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - `collision` on a corner set boxes each tile's terrain quarters, kept from their cells' open sides, so the shapes join into the blob boxes of the same map; two cells that touch only at a tile's middle give two polygons. A frame's `tile.collision` takes a list of up to 8 polygons, the atlas always holds a list, and the TileSet writes `polygon_0`, `polygon_1` and so on.
 - The seam check, test map and `expect.transparent` handle corner sets, and the delivery check does not call the empty tile an accident. `scripts/verify-godot.mjs` loads a weighted corner set with collision on its own and in the scene's TileSet, with three sets painted on one layer.
 
+### Presets over MCP and the command line
+
+- `pixel_help` topic `presets` lists every shipped fluid, fx, wave and poses source and each looping plain recipe in `examples/` (the coin spin, the ember), read from the folder when asked: each with its name, file, size, frames, loop or one-shot, colours, animations and a line on what it is for, with the Fluid and Effects labs' titles where they have one. Topic `preset` with a `name` returns one preset's source, any file it names inlined, ready to edit.
+- `pixel_compile` takes `{"preset": "<name>"}` in place of `source`, and the CLI `compile --preset <name> --out <new.json>`; both are byte-identical to compiling the preset's file. `pixelbolt presets [name]` prints the listing or one source.
+- The quick start, the server instructions and the first sentence of the fluid and fx schemas say to start fire, smoke, explosions, splashes and spells from a preset, and to get fewer frames by keeping N evenly spaced frames with one `pixel_patch` call (the quick start has the call for 8 of the smoke puff's 19), never by lowering `frames`, which stops the effect before it ends. The quick start no longer lists the slime fluid among ready-made effects: it is a drop of liquid, not a character.
+- The MCPB bundle ships every top-level example and the labs' preset lists, so the presets work in Claude Desktop too.
+
 ### Godot TileSets with weights, collision, plain tiles and several sets
 
 - Autotile variants take `weight` (1–1000): the test map mixes variants by weight, and the Godot TileSet gives each tile its probability against the heaviest of its terrain. The meadow example's flowers now show a quarter as often as each plain fill.
