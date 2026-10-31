@@ -33,7 +33,7 @@ test('a hopping slime gets lift, uneven-step and nearly-the-same notes', () => {
   assert.deepEqual(result.motion, { idle: { box: asBoxes(slimeBoxes), lowest: [27, 27, 27, 21, 18, 23, 27, 27] } });
   assert.deepEqual(steps(result.motion.idle.box), [4, 8, 6, 3, 5, 9, 2, 1]);
   assert.deepEqual(kinds(result.notes), ['lift', 'uneven', 'nearly']);
-  assert.equal(result.notes[0], '"idle" loops, but its lowest visible row leaves row 27 (where 5 of its 8 frames stand) for row 18 ("slime-4"): a body that stands on the ground should keep its lowest row on one row in every frame (squash it down onto that row rather than lifting it). A hop, a jump, a run\'s flight frames or something that floats may leave the ground on purpose. pixel_inspect with view: "motion" and animation: "idle" shows its frames in play order.');
+  assert.equal(result.notes[0], '"idle" loops, but its lowest visible row leaves row 27 (where 5 of its 8 frames stand) for row 18 ("slime-4"): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run\'s flight frames or something that floats may leave the ground on purpose. pixel_inspect with view: "motion" and animation: "idle" shows its frames in play order.');
   assert.equal(result.notes[1], '"idle" moves unevenly: from "slime-5" to "slime-6" the silhouette moves 9 px, while the median step is 4.5 px. Space the frames so each step changes the silhouette by a similar amount, or add in-between frames.');
   assert.equal(result.notes[2], 'In "idle", "slime-6" → "slime-7" and "slime-7" → "slime-0" are nearly the same (the silhouette moves at most 2 px) while another step moves 9 px: the motion holds, then jumps.');
   // The motion field sits right after delivered, with or without expect.
@@ -77,7 +77,7 @@ test('a loop whose lowest row wobbles by one row gets no lift note; two rows off
   assert.deepEqual(wobble.motion.idle.lowest, [20, 20, 19, 19, 20, 20]);
   assert.equal(wobble.notes, undefined);
   // Four of six frames stand on row 20 and one sinks to 22. On a tie the ground is the lower row: 20, not 18.
-  assert.match(check(ellipses('sink', 24, rows([20, 20, 21, 22, 20, 20]))).notes[0], /^"idle" loops, but its lowest visible row leaves row 20 \(where 4 of its 6 frames stand\) for row 22 \("sink-3"\)/);
+  assert.match(check(ellipses('sink', 24, rows([20, 20, 21, 22, 20, 20]))).notes[0], /^"idle" loops, but its lowest visible row leaves row 20 \(where 4 of its 6 frames stand\) for row 22 below it \("sink-3"\): .*\(squash it onto that row rather than lifting or sinking it\)/);
   assert.match(check(ellipses('tie', 24, rows([20, 20, 18, 18]))).notes[0], /leaves row 20 \(where 2 of its 4 frames stand\) for row 18 \("tie-2"\)/);
 });
 
@@ -135,7 +135,7 @@ test('motion notes never change ok or problems', () => {
   assert.equal(check(slime).ok, undefined);
 });
 
-test('motion skips stills and tile sets, keeps 64 entries an animation, and caps the notes at 8', async () => {
+test('motion skips stills and tile sets, keeps 64 entries an animation, and caps the notes at 8 with a count of the rest', async () => {
   const still = { version: 1, name: 'still', width: 4, height: 4, palette: { g: '#33cc99' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 1, y: 1, color: 'g' }] }] };
   assert.equal(check(still).motion, undefined);
   // A one-frame animation beside a moving one is left out.
@@ -145,15 +145,65 @@ test('motion skips stills and tile sets, keeps 64 entries an animation, and caps
   assert.equal(check({ ...slime, animations: { ...slime.animations, pose: { frames: ['slime-0'] } } }, { animation: 'pose' }).motion, undefined);
   const long = check({ ...slime, animations: { idle: { frames: Array.from({ length: 70 }, (_, i) => `slime-${i % 8}`) } } });
   assert.deepEqual([long.motion.idle.box.length, long.motion.idle.lowest.length, long.motion.idle.omitted], [64, 64, 6]);
-  // Ten hopping animations: every one is measured, eight notes in all, and pixel_inspect is named once.
+  // A moving animation named beside another that plays other frames is measured from its own frames.
+  const pair = { ...slime, animations: { idle: { frames: ['slime-0', 'slime-1'] }, fall: { frames: ['slime-3', 'slime-4', 'slime-5'] } } };
+  assert.deepEqual(check(pair, { animation: 'fall' }).motion, { fall: { box: asBoxes(slimeBoxes.slice(3, 6)), lowest: [21, 18, 23] } });
+  // Ten hopping animations: every one is measured, eight motion notes are shown and the other 22 counted, and
+  // pixel_inspect is named once.
   const crowd = check({ ...slime, animations: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`hop${i}`, slime.animations.idle])) });
   assert.equal(Object.keys(crowd.motion).length, 10);
-  assert.equal(crowd.notes.length, 8);
+  assert.deepEqual([crowd.notes.length, crowd.notes.at(-1)], [9, '22 more motion notes not shown: pass animation to check one animation at a time.']);
   assert.equal(crowd.notes.filter(note => note.includes('pixel_inspect')).length, 1);
   // A tile set's only animation flips through its tiles: no motion to review.
   const meadow = JSON.parse(await readFile(new URL('../examples/meadow.autotile.json', import.meta.url), 'utf8'));
   const tiles = check(compileAutotile(meadow).recipe);
   assert.deepEqual([tiles.motion, tiles.notes], [undefined, undefined]);
+});
+
+test('a recipe without animations, such as an icon sheet, gets its motion but no motion notes', () => {
+  // Four unrelated items; named as one animation they would get a lift note (the gem sits 5 rows above the others).
+  const icons = { version: 1, name: 'items', width: 16, height: 16, palette: { g: '#33cc99' },
+    frames: [['sword', 6, 2, 4, 13], ['potion', 4, 6, 8, 9], ['gem', 5, 4, 6, 6], ['shield', 3, 3, 10, 10]].map(([name, x, y, w, h]) => ({ name, ops: [{ op: 'rect', x, y, w, h, color: 'g' }] })) };
+  const sheet = check(icons);
+  assert.deepEqual([Object.keys(sheet.motion), sheet.motion.default.lowest, sheet.notes], [['default'], [14, 14, 9, 12], undefined]);
+  assert.ok(kinds(check({ ...icons, animations: { items: { frames: ['sword', 'potion', 'gem', 'shield'] } } }).notes).includes('lift'));
+});
+
+test('sparkles that leave their row in a loop get no lift note, while a solid body does', () => {
+  // Two specks a frame, the lower one on rows 10, 10, 14, 10, 10: they cover little of their box, so no body stands.
+  const lows = [10, 10, 14, 10, 10];
+  const sparkles = { version: 1, name: 'sparkles', width: 16, height: 16, palette: { y: '#ffd34d' },
+    frames: lows.map((row, i) => ({ name: `s${i}`, ops: [{ op: 'pixel', x: 2 + i, y: 3, color: 'y' }, { op: 'pixel', x: 9, y: row, color: 'y' }] })),
+    animations: { twinkle: { frames: lows.map((_, i) => `s${i}`), loop: true } } };
+  const result = check(sparkles);
+  assert.deepEqual([result.motion.twinkle.lowest, result.notes], [lows, undefined]);
+  const solid = { ...sparkles, frames: lows.map((row, i) => ({ name: `s${i}`, ops: [{ op: 'rect', x: 2 + i, y: 3, w: 8, h: row - 2, color: 'y' }] })) };
+  assert.match(check(solid).notes[0], /^"twinkle" loops, but its lowest visible row leaves row 10 \(where 4 of its 5 frames stand\) for row 14 below it \("s2"\)/);
+});
+
+test('a pingpong turn is no loop jump: its big first step is noted once, as uneven', () => {
+  const sway = { version: 1, name: 'sway', width: 16, height: 16, palette: { g: '#33cc99' },
+    frames: [1, 6, 7, 8].map((x, i) => ({ name: `p${i}`, ops: [{ op: 'rect', x, y: 4, w: 4, h: 4, color: 'g' }] })),
+    animations: { sway: { frames: ['p0', 'p1', 'p2', 'p3'], direction: 'pingpong', loop: true } } };
+  const result = check(sway);
+  // Played p0 p1 p2 p3 p2 p1; the wrap from p1 back to p0 is the first step played backwards.
+  assert.deepEqual(steps(result.motion.sway.box), [5, 1, 1, 1, 1, 5]);
+  assert.deepEqual(kinds(result.notes), ['uneven', 'nearly']);
+  assert.match(result.notes[0], /^"sway" moves unevenly: from "p0" to "p1" the silhouette moves 5 px, while the median step is 1 px\./);
+  assert.ok(!result.notes.some(note => note.includes('jumps when it loops')));
+});
+
+test('a loop that only loops by default is told how to make it play once', () => {
+  // The coin and the slide without a loop field: their uneven and join notes end with the change that makes a one-shot.
+  const byDefault = recipe => ({ ...recipe, animations: { idle: { frames: recipe.animations.idle.frames } } });
+  const coinNotes = check(byDefault(coin)).notes;
+  assert.match(coinNotes[0], /add in-between frames\. If it should play once, set animations\.idle\.loop to false\. pixel_inspect/);
+  assert.ok(!coinNotes[1].includes('play once'));
+  const slide = ellipses('slide', 16, [2, 3, 4, 5, 6, 7].map(x => [x, 6, x + 4, 10]));
+  assert.match(check(byDefault(slide)).notes[0], /Make the last frame lead into the first\. If it should play once, set animations\.idle\.loop to false\. pixel_inspect/);
+  // A loop set on purpose gets no hint, and a one-shot no notes at all.
+  assert.ok(!check(coin).notes.some(note => note.includes('play once')));
+  assert.equal(check({ ...coin, animations: { idle: { frames: coin.animations.idle.frames, loop: false } } }).notes, undefined);
 });
 
 test('MCP pixel_render replies carry the motion and its notes in the check', async t => {
