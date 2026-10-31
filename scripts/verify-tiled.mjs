@@ -4,8 +4,9 @@
 // filler (a script's TileLayerWangEdit, which the Terrain Brush uses), giving every side and corner of every cell its
 // colour as Pixelbolt's map has it, and every tile Tiled chooses must be one Pixelbolt's tilemap draws there. Last it
 // renders a map of every tile with tmxrasterizer, which must give each frame's exported pixels. The sets and maps are
-// the Godot check's (scripts/verify-godot.mjs), so both engines are held to the same tiles. Independent developer
-// check: Pixelbolt never needs Tiled.
+// the Godot check's (scripts/verify-godot.mjs), so both engines are held to the same tiles. Then it exports a scene
+// holding every kind of placement, reads its scene.tmx in Tiled and renders it with tmxrasterizer, which must draw the
+// scene's unlit view. Independent developer check: Pixelbolt never needs Tiled.
 //   node scripts/verify-tiled.mjs [--tiled <path to tiled>] [--keep]
 // Without --tiled it uses $TILED, then tiled on PATH, then the Windows installer's folder. Needs Tiled 1.10.2 or later.
 import assert from 'node:assert/strict';
@@ -20,6 +21,7 @@ import { createSceneBundle } from '../src/scene-export.js';
 import { compileAutotile } from '../src/authoring.js';
 import { neighbourMask } from '../src/autotile.js';
 import { renderProject } from '../src/core.js';
+import { prepareScene, renderScene } from '../src/scene.js';
 import { decodePNG } from '../src/import.js';
 import { GODOT_TILE_SOURCES, GODOT_LAYERED_SOURCE, GODOT_LAYERED_MAPS, GODOT_TILE_MAPS, godotTileRecipe } from './verify-godot.mjs';
 
@@ -266,10 +268,117 @@ export async function verifyTiled({ tiled = findTiled(), keep = false, log = con
   }
 }
 
+// ---- Scene maps ----------------------------------------------------------------------------------------------------
+// A scene with every kind of placement a Tiled map holds: a layered map with variants, a corner map, a blob map, a map
+// whose frames are taller than its cells (all tile layers), a map of a sheet exported at 3× and a ground-sorted map
+// among a sorted placement (objects), a placement at 2× whose partly transparent glow falls on tiles, and a repeat.
+const posts = { version: 1, name: 'posts', width: 4, height: 8, palette: { o: '#203018', b: '#a07040', t: '#d0a060' },
+  frames: [{ name: 'post', ops: [{ op: 'rect', x: 1, y: 1, w: 2, h: 7, color: 'b' }, { op: 'pixel', x: 1, y: 1, color: 't' }] }, { name: 'stump', ops: [{ op: 'rect', x: 0, y: 5, w: 4, h: 3, color: 'o' }] }] };
+export async function tiledScene() {
+  const spirit = JSON.parse(await readFile(new URL('../examples/forest-spirit.json', import.meta.url), 'utf8'));
+  const turf = godotTileRecipe({ ...GODOT_TILE_SOURCES[0], sheet: { padding: 1 } }), moss = godotTileRecipe({ ...GODOT_TILE_SOURCES[4], sheet: { padding: 1, columns: 4 } });
+  const shore = compileAutotile({ ...GODOT_LAYERED_SOURCE, sheet: { padding: 1, columns: 9 } }).recipe, fence = godotTileRecipe({ ...GODOT_TILE_SOURCES[1], sheet: { scale: 3 } });
+  const sea = ['wwwwwwwwwwwwwwwwwwwwwwww', 'wwsssssswwwwwwwwwwwwwwww', 'wsssggssswwwwwwwwwggwwww', 'wssggggsswwwwwwwwwggwwww', 'wsssggsssswwwwwwwwwwwwww', 'wwssssssswwwwwwwwwwwwwww', 'wwwwwwwwwwwwwwwwwwwwwwww', 'wwwwwwwwwwwwwwwwwwwwwwww'];
+  return { format: 'pixelforge-scene', version: 1, name: 'tiled-check', width: 96, height: 72, background: '#203040', assets: { turf, moss, shore, fence, posts, spirit },
+    instances: [
+      { name: 'sea', asset: 'shore', at: [0, 0], tilemap: { tile: [4, 4], rows: sea, legend: { w: { frames: ['shore-{corners}', 'shore-{corners}-glint'], weights: [3, 1], autotile: 'corner' }, s: { frames: ['shore-{corners}', 'shore-{corners}-shell'], weights: [1, 2], autotile: 'corner' }, g: { frame: 'shore-{corners}', autotile: 'corner' } } } },
+      { name: 'moss', asset: 'moss', at: [8, 36], tilemap: { tile: [4, 4], rows: ['.##..##', '####.##', '.###...', '..#....'], legend: { '#': { frames: ['moss-{mask}-a', 'moss-{mask}-b'], autotile: 'corner' } } } },
+      { name: 'turf', asset: 'turf', at: [48, 36], tilemap: { tile: [4, 4], rows: ['.###.', '#####', '##.##', '.###.'], legend: { '#': { frame: 'turf-{mask}', autotile: 'blob' } } } },
+      { name: 'fence', asset: 'fence', at: [8, 56], tilemap: { tile: [4, 4], rows: ['####', '#..#'], legend: { '#': { frame: 'fence-{mask}-plain', autotile: 'cardinal' } } } },
+      { name: 'posts', asset: 'posts', at: [36, 34], tilemap: { tile: [4, 4], rows: ['#.#', '...', '#x#'], legend: { '#': 'post', x: 'stump' } } },
+      { name: 'grove', asset: 'posts', at: [70, 50], sort: 'ground', tilemap: { tile: [4, 4], rows: ['#.#.', '.#.#', '#.#.'], legend: { '#': 'post' } } },
+      { name: 'walker', asset: 'spirit', at: [72, 60], anchor: [12, 23], sort: 'ground', animation: 'bob' },
+      { name: 'spirit', asset: 'spirit', at: [44, 2], animation: 'idle', scale: 2 },
+      { name: 'wisps', asset: 'spirit', at: [40, 56], frame: spirit.frames[1].name, repeat: [2, 1], step: [14, 0] }
+    ] };
+}
+
+// Runs in Tiled: reads scene.tmx with Tiled's own reader and reports its tilesets and, per layer, its kind, name,
+// offset and how many tiles or tile objects it holds.
+const TILED_MAP_CHECK = String.raw`
+const [mapFile, outFile] = tiled.scriptArguments;
+let result;
+try {
+  const map = tiled.mapFormat('tmx').read(mapFile);
+  result = { size: [map.width, map.height, map.tileWidth, map.tileHeight], tilesets: map.tilesets.map(ts => [ts.name, ts.tileCount]),
+    layers: map.layers.map(layer => {
+      if (layer.isTileLayer) { let tiles = 0; for (let y = 0; y < layer.height; y++) for (let x = 0; x < layer.width; x++) if (layer.tileAt(x, y)) tiles++; return ['tiles', layer.name, layer.offset.x, layer.offset.y, tiles]; }
+      return ['objects', layer.name, layer.offset.x, layer.offset.y, layer.objects.filter(o => o.tile).length];
+    }) };
+} catch (error) { result = { error: String(error && error.stack || error) }; }
+const out = new TextFile(outFile, TextFile.WriteOnly);
+out.write(JSON.stringify(result));
+out.commit();
+`;
+
+// Exports the scene, has Tiled read scene.tmx, and renders it with tmxrasterizer, which must draw Pixelbolt's unlit
+// view at time 0: every pixel exact, but for a step of one where a partly transparent pixel blends (Qt blends in
+// premultiplied 8-bit colour). tmxrasterizer widens the map's rectangle by each tile layer's offset and leaves the
+// map's background colour out, so the check lays its render on that colour at the map's origin.
+export async function verifyTiledScene({ tiled = findTiled(), keep = false, log = console.log } = {}) {
+  if (!tiled) throw new Error('Tiled was not found: pass --tiled <path> or set TILED');
+  const rasterizer = [path.join(path.dirname(tiled), process.platform === 'win32' ? 'tmxrasterizer.exe' : 'tmxrasterizer')].find(existsSync) ?? 'tmxrasterizer';
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-tiled-scene-'));
+  try {
+    const source = await tiledScene(), bundle = await createSceneBundle(source);
+    for (const [file, bytes] of bundle.files) if (/\.(tmx|tsx|png)$/.test(file)) { await mkdir(path.dirname(path.join(dir, file)), { recursive: true }); await writeFile(path.join(dir, file), bytes); }
+    await writeFile(path.join(dir, 'mapcheck.js'), TILED_MAP_CHECK);
+    const evaluated = run(tiled, ['--evaluate', path.join(dir, 'mapcheck.js'), path.join(dir, 'scene.tmx'), path.join(dir, 'map.json')]);
+    assert.ok(existsSync(path.join(dir, 'map.json')), `Tiled wrote no report (exit ${evaluated.status}):\n${evaluated.output}`);
+    const read = JSON.parse(await readFile(path.join(dir, 'map.json'), 'utf8'));
+    assert.ok(!read.error, `Tiled failed to read scene.tmx: ${read.error}`);
+    const scene = prepareScene(source), view = renderScene(scene, { lit: false, draws: true });
+    assert.deepEqual(read.tilesets, Object.entries(scene.assets).map(([id, asset]) => [id, asset.recipe.sheet.columns * Math.ceil(asset.recipe.frames.length / asset.recipe.sheet.columns)]), 'scene.tmx: tilesets');
+    // The square, unsorted maps at 1× of 1× sheets are tile layers: the corner maps half a cell up and left, the posts
+    // (8 pixels tall on 4-pixel cells, at y 34) a cell lower, since Tiled hangs a tile from its cell's bottom, and up
+    // the 2 pixels left over from whole cells. The rest are tile objects in drawing order.
+    const cells = name => view.draws.filter(draw => draw.cell !== undefined && scene.instances[draw.instance].name === name).length;
+    const objects = names => view.draws.filter(draw => names.includes(scene.instances[draw.instance].name)).length;
+    assert.deepEqual(read.layers, [['tiles', 'sea', -2, -2, cells('sea')], ['tiles', 'moss', -2, -2, cells('moss')], ['tiles', 'turf', 0, 0, cells('turf')], ['objects', 'fence', 0, 0, objects(['fence'])],
+      ['tiles', 'posts', 0, -2, cells('posts')], ['objects', 'grove, walker, spirit, wisps', 0, 0, objects(['grove', 'walker', 'spirit', 'wisps'])]], 'scene.tmx: layers');
+    assert.deepEqual(bundle.warnings.filter(warning => warning.startsWith('scene.tmx')), [], 'scene.tmx warnings');
+    // Where some frame's partly transparent pixel lands, Qt's blend may differ by one.
+    const blended = new Uint8Array(scene.width * scene.height);
+    for (const draw of view.draws) {
+      const project = scene.assets[draw.asset].recipe, data = project.frames[draw.frame].data, s = draw.scale;
+      for (let y = 0; y < project.height * s; y++) for (let x = 0; x < project.width * s; x++) {
+        const alpha = data[(Math.floor(y / s) * project.width + Math.floor(x / s)) * 4 + 3], sx = draw.x + x, sy = draw.y + y;
+        if (alpha > 0 && alpha < 255 && sx >= 0 && sy >= 0 && sx < scene.width && sy < scene.height) blended[sy * scene.width + sx] = 1;
+      }
+    }
+    const rendered = run(rasterizer, ['--no-smoothing', path.join(dir, 'scene.tmx'), path.join(dir, 'tiled.png')]);
+    assert.ok(existsSync(path.join(dir, 'tiled.png')), `tmxrasterizer wrote no image (exit ${rendered.status}):\n${rendered.output}`);
+    const image = decodePNG(await readFile(path.join(dir, 'tiled.png'))), tmx = await readFile(path.join(dir, 'scene.tmx'), 'utf8');
+    let left = 0, top = 0;
+    for (const [, attributes] of tmx.matchAll(/<layer ([^>]*)>/g)) {
+      left = Math.max(left, Math.ceil(-Number(attributes.match(/offsetx="(-?[\d.]+)"/)?.[1] ?? 0)));
+      top = Math.max(top, Math.ceil(-Number(attributes.match(/offsety="(-?[\d.]+)"/)?.[1] ?? 0)));
+    }
+    const hex = tmx.match(/backgroundcolor="#([0-9a-f]{6})"/)[1], background = [0, 2, 4].map(k => parseInt(hex.slice(k, k + 2), 16));
+    let exact = 0, near = 0;
+    const wrong = [];
+    for (let y = 0; y < scene.height; y++) for (let x = 0; x < scene.width; x++) {
+      const at = ((y + top) * image.width + x + left) * 4, alpha = image.data[at + 3] / 255, want = view.data.subarray((y * scene.width + x) * 4, (y * scene.width + x) * 4 + 4);
+      const got = [0, 1, 2].map(k => Math.round(image.data[at + k] * alpha + background[k] * (1 - alpha)));
+      const off = Math.max(...got.map((v, k) => Math.abs(v - want[k])));
+      if (off === 0) exact++;
+      else if (off === 1 && blended[y * scene.width + x]) near++;
+      else wrong.push(`${x},${y}: Tiled ${got.join(' ')}, Pixelbolt ${[...want.subarray(0, 3)].join(' ')}`);
+    }
+    assert.deepEqual(wrong.slice(0, 12), [], `scene.tmx: ${wrong.length} pixels of tmxrasterizer's render differ from the unlit scene`);
+    log(`Tiled scene map: Tiled read scene.tmx with ${read.layers.filter(layer => layer[0] === 'tiles').length} tile layers and ${read.layers.filter(layer => layer[0] === 'objects').reduce((sum, layer) => sum + layer[4], 0)} tile objects over ${read.tilesets.length} tilesets; tmxrasterizer drew the unlit scene exactly in ${exact} of ${scene.width * scene.height} pixels and within one step in the other ${near}, where partly transparent pixels blend.`);
+    return { dir: keep ? dir : null };
+  } finally {
+    if (!keep) await rm(dir, { recursive: true, force: true });
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const args = process.argv.slice(2), at = args.indexOf('--tiled');
   try {
-    const result = await verifyTiled({ ...(at >= 0 && { tiled: args[at + 1] }), keep: args.includes('--keep') });
-    if (result.dir) console.log(`Kept the Tiled files at ${result.dir}`);
+    for (const verify of [verifyTiled, verifyTiledScene]) {
+      const result = await verify({ ...(at >= 0 && { tiled: args[at + 1] }), keep: args.includes('--keep') });
+      if (result.dir) console.log(`Kept the Tiled files at ${result.dir}`);
+    }
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

@@ -238,8 +238,10 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
     }
     if (!exists(rule.kind, name)) fail(cp, `${rule.kind} ${JSON.stringify(name)} does not exist${corners ? ` (corners ${corners.join(' ')}: every cell around a layered tile is one of the set's keys)` : mask === null ? '' : ` (${corner ? 'corner ' : ''}mask ${mask})`}`);
     const [dx, dy] = rule.offset, moved = dx !== 0 || dy !== 0, half = corner ? 0.5 : 0;
+    // A layered tile's name says all it draws, so another terrain's entry that finds it (with a mask of its own) draws
+    // nothing more.
     if (corner) {
-      const key = `${x + dx},${y + dy}|${rule.kind}|${name}|${mask}`;
+      const key = `${x + dx},${y + dy}|${rule.kind}|${name}|${corners ? '' : mask}`;
       if (drawnCorners.has(key)) return;
       drawnCorners.add(key);
     }

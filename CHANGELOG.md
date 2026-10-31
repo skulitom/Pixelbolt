@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Scenes as Tiled maps
+
+- A scene export adds `scene.tmx`, a Tiled map of the scene at its start, unlit, in Pixelbolt's drawing order. A tilemap becomes a tile layer, painted with its asset's tiles and Wang sets, when Tiled's grid holds it (square cells of the map's grid, one frame per cell, 1× from a 1× sheet, not ground-sorted), offset half a cell for corner maps and by the difference for frames taller than their cells. Everything else becomes tile objects drawn in list order: placements and repeat copies at their frame and position at that time, sorted, iso and scaled maps. Shade placements are left out and haze is dropped, with warnings; lights, the camera and parallax stay in the scene.
+- Every scene asset now gets `assets/<n>/tileset.tsx`: a sprite's frames as tiles, its looping animations animated. `alignment.json` names the map under `tiled`.
+- `renderScene` takes `draws: true` and lists every frame it drew, in order, with its position, scale and camera shift.
+- A layered map in a scene draws each corner tile once: another terrain's legend entry that finds the same `{corners}` tile at a point no longer draws it again over itself.
+- `node scripts/verify-tiled.mjs` checks a scene with every kind of placement: Tiled reads its map, and `tmxrasterizer` draws the unlit scene exactly, but for one step where partly transparent pixels blend (45 of 6,912 pixels).
+
 ### Tiled tilesets
 
 - A tile set's export adds `name.tsx`, a Tiled tileset over its sheet: the sheet as Tiled's grid (padding as margin, twice it as spacing), each terrain a Wang set for Tiled's Terrain Brush (blob sets mixed, cardinal sets edge, corner sets corner, one colour each; a layered set one corner set with a colour per terrain), each tile's Wang id its neighbour mask or corners. Tile weights become probabilities against the heaviest tile of their kind, collision polygons objects in each tile's collision group, `oneWay` a bool property, and a looping animation over tiles of one kind an animated tile (its later frames left out of the Wang sets).

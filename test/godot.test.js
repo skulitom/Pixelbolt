@@ -212,7 +212,7 @@ test('a lit scene asset gets its normal pass flipped to +Y up and a CanvasTextur
   const bundle = await createSceneBundle(GODOT_LIT_SCENE), alignment = JSON.parse(bundle.files.get('alignment.json'));
   assert.deepEqual(alignment.assets.orb, {
     directory: 'assets/0', metadata: 'assets/0/atlas.json', godot: 'assets/0/sprite_frames.tres',
-    passes: { color: 'assets/0/color.png', normal: 'assets/0/normal.png', normalYUp: 'assets/0/normal_y_up.png' }, canvasTexture: 'assets/0/canvas_texture.tres'
+    passes: { color: 'assets/0/color.png', normal: 'assets/0/normal.png', normalYUp: 'assets/0/normal_y_up.png' }, canvasTexture: 'assets/0/canvas_texture.tres', tiled: 'assets/0/tileset.tsx'
   });
   assert.match(alignment.coordinates, /normalYUp flips green to \+Y up/);
   // Laid out as Godot 4.6 saves a CanvasTexture, with nearest filtering.

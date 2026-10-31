@@ -9,6 +9,9 @@ import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
 import { tiledTileset } from '../src/tiled.js';
 import { GODOT_TILE_SOURCES, godotTileRecipe } from '../scripts/verify-godot.mjs';
+import { tiledScene } from '../scripts/verify-tiled.mjs';
+import { prepareScene, renderScene } from '../src/scene.js';
+import { expandTilemap } from '../src/autotile.js';
 
 const example = async name => JSON.parse(await readFile(new URL(`../examples/${name}.autotile.json`, import.meta.url), 'utf8'));
 const tsx = async recipe => { const bundle = await createBundle(recipe); return { bundle, text: bundle.files.get(`${recipe.name}.tsx`)?.toString(), id: name => recipe.frames.findIndex(frame => frame.name === name) }; };
@@ -92,4 +95,63 @@ test('a scene export writes a Tiled tileset beside each tile-set asset\'s colour
   assert.deepEqual([alignment.assets.fence.tiled, alignment.assets.moss.tiled], ['assets/0/tileset.tsx', 'assets/1/tileset.tsx']);
   assert.match(files.get('assets/0/tileset.tsx').toString(), /<tileset version="1\.10" name="fence" [^>]*>\n <image source="color\.png" /);
   assert.match(files.get('assets/1/tileset.tsx').toString(), /<wangset name="moss" type="corner"/);
+});
+
+// ---- Scenes as Tiled maps ----
+const fail = (where, message) => { throw new Error(`${where}: ${message}`); };
+
+test('a scene export maps the scene at its start into Tiled: tile layers where the grid holds a tilemap, tile objects in drawing order', async () => {
+  const { files, warnings } = await createSceneBundle(await tiledScene()), tmx = files.get('scene.tmx').toString();
+  assert.deepEqual(warnings.filter(warning => warning.startsWith('scene.tmx')), []);
+  assert.equal(JSON.parse(files.get('alignment.json')).tiled, 'scene.tmx');
+  assert.match(tmx, /<map version="1\.10" orientation="orthogonal" renderorder="right-down" width="25" height="18" tilewidth="4" tileheight="4" infinite="0" backgroundcolor="#203040" nextlayerid="7" nextobjectid="17">/);
+  assert.deepEqual(tmx.split('\n').filter(line => / <tileset /.test(line)), [1, 49, 81, 171, 203, 205].map((first, i) => ` <tileset firstgid="${first}" source="assets/${i}/tileset.tsx"/>`));
+  // The corner maps half a cell up and left; the posts, 8 pixels tall on 4-pixel cells at y 34, a cell lower and up
+  // the 2 pixels left over. The fence's sheet is exported at 3× and the grove sorts among the walker: objects.
+  assert.deepEqual(tmx.split('\n').filter(line => /^ <(layer|objectgroup) /.test(line)), [
+    ' <layer id="1" name="sea" width="25" height="18" offsetx="-2" offsety="-2">', ' <layer id="2" name="moss" width="25" height="18" offsetx="-2" offsety="-2">',
+    ' <layer id="3" name="turf" width="25" height="18">', ' <objectgroup draworder="index" id="4" name="fence">', ' <layer id="5" name="posts" width="25" height="18" offsetx="0" offsety="-2">',
+    ' <objectgroup draworder="index" id="6" name="grove, walker, spirit, wisps">']);
+  const data = name => tmx.split(`name="${name}"`)[1].split('<data encoding="csv">\n')[1].split('\n</data>')[0].split(',\n').map(row => row.split(',').map(Number));
+  // The sea's top row of points is plain water or its glint (gids 81 and 162); the posts' cells moved by whole cells.
+  assert.ok(data('sea')[0].length === 25 && data('sea')[0].every(gid => gid === 81 || gid === 162));
+  assert.ok(data('sea')[0].includes(162));
+  assert.deepEqual([data('posts')[10].slice(9, 12), data('posts')[12].slice(9, 12), data('posts')[11].slice(9, 12)], [[203, 0, 203], [203, 204, 203], [0, 0, 0]]);
+  // A tile object stands on its bottom-left corner, at the size it is drawn: the walker anchored at its feet, the 2×
+  // spirit, sorted grove cells round the walker by their ground lines.
+  const objects = tmx.split('\n').filter(line => line.startsWith('  <object '));
+  assert.deepEqual(objects.slice(6, 11), ['  <object id="7" name="grove" gid="203" x="70" y="58" width="4" height="8"/>', '  <object id="8" name="grove" gid="203" x="78" y="58" width="4" height="8"/>',
+    '  <object id="9" name="walker" gid="205" x="60" y="61" width="24" height="24"/>', '  <object id="10" name="grove" gid="203" x="74" y="62" width="4" height="8"/>', '  <object id="11" name="grove" gid="203" x="82" y="62" width="4" height="8"/>']);
+  assert.equal(objects[13], '  <object id="14" name="spirit" gid="205" x="44" y="50" width="48" height="48"/>');
+  // A sprite's tileset: its frames as tiles, a looping animation on its first frame, no terrain.
+  const spirit = files.get('assets/5/tileset.tsx').toString();
+  assert.match(spirit, /<tileset version="1\.10" name="spirit" tilewidth="24" tileheight="24" spacing="2" margin="1" tilecount="6" columns="6">\n <image source="color\.png" width="156" height="26"\/>\n <tile id="0">\n  <animation>\n   <frame tileid="0" duration="240"\/>/);
+  assert.doesNotMatch(spirit, /<wangsets>/);
+});
+
+test('shade and haze have nothing in a Tiled map to become, and the export says so', async () => {
+  const block = { version: 1, name: 'block', width: 4, height: 4, palette: { a: '#204020', b: '#408040', c: '#80c080' }, ramps: [['a', 'b', 'c']], frames: [{ name: 'f', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color: 'b' }] }] };
+  const { files, warnings } = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'shaded', width: 12, height: 12, haze: { color: '#8090a0' }, assets: { block },
+    instances: [{ name: 'floor', asset: 'block', at: [0, 0], repeat: [3, 3] }, { name: 'shadow', asset: 'block', at: [2, 2], shade: -1 }, { name: 'far', asset: 'block', at: [6, 6], haze: 0.5 }] });
+  assert.deepEqual(warnings.filter(warning => warning.startsWith('scene.tmx')), ['scene.tmx: shadow: left out: a shade placement darkens what is drawn under it, which a Tiled map can\'t', 'scene.tmx: far: drawn without haze, which a Tiled map has no way to give']);
+  assert.deepEqual(files.get('scene.tmx').toString().split('\n').filter(line => line.startsWith('  <object ')).map(line => line.match(/name="(\w+)"/)[1]), [...Array(9).fill('floor'), 'far']);
+});
+
+test('renderScene lists what it drew, in drawing order, for the Tiled map', async () => {
+  const scene = prepareScene(await tiledScene()), view = renderScene(scene, { lit: false, draws: true }), name = draw => scene.instances[draw.instance].name;
+  assert.equal(renderScene(scene).draws, undefined);
+  assert.deepEqual(view.draws.find(draw => name(draw) === 'spirit'), { instance: 7, asset: 'spirit', frame: 0, x: 44, y: 2, scale: 2, shift: [0, 0] });
+  assert.deepEqual(view.draws.find(draw => name(draw) === 'moss'), { instance: 1, cell: 0, asset: 'moss', frame: view.draws.find(draw => name(draw) === 'moss').frame, x: 10, y: 34, scale: 1, shift: [0, 0] });
+  // The sorted grove and walker draw by their ground lines.
+  assert.deepEqual(view.draws.filter(draw => ['grove', 'walker'].includes(name(draw))).map(name), ['grove', 'grove', 'walker', 'grove', 'grove', 'grove', 'grove']);
+  assert.throws(() => renderScene(scene, { draws: 'yes' }), /scene\.draws: expected a boolean/);
+});
+
+test('a layered map draws the tile at each point once, whichever terrains\' entries find it', () => {
+  const legend = { w: { frame: 'shore-{corners}', autotile: 'corner' }, s: { frame: 'shore-{corners}', autotile: 'corner' } };
+  const cells = expandTilemap({ rows: ['ws', 'sw'], legend }, { path: 'map', fail, kinds: ['frame'], text: 'frame', masked: () => true, exists: () => true }).cells;
+  // One tile per point, named by the cells around it (past the edge, the nearest cell).
+  const rows = ['ws', 'sw'], at = (x, y) => rows[Math.min(Math.max(y, 0), 1)][Math.min(Math.max(x, 0), 1)];
+  const want = [0, 1, 2].flatMap(y => [0, 1, 2].map(x => `${x - 0.5},${y - 0.5} shore-${at(x - 1, y - 1)}${at(x, y - 1)}${at(x - 1, y)}${at(x, y)}`));
+  assert.deepEqual(cells.map(cell => `${cell.x},${cell.y} ${cell.name}`), want);
 });
