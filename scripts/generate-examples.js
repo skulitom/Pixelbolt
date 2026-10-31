@@ -205,6 +205,26 @@ const hero = { format: 'pixelforge-poses', version: 1, name: 'hero', width: 32, 
     run: { template: 'run', speed: 48, stride: 10, lift: 4, bob: 1, lean: 8 }, jump: { template: 'jump' }, attack: { template: 'attack' }, hurt: { template: 'hurt' } },
   sheet: { columns: 8 } };
 
+// The quick start's slime at 32 × 32, breathing in a gentle squash and stretch: a flat mass keeps its base on its
+// anchor row, and the idle template's squash keeps the outline's lowest row on rig.ground in every frame. The rest pose
+// is named idle-0, the loop's first generated pose, so it stands in for that pose and the sheet holds just the loop.
+const slimeIdle = { format: 'pixelforge-poses', version: 1, name: 'slime-idle', width: 32, height: 32,
+  palette: { k: '#1d2b3a', d: '#2b7a3d', g: '#3fa34d', l: '#8fd16a', w: '#f4f4e8' },
+  ramps: [['d', 'g', 'l']], light: 225,
+  parts: {
+    body: { mass: { size: [23, 12], ramp: 0, base: 1, outline: 'k', flat: true }, points: { face: [0, -5], shine: [-6, -8] } },
+    eyes: { rows: ['ww...ww', 'kk...kk', 'kk...kk'], anchor: [3, 1] },
+    shine: { rows: ['ww', 'w.'] }
+  },
+  poses: [{ name: 'idle-0', duration: 140, origin: [16, 28], parts: [
+    { name: 'body', part: 'body', at: [0, -1] },
+    { name: 'eyes', part: 'eyes', attach: { part: 'body', point: 'face' } },
+    { name: 'shine', part: 'shine', attach: { part: 'body', point: 'shine' } }
+  ] }],
+  rig: { ground: 28, body: 'body', rest: 'idle-0' },
+  motions: { idle: { template: 'idle', frames: 8, squash: 0.15, duration: 140 } },
+  sheet: { columns: 8 } };
+
 // A lower third for video: 240 × 32 fills the width of a 1080p frame at scale 8. The panel opens, the title is typed
 // in, and the last pose holds. Every duration is a whole number of frames at 30 and at 60 frames per second.
 const panel = width => [{ op: 'rect', x: 0, y: 4, w: 3, h: 24, color: 'gold' }, ...(width ? [{ op: 'rect', x: 3, y: 4, w: width, h: 24, color: 'panel' }, { op: 'rect', x: 3, y: 27, w: width, h: 1, color: 'edge' }] : [])];
@@ -511,7 +531,7 @@ const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': ste
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])), ...Object.fromEntries(Object.entries(spellLibrary).map(([element, source]) => [`${element}-spells.fx`, source])) };
+const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'slime-idle.poses': slimeIdle, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])), ...Object.fromEntries(Object.entries(spellLibrary).map(([element, source]) => [`${element}-spells.fx`, source])) };
 // Autotile sets drawn from terrain descriptions (scripts/terrain-presets.mjs).
 Object.assign(authored, terrainPresets);
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };

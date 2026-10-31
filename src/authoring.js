@@ -24,7 +24,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 function structuralPart(part, source, path) {
   const kind = part.bone !== undefined ? 'bone' : 'mass', shape = part[kind], p = `${path}.${kind}`;
-  fields(shape, kind === 'bone' ? ['length', 'width', 'ramp', 'base', 'outline', 'caps', 'snap'] : ['size', 'ramp', 'base', 'outline'], p, ['outline']);
+  fields(shape, kind === 'bone' ? ['length', 'width', 'ramp', 'base', 'outline', 'caps', 'snap'] : ['size', 'ramp', 'base', 'outline', 'flat'], p, ['outline']);
   const integer = (value, at, low, high) => {
     if (!Number.isInteger(value) || value < low || value > high) fail(at, `expected an integer from ${low} to ${high}`);
   };
@@ -37,6 +37,7 @@ function structuralPart(part, source, path) {
   } else {
     if (!Array.isArray(shape.size) || shape.size.length !== 2) fail(`${p}.size`, 'expected [width, height]');
     shape.size.forEach((value, i) => integer(value, `${p}.size[${i}]`, 2, 64));
+    if (shape.flat !== undefined && typeof shape.flat !== 'boolean') fail(`${p}.flat`, 'expected a boolean');
   }
   if (!source.ramps?.length) fail(`${p}.ramp`, 'this pose source has no ramps: add "ramps" (lists of palette keys from dark to light), or link a shared palette file that lists them');
   integer(shape.ramp, `${p}.ramp`, 0, source.ramps.length - 1);
@@ -48,7 +49,7 @@ function structuralPart(part, source, path) {
   integer(shape.base, `${p}.base`, 0, ramp.length - 1);
   if (shape.outline !== undefined && shape.outline !== null && shape.outline !== 'selective'
     && (typeof shape.outline !== 'string' || shape.outline.length !== 1 || !Object.hasOwn(source.palette ?? {}, shape.outline) || ['.', ' '].includes(shape.outline))) fail(`${p}.outline`, 'expected a one-character palette key, selective, or null');
-  if (part.anchor !== undefined) fail(`${path}.anchor`, 'bones anchor at the start joint; masses anchor at their centre');
+  if (part.anchor !== undefined) fail(`${path}.anchor`, 'bones anchor at the start joint; masses anchor at their centre, flat masses at the middle of their base row');
 }
 
 // Templates check planted-foot reach on many single poses; they need resolved joints, not a validated recipe. The
