@@ -159,8 +159,9 @@ test('a scene becomes a shot: each frame is the scene at that moment, and still 
   const clear = createSceneSequence(scene, source.name, { fps: 1, size: '1080p', seconds: 1, background: 'transparent' });
   assert.deepEqual([pixel(decodePNG(clear.files.get('skink-stride-study_0001.png')), 0, 0), clear.info.alpha, clear.info.notes[0].startsWith('The scene covers 1920×720 of the 1920×1080 canvas. Use fit cover')], [[0, 0, 0, 0], 'straight (unpremultiplied)', true]);
   assert.deepEqual(pixel(decodePNG(createSceneSequence(scene, source.name, { fps: 1, size: '1080p', seconds: 1, background: '#ff0000' }).files.get('skink-stride-study_0001.png')), 0, 0), [255, 0, 0, 255]);
-  // Cover fills 1080p with the 192 × 72 scene at scale 15 and keeps its middle 128 columns.
-  const filled = createSceneSequence(scene, source.name, { fps: 6, size: '1080p', seconds: 1, fit: 'cover' });
+  // Cover fills 1080p with the 192 × 72 scene at scale 15 and keeps its middle 128 columns. Only its first frame is
+  // read too.
+  const filled = createSceneSequence(scene, source.name, { fps: 1, size: '1080p', seconds: 1, fit: 'cover' });
   assert.deepEqual([filled.info.placement, filled.info.notes], [{ scale: 15, x: -480, y: 0, width: 2880, height: 1080, source: [192, 72], fit: 'cover', cropped: true, visible: [32, 0, 128, 72] }, ['The scene is enlarged 15 times to 2880×1080 and cropped to the 1920×1080 canvas: columns 32 to 159 and rows 0 to 71 of the scene stay in view.']]);
   const shot = decodePNG(filled.files.get('skink-stride-study_0001.png')), whole = renderScene(scene, { time: 0 });
   for (const [x, y] of [[32, 0], [60, 40], [100, 50], [159, 71]]) assert.deepEqual(pixel(shot, (x - 32) * 15 + 7, y * 15 + 7), [...whole.data.subarray((y * 192 + x) * 4, (y * 192 + x) * 4 + 4)], `cover at ${x},${y}`);
@@ -187,7 +188,7 @@ test('CLI sequence writes a new folder for a recipe, an effects source and a sce
   assert.deepEqual([sparks.name, sparks.loop.plays, sparks.width, sparks.height], ['effects-sparks', 'once', 192, 160]);
   const shot = JSON.parse(run('examples/quality/stride.scene.json', '--fps', '10', '--seconds', '1', '--out', path.join(dir, 'shot')).stdout);
   assert.deepEqual([shot.source, shot.frames, shot.width, shot.height], ['scene', 10, 192, 72]);
-  const filled = JSON.parse(run('examples/quality/stride.scene.json', '--fps', '5', '--seconds', '1', '--size', '720p', '--fit', 'cover', '--out', path.join(dir, 'filled')).stdout);
+  const filled = JSON.parse(run('examples/quality/stride.scene.json', '--fps', '1', '--seconds', '1', '--size', '720p', '--fit', 'cover', '--out', path.join(dir, 'filled')).stdout);
   assert.deepEqual([filled.width, filled.height, filled.placement.scale, filled.placement.visible], [1280, 720, 10, [32, 0, 128, 72]]);
   // Refused requests write nothing.
   for (const [args, message] of [[['--out', path.join(dir, 'a')], /requires --fps/], [['--fps', '30'], /requires --out/], [['--fps', '30', '--size', '8k', '--out', path.join(dir, 'b')], /sequence\.size/], [['--fps', '30', '--fit', 'cover', '--out', path.join(dir, 'd')], /sequence\.fit: cover needs a size to cover/], [['--fps', '30', '--grid', '--out', path.join(dir, 'c')], /--grid is not supported by sequence/]]) assert.match(JSON.parse(run('examples/coin.json', ...args).stderr).error, message);

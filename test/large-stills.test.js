@@ -34,8 +34,9 @@ const temp = async t => {
 };
 
 test('a still 4093 to 4096 pixels a side inspects as one sheet: the 4096-pixel limit is on the cells, not the gutters', () => {
+  const wide = renderProject(filled(4096, 1024));
   for (const [w, h] of [[4096, 1024], [4093, 1024], [1024, 4096]]) {
-    const project = renderProject(filled(w, h));
+    const project = w === 4096 ? wide : renderProject(filled(w, h));
     // pixel_render previews with maxCells 256; the CLI and pixel_inspect without options.
     for (const options of w === 4096 ? [{}, { maxCells: 256 }] : [{}]) {
       const { sheet } = inspectProject(project, options);
@@ -44,7 +45,7 @@ test('a still 4093 to 4096 pixels a side inspects as one sheet: the 4096-pixel l
     }
   }
   // Cells past 4096 are still refused, with the advice that fixes it.
-  assert.throws(() => inspectProject(renderProject(filled(4096, 1024)), { scale: 2 }), /8196×2052 pixels, above the 4096-pixel limit/);
+  assert.throws(() => inspectProject(wide, { scale: 2 }), /8196×2052 pixels, above the 4096-pixel limit/);
   assert.throws(() => inspectProject(renderProject({ ...still(256, 256), frames: Array.from({ length: 17 }, (_, i) => ({ name: `f${i}` })) }), { scale: 16 }), /above the 4096-pixel limit/);
 });
 
