@@ -1,6 +1,6 @@
 # Using Pixelbolt assets in games
 
-The bundle deliberately keeps the interchange format simple: RGBA PNGs plus JSON frame rectangles, and a Godot 4 SpriteFrames made from them (with a TileSet for an autotile set). By default every frame retains the full canvas and common origin; opt into trimmed packing with `sheet.trim` (below). Frames are never rotated. Use nearest-neighbor filtering and whole-pixel placement for crisp rendering (the bundled `drawFrame` snaps fractional positions to whole pixels for you).
+The bundle deliberately keeps the interchange format simple: RGBA PNGs plus JSON frame rectangles, and a Godot 4 SpriteFrames made from them (with a Godot TileSet and a Tiled tileset for an autotile set). By default every frame retains the full canvas and common origin; opt into trimmed packing with `sheet.trim` (below). Frames are never rotated. Use nearest-neighbor filtering and whole-pixel placement for crisp rendering (the bundled `drawFrame` snaps fractional positions to whole pixels for you).
 
 ## Phaser
 
@@ -51,6 +51,19 @@ $Ground.set_cells_terrain_connect(cells, 0, 0) # terrain set 0, terrain 0
 - **Filter.** As for sprites, set the default texture filter, or the TileMapLayer's **Texture → Filter**, to Nearest.
 
 `node scripts/verify-godot.mjs` (with Godot 4 on `PATH`, in `GODOT` or passed as `--godot <path>`) imports the forest spirit and a trimmed, scaled sheet with unequal durations into a headless Godot project, and checks every frame's region, margin, size, pixels and time, and each animation's playback step by step. It then loads a blob, a cardinal, an animated, a weighted one-way TileSet with plain tiles, a weighted corner TileSet with collision, a layered set of three terrains with variants of a plain tile and solid water (painted bottom-up, so every cell must hold a tile with the corners and centre terrain the map of points gives it), and a scene's TileSet holding three sets, checks every tile's terrain, peering bits, probability, collision polygons, region, pixels and frame times, and paints maps (islands, strips, inner corners, a ring, cells that touch only at a corner, a scatter; for the scene, all three sets on one layer) with Godot's terrain painter, which must choose Pixelbolt's tile in every cell. Last it loads a lit scene asset and checks that every frame draws through `canvas_texture.tres` and that its normal map is `normal.png` with green flipped. With `--render` it also lights the sprite in a Godot window (Godot can't render headless) from above, below, left and right: the half facing the light must be brighter, and a control drawn with the unflipped `normal.png` must come out upside down.
+
+### Tiled
+
+A tile set also exports `name.tsx`, a [Tiled](https://www.mapeditor.org) tileset over `name.png` beside it: in a map whose tiles are the exported frame size, **Map → Add External Tileset**. The sheet is Tiled's grid (padding becomes margin, twice the padding spacing), and a tile's id is its frame's index in the recipe. A trimmed sheet has no grid, so it gets no `.tsx`.
+
+- **Terrains.** Each terrain is a Wang set (Tiled's terrain set) for the Terrain Brush: a blob set is mixed (sides and corners), a cardinal set an edge set and a corner set a corner set, one colour each, and each tile's Wang id is its neighbour mask, so the brush picks the tiles Pixelbolt's tilemaps draw. Tiled paints the sides and corners between cells, not cells, so the tile of a lone blob or cardinal cell (mask 0, its terrain on no side) is no Wang tile: place it by hand. A corner set's empty tile is none either; Tiled leaves the cell empty.
+- **Transitions.** A layered set is one corner Wang set with a colour per terrain, bottom first. A corner set's corners are the points where four cells meet, which are Pixelbolt's map cells: paint each terrain on the points where a Pixelbolt map has its cells. Every mix of them has a tile, so there is no painting order.
+- **Variants and weights.** Tiles with one Wang id are alternatives the brush picks between at random, at each tile's `probability`: its `tile.weight` against the heaviest tile of its kind (its terrain and mask, its corners, or the plain tiles).
+- **Collision.** `tile.collision` polygons are objects in each tile's collision group (the Tile Collision Editor), in exported pixels; `tile.oneWay` is a bool property `oneWay` on the tile, for the game to read.
+- **Animated tiles.** An animation that loops over frames of one kind animates its first frame's tile, with each frame's time, wherever its frames are on the sheet; its later frames are left out of the Wang sets, so the brush never places a still frame of it.
+- **Scenes.** A scene export writes `assets/<n>/tileset.tsx` beside each tile-set asset's `color.png` (a Tiled tileset has one image), named in `alignment.json` under the asset's `tiled`.
+
+`node scripts/verify-tiled.mjs` (with Tiled 1.10.2 or later on `PATH`, in `TILED` or passed as `--tiled <path>`) runs a script in a headless Tiled that reads the Godot check's tile sets with Tiled's own reader and checks the grid, every tile's probability, collision polygons, `oneWay` and animation, and each Wang set's type, colours and Wang ids. It then paints the same maps with Tiled's terrain filler, every side and corner of every cell given its colour, and every tile Tiled chooses must be one Pixelbolt's tilemap draws there; last, `tmxrasterizer` draws a map of every tile, which must give each frame's exported pixels.
 
 ### Effects round a character
 

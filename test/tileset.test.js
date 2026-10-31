@@ -85,7 +85,7 @@ test('variant weights become probabilities, collision boxes one-way polygons, an
 
 test('a tile set without animations of its own exports no flipbook of its tiles; one with animations keeps them', async () => {
   const { recipe } = compileAutotile(meadowSource), bundle = await createBundle(recipe);
-  assert.deepEqual([...bundle.files.keys()].filter(file => !file.startsWith('frames/')), ['meadow.png', 'meadow.atlas.json', 'meadow.tileset.tres', 'meadow.pixel.json', 'preview.html', 'README.txt']);
+  assert.deepEqual([...bundle.files.keys()].filter(file => !file.startsWith('frames/')), ['meadow.png', 'meadow.atlas.json', 'meadow.tileset.tres', 'meadow.tsx', 'meadow.pixel.json', 'preview.html', 'README.txt']);
   const readme = bundle.files.get('README.txt').toString();
   assert.match(readme, /^meadow — Pixelbolt tile set\n/);
   assert.match(readme, /meadow\.tileset\.tres: Godot 4 TileSet with the terrain meadow; it finds meadow\.png/);

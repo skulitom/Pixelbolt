@@ -310,11 +310,14 @@ test('an animation over one mask\'s frames side by side in a row becomes an anim
   assert.ok(animated > 0 && animated < 47, `${animated} animated tiles`);
   assert.equal(wrapped.project.warnings.length, 1);
   assert.match(wrapped.project.warnings[0], /^surf\.tileset\.tres: animations surf-\d+, .* became still tiles of their first frame: their frames run onto the next row of the sheet, and Godot animates a tile only through frames side by side in one row\. Set sheet\.columns to a multiple of 3$/);
-  // A ping-pong or a one-shot can't animate a tile at any width.
+  // A ping-pong or a one-shot can't animate a Godot tile at any width. A Tiled tile plays any list of frames, so the
+  // ping-pong animates there; every tile animation loops in both.
   const { animations } = recipe, first = Object.keys(animations)[0];
   for (const change of [{ direction: 'pingpong' }, { loop: false }]) {
     const other = await createBundle({ ...recipe, animations: { ...animations, [first]: { ...animations[first], ...change } } });
-    assert.deepEqual(other.project.warnings, [`surf.tileset.tres: animation ${first} became still tiles of its first frame: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`], JSON.stringify(change));
+    assert.deepEqual(other.project.warnings, [`surf.tileset.tres: animation ${first} became still tiles of its first frame: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping`,
+      ...(change.loop === false ? [`surf.tsx: animation ${first} became still tiles of its first frame: Tiled loops every tile animation`] : [])], JSON.stringify(change));
+    if (change.direction) assert.match(other.files.get('surf.tsx').toString(), /<tile id="0">\n  <animation>\n   <frame tileid="0" duration="120"\/>\n   <frame tileid="1" duration="250"\/>\n   <frame tileid="2" duration="90"\/>\n   <frame tileid="1" duration="250"\/>\n  <\/animation>/);
   }
 });
 
@@ -329,7 +332,7 @@ test('only an autotile set on a grid gets a TileSet, and what can\'t be one is s
   // A trimmed sheet has no grid.
   let bundle = await createBundle({ ...recipe, sheet: { trim: true } });
   assert.equal(bundle.files.has('turf.tileset.tres'), false);
-  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: not written: a Godot TileSet needs the sheet\'s grid, and sheet.trim packs frames without one. Remove sheet.trim to get it']);
+  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres and turf.tsx: not written: a Godot TileSet and a Tiled tileset need the sheet\'s grid, and sheet.trim packs frames without one. Remove sheet.trim to get them']);
   // Blob and cardinal tiles can't share one terrain; named apart, each is a terrain set of its own.
   const fence = compileAutotile(fenceSource).recipe;
   bundle = await createBundle({ ...recipe, frames: [...recipe.frames.slice(0, 3), ...fence.frames.slice(0, 3).map(frame => ({ ...frame, name: `c${frame.name}` }))] });
@@ -344,7 +347,7 @@ test('only an autotile set on a grid gets a TileSet, and what can\'t be one is s
   // A partial set is written, with the masks it lacks counted.
   bundle = await createBundle({ ...recipe, frames: recipe.frames.slice(0, 40) });
   assert.equal(readTileSet(bundle.files.get('turf.tileset.tres').toString()).tiles['0:0']['0'], '0');
-  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: 7 of the 47 blob masks have no tile, so Godot draws its nearest match where one is needed']);
+  assert.deepEqual(bundle.project.warnings, ['turf.tileset.tres: 7 of the 47 blob masks have no tile, so Godot draws its nearest match where one is needed', 'turf.tsx: 7 of the 46 blob Wang tiles are missing, so Tiled draws its nearest match where one is needed']);
 });
 
 test('autotileFrames finds frames drawn by one autotile mask at the corner, with blob masks reduced', () => {

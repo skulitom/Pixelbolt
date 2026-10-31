@@ -116,6 +116,7 @@ Pixelbolt は公式 MCP Registry に `io.github.skulitom/pixelbolt` として登
 | `name.atlas.json` | TexturePacker 形式の JSON アトラス：矩形、アンカー、フレームの表示時間、名前付きアニメーション、Aseprite 形式のフレームタグ |
 | `name.tres` | Godot 4 の `SpriteFrames`（`AnimatedSprite2D` 用）。`name.png` と同じフォルダーに置いてください |
 | `name.tileset.tres` | オートタイルのセットのみ：Godot 4 の `TileSet`（`TileMapLayer` 用）。テレインで塗ると Pixelbolt のタイルマップと同じタイルが選ばれます。`name.png` と同じフォルダーに置いてください |
+| `name.tsx` | オートタイルのセットのみ：[Tiled](https://www.mapeditor.org) のタイルセット。地形ごとに Wang セットがあり、テレインブラシで塗ると Pixelbolt のタイルマップと同じタイルが選ばれます。`name.png` と同じフォルダーに置いてください |
 | `frames/*.png` | 各フレームの透過 PNG |
 | `animations/*.png` | アニメーションごとの APNG（透過とフレームの表示時間を保持） |
 | `name.css` | CSS アニメーションのクラス |

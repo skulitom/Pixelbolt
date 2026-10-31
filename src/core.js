@@ -197,8 +197,9 @@ function readProject(spec, { stills = true } = {}) {
   if (width * height * spec.frames.length > 4194304) fail('project.frames', 'total frame area exceeds 4,194,304 pixels');
   object(spec.animations ?? {}, 'project.animations');
   const animationCount = spec.animations === undefined ? 1 : Object.keys(spec.animations).length;
-  // Support files: sheet, atlas, SpriteFrames, recipe, CSS, player, preview and README, and a TileSet for an autotile set.
-  if (9 + spec.frames.length + animationCount > 65535) fail('project.animations', `bundle exceeds the ZIP32 limit of 65,535 files; at most ${65535 - 9 - spec.frames.length} animations fit alongside these frames and 9 support files`);
+  // Support files: sheet, atlas, SpriteFrames, recipe, CSS, player, preview and README, and a Godot TileSet and a Tiled
+  // tileset for a tile set.
+  if (10 + spec.frames.length + animationCount > 65535) fail('project.animations', `bundle exceeds the ZIP32 limit of 65,535 files; at most ${65535 - 10 - spec.frames.length} animations fit alongside these frames and 10 support files`);
   return { projectName, width, height, palette, ramps, background, projectAnchor, symbols };
 }
 

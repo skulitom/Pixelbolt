@@ -454,3 +454,33 @@ test('pixel_render saveAs writes an autotile set\'s Godot TileSet naming its she
   assert.deepEqual([isError, info.path], [true, 'saveAs.tileset'], JSON.stringify(info));
   assert.match(info.error, /this export has no Godot TileSet: only a recipe whose frames are an autotile set/);
 });
+
+test('pixel_render saveAs writes an autotile set\'s Tiled tileset naming its image, and replaces only a Tiled tileset', async t => {
+  const project = await temp(t), mcp = await session(t, project), { recipe } = compileAutotile(GODOT_TILE_SOURCES[0]);
+  const text = (await createBundle(recipe)).files.get('turf.tsx').toString();
+  let { isError, info } = await mcp.render({ project: recipe, saveAs: { sheet: 'game/tiles/turf.png', tiled: 'game/tiles/turf.tsx' } });
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.file), ['turf.png', 'turf.tsx']);
+  assert.equal(await readFile(path.join(project, 'game', 'tiles', 'turf.tsx'), 'utf8'), text);
+  // In another folder it names the saved image relative to itself, as Tiled reads it; the export's copy is unchanged.
+  ({ isError, info } = await mcp.render({ project: recipe, saveAs: { sheet: 'game/art/turf.png', tiled: 'game/maps/ground.tsx' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.equal(await readFile(path.join(project, 'game', 'maps', 'ground.tsx'), 'utf8'), text.replace('<image source="turf.png"', '<image source="../art/turf.png"'));
+  assert.equal(await readFile(path.join(info.directory, 'turf.tsx'), 'utf8'), text);
+  // Saved alone, it names the export folder's image.
+  ({ isError, info } = await mcp.render({ project: recipe, saveAs: { tiled: 'game/maps/alone.tsx' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.match(await readFile(path.join(project, 'game', 'maps', 'alone.tsx'), 'utf8'), new RegExp(`<image source="\\.\\./\\.\\./output/${path.basename(info.directory)}/turf\\.png"`));
+  // overwrite replaces a Tiled tileset, never another file.
+  await writeFile(path.join(project, 'game', 'maps', 'notes.tsx'), 'not a tileset\n');
+  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { tiled: 'game/maps/notes.tsx' } }));
+  assert.equal(isError, true); assert.match(info.error, /notes\.tsx is not a Tiled tileset, so overwrite won't replace it/);
+  assert.equal(await readFile(path.join(project, 'game', 'maps', 'notes.tsx'), 'utf8'), 'not a tileset\n');
+  ({ isError, info } = await mcp.render({ project: recipe, overwrite: true, saveAs: { sheet: 'game/art/turf.png', tiled: 'game/maps/ground.tsx' } }));
+  assert.equal(isError, false, JSON.stringify(info));
+  assert.deepEqual(info.saved.map(item => item.replaced), [true, true]);
+  // A recipe that isn't a tile set has none to save.
+  ({ isError, info } = await mcp.render({ project: spirit, saveAs: { tiled: 'game/maps/spirit.tsx' } }));
+  assert.deepEqual([isError, info.path], [true, 'saveAs.tiled'], JSON.stringify(info));
+  assert.match(info.error, /this export has no Tiled tileset: only a recipe whose frames are an autotile set/);
+});

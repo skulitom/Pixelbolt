@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Tiled tilesets
+
+- A tile set's export adds `name.tsx`, a Tiled tileset over its sheet: the sheet as Tiled's grid (padding as margin, twice it as spacing), each terrain a Wang set for Tiled's Terrain Brush (blob sets mixed, cardinal sets edge, corner sets corner, one colour each; a layered set one corner set with a colour per terrain), each tile's Wang id its neighbour mask or corners. Tile weights become probabilities against the heaviest tile of their kind, collision polygons objects in each tile's collision group, `oneWay` a bool property, and a looping animation over tiles of one kind an animated tile (its later frames left out of the Wang sets).
+- A scene export writes `assets/<n>/tileset.tsx` beside each tile-set asset's colour pass, named in `alignment.json` as the asset's `tiled`. MCP `saveAs` takes `tiled`, naming the saved sheet relative to the saved `.tsx`, and replaces only a Tiled tileset.
+- The lone-cell tile of a blob or cardinal set (mask 0) and a corner set's empty tile are no Wang tiles: Tiled's brush paints sides and corners, which such a cell lacks.
+- `node scripts/verify-tiled.mjs` checks the export in a real headless Tiled: Tiled's own reader, its terrain filler painting the Godot check's maps (it chose Pixelbolt's tile in all 2,600 cells in Tiled 1.12.2) and `tmxrasterizer` drawing every tile. Tiled re-saves the files unchanged but for its own `tiledversion`.
+- A bundle can hold 10 support files, so the ZIP32 budget is animation count + frame count + 10 (at most 65,524 animations with one frame).
+
 ### Variants and collision for terrain transitions
 
 - A layer of a layered autotile set takes `variants` of its plain tile, the one with it at all four corners, which fills big areas: another fill (`terrain` merged into the layer's) or decoration (`ops` drawn over the tile in tile pixels), weighed against the layer's `weight` for the plain tile. They come after the other tiles, named after the plain tile with `-<name>` (`shore-wwww-lily`), each kept in a template of its own (`template-water-lily`). Ops that change the tile's border are warned about.

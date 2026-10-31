@@ -4,6 +4,7 @@ import { readFile, readdir, mkdir, writeFile, access, rm, stat, realpath } from 
 import path from 'node:path';
 import { embedRecipe, recipeKind } from './share.js';
 import { spriteFrames, tileSets } from './godot.js';
+import { tiledTileset } from './tiled.js';
 import { autotileFrames } from './autotile.js';
 
 const json = value => JSON.stringify(value, null, 2) + '\n';
@@ -67,6 +68,7 @@ export async function createBundle(spec) {
   files.set(`${name}.atlas.json`, Buffer.from(json(atlas.metadata)));
   const tiles = godotTiles(spec, project, atlas);
   if (tiles) files.set(`${name}.tileset.tres`, Buffer.from(tiles.text));
+  if (tiles?.tiled) files.set(`${name}.tsx`, Buffer.from(tiles.tiled));
   // A tile set with no animations of its own has only the flipbook of every tile, which is no animation: it gets no
   // SpriteFrames, animated PNGs, CSS or player, and its preview shows the sheet.
   const still = Boolean(tiles) && spec.animations === undefined;
@@ -122,20 +124,23 @@ export function tileSource(spec, project, atlas, { name = project.name, terrain 
   const { sheet } = project;
   return { atlas: spec.animations === undefined ? { ...atlas.metadata, animations: {} } : atlas.metadata, tiles, layered, plain, colors, name, terrain, margin: sheet.padding * sheet.scale, separation: sheet.padding * 2 * sheet.scale, ...(image && { image }) };
 }
-// The bundle's TileSet ({ text, terrains, collision }), or null. Its warnings join the project's.
+// The bundle's TileSet ({ text, tiled, terrains, collision }, tiled the Tiled tileset or null), or null. Their
+// warnings join the project's.
 function godotTiles(spec, project, atlas) {
   const source = tileSource(spec, project, atlas), { name, sheet } = project;
   if (!source) return null;
   if (sheet.trim) {
-    project.warnings.push(`${name}.tileset.tres: not written: a Godot TileSet needs the sheet's grid, and sheet.trim packs frames without one. Remove sheet.trim to get it`);
+    project.warnings.push(`${name}.tileset.tres and ${name}.tsx: not written: a Godot TileSet and a Tiled tileset need the sheet's grid, and sheet.trim packs frames without one. Remove sheet.trim to get them`);
     return null;
   }
   const result = tileSets([source]);
   project.warnings.push(...result.warnings.map(warning => `${name}.tileset.tres: ${warning}`));
   if (result.text === null) return null;
+  const tiled = tiledTileset(source);
+  project.warnings.push(...tiled.warnings.map(warning => `${name}.tsx: ${warning}`));
   const terrains = [...new Set(source.tiles.map(tile => tile.terrain ?? name))], layers = [];
   for (const tile of source.layered) for (const corner of tile.corners) if (!layers.includes(corner)) layers.push(corner);
-  return { text: result.text, terrains, layers, corner: source.tiles.some(tile => tile.mode === 'corner'), collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
+  return { text: result.text, tiled: tiled.text, terrains, layers, corner: source.tiles.some(tile => tile.mode === 'corner'), sides: source.tiles.some(tile => tile.mode !== 'corner'), oneWay: project.frames.some(frame => frame.tile?.oneWay), collision: project.frames.some(frame => frame.tile?.collision), facts: project.frames.some(frame => frame.tile), plain: source.plain.length };
 }
 function spriteReadme(project) {
   const { name } = project, first = Object.keys(project.animations)[0];
@@ -149,10 +154,12 @@ function tilesetReadme(project, tiles, still) {
   const lines = [`${name} — Pixelbolt tile set`, '',
     `${name}.png: transparent RGBA tile sheet`,
     `${name}.tileset.tres: Godot 4 TileSet with ${holds}${tiles.collision ? ', and collision shapes on physics layer 0' : ''}; it finds ${name}.png in its own folder, so keep the two together`,
+    ...(tiles.tiled ? [`${name}.tsx: Tiled tileset with ${holds}${tiles.collision ? ', and collision shapes in each tile\'s collision group' : ''}; it finds ${name}.png in its own folder`] : []),
     `${name}.atlas.json: TexturePacker-style frames${tiles.facts ? ', with each tile\'s terrain, weight and collision polygons (in exported pixels) where the recipe gives them' : ''}`,
     ...(still ? [] : [`${name}.tres: Godot 4 SpriteFrames of the animations`, `${name}.css: CSS classes with per-frame timing`, 'animations/: animated PNGs (APNG)', 'player.js: dependency-free Canvas player']),
     'frames/: one PNG per tile', `${name}.pixel.json: editable source`, `preview.html: ${still ? 'the tile sheet' : 'the animations'}; open it directly in a browser`, '',
     `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.${tiles.corner ? ' A corner terrain is drawn where four painted cells meet, so its ground ends half a cell inside what you paint: 3×3 painted cells draw 2×2 cells of ground, centred.' : ''}` : ''}${tiles.layers.length ? ` For the layered terrains, paint bottom-up, each terrain over its own cells and those of every terrain above it: ${tiles.layers[0]} over the whole area, ${tiles.layers.slice(1).map((layer, i) => `then ${layer} over the ${list(tiles.layers.slice(i + 1))}`).join(', ')}. Godot puts a terrain where four cells painted with it meet, so each ends half a cell inside what you paint, and the transitions between terrains appear on their own.` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
+  if (tiles.tiled) lines.push('', `Tiled: in a map of ${project.width * project.sheet.scale}×${project.height * project.sheet.scale} tiles, Map > Add External Tileset and pick ${name}.tsx.${tiles.terrains.length || tiles.layers.length ? ' In the Terrain Sets view pick a terrain set and paint with the Terrain Brush.' : ''}${tiles.sides ? ' A blob or cardinal terrain is painted on the sides and corners between cells, so a lone cell, with its terrain on no side, has no terrain tile: place it by hand.' : ''}${tiles.corner ? ' A corner terrain is painted on the points where four cells meet: a point of Tiled\'s map is a cell of Pixelbolt\'s.' : ''}${tiles.layers.length ? ` The layered terrains ${list(tiles.layers)} are painted on the points where four cells meet, a point of Tiled's map being a cell of Pixelbolt's, and every mix of them has its tile: paint each terrain where its cells are.` : ''}${tiles.collision ? ` Collision shapes are in each tile's collision group (the Tile Collision Editor)${tiles.oneWay ? ', with the bool property oneWay on one-way platforms' : ''}.` : ''}`);
   if (!still) lines.push('', `Animations: give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${first}").`);
   return lines.join('\n') + '\n';
 }
