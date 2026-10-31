@@ -7,6 +7,7 @@ import { renderProject, buildAtlas, PixelError } from '../src/core.js';
 import { rasterizeMass } from '../src/craft.js';
 import { animationGIF } from '../src/gif.js';
 import { inspectMotion } from '../src/motion.js';
+import { decodeGIF } from './fixtures/decode-gif.js';
 
 const read = async file => JSON.parse(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'));
 const hash = data => createHash('sha256').update(data).digest('hex');
@@ -44,46 +45,6 @@ function silhouette({ data }, width, height) {
   return { lowest, width: right - left + 1, height: lowest - top + 1, contact, opaque };
 }
 const idleFrames = (project, name = 'idle') => project.animations[name].frames.map(index => project.frames[index]);
-
-// A plain reading of the GIF89a structure and its LZW stream (as in gif.test.js), sharing no code with the encoder.
-function decodeGIF(bytes) {
-  assert.equal(Buffer.from(bytes.subarray(0, 6)).toString('latin1'), 'GIF89a');
-  const word = at => bytes[at] | bytes[at + 1] << 8, gif = { width: word(6), height: word(8), loop: null, frames: [] };
-  let at = 13, control = null, canvas = Array(gif.width * gif.height).fill('clear');
-  const table = flags => { const colors = bytes.subarray(at, at + (3 << (flags & 7) + 1)); at += colors.length; return colors; };
-  const blocks = () => { const parts = []; for (let size = bytes[at++]; size; size = bytes[at++]) { parts.push(bytes.subarray(at, at + size)); at += size; } return Buffer.concat(parts); };
-  const shared = bytes[10] & 0x80 ? table(bytes[10]) : null;
-  for (let marker = bytes[at++]; marker !== 0x3b; marker = bytes[at++]) {
-    if (marker === 0x21) {
-      const label = bytes[at++];
-      if (label === 0xf9) { assert.equal(bytes[at], 4); control = { disposal: bytes[at + 1] >> 2 & 7, transparent: bytes[at + 1] & 1 ? bytes[at + 4] : null }; at += 5; assert.equal(bytes[at++], 0); }
-      else if (label === 0xff) { assert.equal(Buffer.from(bytes.subarray(at + 1, at + 12)).toString('latin1'), 'NETSCAPE2.0'); at += 12; const data = blocks(); assert.equal(data[0], 1); gif.loop = data[1] | data[2] << 8; }
-      else assert.fail(`unexpected extension ${label}`);
-      continue;
-    }
-    assert.equal(marker, 0x2c);
-    const rect = [word(at), word(at + 2), word(at + 4), word(at + 6)], flags = bytes[at + 8]; at += 9;
-    const colors = flags & 0x80 ? table(flags) : shared, minimum = bytes[at++], data = blocks(), clear = 1 << minimum, indices = [];
-    let size = minimum + 1, buffer = 0, bits = 0, read = 0, dictionary = [], previous = null;
-    for (;;) {
-      while (bits < size) { buffer |= data[read++] << bits; bits += 8; }
-      const code = buffer & (1 << size) - 1; buffer >>>= size; bits -= size;
-      if (code === clear) { dictionary = Array.from({ length: clear + 2 }, (_, index) => [index]); size = minimum + 1; previous = null; continue; }
-      if (code === clear + 1) break;
-      const entry = code < dictionary.length ? dictionary[code] : [...previous, previous[0]];
-      indices.push(...entry);
-      if (previous && dictionary.length < 4096) dictionary.push([...previous, entry[0]]);
-      if (dictionary.length === 1 << size && size < 12) size++;
-      previous = entry;
-    }
-    const pixels = canvas.slice(), inside = callback => { for (let y = 0; y < rect[3]; y++) for (let x = 0; x < rect[2]; x++) callback((rect[1] + y) * gif.width + rect[0] + x, y * rect[2] + x); };
-    inside((to, from) => { if (indices[from] !== control.transparent) pixels[to] = Buffer.from(colors.subarray(indices[from] * 3, indices[from] * 3 + 3)).toString('hex'); });
-    gif.frames.push(pixels);
-    canvas = pixels.slice();
-    if (control.disposal === 2) inside(to => { canvas[to] = 'clear'; });
-  }
-  return gif;
-}
 
 test('the slime idle keeps its lowest row on rig.ground in every frame, its base on the ground, gentle height changes and a passing motion review', () => {
   const { recipe, metadata, warnings } = compilePoses(slime), project = renderProject(recipe), { width, height } = project;
@@ -142,7 +103,7 @@ test('the slime idle passes the sprite task checks: size, frames, looping GIF, c
       const at = ((cell.y + y) * atlas.width + cell.x + x) * 4;
       sheet.push(atlas.data[at + 3] ? Buffer.from(atlas.data.slice(at, at + 3)).toString('hex') : 'clear');
     }
-    assert.deepEqual(decoded.frames[i], sheet, name);
+    assert.deepEqual(decoded.frames[i].pixels, sheet, name);
   });
 });
 
