@@ -1,5 +1,13 @@
 # Pixelbolt
 
+<img src="https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/gallery/library.gif" width="100%" alt="A library drawn with Pixelbolt: books circle the chandelier, a lectern book turns its page and a grey tabby sleeps on a shelf">
+
+Give Claude Code the pixel art skill in one line (Node.js 20 or newer):
+
+```sh
+npx -y pixelbolt@latest skill install
+```
+
 **Pixel art and sprite animation that your AI agent can make, check and fix.** Pixelbolt turns an editable JSON recipe into sprites, tiles, icons, effects and short animations, and exports them as PNG sprite sheets, texture atlases, animated PNGs, GIFs and frames for a video editor. Agents drive it through a local MCP server or the command line; you can open, play and edit the same recipe in a local browser studio.
 
 [Try it in your browser](https://skulitom.github.io/Pixelbolt/playground/): render, export and share recipes with nothing installed.
@@ -13,8 +21,6 @@ English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README
 [![Tests](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml/badge.svg)](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js: 20+](https://img.shields.io/badge/node.js-20%2B-43853d.svg)](package.json)
-
-![A library drawn with Pixelbolt: books circle the chandelier, a lectern book turns its page and a grey tabby sleeps on a shelf](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/gallery/library.gif)
 
 ![A campfire simulated by Pixelbolt's fluid compiler: flames lick up from the logs, embers drift up and smoke curls away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/explosion.gif)
 
