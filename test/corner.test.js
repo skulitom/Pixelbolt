@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderProject } from '../src/core.js';
 import { compileAutotile } from '../src/authoring.js';
-import { neighbourMask, tilePieces, expandTilemap, CORNER_MASKS } from '../src/autotile.js';
+import { neighbourMask, tilePieces, expandTilemap, autotileFrames, CORNER_MASKS } from '../src/autotile.js';
 import { JOINS, TEST_MAP } from '../src/terrain.js';
 import { createBundle } from '../src/export.js';
 import { prepareScene, renderScene } from '../src/scene.js';
@@ -103,4 +103,64 @@ test('scene tilemaps place corner frames where four cells meet', () => {
   assert.throws(() => prepareScene(scene({ tile: [15, 16], rows: ['#'], legend: { '#': { frame: 'meadow-{mask}', autotile: 'corner' } } })), /tilemap\.tile: corner tiles sit where four cells meet/);
   assert.throws(() => prepareScene(scene({ layout: 'iso', rows: ['#'], legend: { '#': { frame: 'meadow-{mask}', autotile: 'corner' } } })), /corner tiles sit where four square cells meet/);
   assert.throws(() => renderProject({ ...recipe, frames: [{ name: 'map', ops: [{ op: 'tilemap', tile: [15, 15], rows: ['#'], legend: { '#': { template: 'template', autotile: 'corner' } } }] }] }), /tile: corner tiles sit where four cells meet/);
+});
+
+// ---- Layered sets: transitions between terrains ----
+const shore = JSON.parse(await readFile(new URL('../examples/shore.autotile.json', import.meta.url), 'utf8'));
+
+test('a layered set has a tile for every mix of its terrains at the four corners, each lower one running on under the higher', () => {
+  const { recipe, metadata, warnings, preview } = compileAutotile(shore);
+  assert.equal(warnings, undefined);
+  assert.deepEqual(metadata.layers, [{ name: 'water', key: 'w' }, { name: 'sand', key: 's' }, { name: 'grass', key: 'g' }]);
+  assert.deepEqual([metadata.mode, metadata.tiles, metadata.seams.shape, metadata.seams.texture], ['corner', 81, 0, 0]);
+  assert.deepEqual(recipe.frames.slice(0, 3).map(frame => frame.name), ['shore-wwww', 'shore-swww', 'shore-gwww']);
+  // Water at NW and SE, sand at NE, grass at SW: water fills the tile, sand covers its own corner and the grass's, grass its own.
+  assert.deepEqual(recipe.frames.find(frame => frame.name === 'shore-wsgw'), { name: 'shore-wsgw', tile: { corners: ['water', 'sand', 'grass', 'water'] }, ops: [
+    { op: 'autotile', symbol: 'template-water', mask: 15, mode: 'corner' }, { op: 'autotile', symbol: 'template-sand', mask: 6, mode: 'corner' }, { op: 'autotile', symbol: 'template-grass', mask: 4, mode: 'corner' }] });
+  // Grass straight on water draws no sand.
+  assert.deepEqual(recipe.frames.find(frame => frame.name === 'shore-ggww').ops.map(op => [op.symbol, op.mask]), [['template-water', 15], ['template-grass', 3]]);
+  // A layered tile is no single-terrain autotile frame.
+  assert.deepEqual(autotileFrames(recipe), []);
+  // The test map draws one map per terrain over the same rows.
+  assert.deepEqual(preview.frames[0].ops.map(op => [op.op, Object.entries(op.legend).filter(([, entry]) => entry).map(([key, entry]) => `${key}:${entry.match}`)]), [['tilemap', ['w:wsg']], ['tilemap', ['s:sg']], ['tilemap', ['g:g']]]);
+  const layers = shore.layers;
+  for (const [change, message] of [
+    [{ mode: 'blob' }, /autotile\.mode: layers are corner tiles/],
+    [{ variants: [{ name: 'a' }] }, /autotile\.variants: a layered set has no variants yet/],
+    [{ collision: true }, /autotile\.collision: a layered set has no collision boxes yet/],
+    [{ frame: 'shore-{mask}' }, /autotile\.frame: expected a frame name template containing \{corners\}/],
+    [{ layers: layers.slice(0, 1) }, /autotile\.layers: expected 2–4 layers, bottom first/],
+    [{ layers: [layers[0], { ...layers[1], key: 'w' }] }, /autotile\.layers\[1\]\.key: expected one letter or digit, unique among the layers/],
+    [{ layers: [layers[0], { name: 'sand', key: 's' }] }, /autotile\.layers\[1\]: give the layer a terrain, template rows or ops/]
+  ]) assert.throws(() => compileAutotile({ ...shore, ...change }), message, JSON.stringify(change));
+});
+
+test('a layered map draws the same from the compiled tiles as from one map per terrain', () => {
+  const { recipe } = compileAutotile(shore), tile = 16, keys = 'wsg';
+  const rows = ['wwwwwwww', 'wssgggsw', 'wsgggssw', 'wwgsswww', 'wwwgwwsw', 'wwwwwwww'], width = rows[0].length * tile, height = rows.length * tile;
+  const scene = renderScene(prepareScene({ format: 'pixelforge-scene', version: 1, name: 'coast', width, height, assets: { shore: recipe },
+    instances: [{ asset: 'shore', at: [0, 0], tilemap: { rows, legend: Object.fromEntries([...keys].map(key => [key, { frame: 'shore-{corners}', autotile: 'corner' }])) } }] }), { lit: false });
+  const maps = [...keys].map((key, i) => ({ op: 'tilemap', tile: [tile, tile], rows, outside: 'match', legend: Object.fromEntries([...keys].map((other, j) => [other, j === i ? { template: `template-${shore.layers[i].name}`, autotile: 'corner', match: keys.slice(i) } : null])) }));
+  const drawn = renderProject({ version: 1, name: 'coast', width, height, palette: recipe.palette, symbols: recipe.symbols, frames: [{ name: 'map', ops: maps }] }).frames[0].data;
+  assert.deepEqual(scene.data, drawn);
+  // {corners} needs a terrain in every cell around a tile, and a tile for what it finds there.
+  const place = tilemap => () => prepareScene({ format: 'pixelforge-scene', version: 1, name: 'coast', width: 64, height: 64, assets: { shore: recipe }, instances: [{ asset: 'shore', at: [0, 0], tilemap }] });
+  assert.throws(place({ rows: ['ws', 'w.'], legend: { w: { frame: 'shore-{corners}', autotile: 'corner' }, s: { frame: 'shore-{corners}', autotile: 'corner' } } }), /tilemap\.rows\[1\]\[1\]: is empty, but \{corners\} names a layered tile/);
+  assert.throws(place({ rows: ['wx'], legend: { w: { frame: 'shore-{corners}', autotile: 'corner' }, x: 'shore-wwww' } }), /frame "shore-wxwx" does not exist \(corners w x w x: every cell around a layered tile is one of the set's keys\)/);
+  assert.throws(place({ rows: ['w'], legend: { w: { frame: 'shore-{corners}', autotile: 'blob' } } }), /\{corners\} names a layered set's tile by the characters of the four cells around it; it goes with autotile corner/);
+});
+
+test('a layered set exports one Godot corner terrain set, the ground unset, every tile once per centre terrain', async () => {
+  const bundle = await createBundle(compileAutotile(shore).recipe), text = bundle.files.get('shore.tileset.tres').toString();
+  const atlas = JSON.parse(bundle.files.get('shore.atlas.json')), { x, y } = atlas.frames['shore-wsgw'].frame, cell = `${x / 16}:${y / 16}`;
+  assert.match(text, /terrain_set_0\/mode = 1\nterrain_set_0\/terrain_0\/name = "water"\n.*\nterrain_set_0\/terrain_1\/name = "sand"\n.*\nterrain_set_0\/terrain_2\/name = "grass"\n/);
+  assert.equal(text.match(/\/terrain = /g).length, 81 * 3);
+  assert.deepEqual(text.split('\n').filter(line => line.startsWith(`${cell}/`)), [`${cell}/next_alternative_id = 3`,
+    ...[0, 1, 2].flatMap(k => [`${cell}/${k} = ${k}`, `${cell}/${k}/terrain_set = 0`, `${cell}/${k}/terrain = ${k}`, `${cell}/${k}/terrains_peering_bit/bottom_left_corner = 2`, `${cell}/${k}/terrains_peering_bit/top_right_corner = 1`])]);
+  assert.deepEqual(atlas.frames['shore-wsgw'].tile, { corners: ['water', 'sand', 'grass', 'water'] });
+  const readme = bundle.files.get('README.txt').toString();
+  assert.match(readme, /the layered terrains water, sand and grass and their transitions/);
+  assert.match(readme, /paint bottom-up, each terrain over its own cells and those of every terrain above it: water over the whole area, then sand over the sand and grass, then grass over the grass\./);
+  for (const [tile, message] of [[{ corners: ['water', 'sand'] }, /tile\.corners: expected the terrains at the tile's four corners/], [{ corners: ['a', 'b', 'c', 'd'], terrain: 'a' }, /tile\.terrain: a tile with corners belongs to the terrains they name/]])
+    assert.throws(() => renderProject({ version: 1, name: 't', width: 4, height: 4, frames: [{ name: 'a', tile }] }), message);
 });

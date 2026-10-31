@@ -157,6 +157,20 @@ export const GODOT_TILE_SOURCES = [
   { ...TILE_SOURCE, name: 'moss', mode: 'corner', frame: 'moss-{mask}-{variant}', collision: { inset: 1 }, sheet: { padding: 1, scale: 3, columns: 4 },
     variants: [{ name: 'a', weight: 3 }, { name: 'b', palette: { g: '#8ab838' } }] }
 ];
+// A layered set of three terrains, water under sand under grass, each the tile template in its own colours, on a padded,
+// scaled sheet; painted bottom-up over maps of their keys.
+const layerTemplate = (g, d) => TILE_TEMPLATE.map(row => row.replaceAll('g', g).replaceAll('d', d));
+export const GODOT_LAYERED_SOURCE = { format: 'pixelforge-autotile', version: 1, name: 'shore', tile: 4, frame: 'shore-{corners}', sheet: { padding: 1, scale: 2, columns: 9 },
+  palette: { o: '#203018', g: '#58a040', d: '#3c7830', a: '#d8b878', b: '#a88850', w: '#3070b0', x: '#205088' },
+  layers: [{ name: 'water', key: 'w', template: layerTemplate('w', 'x') }, { name: 'sand', key: 's', template: layerTemplate('a', 'b') }, { name: 'grass', key: 'g', template: TILE_TEMPLATE }] };
+const layeredScatter = Array.from({ length: 10 }, (_, y) => Array.from({ length: 14 }, (_, x) => 'wsg'[(x * 7919 + y * 104729 + x * y * 31) % 3]).join(''));
+export const GODOT_LAYERED_MAPS = [
+  ['wwwwwwww', 'wsssssww', 'wsgggsww', 'wsgggsww', 'wssssswg', 'wwwwwwww'],
+  ['wwwwwww', 'wwgggww', 'wwgggww', 'wwwwwww', 'wwwswww', 'wwwwwww'],
+  ['ssssggg', 'ssssggg', 'ssssggg', 'wwwwwww'],
+  ['wgwg', 'gwgw', 'wgwg', 'ssss'],
+  layeredScatter
+];
 // Frames added to a compiled set before it is exported: plain tiles, one weighted with a diamond collision polygon, and
 // an empty frame, which is no tile.
 export const GODOT_TILE_EXTRAS = {
@@ -229,7 +243,17 @@ func _initialize():
                     var cell := Vector2i(at.x + f, at.y)
                     var file = c["files"].get("%d:%d:%d" % [id, cell.x, cell.y], "")
                     frames.append({"duration": source.get_tile_animation_frame_duration(at, f), "region": [region.position.x, region.position.y, region.size.x, region.size.y], "mismatched": compare(source.texture, region, file)})
-                list.append({"at": [at.x, at.y], "alternatives": source.get_alternative_tiles_count(at), "terrain_set": data.terrain_set, "terrain": data.terrain, "probability": data.probability, "bits": bits, "polygons": polygons, "frames": frames})
+                var alts := []
+                for k in source.get_alternative_tiles_count(at):
+                    var alt_id := source.get_alternative_tile_id(at, k)
+                    var alt := source.get_tile_data(at, alt_id)
+                    var alt_bits := {}
+                    if alt.terrain_set >= 0:
+                        for name in NEIGHBOURS:
+                            if alt.is_valid_terrain_peering_bit(NEIGHBOURS[name]) and alt.get_terrain_peering_bit(NEIGHBOURS[name]) != -1:
+                                alt_bits[name] = alt.get_terrain_peering_bit(NEIGHBOURS[name])
+                    alts.append({"id": alt_id, "terrain_set": alt.terrain_set, "terrain": alt.terrain, "probability": alt.probability, "bits": alt_bits, "polygons": alt.get_collision_polygons_count(0) if tiles.get_physics_layers_count() > 0 else 0})
+                list.append({"at": [at.x, at.y], "alternatives": source.get_alternative_tiles_count(at), "alts": alts, "terrain_set": data.terrain_set, "terrain": data.terrain, "probability": data.probability, "bits": bits, "polygons": polygons, "frames": frames})
             sources.append({"id": id, "name": source.resource_name, "texture": source.texture.resource_path, "margins": [source.margins.x, source.margins.y], "separation": [source.separation.x, source.separation.y], "region_size": [source.texture_region_size.x, source.texture_region_size.y], "tiles": list})
         var painted := []
         for m in c["maps"]:
@@ -237,17 +261,28 @@ func _initialize():
             var layer := TileMapLayer.new()
             layer.tile_set = tiles
             root.add_child(layer)
-            for ch in m["sets"]:
-                var cells: Array[Vector2i] = []
-                for y in rows.size():
-                    for x in rows[y].length():
-                        if rows[y][x] == ch:
-                            cells.append(Vector2i(x, y))
-                layer.set_cells_terrain_connect(cells, int(m["sets"][ch]), 0)
+            if m.has("layers"):
+                # A layered map, bottom-up: each terrain over its own cells and every higher terrain's.
+                var keys: String = m["layers"]["keys"]
+                for t in keys.length():
+                    var cells: Array[Vector2i] = []
+                    for y in rows.size():
+                        for x in rows[y].length():
+                            if keys.find(rows[y][x]) >= t:
+                                cells.append(Vector2i(x, y))
+                    layer.set_cells_terrain_connect(cells, int(m["layers"]["set"]), t)
+            else:
+                for ch in m["sets"]:
+                    var cells: Array[Vector2i] = []
+                    for y in rows.size():
+                        for x in rows[y].length():
+                            if rows[y][x] == ch:
+                                cells.append(Vector2i(x, y))
+                    layer.set_cells_terrain_connect(cells, int(m["sets"][ch]), 0)
             var got := {}
             for cell in layer.get_used_cells():
                 var at := layer.get_cell_atlas_coords(cell)
-                got["%d,%d" % [cell.x, cell.y]] = "%d:%d:%d" % [layer.get_cell_source_id(cell), at.x, at.y]
+                got["%d,%d" % [cell.x, cell.y]] = "%d:%d:%d:%d" % [layer.get_cell_source_id(cell), at.x, at.y, layer.get_cell_alternative_tile(cell)]
             painted.append(got)
             layer.free()
         report[c["key"]] = {"tile_size": [tiles.tile_size.x, tiles.tile_size.y], "physics": physics, "sets": sets, "sources": sources, "painted": painted}
@@ -618,23 +653,27 @@ function tileModel(recipe, atlas, { id, terrainSet, texture, frameFile }) {
   // The sheet cell of every frame, and back.
   const cells = Object.fromEntries(Object.entries(atlas.frames).map(([frame, { frame: rect }]) => [frame, `${(rect.x - margin) / step[0]}:${(rect.y - margin) / step[1]}`]));
   const frameAt = Object.fromEntries(Object.entries(cells).map(([frame, cell]) => [cell, frame]));
-  const masks = Object.fromEntries(recipe.frames.filter(frame => frame.ops?.[0]?.op === 'autotile').map(frame => [frame.name, frame.ops[0].mask]));
-  const mode = recipe.frames.find(frame => frame.name in masks)?.ops[0].mode ?? 'blob';
+  // A layered tile names its corners' terrains; its set's terrains come in order of first appearance.
+  const corners = Object.fromEntries(recipe.frames.filter(frame => frame.tile?.corners).map(frame => [frame.name, frame.tile.corners])), layers = [];
+  for (const names of Object.values(corners)) for (const name of names) if (!layers.includes(name)) layers.push(name);
+  const masks = Object.fromEntries(recipe.frames.filter(frame => frame.ops?.[0]?.op === 'autotile' && !(frame.name in corners)).map(frame => [frame.name, frame.ops[0].mask]));
+  const mode = layers.length ? 'layers' : recipe.frames.find(frame => frame.name in masks)?.ops[0].mode ?? 'blob';
+  const terrainTile = frame => frame in masks || frame in corners;
   const drawn = frame => frame.data.some((value, i) => i % 4 === 3 && value > 0);
-  const plain = new Set(project.frames.filter(frame => !(frame.name in masks) && (frame.tile || drawn(frame))).map(frame => frame.name));
+  const plain = new Set(project.frames.filter(frame => !terrainTile(frame.name) && (frame.tile || drawn(frame))).map(frame => frame.name));
   // One tile per frame, except that an animation over one mask's frames (or plain frames) is one animated tile. A
   // recipe without animations of its own animates no tile.
-  const animations = recipe.animations === undefined ? [] : Object.values(atlas.animations).filter(a => a.frames.length > 1 && new Set(a.frames.map(f => masks[f] ?? (plain.has(f) ? 'plain' : f))).size === 1);
+  const animations = recipe.animations === undefined ? [] : Object.values(atlas.animations).filter(a => a.frames.length > 1 && new Set(a.frames.map(f => masks[f] ?? corners[f]?.join() ?? (plain.has(f) ? 'plain' : f))).size === 1);
   const later = new Set(animations.flatMap(a => a.frames.slice(1))), sequences = new Map(animations.map(a => [a.frames[0], a.frames]));
-  const tiles = Object.keys(atlas.frames).filter(frame => (frame in masks || plain.has(frame)) && !later.has(frame));
+  const tiles = Object.keys(atlas.frames).filter(frame => (terrainTile(frame) || plain.has(frame)) && !later.has(frame));
   const facts = Object.fromEntries(recipe.frames.map(frame => [frame.name, frame.tile ?? {}]));
-  const heaviest = group => Math.max(...tiles.filter(frame => (frame in masks) === group).map(frame => facts[frame].weight ?? 1));
-  const probability = frame => (facts[frame].weight ?? 1) / heaviest(frame in masks);
+  const heaviest = group => Math.max(...tiles.filter(frame => terrainTile(frame) === group).map(frame => facts[frame].weight ?? 1));
+  const probability = frame => (facts[frame].weight ?? 1) / heaviest(terrainTile(frame));
   // One polygon, or a list of them.
   const shapes = collision => (collision === undefined ? [] : Array.isArray(collision[0][0]) ? collision : [collision]);
   const polygons = frame => shapes(facts[frame].collision).map(points => ({ points: points.map(([x, y]) => [x * s - size[0] / 2, y * s - size[1] / 2]), one_way: Boolean(facts[frame].oneWay) }));
   const files = Object.fromEntries(Object.entries(frameAt).map(([cell, frame]) => [`${id}:${cell}`, frameFile(frame)]));
-  return { id, terrainSet, texture, name: recipe.name, mode, atlas, size, margin, step, cells, frameAt, masks, plain, tiles, sequences, probability, polygons, files, solid: tiles.some(frame => facts[frame].collision) };
+  return { id, terrainSet, texture, name: recipe.name, mode, atlas, size, margin, step, cells, frameAt, masks, corners, layers, plain, tiles, sequences, probability, polygons, files, solid: tiles.some(frame => facts[frame].collision) };
 }
 
 // Loads exported TileSets in a real Godot 4: the physics layer, terrain sets, and per source every tile's terrain,
@@ -657,6 +696,16 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
       const maps = GODOT_TILE_MAPS.map(rows => ({ rows, sets: { '#': 0 } }));
       cases.push({ key: name, tres: `res://${folder}/${name}.tileset.tres`, files: model.files, maps });
       expected[name] = { models: [model], maps, chars: { '#': model } };
+    }
+    // The layered set, painted bottom-up.
+    {
+      const recipe = compileAutotile(GODOT_LAYERED_SOURCE).recipe, bundle = await createBundle(recipe), { name } = bundle.project, folder = `tiles/${name}`;
+      assert.ok(bundle.files.has(`${name}.tileset.tres`), `${name}: the export has no ${name}.tileset.tres`);
+      for (const [file, bytes] of bundle.files) if (file === `${name}.png` || file === `${name}.tileset.tres` || file.startsWith('frames/')) await put(`${folder}/${file}`, bytes);
+      const model = tileModel(recipe, JSON.parse(bundle.files.get(`${name}.atlas.json`)), { id: 0, terrainSet: 0, texture: `res://${folder}/${name}.png`, frameFile: frame => `res://${folder}/frames/${frame}.png` });
+      const keys = GODOT_LAYERED_SOURCE.layers.map(layer => layer.key).join(''), maps = GODOT_LAYERED_MAPS.map(rows => ({ rows, layers: { set: 0, keys } }));
+      cases.push({ key: name, tres: `res://${folder}/${name}.tileset.tres`, files: model.files, maps });
+      expected[name] = { models: [model], maps, layered: { model, keys } };
     }
     // The scene: the cardinal fence, the weighted one-way ledge on about every fourth cell of each map, and the corner
     // moss on the cells of a band of rows. The fence at the others' scale and padding, since one TileSet has one tile
@@ -694,7 +743,7 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
       assert.ok(got && !got.error, `${key}: ${got?.error ?? 'missing from the report'}`);
       assert.deepEqual(got.tile_size, want.models[0].size, `${key}: tile size`);
       assert.deepEqual(got.physics, want.models.some(model => model.solid) ? [1] : [], `${key}: physics layers`);
-      assert.deepEqual(got.sets, want.models.filter(model => Object.keys(model.masks).length).map(model => ({ mode: GODOT_MODES[model.mode], terrains: [model.name] })), `${key}: terrain sets`);
+      assert.deepEqual(got.sets, want.models.filter(model => Object.keys(model.masks).length || model.layers.length).map(model => (model.layers.length ? { mode: GODOT_MODES.corner, terrains: model.layers } : { mode: GODOT_MODES[model.mode], terrains: [model.name] })), `${key}: terrain sets`);
       assert.equal(got.sources.length, want.models.length, `${key}: sources`);
       want.models.forEach((model, s) => {
         const source = got.sources[s], where = `${key} source ${s}`;
@@ -707,14 +756,19 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
         assert.deepEqual(source.tiles.map(tile => model.frameAt[tile.at.join(':')]).sort(), [...model.tiles].sort(), `${where}: tiles`);
         for (const tile of source.tiles) {
           // Compiled masks are already reduced.
-          const frame = model.frameAt[tile.at.join(':')], at = `${where} ${frame}`, mask = model.masks[frame], plain = mask === undefined;
-          assert.equal(tile.alternatives, 1, `${at}: alternatives`);
+          const frame = model.frameAt[tile.at.join(':')], at = `${where} ${frame}`, mask = model.masks[frame], corners = model.corners[frame], plain = mask === undefined && !corners;
+          // A layered tile is there once per terrain as its centre, with its corners' terrains as peering bits and the
+          // ground (the first terrain) unset.
+          if (corners) {
+            const bits = Object.fromEntries(Object.entries(GODOT_PEERS.corner).map(([peer, bit]) => [peer, model.layers.indexOf(corners[Math.log2(bit)])]).filter(([, terrain]) => terrain > 0));
+            assert.deepEqual(tile.alts.map(alt => [alt.id, alt.terrain_set, alt.terrain, alt.bits]), model.layers.map((_, k) => [k, model.terrainSet, k, bits]), `${at}: one alternative per centre terrain, with corners ${corners.join(' ')}`);
+          } else assert.equal(tile.alternatives, 1, `${at}: alternatives`);
           assert.deepEqual([tile.terrain_set, tile.terrain], plain ? [-1, -1] : [model.terrainSet, 0], `${at}: terrain`);
           assert.ok(Math.abs(tile.probability - model.probability(frame)) < 1e-6, `${at}: probability ${tile.probability}, not ${model.probability(frame)}`);
           assert.deepEqual(tile.polygons, model.polygons(frame), `${at}: collision`);
           polygons += tile.polygons.length;
-          const bits = plain ? {} : Object.fromEntries(Object.entries(GODOT_PEERS[model.mode]).filter(([, bit]) => mask & bit).map(([peer]) => [peer, 0]));
-          assert.deepEqual(tile.bits, bits, `${at}: peering bits for mask ${mask}`);
+          const bits = plain || corners ? tile.alts[0].bits : Object.fromEntries(Object.entries(GODOT_PEERS[model.mode]).filter(([, bit]) => mask & bit).map(([peer]) => [peer, 0]));
+          assert.deepEqual(tile.bits, plain ? {} : bits, `${at}: peering bits for mask ${mask}`);
           const sequence = model.sequences.get(frame) ?? [frame];
           assert.equal(tile.frames.length, sequence.length, `${at}: animation frames`);
           tile.frames.forEach((played, i) => {
@@ -731,6 +785,26 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
       // outside the map. Godot's corner terrains are terrain where four painted cells meet, and every painted cell holds
       // the tile whose corners are those points: Pixelbolt's corner tilemap of the map of those points, whose tiles sit
       // on the painted cells (and the empty tile on a painted cell it draws nothing on).
+      // A layered map painted bottom-up: a point is the lowest terrain of the four cells around it (the ground outside the
+      // map), and each cell holds the tile whose corners are its four points, centred on its own terrain. That is
+      // Pixelbolt's corner tilemap of the map of points, its tiles on the cells.
+      if (want.layered) {
+        const { model, keys } = want.layered;
+        want.maps.forEach(({ rows }, m) => {
+          const level = (x, y) => (y >= 0 && y < rows.length && x >= 0 && x < rows[0].length ? keys.indexOf(rows[y][x]) : 0);
+          const points = Array.from({ length: rows.length + 1 }, (_, j) => Array.from({ length: rows[0].length + 1 }, (_, i) => keys[Math.min(level(i - 1, j - 1), level(i, j - 1), level(i - 1, j), level(i, j))]).join(''));
+          const drawn = expandTilemap({ rows: points, legend: Object.fromEntries([...keys].map(k => [k, { frame: 'tile-{corners}', autotile: 'corner' }])) }, { path: 'map', fail: (where, message) => { throw new Error(`${where}: ${message}`); }, kinds: ['frame'], text: 'frame', masked: () => true, exists: () => true }).cells;
+          const wanted = new Map(drawn.map(cell => [`${cell.x - 0.5},${cell.y - 0.5}`, cell.name.slice(5)]));
+          rows.forEach((row, y) => [...row].forEach((char, x) => {
+            const cell = got.painted[m][`${x},${y}`], [id, ax, ay, alt] = cell === undefined ? [] : cell.split(':');
+            const frame = Number(id) === model.id ? model.frameAt[`${ax}:${ay}`] : null, chose = frame && model.corners[frame] ? `${model.corners[frame].map(name => keys[model.layers.indexOf(name)]).join('')}/${keys[alt]}` : 'nothing';
+            if (chose !== `${wanted.get(`${x},${y}`)}/${char}`) differ.push(`${key} map ${m} cell ${x},${y}: Godot drew ${chose}, Pixelbolt ${wanted.get(`${x},${y}`)}/${char}`);
+            painted++;
+          }));
+          assert.equal(Object.keys(got.painted[m]).length, rows.length * rows[0].length, `${key} map ${m}: Godot painted cells outside the map`);
+        });
+        continue;
+      }
       want.maps.forEach(({ rows }, m) => {
         let count = 0;
         const corners = new Map();
@@ -745,7 +819,7 @@ export async function verifyGodotTiles({ godot = findGodot(), keep = false, log 
           if (!model) return;
           count++;
           const pixelbolt = model.mode === 'corner' ? corners.get(char).get(`${x},${y}`) ?? 0 : neighbourMask(model.mode, (dx, dy) => rows[y + dy]?.[x + dx] === char), cell = got.painted[m][`${x},${y}`];
-          const [id, ...at] = cell === undefined ? [] : cell.split(':'), mask = Number(id) === model.id ? model.masks[model.frameAt[at.join(':')]] : null;
+          const [id, ...at] = cell === undefined ? [] : cell.split(':'), mask = Number(id) === model.id ? model.masks[model.frameAt[at.slice(0, 2).join(':')]] : null;
           if (mask !== pixelbolt) differ.push(`${key} map ${m} cell ${x},${y}: Godot drew ${cell === undefined ? 'nothing' : `source ${id} mask ${mask}`}, Pixelbolt ${model.name} mask ${pixelbolt}`);
           painted++;
         }));

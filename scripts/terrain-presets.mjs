@@ -1,7 +1,7 @@
 // Reviewed autotile sources drawn from terrain descriptions, written to examples/ by generate-examples.js: a top-down
-// meadow over dirt with rare flowers and a side-view platformer ground with collision boxes. Both compile without seam
-// warnings; their test maps are the review (pixelbolt autotile examples/meadow.autotile.json --out <new.json>
-// --preview <new.png>).
+// meadow over dirt with rare flowers, a side-view platformer ground with collision boxes and a layered shore of water,
+// sand and grass. All compile without seam warnings; their test maps are the review (pixelbolt autotile
+// examples/meadow.autotile.json --out <new.json> --preview <new.png>).
 
 // Grass seen from above, over dirt: jittered edges with a dark outline, a lit top rim with tufts, a shaded lip and a
 // cast shadow at the bottom. Two more fills and a flowered one hide the tile repeat when mixed by weight in a map.
@@ -59,4 +59,24 @@ const ground = {
   sheet: { columns: 16 }
 };
 
-export const terrainPresets = { 'meadow.autotile': meadow, 'ground.autotile': ground };
+// A shore seen from above, as a layered corner set: water under sand under grass, 81 tiles for every mix of the three at
+// a tile's corners. The sand meets the water with a line of foam and the grass keeps the meadow's outline, so grass
+// on sand and grass straight on water both read.
+const shore = {
+  format: 'pixelforge-autotile', version: 1, name: 'shore', tile: 16,
+  palette: { k: '#1e2b22', D: '#2d4a2c', d: '#3c6b35', g: '#4f8a3f', G: '#67a447', L: '#8fc75a', S: '#8a6d48', s: '#d9b97a', t: '#c49f62', y: '#ecd39a', W: '#28598a', w: '#2f6aa0', v: '#4a90c4', f: '#cfe8f2' },
+  frame: 'shore-{corners}',
+  layers: [
+    { name: 'water', key: 'w', terrain: { seed: 5, fill: { color: 'w', speckle: [{ color: 'W', amount: 0.2, size: 8 }, { color: 'v', amount: 0.04, size: 2 }] } } },
+    { name: 'sand', key: 's', terrain: { seed: 8,
+      fill: { color: 's', speckle: [{ color: 't', amount: 0.14, size: 5 }, { color: 'y', amount: 0.06, size: 2 }, { color: 'S', amount: 0.02, size: 1 }] },
+      edges: { all: { depth: 2, jitter: 1, size: 6, bands: ['t'], outside: ['f', 'v'] } }, round: 3, inner: 2 } },
+    { name: 'grass', key: 'g', terrain: { seed: 4,
+      fill: { color: 'g', speckle: [{ color: 'd', amount: 0.22, size: 5 }, { color: 'G', amount: 0.16, size: 4 }, { color: 'L', amount: 0.03, size: 2 }] },
+      edges: { all: { depth: 2, jitter: 1, size: 5, bands: ['k', 'd'] }, n: { bands: ['k', 'G'], tufts: { colors: ['g', 'G'], amount: 0.4 } }, s: { depth: 3, bands: ['k', 'D'] } },
+      round: 2, inner: 1 } }
+  ],
+  sheet: { columns: 9 }
+};
+
+export const terrainPresets = { 'meadow.autotile': meadow, 'ground.autotile': ground, 'shore.autotile': shore };
