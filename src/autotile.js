@@ -150,7 +150,7 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
     if (spec.autotile && masked(kind) && list.some(n => !n.includes('{mask}') && !(spec.autotile === 'corner' && n.includes('{corners}')))) fail(`${where}.${key}`, spec.autotile === 'corner' ? 'corner names must contain {mask} or, for a layered set, {corners}' : 'autotile names must contain {mask}');
     if (!spec.autotile && !masked(kind)) fail(`${where}.autotile`, `a ${kind} draws the tile its neighbour mask selects; set autotile to blob, cardinal or corner`);
     if (spec.match !== undefined && (typeof spec.match !== 'string' || !spec.match.length)) fail(`${where}.match`, 'expected a string of matching characters');
-    return { kind, names: list, weights, autotile: spec.autotile ?? null, match: spec.match ?? null };
+    return { kind, names: list, weights, autotile: spec.autotile ?? null, match: spec.match ?? null, path: `${where}.${key}`, all: list.map((_, i) => i), layered: list.some(n => n.includes('{corners}')) };
   };
   const ruleFields = ['where', 'chance', 'offset', 'stop'], drawFields = [...names, 'weights', 'autotile', 'match'];
   const legend = new Map();
@@ -181,6 +181,17 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
       legend.set(char, [{ ...drawable(entry, lp), salt: 0, pattern: null, chance: 1, offset: [0, 0], stop: false }]);
     }
   }
+  // A layered entry's variants are tiles the set has for some corners only (a layer's variants of its plain tile), so
+  // each must be a tile for some four of the map's layered keys; one that is a tile for none is a mistake.
+  const layeredKeys = [...legend].filter(([, rules]) => rules?.some(rule => rule.layered)).map(([char]) => char), k = layeredKeys.length;
+  if (k <= 8) for (const rules of legend.values()) for (const rule of rules ?? []) {
+    if (!rule.layered || rule.names.length < 2) continue;
+    rule.names.forEach((name, i) => {
+      if (!name.includes('{corners}') || name.includes('{mask}')) return;
+      for (let code = 0; code < k * k * k * k; code++) if (exists(rule.kind, name.replaceAll('{corners}', [1, k, k * k, k * k * k].map(place => layeredKeys[Math.floor(code / place) % k]).join('')))) return;
+      fail(`${rule.path}[${i}]`, `${JSON.stringify(name)} is no ${rule.kind} for any four of the map's layered keys (${layeredKeys.join(' ')}); a layered set names a layer's variants after its plain tile, such as ${rule.names[0].replaceAll('{corners}', layeredKeys[0].repeat(4))}-<variant>`);
+    });
+  }
   const width = rows[0].length;
   const charAt = (x, y) => (y >= 0 && y < rows.length && x >= 0 && x < width ? rows[y][x] : undefined);
   // In a `where` pattern a dot matches anything, the empty character matches empty cells, a class matches its
@@ -196,13 +207,14 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
   };
   // Variants picked by a seeded hash of the cell's position, so repeated terrain does not tile visibly. (A product of
   // x and y with two odd numbers, used without a seed before, kept only their low bits: two variants made a checkerboard.)
-  const pick = (rule, x, y) => {
-    if (rule.names.length === 1) return rule.names[0];
+  // Returns the index of the name picked from `among`, indices into the rule's names, by their weights.
+  const pick = (rule, x, y, among) => {
+    if (among.length === 1) return among[0];
     const value = hash(seed, x, y, rule.salt);
-    if (!rule.weights) return rule.names[value % rule.names.length];
-    let left = value % rule.weights.reduce((sum, w) => sum + w, 0);
-    for (let i = 0; i < rule.names.length; i++) { left -= rule.weights[i]; if (left < 0) return rule.names[i]; }
-    return rule.names.at(-1);
+    if (!rule.weights) return among[value % among.length];
+    let left = value % among.reduce((sum, i) => sum + rule.weights[i], 0);
+    for (const i of among) { left -= rule.weights[i]; if (left < 0) return i; }
+    return among.at(-1);
   };
   const outputs = [], drawnCorners = new Set();
   // The characters of the four cells around a corner tile (NW, NE, SW, SE), for {corners}: past the map's edge, the
@@ -213,13 +225,16 @@ export function expandTilemap(tilemap, { path, fail, kinds, text, exists, masked
   const emit = (rule, char, x, y, cp) => {
     const match = rule.match ?? char, corner = rule.autotile === 'corner';
     const mask = rule.autotile ? neighbourMask(rule.autotile, (dx, dy) => { const c = charAt(x + dx, y + dy); return c === undefined ? outside === 'match' : match.includes(c); }) : null;
-    let name = pick(rule, x, y), corners = null;
-    if (mask !== null && masked(rule.kind)) name = name.replaceAll('{mask}', String(mask));
-    if (name.includes('{corners}')) {
+    const named = name => (mask !== null && masked(rule.kind) ? name.replaceAll('{mask}', String(mask)) : name);
+    let name, corners = null;
+    if (!rule.layered) name = named(rule.names[pick(rule, x, y, rule.all)]);
+    else {
       const cells = cornerCells(x, y), blank = cells.find(([cx, cy]) => rows[cy][cx] === '.' || rows[cy][cx] === ' ');
       if (blank) fail(`${path}.rows[${blank[1]}][${blank[0]}]`, 'is empty, but {corners} names a layered tile by the characters of the four cells around it; give every cell of a layered map one of its terrains\' keys');
       corners = cells.map(([cx, cy]) => rows[cy][cx]);
-      name = name.replaceAll('{corners}', corners.join(''));
+      // Names the set has no tile for at these corners (other terrains' variants) are left out of the pick.
+      const names = rule.names.map(n => named(n).replaceAll('{corners}', corners.join(''))), have = rule.all.filter(i => exists(rule.kind, names[i]));
+      name = names[have.length ? pick(rule, x, y, have) : 0];
     }
     if (!exists(rule.kind, name)) fail(cp, `${rule.kind} ${JSON.stringify(name)} does not exist${corners ? ` (corners ${corners.join(' ')}: every cell around a layered tile is one of the set's keys)` : mask === null ? '' : ` (${corner ? 'corner ' : ''}mask ${mask})`}`);
     const [dx, dy] = rule.offset, moved = dx !== 0 || dy !== 0, half = corner ? 0.5 : 0;

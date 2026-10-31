@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { renderProject } from '../src/core.js';
 import { compileAutotile } from '../src/authoring.js';
 import { neighbourMask, tilePieces, expandTilemap, autotileFrames, CORNER_MASKS } from '../src/autotile.js';
-import { JOINS, TEST_MAP } from '../src/terrain.js';
+import { JOINS, TEST_MAP, layeredTestMap } from '../src/terrain.js';
 import { createBundle } from '../src/export.js';
 import { prepareScene, renderScene } from '../src/scene.js';
 import { checkDelivery } from '../src/check.js';
@@ -111,23 +111,30 @@ const shore = JSON.parse(await readFile(new URL('../examples/shore.autotile.json
 test('a layered set has a tile for every mix of its terrains at the four corners, each lower one running on under the higher', () => {
   const { recipe, metadata, warnings, preview } = compileAutotile(shore);
   assert.equal(warnings, undefined);
-  assert.deepEqual(metadata.layers, [{ name: 'water', key: 'w' }, { name: 'sand', key: 's' }, { name: 'grass', key: 'g' }]);
-  assert.deepEqual([metadata.mode, metadata.tiles, metadata.seams.shape, metadata.seams.texture], ['corner', 81, 0, 0]);
+  const fills = [{ name: 'b', weight: 4 }, { name: 'c', weight: 4 }];
+  assert.deepEqual(metadata.layers, [{ name: 'water', key: 'w', weight: 4, variants: [...fills, { name: 'lily', weight: 1 }], solid: true },
+    { name: 'sand', key: 's', weight: 4, variants: [...fills, { name: 'shell', weight: 1 }] }, { name: 'grass', key: 'g', weight: 4, variants: [...fills, { name: 'daisies', weight: 1 }] }]);
+  assert.deepEqual([metadata.mode, metadata.tiles, metadata.seams.shape, metadata.seams.texture], ['corner', 90, 0, 0]);
   assert.deepEqual(recipe.frames.slice(0, 3).map(frame => frame.name), ['shore-wwww', 'shore-swww', 'shore-gwww']);
   // Water at NW and SE, sand at NE, grass at SW: water fills the tile, sand covers its own corner and the grass's, grass its own.
-  assert.deepEqual(recipe.frames.find(frame => frame.name === 'shore-wsgw'), { name: 'shore-wsgw', tile: { corners: ['water', 'sand', 'grass', 'water'] }, ops: [
-    { op: 'autotile', symbol: 'template-water', mask: 15, mode: 'corner' }, { op: 'autotile', symbol: 'template-sand', mask: 6, mode: 'corner' }, { op: 'autotile', symbol: 'template-grass', mask: 4, mode: 'corner' }] });
+  const wsgw = recipe.frames.find(frame => frame.name === 'shore-wsgw');
+  assert.deepEqual(wsgw.tile.corners, ['water', 'sand', 'grass', 'water']);
+  assert.deepEqual(wsgw.ops, [{ op: 'autotile', symbol: 'template-water', mask: 15, mode: 'corner' }, { op: 'autotile', symbol: 'template-sand', mask: 6, mode: 'corner' }, { op: 'autotile', symbol: 'template-grass', mask: 4, mode: 'corner' }]);
   // Grass straight on water draws no sand.
   assert.deepEqual(recipe.frames.find(frame => frame.name === 'shore-ggww').ops.map(op => [op.symbol, op.mask]), [['template-water', 15], ['template-grass', 3]]);
   // A layered tile is no single-terrain autotile frame.
   assert.deepEqual(autotileFrames(recipe), []);
-  // The test map draws one map per terrain over the same rows.
-  assert.deepEqual(preview.frames[0].ops.map(op => [op.op, Object.entries(op.legend).filter(([, entry]) => entry).map(([key, entry]) => `${key}:${entry.match}`)]), [['tilemap', ['w:wsg']], ['tilemap', ['s:sg']], ['tilemap', ['g:g']]]);
+  // The test map draws one map per terrain over the same rows, then the variants.
+  const ops = preview.frames[0].ops, maps = ops.filter(op => op.op === 'tilemap');
+  assert.deepEqual(maps.map(op => Object.entries(op.legend).filter(([, entry]) => entry).map(([key, entry]) => `${key}:${entry.match}`)), [['w:wsg'], ['s:sg'], ['g:g']]);
+  assert.deepEqual([...new Set(ops.slice(maps.length).map(op => op.op))], ['autotile']);
+  // Below the block and the shapes, a patch of the terrain between shows its plain tile and variants.
+  assert.deepEqual(layeredTestMap(3).slice(-5).map(row => row.join('')), [...Array(4).fill(`0${'1'.repeat(20)}0`), '0'.repeat(22)]);
   const layers = shore.layers;
   for (const [change, message] of [
     [{ mode: 'blob' }, /autotile\.mode: layers are corner tiles/],
-    [{ variants: [{ name: 'a' }] }, /autotile\.variants: a layered set has no variants yet/],
-    [{ collision: true }, /autotile\.collision: a layered set has no collision boxes yet/],
+    [{ variants: [{ name: 'a' }] }, /autotile\.variants: a layered set's variants belong to its layers: give a layer variants of its plain tile/],
+    [{ collision: true }, /autotile\.collision: a layered set's collision belongs to its layers: give each solid layer collision/],
     [{ frame: 'shore-{mask}' }, /autotile\.frame: expected a frame name template containing \{corners\}/],
     [{ layers: layers.slice(0, 1) }, /autotile\.layers: expected 2–4 layers, bottom first/],
     [{ layers: [layers[0], { ...layers[1], key: 'w' }] }, /autotile\.layers\[1\]\.key: expected one letter or digit, unique among the layers/],
@@ -154,13 +161,90 @@ test('a layered set exports one Godot corner terrain set, the ground unset, ever
   const bundle = await createBundle(compileAutotile(shore).recipe), text = bundle.files.get('shore.tileset.tres').toString();
   const atlas = JSON.parse(bundle.files.get('shore.atlas.json')), { x, y } = atlas.frames['shore-wsgw'].frame, cell = `${x / 16}:${y / 16}`;
   assert.match(text, /terrain_set_0\/mode = 1\nterrain_set_0\/terrain_0\/name = "water"\n.*\nterrain_set_0\/terrain_1\/name = "sand"\n.*\nterrain_set_0\/terrain_2\/name = "grass"\n/);
-  assert.equal(text.match(/\/terrain = /g).length, 81 * 3);
+  assert.equal(text.match(/\/terrain = /g).length, 90 * 3);
+  // Solid water: the tile but for the sand's corner and the grass's, from where each starts.
   assert.deepEqual(text.split('\n').filter(line => line.startsWith(`${cell}/`)), [`${cell}/next_alternative_id = 3`,
-    ...[0, 1, 2].flatMap(k => [`${cell}/${k} = ${k}`, `${cell}/${k}/terrain_set = 0`, `${cell}/${k}/terrain = ${k}`, `${cell}/${k}/terrains_peering_bit/bottom_left_corner = 2`, `${cell}/${k}/terrains_peering_bit/top_right_corner = 1`])]);
-  assert.deepEqual(atlas.frames['shore-wsgw'].tile, { corners: ['water', 'sand', 'grass', 'water'] });
+    ...[0, 1, 2].flatMap(k => [`${cell}/${k} = ${k}`, `${cell}/${k}/terrain_set = 0`, `${cell}/${k}/terrain = ${k}`, `${cell}/${k}/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 2, -8, 2, -2, 8, -2, 8, 8, -2, 8, -2, 3, -8, 3)`,
+      `${cell}/${k}/terrains_peering_bit/bottom_left_corner = 2`, `${cell}/${k}/terrains_peering_bit/top_right_corner = 1`])]);
+  assert.deepEqual(atlas.frames['shore-wsgw'].tile, { corners: ['water', 'sand', 'grass', 'water'], collision: [[[0, 0], [10, 0], [10, 6], [16, 6], [16, 16], [6, 16], [6, 11], [0, 11]].map(([x, y]) => ({ x, y }))] });
+  // A variant's probability is its weight against the heaviest tile with its corners, so other tiles keep Godot's 1.
+  const probability = frame => { const { x: fx, y: fy } = atlas.frames[frame].frame; return text.split('\n').find(line => line.startsWith(`${fx / 16}:${fy / 16}/0/probability = `))?.split(' = ')[1]; };
+  assert.deepEqual(['shore-wwww', 'shore-wwww-b', 'shore-wwww-lily', 'shore-wsgw'].map(probability), [undefined, undefined, '0.25', undefined]);
+  assert.match(text, /\nphysics_layer_0\/collision_layer = 1\n/);
   const readme = bundle.files.get('README.txt').toString();
   assert.match(readme, /the layered terrains water, sand and grass and their transitions/);
   assert.match(readme, /paint bottom-up, each terrain over its own cells and those of every terrain above it: water over the whole area, then sand over the sand and grass, then grass over the grass\./);
   for (const [tile, message] of [[{ corners: ['water', 'sand'] }, /tile\.corners: expected the terrains at the tile's four corners/], [{ corners: ['a', 'b', 'c', 'd'], terrain: 'a' }, /tile\.terrain: a tile with corners belongs to the terrains they name/]])
     assert.throws(() => renderProject({ version: 1, name: 't', width: 4, height: 4, frames: [{ name: 'a', tile }] }), message);
+});
+
+test('a layer\'s variants redraw its plain tile, after the other tiles, weighed against it', () => {
+  const { recipe } = compileAutotile(shore), frame = name => recipe.frames.find(item => item.name === name);
+  assert.deepEqual(recipe.frames.slice(81).map(item => item.name), ['shore-wwww-b', 'shore-wwww-c', 'shore-wwww-lily', 'shore-ssss-b', 'shore-ssss-c', 'shore-ssss-shell', 'shore-gggg-b', 'shore-gggg-c', 'shore-gggg-daisies']);
+  assert.deepEqual(['shore-wwww', 'shore-wwww-b', 'shore-wwww-lily', 'shore-wsgw'].map(name => frame(name).tile.weight), [4, 4, undefined, undefined]);
+  assert.deepEqual(frame('shore-wwww-lily'), { name: 'shore-wwww-lily', tile: { corners: ['water', 'water', 'water', 'water'], collision: [[0, 0], [16, 0], [16, 16], [0, 16]] }, ops: [{ op: 'autotile', symbol: 'template-water-lily', mask: 15, mode: 'corner' }] });
+  // The lily is the plain tile with the lily stamped over it, kept in the template's plain-tile quarters (the middle of
+  // its island), so the rest of the template is the water's.
+  const project = renderProject(recipe), pixels = name => project.frames.find(item => item.name === name).data, plainTile = pixels('shore-wwww'), lily = pixels('shore-wwww-lily'), changed = [];
+  for (let i = 0; i < plainTile.length; i += 4) if (plainTile.subarray(i, i + 4).join() !== lily.subarray(i, i + 4).join()) changed.push([(i / 4) % 16, Math.floor(i / 64)]);
+  assert.ok(changed.length > 10 && changed.every(([x, y]) => x >= 6 && x <= 11 && y >= 5 && y <= 9), JSON.stringify(changed));
+  recipe.symbols['template-water'].forEach((row, y) => [...row].forEach((char, x) => { if (recipe.symbols['template-water-lily'][y][x] !== char) assert.ok(x >= 8 && x < 24 && y >= 24 && y < 40, `${x}, ${y}`); }));
+  // Another fill seed redraws the whole template; only its plain tile is used.
+  assert.notDeepEqual(recipe.symbols['template-water-b'], recipe.symbols['template-water']);
+  const water = shore.layers[0], withWater = change => ({ ...shore, layers: [{ ...water, ...change }, ...shore.layers.slice(1)] });
+  for (const [change, message] of [
+    [{ variants: undefined }, /autotile\.layers\[0\]\.weight: weighs the layer's plain tile against its variants; give the layer variants/],
+    [{ variants: [] }, /autotile\.layers\[0\]\.variants: expected 1–16 variants of the layer's plain tile/],
+    [{ variants: [{ name: 'b' }] }, /autotile\.layers\[0\]\.variants\[0\]: a variant redraws the layer's plain tile: give it a terrain \(merged into the layer's\) or ops drawn over the tile/],
+    [{ variants: [{ name: 'b', ops: [] }, { name: 'b', ops: [] }] }, /autotile\.layers\[0\]\.variants\[1\]\.name: expected 1–16 letters, digits, hyphens or underscores, unique among the layer's variants/],
+    [{ variants: [{ name: 'b', weight: 0, ops: [] }] }, /autotile\.layers\[0\]\.variants\[0\]\.weight: expected a whole number from 1 to 1000/],
+    [{ terrain: undefined, ops: [{ op: 'rect', x: 0, y: 0, w: 32, h: 48, color: 'w' }], variants: [{ name: 'b', terrain: { seed: 2 } }] }, /autotile\.layers\[0\]\.variants\[0\]\.terrain: a variant's terrain changes the layer's terrain; give the layer \(or the set\) a terrain first/],
+    [{ variants: [{ name: 'b', ops: [{ op: 'pixel', x: 3, y: 3, color: '#123456' }] }] }, /autotile\.layers\[0\]\.variants\[0\]\.ops: drew #123456ff at \[3, 3\], a colour no one-character palette key names/]
+  ]) assert.throws(() => compileAutotile(withWater(change)), message, JSON.stringify(change));
+  // A layer's template and a variant's never share a name.
+  assert.throws(() => compileAutotile({ ...shore, layers: [water, { ...shore.layers[1], name: 'water-b' }, shore.layers[2]] }), /autotile\.layers\[1\]\.name: template-water-b would name two templates/);
+  // Drawing on the tile's border, which the tiles beside it do not continue, is warned about.
+  assert.deepEqual(compileAutotile(withWater({ variants: [{ name: 'rock', ops: [{ op: 'rect', x: 0, y: 6, w: 3, h: 2, color: 'S' }] }] })).warnings,
+    ['Layer water, variant rock: its ops change 2 pixels on the left border, which the tiles beside it do not continue; keep a variant\'s drawing a pixel inside the tile']);
+});
+
+test('a map draws a layer\'s variants only where its plain tile goes, as the test map does', () => {
+  const { recipe, preview } = compileAutotile(shore), names = new Set(recipe.frames.map(frame => frame.name)), keys = 'wsg';
+  const legend = Object.fromEntries(shore.layers.map(layer => [layer.key, { frames: ['shore-{corners}', ...layer.variants.map(variant => `shore-{corners}-${variant.name}`)], weights: [layer.weight, ...layer.variants.map(variant => variant.weight)], autotile: 'corner' }]));
+  const expand = (rows, legendUsed = legend) => expandTilemap({ rows, legend: legendUsed }, { path: 'map', fail, kinds: ['frame'], text: 'frame', masked: () => true, exists: (kind, name) => names.has(name) }).cells;
+  // Over the test map: a variant only where four cells of its terrain meet, at the points and with the picks of the
+  // test map's own variants.
+  const cells = expand(layeredTestMap(3).map(row => row.map(i => keys[i]).join(''))), variants = cells.filter(cell => cell.name.split('-').length === 3);
+  assert.ok(variants.every(cell => /^shore-(.)\1\1\1-/.test(cell.name)));
+  assert.deepEqual(new Set(variants.map(cell => cell.name.split('-')[2])), new Set(['b', 'c', 'lily', 'shell', 'daisies']));
+  const symbolOf = name => recipe.frames.find(frame => frame.name === name).ops[0].symbol;
+  assert.deepEqual(variants.map(cell => [cell.x * 16, cell.y * 16, symbolOf(cell.name)]).sort(), preview.frames[0].ops.filter(op => op.op === 'autotile').map(op => [op.x, op.y, op.symbol]).sort());
+  // A legend listing variants of one terrain draws its plain tile wherever another terrain is at a corner.
+  const scene = renderScene(prepareScene({ format: 'pixelforge-scene', version: 1, name: 'coast', width: 96, height: 64, assets: { shore: recipe },
+    instances: [{ asset: 'shore', at: [0, 0], tilemap: { rows: ['wwwwww', 'wwssww', 'wwssww', 'wwwwww'], legend: { w: legend.w, s: { frame: 'shore-{corners}', autotile: 'corner' } } } }] }), { lit: false });
+  assert.equal(scene.width, 96);
+  // A variant that is no tile for any corners of the map's keys is a mistake, not a variant never drawn.
+  assert.throws(() => expand(['ws'], { w: { frames: ['shore-{corners}', 'shore-{corners}-lilly'], autotile: 'corner' }, s: { frame: 'shore-{corners}', autotile: 'corner' } }),
+    /map\.legend\["w"\]\.frames\[1\]: "shore-\{corners\}-lilly" is no frame for any four of the map's layered keys \(w s\); a layered set names a layer's variants after its plain tile, such as shore-wwww-<variant>/);
+});
+
+test('a solid layer collides where it shows, up to where the terrains over it start', () => {
+  const tiles = layers => { const { recipe } = compileAutotile({ ...shore, layers: shore.layers.map((layer, i) => ({ ...layer, collision: layers[i] })) }); return name => recipe.frames.find(frame => frame.name === name).tile; };
+  // Solid water: all of a water tile, and its variants; not a sand tile; a tile with sand at NE and grass at SW but
+  // for their corners, from where each starts (the depth of their edges).
+  const water = tiles([true]);
+  assert.deepEqual(water('shore-wwww').collision, [[0, 0], [16, 0], [16, 16], [0, 16]]);
+  assert.deepEqual(water('shore-wwww-lily').collision, water('shore-wwww').collision);
+  assert.deepEqual([water('shore-ssss').collision, water('shore-ssss-shell').collision], [undefined, undefined]);
+  assert.deepEqual(water('shore-wsgw').collision, [[0, 0], [10, 0], [10, 6], [16, 6], [16, 16], [6, 16], [6, 11], [0, 11]]);
+  // Solid grass instead: its own corners, kept from the terrains under it by its edges, as one-way platforms.
+  const grass = tiles([undefined, undefined, { oneWay: true }]);
+  assert.deepEqual(grass('shore-ggww'), { corners: ['grass', 'grass', 'water', 'water'], collision: [[0, 0], [16, 0], [16, 5], [0, 5]], oneWay: true });
+  assert.equal(grass('shore-wwww').collision, undefined);
+  // Water and grass both solid, grass at NW and sand at NE over water: the grass's edge is a pixel deeper than the
+  // sand's, so a strip of sand shows between them and stays open.
+  assert.deepEqual(tiles([true, undefined, true])('shore-gsww').collision, [[[0, 0], [6, 0], [6, 5], [0, 5]], [[0, 6], [16, 6], [16, 16], [0, 16]]]);
+  assert.throws(() => tiles([true, undefined, { oneWay: true }]), /autotile\.layers\[2\]\.collision\.oneWay: engines keep one oneWay per tile: give every solid layer the same oneWay/);
+  assert.throws(() => tiles([{ inset: 8 }]), /autotile\.layers\[0\]\.collision\.inset: expected a whole number of pixels from 0 to 7/);
+  assert.throws(() => tiles(['yes']), /autotile\.layers\[0\]\.collision: expected true, or \{ inset, oneWay \}/);
 });

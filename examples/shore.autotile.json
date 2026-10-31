@@ -19,6 +19,25 @@
     "v": "#4a90c4",
     "f": "#cfe8f2"
   },
+  "symbols": {
+    "lily": [
+      ".ggwg.",
+      "gGGwgg",
+      "ggggfg",
+      "dggggd",
+      ".dddd."
+    ],
+    "shell": [
+      ".f.",
+      "fff",
+      "SSS"
+    ],
+    "daisy": [
+      ".f.",
+      "fyf",
+      ".f."
+    ]
+  },
   "frame": "shore-{corners}",
   "layers": [
     {
@@ -30,7 +49,14 @@
           "color": "w",
           "speckle": [{ "color": "W", "amount": 0.2, "size": 8 }, { "color": "v", "amount": 0.04, "size": 2 }]
         }
-      }
+      },
+      "weight": 4,
+      "variants": [
+        { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+        { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
+        { "name": "lily", "weight": 1, "ops": [{ "op": "stamp", "symbol": "lily", "x": 6, "y": 5 }] }
+      ],
+      "collision": true
     },
     {
       "name": "sand",
@@ -48,7 +74,13 @@
         "edges": { "all": { "depth": 2, "jitter": 1, "size": 6, "bands": ["t"], "outside": ["f", "v"] } },
         "round": 3,
         "inner": 2
-      }
+      },
+      "weight": 4,
+      "variants": [
+        { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+        { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
+        { "name": "shell", "weight": 1, "ops": [{ "op": "stamp", "symbol": "shell", "x": 6, "y": 7 }] }
+      ]
     },
     {
       "name": "grass",
@@ -70,7 +102,20 @@
         },
         "round": 2,
         "inner": 1
-      }
+      },
+      "weight": 4,
+      "variants": [
+        { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+        { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
+        {
+          "name": "daisies",
+          "weight": 1,
+          "ops": [
+            { "op": "stamp", "symbol": "daisy", "x": 3, "y": 3 },
+            { "op": "stamp", "symbol": "daisy", "x": 10, "y": 9 }
+          ]
+        }
+      ]
     }
   ],
   "sheet": { "columns": 9 }

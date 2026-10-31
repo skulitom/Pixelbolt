@@ -202,9 +202,10 @@ export function tileSets(sources) {
     const frames = Object.keys(atlas.frames).filter(frame => kind(frame) !== null && !covered.has(frame));
     return { source, byFrame, cornered, coords, animated, frames };
   });
-  // Probabilities: each frame's weight against the heaviest of its terrain, its layered set, or the plain tiles.
+  // Probabilities: each frame's weight against the heaviest of its terrain, of the layered tiles with its corners (a
+  // plain tile and its variants), or of the plain tiles.
   const weight = (atlas, frame) => atlas.frames[frame].tile?.weight ?? 1, heaviest = new Map();
-  const groupOf = (byFrame, cornered, frame, i) => byFrame.get(frame)?.terrain ?? (cornered.has(frame) ? `\u0000layers ${i}` : '');
+  const groupOf = (byFrame, cornered, frame, i) => byFrame.get(frame)?.terrain ?? (cornered.has(frame) ? `\u0000layers ${i} ${cornered.get(frame).join()}` : '');
   for (const [i, { source, byFrame, cornered, frames }] of prepared.entries()) for (const frame of frames) {
     const group = groupOf(byFrame, cornered, frame, i);
     heaviest.set(group, Math.max(heaviest.get(group) ?? 1, weight(source.atlas, frame)));

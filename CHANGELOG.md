@@ -4,6 +4,15 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Variants and collision for terrain transitions
+
+- A layer of a layered autotile set takes `variants` of its plain tile, the one with it at all four corners, which fills big areas: another fill (`terrain` merged into the layer's) or decoration (`ops` drawn over the tile in tile pixels), weighed against the layer's `weight` for the plain tile. They come after the other tiles, named after the plain tile with `-<name>` (`shore-wwww-lily`), each kept in a template of its own (`template-water-lily`). Ops that change the tile's border are warned about.
+- A layer takes `collision` (`true`, or `{ inset, oneWay }`): every tile is solid where that terrain shows, from where its edges start, less the corners of the terrains drawn over it from where theirs start. Solid water ends where the sand starts; two solid terrains give one shape where they touch.
+- Scene and recipe tilemap legends may list a layered tile with its variants (`frames: ["shore-{corners}", "shore-{corners}-lily"]` with `weights`): at each point, the names the set has no tile for are left out, and a name that is no tile for any corners of the map's keys is an error.
+- The layered test map adds a patch of each terrain between the bottom and the top, and draws every variant where a scene with those legends (seed 0) would.
+- The Godot TileSet weighs a layered tile against the heaviest tile with its corners, so the plain tile and its variants share out Godot's random pick and every other tile keeps probability 1. A terrain's editor colour comes from its plain tile.
+- `examples/shore.autotile.json` has two more fills per terrain and a rare lily pad, shell and daisies, and solid water: 90 tiles.
+
 ### Renders note loops that lift, jump or repeat a frame
 
 - The render `check` (MCP `pixel_render`, CLI `render`) reports `motion`: each animation's silhouette box and lowest row for every played frame, in play order.

@@ -110,8 +110,9 @@ export function tileSource(spec, project, atlas, { name = project.name, terrain 
     const key = tile.terrain ?? terrain, best = fullest.get(key);
     if (!best || popcount(tile.mask) > popcount(best.mask)) fullest.set(key, tile);
   }
-  // A layered terrain's tile is the one with it at every corner.
-  for (const tile of layered) if (new Set(tile.corners).size === 1) fullest.set(tile.corners[0], tile);
+  // A layered terrain's tile is the first with it at every corner: its plain tile, before its variants.
+  const plainTiles = new Set();
+  for (const tile of layered) if (new Set(tile.corners).size === 1 && !plainTiles.has(tile.corners[0])) { plainTiles.add(tile.corners[0]); fullest.set(tile.corners[0], tile); }
   for (const [key, tile] of fullest) {
     const data = project.frames.find(frame => frame.name === tile.frame).data, counts = new Map();
     for (let i = 0; i < data.length; i += 4) if (data[i + 3] === 255) { const id = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]; counts.set(id, (counts.get(id) ?? 0) + 1); }

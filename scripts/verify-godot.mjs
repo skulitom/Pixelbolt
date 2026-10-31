@@ -158,11 +158,13 @@ export const GODOT_TILE_SOURCES = [
     variants: [{ name: 'a', weight: 3 }, { name: 'b', palette: { g: '#8ab838' } }] }
 ];
 // A layered set of three terrains, water under sand under grass, each the tile template in its own colours, on a padded,
-// scaled sheet; painted bottom-up over maps of their keys.
+// scaled sheet; painted bottom-up over maps of their keys. Water and sand have variants of their plain tiles, which
+// Godot picks between at random, and the water is solid where it shows.
 const layerTemplate = (g, d) => TILE_TEMPLATE.map(row => row.replaceAll('g', g).replaceAll('d', d));
 export const GODOT_LAYERED_SOURCE = { format: 'pixelforge-autotile', version: 1, name: 'shore', tile: 4, frame: 'shore-{corners}', sheet: { padding: 1, scale: 2, columns: 9 },
   palette: { o: '#203018', g: '#58a040', d: '#3c7830', a: '#d8b878', b: '#a88850', w: '#3070b0', x: '#205088' },
-  layers: [{ name: 'water', key: 'w', template: layerTemplate('w', 'x') }, { name: 'sand', key: 's', template: layerTemplate('a', 'b') }, { name: 'grass', key: 'g', template: TILE_TEMPLATE }] };
+  layers: [{ name: 'water', key: 'w', template: layerTemplate('w', 'x'), weight: 3, variants: [{ name: 'glint', ops: [{ op: 'pixel', x: 1, y: 1, color: 'a' }] }], collision: true },
+    { name: 'sand', key: 's', template: layerTemplate('a', 'b'), variants: [{ name: 'shell', weight: 2, ops: [{ op: 'pixel', x: 2, y: 1, color: 'o' }] }] }, { name: 'grass', key: 'g', template: TILE_TEMPLATE }] };
 const layeredScatter = Array.from({ length: 10 }, (_, y) => Array.from({ length: 14 }, (_, x) => 'wsg'[(x * 7919 + y * 104729 + x * y * 31) % 3]).join(''));
 export const GODOT_LAYERED_MAPS = [
   ['wwwwwwww', 'wsssssww', 'wsgggsww', 'wsgggsww', 'wssssswg', 'wwwwwwww'],
@@ -667,8 +669,10 @@ function tileModel(recipe, atlas, { id, terrainSet, texture, frameFile }) {
   const later = new Set(animations.flatMap(a => a.frames.slice(1))), sequences = new Map(animations.map(a => [a.frames[0], a.frames]));
   const tiles = Object.keys(atlas.frames).filter(frame => (terrainTile(frame) || plain.has(frame)) && !later.has(frame));
   const facts = Object.fromEntries(recipe.frames.map(frame => [frame.name, frame.tile ?? {}]));
-  const heaviest = group => Math.max(...tiles.filter(frame => terrainTile(frame) === group).map(frame => facts[frame].weight ?? 1));
-  const probability = frame => (facts[frame].weight ?? 1) / heaviest(terrainTile(frame));
+  // Weights count against the heaviest frame of the terrain, of the plain tiles, or of the layered tiles with the same corners.
+  const groupOf = frame => (frame in corners ? `corners ${corners[frame].join()}` : terrainTile(frame) ? 'terrain' : 'plain');
+  const heaviest = group => Math.max(...tiles.filter(frame => groupOf(frame) === group).map(frame => facts[frame].weight ?? 1));
+  const probability = frame => (facts[frame].weight ?? 1) / heaviest(groupOf(frame));
   // One polygon, or a list of them.
   const shapes = collision => (collision === undefined ? [] : Array.isArray(collision[0][0]) ? collision : [collision]);
   const polygons = frame => shapes(facts[frame].collision).map(points => ({ points: points.map(([x, y]) => [x * s - size[0] / 2, y * s - size[1] / 2]), one_way: Boolean(facts[frame].oneWay) }));

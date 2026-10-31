@@ -625,6 +625,105 @@
             },
             "maxItems": 2048,
             "description": "Drawn over this layer's template."
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "With variants: how often the plain tile (this terrain at all four corners) is picked against them; default 1."
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,16}$"
+                },
+                "weight": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000,
+                  "description": "Default 1."
+                },
+                "terrain": {
+                  "type": "object",
+                  "description": "Changes to this layer's terrain, merged into it: { \"fill\": { \"seed\": 2 } } is another fill."
+                },
+                "ops": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/op"
+                  },
+                  "maxItems": 2048,
+                  "description": "Drawn over the plain tile in tile pixels (a lily pad, a shell), a pixel inside its border."
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "description": "Variants of the plain tile, named after it with -<name> and placed after the other tiles; transitions keep the layer's own fill. Each has a terrain or ops."
+          },
+          "collision": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "inset": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 41
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "n": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 41
+                          },
+                          "e": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 41
+                          },
+                          "s": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 41
+                          },
+                          "w": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 41
+                          }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "Pixels kept from the sides this terrain shares with lower ones; default its edges' depth."
+                  },
+                  "oneWay": {
+                    "type": "boolean",
+                    "description": "The same for every solid layer."
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Solid where this terrain shows: its corners, from where its edges start, less those of the terrains over it, from where theirs start."
           }
         },
         "required": [
@@ -635,7 +734,7 @@
       },
       "maxItems": 4,
       "minItems": 2,
-      "description": "A layered corner set of 2–4 terrains, bottom first (water, sand, grass): a tile for every mix of them at its four corners, n^4 in all, the lowest filling it and each higher one among them drawn over it. Not with template, ops, variants, collision or animation."
+      "description": "A layered corner set of 2–4 terrains, bottom first (water, sand, grass): a tile for every mix of them at its four corners, n^4 in all, the lowest filling it and each higher one among them drawn over it. Variants and collision belong to the layers. Not with template, ops or animation."
     },
     "collision": {
       "oneOf": [
@@ -2035,7 +2134,7 @@
                           "cardinal",
                           "corner"
                         ],
-                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
+                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set, and its variants with no tile there are left out)."
                       },
                       "match": {
                         "type": "string",
@@ -2099,7 +2198,7 @@
                                 "cardinal",
                                 "corner"
                               ],
-                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
+                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set, and its variants with no tile there are left out)."
                             },
                             "match": {
                               "type": "string",

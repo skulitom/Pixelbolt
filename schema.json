@@ -1666,7 +1666,7 @@
                           "cardinal",
                           "corner"
                         ],
-                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
+                        "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set, and its variants with no tile there are left out)."
                       },
                       "match": {
                         "type": "string",
@@ -1730,7 +1730,7 @@
                                 "cardinal",
                                 "corner"
                               ],
-                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set)."
+                              "description": "Pick by neighbour mask: 47-value blob, 16-value cardinal, or 16-value corner (a tile where four cells meet, half a cell up and left; {corners} in a name becomes those four cells' characters, for a layered set, and its variants with no tile there are left out)."
                             },
                             "match": {
                               "type": "string",
