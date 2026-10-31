@@ -205,7 +205,9 @@ function readShape(value, path, width, height) {
 }
 
 // Obstacle keys move an obstacle or take it away on cue: from a key's frame on it goes to the key's x and y (in a
-// straight line over `over` frames, in whole pixels) and shows or not as `show` says, starting from where it was.
+// straight line over `over` frames, in whole pixels) and shows or not as `show` says, starting from where it was. A key
+// may take it partly or wholly off the canvas, as far as its own size past any edge: what hangs off is clipped, as the
+// canvas edge clips the fluid, so a rod can reach in from outside and a gate or a conveyor's load can leave.
 // Returns its place on every frame of the cycle: { x, y, show }.
 function readTrack(value, path, frames, home, rows, width, height) {
   if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of x, y, show }');
@@ -218,8 +220,8 @@ function readTrack(value, path, frames, home, rows, width, height) {
     last = frame;
     if (key.x === undefined && key.y === undefined && key.show === undefined) fail(kp, 'a key moves the obstacle (x, y) or shows or hides it (show)');
     return {
-      frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256), ...(key.x !== undefined && { x: integer(key.x, `${kp}.x`, 0, width - 1) }),
-      ...(key.y !== undefined && { y: integer(key.y, `${kp}.y`, 0, height - 1) }), ...(key.show !== undefined && { show: boolean(key.show, `${kp}.show`) })
+      frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256), ...(key.x !== undefined && { x: integer(key.x, `${kp}.x`, -rows[0].length, width) }),
+      ...(key.y !== undefined && { y: integer(key.y, `${kp}.y`, -rows.length, height) }), ...(key.show !== undefined && { show: boolean(key.show, `${kp}.show`) })
     };
   });
   // Where the obstacle is along each axis, before rounding to whole pixels, and the frames it jumps on (a key with no
@@ -236,31 +238,35 @@ function readTrack(value, path, frames, home, rows, width, height) {
   };
   const ax = along('x'), ay = along('y'), shows = Array(frames).fill(true);
   for (const key of keys) if (key.show !== undefined) for (let f = key.frame; f < frames; f++) shows[f] = key.show;
-  const track = ax.raw.map((rx, f) => {
+  return ax.raw.map((rx, f) => {
     const jump = ax.jumps[f] || ay.jumps[f] || (f > 0 && shows[f] !== shows[f - 1]), still = !f || jump;
     return { x: Math.floor(rx + 0.5), y: Math.floor(ay.raw[f] + 0.5), show: shows[f], jump, vx: still ? 0 : rx - ax.raw[f - 1], vy: still ? 0 : ay.raw[f] - ay.raw[f - 1] };
   });
-  // The symbol must stay inside the canvas on every frame it shows; the key that took it out is named.
-  track.forEach((at, f) => {
-    if (!at.show || (at.x + rows[0].length <= width && at.y + rows.length <= height)) return;
-    let i = keys.length - 1;
-    while (i > 0 && keys[i].frame > f) i--;
-    fail(`${path}[${i}]`, `the ${rows[0].length} × ${rows.length} symbol must fit inside the ${width} × ${height} canvas on every frame it shows`);
-  });
-  return track;
+}
+// The part of an obstacle's symbol at (x, y) that lies on the canvas, as a rectangle of the symbol (sx, sy, w, h), or
+// null when none of it does.
+function onCanvas(rows, x, y, width, height) {
+  const sx = Math.max(0, -x), sy = Math.max(0, -y), w = Math.min(rows[0].length, width - x) - sx, h = Math.min(rows.length, height - y) - sy;
+  return w > 0 && h > 0 ? { sx, sy, w, h } : null;
+}
+// Whether any visible pixel of the symbol at (x, y) lies on the canvas.
+function showsOnCanvas(rows, x, y, width, height) {
+  const part = onCanvas(rows, x, y, width, height);
+  return !!part && rows.slice(part.sy, part.sy + part.h).some(row => /[^. ]/.test(row.slice(part.sx, part.sx + part.w)));
 }
 // Where every obstacle is on frame `cycle` of the effect's cycle.
 const placementsAt = (obstacles, cycle) => obstacles.map(o => (o.track ? o.track[cycle] : { x: o.x, y: o.y, show: true }));
 const layoutKey = places => places.map(p => (p.show ? `${p.x},${p.y}` : '-')).join(';');
 // The obstacles at these places as cell masks: what is solid, what is drawn over the fluid, which solid cells are smooth,
-// and which obstacle (the first listed) covers each cell. Decorations are only drawn.
+// and which obstacle (the first listed) covers each cell. Decorations are only drawn. What hangs off the canvas is left out.
 function buildLayout(obstacles, width, height, places) {
   const N = width * height, solid = new Uint8Array(N), front = new Uint8Array(N), rounded = new Uint8Array(N), stepped = new Uint8Array(N), owner = new Int16Array(N).fill(-1);
   obstacles.forEach((o, i) => {
     const at = places[i];
     if (!at.show) return;
     o.rows.forEach((row, j) => {
-      for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') {
+      if (at.y + j < 0 || at.y + j >= height) return;
+      for (let k = Math.max(0, -at.x); k < Math.min(row.length, width - at.x); k++) if (row[k] !== '.' && row[k] !== ' ') {
         const c = (at.y + j) * width + at.x + k;
         if (o.blocks) { solid[c] = 1; (o.smooth ? rounded : stepped)[c] = 1; if (owner[c] < 0) owner[c] = i; }
         if (o.draw === 'over') front[c] = 1;
@@ -340,8 +346,8 @@ function readEffect(effect, path, source) {
     const op = `${path}.obstacles[${i}]`;
     fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid', 'keys'], op);
     if (typeof obstacle.symbol !== 'string' || !Object.hasOwn(symbols, obstacle.symbol)) fail(`${op}.symbol`, `unknown symbol ${JSON.stringify(obstacle.symbol)}`);
-    const rows = symbols[obstacle.symbol], x = integer(obstacle.x ?? 0, `${op}.x`, 0, width - 1), y = integer(obstacle.y ?? 0, `${op}.y`, 0, height - 1);
-    if (x + rows[0].length > width || y + rows.length > height) fail(op, `the ${rows[0].length} × ${rows.length} symbol must fit inside the ${width} × ${height} canvas`);
+    // It may hang off any edge by up to its own size; what hangs off is clipped.
+    const rows = symbols[obstacle.symbol], x = integer(obstacle.x ?? 0, `${op}.x`, -rows[0].length, width), y = integer(obstacle.y ?? 0, `${op}.y`, -rows.length, height);
     const draw = obstacle.draw ?? 'over';
     if (!['over', 'under', 'none'].includes(draw)) fail(`${op}.draw`, 'expected over (drawn in front of the fluid), under or none (an invisible wall)');
     const surface = obstacle.surface ?? 'pixels';
@@ -392,6 +398,11 @@ function readEffect(effect, path, source) {
   const pull = schedule ? (schedule.find(now => now.gravity[0] || now.gravity[1])?.gravity ?? gravity) : gravity;
   const layouts = new Map(), layoutAt = moving ? cycle => { const places = placementsAt(obstacles, cycle), key = layoutKey(places); if (!layouts.has(key)) layouts.set(key, buildLayout(obstacles, width, height, places)); return layouts.get(key); } : null;
   const warnings = sourceWarnings({ path, width, height, frames, liquid, seed, emitters, fills, gravity: pull, solid, smooth, owner, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), layoutAt, adhesive: most.adhesion > 0 });
+  // An obstacle that shows but has no visible pixel on the canvas whenever it does blocks and draws nothing.
+  obstacles.forEach((o, i) => {
+    const shown = (o.track ?? [{ x: o.x, y: o.y, show: true }]).filter(at => at.show);
+    if (shown.length && !shown.some(at => showsOnCanvas(o.rows, at.x, at.y, width, height))) warnings.push(`${path}.obstacles[${i}] has no visible pixel on the canvas whenever it shows, so it ${!o.blocks ? 'draws' : o.draw === 'none' ? 'blocks' : 'blocks and draws'} nothing: move its x and y (or its keys) onto the ${width} × ${height} canvas`);
+  });
   return {
     warnings,
     kind, liquid, frames, durations, light: [light[0] / reachLight, light[1] / reachLight], loop, seed, emitters, look, whitewater, obstacles, moving, layout, solid, front, smooth, walls: Object.fromEntries(FLUID_WALLS.map(edge => [edge, walls.includes(edge)])), fills, cleanup,
@@ -1884,7 +1895,10 @@ function moveObstacles(run, cycle) {
     o.rows.forEach((row, j) => {
       for (let k = 0; k < row.length; k++) if (row[k] !== '.' && row[k] !== ' ') {
         for (let step = 1; step < steps; step++) {
-          const c = Math.floor(was.y + j + 0.5 + s[1] * step / steps) * W + Math.floor(was.x + k + 0.5 + s[0] * step / steps);
+          // Off the canvas (an obstacle that hangs off an edge) there are no cells to sweep.
+          const px = Math.floor(was.x + k + 0.5 + s[0] * step / steps), py = Math.floor(was.y + j + 0.5 + s[1] * step / steps);
+          if (px < 0 || py < 0 || px >= W || py >= H) continue;
+          const c = py * W + px;
           if (swept[c] < 0) swept[c] = i;
         }
       }
@@ -1928,8 +1942,16 @@ function moveObstacles(run, cycle) {
     }
   }
 }
-// The stamps of the obstacles drawn under or over the fluid, at their places in a layout.
-const stampsOf = (effect, layout, draw) => effect.obstacles.flatMap((o, i) => (o.draw === draw && layout.places[i].show ? [{ op: 'stamp', symbol: o.symbol, x: layout.places[i].x, y: layout.places[i].y }] : []));
+// The stamps of the obstacles drawn under or over the fluid, at their places in a layout. An obstacle that hangs off the
+// canvas copies only the part of its symbol on it, so the frame draws nothing outside the canvas.
+const stampsOf = (effect, layout, draw, width, height) => effect.obstacles.flatMap((o, i) => {
+  const at = layout.places[i];
+  if (o.draw !== draw || !at.show) return [];
+  const part = onCanvas(o.rows, at.x, at.y, width, height);
+  if (!part) return [];
+  if (part.w === o.rows[0].length && part.h === o.rows.length) return [{ op: 'stamp', symbol: o.symbol, x: at.x, y: at.y }];
+  return [{ op: 'copy', symbol: o.symbol, sx: part.sx, sy: part.sy, w: part.w, h: part.h, x: at.x + part.sx, y: at.y + part.sy }];
+});
 // Frame `t` of a run, `cycle` within the effect's cycle: every active emitter adds its share, its strength scaled by
 // `factors[index]` when given. Returns where each emitter was, or null where it was idle, for its sparks.
 function emitFrame(run, t, cycle, factors = null) {
@@ -2067,14 +2089,14 @@ function simulate(effect, context) {
     for (let k = 0; k < list.length; k += 2) grid[list[k]] = list[k + 1];
     let left = width, top = height, right = -1, bottom = -1;
     for (let c = 0; c < N; c++) if (grid[c]) { const x = c % width, y = Math.floor(c / width); if (x < left) left = x; if (x > right) right = x; if (y < top) top = y; if (y > bottom) bottom = y; }
-    const ops = stampsOf(effect, layouts[i], 'under');
+    const ops = stampsOf(effect, layouts[i], 'under', width, height);
     let pixels = 0;
     if (right >= 0) {
       const rows = [];
       for (let y = top; y <= bottom; y++) { let row = ''; for (let x = left; x <= right; x++) { const ch = grid[y * width + x]; row += ch ? String.fromCharCode(ch) : '.'; if (ch) pixels++; } rows.push(row); }
       ops.push({ op: 'grid', x: left, y: top, rows });
     }
-    ops.push(...stampsOf(effect, layouts[i], 'over'));
+    ops.push(...stampsOf(effect, layouts[i], 'over', width, height));
     return { ops, pixels };
   });
   const round = value => Math.floor(value * 1000 + 0.5) / 1000;
@@ -2203,7 +2225,8 @@ export function createLiveFluid(source, options = {}) {
       const at = layout.places[n];
       if (o.draw === 'none' || !at.show) return;
       recipe.symbols[o.symbol].forEach((row, j) => {
-        for (let i = 0; i < row.length; i++) {
+        if (at.y + j < 0 || at.y + j >= height) return;
+        for (let i = Math.max(0, -at.x); i < Math.min(row.length, width - at.x); i++) {
           if (row[i] === '.' || row[i] === ' ') continue;
           const c = (at.y + j) * width + at.x + i, code = row.charCodeAt(i);
           if (o.draw === 'under') { composite(under, c * 4, colours.get(code)); underKeys[c] = code; } else over.push(c, code);

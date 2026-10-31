@@ -487,6 +487,46 @@ test('an obstacle moving more pixels a frame than it is thick pushes the fluid a
   });
 });
 
+test('an obstacle may hang off the canvas or leave it: what hangs off is clipped, as the edge clips the fluid (P-038)', () => {
+  const look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], pixels = recipe => renderProject(recipe).frames.map(frame => [...frame.data].join());
+  // A press rod reaching down from above the board (y -12 shows the lower 8 of its 20 rows) and a block hanging off the
+  // left edge simulate and draw exactly as the parts of them on the canvas would, placed there as symbols of their own;
+  // the frames copy only those parts, so rendering them clips nothing.
+  const tank = (symbols, obstacles) => compileFluid({ ...gas(null), width: 32, height: 24, symbols, effects: { e: { kind: 'liquid', frames: 16, walls: FLUID_WALLS, emitters: [], fill: [{ x: 2, y: 10, w: 28, h: 12 }], obstacles, look } } });
+  const off = tank({ rod: Array(20).fill('kkkkyy'), block: Array(5).fill('kkkkkyyy') }, [{ symbol: 'rod', x: 13, y: -12 }, { symbol: 'block', x: -5, y: 14, draw: 'under' }]);
+  const on = tank({ rod: Array(8).fill('kkkkyy'), block: Array(5).fill('yyy') }, [{ symbol: 'rod', x: 13, y: 0 }, { symbol: 'block', x: 0, y: 14, draw: 'under' }]);
+  assert.deepEqual(pixels(off.recipe), pixels(on.recipe));
+  assert.deepEqual(off.metadata.effects.e.figures, on.metadata.effects.e.figures);
+  assert.deepEqual(off.recipe.frames[0].ops.filter(op => op.op !== 'grid'), [
+    { op: 'copy', symbol: 'block', sx: 5, sy: 0, w: 3, h: 5, x: 0, y: 14 },
+    { op: 'copy', symbol: 'rod', sx: 0, sy: 12, w: 6, h: 8, x: 13, y: 0 }
+  ]);
+  assert.deepEqual(renderProject(off.recipe).warnings, []);
+  assert.deepEqual(off.warnings, on.warnings);
+  // A conveyor's load slides in from beyond the right edge, across, and out at the left; a live runner moves and draws
+  // it as the compile does, and it is stamped whole only while all of it is on the canvas.
+  const source = { ...gas(null), width: 32, height: 24, symbols: { cone: ['..kk..', '.kkkk.', 'kkkkkk'] }, effects: { e: { kind: 'liquid', frames: 30, walls: ['left', 'right', 'bottom'], emitters: [{ at: [16, 2], radius: 1, rate: 1, density: 1, end: 20 }], obstacles: [{ symbol: 'cone', x: 32, y: 18, keys: [{ frame: 2, x: -6, over: 26 }] }], look } } };
+  const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
+  const placed = recipe.frames.map(frame => (frame.ops ?? []).filter(op => op.op !== 'grid').map(op => `${op.op} ${op.x}`).join());
+  assert.deepEqual([placed[0], placed[3], placed[15], placed[27], placed[29]], ['', 'copy 31', 'stamp 13', 'copy 0', '']);
+  for (let f = 0; f < 30; f++) {
+    live.step();
+    assert.deepEqual([...live.render().rgba].join(), pixels(recipe)[f], `frame ${f}`);
+  }
+  // Bounds: as far off as the symbol's own size. One wholly off the canvas whenever it shows is pointed out.
+  const bad = (obstacle, where, message) => assert.throws(() => compileFluid(gas({ frames: 6, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke, obstacles: [obstacle] }, { symbols: { slab: ['kkkk'] } })), error => error instanceof PixelError && error.path === where && message.test(error.message), where);
+  bad({ symbol: 'slab', x: -5 }, 'fluid.effects.plume.obstacles[0].x', /from -4 to 16/);
+  bad({ symbol: 'slab', y: 17 }, 'fluid.effects.plume.obstacles[0].y', /from -1 to 16/);
+  bad({ symbol: 'slab', keys: [{ frame: 2, x: 17 }] }, 'fluid.effects.plume.obstacles[0].keys[0].x', /from -4 to 16/);
+  const hidden = compileFluid(gas({ frames: 6, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke, obstacles: [{ symbol: 'slab', x: 16, keys: [{ frame: 3, show: false }] }, { symbol: 'slab', y: -1, solid: false }, { symbol: 'tip', x: -1 }, { symbol: 'tip', x: -1, draw: 'none' }] }, { symbols: { slab: ['kkkk'], tip: ['k...'] } }));
+  assert.deepEqual(hidden.warnings, [
+    'fluid.effects.plume.obstacles[0] has no visible pixel on the canvas whenever it shows, so it blocks and draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[1] has no visible pixel on the canvas whenever it shows, so it draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[2] has no visible pixel on the canvas whenever it shows, so it blocks and draws nothing: move its x and y (or its keys) onto the 16 × 16 canvas',
+    'fluid.effects.plume.obstacles[3] has no visible pixel on the canvas whenever it shows, so it blocks nothing: move its x and y (or its keys) onto the 16 × 16 canvas'
+  ]);
+});
+
 test('obstacles move and vanish on cue, pushing the fluid ahead of them', () => {
   const wall = Array(20).fill('kk'), tank = (obstacle, extra = {}) => compileFluid({ ...gas(null), width: 64, height: 32, symbols: { wall }, effects: { e: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], emitters: [], fill: [{ x: 0, y: 12, w: 20, h: 20 }], obstacles: [{ symbol: 'wall', x: 20, y: 12, ...obstacle }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], ...extra } } });
   const right = (figures, f) => figures.box[f][2];
@@ -637,7 +677,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.walls = ['top', 'top']; }, 'fluid.effects.plume.walls', /once/);
   bad(e => { e.walls = ['up']; }, 'fluid.effects.plume.walls[0]', /left, right, top, bottom/);
   bad(e => { e.obstacles = [{ symbol: 'nope' }]; }, 'fluid.effects.plume.obstacles[0].symbol', /unknown symbol/);
-  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', x: 14 }]; }, 'fluid.effects.plume.obstacles[0]', /must fit inside the 16 × 16 canvas/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', x: 17 }]; }, 'fluid.effects.plume.obstacles[0].x', /from -4 to 16/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', surface: 'round' }]; }, 'fluid.effects.plume.obstacles[0].surface', /pixels .* smooth/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, draw: 'none' }]; }, 'fluid.effects.plume.obstacles[0].draw', /decoration .* over or under/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', solid: false, surface: 'smooth' }]; }, 'fluid.effects.plume.obstacles[0].surface', /never meets a decoration/);
@@ -651,8 +691,8 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /moves the obstacle/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 3, x: 2 }, { frame: 1, x: 4 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[1].frame', /frame order/);
-  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2, x: 14 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /must fit inside the 16 × 16 canvas/);
-  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 1, x: 14, over: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /on every frame it shows/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2, x: 17 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0].x', /from -4 to 16/);
+  bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 1, y: -2, over: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0].y', /from -1 to 16/);
   bad(e => { e.emitters = [{ ...emitter, density: -1, carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /draining emitter/);
   bad(e => { e.emitters = [{ ...emitter, carry: { drag: 2 } }]; }, 'fluid.effects.plume.emitters[0].carry.drag', /0 to 1/);
   bad(e => { e.emitters = [{ at: [8, 8], burst: 1, velocity: [8, 0], carry: {} }]; }, 'fluid.effects.plume.emitters[0].carry', /positive density or temperature/);
