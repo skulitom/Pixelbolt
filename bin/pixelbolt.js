@@ -201,7 +201,8 @@ try {
     // A preset compiles exactly as its file in examples/ does, so the compile command reads that file.
     if (command === 'compile' && options.preset !== undefined) {
       if (positional.length) throw new Error('compile takes a source file or --preset <name>, not both');
-      positional[0] = path.join(PRESET_FOLDER, (await findPreset(options.preset)).file);
+      const entry = await findPreset(options.preset);
+      positional[0] = path.join(PRESET_FOLDER, entry.file); options.preset = entry.name;
     }
     if (command === 'init') {
       const file = positional[0] ?? 'sprite.pixel.json';

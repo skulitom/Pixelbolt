@@ -122,11 +122,15 @@ async function summarize(entry) {
 }
 
 // The whole listing. A preset that fails to compile is listed with its error, so one broken file hides nothing else.
-export async function listPresets() {
-  const presets = [];
+// Measuring compiles every preset; past `budget` milliseconds (a slow machine, a growing folder) the rest are listed by
+// name, kind and file only, so the call stays well inside the MCP server's time limit.
+export async function listPresets({ budget = 20000 } = {}) {
+  const presets = [], start = Date.now();
+  let unmeasured = 0;
   for (const entry of await presetEntries()) {
+    if (Date.now() - start > budget) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, unmeasured: true }); unmeasured++; continue; }
     try { presets.push(await summarize(entry)); }
     catch (error) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, error: error.message }); }
   }
-  return { guide: PRESET_GUIDE, presets };
+  return { guide: PRESET_GUIDE, presets, ...(unmeasured && { note: `${unmeasured} presets were listed without measuring them, to keep this call short; pixel_compile one by name to see it.` }) };
 }

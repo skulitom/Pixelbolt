@@ -15,7 +15,7 @@ import { compileFluid } from '../src/fluid.js';
 import { compileWaves } from '../src/wave.js';
 import { decodePNG } from '../src/import.js';
 import { skillFiles } from '../src/skill.js';
-import { presetEntries } from '../src/presets.js';
+import { presetEntries, listPresets } from '../src/presets.js';
 import { decodeGIF } from './fixtures/decode-gif.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), examples = path.join(root, 'examples');
@@ -179,6 +179,12 @@ test('pixel_help returns one preset\'s source with its files inlined, says what 
   assert.match((await error({ tool: 'pixel_compile' })).error, /either source or preset/);
   for (const name of ['../package', '../package.json', 'forest-spirit', 'caption.json']) assert.equal((await error({ tool: 'pixel_compile', preset: name })).path, 'preset', name);
   await mcp.close();
+});
+
+test('past its time budget the listing names the remaining presets without measuring them', async () => {
+  const { presets, note } = await listPresets({ budget: -1 }), entries = await presetEntries();
+  assert.deepEqual(presets, entries.map(entry => ({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, unmeasured: true })));
+  assert.match(note, new RegExp(`^${entries.length} presets were listed without measuring them`));
 });
 
 test('the standalone skill reaches the presets through the command line and its copied examples', async () => {
