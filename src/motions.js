@@ -82,7 +82,7 @@ export function expandMotions(input, compileRest, probeJoints) {
     if (!existing && rest.markers?.some(m => m.name === marker)) fail(`poses.rig.legs[${i}]`, `marker ${marker} is already used for another point`);
     return { last: last.name, point, marker, x: restData.parts[last.name].points[point][0] };
   });
-  const generated = [], animations = { ...(source.animations ?? {}) }, motionInfo = {};
+  const generated = [], animations = { ...(source.animations ?? {}) }, motionInfo = {}, groundedPoses = new Map();
   for (const [name, motion] of Object.entries(source.motions)) {
     const path = `poses.motions.${name}`; id(name, path);
     const template = motion?.template;
@@ -107,6 +107,9 @@ export function expandMotions(input, compileRest, probeJoints) {
     const grounded = template === 'idle' && motion.squash !== undefined, squashBy = grounded ? p('squash', 0, .05, .5) : 0;
     if (grounded && motion.breath !== undefined) fail(`${path}.squash`, 'choose breath or squash, not both: breath squashes the body about its centre, squash keeps its base on rig.ground');
     if (grounded && legs.length) fail(`${path}.squash`, 'squash sits the body on rig.ground, but this rig stands on its legs; use breath');
+    // The head bob and tail sway move their instance after grounding, so the body can't also play either role.
+    if (grounded && rig.head === rig.body) fail('poses.rig.head', `the grounded idle "${name}" keeps the body on rig.ground, so the body can't also be the head, whose bob would lift it; name another instance or leave head out`);
+    if (grounded) (rig.tail ?? []).forEach((tail, i) => { if (tail === rig.body) fail(`poses.rig.tail[${i}]`, `the grounded idle "${name}" keeps the body on rig.ground, so the body can't also be part of the tail, whose sway would turn it off the ground`); });
     const crouch = template === 'jump' ? p('crouch', .8, .5, 1) : 1, stretch = template === 'jump' ? p('stretch', 1.15, 1, 2) : 1, apex = template === 'jump' ? p('apex', 4, 1, 32, true) : 0;
     const arm = template === 'attack' ? p('arm', 0, 0, (rig.arms?.length ?? 0) - 1, true) : 0;
     const windup = template === 'attack' ? p('windup', -130, -360, 360, true) : 0, strike = template === 'attack' ? p('strike', 50, -360, 360, true) : 0;
@@ -194,6 +197,7 @@ export function expandMotions(input, compileRest, probeJoints) {
         }
       }
       generated.push(pose); names.push(pose.name);
+      if (grounded) groundedPoses.set(pose.name, name);
     }
     // A bob or lean must never lift a hip beyond its leg: a planted foot that misses its target floats and slides.
     // Find how far each pose must sink (at most four pixels, while that reduces its planted feet's miss) and lower
@@ -233,8 +237,25 @@ export function expandMotions(input, compileRest, probeJoints) {
   }
   const authored = new Map();
   for (const pose of source.poses) { if (authored.has(pose.name)) fail('poses.poses', `duplicate authored pose ${pose.name}`); authored.set(pose.name, pose); }
-  const generatedNames = new Set(generated.map(p => p.name));
+  const generatedNames = new Set(generated.map(p => p.name)), inputIndex = new Map(source.poses.map((pose, i) => [pose.name, i]));
   source.poses = [...source.poses.filter(p => !generatedNames.has(p.name)), ...generated.map(p => authored.get(p.name) ?? p)];
+  // An authored pose standing in for a pose of a grounded idle is the author's own, so it is never moved: it must
+  // already stand on rig.ground. Its body is measured as the compiler draws it (the pose may turn, flip, squash or
+  // attach the body, or mirror or tween other poses, so compile the poses rather than redraw one mass). A pose that
+  // fails to compile here is left to the full compile, which reports it at its written path.
+  const standIns = [...groundedPoses.keys()].filter(pose => authored.has(pose));
+  if (standIns.length) {
+    let drawn = null;
+    try { drawn = compileRest({ ...checkSource, poses: source.poses, animations: { check: { frames: standIns, loop: false } } }); }
+    catch (error) { if (!(error instanceof PixelError)) throw error; }
+    for (const pose of drawn ? standIns : []) {
+      const placed = drawn.metadata.poses[pose].parts[rig.body], rows = placed && drawn.recipe.symbols[placed.symbol ?? placed.definition];
+      const lowest = placed ? placed.topLeft[1] + rows.findLastIndex(row => /[^. ]/.test(row)) : null, at = `poses.poses[${inputIndex.get(pose)}]`;
+      const about = `"${pose}" stands in for a pose of the grounded idle "${groundedPoses.get(pose)}", so`;
+      if (lowest === null) fail(at, `${about} it needs the body instance "${rig.body}" standing on rig.ground (row ${rig.ground})`);
+      if (lowest !== rig.ground) fail(at, `${about} its body must stand on rig.ground (row ${rig.ground}); its lowest pixel is on row ${lowest}`);
+    }
+  }
   source.animations = animations; source.motionInfo = motionInfo; delete source.motions;
   if (source.poses.length > 256) fail('poses.motions', 'expanded source exceeds 256 poses');
   return source;
