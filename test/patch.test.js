@@ -71,6 +71,20 @@ test('canvas painting replaces exact pixels after translated layers, and inherit
   assert.deepEqual(renderProject(undo).frames, before.frames);
 });
 
+test('recolor reads keys as the frame draws them, and frame scope protects dependents with palette keys', () => {
+  const recipe = { version: 1, name: 'swap', width: 4, height: 1, palette: { r: '#ff0000', b: '#0000ff' }, frames: [
+    { name: 'a', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 1, color: 'r' }] },
+    { name: 'green', palette: { r: '#00ff00' }, ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 1, color: 'r' }] },
+    { name: 'next', from: 'a' }] };
+  // The green frame draws r in its own palette's green; recolor from r finds those pixels.
+  const recolored = patchRecipe(recipe, [{ recolor: 'frames[green]', value: { from: 'r', to: 'b', x: 0, y: 0, w: 2, h: 1 } }]).recipe;
+  assert.deepEqual(recolored.frames[1].pixels, [{ x: 0, y: 0, color: 'b' }, { x: 1, y: 0, color: 'b' }]);
+  // Frame scope keeps `next` as it was, with corrections named by key, so a later palette edit still reaches them.
+  const { recipe: scoped, edits } = patchRecipe(recipe, [{ paint: 'frames[a]', value: [{ x: 3, y: 0, color: 'b' }], scope: 'frame' }]);
+  assert.deepEqual(edits[0].protected, [{ frame: 'next', pixels: 1 }]);
+  assert.deepEqual(scoped.frames[2].pixels, [{ x: 3, y: 0, color: 'r' }]);
+});
+
 test('paint rejects wrong targets and invalid pixels without mutating the source', () => {
   const base = recipe();
   for (const [change, message] of [

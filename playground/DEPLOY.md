@@ -10,7 +10,7 @@ On a loopback page, `&limit=1000` lowers the 20-second render limit (never raise
 
 Alternatively, run `node scripts/deploy-playground.mjs <tmp>` and serve that output with any static HTTP server. Do not open `index.html` as a file: module workers need HTTP. Use HTTPS when publishing. The page needs module workers, Canvas, Web Crypto, CompressionStream and DecompressionStream (including `deflate-raw`).
 
-The `?engine=` override accepts only the page's own origin, or loopback-to-loopback URLs (`localhost`, `127.0.0.1`, `[::1]`). The production CSP also restricts connections and scripts to self and jsDelivr. A cross-origin loopback engine therefore needs a test server with a suitably adjusted CSP and CORS; the ordinary same-origin override needs neither.
+The `?engine=` override accepts only the page's own origin, or loopback-to-loopback URLs (`localhost`, `127.0.0.1`, `[::1]`). The page's meta CSP restricts its own connections and scripts to self and jsDelivr, but a meta tag doesn't reach the worker: workers take CSP only from response headers, and GitHub Pages sends none. So the worker checks every engine and example address itself before loading it (`engineAllowed` in `lib.js`): jsDelivr's `pixelbolt` package, the page's origin, or loopback on both URLs, with no credentials, query or fragment. A cross-origin loopback engine therefore needs a test server with a suitably adjusted CSP and CORS; the ordinary same-origin override needs neither.
 
 ## Live fluid toy
 

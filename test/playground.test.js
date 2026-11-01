@@ -11,7 +11,7 @@ import { resolveReferences } from '../src/resolve.js';
 import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT, EMBED_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
-import { compareVersions, filterExamples, engineOverride, engineBase, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
+import { compareVersions, filterExamples, engineOverride, engineBase, engineAllowed, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
 import { handleRequest, EDITOR_LINES } from '../playground/worker.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -123,6 +123,11 @@ test('engine overrides only accept HTTP own-origin or loopback-to-loopback URLs'
   assert.equal(use('http://localhost/', 'https://external.invalid/').base, null);
   assert.equal(engineOverride(page).notice, '');
   assert.equal(engineBase('0.9.0'), 'https://cdn.jsdelivr.net/npm/pixelbolt@0.9.0/src/');
+  // The worker checks the same again, since the page's meta CSP doesn't reach it (P-023).
+  const worker = 'https://skulitom.github.io/Pixelbolt/playground/worker.js';
+  for (const ok of [engineBase('0.10.0'), 'https://skulitom.github.io/Pixelbolt/src/']) assert.ok(engineAllowed(ok, worker), ok);
+  assert.ok(engineAllowed('http://localhost:9000/src/', 'http://127.0.0.1:8000/playground/worker.js'));
+  for (const bad of ['https://cdn.jsdelivr.net/npm/other@1.0.0/src/', 'https://cdn.jsdelivr.net/npm/pixelbolt@0.10.0/src/?x', 'https://other.invalid/src/', 'http://localhost:9000/src/', 'javascript:alert(1)', 'data:text/javascript,1', 'https://user:pw@skulitom.github.io/src/', 'not a url']) assert.equal(engineAllowed(bad, worker), false, bad);
 });
 test('a JSON mistake reports its line once, without the parser\'s own position wording', async () => {
   const text = ['{', '  "version": 1,', '  "name": "broken"', '  "width": 8', '}'].join('\n');
