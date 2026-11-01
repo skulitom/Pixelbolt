@@ -23,17 +23,17 @@ const GOLDEN = {
   'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
-  splash: '66ef64ae3bcca306d31d6428da3a4c5a3a9a1f500e466dfe6e2b5e82010b484a',
-  waterfall: 'f1efd4b19f0e3c05a48b7a2f6505e50fe5292b214fcd5f5cce93c5868d4e648d',
-  drip: '540bd60355c8e1a3dabfc4550b753d5e0f214658c11156f37a90456e44825070',
-  potion: 'a2aaefe06559d19c55724e023f2717c3904858e722d4bb0f17f7afc61bd0f8ce',
-  honey: '66506170ee87776f7e128b1c99944a275e52da3a5ee8af24cf7ff163993035ab',
-  slime: '825c482db016721d22cc8c173d14708977f4a9f05f8d9d0a180549422476e04f',
-  'roof-snow': 'ceef673d9afc22b22e6b2a955e21b39ebda85f81052aec5dbe9a2acb62413add',
-  'dam-break': '3e8958e3c2833e522717a72843feb4564b9162e3d2cd9fbe049468d22c4bdb9e',
+  splash: 'ba6f92057c7338e6f03f1e81979274f72c87e401292a5e62f526e5d29cd003aa',
+  waterfall: '3490d5e0805f191c402f49185e97b05d9b8d317ebe9f55235e7cf43450382301',
+  drip: '888968097313b5b6c3144cc28743e0f72a54f76975774125048235fa190cf70b',
+  potion: 'f3fd74ffac7e811f40d72a9911ef227c37fb23e8fcb66fff035343a6cd094e13',
+  honey: 'da303b6a9dff25af000c7f1e78560c244141d378a849b62ca7dda584d8565f19',
+  slime: '2918ba24014dc39991528890620881a36ff71da3eb76e86307ea1856c39d1def',
+  'roof-snow': '723839a174c4c78c3292a9ee484a2d4371e1dd373f671504e277c9b5eef080ff',
+  'dam-break': '249f1faa6bbbcec3c6ac4c0be57d6ea0e4daa186b3ed3cdf3afd8d254be79861',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
-  'slime-burst': '70d4d5860e9cd806e1cdf396c8cc2ca518b39f08a0b80dee473048cf3bf1e5bb',
-  'honey-drop': '8b588089a4bc6d37405252c63b4d0b009806c95ad016506c675ecfecb116e010'
+  'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
+  'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63'
 };
 const examples = new Map();
 const example = async name => {
@@ -942,7 +942,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '767b87bfa1aa7412f8f4615d7604267178449cd873cc5a56ee35fa928cc837ab' };
+const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: 'bf3294d461cc55da5a41445ea95fb71b3fa77d25f1670fed2efdffaa0fdba9b9' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
@@ -1194,7 +1194,8 @@ test('a liquid fill can be an ellipse, and a fill list holds 64 shapes', () => {
   assert.equal(ellipse.particles[0], 4 * inside(24, 16, 12, 6, 32));
   assert.deepEqual(ellipse.box[0], [12, 10, 35, 21]);
   assert.equal(dome.particles[0], 4 * inside(24, 16, 12, 6, 16));
-  assert.deepEqual(dome.box[0], [12, 10, 35, 15]);
+  // The dome's widest row stuck out a lone pixel at each end, which the liquid's outline trims.
+  assert.deepEqual(dome.box[0], [13, 10, 34, 15]);
   // Equal radii are the disc a number gives.
   assert.deepEqual(first([{ at: [24, 16], radius: [6, 6] }]), first([{ at: [24, 16], radius: 6 }]));
   // Thirty one-row strips (a dome drawn row by row) fit; 65 entries don't.

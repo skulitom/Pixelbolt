@@ -466,7 +466,8 @@ const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 
 const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
   kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
   keys: [{ frame: 26, yield: 4, over: 4 }],
-  obstacles: [{ symbol: 'wall', x: 2, y: 18, draw: 'under' }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
+  // The house is drawn in front of the snow's outline, so the outline stops at the wall instead of covering its edge.
+  obstacles: [{ symbol: 'wall', x: 2, y: 18 }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
   fill: [{ x: 6, y: 2, w: 12, h: 7 }], emitters: [],
   // White snow with a two-step blue shadow away from the light, outlined.
   look: [{ field: 'density', colors: ['w'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['s', 'S'], thresholds: [0.4, 0.8], dither: 0 }],

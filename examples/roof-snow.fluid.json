@@ -90,7 +90,7 @@
       "tension": 1.2,
       "keys": [{ "frame": 26, "yield": 4, "over": 4 }],
       "obstacles": [
-        { "symbol": "wall", "x": 2, "y": 18, "draw": "under" },
+        { "symbol": "wall", "x": 2, "y": 18 },
         { "symbol": "slab", "x": 2, "y": 6, "surface": "smooth" },
         { "symbol": "ground", "x": 0, "y": 40 }
       ],
