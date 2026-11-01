@@ -241,7 +241,7 @@
             "type": "number",
             "minimum": 0,
             "maximum": 4,
-            "description": "Liquid: how strongly it holds on to walls and obstacles. Liquid touching a solid stays on it unless pulled away faster than about adhesion ÷ 2 pixels per frame, so a film clings under a ledge, to a spoon or down a jar's side. Default 0."
+            "description": "Liquid: how strongly it holds on to walls and obstacles. Liquid touching a solid stays on it unless pulled away faster than about adhesion ÷ 2 pixels per frame, so a film clings under a ledge, to a spoon or down a jar's side, and moves with an obstacle that moves. An obstacle's own adhesion replaces it there. Default 0."
           },
           "keys": {
             "type": "array",
@@ -284,6 +284,11 @@
                   },
                   "maxItems": 2,
                   "minItems": 2
+                },
+                "drag": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
                 }
               },
               "required": [
@@ -293,7 +298,7 @@
             },
             "maxItems": 16,
             "minItems": 1,
-            "description": "Liquid: change yield, viscosity, adhesion or gravity at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
+            "description": "Liquid: change yield, viscosity, adhesion, gravity or drag at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0, and drag (not viscosity, which freezes a slosh tilted) calms a one-shot so it ends at rest. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
           },
           "fill": {
             "type": "array",
@@ -395,7 +400,7 @@
                     "speed"
                   ],
                   "additionalProperties": false,
-                  "description": "Break the fill into seeded pieces with a one-pixel gap between them, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps goes to their pieces, so the volume is kept."
+                  "description": "Break the fill into seeded pieces with a one-pixel gap between them and rounded corners, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps and corners goes to their pieces, so the volume is kept."
                 }
               },
               "required": [],
@@ -516,6 +521,12 @@
                   "type": "boolean",
                   "description": "Gas: metal at no set voltage, which arcs jump to and through."
                 },
+                "adhesion": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4,
+                  "description": "Liquid: this obstacle's own adhesion, in place of the effect's, for liquid touching it: a sticky spoon (4) beside a non-stick pan (0)."
+                },
                 "keys": {
                   "type": "array",
                   "items": {
@@ -555,7 +566,7 @@
                   },
                   "maxItems": 16,
                   "minItems": 1,
-                  "description": "Move the obstacle or take it away on cue: a dam that vanishes, a gate that lifts, a plunger, a paddle. Each key starts from where the obstacle is on its frame, and may take it partly or wholly off the canvas (up to its own size past an edge), where it is clipped: a rod reaching in, a load leaving. While a key's over runs, the obstacle pushes the fluid ahead of it (its faces carry its speed) and shoves fluid in cells it now covers to the first open cell, never through another solid. A key with no over is a cut: the obstacle is simply elsewhere, pushes nothing, and fluid where it lands (or where an obstacle appears) is taken away. A loop repeats the keys every cycle."
+                  "description": "Move the obstacle or take it away on cue: a dam that vanishes, a gate that lifts, a plunger, a paddle. Each key starts from where the obstacle is on its frame, and may take it partly or wholly off the canvas (up to its own size past an edge), where it is clipped: a rod reaching in, a load leaving. While a key's over runs, the obstacle pushes the fluid ahead of it (its faces carry its speed) and shoves fluid in cells it now covers to the first open cell, never through another solid; liquid flows in behind it, a viscous liquid is dragged along its sides, and with adhesion liquid touching it moves with it. A key with no over is a cut: the obstacle is simply elsewhere, pushes nothing, and fluid where it lands (or where an obstacle appears) is taken away. A loop repeats the keys every cycle."
                 }
               },
               "required": [
@@ -807,7 +818,7 @@
                           "minItems": 2
                         }
                       ],
-                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]."
+                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]. In a liquid, spray (follow 0) still in the air then flies on, for up to as long again, until it falls back in."
                     },
                     "colors": {
                       "type": "array",
@@ -897,6 +908,24 @@
                     "pop": {
                       "type": "boolean",
                       "description": "Liquid only: the spark pops where it leaves the liquid, drawn as a ring around it for one frame and two droplets the next (bubbles bursting at the surface)."
+                    },
+                    "rise": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 4,
+                      "description": "Liquid: makes the spark a bubble that behaves like air. It rises this many pixels per frame through still water, against the liquid's gravity, on top of the flow that carries it (follow); it slides along any obstacle or closed edge it meets instead of ending there, up a sloping ceiling and out from under a ledge within 5 pixels, or waits under it, where waiting bubbles that touch merge into larger ones (up to 3 pixels across); it ends where it reaches the air, bursting there with pop. About 0.3–0.8."
+                    },
+                    "wobble": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2,
+                      "description": "With rise: pixels the bubble sways from side to side as it rises, once every eight frames from a seeded start. Default 0."
+                    },
+                    "lift": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "With rise: share of its buoyancy the bubble hands to the water around it, as if that much of the water weighed nothing. A column of bubbles then drives an upwelling: 1 with about a bubble a frame raises a dome on the surface over it, 0.3 a slight bump. Default 0."
                     }
                   },
                   "required": [
@@ -964,7 +993,7 @@
                 "type": "number",
                 "minimum": 0.01,
                 "maximum": 64,
-                "description": "Gas this hot is plasma too (from half of it, fully at it): a fireball's or a star's core. Default none."
+                "description": "Gas hotter than this is plasma too, fully at half as hot again: a fireball's or a star's core. 2 is above every flame. Default none."
               },
               "ground": {
                 "type": "array",
@@ -1004,10 +1033,11 @@
                     "depth",
                     "light",
                     "shadow",
+                    "strand",
                     "ionization",
                     "current"
                   ],
-                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
+                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
                 },
                 "colors": {
                   "type": "array",
@@ -1154,7 +1184,7 @@
                       "minItems": 2
                     }
                   ],
-                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]."
+                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]. Spray still in the air then flies on, for up to as long again, until it falls back in."
                 },
                 "colors": {
                   "type": "array",
@@ -1199,7 +1229,29 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 2,
-                  "description": "How much the flow carries the droplet: 0 (default) is spray, drawn once it has left the water and ending where it falls back in; above 0 is foam carried on the flow, ending once it is carried under."
+                  "description": "How much the flow carries the droplet: 0 (default) is spray, drawn once it has left the water and ending where it falls back in; above 0 is foam carried on the flow, ending once it is carried under. Bubbles default to 1."
+                },
+                "rise": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4,
+                  "description": "Makes the layer bubbles instead of spray: air a plunging stream (speed) or a landing drop (impact) drives into a pool. They start under the surface, where water lies two pixels deep on every side, at rest in the water; they rise this many pixels per frame against the liquid's gravity, ride the flow, slide under obstacles and end at the surface, as sparks with rise do. throw, spread and gravity shape spray only."
+                },
+                "wobble": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2,
+                  "description": "Bubbles: pixels each sways from side to side as it rises, once every eight frames. Default 0."
+                },
+                "lift": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Bubbles: share of each one's buoyancy handed to the water around it (see the sparks' lift). Default 0."
+                },
+                "pop": {
+                  "type": "boolean",
+                  "description": "Bubbles: burst where they reach the surface, a ring for one frame and two droplets the next. Default false: they vanish there."
                 }
               },
               "required": [
@@ -1218,10 +1270,88 @@
                   ]
                 }
               ],
-              "description": "Spray and foam thrown off the liquid by its own motion, from particles at the surface, tipped away from the water."
+              "description": "Spray and foam thrown off the liquid by its own motion, from particles at the surface, tipped away from the water; or, with rise, bubbles driven under it."
             },
             "maxItems": 4,
             "description": "Liquid: up to four layers of spray or foam thrown off the water where it lands or runs fast, drawn over it like sparks."
+          },
+          "air": {
+            "type": "object",
+            "properties": {
+              "stiffness": {
+                "type": "number",
+                "minimum": 2,
+                "maximum": 1000,
+                "description": "Pixels of liquid head that squeeze a pocket to half its size: under h pixels of liquid a pocket keeps stiffness / (stiffness + h) of its size, and a pocket the liquid pulls on stretches the same way. Default 40; 1000 barely gives. Stable at any setting."
+              },
+              "bubbles": {
+                "type": "object",
+                "properties": {
+                  "colors": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1,
+                      "description": "A one-character palette key (grid rows name colours by character)."
+                    },
+                    "maxItems": 16,
+                    "minItems": 1,
+                    "description": "Palette keys spread over each bubble's life."
+                  },
+                  "life": {
+                    "oneOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 256
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 256
+                        },
+                        "maxItems": 2,
+                        "minItems": 2
+                      }
+                    ],
+                    "description": "Frames each bubble lives; [min, max] picks per bubble. Default [30, 60]."
+                  },
+                  "rise": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 4,
+                    "description": "Pixels per frame each rises through still water; default 0.5."
+                  },
+                  "wobble": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "description": "Pixels each sways from side to side; default 0."
+                  },
+                  "lift": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Share of each one's buoyancy handed to the water; default 0."
+                  },
+                  "pop": {
+                    "type": "boolean",
+                    "description": "Burst where they reach the surface; default false."
+                  }
+                },
+                "required": [
+                  "colors"
+                ],
+                "additionalProperties": false,
+                "description": "How the air of a pocket squeezed too small to show (under three cells) rises as bubbles, as large as the air it held, as sparks with rise do. Without it that air leaves unseen."
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "description": "Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank's air pushes on its water."
           },
           "light": {
             "type": "array",

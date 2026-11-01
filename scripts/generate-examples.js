@@ -347,8 +347,8 @@ const water = { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff' }, stone 
 const waterLook = (deep, band = 4) => [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, band, deep], dither: 0 }];
 // Spray thrown up where water lands; in a liquid it ends where it falls back into the water.
 const spray = (name, at, start, count, angle, extra = {}) => ({ name, at, area: [2, 1], burst: 1, start, density: 0, sparks: { count, life: [12, 20], colors: ['w', 'w', 'c'], angle, speed: [2.8, 4], gravity: [0, 0.55], drag: 0.02, follow: 0, ...extra } });
-// A round drop falls and speeds up; where it lands, whitewater throws a crown of spray streaks and drops off the crater's
-// rims, and the crater springs back as a hump in the middle. A low flip share and drag calm the waves, and a slow drain
+// A round drop falls and speeds up; where it lands, whitewater throws a crown of droplets off the crater's rims, which
+// arc up and fall back into the pool, and the crater springs back as a hump in the middle. A low flip share and drag calm the waves, and a slow drain
 // at the bottom takes back the drop's water, so the pool settles flat at its old level instead of a fraction of a pixel
 // higher.
 const splash = fluidSource('splash', 48, 40, water, {
@@ -356,8 +356,8 @@ const splash = fluidSource('splash', 48, 40, water, {
   fill: [{ x: 0, y: 28, w: 48, h: 12 }, { at: [24, 5], radius: 3, velocity: [0, 0.5] }],
   emitters: [{ name: 'settle', at: [24, 38], area: [48, 2], rate: 1, start: 12, end: 29, density: -0.017 },
     { name: 'rebound', at: [24, 31], area: [4, 3], rate: 1, start: 15, end: 17, density: 0, velocity: [0, -2] }],
-  whitewater: [{ impact: 1.5, chance: 0.45, throw: 1.8, spread: 30, life: [12, 20], colors: ['w', 'w', 'c'], trail: true },
-    { impact: 2.5, chance: 0.3, throw: 1.6, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
+  whitewater: [{ impact: 1.5, chance: 0.45, throw: 1.3, spread: 30, life: [12, 20], colors: ['w', 'w', 'c'] },
+    { impact: 2.5, chance: 0.3, throw: 1.2, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
   look: waterLook(9, 5), cleanup: { strays: true }
 });
 // A stream runs along the cliff top and pours over the mossy lip in one unbroken arc that falls clear of the cliff face,
@@ -387,13 +387,13 @@ const waterfall = fluidSource('waterfall', 48, 64, { ...water, ...stone, L: '#7b
 });
 // A drop gathers under the stalactite, falls and splashes; a slow soak drains as much as each drop adds.
 const drip = fluidSource('drip', 16, 32, { ...water, ...stone }, {
-  kind: 'liquid', frames: 24, duration: 70, loop: true, seed: 2, warmup: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.4], flip: 0, drag: 0.04, tension: 2,
+  kind: 'liquid', frames: 24, duration: 70, loop: true, seed: 2, warmup: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.4], flip: 0, drag: 0.04, tension: 3,
   obstacles: [{ symbol: 'rock', x: 0, y: 0 }, { symbol: 'ground', x: 0, y: 29 }], fill: [{ x: 1, y: 25, w: 14, h: 4 }],
-  // A bead hangs at the tip, held still by velocity [0, 0], and swells when the wider emitter joins; when both stop,
-  // the drop falls, speeding up, as one compact two-pixel-wide drop with a highlight on top (strong cohesion and little
-  // drag keep it whole). A pair of droplets flies out either side where it lands. The soak drains the row above the
+  // A bead hangs at the tip, held still by velocity [0, 0], and swells round when the wider emitter joins; when both
+  // stop, the drop falls, speeding up, as one round bead about three pixels across with a highlight on top (strong
+  // cohesion and little drag keep it whole). A pair of droplets flies out either side where it lands. The soak drains the row above the
   // pool's level, so each drop's water runs off and the surface settles flat between drops.
-  emitters: [{ name: 'bead', at: [8, 7.5], radius: 1.4, rate: 1, end: 8, velocity: [0, 0] }, { name: 'swell', at: [8, 8], radius: 1.5, rate: 1, start: 4, end: 8, velocity: [0, 0] },
+  emitters: [{ name: 'bead', at: [8, 7.5], radius: 1.4, rate: 1, end: 8, velocity: [0, 0] }, { name: 'swell', at: [8, 8.5], radius: 2, rate: 1, start: 4, end: 8, velocity: [0, 0] },
     spray('spray-left', [6.5, 25.5], 18, 2, [220, 250], { life: [8, 14], speed: [1.3, 2], gravity: [0, 0.5] }),
     { name: 'soak', at: [8, 26], area: [14, 2], rate: 1, density: -0.1 },
     spray('spray-right', [9.5, 25.5], 18, 2, [290, 320], { life: [8, 14], speed: [1.3, 2], gravity: [0, 0.5] })],
@@ -461,27 +461,32 @@ const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8b
 }, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
 // Wet snow on a house's 45-degree roof slides off as one slab, pours over the eave and settles in a drift against the
 // wall. The roof is a smooth obstacle, so the snow (a soft yield-stress liquid with slip) slides down its pixel steps
-// instead of catching on them; a key firms the snow once it has landed, so the drift stays put rather than skidding on.
+// instead of catching on them; a key firms the snow over ten frames as it lands, so the falling column slumps into a
+// rounded drift and stops there, rather than spreading into a thin sheet or freezing as a column.
 const roofSlab = shapeRows(22, 24, (x, y) => (y === x ? 't' : y === x + 1 ? 'r' : y === x + 2 || (y > x + 2 && x < 2) ? 'R' : null));
 const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 12 && y >= 10 && y <= 14 ? (x === 10 || y === 12 ? 'M' : 'y') : y % 4 === 0 ? 'M' : 'm'));
+// The snow starts lying on the roof: one-row strips over its top pixels (y = x + 4), seven rows deep from column 8 to 20.
+const roofSnowFill = Array.from({ length: 19 }, (_, i) => i + 5).flatMap(y => { const x0 = Math.max(y - 3, 8), x1 = Math.min(y + 3, 20); return x1 >= x0 ? [{ x: x0, y, w: x1 - x0 + 1, h: 1 }] : []; });
 const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
   kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
-  keys: [{ frame: 26, yield: 4, over: 4 }],
+  keys: [{ frame: 24, yield: 3, over: 10 }],
   // The house is drawn in front of the snow's outline, so the outline stops at the wall instead of covering its edge.
   obstacles: [{ symbol: 'wall', x: 2, y: 18 }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
-  fill: [{ x: 6, y: 2, w: 12, h: 7 }], emitters: [],
+  fill: roofSnowFill, emitters: [],
   // White snow with a two-step blue shadow away from the light, outlined.
   look: [{ field: 'density', colors: ['w'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['s', 'S'], thresholds: [0.4, 0.8], dither: 0 }],
   light: [-1, -1], outline: 'o', cleanup: { strays: true, corners: true }
 }, { slab: roofSlab, wall: roofWall, ground: shapeRows(56, 4, (x, y) => (y === 0 ? 'g' : 'G')) });
-// A plank dam holds back a tank of water until frame 14, when an obstacle key takes it away: the water floods out as a
-// wave, rolls over a rock and splashes off the far wall, throwing whitewater where it lands. It runs on until the
-// water has settled, so the one-shot ends at rest.
+// A plank dam holds back a tank of water until frame 4, when an obstacle key lifts it off the top over six frames: the
+// water bursts out under it and floods out as a wave, rolls over a rock and splashes off the far wall, throwing
+// whitewater where it lands. It runs on until the water has settled, so the one-shot ends at rest.
 const damBreak = fluidSource('dam-break', 64, 36, { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff', p: '#8a5a36', P: '#5a3825', n: '#c79a5b', g: '#4a4a5e', G: '#33334a' }, {
   kind: 'liquid', frames: 70, duration: 60, seed: 5, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], apic: true,
-  // Water sloshes on long after the wave breaks, so it thickens over frames 45-55 and the one-shot ends at rest.
-  keys: [{ frame: 45, viscosity: 4, over: 10 }],
-  obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 14, show: false }] }],
+  // A slosh this long and shallow takes about ninety frames to swing back, so drag comes in while the wave crosses the
+  // tank: it still climbs the far wall, but loses enough to settle nearly level by frame 50. Thickening it instead froze
+  // the water tilted.
+  keys: [{ frame: 16, drag: 0.07, over: 8 }],
+  obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 4, y: -22, over: 6 }] }],
   fill: [{ x: 0, y: 10, w: 20, h: 20 }], emitters: [],
   whitewater: [{ impact: 1.2, chance: 0.35, throw: 0.6, spread: 30, colors: ['w', 'c'], life: [6, 12] }],
   look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, 5, 9], dither: 0 }], cleanup: { strays: true }
@@ -531,7 +536,69 @@ const honeyDrop = fluidSource('honey-drop', 40, 48, { H: '#fff3b0', y: '#f7c948'
   look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 }],
   cleanup: { strays: true }
 }, { spoon, bowl });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop };
+// An aquarium whose bubbles behave like air. An air stone sends up a column of bubbles that rise at their own speed and
+// sway, and lift the water over them into a low dome. A second stone, under a rock ledge, sends bubbles up against the
+// ledge's underside: they run up it to its lip and rise from there. The filter's stream plunges into the tank and drives
+// bubbles into the water where it lands (whitewater with rise), which the flow carries down before they rise and end at
+// the surface. An intake under the ledge takes back what the filter pours in.
+const dune = '33333333332222333333332221110000111122222221111111111111', sway = '22333322211112';
+const tankSand = shapeRows(56, 7, (x, y) => (y >= +dune[x] ? (y === +dune[x] ? 's' : (x * 3 + y * 5) % 11 === 0 ? 'S' : 'd') : null));
+const tankLedge = shapeRows(18, 11, (x, y) => {
+  const under = 3 + Math.floor(x / 3), top = x < 3 ? 3 - x : x > 15 ? 0 : 1;
+  if (y < top || y > Math.min(10, under)) return null;
+  return y === top ? 'l' : y === under ? 'R' : (x * 7 + y * 3) % 9 === 0 ? 'R' : 'r';
+});
+const aquarium = fluidSource('aquarium', 56, 48, { ...water, s: '#e8c98a', d: '#c9a464', S: '#9c7a45', l: '#9e97ad', r: '#6b6478', R: '#45405a', g: '#8a8f99', G: '#5e6270', h: '#3f5f8f', p: '#9aa4b0', k: '#3b4150', e: '#4fa65a', E: '#2f6e3d' }, {
+  kind: 'liquid', frames: 48, duration: 70, loop: true, warmup: 2, seed: 4, walls: ['left', 'right', 'bottom'], flip: 0.6, drag: 0.04,
+  obstacles: [{ symbol: 'hose', x: 4, y: 7, solid: false }, { symbol: 'sand', x: 0, y: 41 }, { symbol: 'ledge', x: 38, y: 24 }, { symbol: 'stone', x: 5, y: 40 }, { symbol: 'nook', x: 52, y: 40 },
+    { symbol: 'spout', x: 36, y: 3 }, { symbol: 'weed', x: 13, y: 30, solid: false }, { symbol: 'weed', x: 19, y: 33, solid: false }],
+  fill: [{ x: 0, y: 18, w: 56, h: 30 }],
+  emitters: [{ name: 'filter', at: [35, 5], area: [2, 2], rate: 1, velocity: [-0.9, 0.4] }, { name: 'intake', at: [46, 39], area: [8, 3], rate: 1, density: -0.12 },
+    { name: 'air-stone', at: [7, 39], radius: 1, rate: 1, density: 0, sparks: { count: 0.6, life: [50, 60], colors: ['w'], rise: 0.55, wobble: 0.5, lift: 1, pop: true } },
+    { name: 'under-ledge', at: [54, 39], radius: 1, rate: 1, density: 0, sparks: { count: 0.3, life: [60, 80], colors: ['w'], rise: 0.5, wobble: 0.3, pop: true } }],
+  whitewater: [{ speed: 1.2, chance: 0.03, life: [24, 48], colors: ['w', 'c'], rise: 0.45, wobble: 0.4 }],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['c', 'b', 'B'], thresholds: [1, 2, 14], dither: 0 }], cleanup: { strays: true }
+}, {
+  sand: tankSand, ledge: tankLedge, stone: ['.gg.', 'gGGg'], nook: ['.ggg', 'gGGG'], hose: shapeRows(1, 34, () => 'h'),
+  spout: shapeRows(20, 4, (x, y) => (y === 0 || y === 3 || (x === 0 && y === 1) ? 'k' : x === 0 ? null : 'p')),
+  weed: shapeRows(5, 14, (x, y) => (x === +sway[y] ? (y % 3 === 0 ? 'E' : 'e') : x === +sway[y] + 1 && y % 4 === 1 ? 'e' : null))
+});
+// A honey dipper is lifted out of a jar of honey. The dipper is sticky (its own adhesion) and the jar nearly non-stick,
+// so the honey clings to the dipper as it rises: it draws the surface up into a peak, a glossy string joins the dipper's
+// tip to the peak, thins and snaps, and what is left of it curls back into the peak while the dipper keeps its coat. The
+// string is a `strand` layer, which draws liquid stretched thinner than the density can, in a pale gloss.
+const honeyDipper = fluidSource('honey-dipper', 40, 60, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
+  kind: 'liquid', frames: 56, duration: 70, seed: 5, iterations: 24, walls: ['left', 'right', 'bottom'], viscosity: 16, apic: true, adhesion: 0.5, tension: 0.25,
+  obstacles: [{ symbol: 'jar', x: 7, y: 38 }, { symbol: 'dipper', x: 16, y: -5, adhesion: 2.5, keys: [{ frame: 4, y: -35, over: 30 }] }],
+  fill: [{ x: 9, y: 44, w: 22, h: 15 }], emitters: [],
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 },
+    { field: 'strand', colors: ['y'], thresholds: [0.5], dither: 0 }],
+  cleanup: { strays: true }
+}, {
+  // A grooved head on a long handle that runs off the top of the canvas as the dipper rises.
+  dipper: [...Array.from({ length: 48 }, (_, y) => (y % 7 === 3 ? '...bb...' : '...nB...')), '..bnBb..', '.bbbbbb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bbbbbb.'],
+  jar
+});
+// A bottle turned upside down over a glass glugs as it pours (air pockets): the air at its top keeps its amount, so as
+// water leaves, it stretches and holds the rest back until outside air pushes up the neck as a big bubble that rises
+// through the water and joins it, and the next pour follows. Air the pour drives into the glass rises as bubbles (or,
+// where a lot is trapped at once, as a pocket). One-shot: it ends with the bottle empty and the glass settled.
+const glugBottle = shapeRows(16, 33, (x, y) => {
+  if (y === 0) return 'G';
+  if (y <= 22) return x === 0 || x === 15 ? (x === 0 && y > 2 && y < 20 ? 'h' : 'G') : null;
+  if (y <= 26) return x === y - 22 || x === 37 - y ? 'G' : null;
+  return x === 4 || x === 11 ? 'G' : null;
+});
+const glug = fluidSource('glug', 40, 56, { ...water, G: '#3f7f5f', h: '#bfe8cf', q: '#c7d6e6', Q: '#8fa4bd', t: '#5a4638' }, {
+  kind: 'liquid', frames: 110, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], flip: 0.7,
+  air: { stiffness: 40, bubbles: { colors: ['w'], rise: 0.6, wobble: 0.3 } },
+  obstacles: [{ symbol: 'bottle', x: 12, y: 1 }, { symbol: 'glass', x: 7, y: 39 }, { symbol: 'table', x: 0, y: 55 }],
+  fill: [{ x: 13, y: 4, w: 14, h: 20 }, { x: 14, y: 24, w: 12, h: 1 }, { x: 15, y: 25, w: 10, h: 1 }, { x: 16, y: 26, w: 8, h: 1 }, { x: 17, y: 27, w: 6, h: 1 }, { x: 17, y: 28, w: 6, h: 6 }], emitters: [],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['c', 'b'], thresholds: [1, 2], dither: 0 }], cleanup: { strays: true }
+}, {
+  bottle: glugBottle, glass: shapeRows(26, 16, (x, y) => (x === 1 || x === 24 ? 'q' : y === 15 || x === 0 || x === 25 ? 'Q' : null)), table: shapeRows(40, 1, () => 't')
+});
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, 'honey-dipper': honeyDipper, glug };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

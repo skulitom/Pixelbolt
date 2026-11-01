@@ -29,6 +29,8 @@ import { fields } from './authoring.js';
 import { random, traceLine } from './craft.js';
 
 export const EDGES = ['left', 'right', 'top', 'bottom'];
+// The obstacle fields an electrode or metal reads (the fluid compiler lists them with the solid's other fields).
+export const ELECTRODE_FIELDS = ['voltage', 'resistance', 'charge', 'conductor'];
 const LIMITS = { electrodes: 8, markers: 16384, keys: 16 };
 // A cell is a channel (it conducts, and grows the arc) from this much ionization; a marker goes once its ionization and
 // trace fall below FADED; current under OUT × sustain keeps no plasma. Breakdown is lowered by up to MEMORY in partly
@@ -130,11 +132,12 @@ export function createElectric(effect, width, height) {
   return E;
 }
 
-// Which cells are electrodes, metal or insulators, for the obstacles' places now.
-function buildMasks(E, effect, layout) {
+// Which cells are electrodes, metal or insulators, for the obstacles' places now. Every solid of the shared solid layer
+// (obstacles, ice, whatever comes next) insulates unless it is an electrode or metal.
+function buildMasks(E, effect, layout, solid) {
   const { W, H, N, kind, which, metal } = E;
   kind.fill(OPEN); which.fill(-1); metal.fill(0);
-  for (let c = 0; c < N; c++) if (layout.solid[c]) kind[c] = INSULATOR;
+  for (let c = 0; c < N; c++) if (solid[c]) kind[c] = INSULATOR;
   const slot = new Map(E.electrodes.map((e, n) => [e.index, n]));
   effect.obstacles.forEach((o, i) => {
     if (!o.electric) return;
@@ -501,8 +504,9 @@ function raster(E, T) {
       if (line[c] < 0) { const da = (x - ax) * (x - ax) + (y - ay) * (y - ay), db = (x - bx) * (x - bx) + (y - by) * (y - by); line[c] = da <= db ? a.k : b.k; }
     });
   }
+  // Thermal plasma on the shared heat scale: none at `ionize` (2 is above every flame), fully ionized half as hot again.
   if (config.ionize) {
-    const full = config.ionize, start = 0.5 * full;
+    const start = config.ionize, full = 1.5 * start;
     for (let c = 0; c < N; c++) if (T[c] > start) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }
   }
 }
@@ -668,8 +672,8 @@ function charge(E, charged) {
 // One step of electricity in a gas: move and draw the plasma, solve the field, heat the gas, keep or lose the plasma,
 // then grow it where the field breaks the gas down.
 export function stepElectric(E, state, effect, dt) {
-  const { g, T } = state, config = E.config, layout = E.layout ?? effect.layout;
-  if (E.layoutKey !== layout.key) buildMasks(E, effect, layout);
+  const { g, T } = state, config = E.config, layout = E.layout ?? effect.layout, solids = state.solids ?? layout;
+  if (E.layoutKey !== layout.key || E.solids !== solids) { buildMasks(E, effect, layout, solids.solid); E.solids = solids; }
   moveMarkers(E, g, dt);
   tidy(E);
   raster(E, T);
