@@ -23,17 +23,17 @@ const GOLDEN = {
   'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
-  splash: '1b2a22fe73a5f818858199a0b5098c326395ba26ed5c5a9996dc178bb997f5f4',
-  waterfall: '0ebd8edbb0bca1c4f3a0642dcb0bcf41b6289663eec4b4b38c999b5df49cd064',
-  drip: 'c073b2539df02705578dfd6cc652703a8354e3b0bfeb9db2ddb57bb51ced4794',
-  potion: 'b13996872f8758a39191c2745cac83b4196d0a23bb484f3d8c95e1ed171fb22c',
-  honey: '2beb539dc3c98377a1c24af2ffe18fb0d74bc5aad56b1c70ec58d1613cf6ffa7',
-  slime: '3da5a16ae70f2f9b529c40447b9d65b1cd9bbe96c761b8f1380874e76c7db25c',
-  'roof-snow': '30ef90f4002af118687760cc8b6cca97ad523b372a43da5e433eecb31e02203c',
-  'dam-break': 'bc4d60fd9460ac93e46cffd6737b2cbfd3d56f570309033bcd6a3ddaff3d9232',
+  splash: '666609e224d26195c17d8671e7bd5f4bab34b9a27be862e99043f87b3c3d861b',
+  waterfall: 'fc8b74995686fe73046e6d471e30b1375fd3282fdf2c5e689a9cbf522398c6ad',
+  drip: '3e4c0d9d4b5f5e6bf4f88f969d289cb14399d337884f7d4c226f5e1e719c721f',
+  potion: '62d4308596244fb90e436528b705da726361fb254185bbeb57f91219d74cfbe7',
+  honey: 'b69a82ebe218e5f1d336091a6083a9ada4aa3ad772c7d63e425b188dd87728df',
+  slime: '5f69092261b8c3f0ae67e60de53654f2f600f79af59726b67b24f45587726cc4',
+  'roof-snow': '64fa840627634ef8657f42e950cf2a3b0d0396617288331d4959b0bf57558d38',
+  'dam-break': '9a35b04fae58f4c8c0e76146fd7c6512126ee22077ed3fb2b8effc2a7d0362cd',
   'dust-wave': '1ce0f12a6aa17fee36e25c42b0a8fc15b9e60454144ecb87f90973fc205ce4a9',
-  'slime-burst': '997f5cb5941d55af91fcad2879166ba2ee440542a3a8e2bc21695a3305658854',
-  'honey-drop': '01a9bd8087e735b9ce1be4e8faf76b7f840f20d90ce7edfb3e50aeaccc4c6a22'
+  'slime-burst': '34b96ee2eb8488b579fdeadf1a38d420cdf006cb2a2be64aef9e0e6f4d04636e',
+  'honey-drop': 'c498219b7043b4d1b6c1cf196269b0789f34f463c8bffc0541ac69f79afe447f'
 };
 const examples = new Map();
 const example = async name => {
@@ -114,8 +114,9 @@ test('heat rises and curls, smoke thins, obstacles stay clear and a still pool s
     if (grid) grid.rows.forEach((row, j) => [...row].forEach((char, i) => { if (grid.y + j === 4 && grid.x + i >= 4 && grid.x + i < 12) assert.equal(char, '.'); }));
     assert.deepEqual(frame.ops.at(-1), { op: 'stamp', symbol: 'lid', x: 4, y: 4 });
   }
-  // A pool at rest in a closed box keeps every pixel, frame after frame.
-  const pool = compileFluid({ ...gas(null), effects: { pool: { kind: 'liquid', frames: 12, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 10, w: 16, h: 6 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5] }, { field: 'depth', colors: ['w', 's'], thresholds: [1, 2], dither: 0 }] } } });
+  // A pool at rest in a closed box keeps every pixel, frame after frame. (Without dither: its feather reaches down to a
+  // quarter full, and the faint row above the surface sits there, so a trembling particle would show.)
+  const pool = compileFluid({ ...gas(null), effects: { pool: { kind: 'liquid', frames: 12, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 10, w: 16, h: 6 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 's'], thresholds: [1, 2], dither: 0 }] } } });
   assert.deepEqual(new Set(pool.metadata.effects.pool.pixels), new Set([96]));
   assert.deepEqual(pool.recipe.frames[11].ops, pool.recipe.frames[0].ops);
   assert.deepEqual(pool.recipe.frames[0].ops[0].rows.slice(0, 2), ['w'.repeat(16), 's'.repeat(16)]);
@@ -350,6 +351,23 @@ test('nothing passes through a wall one pixel thick, however fast it moves', () 
   assert.equal(beyond(compileFluid(bubbles).recipe, (x, y) => x < 8 || x > 23 || y > 29), 0);
 });
 
+test('liquid fills nooks a pixel wide: cracks and notches walled in on three sides, but not a cell sealed off at a corner', () => {
+  // A pool over a rock with a crack one pixel wide and four deep, notches pointing down, a crack two pixels wide, a
+  // pillar with a notch in its side and a shelf with a notch in its underside. The cell at (28, 15) touches the notch
+  // above it at a corner only, so no water reaches it.
+  const W = 32, H = 24, nooks = new Set(['4,14', '4,15', '4,16', '4,17', '8,14', '16,14', '17,14', '16,15', '17,15', '16,16', '17,16', '27,14', '28,15', '12,10', '22,9']);
+  const rock = (x, y) => !nooks.has(`${x},${y}`) && (y >= 14 || (x >= 12 && x <= 14 && y >= 6) || (x >= 18 && x <= 26 && (y === 8 || y === 9)));
+  const rows = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (rock(x, y) ? 'k' : '.')).join(''));
+  const { recipe } = compileFluid({ ...gas(null), width: W, height: H, palette: { s: '#48c', w: '#fff', k: '#000', o: '#123' }, symbols: { rock: rows }, effects: { pool: {
+    kind: 'liquid', frames: 40, seed: 2, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], obstacles: [{ symbol: 'rock', draw: 'none' }], fill: [{ x: 0, y: 1, w: W, h: 13 }], emitters: [],
+    look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }], outline: 'o', cleanup: { strays: true, corners: true } } } });
+  const op = recipe.frames[39].ops.find(o => o.op === 'grid'), at = (x, y) => op.rows[y - op.y]?.[x - op.x] ?? '.';
+  const dry = [];
+  for (let y = 6; y < H; y++) for (let x = 0; x < W; x++) if (!rock(x, y) && !(x === 28 && y === 15) && !'sw'.includes(at(x, y))) dry.push(`${x},${y}`);
+  assert.deepEqual(dry, [], 'every open cell under the surface is drawn as water');
+  assert.equal(at(28, 15), '.');
+});
+
 test('smooth obstacles let thick liquids slide down drawn slopes and fall away from them, and keep everything out', () => {
   const W = 72, H = 56, art = f => Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (f(x, y) ? 'k' : '.')).join(''));
   const scene = (symbol, rows, effect) => ({ ...gas(null), width: W, height: H, symbols: { [symbol]: rows }, effects: { e: { kind: 'liquid', frames: 60, seed: 3, look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], emitters: [], ...effect } } });
@@ -396,14 +414,14 @@ test('smooth obstacles let thick liquids slide down drawn slopes and fall away f
 });
 
 test('decorations are drawn over or under the fluid but never met by it', () => {
-  // Water falls through a net drawn over it; the same net as an obstacle catches it.
-  const net = ['k.k.k.k.k.k.k.k', '.k.k.k.k.k.k.k.', 'k.k.k.k.k.k.k.k'];
+  // Water falls through a net drawn over it; the same net as an obstacle, wall to wall, catches all of it.
+  const net = [0, 1, 2].map(r => Array.from({ length: 48 }, (_, x) => ((x + r) % 2 ? '.' : 'k')).join(''));
   const drop = obstacle => compileFluid(goo({ walls: FLUID_WALLS, obstacles: [obstacle] }, [{ at: [24, 5], radius: 3 }], { symbols: { net } })).recipe;
-  const below = recipe => drawn(recipe, 39).filter(([, y]) => y > 14).length, held = drop({ symbol: 'net', x: 17, y: 12 }), through = drop({ symbol: 'net', x: 17, y: 12, solid: false });
-  assert.ok(below(through) > 12 && below(held) < below(through) / 3, `${below(through)} pixels fell through the decoration, ${below(held)} past the obstacle`);
+  const below = recipe => drawn(recipe, 39).filter(([, y]) => y > 14).length, held = drop({ symbol: 'net', x: 0, y: 12 }), through = drop({ symbol: 'net', x: 0, y: 12, solid: false });
+  assert.ok(below(through) > 12 && below(held) === 0, `${below(through)} pixels fell through the decoration, ${below(held)} past the obstacle`);
   // It is still stamped in front of the water, and a decoration drawn under shows through wherever the water is not.
   assert.ok(through.frames.every(frame => frame.ops.at(-1).op === 'stamp' && frame.ops.at(-1).symbol === 'net'));
-  const under = drop({ symbol: 'net', x: 17, y: 12, solid: false, draw: 'under' });
+  const under = drop({ symbol: 'net', x: 0, y: 12, solid: false, draw: 'under' });
   assert.ok(under.frames.every(frame => frame.ops[0].op === 'stamp'));
   // Gas rises through a decoration too.
   const plume = solidity => compileFluid(gas({ frames: 12, emitters: [{ at: [8, 13], radius: 2, rate: 1, density: 1, temperature: 1 }], obstacles: [{ symbol: 'lid', x: 2, y: 8, solid: solidity }], look: smoke }, { symbols: { lid: ['kkkkkkkkkkkk'] } })).recipe;
@@ -869,7 +887,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '41aedcb953cf977211b0cc29cfb551c7975318b6ed1965bf0ba0d9173ba52dfe' };
+const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '0e893c81e8608e18bef30ba5d21a139a86da73d65fd9e73b3108a79c76c90e08' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }

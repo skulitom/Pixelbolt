@@ -1475,18 +1475,31 @@ function splat(a, weights, nx, ny, fx, fy, value) {
   const add = (x, y, w) => { if (x >= 0 && y >= 0 && x < nx && y < ny && w) { a[y * nx + x] += w * value; weights[y * nx + x] += w; } };
   add(i, j, (1 - s) * (1 - t)); add(i + 1, j, s * (1 - t)); add(i, j + 1, (1 - s) * t); add(i + 1, j + 1, s * t);
 }
-// As splat, onto cell centres, from a particle at (px, py) beside smooth obstacles: a centre with the outline between it
-// and the particle gets nothing, so a particle never shows on the far side of a thin wall.
-function splatClear(a, weights, nx, ny, px, py, value, geo) {
+// As splat, onto the cell centres of a W × H canvas, from a particle at (px, py), with its whole weight shared among the
+// centres it could be in: none goes into an obstacle pixel, off the canvas or across a corner where two obstacle pixels
+// touch (nor, beside a smooth obstacle, to a centre with the outline between it and the particle). So a wall soaks up
+// none of the water beside it: a full cell walled in on three sides, or a crack one pixel wide, holds as much as open
+// water does, and nothing shows on the far side of a thin wall.
+function splatOpen(a, weights, W, H, px, py, value, solid, geo) {
   const fx = px - 0.5, fy = py - 0.5, i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
-  // The particle's own cell, and the corners it is cut off at (two obstacle pixels touching there only).
-  const ci = Math.floor(px), cj = Math.floor(py), cut = ci >= 0 && cj >= 0 && ci < nx && cj < ny ? geo.across[cj * nx + ci] : 0;
-  const add = (x, y, w) => {
-    if (x < 0 || y < 0 || x >= nx || y >= ny || !w || outlineAt(geo, (px + x + 0.5) / 2, (py + y + 0.5) / 2) < 0) return;
-    if (x !== ci && y !== cj && (cut & (y < cj ? (x < ci ? TL : TR) : x < ci ? BL : BR))) return;
-    a[y * nx + x] += w * value; weights[y * nx + x] += w;
+  // The particle's own cell, and beside smooth obstacles the corners it is cut off at.
+  const ci = Math.floor(px), cj = Math.floor(py), cut = geo && ci >= 0 && cj >= 0 && ci < W && cj < H ? geo.across[cj * W + ci] : 0;
+  let dropped = false;
+  const reach = (x, y, w) => {
+    if (!w) return 0;
+    const shut = x < 0 || y < 0 || x >= W || y >= H || solid[y * W + x]
+      // The centre diagonal to the particle's own cell, past the corner they share.
+      || (x !== ci && y !== cj && (geo ? cut & (y < cj ? (x < ci ? TL : TR) : x < ci ? BL : BR) : solid[cj * W + x] && solid[y * W + ci]))
+      || (geo && outlineAt(geo, (px + x + 0.5) / 2, (py + y + 0.5) / 2) < 0);
+    if (shut) dropped = true;
+    return shut ? 0 : w;
   };
-  add(i, j, (1 - s) * (1 - t)); add(i + 1, j, s * (1 - t)); add(i, j + 1, (1 - s) * t); add(i + 1, j + 1, s * t);
+  const w00 = reach(i, j, (1 - s) * (1 - t)), w10 = reach(i + 1, j, s * (1 - t)), w01 = reach(i, j + 1, (1 - s) * t), w11 = reach(i + 1, j + 1, s * t);
+  // In open water the weights already sum to one, and stay exactly as they are.
+  const scale = dropped ? 1 / (w00 + w10 + w01 + w11) : 1;
+  if (!(scale < Infinity)) return;
+  const add = (x, y, w) => { if (w) { a[y * W + x] += w * scale * value; weights[y * W + x] += w * scale; } };
+  add(i, j, w00); add(i + 1, j, w10); add(i, j + 1, w01); add(i + 1, j + 1, w11);
 }
 // As splat, with the particle's local flow (APIC): each lattice point gets value + gx (x − fx) + gy (y − fy), so a turning
 // or shearing patch of liquid hands the grid its turning and shearing, not only its mean velocity.
@@ -1648,18 +1661,18 @@ function liquidFields(state, out) {
   count.fill(0); speedSum.fill(0);
   for (let k = 0; k < state.n; k++) {
     const x = state.x[k], y = state.y[k], value = Math.sqrt(state.vx[k] * state.vx[k] + state.vy[k] * state.vy[k]);
-    if (geo) splatClear(speedSum, count, W, H, x, y, value, geo); else splat(speedSum, count, W, H, x - 0.5, y - 0.5, value);
+    splatOpen(speedSum, count, W, H, x, y, value, solid, geo);
   }
-  // A light 3 × 3 blur turns particles into a continuous surface. What particles beside an obstacle splat into it counts
-  // only for cells that hold water themselves, so it shapes the water's own edge but never shows on the dry far side of a
-  // wall one pixel thick (nor, past a smooth one, across a corner inside its outline).
+  // A light 3 × 3 blur over the open cells turns particles into a continuous surface. Obstacle pixels hold no water and
+  // take no part, so a wall thins neither the water beside it nor a pocket walled in on three sides (past a smooth
+  // obstacle, a dry cell also skips a corner inside its outline).
   const across = geo ? geo.across : null;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const wet = count[j * W + i] > 0;
     let sum = 0, weights = 0;
     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
       const x = i + di, y = j + dj;
-      if (x < 0 || y < 0 || x >= W || y >= H || (!wet && solid[y * W + x])) continue;
+      if (x < 0 || y < 0 || x >= W || y >= H || solid[y * W + x]) continue;
       if (across && !wet && di && dj && (across[j * W + i] & (dj < 0 ? (di < 0 ? TL : TR) : di < 0 ? BL : BR))) continue;
       const w = (di ? 1 : 2) * (dj ? 1 : 2);
       sum += count[y * W + x] * w; weights += w;
@@ -1813,7 +1826,9 @@ function renderFields(effect, base, width, height, drawn = null) {
     }
   }
   if (effect.cleanup.strays || effect.cleanup.corners) {
-    for (const change of cleanupIds(chars, width, height, { ...effect.cleanup, allowed: c => !solid[c] })) chars[change.index] = change.id;
+    // An obstacle is neither fluid nor air: a corner pixel tucked against one is not a step in the fluid's edge, so
+    // cleanup never opens a hole between the fluid and a wall.
+    for (const change of cleanupIds(chars, width, height, { ...effect.cleanup, allowed: c => !solid[c], walls: c => solid[c] })) chars[change.index] = change.id;
   }
   // `drawn`, when given, marks the cells the look layers drew the fluid on (after cleanup, before the outline).
   if (drawn) for (let c = 0; c < N; c++) drawn[c] = chars[c] ? 1 : 0;

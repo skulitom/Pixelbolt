@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Liquids fill small spaces
+
+- A liquid's surface now reads only the cells water can be in. Each particle's weight goes to the cells around it that it could be in (not into an obstacle, off the canvas or across a corner where two obstacle pixels touch), and the 3 × 3 blur that turns particles into a surface skips obstacle pixels. Before, an obstacle beside a cell soaked up part of its water and counted as empty in its blur, so a full cell walled in on three sides read at 0.3–0.5 of full and was drawn empty with an outline: the points of a mould (a bat's wing tips, ears and scallops), a crack one pixel wide and the corners of a pool against a wall. A cell sealed off at a corner still stays dry, and nothing shows past a thin wall.
+- De-Corner cleanup in a fluid leaves a pixel tucked against an obstacle alone, so it no longer carves a hole between a liquid's highlight and a wall. `cleanupIds` takes `walls(index)` for this.
+- Water against walls and the canvas edge is drawn as it is: depth bands meet a wall level instead of dipping, a film on the floor shows where it is half a cell deep, and a heap's foot reaches the floor square where its corner cells are half full (the slime's contact shadow is one row instead of two). The ten liquid examples' golden hashes and GIFs are updated; gases are unchanged.
+
 ### Indexed and greyscale PNG import
 
 - `pixelbolt import`, MCP `pixel_import` and `gif-frames` read every PNG colour type at up to 8 bits per channel: indexed (1, 2, 4 or 8 bits per pixel), greyscale (1, 2, 4 or 8 bits), greyscale with alpha, RGB and RGBA, with `tRNS` transparency, an alpha for each palette entry or one key colour. Pixels are exact: palette entries and their alpha are copied as stored, and greyscale below 8 bits takes the PNG specification's 8-bit values.

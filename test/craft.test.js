@@ -125,6 +125,10 @@ test('cleanup finds doubled corners and strays without touching filled areas or 
   assert.deepEqual(cleanupIds(grid(['ggg', 'gbg', 'ggg']), 3, 3, { strays: true }).map(({ id }) => id), [2]);
   assert.deepEqual(cleanupIds(grid(['ggg', 'g.g', 'ggg']), 3, 3, { strays: true }).map(({ id }) => id), [2]);
   assert.equal(cleanupIds(grid(['ggg', 'gbg', 'ggg']), 3, 3, { strays: true, allowed: index => index !== 4 }).length, 0);
+  // A step out in the open goes; the same step tucked against a wall (an obstacle a liquid rests on) stays.
+  const nook = grid(['.....', '.xx..', '.x...', '.x...']);
+  assert.deepEqual(cleanupIds(nook, 5, 4, { corners: true }).map(({ x, y }) => [x, y]), [[1, 1]]);
+  assert.equal(cleanupIds(nook, 5, 4, { corners: true, walls: index => index === 0 }).length, 0);
 });
 
 test('a cleanup patch proposes corrections with a report, and diagnostics count what it would change', () => {

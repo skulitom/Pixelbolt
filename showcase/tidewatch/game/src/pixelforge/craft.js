@@ -168,8 +168,10 @@ const FOUR = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 //   when those pixels agree. It needs exactly two perpendicular same-colour neighbours, a different colour on the
 //   diagonal between them (so filled areas are untouched) and at least one arm one pixel long, so real right-angle
 //   corners with longer arms survive. Repeats until stable (at most four passes).
-// `allowed(index)` limits which pixels may change. Returns [{ index, x, y, id, kind }] in scan order.
-export function cleanupIds(ids, width, height, { corners = false, strays = false, allowed = () => true } = {}) {
+// `allowed(index)` limits which pixels may change. `walls(index)` marks pixels that are neither the shape nor the space
+// around it, such as an obstacle a liquid rests against: a corner pixel tucked against one is not a step in the shape's
+// edge, so it stays. Returns [{ index, x, y, id, kind }] in scan order.
+export function cleanupIds(ids, width, height, { corners = false, strays = false, allowed = () => true, walls = () => false } = {}) {
   const work = Uint32Array.from(ids), kinds = new Map();
   const at = (x, y) => (x < 0 || y < 0 || x >= width || y >= height ? -1 : work[y * width + x]);
   if (strays) for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
@@ -195,7 +197,9 @@ export function cleanupIds(ids, width, height, { corners = false, strays = false
       if (at(x + ax + bx, y + ay + by) === color) continue; // part of a 2×2 block: a filled area
       const run = (dx, dy) => { let n = 1; while (at(x + dx * (n + 1), y + dy * (n + 1)) === color) n++; return n; };
       if (Math.min(run(ax, ay), run(bx, by)) !== 1) continue;
-      const outside = [at(x - ax, y - ay), at(x - bx, y - by), at(x - ax - bx, y - ay - by)].filter(n => n >= 0);
+      const beyond = [[x - ax, y - ay], [x - bx, y - by], [x - ax - bx, y - ay - by]];
+      if (beyond.some(([px, py]) => px >= 0 && py >= 0 && px < width && py < height && walls(py * width + px))) continue;
+      const outside = beyond.map(([px, py]) => at(px, py)).filter(n => n >= 0);
       if (!outside.length || outside.some(n => n !== outside[0])) continue;
       work[i] = outside[0]; kinds.set(i, 'corner'); changed = true;
     }
