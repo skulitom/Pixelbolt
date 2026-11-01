@@ -1299,8 +1299,8 @@ export function inspectProject(project, options = {}) {
   if (total !== cells.length) view.sampling = { total, shown: cells.length, omitted: total - cells.length, positions, ...((step > 1 || offset > 0) && { step, offset }), method: `${methods.join(', then ')}; durations are original, not playback timing` };
   if (diagnostics) view.diagnostics = analyzeProject(project);
   if (options.animation !== undefined && (diagnostics || mode === 'onion')) {
-    const a = project.animations[options.animation]; let start = 0;
-    view.timing = { animation: options.animation, duration: a.duration, loop: a.loop, entries: a.frames.map((index, position) => {
+    const a = project.animations[options.animation], fps = animationFps(project, options.animation); let start = 0;
+    view.timing = { animation: options.animation, duration: a.duration, loop: a.loop, ...(fps !== undefined && { fps }), entries: a.frames.map((index, position) => {
       const entry = { position, frame: frames[index].name, start, duration: frames[index].duration, ...animationNeighbors(a, position) };
       start += entry.duration; return entry;
     }) };
@@ -1321,6 +1321,15 @@ export function animationPosition(project, animation, time) {
     cursor -= duration;
   }
   return animation.frames.length - 1;
+}
+// Frames per second of an animation of two or more frames that all last the same, for engines and editors that ask
+// for a rate: to two decimals (70 ms a frame is 14.29), or three significant figures under 1 (60 s a frame is 0.0167);
+// undefined when the durations differ or there is one frame.
+export function animationFps(project, key) {
+  const durations = project.animations[key].frames.map(i => project.frames[i].duration);
+  if (durations.length < 2 || durations.some(ms => ms !== durations[0])) return undefined;
+  const fps = 1000 / durations[0];
+  return fps >= 1 ? Math.round(fps * 100) / 100 : Number(fps.toPrecision(3));
 }
 export function animationNeighbors(animation, position) {
   integer(position, 'animation.position', 0, animation.frames.length - 1);
