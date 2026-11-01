@@ -7,7 +7,7 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createBundle, formatJSON, embedBundleRecipe } from '../src/export.js';
+import { createBundle, formatJSON, embedBundleRecipe, withRates } from '../src/export.js';
 import { createSequence } from '../src/sequence.js';
 import { renderProject } from '../src/core.js';
 import { createSceneBundle } from '../src/scene-export.js';
@@ -35,7 +35,7 @@ function cli(args, { input, cwd = root, status = 0 } = {}) {
   assert.equal(status ? result.stdout : result.stderr, '');
   return result;
 }
-const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
+const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
 function chunks(png) {
   const found = [];
   for (let at = 8; at < png.length;) {

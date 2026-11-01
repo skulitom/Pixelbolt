@@ -152,6 +152,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The Godot TileSet weighs a layered tile against the heaviest tile with its corners, so the plain tile and its variants share out Godot's random pick and every other tile keeps probability 1. A terrain's editor colour comes from its plain tile.
 - `examples/shore.autotile.json` has two more fills per terrain and a rare lily pad, shell and daisies, and solid water: 90 tiles.
 
+### Frame rates in replies and exports
+
+- Where every frame of an animation lasts the same, the validate, inspect and render replies (MCP and CLI) and `pixel_compile`'s reply carry `fps` beside the animations: frames per second by animation name, to two decimals (a torch of 24 frames at 70 ms is `"fps": {"burn": 14.29}`), for the first 16 such animations. Inspect's `timing` names it too. An export's README.txt ends with a Timing section for every animation of two or more frames: its frame count and durations, its frame rate when they match, and whether it plays once. Godot, Unity, Aseprite and video editors ask for a rate, which an agent used to work out from milliseconds by hand.
+
 ### Renders note loops that lift, jump or repeat a frame
 
 - The render `check` (MCP `pixel_render`, CLI `render`) reports `motion`: each animation's silhouette box and lowest row for every played frame, in play order.
