@@ -135,7 +135,7 @@ test('MCP stops a tool call that runs past its time limit or out of memory, and 
   const dir = await temp(t, 'limits'), slow = session({ directory: dir, timeLimit: 300 }); await slow.init();
   try {
     // A thick liquid this size takes most of a minute to simulate, well inside the compiler's own work budget.
-    const goo = { kind: 'liquid', frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
+    const goo = { kind: 'liquid', frames: 256, loop: true, warmup: 7, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
       fill: [{ x: 0, y: 0, w: 64, h: 52 }], emitters: [], look: [{ field: 'density', colors: ['a', 'b'], thresholds: [0.3, 0.6] }] };
     const source = { format: 'pixelforge-fluid', version: 1, name: 'slow', width: 64, height: 52, palette: { a: '#123', b: '#456' }, effects: { goo } };
     // The limit's timer starts once the worker has loaded. A first call loads it, so the slow call's timer starts at

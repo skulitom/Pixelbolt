@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Cohesive and elastic liquids come to rest
+
+- Cohesion (`tension`) is a force on the grid before the pressure solve, as gravity is, instead of a velocity added to each particle after it. That velocity stayed on the particles and built up step after step, so a resting liquid kept a speed it never moved by (slime-burst read 0.16 px a frame and a still pool's peak speed 0.15, though no pixel changed), and with APIC a high-tension drop at rest trembled for good (about 12 changed pixels a frame at tension 3, now about 4). Half of the force is the density difference across each face, which the pressure balances exactly at rest; half is sampled at the particles and spread onto the faces as their velocities are, which keeps a small falling drop round: with the first half alone, the drip's drop fell as a pixel-wide streak.
+- A yield-stress liquid stops rocking. The slime example rocked from side to side for good, 4-9 pixels changing every frame from frame 500 to 700 whatever the seed; now 0-2, and its particles settle to about 0.02 px a frame rms. Two causes. A particle's strain was turned with the flow by a straight step along the tangent, which grows it a little every step; a Cayley rotation now turns it and keeps its size. And the spreading that evens out the particles (crowded cells spread, sparse ones inside draw particles in) strained the liquid as well, storing springiness that had only mended the spacing; it now has a pressure solve of its own after the flow's, which moves the particles without straining them. That solve makes the yield-stress examples 18-25% slower to compile (cohesion's spreading onto the faces adds 2-11% to the other liquids), and the work budget counts it: the studio's slime course warms up live for at most 102 frames, not 132.
+- The ten liquid examples' golden hashes and GIFs are updated; gases are unchanged. They look much as they did: slime-burst's pieces gather into a rounder heap, the waterfall's foot splits into strands a little more, and splash throws a little more spray.
+- Still open: how soon an elastic heap rests varies a lot with its seed (over twelve seeds the slime changes about 1 pixel a frame on average from frame 100 to 900, down from 6), and water standing in a box keeps rippling by a pixel or two for a while, with or without cohesion.
+
 ### Liquid fixes: settling, drops, sparks and carriers
 
 - Liquid standing in a pipe or a long channel comes to rest (P-067). A liquid's pressure is now solved by conjugate gradients with a MIC(0) preconditioner, a third as many steps as `iterations` (each costs about three sweeps). The sweeps carried pressure only a few cells a step against their scan order, so in a pipe or U-tube the push that holds the liquid lagged the flow, and a lagging push pumps a slosh up: the studio's rocket mould never settled (50-65 changed pixels a frame from frame 200 on), and jelly in 4-wide pipes bobbed to the end of every run. It now rests within about 100 frames. Gases keep the sweeps. Slow levelling in narrow channels is the jelly's own yield and viscosity holding a head, and is unchanged.
@@ -14,7 +21,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A gas carrier that hits a wall or a closed edge drops its smoke in the last open cell before it, not up to a whole step short (P-047).
 - Patch `recolor` reads a palette key as the frame draws it, so a frame with its own palette can be recoloured; `scope: "frame"` restores dependents with palette keys where one draws the colour, so a later palette edit still reaches them.
 - The playground's worker checks every engine and example address itself (P-023): a page's meta CSP doesn't reach a worker, and GitHub Pages sends no CSP header.
-- Known and left as is: cohesion (`tension`) keeps a resting liquid's surface trembling a little (about 0.16 px a frame at tension 3.2), so a pixel at the look's threshold can still flip.
+- Cohesion (`tension`), left as it was here, is reworked in the section above: the 0.16 px a frame a resting liquid seemed to keep under it was a speed the particles never moved by.
 
 ### Liquids fill small spaces
 

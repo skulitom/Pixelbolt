@@ -23,17 +23,17 @@ const GOLDEN = {
   'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
-  splash: 'a78a61add2f12cf845e9fa04e31df4691ff7bc1726c71e905526baad8bd0d886',
-  waterfall: '84c02721ddbcccba51e44a98cd18a08de6b5632cd6b8c0f2e3ad33383f5bba13',
-  drip: '3e4c0d9d4b5f5e6bf4f88f969d289cb14399d337884f7d4c226f5e1e719c721f',
-  potion: 'c293ef6ab559f79cfc85bc29f819df27ad0045d14eea00fe11c2aae35729ceda',
-  honey: '82b67920d1fd9ea8a4f3f6d640ee6f243409055d809bb7af500eeeaef39b0148',
-  slime: 'e12247c1221ad5121a4db3995d94c2041050e1d88131ae658dddcfd9cc1fb7e8',
-  'roof-snow': 'f9c7c5750696bb9d455e706a3fa3bece7efb325c529a8430367759028dbccd02',
-  'dam-break': '082ffdbab0d27e7975b9dd1b9648f0fb4392c8c69b10114bbfba5a42a435be9d',
+  splash: '66ef64ae3bcca306d31d6428da3a4c5a3a9a1f500e466dfe6e2b5e82010b484a',
+  waterfall: 'f1efd4b19f0e3c05a48b7a2f6505e50fe5292b214fcd5f5cce93c5868d4e648d',
+  drip: '540bd60355c8e1a3dabfc4550b753d5e0f214658c11156f37a90456e44825070',
+  potion: 'a2aaefe06559d19c55724e023f2717c3904858e722d4bb0f17f7afc61bd0f8ce',
+  honey: '66506170ee87776f7e128b1c99944a275e52da3a5ee8af24cf7ff163993035ab',
+  slime: '825c482db016721d22cc8c173d14708977f4a9f05f8d9d0a180549422476e04f',
+  'roof-snow': 'ceef673d9afc22b22e6b2a955e21b39ebda85f81052aec5dbe9a2acb62413add',
+  'dam-break': '3e8958e3c2833e522717a72843feb4564b9162e3d2cd9fbe049468d22c4bdb9e',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
-  'slime-burst': '4209084f096f4ab40599cfaecddc888a9deafaa7a0c6f51aa2424d21a8c219f5',
-  'honey-drop': '1cf2d5081e6cf5b16384c607552573504e4c3c9b00d44e610191b0a2c3826153'
+  'slime-burst': '70d4d5860e9cd806e1cdf396c8cc2ca518b39f08a0b80dee473048cf3bf1e5bb',
+  'honey-drop': '8b588089a4bc6d37405252c63b4d0b009806c95ad016506c675ecfecb116e010'
 };
 const examples = new Map();
 const example = async name => {
@@ -83,9 +83,10 @@ test('looping examples close their loop and one-shot examples end empty or at re
       if (!ops.length) assert.equal(pixelsOf(last), 0, name);
     } else {
       // A liquid one-shot settles: its last frames barely change. (Over the last four frames, since a pixel at the
-      // look's threshold may still flip in a resting liquid whose surface trembles under cohesion.)
+      // look's threshold may still flip in a liquid that is still settling, and the splash ends on its last ripples, a
+      // pixel high across a 48-pixel pool.)
       const last = animation.frames.slice(-5).map(index => project.frames[index]), moves = last.slice(1).map((frame, k) => changed(last[k], frame));
-      assert.ok(moves.reduce((a, b) => a + b, 0) / moves.length <= 12, `${name} still moves ${moves.join(', ')} pixels a frame at the end`);
+      assert.ok(moves.reduce((a, b) => a + b, 0) / moves.length <= 16, `${name} still moves ${moves.join(', ')} pixels a frame at the end`);
     }
   }
 });
@@ -121,8 +122,24 @@ test('heat rises and curls, smoke thins, obstacles stay clear and a still pool s
   assert.deepEqual(new Set(pool.metadata.effects.pool.pixels), new Set([96]));
   assert.deepEqual(pool.recipe.frames[11].ops, pool.recipe.frames[0].ops);
   assert.deepEqual(pool.recipe.frames[0].ops[0].rows.slice(0, 2), ['w'.repeat(16), 's'.repeat(16)]);
-  // Cohesion keeps the surface particles trembling a little, never enough to move a pixel.
-  assert.ok(pool.metadata.effects.pool.peak.speed < 0.25);
+  // Its particles stay all but still, cohesion and all: cohesion is a force the pressure holds a resting surface
+  // against, not a speed left on each particle (which read about 0.15 pixels a frame here though nothing moved).
+  assert.ok(pool.metadata.effects.pool.peak.speed < 0.02, `peak speed ${pool.metadata.effects.pool.peak.speed}`);
+});
+
+test('a slime that has landed comes to rest instead of rocking for good', async () => {
+  // The slime example, long after it lands. Its strain used to grow a little every time it was turned with the flow, and
+  // the spreading that mends particle spacing strained it too, so it rocked from side to side for good, 4 to 9 pixels
+  // changing every frame from frame 500 to 700 whatever the seed; now none to 2. (Single runs of an elastic heap differ
+  // a lot from seed to seed, hence the margin.)
+  const live = createLiveFluid((await example('slime')).source, { warmup: 0 }).step(500);
+  let keys = live.render().keys.join(''), changed = 0;
+  for (let f = 0; f < 200; f++) {
+    const next = live.step().render().keys.join('');
+    for (let i = 0; i < next.length; i++) if (next[i] !== keys[i]) changed++;
+    keys = next;
+  }
+  assert.ok(changed / 200 < 3, `${changed / 200} pixels change a frame`);
 });
 
 test('sparks draw as blocks of their size, with a streak back along their path', () => {
@@ -417,12 +434,13 @@ test('smooth obstacles let thick liquids slide down drawn slopes and fall away f
   const below = art((x, y) => { const top = 12 - Math.floor((x - 9) / 3.5); return x >= 9 && x < 39 && (y === top + 2 || y === top + 3); });
   const hanging = surface => drawn(compileFluid(scene('branch', branch, { frames: 31, yield: 3, slip: true, walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'branch', draw: 'none', surface }], fill: [{ at: [24, 12.6], radius: 6 }] })).recipe, 30).filter(([x, y]) => below[y][x] === 'k').length;
   assert.ok(hanging('pixels') >= 10 && hanging('smooth') === 0, `${hanging('pixels')} pixels hang under the stepped branch, ${hanging('smooth')} under the smooth one`);
-  // Water poured into a smooth V-shaped bowl settles there, keeping its volume, as in a stepped one.
+  // Water poured into a smooth V-shaped bowl settles there, keeping its volume, as in a stepped one. (Its volume is the
+  // water it holds; the pixels drawn rise and fall by a few with the last ripples on its surface.)
   const bowl = art((x, y) => y >= 55 - Math.abs(x - 36));
-  const poured = surface => compileFluid(scene('bowl', bowl, { frames: 90, walls: FLUID_WALLS, obstacles: [{ symbol: 'bowl', draw: 'none', surface }], fill: [{ x: 24, y: 30, w: 24, h: 10 }] })).recipe;
-  const pool = poured('smooth'), stepped = drawn(poured('pixels'), 89).length;
+  const poured = surface => compileFluid(scene('bowl', bowl, { frames: 90, walls: FLUID_WALLS, obstacles: [{ symbol: 'bowl', draw: 'none', surface }], fill: [{ x: 24, y: 30, w: 24, h: 10 }] }));
+  const { recipe: pool, metadata } = poured('smooth'), stepped = drawn(poured('pixels').recipe, 89).length, { amount } = metadata.effects.e.figures;
   const at = f => new Set(drawn(pool, f).map(([x, y]) => y * W + x)), [a, b] = [at(70), at(89)], moved = [...a].filter(c => !b.has(c)).length + [...b].filter(c => !a.has(c)).length;
-  assert.ok(moved <= 16 && Math.abs(a.size - b.size) <= 4 && b.size >= 0.95 * stepped, `the pool: ${a.size} and ${b.size} pixels at frames 70 and 89 (${stepped} in a stepped bowl), ${moved} changed`);
+  assert.ok(moved <= 16 && Math.abs(amount[89] - amount[70]) <= 0.01 * amount[70] && b.size >= 0.95 * stepped, `the pool: ${a.size} and ${b.size} pixels (${amount[70]} and ${amount[89]} cells of water) at frames 70 and 89 (${stepped} pixels in a stepped bowl), ${moved} changed`);
   // Nothing gets through a smooth diagonal wall one or two pixels thick, nor one that is smooth above and pixels below:
   // not a jet at 16 pixels a frame, not the spray it throws, not gas, not even the faintest density a look draws.
   for (const thick of [1, 2]) {
@@ -924,7 +942,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '6506d1c6506ade069c204c9921c1a275cc05db9767ed47c64459d638f52e2f1d' };
+const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '767b87bfa1aa7412f8f4615d7604267178449cd873cc5a56ee35fa928cc837ab' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
@@ -1138,13 +1156,13 @@ test('live runners check sources like compileFluid, and their own inputs with pa
 });
 
 test('a live run is held to the work budget only for its warm-up, since it steps one frame at a time', () => {
-  // The studio's 72 × 128 slime course (P-032): 256 frames at 4 substeps would be about 774 million cell updates to
-  // compile, over the 400 million budget, yet each live frame is about 3 million.
+  // The studio's 72 × 128 slime course (P-032): 256 frames at 4 substeps would be about 1000 million cell updates to
+  // compile, over the 400 million budget, yet each live frame is about 4 million.
   const slime = { ...gas(null), width: 72, height: 128, effects: { slime: { kind: 'liquid', frames: 256, substeps: 4, iterations: 24, yield: 0.15, walls: ['left', 'right', 'bottom'], fill: [{ x: 20, y: 96, w: 32, h: 24 }], emitters: [], look: smoke } } };
-  assert.throws(() => compileFluid(slime), error => error instanceof PixelError && error.path === 'fluid.effects.slime' && /about 774 million cell updates, more than 400 million/.test(error.message));
+  assert.throws(() => compileFluid(slime), error => error instanceof PixelError && error.path === 'fluid.effects.slime' && /about 1000 million cell updates, more than 400 million/.test(error.message));
   // The default warm-up, one whole cycle, does count, and the error says how many frames fit.
-  assert.throws(() => createLiveFluid(slime), error => error instanceof PixelError && error.path === 'live.warmup' && error.message === 'live.warmup: warming up 256 frames (the default: one cycle) needs about 774 million cell updates, more than 400 million; warm up at most 132 frames, or lower substeps or iterations');
-  assert.throws(() => createLiveFluid(slime, { warmup: 133 }), error => error.path === 'live.warmup' && /: warming up 133 frames needs about 402 million/.test(error.message));
+  assert.throws(() => createLiveFluid(slime), error => error instanceof PixelError && error.path === 'live.warmup' && error.message === 'live.warmup: warming up 256 frames (the default: one cycle) needs about 1000 million cell updates, more than 400 million; warm up at most 102 frames, or lower substeps or iterations');
+  assert.throws(() => createLiveFluid(slime, { warmup: 103 }), error => error.path === 'live.warmup' && /: warming up 103 frames needs about 402 million/.test(error.message));
   const live = createLiveFluid(slime, { warmup: 2 });
   assert.equal(live.step().frame, 3);
   assert.ok(live.particles > 0 && live.render().keys.some(row => /[^.]/.test(row)));

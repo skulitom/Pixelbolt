@@ -27,7 +27,7 @@ function session(options) {
 const strip = { version: 1, name: 'strip', width: 4, height: 2, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 3, y: 1, color: 'k' }] }, { name: 'b', duration: 90 }] };
 // A thick liquid this size takes most of a minute to simulate, well inside the compiler's own work budget.
 const slowSource = () => ({ format: 'pixelforge-fluid', version: 1, name: 'slow', width: 64, height: 52, palette: { a: '#123', b: '#456' }, effects: { goo: {
-  kind: 'liquid', frames: 256, loop: true, warmup: 8, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
+  kind: 'liquid', frames: 256, loop: true, warmup: 7, substeps: 4, iterations: 1, viscosity: 64, yield: 16, apic: true, walls: ['left', 'right', 'bottom', 'top'],
   fill: [{ x: 0, y: 0, w: 64, h: 52 }], emitters: [], look: [{ field: 'density', colors: ['a', 'b'], thresholds: [0.3, 0.6] }] } } });
 const info = reply => JSON.parse(reply.result.content[0].text);
 

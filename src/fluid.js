@@ -1177,8 +1177,8 @@ function strainForce(state, effect, dt) {
 
 // The rate of strain (stretch, shear) and the spin of each wet cell, from the same differences the stress uses: stretch
 // across the cell, shear and spin at its corners (walls, and anything beyond a closed edge, still), averaged.
-function strainRates(state) {
-  const { g, fluid, strain } = state, { W, H, u, v } = g, { ra, rb, spin } = strain, X = W + 1;
+function strainRates(state, u, v) {
+  const { g, fluid, strain } = state, { W, H } = g, { ra, rb, spin } = strain, X = W + 1;
   const uAt = (i, j) => (j >= 0 && j < H ? u[j * X + i] : 0), vAt = (i, j) => (i >= 0 && i < W ? v[j * W + i] : 0);
   const dudy = (i, j) => uAt(i, j) - uAt(i, j - 1), dvdx = (i, j) => vAt(i, j) - vAt(i - 1, j);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
@@ -1433,9 +1433,10 @@ function createLiquid(effect, width, height) {
     pvx: new Float64Array(1024), pvy: new Float64Array(1024),
     uw: new Float64Array(U), vw: new Float64Array(V), uOld: new Float64Array(U), vOld: new Float64Array(V), uValid: new Uint8Array(U), vValid: new Uint8Array(V),
     fluid: new Uint8Array(N), cells: new Uint16Array(N), target: new Float64Array(N), splat: new Float64Array(N), blur: new Float64Array(N), speedSum: new Float64Array(N),
+    pullU: effect.tension ? new Float64Array(U) : null, pullV: effect.tension ? new Float64Array(V) : null,
     cux: new Float64Array(1024), cuy: new Float64Array(1024), cvx: new Float64Array(1024), cvy: new Float64Array(1024), ea: new Float64Array(1024), eb: new Float64Array(1024), apic: effect.apic,
     cling: effect.most.adhesion ? clingField(g) : null, pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
-    strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N) } : null
+    strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), flowU: new Float64Array(U), flowV: new Float64Array(V), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null
   };
   return state;
 }
@@ -1598,10 +1599,10 @@ function extrapolate(a, valid, nx, ny, layers) {
     }
   }
 }
-// Adds `value` to the four lattice points around (fx, fy) with bilinear weights, and the weights to `weights`.
+// Adds `value` to the four lattice points around (fx, fy) with bilinear weights, and the weights to `weights` if given.
 function splat(a, weights, nx, ny, fx, fy, value) {
   const i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
-  const add = (x, y, w) => { if (x >= 0 && y >= 0 && x < nx && y < ny && w) { a[y * nx + x] += w * value; weights[y * nx + x] += w; } };
+  const add = (x, y, w) => { if (x >= 0 && y >= 0 && x < nx && y < ny && w) { a[y * nx + x] += w * value; if (weights) weights[y * nx + x] += w; } };
   add(i, j, (1 - s) * (1 - t)); add(i + 1, j, s * (1 - t)); add(i, j + 1, (1 - s) * t); add(i + 1, j + 1, s * t);
 }
 // As splat, onto the cell centres of a W × H canvas, from a particle at (px, py), with its whole weight shared among the
@@ -1667,6 +1668,50 @@ function transfer(state) {
   enforce(g);
   extrapolate(u, uValid, W + 1, H, 2); extrapolate(v, vValid, W, H + 1, 2);
 }
+// Cohesion: the liquid is drawn up its smoothed density, which only matters at the surface (inside, the density is
+// level). Drops hold together and thin sheets gather into strands instead of drifting apart as mist. It is a force on
+// the grid's faces before the pressure solve, as gravity is, so the pressure holds a resting surface against it. (Added
+// to each particle's velocity after the solve, it stayed there, built up step after step and went round every transfer,
+// so a resting liquid kept a speed it never moved by and a thin one, with APIC, trembled for ever.) Half of it is the
+// difference in density across each face, which the pressure balances exactly at rest; half is sampled at the
+// particles and spread onto the faces as their velocities are, which keeps a small falling drop round where a pixel-wide
+// difference cannot tell its end from its sides.
+function cohere(state, strength, room) {
+  const { g, fluid, blur: rho, cells, uw, vw } = state, { W, H, u, v, solid, uFixed, vFixed } = g, X = W + 1;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    let sum = 0, weights = 0;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const x = i + di, y = j + dj;
+      // Obstacles take no part, so liquid neither clings to walls nor shies away from them; beside a smooth one a cell
+      // counts by its open share, and a cut step's open corner not at all.
+      if (x < 0 || y < 0 || x >= W || y >= H || (room ? room[y * W + x] < 0.5 : solid[y * W + x])) continue;
+      const w = (di ? 1 : 2) * (dj ? 1 : 2);
+      sum += cells[y * W + x] * w; weights += room ? w * room[y * W + x] : w;
+    }
+    rho[j * W + i] = weights ? sum / weights / PER_CELL : 0;
+  }
+  // Each face between two cells, one of them liquid, is pushed toward the denser one.
+  const half = 0.5 * strength;
+  for (let j = 0; j < H; j++) for (let i = 1; i < W; i++) {
+    const k = j * X + i, c = j * W + i;
+    if (!uFixed[k] && (fluid[c - 1] || fluid[c])) u[k] += half * (rho[c] - rho[c - 1]);
+  }
+  for (let j = 1; j < H; j++) for (let i = 0; i < W; i++) {
+    const c = j * W + i;
+    if (!vFixed[c] && (fluid[c - W] || fluid[c])) v[c] += half * (rho[c] - rho[c - W]);
+  }
+  // Each particle's pull, the density's difference across the two cells around it, is spread with the weights the
+  // transfer gave its velocity (the particles have not moved since).
+  const { pullU, pullV } = state;
+  pullU.fill(0); pullV.fill(0);
+  for (let k = 0; k < state.n; k++) {
+    const x = state.x[k], y = state.y[k], fx = x - 0.5, fy = y - 0.5;
+    splat(pullU, null, W + 1, H, x, y - 0.5, 0.5 * half * (bilinear(rho, W, H, fx + 1, fy) - bilinear(rho, W, H, fx - 1, fy)));
+    splat(pullV, null, W, H + 1, x - 0.5, y, 0.5 * half * (bilinear(rho, W, H, fx, fy + 1) - bilinear(rho, W, H, fx, fy - 1)));
+  }
+  for (let k = 0; k < u.length; k++) if (uw[k] > 0 && !uFixed[k]) u[k] += pullU[k] / uw[k];
+  for (let k = 0; k < v.length; k++) if (vw[k] > 0 && !vFixed[k]) v[k] += pullV[k] / vw[k];
+}
 function stepLiquid(state, effect, dt) {
   const { g, fluid, target, uOld, vOld } = state, { W, H, u, v, solid, walls } = g;
   transfer(state);
@@ -1675,11 +1720,13 @@ function stepLiquid(state, effect, dt) {
   for (let k = 0; k < v.length; k++) v[k] += dt * effect.gravity[1];
   if (effect.drag) { const keep = 1 - effect.drag * dt; for (let k = 0; k < u.length; k++) u[k] *= keep; for (let k = 0; k < v.length; k++) v[k] *= keep; }
   if (effect.yield) strainForce(state, effect, dt);
+  countCells(state);
+  const room = g.geo ? g.geo.open : null;
+  if (effect.tension) cohere(state, effect.tension * dt, room);
   enforce(g);
   // Crowded cells spread and sparse cells inside the liquid draw particles in, so splashes neither shrink the volume nor
   // thin it out into a larger, emptier one. Cells on the surface only spread.
-  countCells(state);
-  const wet = c => solid[c] || fluid[c], room = g.geo ? g.geo.open : null;
+  const wet = c => solid[c] || fluid[c];
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const c = j * W + i;
     // Beside a smooth obstacle a cell holds particles for its open share; the open corners of cut steps take no part.
@@ -1688,7 +1735,11 @@ function stepLiquid(state, effect, dt) {
     const interior = fluid[c] && (i > 0 ? wet(c - 1) : walls.left) && (i < W - 1 ? wet(c + 1) : walls.right) && (j > 0 ? wet(c - W) : walls.top) && (j < H - 1 ? wet(c + W) : walls.bottom);
     target[c] = error > 0 || interior ? 0.5 * error : 0;
   }
-  project(g, fluid, effect.iterations, target);
+  // A yield-stress liquid is strained by its flow alone: the spreading has a solve of its own after the flow's, which
+  // moves the particles without straining them. (Strained by it, the liquid stored springiness that only mended the
+  // particles' spacing, and a resting slime rocked for ever.)
+  const split = effect.yield > 0, spreading = split ? state.strain.none : target;
+  project(g, fluid, effect.iterations, spreading);
   // A thick liquid resists the flow the pressure solve has just made (a heap slumping under its own weight) before it
   // moves, then is made divergence-free again. That second solve starts from no pressure and leaves the first's in
   // place to start the next step from.
@@ -1696,36 +1747,30 @@ function stepLiquid(state, effect, dt) {
   if (thick) {
     viscous(g, fluid, effect, dt, effect.yield ? state.strain.stiff : null);
     state.pressure.set(g.p); g.p.fill(0);
-    project(g, fluid, effect.iterations, target);
+    project(g, fluid, effect.iterations, spreading);
     g.p.set(state.pressure);
   }
   const uValid = new Uint8Array(state.uValid.length), vValid = new Uint8Array(state.vValid.length);
   for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * (W + 1) + i; uValid[k] = g.uFixed[k] || (i > 0 && fluid[j * W + i - 1]) || (i < W && fluid[j * W + i]) ? 1 : 0; }
   for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vValid[k] = g.vFixed[k] || (j > 0 && fluid[(j - 1) * W + i]) || (j < H && fluid[j * W + i]) ? 1 : 0; }
-  extrapolate(u, uValid, W + 1, H, 3); extrapolate(v, vValid, W, H + 1, 3);
-  // Cohesion: particles are drawn up the smoothed density gradient, which only matters at the surface (inside, the
-  // density is level). Drops hold together and thin sheets gather into strands instead of drifting apart as mist.
-  const rho = state.blur;
-  if (effect.tension) for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
-    let sum = 0, weights = 0;
-    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
-      const x = i + di, y = j + dj;
-      // Obstacles take no part, so liquid neither clings to walls nor shies away from them; beside a smooth one a cell
-      // counts by its open share, and a cut step's open corner not at all.
-      if (x < 0 || y < 0 || x >= W || y >= H || (room ? room[y * W + x] < 0.5 : solid[y * W + x])) continue;
-      const w = (di ? 1 : 2) * (dj ? 1 : 2);
-      sum += state.cells[y * W + x] * w; weights += room ? w * room[y * W + x] : w;
-    }
-    rho[j * W + i] = weights ? sum / weights / PER_CELL : 0;
+  if (split) {
+    const { flowU, flowV, flowPressure } = state.strain;
+    flowU.set(u); flowV.set(v);
+    extrapolate(flowU, Uint8Array.from(uValid), W + 1, H, 3); extrapolate(flowV, Uint8Array.from(vValid), W, H + 1, 3);
+    strainRates(state, flowU, flowV);
+    // The spreading's solve starts from the last step's, as the flow's starts from the last step's pressure.
+    flowPressure.set(g.p); g.p.set(state.strain.spread);
+    project(g, fluid, effect.iterations, target);
+    state.strain.spread.set(g.p); g.p.set(flowPressure);
   }
+  extrapolate(u, uValid, W + 1, H, 3); extrapolate(v, vValid, W, H + 1, 3);
   // FLIP: particles keep their own velocity plus the grid's change, blended with the grid velocity (PIC) to calm noise.
   // In a thick liquid a particle's own jitter, finer than the grid, fades as the grid's finest ripples do under its
   // viscosity, so the FLIP share shrinks where the liquid is thick. With APIC the grid share also hands each particle the
   // slopes of the flow around it, which it carries and hands back, so the calm share keeps swirls instead of smearing them.
-  const flip = effect.flip, pull = effect.tension * dt * 0.5, mu = thick ? g.visc.mu : null, cling = state.cling, normal = cling ? new Float64Array(2) : null;
+  const flip = effect.flip, mu = thick ? g.visc.mu : null, cling = state.cling, normal = cling ? new Float64Array(2) : null;
   const slopes = state.apic ? new Float64Array(2) : null, limit = effect.yield / (2 * STIFFNESS);
   const { geo } = g, stepped = geo ? geo.stepped : solid, velocity = geo ? new Float64Array(2) : null, landing = geo ? new Float64Array(2) : null;
-  if (limit) strainRates(state);
   for (let k = state.n - 1; k >= 0; k--) {
     let x = state.x[k], y = state.y[k];
     const pu = sampleU(g, u, x, y), pv = sampleV(g, v, x, y), share = mu ? flip / (1 + 8 * dt * mu[Math.floor(y) * W + Math.floor(x)]) : flip;
@@ -1736,20 +1781,17 @@ function stepLiquid(state, effect, dt) {
       slope(v, W, H + 1, x - 0.5, y, slopes); state.cvx[k] = slopes[0]; state.cvy[k] = slopes[1];
     }
     // Yield stress: the particle's strain grows by this step's rate of strain, turns with the flow, and is capped at the
-    // yield strain; strain beyond the cap is plastic flow, which the liquid does not spring back from.
+    // yield strain; strain beyond the cap is plastic flow, which the liquid does not spring back from. The turn keeps the
+    // strain's size (a Cayley rotation): turned a step at a time along the tangent, it grew a little every step, and the
+    // growth set a resting slime rocking for ever.
     if (limit) {
       const c = Math.floor(y) * W + Math.floor(x), { ra, rb, spin } = state.strain, ea = state.ea[k], eb = state.eb[k];
-      let na = ea + dt * (ra[c] - spin[c] * eb), nb = eb + dt * (rb[c] + spin[c] * ea);
+      const turn = dt * spin[c], q = turn * turn / 4;
+      let na = ((1 - q) * ea - turn * eb) / (1 + q) + dt * ra[c], nb = ((1 - q) * eb + turn * ea) / (1 + q) + dt * rb[c];
       const size = na * na + nb * nb;
       if (size > limit * limit) { const scale = limit / Math.sqrt(size); na *= scale; nb *= scale; }
       state.ea[k] = na; state.eb[k] = nb;
     }
-    if (pull) {
-      const fx = x - 0.5, fy = y - 0.5;
-      state.vx[k] += pull * (bilinear(rho, W, H, fx + 1, fy) - bilinear(rho, W, H, fx - 1, fy));
-      state.vy[k] += pull * (bilinear(rho, W, H, fx, fy + 1) - bilinear(rho, W, H, fx, fy - 1));
-    }
-    // The speed cap comes last, so cohesion cannot push a particle past it.
     if (state.vx[k] > MAX_SPEED) state.vx[k] = MAX_SPEED; else if (state.vx[k] < -MAX_SPEED) state.vx[k] = -MAX_SPEED;
     if (state.vy[k] > MAX_SPEED) state.vy[k] = MAX_SPEED; else if (state.vy[k] < -MAX_SPEED) state.vy[k] = -MAX_SPEED;
     const mx = x + 0.5 * dt * pu, my = y + 0.5 * dt * pv;
@@ -1990,9 +2032,9 @@ function renderFields(effect, base, width, height, drawn = null) {
 
 // ---- Simulation -------------------------------------------------------------------------------------------------------
 // Cell updates per cell per step, for the work budget: one per pressure sweep plus the transfers and advection. A thick
-// fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, sharp advection about
-// thirty.
-const stepWork = effect => effect.iterations * (effect.most.viscosity || effect.most.yield ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
+// fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
+// spreading solve one more, sharp advection about thirty.
+const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
 const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
@@ -2312,7 +2354,7 @@ export function compileFluid(source) {
   let work = 0;
   const recipe = buildRecipe(source, (name, effect, context) => {
     // Bounded work, checked before each effect is simulated: about one update per cell per pressure sweep, per step,
-    // summed over the source's effects. The presets need at most 60 million.
+    // summed over the source's effects. The presets need at most 61 million.
     work += context.width * context.height * simulatedFrames(effect) * effect.substeps * stepWork(effect);
     if (work > LIMITS.work) fail(context.path, `the simulations need about ${Math.round(work / 1e6)} million cell updates, more than ${LIMITS.work / 1e6} million; lower frames, warmup, substeps, iterations or the canvas size`);
     const run = simulate(effect, context);
