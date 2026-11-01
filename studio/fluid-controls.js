@@ -11,6 +11,7 @@ export const FLUID_PRESETS = [
   { file: 'roof-snow', title: 'Snow off a roof', note: 'Smooth obstacle · one-shot' }, { file: 'dam-break', title: 'Dam break', note: 'Moving obstacle · one-shot' },
   { file: 'dust-wave', title: 'Dust wave', note: 'Carried gas · one-shot' }, { file: 'slime-burst', title: 'Bursting slime', note: 'Burst fill · one-shot' },
   { file: 'honey-drop', title: 'Honey let-go', note: 'Keyed liquid · one-shot' }, { file: 'aquarium', title: 'Aquarium bubbles', note: 'Bubbles · loop' },
+  { file: 'honey-dipper', title: 'Honey dipper', note: 'Sticky moving obstacle · one-shot' },
   { file: 'glug', title: 'Glugging bottle', note: 'Air pockets · one-shot' }
 ];
 // Each slider sets one setting of the preset's effect; Strength scales every emitter's rate or burst. A slider's range

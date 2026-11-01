@@ -460,14 +460,15 @@ const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8b
 }, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
 // Wet snow on a house's 45-degree roof slides off as one slab, pours over the eave and settles in a drift against the
 // wall. The roof is a smooth obstacle, so the snow (a soft yield-stress liquid with slip) slides down its pixel steps
-// instead of catching on them; a key firms the snow once it has landed, so the drift stays put rather than skidding on.
+// instead of catching on them; a key firms the snow over ten frames as it lands, so the falling column slumps into a
+// rounded drift and stops there, rather than spreading into a thin sheet or freezing as a column.
 const roofSlab = shapeRows(22, 24, (x, y) => (y === x ? 't' : y === x + 1 ? 'r' : y === x + 2 || (y > x + 2 && x < 2) ? 'R' : null));
 const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 12 && y >= 10 && y <= 14 ? (x === 10 || y === 12 ? 'M' : 'y') : y % 4 === 0 ? 'M' : 'm'));
 // The snow starts lying on the roof: one-row strips over its top pixels (y = x + 4), seven rows deep from column 8 to 20.
 const roofSnowFill = Array.from({ length: 19 }, (_, i) => i + 5).flatMap(y => { const x0 = Math.max(y - 3, 8), x1 = Math.min(y + 3, 20); return x1 >= x0 ? [{ x: x0, y, w: x1 - x0 + 1, h: 1 }] : []; });
 const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
   kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
-  keys: [{ frame: 28, yield: 4, over: 4 }],
+  keys: [{ frame: 24, yield: 3, over: 10 }],
   // The house is drawn in front of the snow's outline, so the outline stops at the wall instead of covering its edge.
   obstacles: [{ symbol: 'wall', x: 2, y: 18 }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
   fill: roofSnowFill, emitters: [],
@@ -561,6 +562,22 @@ const aquarium = fluidSource('aquarium', 56, 48, { ...water, s: '#e8c98a', d: '#
   spout: shapeRows(20, 4, (x, y) => (y === 0 || y === 3 || (x === 0 && y === 1) ? 'k' : x === 0 ? null : 'p')),
   weed: shapeRows(5, 14, (x, y) => (x === +sway[y] ? (y % 3 === 0 ? 'E' : 'e') : x === +sway[y] + 1 && y % 4 === 1 ? 'e' : null))
 });
+// A honey dipper is lifted out of a jar of honey. The dipper is sticky (its own adhesion) and the jar nearly non-stick,
+// so the honey clings to the dipper as it rises: it draws the surface up into a peak, a glossy string joins the dipper's
+// tip to the peak, thins and snaps, and what is left of it curls back into the peak while the dipper keeps its coat. The
+// string is a `strand` layer, which draws liquid stretched thinner than the density can, in a pale gloss.
+const honeyDipper = fluidSource('honey-dipper', 40, 60, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
+  kind: 'liquid', frames: 56, duration: 70, seed: 5, iterations: 24, walls: ['left', 'right', 'bottom'], viscosity: 16, apic: true, adhesion: 0.5, tension: 0.25,
+  obstacles: [{ symbol: 'jar', x: 7, y: 38 }, { symbol: 'dipper', x: 16, y: -5, adhesion: 2.5, keys: [{ frame: 4, y: -35, over: 30 }] }],
+  fill: [{ x: 9, y: 44, w: 22, h: 15 }], emitters: [],
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 },
+    { field: 'strand', colors: ['y'], thresholds: [0.5], dither: 0 }],
+  cleanup: { strays: true }
+}, {
+  // A grooved head on a long handle that runs off the top of the canvas as the dipper rises.
+  dipper: [...Array.from({ length: 48 }, (_, y) => (y % 7 === 3 ? '...bb...' : '...nB...')), '..bnBb..', '.bbbbbb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bbbbbb.'],
+  jar
+});
 // A bottle turned upside down over a glass glugs as it pours (air pockets): the air at its top keeps its amount, so as
 // water leaves, it stretches and holds the rest back until outside air pushes up the neck as a big bubble that rises
 // through the water and joins it, and the next pour follows. Air the pour drives into the glass rises as bubbles (or,
@@ -580,7 +597,7 @@ const glug = fluidSource('glug', 40, 56, { ...water, G: '#3f7f5f', h: '#bfe8cf',
 }, {
   bottle: glugBottle, glass: shapeRows(26, 16, (x, y) => (x === 1 || x === 24 ? 'q' : y === 15 || x === 0 || x === 25 ? 'Q' : null)), table: shapeRows(40, 1, () => 't')
 });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, glug };
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, 'honey-dipper': honeyDipper, glug };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

@@ -29,12 +29,13 @@ const GOLDEN = {
   potion: 'f3fd74ffac7e811f40d72a9911ef227c37fb23e8fcb66fff035343a6cd094e13',
   honey: 'da303b6a9dff25af000c7f1e78560c244141d378a849b62ca7dda584d8565f19',
   slime: '2918ba24014dc39991528890620881a36ff71da3eb76e86307ea1856c39d1def',
-  'roof-snow': 'e848d67df62f7ad7951b26ac6297af8f32343bf688496d109ea4b114805486de',
+  'roof-snow': 'f442fad799fb4a51fcb8264cf476e2636c2cd41df1ac740706eece861abf3903',
   'dam-break': 'f1652ff5e69451024d7a94cd3f95fef93e817995d6c7269f29fb781a02359eb2',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
-  'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
+  'slime-burst': 'fb30f6c339a62342f57d72af1ba2c9379aa22658d8b656a7a9d7204d17c36beb',
   'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
   aquarium: '2944337f7829a7ecadafbcb8a67c83bfa4f1bcb734cac3e17593b4be6e28cafb',
+  'honey-dipper': '474e5a74a7a78b72d83d9adc50e363f670c5039f0e2a7c14d0aa22001610aa9e',
   glug: '9bab4a31432d8d75c8b70aedaa46cc3f0a20b291dccce6349b7c7a2b90ac7e48'
 };
 const examples = new Map();
@@ -489,6 +490,87 @@ test('adhesion keeps a film under a ledge, APIC keeps a thick liquid turning', (
   assert.ok(affine > pic * 1.5, `APIC ${affine} vs PIC ${pic} pixels still turning`);
 });
 
+// A bar 4 pixels wide dipped 16 pixels into a pool and lifted 24 pixels over frames 20–50, drawn by density (and strands
+// when asked): per frame, the pixels drawn above the pool's surface, those within a pixel of the bar, and whether drawn
+// liquid joins the bar's tip to the pool once the tip is clear of it.
+const dip = (settings, { strands = false, lift = [{ frame: 20, y: -14, over: 30 }], frames = 70, seed = 1 } = {}) => {
+  const look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, ...(strands ? [{ field: 'strand', colors: ['w'], thresholds: [0.5], dither: 0 }] : [])];
+  const { recipe } = compileFluid({ ...gas(null), width: 40, height: 44, symbols: { bar: Array(30).fill('kkkk') }, effects: { e: { kind: 'liquid', frames, seed, walls: ['left', 'right', 'bottom'], ...settings, obstacles: [{ symbol: 'bar', x: 18, y: 10, draw: 'none', keys: lift }], fill: [{ x: 0, y: 24, w: 40, h: 20 }], emitters: [], look } } });
+  return recipe.frames.map((_, f) => {
+    const cells = drawn(recipe, f), set = new Set(cells.map(([x, y]) => y * 40 + x)), tip = 40 - Math.max(0, Math.min(24, Math.round(24 * (f - 20) / 30)));
+    let surface = 44;
+    for (let y = 0; y < 44 && surface === 44; y++) if (cells.filter(([x, cy]) => cy === y && (x < 12 || x > 27)).length >= 12) surface = y;
+    const above = cells.filter(([, y]) => y < surface - 1), coat = above.filter(([x, y]) => x >= 17 && x <= 22 && y <= tip);
+    const seen = new Set(), stack = [...set].filter(c => c % 40 >= 17 && c % 40 <= 22 && Math.floor(c / 40) >= tip && Math.floor(c / 40) <= tip + 1);
+    stack.forEach(c => seen.add(c));
+    let joined = false;
+    while (stack.length && !joined) {
+      const c = stack.pop();
+      if (Math.floor(c / 40) >= surface) joined = true;
+      for (const d of [-41, -40, -39, -1, 1, 39, 40, 41]) if (set.has(c + d) && !seen.has(c + d) && Math.abs(((c + d) % 40) - (c % 40)) <= 1) { seen.add(c + d); stack.push(c + d); }
+    }
+    return { above: above.length, coat: coat.length, joined: joined && surface - tip >= 3 };
+  });
+};
+
+test('liquid moves with an obstacle it touches: a lifted bar carries a coat and pulls up a string of honey', () => {
+  const honey = { viscosity: 12, apic: true, tension: 0.3, adhesion: 4 };
+  // Honey clings to the bar as it rises: a coat stays on it long after it stops (before, adhesion held the honey where
+  // the bar had been, and a pixel or two was left by frame 40), and a string joins its tip to the pool for a while.
+  const sticky = [1, 2, 3].map(seed => dip(honey, { seed, strands: true }));
+  for (const frames of sticky) {
+    assert.ok(frames[65].coat >= 10, `coat ${frames.map(f => f.coat).join(' ')}`);
+    assert.ok(frames.filter(f => f.joined).length >= 4, `joined on ${frames.filter(f => f.joined).length} frames`);
+  }
+  // Water barely follows it: nothing is left above the pool once the bar is out.
+  const water = dip({});
+  assert.ok(water.slice(55).every(f => f.above <= 3), `water above ${water.map(f => f.above).join(' ')}`);
+  // A jump is a cut: the bar carries nothing up with it.
+  const cut = dip(honey, { lift: [{ frame: 20, y: -14 }] });
+  assert.ok(cut.slice(22).every(f => f.coat <= 2), `cut coat ${cut.map(f => f.coat).join(' ')}`);
+});
+
+test('an obstacle can have its own adhesion: a sticky spoon beside a non-stick pan', () => {
+  // Two slabs with liquid under each: the film stays under the one whose adhesion holds it, whatever the effect's.
+  const film = (effect, left, right) => {
+    const { recipe } = compileFluid(goo({ ...effect, obstacles: [{ symbol: 'slab', x: 2, y: 6, ...left }, { symbol: 'slab', x: 26, y: 6, ...right }] }, [{ x: 2, y: 7, w: 20, h: 3 }, { x: 26, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } }));
+    const row = drawn(recipe, 30).filter(([, y]) => y === 7);
+    return [row.filter(([x]) => x < 24).length, row.filter(([x]) => x >= 24).length];
+  };
+  const [stuck, free] = film({}, { adhesion: 4 }, {});
+  assert.ok(stuck >= 8 && free === 0, `own adhesion: ${stuck} held, ${free} on the plain slab`);
+  const [plain, nonstick] = film({ adhesion: 4 }, {}, { adhesion: 0 });
+  assert.ok(plain >= 8 && nonstick === 0, `effect adhesion: ${plain} held, ${nonstick} on the non-stick slab`);
+  // Every other solid takes the effect's adhesion, a closed edge included: a film stays under the closed top edge.
+  const { recipe: edge } = compileFluid(goo({ adhesion: 4, walls: FLUID_WALLS, obstacles: [{ symbol: 'slab', x: 26, y: 6, adhesion: 0 }] }, [{ x: 2, y: 0, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } }));
+  assert.ok(drawn(edge, 30).filter(([x, y]) => y === 0 && x < 24).length >= 8, 'film under the closed top edge');
+  // With no obstacle of its own adhesion, nothing changes.
+  assert.deepEqual(compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe, compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6, adhesion: 2 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe);
+});
+
+test('strands draw liquid stretched thinner than the density can, and nothing else', () => {
+  // Honey pulled up after the bar: the density alone loses the string long before it breaks; the strand field keeps it.
+  const honey = { viscosity: 12, apic: true, tension: 0.3, adhesion: 4 };
+  for (const seed of [1, 2, 3]) {
+    const [plain, strands] = [dip(honey, { seed }), dip(honey, { seed, strands: true })];
+    const joined = frames => frames.filter(f => f.joined).length;
+    assert.ok(joined(strands) >= joined(plain) + 2, `seed ${seed}: joined on ${joined(plain)} frames by density, ${joined(strands)} with strands`);
+  }
+  // A strand needs a string of particles the density misses, hanging three pixels or joining two pieces: a pool at rest
+  // and a falling drop draw exactly as they did, and a splash gains only the thin sheets it throws up, never a lone pixel.
+  const strandsOf = (fill, effect = {}) => {
+    const source = goo({ apic: true, ...effect }, fill), withStrands = structuredClone(source);
+    withStrands.effects.goo.look.push({ field: 'strand', colors: ['w'], thresholds: [0.5], dither: 0 });
+    const a = compileFluid(source).recipe, b = compileFluid(withStrands).recipe;
+    return a.frames.map((_, f) => { const before = new Set(drawn(a, f).map(([x, y]) => y * 48 + x)), after = drawn(b, f); assert.ok([...before].every(c => after.some(([x, y]) => y * 48 + x === c))); return after.filter(([x, y]) => !before.has(y * 48 + x)).map(([x, y]) => [x, y, after]); });
+  };
+  assert.deepEqual(strandsOf([{ x: 0, y: 24, w: 48, h: 8 }]).flat(), [], 'a pool at rest');
+  assert.deepEqual(strandsOf([{ at: [24, 6], radius: 3 }], { frames: 12 }).flat(), [], 'a falling drop');
+  for (const [x, y, after] of strandsOf([{ at: [24, 6], radius: 3 }, { x: 0, y: 26, w: 48, h: 6 }]).flat()) assert.ok(after.some(([ax, ay]) => (ax !== x || ay !== y) && Math.abs(ax - x) <= 1 && Math.abs(ay - y) <= 1), `lone strand pixel at ${x}, ${y}`);
+  // Strands are a liquid's.
+  assert.throws(() => compileFluid(gas({ frames: 4, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: [{ field: 'strand', colors: ['s'], thresholds: [0.5] }] })), err => err.path === 'fluid.effects.plume.look[0].field' && /liquid/.test(err.message));
+});
+
 test('sharp advection keeps a puff crisp, and a viscous gas calms swirls but not drift', () => {
   const drift = settings => compileFluid(gas({ frames: 30, buoyancy: 0, dissipation: 0, cooling: 0, drag: 0, vorticity: 0, wind: [0.08, 0], ...settings, emitters: [{ at: [8, 16], radius: 4, burst: 1, density: 1 }], look: [{ field: 'density', colors: ['s', 'w'], thresholds: [0.2, 0.7], dither: 0 }] }, { width: 48, height: 32 }));
   const core = ({ recipe }) => recipe.frames[29].ops[0].rows.join('').split('w').length - 1;
@@ -836,7 +918,8 @@ test('a bursting fill flies apart in mid-air in pieces, keeping its volume', () 
   // A plain ball stays one ball; a burst one is in pieces three times as wide by frame 8, with about the same water.
   assert.equal(blobs(drawn(still, 8)), 1);
   assert.ok(blobs(drawn(burst, 8)) >= 6 && width(drawn(burst, 8)) >= 3 * width(drawn(still, 8)), `${blobs(drawn(burst, 8))} pieces, ${width(drawn(burst, 8))} pixels wide`);
-  assert.ok(drawn(burst, 1).length >= 0.85 * drawn(still, 1).length, `${drawn(burst, 1).length} pixels against ${drawn(still, 1).length}`);
+  // The water trimmed off the pieces' corners crowds them at first, so they swell back over the first frames of flight.
+  assert.ok(drawn(burst, 4).length >= 0.85 * drawn(still, 4).length, `${drawn(burst, 4).length} pixels against ${drawn(still, 4).length}`);
   // Every particle is kept, even when a small fill breaks into more pieces than it has room for.
   const particles = (radius, burst) => compileFluid({ ...gas(null), width: 32, height: 32, effects: { e: { kind: 'liquid', frames: 1, gravity: [0, 0], fill: [{ at: [16, 16], radius, ...(burst && { burst }) }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5] }] } } }).metadata.effects.e.particles;
   for (const [radius, pieces] of [[1, 8], [2, 8], [3, 8], [8, 64]]) assert.equal(particles(radius, { speed: 2, pieces }), particles(radius, null), `radius ${radius}, ${pieces} pieces`);

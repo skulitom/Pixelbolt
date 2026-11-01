@@ -88,7 +88,7 @@
       "slip": true,
       "apic": true,
       "tension": 1.2,
-      "keys": [{ "frame": 28, "yield": 4, "over": 4 }],
+      "keys": [{ "frame": 24, "yield": 3, "over": 10 }],
       "obstacles": [
         { "symbol": "wall", "x": 2, "y": 18 },
         { "symbol": "slab", "x": 2, "y": 6, "surface": "smooth" },
