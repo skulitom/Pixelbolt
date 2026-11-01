@@ -161,7 +161,7 @@ function tilesetReadme(project, tiles, still) {
     `Godot 4: copy ${name}.png and ${name}.tileset.tres into one folder of your project. Add a TileMapLayer and set its Tile Set to ${name}.tileset.tres.${tiles.terrains.length ? ` In the TileMap panel's Terrains tab, pick ${tiles.terrains[0]} and paint: Godot picks each cell's tile from its neighbours, as Pixelbolt's tilemaps do.${tiles.corner ? ' A corner terrain is drawn where four painted cells meet, so its ground ends half a cell inside what you paint: 3×3 painted cells draw 2×2 cells of ground, centred.' : ''}` : ''}${tiles.layers.length ? ` For the layered terrains, paint bottom-up, each terrain over its own cells and those of every terrain above it: ${tiles.layers[0]} over the whole area, ${tiles.layers.slice(1).map((layer, i) => `then ${layer} over the ${list(tiles.layers.slice(i + 1))}`).join(', ')}. Godot puts a terrain where four cells painted with it meet, so each ends half a cell inside what you paint, and the transitions between terrains appear on their own.` : ''} Set the layer's Texture Filter to Nearest for crisp pixels.${tiles.collision ? ' Bodies collide with the tiles on the physics layer\'s collision layer 1.' : ''}`];
   if (tiles.tiled) lines.push('', `Tiled: in a map of ${project.width * project.sheet.scale}×${project.height * project.sheet.scale} tiles, Map > Add External Tileset and pick ${name}.tsx.${tiles.terrains.length || tiles.layers.length ? ' In the Terrain Sets view pick a terrain set and paint with the Terrain Brush.' : ''}${tiles.sides ? ' A blob or cardinal terrain is painted on the sides and corners between cells, so a lone cell, with its terrain on no side, has no terrain tile: place it by hand.' : ''}${tiles.corner ? ' A corner terrain is painted on the points where four cells meet: a point of Tiled\'s map is a cell of Pixelbolt\'s.' : ''}${tiles.layers.length ? ` The layered terrains ${list(tiles.layers)} are painted on the points where four cells meet, a point of Tiled's map being a cell of Pixelbolt's, and every mix of them has its tile: paint each terrain where its cells are.` : ''}${tiles.collision ? ` Collision shapes are in each tile's collision group (the Tile Collision Editor)${tiles.oneWay ? ', with the bool property oneWay on one-way platforms' : ''}.` : ''}`);
   if (!still) lines.push('', `Animations: give an AnimatedSprite2D the Sprite Frames ${name}.tres and play("${first}").`);
-  return lines.join('\n') + '\n' + timingText(project);
+  return lines.join('\n') + '\n' + (still ? '' : timingText(project));
 }
 // README.txt's timing: each animation of two or more frames with its frame count and durations, and its frame rate
 // when every frame lasts the same, since engines and editors ask for frames per second.
@@ -173,11 +173,17 @@ function timingText(project) {
   });
   return lines.length ? `\nTiming:\n${lines.join('\n')}\n` : '';
 }
-// A reply's `fps`: the frame rate of each animation whose frames all last the same (animationFps), by name, for the
-// first 16 such animations (README.txt lists every animation's timing); no field when none has one.
-export function withRates(project) {
+// A tile set whose recipe names no animations, as createBundle finds it (a Godot TileSet and no sheet.trim): its one
+// animation, the implicit flipbook of every tile, is no animation, so it has no SpriteFrames, CSS or timing.
+const stillTileSet = (spec, project) => spec.animations === undefined && !project.sheet.trim
+  && (new Set(autotileFrames(spec).map(tile => tile.mask)).size >= 2 || project.frames.some(frame => frame.tile));
+// A reply's `animationFps`: the frame rate of each animation whose frames all last the same (animationFps), by name,
+// for the first 16 such animations (README.txt times every animation of two or more frames); no field when none has
+// one, or for a still tile set. `spec` is the recipe the project was rendered from.
+export function withRates(project, spec) {
+  if (stillTileSet(spec, project)) return {};
   const rates = Object.keys(project.animations).map(key => [key, animationFps(project, key)]).filter(([, fps]) => fps !== undefined).slice(0, 16);
-  return rates.length ? { fps: Object.fromEntries(rates) } : {};
+  return rates.length ? { animationFps: Object.fromEntries(rates) } : {};
 }
 const popcount = mask => { let bits = 0; for (let m = mask; m; m &= m - 1) bits++; return bits; };
 // The frame and animation PNGs an export wrote, as its atlas metadata names them. Anything else lists nothing.

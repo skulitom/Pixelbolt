@@ -6,7 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { renderProject, inspectProject, animationFps } from '../src/core.js';
 import { createBundle, withRates } from '../src/export.js';
+import { compileAutotile } from '../src/authoring.js';
 import { startMCP } from '../src/mcp.js';
+import { GODOT_TILE_SOURCES } from '../scripts/verify-godot.mjs';
 
 // Engines and editors ask for frames per second (P-051): a torch of 24 frames at 70 ms each plays at 14.29 fps.
 const frames = (count, duration) => Array.from({ length: count }, (_, i) => ({ name: `f${i}`, duration, ops: [{ op: 'pixel', x: i % 4, y: 0, color: 'k' }] }));
@@ -23,14 +25,29 @@ test('animationFps gives an evenly timed animation its frames per second, and no
   assert.equal(animationFps(varied, 'idle'), undefined);
   assert.equal(animationFps(varied, 'bounce'), 10, 'pingpong repeats frames of the same duration');
   assert.equal(animationFps(varied, 'still'), undefined, 'a rate means nothing for a single frame');
-  assert.deepEqual(withRates(project), { fps: { burn: 14.29 } });
-  assert.deepEqual(withRates(varied), { fps: { bounce: 10 } });
-  assert.deepEqual(withRates(renderProject({ ...mixed, animations: { idle: mixed.animations.idle } })), {}, 'no field when no animation has a rate');
+  assert.deepEqual(withRates(project, torch), { animationFps: { burn: 14.29 } });
+  assert.deepEqual(withRates(varied, mixed), { animationFps: { bounce: 10 } });
+  const idleOnly = { ...mixed, animations: { idle: mixed.animations.idle } };
+  assert.deepEqual(withRates(renderProject(idleOnly), idleOnly), {}, 'no field when no animation has a rate');
+});
+
+test('a slow animation keeps three significant figures, and a still tile set has no rate or timing', async () => {
+  const slow = { ...torch, frames: frames(2, 60000), animations: { glow: { frames: ['f0', 'f1'] } } };
+  assert.equal(animationFps(renderProject(slow), 'glow'), 0.0167);
+  assert.equal(animationFps(renderProject({ ...slow, frames: frames(2, 40000) }), 'glow'), 0.025);
+  // A tile set with no animations of its own has only the flipbook of every tile, which createBundle doesn't animate.
+  const meadow = compileAutotile(JSON.parse(await readFile(new URL('../examples/meadow.autotile.json', import.meta.url), 'utf8'))).recipe;
+  assert.equal(meadow.animations, undefined);
+  assert.deepEqual(withRates(renderProject(meadow), meadow), {});
+  assert.doesNotMatch((await createBundle(meadow)).files.get('README.txt').toString(), /Timing|fps/);
+  // Animated tiles keep theirs.
+  const surf = compileAutotile(GODOT_TILE_SOURCES[2]).recipe, readme = (await createBundle(surf)).files.get('README.txt').toString();
+  assert.match(readme, /\nTiming:\nsurf-\d+: 3 frames of 90 to 250 ms, 460 ms in all\n/);
 });
 
 test('a reply lists at most 16 rates; README.txt still times every animation', async () => {
   const many = { ...torch, frames: frames(2, 50), animations: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`a${i}`, { frames: ['f0', 'f1'] }])) };
-  const rates = withRates(renderProject(many)).fps;
+  const rates = withRates(renderProject(many), many).animationFps;
   assert.equal(Object.keys(rates).length, 16);
   assert.deepEqual(Object.keys(rates).slice(0, 2), ['a0', 'a1']);
   const readme = (await createBundle(many)).files.get('README.txt').toString();
@@ -65,11 +82,11 @@ test('MCP validate, inspect and render replies carry fps beside the animations',
   try {
     await request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
     const validated = await call('pixel_validate', { project: torch });
-    assert.deepEqual(validated.fps, { burn: 14.29 });
-    assert.deepEqual((await call('pixel_inspect', { revision: validated.revision })).fps, { burn: 14.29 });
+    assert.deepEqual(validated.animationFps, { burn: 14.29 });
+    assert.deepEqual((await call('pixel_inspect', { revision: validated.revision })).animationFps, { burn: 14.29 });
     const rendered = await call('pixel_render', { revision: validated.revision });
-    assert.deepEqual(rendered.fps, { burn: 14.29 });
+    assert.deepEqual(rendered.animationFps, { burn: 14.29 });
     assert.match(await readFile(path.join(rendered.directory, 'README.txt'), 'utf8'), /burn: 24 frames of 70 ms \(14\.29 fps\)/);
-    assert.equal('fps' in (await call('pixel_validate', { project: { ...mixed, animations: { idle: mixed.animations.idle } } })), false);
+    assert.equal('animationFps' in (await call('pixel_validate', { project: { ...mixed, animations: { idle: mixed.animations.idle } } })), false);
   } finally { input.end(); await running; }
 });

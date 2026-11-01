@@ -157,7 +157,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Frame rates in replies and exports
 
-- Where every frame of an animation lasts the same, the validate, inspect and render replies (MCP and CLI) and `pixel_compile`'s reply carry `fps` beside the animations: frames per second by animation name, to two decimals (a torch of 24 frames at 70 ms is `"fps": {"burn": 14.29}`), for the first 16 such animations. Inspect's `timing` names it too. An export's README.txt ends with a Timing section for every animation of two or more frames: its frame count and durations, its frame rate when they match, and whether it plays once. Godot, Unity, Aseprite and video editors ask for a rate, which an agent used to work out from milliseconds by hand.
+- Where every frame of an animation lasts the same, the validate, inspect and render replies (MCP and CLI) and `pixel_compile`'s reply carry `animationFps` beside the animations: frames per second by animation name, to two decimals or three significant figures under 1 (a torch of 24 frames at 70 ms is `"animationFps": {"burn": 14.29}`), for the first 16 such animations. A tile set with no animations of its own has none. Inspect's `timing` names it as `fps`. An export's README.txt ends with a Timing section for every animation of two or more frames: its frame count and durations, its frame rate when they match, and whether it plays once. Godot, Unity, Aseprite and video editors ask for a rate, which an agent used to work out from milliseconds by hand.
 
 ### Renders note loops that lift, jump or repeat a frame
 

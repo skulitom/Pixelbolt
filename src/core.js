@@ -1322,12 +1322,14 @@ export function animationPosition(project, animation, time) {
   }
   return animation.frames.length - 1;
 }
-// Frames per second of an animation of two or more frames that all last the same, to two decimals (70 ms a frame is
-// 14.29), for engines and editors that ask for a rate; undefined when the durations differ or there is one frame.
+// Frames per second of an animation of two or more frames that all last the same, for engines and editors that ask
+// for a rate: to two decimals (70 ms a frame is 14.29), or three significant figures under 1 (60 s a frame is 0.0167);
+// undefined when the durations differ or there is one frame.
 export function animationFps(project, key) {
   const durations = project.animations[key].frames.map(i => project.frames[i].duration);
   if (durations.length < 2 || durations.some(ms => ms !== durations[0])) return undefined;
-  return Math.round(100000 / durations[0]) / 100;
+  const fps = 1000 / durations[0];
+  return fps >= 1 ? Math.round(fps * 100) / 100 : Number(fps.toPrecision(3));
 }
 export function animationNeighbors(animation, position) {
   integer(position, 'animation.position', 0, animation.frames.length - 1);
