@@ -95,6 +95,10 @@ test('the installed skill reaches every guide, schema and example it names, and 
   const shipped = await readFile(path.join(root, 'skills', 'pixel-art', 'SKILL.md'), 'utf8');
   assert.match(shipped, /two directories above this skill's directory/);
   assert.match(shipped, /node bin\/pixelbolt\.js validate/);
+  // `npx skills add` copies SKILL.md alone, so the shipped file says how to run and read Pixelbolt without a checkout;
+  // this copy has the files beside it and runs a pinned version, so it leaves that paragraph out.
+  assert.match(shipped, /^In a copy of this file alone, as `npx skills add skulitom\/Pixelbolt` installs it, .*`npx -y pixelbolt@latest`.*raw\.githubusercontent\.com\/skulitom\/Pixelbolt\/main\//m);
+  assert.doesNotMatch(files.get('SKILL.md').toString('utf8'), /a copy of this file alone|pixelbolt@latest|raw\.githubusercontent/);
 });
 
 test('the installed skill\'s validate, inspect, render and gif commands work on a bundled example from the user\'s project, offline', async t => {
