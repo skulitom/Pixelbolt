@@ -645,7 +645,8 @@ const boilingPot = fluidSource('boiling-pot', 40, 48, { ...water, ...steamColour
   stove: shapeRows(40, 4, (x, y) => (y === 0 ? 'G' : 'g')), flame: shapeRows(26, 3, (x, y) => ((x + y) % 4 < 2 ? (y === 2 ? 'o' : 'r') : null))
 });
 // Frost creeps across a cold window (seen from the front): the humid air's vapour turns straight into ice where it
-// touches the frozen frame or frost already there, never in mid-air, in a ragged rime that grows inward.
+// touches the frozen frame or frost already there, never in mid-air, in fern-like fingers that start mostly in the panes'
+// corners and fork into feathers.
 const windowFrame = shapeRows(40, 40, (x, y) => (x < 3 || y < 3 || x >= 37 || y >= 37 || x === 19 || x === 20 || y === 19 || y === 20 ? (x < 1 || y < 1 || x >= 39 || y >= 39 ? 'k' : 'p') : null));
 const frostWindow = fluidSource('frost-window', 40, 40, { ...iceColours, p: '#8a5a36', k: '#3a2618', f: '#9fc6e6' }, {
   kind: 'liquid', frames: 64, duration: 70, seed: 7, walls: ['left', 'right', 'top', 'bottom'], gravity: [0, 0],

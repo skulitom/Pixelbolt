@@ -11,6 +11,9 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Bubbles gathering under a ceiling become an air pocket: two that touch but cannot merge, with eight square pixels of air between them, clear that many cells under the ceiling, the water gives way and rises elsewhere, and the pocket keeps their air while the bubbles that follow join it. A pocket that reaches open air vents: a cup held mouth down keeps its air until its top is opened, then water gulps up inside it.
 - A body of liquid sealed in by solids and ice with no air at all keeps its volume: the pressure solve gives up what it cannot answer instead of running off to huge pressures (water caught between ice and a smooth slope).
 - A new preset, [lightning into a pond](examples/lightning-pond.fluid.json): two strokes strike a pond and each boils a puff of steam where it lands.
+- Frost grows as fern-like fingers instead of a ragged rim: a finger starts at seeded spots on a cold surface (most often in corners), grows straight at its tip, forks at 45 degrees into shorter branches a pixel apart (`heat.branch`, default 0.5) and stops short of other fingers, and frost grows only into air below freezing. The frosted-window preset is regenerated (its golden hash and GIF change on purpose).
+- The boiling pot loops seamlessly: a loop draws the boil bubbles born in its recorded cycle and simulates on until they end, wrapping them to frame 0 as sparks are, so no bubble pops in or out where the loop repeats (its golden hash and GIF change on purpose; the metadata's `steps` counts the frames actually run).
+- Mist stays out, written down in the physics model: open cold vapour already sinks and draws as fog, and condensing it into water makes every steam plume rain.
 - Cross-feature tests: an arc into water that steams it and keeps the ledger, a heated piston and a smooth hot slope, honey on a heated lifted spoon, bubbles gathering into a pocket under a cup and a pocket venting, and an ice cube floating in a sealed jar with an air pocket while bubbles slide under it. Every other preset keeps its golden hash and GIF.
 
 ### Phase changes: ice, steam, dew, frost and dry-ice fog
@@ -20,14 +23,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Matter is kept exactly: each frame's figures carry `water`, `ice`, `vapour`, `added` and `taken` in cells' worth.
 - In a gas effect, an obstacle's `temperature` warms or chills the air touching it.
 - Five new presets: [ice cube melting](examples/ice-melt.fluid.json), [pond freezing](examples/pond-freeze.fluid.json), [boiling pot](examples/boiling-pot.fluid.json) (a loop), [frosted window](examples/frost-window.fluid.json) and [dry-ice fog](examples/dry-ice.fluid.json).
-- Opt-in: every source without `heat` (or, in a gas, without an obstacle `temperature`) compiles exactly as before, at the same speed within noise. Heat alone adds under a tenth to a liquid's compile time; vapour about doubles it. Heat needs still pixel obstacles for now (no keys, no smooth surfaces), and frost grows as a ragged rime rather than fern-like fingers.
+- Opt-in: every source without `heat` (or, in a gas, without an obstacle `temperature`) compiles exactly as before, at the same speed within noise. Heat alone adds under a tenth to a liquid's compile time; vapour about doubles it.
 
 ### Plasma and electricity
 
 - Gas effects can carry electricity (`src/electric.js`). An obstacle with a `voltage` (volts, or keys `[{ frame, voltage, over }]` that change it on cue) is an electrode, and `conductor: true` makes an obstacle metal that arcs run through. Each step solves the electric field over the gas and grows plasma by the dielectric breakdown model where the field exceeds `breakdown`, at `growth` cells a frame, forking like lightning or keeping to one path as `focus` says. Plasma rides the gas as a linked chain one pixel thin, so heat lifts and bends an arc without blurring it and its ends slide along the rods. Current keeps a channel lit (`sustain`, below half of which it goes out) and heats the gas (`heating` × current²), so a Jacob's ladder climbs on its own hot air; without current, plasma recombines (`recombine`) into an afterglow, and its trace guides the next strike for `memory` frames, so lightning restrikes down the same channel. An electrode's `resistance` sags its supply under load, so a long arc starves and one strike stops the other leaders, and `charge` stores charge for strike-and-recharge bursts. `electric.ground` holds canvas edges at 0 V, and `electric.ionize` makes hot gas plasma without electrodes. A decoration with a voltage may be unseen (`draw: "none"`), and a gas with electrodes needs no emitter.
 - Look layers draw two new fields, `ionization` and `current`, and any layer may have a `halo` glow; the metadata's `peak` gains `ionization` and `current`.
 - Four presets with GIFs: Jacob's ladder, lightning (a one-shot with a restrike), Tesla coil and plasma globe, each compiling in 0.4–0.9 s. An electric gas costs about two to three times plain gas per step. Gases and liquids without electricity are unchanged, golden hashes and GIFs included.
-- Not yet: liquids carry no current (plasma touching water could later boil it through liquid heat), there is no magnetic force on arcs, and voltages do not alternate on their own (keys pulse them).
+- Not yet: there is no magnetic force on arcs, and voltages do not alternate on their own (keys pulse them).
 
 ### Air pockets that keep their air
 
@@ -35,7 +38,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Each pocket's pressure is one more unknown in the liquid's conjugate-gradient solve, with the gas law linearised implicitly, so the system stays symmetric and any stiffness is stable at any `substeps`. (As a pressure fixed from the volume at the start of each step, a pocket rang at stiffness 200 with one substep and at 1000 with two.)
 - A bubble is a pocket too small to show. A sealed gap of three to eleven cells with no pocket before it (air a splash or a pour traps) lets its air go once as bubbles that start in the liquid at its edge, and a pocket squeezed below three cells does the same; `air.bubbles` draws them (`colors`, `life`, `rise`, `wobble`, `lift`, `pop`), and without it that air leaves unseen. Gaps under three cells between jostling particles close as before. A bubble that rises into a pocket gives it its air.
 - A new preset, [glugging bottle](examples/glug.fluid.json): a bottle upside down over a glass holds its water back until a big bubble pushes up its neck, and pours again.
-- Liquids without `air` compile exactly as before. With it, compiling takes 4–25% longer. Not done: bubbles gathering under a ceiling do not yet merge into a pocket.
+- Liquids without `air` compile exactly as before. With it, compiling takes 4–25% longer.
 
 ### Sticky liquids move with what they touch, and stretch into strings
 

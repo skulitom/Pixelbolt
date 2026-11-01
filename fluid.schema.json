@@ -1448,13 +1448,19 @@
                 "type": "number",
                 "minimum": -16,
                 "maximum": 16,
-                "description": "With vapour: vapour touching ice or an obstacle colder than this grows straight into ice (frost), only from cold surfaces and frost already there. Off unless set; at most freeze."
+                "description": "With vapour: vapour touching ice or an obstacle colder than this grows straight into ice (frost) as fern-like fingers, only from cold surfaces (corners first) and frost already there, and only into air below freeze. Off unless set; at most freeze."
               },
               "deposit": {
                 "type": "number",
                 "minimum": 0,
                 "maximum": 1,
-                "description": "Share of such vapour that turns to frost each frame (fastest at a tip); default 0.1."
+                "description": "Share of such vapour that turns to frost each frame, at a finger's tip; default 0.1."
+              },
+              "branch": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "With vapour: how often a frost finger forks at 45 degrees into a shorter branch, at every other cell along it; 0 grows straight fingers. Default 0.5."
               },
               "sublimate": {
                 "type": "boolean",

@@ -557,8 +557,9 @@ const fluid = {
         evaporation: num(0, 1, 'With vapour: the chance each frame that a surface particle near the boil steams off (it falls off with the square of the temperature toward freeze): a warm puddle steams. Default 0.'),
         dew: num(-16, 16, 'With vapour: vapour touching anything colder than this condenses, on a solid as dew (drawn as water) that drips off as a drop. Default boil - 0.1; at most boil.'),
         condense: num(0, 1, 'Share of such vapour that condenses each frame; default 0.2.'),
-        frost: num(-16, 16, 'With vapour: vapour touching ice or an obstacle colder than this grows straight into ice (frost), only from cold surfaces and frost already there. Off unless set; at most freeze.'),
-        deposit: num(0, 1, 'Share of such vapour that turns to frost each frame (fastest at a tip); default 0.1.'),
+        frost: num(-16, 16, 'With vapour: vapour touching ice or an obstacle colder than this grows straight into ice (frost) as fern-like fingers, only from cold surfaces (corners first) and frost already there, and only into air below freeze. Off unless set; at most freeze.'),
+        deposit: num(0, 1, 'Share of such vapour that turns to frost each frame, at a finger\'s tip; default 0.1.'),
+        branch: num(0, 1, 'With vapour: how often a frost finger forks at 45 degrees into a shorter branch, at every other cell along it; 0 grows straight fingers. Default 0.5.'),
         sublimate: { type: 'boolean', description: 'With vapour: ice turns straight into vapour at its surface instead of melting (dry ice). Default false.' },
         grain: num(0, 1, 'Seeded unevenness in where water freezes and frost grows, so fronts are ragged. Default 0.')
       }), description: 'Liquid: phase changes. Each particle carries heat; water below freeze turns to ice where it touches ice or a cold solid (or 0.5 below freeze anywhere), ice holds still or settles as a piece and floats, and a cell of ice is solid to the flow, to bubbles and to air pockets. With vapour, water boils into steam, and steam condenses or frosts back. Water, ice and vapour are counted every frame in the figures (water, ice, vapour, added, taken). Obstacles may move on keys or be smooth: a hot spoon, a heated piston or a smooth hot plate work as a still one does.' },
