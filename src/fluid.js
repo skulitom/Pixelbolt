@@ -7,16 +7,18 @@
 // (optionally APIC) on the same grid and pressure solve, with cohesion and adhesion. Either may be viscous: an implicit
 // viscosity solve in stress form, so a thick fluid falls as fast as water and only resists shearing; and a liquid may
 // have a yield stress, elastic below it and flowing above it, for mud and slime. Obstacles are pixels, or smooth outlines
-// traced through their steps so a liquid slides down a drawn slope. Fields become pixels through palette
+// traced through their steps so a liquid slides down a drawn slope. A gas may carry electricity (electric.js):
+// electrodes break it down into plasma that conducts, glows and heats it. Fields become pixels through palette
 // ramps and ordered dither. Browser-compatible and deterministic: only + − × ÷ and sqrt, craft.js's polynomial
 // trigonometry and seeded hash, a fixed timestep and fixed iteration counts.
 // createLiveFluid runs the same simulation a frame at a time for interactive pages, with pushes, puffs and boosts.
 import { PixelError, renderProject, parseColor } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, random, sinDeg, cosDeg } from './craft.js';
+import { readElectric, readElectrode, createElectric, stepElectric, electricFields, electricWork } from './electric.js';
 
 export const FLUID_KINDS = ['gas', 'liquid'];
-export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow'];
+export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow', 'ionization', 'current'];
 export const FLUID_WALLS = ['left', 'right', 'top', 'bottom'];
 export const OBSTACLE_SURFACES = ['pixels', 'smooth'];
 const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 64, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, carriers: 8192, work: 400000000 };
@@ -166,9 +168,10 @@ function readEmitter(emitter, path, context) {
 
 function readLook(layer, path, context) {
   const { palette, liquid, seed } = context;
-  fields(layer, ['field', 'colors', 'thresholds', 'dither', 'pattern'], path);
+  fields(layer, ['field', 'colors', 'thresholds', 'dither', 'pattern', 'halo'], path);
   if (!FLUID_FIELDS.includes(layer.field)) fail(`${path}.field`, `expected ${FLUID_FIELDS.join(', ')}`);
   if (layer.field === 'temperature' && liquid) fail(`${path}.field`, 'liquids have no temperature; use density, speed or depth');
+  if ((layer.field === 'ionization' || layer.field === 'current') && !context.electric) fail(`${path}.field`, `${layer.field} is drawn from plasma; give the effect electric settings and an electrode (an obstacle with a voltage)`);
   if (!Array.isArray(layer.colors) || !layer.colors.length || layer.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, from the lowest level to the highest`);
   const colors = layer.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette));
   if (!Array.isArray(layer.thresholds) || layer.thresholds.length !== colors.length) fail(`${path}.thresholds`, `expected ${colors.length} thresholds, one per colour`);
@@ -179,7 +182,14 @@ function readLook(layer, path, context) {
   });
   const pattern = layer.pattern ?? 'bayer4', problem = patternProblem(pattern);
   if (problem) fail(`${path}.pattern${problem[0]}`, problem[1]);
-  return { field: FLUID_FIELDS.indexOf(layer.field), colors: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)), dither: number(layer.dither ?? 0.5, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed) };
+  // A halo: a glow of one colour on the empty pixels within `width` steps of what the layer drew.
+  let halo = null;
+  if (layer.halo !== undefined) {
+    if (!isObject(layer.halo)) fail(`${path}.halo`, 'expected { color, width }');
+    fields(layer.halo, ['color', 'width'], `${path}.halo`);
+    halo = { color: paletteKey(layer.halo.color, `${path}.halo.color`, palette).charCodeAt(0), width: integer(layer.halo.width ?? 1, `${path}.halo.width`, 1, 4) };
+  }
+  return { field: FLUID_FIELDS.indexOf(layer.field), colors: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)), dither: number(layer.dither ?? 0.5, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed), halo };
 }
 
 // A disc (at, radius), an ellipse (at, radius [x, y]), a box (x, y, w, h), or both: their overlap, such as the lower
@@ -319,7 +329,7 @@ function readKeys(value, path, frames, base) {
 
 function readEffect(effect, path, source) {
   const { width, height, palette, symbols } = source;
-  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'light', 'outline', 'cleanup', 'keys'], path);
+  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'light', 'outline', 'cleanup', 'keys', 'electric'], path);
   const kind = effect.kind ?? 'gas';
   if (!FLUID_KINDS.includes(kind)) fail(`${path}.kind`, 'expected gas (smoke, fire, steam, magic) or liquid (water, potions)');
   const liquid = kind === 'liquid';
@@ -331,6 +341,7 @@ function readEffect(effect, path, source) {
   if (!ADVECTION.includes(advection)) fail(`${path}.advection`, 'expected smooth (plain semi-Lagrangian, the default) or sharp (MacCormack with a limiter: crisper edges and swirls)');
   const viscosity = number(effect.viscosity ?? 0, `${path}.viscosity`, 0, MAX_VISCOSITY), yieldStress = liquid ? number(effect.yield ?? 0, `${path}.yield`, 0, 16) : 0;
   if (!liquid && effect.whitewater !== undefined) fail(`${path}.whitewater`, 'whitewater is spray and foam thrown off a liquid; it applies to liquids');
+  if (liquid && effect.electric !== undefined) fail(`${path}.electric`, 'electricity drives plasma in gases; liquids carry no current');
   const frames = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop === undefined ? false : boolean(effect.loop, `${path}.loop`);
   const durations = Array.isArray(effect.duration)
     ? (effect.duration.length === frames ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${frames}`))
@@ -338,7 +349,7 @@ function readEffect(effect, path, source) {
   if (!loop) for (const key of ['warmup', 'blend']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} shapes the seam of a looping effect; set loop: true`);
   if (loop && frames < 4) fail(`${path}.frames`, 'a looping effect needs at least 4 frames');
   const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647);
-  const context = { frames, loop, liquid, palette, seed };
+  const context = { frames, loop, liquid, palette, seed, electric: false };
   const obstacles = [];
   const listed = (value, key, max) => {
     if (value === undefined) return [];
@@ -347,7 +358,7 @@ function readEffect(effect, path, source) {
   };
   listed(effect.obstacles, 'obstacles', LIMITS.obstacles).forEach((obstacle, i) => {
     const op = `${path}.obstacles[${i}]`;
-    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid', 'keys'], op);
+    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid', 'keys', 'voltage', 'resistance', 'charge', 'conductor'], op);
     if (typeof obstacle.symbol !== 'string' || !Object.hasOwn(symbols, obstacle.symbol)) fail(`${op}.symbol`, `unknown symbol ${JSON.stringify(obstacle.symbol)}`);
     // It may hang off any edge by up to its own size; what hangs off is clipped.
     const rows = symbols[obstacle.symbol], x = integer(obstacle.x ?? 0, `${op}.x`, -rows[0].length, width), y = integer(obstacle.y ?? 0, `${op}.y`, -rows.length, height);
@@ -357,11 +368,16 @@ function readEffect(effect, path, source) {
     if (!OBSTACLE_SURFACES.includes(surface)) fail(`${op}.surface`, 'expected pixels (the default: the fluid meets every pixel step) or smooth (the fluid meets a smooth outline through the steps, so it slides down a drawn slope)');
     // A decoration (solid: false) is drawn like an obstacle, but the fluid never meets it: a net, a flame, a label.
     const blocks = obstacle.solid === undefined ? true : boolean(obstacle.solid, `${op}.solid`);
-    if (!blocks && draw === 'none') fail(`${op}.draw`, 'a decoration (solid: false) is only drawn; draw it over or under the fluid');
+    if (!blocks && draw === 'none' && obstacle.voltage === undefined) fail(`${op}.draw`, 'a decoration (solid: false) is only drawn; draw it over or under the fluid, or give it a voltage (an unseen charge)');
     if (!blocks && surface === 'smooth') fail(`${op}.surface`, 'surface shapes how the fluid meets an obstacle; the fluid never meets a decoration (solid: false)');
     const track = obstacle.keys === undefined ? null : readTrack(obstacle.keys, `${op}.keys`, frames, { x, y }, rows, width, height);
-    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track });
+    const electric = readElectrode(obstacle, op, frames);
+    if (electric && liquid) fail(`${op}.${electric.conductor ? 'conductor' : 'voltage'}`, 'electrodes and conductors drive plasma in gases; liquids carry no current');
+    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, ...(electric && { electric }) });
   });
+  // Electricity (gases): settings of its own, defaults when only an obstacle has a voltage or conducts.
+  const electric = liquid || (effect.electric === undefined && !obstacles.some(o => o.electric)) ? null : readElectric(effect.electric ?? {}, `${path}.electric`, obstacles);
+  context.electric = !!electric;
   const moving = obstacles.some(o => o.track), layout = buildLayout(obstacles, width, height, placementsAt(obstacles, 0));
   const { solid, front, smooth, owner } = layout;
   const walls = listed(effect.walls, 'walls', 4).map((edge, i) => {
@@ -380,8 +396,10 @@ function readEffect(effect, path, source) {
     }
     return { inside: readShape(entry, fp, width, height), velocity: entry.velocity === undefined ? [0, 0] : pair(entry.velocity, `${fp}.velocity`, -16, 16), burst };
   });
-  if (!Array.isArray(effect.emitters) || effect.emitters.length > LIMITS.emitters || (!effect.emitters.length && !fills.length)) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters${liquid ? ' (or none, with a fill)' : ''}`);
-  const emitters = effect.emitters.map((emitter, i) => readEmitter(emitter, `${path}.emitters[${i}]`, context));
+  // A gas with electrodes needs no emitter: its arcs are its source.
+  const listedEmitters = effect.emitters ?? (electric ? [] : undefined);
+  if (!Array.isArray(listedEmitters) || listedEmitters.length > LIMITS.emitters || (!listedEmitters.length && !fills.length && !electric)) fail(`${path}.emitters`, `expected 1–${LIMITS.emitters} emitters${liquid ? ' (or none, with a fill)' : ' (or none, with electrodes)'}`);
+  const emitters = listedEmitters.map((emitter, i) => readEmitter(emitter, `${path}.emitters[${i}]`, context));
   if (!Array.isArray(effect.look) || !effect.look.length || effect.look.length > LIMITS.looks) fail(`${path}.look`, `expected 1–${LIMITS.looks} layers that map a field to palette colours`);
   const look = effect.look.map((layer, i) => readLook(layer, `${path}.look[${i}]`, context));
   const gravity = effect.gravity === undefined ? [0, 0.3] : pair(effect.gravity, `${path}.gravity`, -2, 2);
@@ -418,7 +436,7 @@ function readEffect(effect, path, source) {
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
-    tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion, schedule, most,
+    tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion, schedule, most, electric,
     outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0)
   };
 }
@@ -1385,10 +1403,12 @@ function createGas(effect, width, height) {
   const state = { g, d: new Float64Array(N), T: new Float64Array(N), source: new Float64Array(N), d1: new Float64Array(N), T1: new Float64Array(N), curl: new Float64Array(N), magnitude: new Float64Array(N), open: new Uint8Array(N) };
   if (effect.emitters.some(e => e.carry)) { state.carriers = []; state.carriedD = new Float64Array(N); state.carriedT = new Float64Array(N); }
   for (let c = 0; c < N; c++) state.open[c] = g.solid[c] ? 0 : 1;
+  if (effect.electric) state.electric = createElectric(effect, width, height);
   return state;
 }
 function stepGas(state, effect, dt) {
   const { g, d, T, d1, T1 } = state, { W, H, u, v } = g;
+  if (state.electric) stepElectric(state.electric, state, effect, dt);
   // Buoyancy lifts hot cells (y is down) and density weighs smoke down; wind pushes everything.
   if (effect.buoyancy || effect.weight || effect.wind[1]) for (let j = 1; j < H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i, a = (j - 1) * W + i, b = j * W + i;
@@ -1422,6 +1442,7 @@ function gasFields(state, out) {
     for (const p of list) { if (p.d) deposit(carriedD, solid, W, H, p.x, p.y, p.d); if (p.T) deposit(carriedT, solid, W, H, p.x, p.y, p.T); }
     for (let c = 0; c < g.N; c++) { density[c] += carriedD[c]; temperature[c] += carriedT[c]; }
   }
+  if (state.electric) electricFields(state.electric, state, out[3], out[4]);
 }
 
 // ---- Liquid -----------------------------------------------------------------------------------------------------------
@@ -2053,7 +2074,7 @@ function renderFields(effect, base, width, height, drawn = null) {
   // bowl instead of light and dark pixels by turns as the sample lands on the bowl or on liquid.
   const lit = new Float64Array(N), shade = new Float64Array(N), [lx, ly] = effect.light;
   const sx = lx >= 0.38 ? 1 : lx <= -0.38 ? -1 : 0, sy = ly >= 0.38 ? 1 : ly <= -0.38 ? -1 : 0;
-  if (effect.look.some(layer => layer.field >= 4)) for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+  if (effect.look.some(layer => layer.field === 4 || layer.field === 5)) for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
     const c = j * width + i, here = density[c], x = i + 0.5, y = j + 0.5;
     if (here <= 0) continue;
     if (liquid) {
@@ -2065,7 +2086,7 @@ function renderFields(effect, base, width, height, drawn = null) {
     lit[c] = Math.max(0, 1 - bilinearZero(density, width, height, x + 2 * lx - 0.5, y + 2 * ly - 0.5) / here);
     shade[c] = Math.max(0, 1 - bilinearZero(density, width, height, x - 2 * lx - 0.5, y - 2 * ly - 0.5) / here);
   }
-  const sources = [density, base[1], base[2], depth, lit, shade];
+  const sources = [density, base[1], base[2], depth, lit, shade, base[3], base[4]];
   // A filled gap that no layer coloured (a look whose first colour starts above the surface level) takes the colour of
   // a neighbour, along the edge first.
   const patch = () => {
@@ -2075,9 +2096,11 @@ function renderFields(effect, base, width, height, drawn = null) {
     }
     filled = null;
   };
-  // Light and shadow only recolour pixels that earlier layers drew. A liquid draws only inside its outline.
-  for (const layer of effect.look) {
-    const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field >= 4;
+  // Light and shadow only recolour pixels that earlier layers drew. A liquid draws only inside its outline. `by` notes
+  // which layer drew each pixel last, for halos.
+  const by = effect.look.some(layer => layer.halo) ? new Uint8Array(N) : null;
+  for (const [index, layer] of effect.look.entries()) {
+    const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field === 4 || layer.field === 5;
     if (shading) patch();
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
@@ -2085,7 +2108,7 @@ function renderFields(effect, base, width, height, drawn = null) {
       const feather = (1 - threshold(i, j)) * dither;
       let level = 0;
       while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
-      if (level) chars[c] = colors[level - 1];
+      if (level) { chars[c] = colors[level - 1]; if (by) by[c] = index + 1; }
     }
   }
   patch();
@@ -2101,6 +2124,23 @@ function renderFields(effect, base, width, height, drawn = null) {
   }
   // `drawn`, when given, marks the cells the look layers drew the fluid on (after cleanup, before the outline).
   if (drawn) for (let c = 0; c < N; c++) drawn[c] = chars[c] ? 1 : 0;
+  // Halos, in look order: the empty pixels within a round reach of a layer's pixels (an offset (dx, dy) reaches when
+  // dx² + dy² ≤ (width + 0.5)² − 1, so one pixel wide is the four neighbours) take its glow colour.
+  if (by) effect.look.forEach((layer, index) => {
+    if (!layer.halo) return;
+    const { color, width: reach } = layer.halo, limit = (reach + 0.5) * (reach + 0.5) - 1, glow = [];
+    for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+      const c = j * width + i;
+      if (chars[c] || solid[c]) continue;
+      search: for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) {
+        const x = i + dx, y = j + dy, n = y * width + x;
+        if (dx * dx + dy * dy > limit || x < 0 || y < 0 || x >= width || y >= height || by[n] !== index + 1 || !chars[n]) continue;
+        glow.push(c);
+        break search;
+      }
+    }
+    for (const c of glow) chars[c] = color;
+  });
   if (effect.outline) {
     // The outline may cover an obstacle drawn under the fluid, never one drawn over it.
     const filled = Uint16Array.from(chars);
@@ -2117,7 +2157,7 @@ function renderFields(effect, base, width, height, drawn = null) {
 // Cell updates per cell per step, for the work budget: one per pressure sweep plus the transfers and advection. A thick
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
 // spreading solve one more, sharp advection about thirty.
-const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
+const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0) + electricWork(effect);
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
 const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
@@ -2130,7 +2170,7 @@ const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater drople
 function createRun(effect, width, height, path) {
   const N = width * height, state = effect.liquid ? createLiquid(effect, width, height) : createGas(effect, width, height);
   if (effect.liquid) { fillLiquid(state, effect); if (state.full) crowded(path); }
-  return { effect, view: effect, layout: effect.layout, state, base: [new Float64Array(N), new Float64Array(N), new Float64Array(N)], sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0 };
+  return { effect, view: effect, layout: effect.layout, state, base: Array.from({ length: effect.electric ? 5 : 3 }, () => new Float64Array(N)), sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0 };
 }
 // Obstacles that move on cue. When the layout for frame `cycle` differs from the last, the solver's masks are rebuilt
 // for it. Through every frame of a key's `over`, the faces against the obstacle carry its speed along the ramp (in
@@ -2258,6 +2298,7 @@ function emitFrame(run, t, cycle, factors = null) {
 // The solver's substeps for one frame, with the settings its keys give frame `cycle` of the effect's cycle.
 function solveFrame(run, cycle) {
   const { state } = run, effect = run.effect.schedule ? { ...run.effect, ...run.effect.schedule[cycle] } : run.effect, dt = 1 / effect.substeps;
+  if (state.electric) { state.electric.cycle = cycle; state.electric.layout = run.layout; }
   // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
   if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
   for (let s = 0; s < effect.substeps; s++) effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
@@ -2336,7 +2377,7 @@ function simulate(effect, context) {
   const begin = effect.warmup * frames, total = simulatedFrames(effect), blend = effect.blend;
   const tail = loop ? Array.from({ length: blend }, () => base.map(() => new Float64Array(N))) : [];
   const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []);
-  const peak = { density: 0, temperature: 0, speed: 0 }, figures = Array.from({ length: frames }, () => null), layouts = Array.from({ length: frames }, () => effect.layout);
+  const peak = { density: 0, temperature: 0, speed: 0, ...(effect.electric && { ionization: 0, current: 0 }) }, figures = Array.from({ length: frames }, () => null), layouts = Array.from({ length: frames }, () => effect.layout);
   for (let t = 0; t < total; t++) {
     const cycle = loop ? t % frames : t, out = t - begin, recording = !loop || (out >= 0 && out < frames);
     if (effect.moving) moveObstacles(run, cycle);
@@ -2356,13 +2397,14 @@ function simulate(effect, context) {
     const frame = loop ? out : t;
     if (loop && frame >= frames - blend) {
       const k = frame - (frames - blend), w = smooth((k + 1) / blend);
-      for (let f = 0; f < 3; f++) { const a = base[f], b = tail[k][f]; for (let c = 0; c < N; c++) a[c] = a[c] * (1 - w) + b[c] * w; }
+      for (let f = 0; f < base.length; f++) { const a = base[f], b = tail[k][f]; for (let c = 0; c < N; c++) a[c] = a[c] * (1 - w) + b[c] * w; }
     }
     for (let c = 0; c < N; c++) {
       if (base[0][c] > peak.density) peak.density = base[0][c];
       if (base[1][c] > peak.temperature) peak.temperature = base[1][c];
       if (base[2][c] > peak.speed) peak.speed = base[2][c];
     }
+    if (effect.electric) for (let c = 0; c < N; c++) { if (base[3][c] > peak.ionization) peak.ionization = base[3][c]; if (base[4][c] > peak.current) peak.current = base[4][c]; }
     chars[frame] = renderFields(run.view, base, width, height);
     figures[frame] = measureFrame(chars[frame], base, run.view.solid, width, height, liquid ? state.n : null);
     layouts[frame] = run.layout;
@@ -2386,7 +2428,7 @@ function simulate(effect, context) {
   const round = value => Math.floor(value * 1000 + 0.5) / 1000;
   const { totals } = run;
   return {
-    output, steps: total * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed) },
+    output, steps: total * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed), ...(effect.electric && { ionization: round(peak.ionization), current: round(peak.current) }) },
     ...(liquid && { particles: run.maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }, figures: columns(figures)
   };
 }

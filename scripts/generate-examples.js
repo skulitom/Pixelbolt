@@ -4,6 +4,7 @@ import { wavePresets } from './wave-presets.mjs';
 import { spellPresets } from './spell-presets.mjs';
 import { spellLibrary } from './spell-library.mjs';
 import { terrainPresets } from './terrain-presets.mjs';
+import { plasmaPresets } from './plasma-presets.mjs';
 const rows = source => source.map(row => row.padEnd(16, '.'));
 const spirit = rows([
   '........dd',
@@ -537,6 +538,8 @@ await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'slime-idle.poses': slimeIdle, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])), ...Object.fromEntries(Object.entries(spellLibrary).map(([element, source]) => [`${element}-spells.fx`, source])) };
 // Autotile sets drawn from terrain descriptions (scripts/terrain-presets.mjs).
 Object.assign(authored, terrainPresets);
+// Electric gases: arcs, lightning and plasma (scripts/plasma-presets.mjs).
+for (const [name, source] of Object.entries(plasmaPresets)) authored[`${name}.fluid`] = source;
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.

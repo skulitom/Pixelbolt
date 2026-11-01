@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Plasma and electricity
+
+- Gas effects can carry electricity (`src/electric.js`). An obstacle with a `voltage` (volts, or keys `[{ frame, voltage, over }]` that change it on cue) is an electrode, and `conductor: true` makes an obstacle metal that arcs run through. Each step solves the electric field over the gas and grows plasma by the dielectric breakdown model where the field exceeds `breakdown`, at `growth` cells a frame, forking like lightning or keeping to one path as `focus` says. Plasma rides the gas as a linked chain one pixel thin, so heat lifts and bends an arc without blurring it and its ends slide along the rods. Current keeps a channel lit (`sustain`, below half of which it goes out) and heats the gas (`heat` × current²), so a Jacob's ladder climbs on its own hot air; without current, plasma recombines (`recombine`) into an afterglow, and its trace guides the next strike for `memory` frames, so lightning restrikes down the same channel. An electrode's `resistance` sags its supply under load, so a long arc starves and one strike stops the other leaders, and `charge` stores charge for strike-and-recharge bursts. `electric.ground` holds canvas edges at 0 V, and `electric.ionize` makes hot gas plasma without electrodes. A decoration with a voltage may be unseen (`draw: "none"`), and a gas with electrodes needs no emitter.
+- Look layers draw two new fields, `ionization` and `current`, and any layer may have a `halo` glow; the metadata's `peak` gains `ionization` and `current`.
+- Four presets with GIFs: Jacob's ladder, lightning (a one-shot with a restrike), Tesla coil and plasma globe, each compiling in 0.4–0.9 s. An electric gas costs about two to three times plain gas per step. Gases and liquids without electricity are unchanged, golden hashes and GIFs included.
+- Not yet: liquids carry no current (plasma touching water could later boil it through liquid heat), there is no magnetic force on arcs, and voltages do not alternate on their own (keys pulse them).
+
 ### Cleaner liquid edges
 
 - A liquid's outline is tidied before it is coloured. A gap one pixel wide with liquid on two sides and liquid or an obstacle on a third is filled, and a lone pixel standing on a straight edge (open air on three sides, liquid either side of its foot) is trimmed, so a resting surface no longer shows dents and pimples that come and go from frame to frame, and the highlight line no longer drops a pixel under each dent. A lone drop, a stream's tip and a two-pixel step stay. Honey and honey-drop had about 0.7 and 0.4 such bumps a frame and now have none; dam-break's fall from 0.43 to 0.09 and its dents from 0.39 to 0.16.

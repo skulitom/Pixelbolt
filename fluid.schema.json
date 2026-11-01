@@ -457,7 +457,64 @@
                 },
                 "solid": {
                   "type": "boolean",
-                  "description": "false: a decoration, drawn over or under the fluid as draw says but never met by it (a net, a candle flame, a label, a background). Default true."
+                  "description": "false: a decoration, drawn over or under the fluid as draw says but never met by it (a net, a candle flame, a label, a background); with a voltage, an electrode the gas flows through (a cloud's charge, unseen with draw none). Default true."
+                },
+                "voltage": {
+                  "oneOf": [
+                    {
+                      "type": "number",
+                      "minimum": -1000,
+                      "maximum": 1000
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "frame": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 255
+                          },
+                          "voltage": {
+                            "type": "number",
+                            "minimum": -1000,
+                            "maximum": 1000
+                          },
+                          "over": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 256,
+                            "description": "Frames to move to it in a straight line; default 0, at once."
+                          }
+                        },
+                        "required": [
+                          "frame",
+                          "voltage"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 16,
+                      "minItems": 1
+                    }
+                  ],
+                  "description": "Gas: an electrode at this many volts, or keys that change it on cue (strikes, pulses); a loop repeats them. Arcs run between electrodes at different voltages."
+                },
+                "resistance": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "The electrode supply's own resistance, so its voltage sags as current flows: a long arc starves, a shorter path takes over, and one strike stops the others. Default 0, an ideal supply."
+                },
+                "charge": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000,
+                  "description": "Charge the electrode stores (current × frames per volt), refilled through its resistance: strikes drain it and come in bursts. Default 0."
+                },
+                "conductor": {
+                  "type": "boolean",
+                  "description": "Gas: metal at no set voltage, which arcs jump to and through."
                 },
                 "keys": {
                   "type": "array",
@@ -856,7 +913,83 @@
               "additionalProperties": false
             },
             "maxItems": 16,
-            "description": "1–16 sources; a liquid with a fill may have none."
+            "description": "1–16 sources; a liquid with a fill, or a gas with electrodes, may have none (an empty list)."
+          },
+          "electric": {
+            "type": "object",
+            "properties": {
+              "breakdown": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 1000,
+                "description": "Field, in volts per pixel, at which neutral gas breaks down; lower in hot gas. Default 3."
+              },
+              "focus": {
+                "type": "number",
+                "minimum": 0.5,
+                "maximum": 8,
+                "description": "How strongly growth favours the strongest field: about 1 forks freely like lightning, 3–4 runs on one path like an arc between close plates. Default 2."
+              },
+              "growth": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 256,
+                "description": "Cells of new plasma a frame, drawn one at a time where the field most exceeds breakdown (a leader's speed). Default 8."
+              },
+              "recombine": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Share of ionization lost a frame where no current holds it (slower in hot gas): the afterglow. Default 0.3."
+              },
+              "sustain": {
+                "type": "number",
+                "minimum": 0.001,
+                "maximum": 1000,
+                "description": "Current that keeps a channel fully ionized; below half of it a channel goes out. Default 0.5."
+              },
+              "memory": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 256,
+                "description": "Frames a spent channel keeps guiding new strikes, which run down it at once (a restrike on the same channel). 0: none. Default 8."
+              },
+              "heat": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 16,
+                "description": "Temperature added a frame per unit of current squared, so buoyancy lifts an arc. Default 0.2."
+              },
+              "ionize": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 64,
+                "description": "Gas this hot is plasma too (from half of it, fully at it): a fireball's or a star's core. Default none."
+              },
+              "ground": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "left",
+                    "right",
+                    "top",
+                    "bottom"
+                  ]
+                },
+                "maxItems": 4,
+                "uniqueItems": true,
+                "description": "Canvas edges held at 0 V, the world beyond: arcs that reach them strike them."
+              },
+              "iterations": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 200,
+                "description": "Conjugate-gradient steps of the field solve each step; default 24."
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "description": "Gas: electricity and plasma. Obstacles with a voltage are electrodes; the field between them breaks the gas down into branching channels that conduct, glow, heat the gas and recombine. Defaults apply when only an obstacle has a voltage."
           },
           "look": {
             "type": "array",
@@ -870,9 +1003,11 @@
                     "speed",
                     "depth",
                     "light",
-                    "shadow"
+                    "shadow",
+                    "ionization",
+                    "current"
                   ],
-                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew)."
+                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
                 },
                 "colors": {
                   "type": "array",
@@ -931,6 +1066,28 @@
                     }
                   ],
                   "description": "Dither pattern, as for the dither operation: bayer4 (default), bayer2, bayer8, noise or value (seeded by the effect) or a matrix of ranks. Anchored to the canvas, so it never crawls."
+                },
+                "halo": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1,
+                      "description": "A one-character palette key (grid rows name colours by character)."
+                    },
+                    "width": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 4,
+                      "description": "Pixels of glow; default 1 (the four neighbours)."
+                    }
+                  },
+                  "required": [
+                    "color"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A glow of one colour on the empty pixels within width of what this layer drew: an arc's glow, a rim round a flame."
                 }
               },
               "required": [

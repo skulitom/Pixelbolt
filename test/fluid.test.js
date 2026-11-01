@@ -33,7 +33,11 @@ const GOLDEN = {
   'dam-break': '249f1faa6bbbcec3c6ac4c0be57d6ea0e4daa186b3ed3cdf3afd8d254be79861',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
   'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
-  'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63'
+  'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
+  'jacobs-ladder': '238d6d0463c12555d9cfed7b9546d8f21bf053d25de44b6bb1855bd1aa48e430',
+  lightning: '454f20c0555e3c282bb02e816e7a6193936440e07fda951f7cd07aafd9358bfb',
+  'tesla-coil': '6b81e18ffef9e1d745322812f74717a4ef68706ff01833331f52f5c99b6dd21c',
+  'plasma-globe': '1174d7927c466c40c968c1c9678022f7e040c1839f76250f9364559d8a83fd58'
 };
 const examples = new Map();
 const example = async name => {
