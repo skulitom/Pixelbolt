@@ -65,6 +65,7 @@
       "walls": ["left", "right", "bottom"],
       "gravity": [0, 0.3],
       "apic": true,
+      "keys": [{ "frame": 45, "viscosity": 4, "over": 10 }],
       "obstacles": [
         { "symbol": "basin", "x": 0, "y": 30 },
         { "symbol": "rock", "x": 40, "y": 25 },

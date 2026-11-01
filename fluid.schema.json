@@ -138,7 +138,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 200,
-            "description": "Pressure solve sweeps per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid)."
+            "description": "Pressure solve work per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid). A gas takes this many sweeps; a liquid a third as many conjugate-gradient steps, which settle long columns and channels."
           },
           "buoyancy": {
             "type": "number",
@@ -835,7 +835,7 @@
                       "type": "number",
                       "minimum": 0,
                       "maximum": 2,
-                      "description": "How much the flow carries the spark: 1 (default) moves with the fluid, 0 ignores it (thrown debris). In a liquid, a spark with follow 0 that leaves the water ends where it falls back in (spray)."
+                      "description": "How much the flow carries the spark: 1 (default) moves with the fluid, 0 ignores it (thrown debris). In a liquid, a spark with follow 0 that leaves the water ends where it falls back in (spray); one riding the flow out of the water flies on as a droplet, falling with the liquid's gravity unless it has its own, and ends the same way."
                     },
                     "pop": {
                       "type": "boolean",
@@ -1095,7 +1095,7 @@
             },
             "required": [],
             "additionalProperties": false,
-            "description": "De-Stray (specks and pinholes take their surroundings' colour) and De-Corner cleanup of the fluid before outline and sparks."
+            "description": "De-Stray (specks and pinholes take their surroundings' colour; a liquid's lone pixel is a drop, and stays) and De-Corner cleanup of the fluid before outline and sparks."
           }
         },
         "required": [

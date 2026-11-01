@@ -458,7 +458,7 @@ const fluidEmitter = object({
     trail: { type: 'boolean', description: 'Streak back to where the spark was a frame earlier, in the next colour of its list: flying debris, rising embers.' },
     angle: range(-3600, 3600, 'Launch direction in degrees, clockwise: 0 right, 90 down, 270 up. Default [0, 360].'), speed: range(0, 16, 'Launch speed in pixels per frame; default 0.'),
     gravity: vector(-2, 2, 'The spark\'s own acceleration [x, y]; negative y rises (bubbles, embers).'), drag: num(0, 1, 'Share of the spark\'s own speed lost each frame; default 0.05.'),
-    follow: num(0, 2, 'How much the flow carries the spark: 1 (default) moves with the fluid, 0 ignores it (thrown debris). In a liquid, a spark with follow 0 that leaves the water ends where it falls back in (spray).'),
+    follow: num(0, 2, 'How much the flow carries the spark: 1 (default) moves with the fluid, 0 ignores it (thrown debris). In a liquid, a spark with follow 0 that leaves the water ends where it falls back in (spray); one riding the flow out of the water flies on as a droplet, falling with the liquid\'s gravity unless it has its own, and ends the same way.'),
     pop: { type: 'boolean', description: 'Liquid only: the spark pops where it leaves the liquid, drawn as a ring around it for one frame and two droplets the next (bubbles bursting at the surface).' }
   }, ['count', 'colors']), description: 'One-pixel particles carried by the flow and drawn over it: embers, sparkles, debris, bubbles. In a loop they wrap round, so they loop exactly.' }
 }, ['at']);
@@ -493,7 +493,7 @@ const fluid = {
       loop: { type: 'boolean', description: 'Seamless loop: emitter timing, pulses, orbits and noise repeat every cycle; the simulation warms up and its closing frames blend toward the frames before frame 0.' },
       seed: int(0, 2147483647, 'Default 1.'), warmup: int(1, 8, 'Loops: whole cycles simulated before the recorded one; default 2. Raise it when a flow takes long to settle (a filling pool).'),
       blend: int(1, 128, 'Loops: closing frames blended toward the previous cycle\'s; default a third of the frames, at most 8.'),
-      substeps: int(1, 16, 'Simulation steps per frame; default 2. Raise for fast liquids; time grows with it (8 takes about twice as long as 4).'), iterations: int(1, 200, 'Pressure solve sweeps per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid).'),
+      substeps: int(1, 16, 'Simulation steps per frame; default 2. Raise for fast liquids; time grows with it (8 takes about twice as long as 4).'), iterations: int(1, 200, 'Pressure solve work per step, and with viscosity or yield as many steps of the viscosity solve; default 30 (gas) or 40 (liquid). A gas takes this many sweeps; a liquid a third as many conjugate-gradient steps, which settle long columns and channels.'),
       buoyancy: num(-2, 2, 'Gas: upward acceleration per unit of temperature; default 0.15.'), weight: num(-2, 2, 'Gas: downward acceleration per unit of density (negative floats smoke); default 0.'),
       vorticity: num(0, 2, 'Gas: vorticity confinement, which keeps small swirls so smoke curls; default 0.25.'),
       dissipation: num(0, 1, 'Gas: share of density lost per frame; default 0.03.'), cooling: num(0, 1, 'Gas: share of temperature lost per frame; default 0.08.'),
@@ -515,7 +515,7 @@ const fluid = {
       whitewater: { ...array(fluidWhitewater, 4), description: 'Liquid: up to four layers of spray or foam thrown off the water where it lands or runs fast, drawn over it like sparks.' },
       light: vector(-1, 1, 'Direction toward the light for the light and shadow fields; default [-1, -1], the upper left.'),
       outline: { ...key, description: 'Palette key for a one-pixel outline around the fluid.' },
-      cleanup: { ...object({ strays: bool, corners: bool }), description: 'De-Stray (specks and pinholes take their surroundings\' colour) and De-Corner cleanup of the fluid before outline and sparks.' }
+      cleanup: { ...object({ strays: bool, corners: bool }), description: 'De-Stray (specks and pinholes take their surroundings\' colour; a liquid\'s lone pixel is a drop, and stays) and De-Corner cleanup of the fluid before outline and sparks.' }
     }, ['frames', 'emitters', 'look']) },
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'width', 'height', 'effects']), $defs: { rows: schema.$defs.rows }

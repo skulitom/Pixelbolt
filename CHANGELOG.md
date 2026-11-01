@@ -4,6 +4,18 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Liquid fixes: settling, drops, sparks and carriers
+
+- Liquid standing in a pipe or a long channel comes to rest (P-067). A liquid's pressure is now solved by conjugate gradients with a MIC(0) preconditioner, a third as many steps as `iterations` (each costs about three sweeps). The sweeps carried pressure only a few cells a step against their scan order, so in a pipe or U-tube the push that holds the liquid lagged the flow, and a lagging push pumps a slosh up: the studio's rocket mould never settled (50-65 changed pixels a frame from frame 200 on), and jelly in 4-wide pipes bobbed to the end of every run. It now rests within about 100 frames. Gases keep the sweeps. Slow levelling in narrow channels is the jelly's own yield and viscosity holding a head, and is unchanged.
+- A smooth obstacle still never pulls on a liquid: a cell beside one that the solve leaves pulling is held at zero pressure and the solve runs again.
+- The dam-break example thickens over frames 45-55 so it still ends at rest; with less numerical damping its water sloshed on to the last frame.
+- De-Stray never erases a liquid's lone pixel: it is a drop whose water is there, so a small drop no longer vanishes for a frame (P-054). A gas's lone speck still goes.
+- A liquid's spark riding the flow (the default `follow: 1`) that leaves the water flies on as a droplet, falling with the liquid's gravity unless it has its own, and ends where it falls back in, instead of hanging where it left the water (P-029).
+- A gas carrier that hits a wall or a closed edge drops its smoke in the last open cell before it, not up to a whole step short (P-047).
+- Patch `recolor` reads a palette key as the frame draws it, so a frame with its own palette can be recoloured; `scope: "frame"` restores dependents with palette keys where one draws the colour, so a later palette edit still reaches them.
+- The playground's worker checks every engine and example address itself (P-023): a page's meta CSP doesn't reach a worker, and GitHub Pages sends no CSP header.
+- Known and left as is: cohesion (`tension`) keeps a resting liquid's surface trembling a little (about 0.16 px a frame at tension 3.2), so a pixel at the look's threshold can still flip.
+
 ### Liquids fill small spaces
 
 - A liquid's surface now reads only the cells water can be in. Each particle's weight goes to the cells around it that it could be in (not into an obstacle, off the canvas or across a corner where two obstacle pixels touch), and the 3 × 3 blur that turns particles into a surface skips obstacle pixels. Before, an obstacle beside a cell soaked up part of its water and counted as empty in its blur, so a full cell walled in on three sides read at 0.3–0.5 of full and was drawn empty with an outline: the points of a mould (a bat's wing tips, ears and scallops), a crack one pixel wide and the corners of a pool against a wall. A cell sealed off at a corner still stays dry, and nothing shows past a thin wall.

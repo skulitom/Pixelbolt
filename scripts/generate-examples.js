@@ -477,6 +477,8 @@ const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', 
 // water has settled, so the one-shot ends at rest.
 const damBreak = fluidSource('dam-break', 64, 36, { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff', p: '#8a5a36', P: '#5a3825', n: '#c79a5b', g: '#4a4a5e', G: '#33334a' }, {
   kind: 'liquid', frames: 70, duration: 60, seed: 5, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], apic: true,
+  // Water sloshes on long after the wave breaks, so it thickens over frames 45-55 and the one-shot ends at rest.
+  keys: [{ frame: 45, viscosity: 4, over: 10 }],
   obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 14, show: false }] }],
   fill: [{ x: 0, y: 10, w: 20, h: 20 }], emitters: [],
   whitewater: [{ impact: 1.2, chance: 0.35, throw: 0.6, spread: 30, colors: ['w', 'c'], life: [6, 12] }],

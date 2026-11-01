@@ -103,7 +103,10 @@ function readSparks(value, path, context, burst) {
     size: integer(value.size ?? 1, `${path}.size`, 1, 3), trail: value.trail === undefined ? false : boolean(value.trail, `${path}.trail`),
     angle: range(value.angle ?? [0, 360], `${path}.angle`, -3600, 3600), speed: range(value.speed ?? 0, `${path}.speed`, 0, 16),
     gravity: value.gravity === undefined ? [0, 0] : pair(value.gravity, `${path}.gravity`, -2, 2), drag: number(value.drag ?? 0.05, `${path}.drag`, 0, 1),
-    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`)
+    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`),
+    // In a liquid, a spark that rides the flow out of the water flies on as a droplet (see moveSparks), falling with the
+    // liquid's gravity unless it has its own.
+    fling: liquid, inherit: liquid && value.gravity === undefined
   };
 }
 
@@ -734,8 +737,10 @@ function enforce(g) {
 
 // Makes the flow divergence-free over the active cells (every open cell for a gas, the cells holding particles for a
 // liquid) with a fixed number of over-relaxed Gauss-Seidel sweeps. Obstacles and closed edges are walls; open edges
-// and air cells hold zero pressure. `target` asks a cell to spread by that much (crowded liquid particles).
+// and air cells hold zero pressure. `target` asks a cell to spread by that much (crowded liquid particles). A liquid
+// takes the conjugate-gradient solve below instead.
 function project(g, active, iterations, target) {
+  if (g.release) return projectLiquid(g, active, iterations, target);
   if (g.geo) return projectOpen(g, active, iterations, target);
   const { W, H, u, v, p, div, solid, walls, count } = g, omega = 1.6;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
@@ -774,7 +779,7 @@ function project(g, active, iterations, target) {
 // The same solve with each face weighted by the share of it that is open (smooth obstacles): flow through a face counts
 // by that share, and so does the pressure difference across it. With every face open or closed it is the solve above.
 function projectOpen(g, active, iterations, target) {
-  const { W, H, u, v, p, div, weights: weight } = g, { uOpen, vOpen } = g.geo, touching = g.release ? g.geo.touching : null, X = W + 1, omega = 1.6;
+  const { W, H, u, v, p, div, weights: weight } = g, { uOpen, vOpen } = g.geo, X = W + 1, omega = 1.6;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const c = j * W + i;
     if (!active[c]) { p[c] = 0; weight[c] = 0; continue; }
@@ -793,9 +798,6 @@ function projectOpen(g, active, iterations, target) {
       if (j > 0 && active[c - W]) sum += vOpen[j * W + i] * p[c - W];
       if (j < H - 1 && active[c + W]) sum += vOpen[(j + 1) * W + i] * p[c + W];
       p[c] += omega * ((sum - div[c]) / n - p[c]);
-      // A smooth obstacle pushes on a liquid but never pulls it, so the liquid can leave it (adhesion holds it on). A gas
-      // keeps its pull, which carries it round the obstacle.
-      if (touching && touching[c] && p[c] < 0) p[c] = 0;
     }
   }
   for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) {
@@ -807,6 +809,115 @@ function projectOpen(g, active, iterations, target) {
   for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i;
     if (g.vFixed[k]) continue;
+    const t = j > 0 && active[(j - 1) * W + i], b = j < H && active[j * W + i];
+    if (t || b) v[k] -= (b ? p[j * W + i] : 0) - (t ? p[(j - 1) * W + i] : 0);
+  }
+}
+
+// A liquid's pressure solve: conjugate gradients with a modified incomplete Cholesky preconditioner, MIC(0) (Bridson,
+// "Fluid Simulation for Computer Graphics", 2nd ed., 5.3), the same system as the sweeps above, with faces weighted by
+// their open share beside smooth obstacles. Sweeps carry pressure only a few cells a step against their scan order, so
+// in a pipe, a channel or a tall column the push that holds the liquid lagged the flow by several steps, and a lagging
+// push pumps a slosh up (jelly left in a 4-wide pipe bobbed for good, and a long U-tube's slosh grew). MIC(0) solves a
+// chain one cell wide exactly and a thin channel nearly so, and each step costs about three sweeps, so a liquid spends
+// `iterations` / 3 steps, starting from the previous step's pressure. A smooth obstacle pushes on a liquid but never
+// pulls it, so the liquid can leave it (adhesion holds it on): a cell beside one that the solve leaves pulling is held
+// at zero pressure, as air is, and the solve runs again, up to twice.
+function projectLiquid(g, active, iterations, target) {
+  const { W, H, N, u, v, p, div, geo, uFixed, vFixed } = g, X = W + 1, steps = Math.ceil(iterations / 3);
+  if (!g.cg) g.cg = { diag: new Float64Array(N), ax: new Float64Array(N), ay: new Float64Array(N), solve: new Uint8Array(N), prec: new Float64Array(N), r: new Float64Array(N), z: new Float64Array(N), s: new Float64Array(N), q: new Float64Array(N) };
+  const { diag, ax, ay, solve, prec, r, z, s, q } = g.cg;
+  // The open share of each face: pixel faces are open or shut, a smooth obstacle's may be half open.
+  const openU = geo ? k => geo.uOpen[k] : k => (uFixed[k] ? 0 : 1), openV = geo ? k => geo.vOpen[k] : k => (vFixed[k] ? 0 : 1);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const c = j * W + i, l = openU(j * X + i), rr = openU(j * X + i + 1), t = openV(c), b = openV(c + W);
+    diag[c] = l + rr + t + b;
+    solve[c] = active[c] && diag[c] > 0 ? 1 : 0;
+    if (!solve[c]) { p[c] = 0; div[c] = 0; continue; }
+    if (geo) {
+      div[c] = rr * u[j * X + i + 1] - l * u[j * X + i] + b * v[c + W] - t * v[c] - target[c];
+      if (g.uWall) div[c] += (1 - rr) * g.uWall[j * X + i + 1] - (1 - l) * g.uWall[j * X + i] + (1 - b) * g.vWall[c + W] - (1 - t) * g.vWall[c];
+    } else div[c] = u[j * X + i + 1] - u[j * X + i] + v[c + W] - v[c] - target[c];
+  }
+  const touching = geo ? geo.touching : null;
+  for (let pass = 0; pass < (touching ? 3 : 1); pass++) {
+    // The couplings to the cell on the right and the one below, between cells being solved.
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const c = j * W + i;
+      ax[c] = solve[c] && i < W - 1 && solve[c + 1] ? openU(j * X + i + 1) : 0;
+      ay[c] = solve[c] && j < H - 1 && solve[c + W] ? openV(c + W) : 0;
+    }
+    // MIC(0), tuning 0.97, with the plain diagonal wherever the factor would fall below a quarter of it.
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const c = j * W + i;
+      if (!solve[c]) { prec[c] = 0; continue; }
+      let e = diag[c];
+      if (i > 0) { const a = ax[c - 1] * prec[c - 1]; e -= a * a + 0.97 * ax[c - 1] * ay[c - 1] * prec[c - 1] * prec[c - 1]; }
+      if (j > 0) { const a = ay[c - W] * prec[c - W]; e -= a * a + 0.97 * ay[c - W] * ax[c - W] * prec[c - W] * prec[c - W]; }
+      if (e < 0.25 * diag[c]) e = diag[c];
+      prec[c] = 1 / Math.sqrt(e);
+    }
+    const times = (x, out) => {
+      for (let j = 0, c = 0; j < H; j++) for (let i = 0; i < W; i++, c++) {
+        if (!solve[c]) { out[c] = 0; continue; }
+        let t = diag[c] * x[c];
+        if (ax[c]) t -= ax[c] * x[c + 1];
+        if (ay[c]) t -= ay[c] * x[c + W];
+        if (i > 0 && ax[c - 1]) t -= ax[c - 1] * x[c - 1];
+        if (j > 0 && ay[c - W]) t -= ay[c - W] * x[c - W];
+        out[c] = t;
+      }
+    };
+    const precondition = (from, out) => {
+      for (let j = 0, c = 0; j < H; j++) for (let i = 0; i < W; i++, c++) {
+        if (!solve[c]) { out[c] = 0; continue; }
+        let t = from[c];
+        if (i > 0 && ax[c - 1]) t += ax[c - 1] * prec[c - 1] * out[c - 1];
+        if (j > 0 && ay[c - W]) t += ay[c - W] * prec[c - W] * out[c - W];
+        out[c] = t * prec[c];
+      }
+      for (let c = N - 1; c >= 0; c--) {
+        if (!solve[c]) continue;
+        let t = out[c];
+        if (ax[c]) t += ax[c] * prec[c] * out[c + 1];
+        if (ay[c]) t += ay[c] * prec[c] * out[c + W];
+        out[c] = t * prec[c];
+      }
+    };
+    // Solves diag·p − Σ coupling·p_neighbour = −div from the pressure already in p.
+    times(p, q);
+    let rz = 0;
+    for (let c = 0; c < N; c++) r[c] = solve[c] ? -div[c] - q[c] : 0;
+    precondition(r, z);
+    for (let c = 0; c < N; c++) { s[c] = z[c]; rz += r[c] * z[c]; }
+    for (let it = 0; it < steps && rz > 0; it++) {
+      times(s, q);
+      let sq = 0;
+      for (let c = 0; c < N; c++) sq += s[c] * q[c];
+      if (!(sq > 0)) break;
+      const alpha = rz / sq;
+      for (let c = 0; c < N; c++) if (solve[c]) { p[c] += alpha * s[c]; r[c] -= alpha * q[c]; }
+      precondition(r, z);
+      let next = 0;
+      for (let c = 0; c < N; c++) next += r[c] * z[c];
+      const beta = next / rz;
+      rz = next;
+      for (let c = 0; c < N; c++) s[c] = z[c] + beta * s[c];
+    }
+    if (!touching) break;
+    let pulled = false;
+    for (let c = 0; c < N; c++) if (solve[c] && touching[c] && p[c] < 0) { p[c] = 0; solve[c] = 0; pulled = true; }
+    if (!pulled) break;
+  }
+  for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) {
+    const k = j * X + i;
+    if (uFixed[k]) continue;
+    const l = i > 0 && active[j * W + i - 1], rr = i < W && active[j * W + i];
+    if (l || rr) u[k] -= (rr ? p[j * W + i] : 0) - (l ? p[j * W + i - 1] : 0);
+  }
+  for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) {
+    const k = j * W + i;
+    if (vFixed[k]) continue;
     const t = j > 0 && active[(j - 1) * W + i], b = j < H && active[j * W + i];
     if (t || b) v[k] -= (b ? p[j * W + i] : 0) - (t ? p[(j - 1) * W + i] : 0);
   }
@@ -1224,6 +1335,24 @@ function deposit(a, solid, W, H, x, y, value) {
   if (w01) a[(j + 1) * W + i] += w01 / sum * value;
   if (w11) a[(j + 1) * W + i + 1] += w11 / sum * value;
 }
+// Moves carrier `p` along its path toward (x1, y1) as far as the open cells go: to just short of the first cell that
+// is an obstacle or beyond the canvas (a closed edge), inside the last open cell, walking cell by cell as crossesSolid
+// does. So a fast carrier drops its smoke against the wall it hits, not a whole step short of it.
+function stopShort(solid, W, H, p, x1, y1) {
+  const x0 = p.x, y0 = p.y, dx = x1 - x0, dy = y1 - y0, si = dx > 0 ? 1 : dx < 0 ? -1 : 0, sj = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+  let i = Math.floor(x0), j = Math.floor(y0), li = i, lj = j, t = 1;
+  let tx = si ? ((si > 0 ? i + 1 : i) - x0) / dx : 2, ty = sj ? ((sj > 0 ? j + 1 : j) - y0) / dy : 2;
+  const stepX = si ? si / dx : 0, stepY = sj ? sj / dy : 0;
+  for (let n = Math.abs(Math.floor(x1) - i) + Math.abs(Math.floor(y1) - j); n > 0; n--) {
+    let enter;
+    if (tx < ty) { enter = tx; i += si; tx += stepX; } else { enter = ty; j += sj; ty += stepY; }
+    if (i < 0 || j < 0 || i >= W || j >= H || solid[j * W + i]) { t = enter; break; }
+    li = i; lj = j;
+  }
+  const x = x0 + dx * t, y = y0 + dy * t;
+  p.x = x < li + 0.01 ? li + 0.01 : x > li + 0.99 ? li + 0.99 : x;
+  p.y = y < lj + 0.01 ? lj + 0.01 : y > lj + 0.99 ? lj + 0.99 : y;
+}
 function moveCarriers(state, dt) {
   const { g, d, T, carriers: list } = state, { W, H, u, v, pixels: solid } = g;
   let kept = 0;
@@ -1239,7 +1368,7 @@ function moveCarriers(state, dt) {
     const closed = (nx < 0 && walls.left) || (nx >= W && walls.right) || (ny < 0 && walls.top) || (ny >= H && walls.bottom);
     if (!closed && (nx < 0 || ny < 0 || nx >= W || ny >= H)) continue;
     const hit = closed || crossesSolid(solid, W, H, p.x, p.y, nx, ny) || solid[Math.floor(ny) * W + Math.floor(nx)];
-    if (!hit) { p.x = nx; p.y = ny; }
+    if (!hit) { p.x = nx; p.y = ny; } else stopShort(solid, W, H, p, nx, ny);
     const part = hit ? 1 : release * dt, dd = p.d * part, tt = p.T * part;
     if (dd) deposit(d, solid, W, H, p.x, p.y, dd);
     if (tt) deposit(T, solid, W, H, p.x, p.y, tt);
@@ -1705,13 +1834,23 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
 // In a liquid, spray (sparks that ignore the flow) that has left the water ends where it falls back in, and a bubble
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
-// `gravity`, when given, is the effect's gravity this frame (keys), which whitewater without its own gravity follows.
+// `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
 function moveSparks(list, g, density, total, liquid, pops, gravity) {
   const { W, H, u, v, pixels: solid } = g;
   for (let k = list.length - 1; k >= 0; k--) {
-    const p = list[k], s = p.s, fall = gravity && s.inherit ? gravity : s.gravity;
+    const p = list[k], s = p.s;
     p.age++;
-    const fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
+    let fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
+    // A liquid's grid holds no flow out in the air (no air is simulated), so a spark riding it would hang where it left
+    // the water. Once out, an emitter's spark keeps the flow's velocity as its own and flies on as a droplet: it falls,
+    // and ends where it falls back in, as spray does.
+    if (s.fling && s.follow && !p.flung) {
+      const ci = Math.floor(p.x), cj = Math.floor(p.y);
+      // Out means no water at all here, not merely too little to draw: a thin, fast stream still carries its foam.
+      if (ci >= 0 && cj >= 0 && ci < W && cj < H && !(density[cj * W + ci] > 0)) { p.vx += fx; p.vy += fy; p.flung = true; p.out = true; }
+    }
+    if (p.flung) { fx = 0; fy = 0; }
+    const fall = gravity && s.inherit && (p.flung || !s.fling) ? gravity : s.gravity;
     p.vx = (p.vx + fall[0]) * (1 - s.drag); p.vy = (p.vy + fall[1]) * (1 - s.drag);
     p.px = p.x; p.py = p.y; p.x += fx + p.vx; p.y += fy + p.vy;
     const i = Math.floor(p.x), j = Math.floor(p.y), inside = i >= 0 && j >= 0 && i < W && j < H, wet = liquid && inside && density[j * W + i] >= LEVEL;
@@ -1828,7 +1967,12 @@ function renderFields(effect, base, width, height, drawn = null) {
   if (effect.cleanup.strays || effect.cleanup.corners) {
     // An obstacle is neither fluid nor air: a corner pixel tucked against one is not a step in the fluid's edge, so
     // cleanup never opens a hole between the fluid and a wall.
-    for (const change of cleanupIds(chars, width, height, { ...effect.cleanup, allowed: c => !solid[c], walls: c => solid[c] })) chars[change.index] = change.id;
+    for (const change of cleanupIds(chars, width, height, { ...effect.cleanup, allowed: c => !solid[c], walls: c => solid[c] })) {
+      // A liquid's lone pixel is a drop whose particles are there: De-Stray may recolour it but never erase it, so a
+      // small drop doesn't vanish for a frame (a gas's lone speck is noise, and goes).
+      if (effect.liquid && change.kind === 'stray' && !change.id && chars[change.index]) continue;
+      chars[change.index] = change.id;
+    }
   }
   // `drawn`, when given, marks the cells the look layers drew the fluid on (after cleanup, before the outline).
   if (drawn) for (let c = 0; c < N; c++) drawn[c] = chars[c] ? 1 : 0;
@@ -1999,7 +2143,7 @@ const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) :
 // whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
 function sparkFrame(run, here, cycle, spawning) {
   const { effect, state, base, sparks, totals } = run;
-  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.schedule ? effect.schedule[cycle].gravity : null);
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null);
   let full = null;
   if (spawning) {
     effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
