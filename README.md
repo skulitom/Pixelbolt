@@ -16,6 +16,8 @@ npx -y pixelbolt@latest skill install
 
 [Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground.
 
+[Neon Voyage](https://skulitom.github.io/NeonRocketGame/): a free browser game made with Pixelbolt. Every sprite, effect and letter is a [recipe](https://github.com/skulitom/NeonRocketGame/tree/main/art), and the rocket's exhaust is a live fluid simulation that bends as you steer.
+
 English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README.zh-CN.md) · [日本語](https://github.com/skulitom/Pixelbolt/blob/main/README.ja.md)
 
 [![Tests](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml/badge.svg)](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml)
