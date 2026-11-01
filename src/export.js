@@ -173,10 +173,20 @@ function timingText(project) {
   });
   return lines.length ? `\nTiming:\n${lines.join('\n')}\n` : '';
 }
-// A tile set whose recipe names no animations, as createBundle finds it (a Godot TileSet and no sheet.trim): its one
-// animation, the implicit flipbook of every tile, is no animation, so it has no SpriteFrames, CSS or timing.
-const stillTileSet = (spec, project) => spec.animations === undefined && !project.sheet.trim
-  && (new Set(autotileFrames(spec).map(tile => tile.mask)).size >= 2 || project.frames.some(frame => frame.tile));
+// A tile set whose recipe names no animations, as createBundle finds it (it gets a Godot TileSet: tiles, no sheet.trim
+// and no terrain that mixes mask modes): its one animation, the implicit flipbook of every tile, is no animation, so it
+// has no SpriteFrames, CSS or timing.
+function stillTileSet(spec, project) {
+  if (spec.animations !== undefined || project.sheet.trim) return false;
+  const tiles = autotileFrames(spec), modes = new Map();
+  if (new Set(tiles.map(tile => tile.mask)).size < 2 && !project.frames.some(frame => frame.tile)) return false;
+  for (const tile of tiles) {
+    const terrain = tile.terrain ?? project.name;
+    if ((modes.get(terrain) ?? tile.mode) !== tile.mode) return false;
+    modes.set(terrain, tile.mode);
+  }
+  return true;
+}
 // A reply's `animationFps`: the frame rate of each animation whose frames all last the same (animationFps), by name,
 // for the first 16 such animations (README.txt times every animation of two or more frames); no field when none has
 // one, or for a still tile set. `spec` is the recipe the project was rendered from.

@@ -40,6 +40,13 @@ test('a slow animation keeps three significant figures, and a still tile set has
   assert.equal(meadow.animations, undefined);
   assert.deepEqual(withRates(renderProject(meadow), meadow), {});
   assert.doesNotMatch((await createBundle(meadow)).files.get('README.txt').toString(), /Timing|fps/);
+  // One terrain mixing mask modes gets no Godot TileSet, so its frames export as an animation, and are timed as one.
+  const mixedModes = structuredClone(meadow), tile = mixedModes.frames.find(frame => frame.ops?.some(op => op.op === 'autotile'));
+  for (const op of tile.ops) if (op.op === 'autotile') op.mode = op.mode === 'cardinal' ? 'blob' : 'cardinal';
+  const broken = await createBundle(mixedModes);
+  assert.ok(broken.files.has('meadow.tres') && !broken.files.has('meadow.tileset.tres'), 'the bundle is not a still tile set');
+  assert.deepEqual(withRates(renderProject(mixedModes), mixedModes), { animationFps: { default: 10 } });
+  assert.match(broken.files.get('README.txt').toString(), /\nTiming:\ndefault: \d+ frames of 100 ms \(10 fps\)\n/);
   // Animated tiles keep theirs.
   const surf = compileAutotile(GODOT_TILE_SOURCES[2]).recipe, readme = (await createBundle(surf)).files.get('README.txt').toString();
   assert.match(readme, /\nTiming:\nsurf-\d+: 3 frames of 90 to 250 ms, 460 ms in all\n/);
