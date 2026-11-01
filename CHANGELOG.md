@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Example setup: dam-break and roof-snow
+
+- Liquid `keys` can change `drag`. Drag slows all motion alike and lets water level as it calms, so it ends a one-shot at rest where thickening (a `viscosity` key) holds whatever shape the liquid has.
+- The dam-break example's gate lifts off the top over six frames from frame 4, so the water bursts out under it, instead of standing for fourteen frames and vanishing in one. Its slosh (about ninety frames to swing back in a tank this long and shallow) was stopped by thickening the water over frames 45-55, which froze it about seven rows higher at the far wall for the last twenty frames; drag now comes in over frames 16-24, while the wave crosses the tank, so the wave still runs up the far wall and the water settles within about a row of level by frame 50.
+- The roof-snow example's snow starts lying on the roof, seven rows deep, and slides off from the first frame, instead of starting as a block in the air that drops onto the roof. The key that firms it moves to frame 28 to fit.
+- honey-drop is unchanged: with the cleaner liquid edges its landed drop already flattens into the pool within a few frames.
+- The dam-break and roof-snow golden hashes and GIFs are updated.
+
 ### Drops and spray
 
 - A liquid's spray (whitewater, and emitter sparks with `follow: 0`) still in the air when its `life` runs out flies on, for up to its life again, until it falls back in, hits an obstacle or leaves the canvas, as the docs say spray ends. Before, a droplet thrown high simply vanished in mid-air: 7 of the splash example's 23 droplets did, and 10 of dam-break's 50. A loop simulates that much longer past its recorded cycle, so the droplets still wrap round to its first frames.

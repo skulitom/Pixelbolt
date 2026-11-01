@@ -29,8 +29,8 @@ const GOLDEN = {
   potion: 'f3fd74ffac7e811f40d72a9911ef227c37fb23e8fcb66fff035343a6cd094e13',
   honey: 'da303b6a9dff25af000c7f1e78560c244141d378a849b62ca7dda584d8565f19',
   slime: '2918ba24014dc39991528890620881a36ff71da3eb76e86307ea1856c39d1def',
-  'roof-snow': '723839a174c4c78c3292a9ee484a2d4371e1dd373f671504e277c9b5eef080ff',
-  'dam-break': '7e2c845d78054793605fb91979049bf7f8da33e1241d63fbe8e7a5e686252253',
+  'roof-snow': 'e848d67df62f7ad7951b26ac6297af8f32343bf688496d109ea4b114805486de',
+  'dam-break': 'f1652ff5e69451024d7a94cd3f95fef93e817995d6c7269f29fb781a02359eb2',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
   'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
   'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63'
@@ -57,7 +57,8 @@ test('every fluid example compiles to its golden recipe, using only its palette 
     assert.equal(sha(recipe), GOLDEN[name], `${name} compiled differently; if the change is intended, update GOLDEN and rebuild the GIFs`);
     const keys = new Set(Object.keys(source.palette)), colours = new Set(Object.values(source.palette).map(hex => hex.toLowerCase()));
     for (const frame of recipe.frames) for (const op of frame.ops ?? []) {
-      assert.ok(['grid', 'stamp'].includes(op.op), `${name} ${frame.name}: ${op.op}`);
+      // An obstacle partly off the canvas (dam-break's plank as it lifts away) is drawn as a copy of its visible part.
+      assert.ok(['grid', 'stamp', 'copy'].includes(op.op), `${name} ${frame.name}: ${op.op}`);
       if (op.op === 'grid') for (const row of op.rows) for (const char of row) assert.ok(char === '.' || keys.has(char), `${name} ${frame.name} draws ${char}`);
     }
     // No colour outside the palette, by construction: every opaque pixel is a palette colour.
@@ -527,6 +528,13 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
   // A key at frame 0 is the same as the setting itself, spray that falls by the effect's gravity included.
   const sideways = extra => compileFluid(goo({ frames: 24, walls: FLUID_WALLS, whitewater: [{ impact: 0.5, chance: 0.5, colors: ['w'], life: 10 }], ...extra }, [{ at: [24, 8], radius: 4, velocity: [0, 3] }])).recipe;
   assert.deepEqual(sideways({ gravity: [0, 0.3], keys: [{ frame: 0, gravity: [0.3, 0.1] }] }), sideways({ gravity: [0.3, 0.1] }));
+  assert.deepEqual(sideways({ keys: [{ frame: 0, drag: 0.1 }] }), sideways({ drag: 0.1 }));
+  // Drag keyed in calms a slosh from its frame on, and changes nothing before it.
+  const slosh = keys => compileFluid(goo({ frames: 40, walls: FLUID_WALLS, ...(keys && { keys }) }, [{ x: 0, y: 12, w: 14, h: 20 }])).recipe;
+  const [free, calmed] = [slosh(null), slosh([{ frame: 12, drag: 0.2, over: 4 }])];
+  assert.deepEqual(calmed.frames.slice(0, 12), free.frames.slice(0, 12), 'nothing changes before the key');
+  const moving = recipe => recipe.frames.slice(30).reduce((sum, frame, i) => { const a = new Set(drawn(recipe, 30 + i).map(([x, y]) => y * 48 + x)), b = new Set(drawn(recipe, 29 + i).map(([x, y]) => y * 48 + x)); return sum + [...a].filter(c => !b.has(c)).length + [...b].filter(c => !a.has(c)).length; }, 0);
+  assert.ok(moving(calmed) < moving(free) / 2, `pixels changing over frames 30-39: ${moving(calmed)} with drag, ${moving(free)} without`);
   // A thick liquid may get its viscosity from a key alone, and slip with it; a live runner follows the keys.
   const source = goo({ frames: 30, slip: true, keys: [{ frame: 10, viscosity: 16 }, { frame: 20, gravity: [0.3, 0] }] }, [{ x: 18, y: 14, w: 12, h: 12 }]);
   const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
@@ -761,7 +769,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.keys = [{ frame: 2, yield: 1 }]; }, 'fluid.effects.plume.keys', /applies to liquids/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 6, yield: 1 }] }); }, 'fluid.effects.plume.keys[0].frame', /0 to 5/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3, yield: 1 }, { frame: 2, yield: 0 }] }); }, 'fluid.effects.plume.keys[1].frame', /frame order/);
-  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
+  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity, drag/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /moves the obstacle/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 3, x: 2 }, { frame: 1, x: 4 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[1].frame', /frame order/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2, x: 17 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0].x', /from -4 to 16/);

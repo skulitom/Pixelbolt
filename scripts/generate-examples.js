@@ -463,24 +463,28 @@ const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8b
 // instead of catching on them; a key firms the snow once it has landed, so the drift stays put rather than skidding on.
 const roofSlab = shapeRows(22, 24, (x, y) => (y === x ? 't' : y === x + 1 ? 'r' : y === x + 2 || (y > x + 2 && x < 2) ? 'R' : null));
 const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 12 && y >= 10 && y <= 14 ? (x === 10 || y === 12 ? 'M' : 'y') : y % 4 === 0 ? 'M' : 'm'));
+// The snow starts lying on the roof: one-row strips over its top pixels (y = x + 4), seven rows deep from column 8 to 20.
+const roofSnowFill = Array.from({ length: 19 }, (_, i) => i + 5).flatMap(y => { const x0 = Math.max(y - 3, 8), x1 = Math.min(y + 3, 20); return x1 >= x0 ? [{ x: x0, y, w: x1 - x0 + 1, h: 1 }] : []; });
 const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
   kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
-  keys: [{ frame: 26, yield: 4, over: 4 }],
+  keys: [{ frame: 28, yield: 4, over: 4 }],
   // The house is drawn in front of the snow's outline, so the outline stops at the wall instead of covering its edge.
   obstacles: [{ symbol: 'wall', x: 2, y: 18 }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
-  fill: [{ x: 6, y: 2, w: 12, h: 7 }], emitters: [],
+  fill: roofSnowFill, emitters: [],
   // White snow with a two-step blue shadow away from the light, outlined.
   look: [{ field: 'density', colors: ['w'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['s', 'S'], thresholds: [0.4, 0.8], dither: 0 }],
   light: [-1, -1], outline: 'o', cleanup: { strays: true, corners: true }
 }, { slab: roofSlab, wall: roofWall, ground: shapeRows(56, 4, (x, y) => (y === 0 ? 'g' : 'G')) });
-// A plank dam holds back a tank of water until frame 14, when an obstacle key takes it away: the water floods out as a
-// wave, rolls over a rock and splashes off the far wall, throwing whitewater where it lands. It runs on until the
-// water has settled, so the one-shot ends at rest.
+// A plank dam holds back a tank of water until frame 4, when an obstacle key lifts it off the top over six frames: the
+// water bursts out under it and floods out as a wave, rolls over a rock and splashes off the far wall, throwing
+// whitewater where it lands. It runs on until the water has settled, so the one-shot ends at rest.
 const damBreak = fluidSource('dam-break', 64, 36, { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff', p: '#8a5a36', P: '#5a3825', n: '#c79a5b', g: '#4a4a5e', G: '#33334a' }, {
   kind: 'liquid', frames: 70, duration: 60, seed: 5, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], apic: true,
-  // Water sloshes on long after the wave breaks, so it thickens over frames 45-55 and the one-shot ends at rest.
-  keys: [{ frame: 45, viscosity: 4, over: 10 }],
-  obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 14, show: false }] }],
+  // A slosh this long and shallow takes about ninety frames to swing back, so drag comes in while the wave crosses the
+  // tank: it still climbs the far wall, but loses enough to settle nearly level by frame 50. Thickening it instead froze
+  // the water tilted.
+  keys: [{ frame: 16, drag: 0.07, over: 8 }],
+  obstacles: [{ symbol: 'basin', x: 0, y: 30 }, { symbol: 'rock', x: 40, y: 25 }, { symbol: 'plank', x: 20, y: 8, keys: [{ frame: 4, y: -22, over: 6 }] }],
   fill: [{ x: 0, y: 10, w: 20, h: 20 }], emitters: [],
   whitewater: [{ impact: 1.2, chance: 0.35, throw: 0.6, spread: 30, colors: ['w', 'c'], life: [6, 12] }],
   look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, 5, 9], dither: 0 }], cleanup: { strays: true }

@@ -281,12 +281,12 @@ function buildLayout(obstacles, width, height, places) {
   return { key: layoutKey(places), places, solid, front, smooth, owner };
 }
 
-// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion or gravity, moving
+// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag, moving
 // there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and follows
 // the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
-const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity'];
+const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity', 'drag'];
 function readKeys(value, path, frames, base) {
-  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity }');
+  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity, drag }');
   let last = -1;
   const keys = value.map((key, i) => {
     const kp = `${path}[${i}]`;
@@ -298,7 +298,8 @@ function readKeys(value, path, frames, base) {
     return {
       frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256),
       ...(key.yield !== undefined && { yield: number(key.yield, `${kp}.yield`, 0, 16) }), ...(key.viscosity !== undefined && { viscosity: number(key.viscosity, `${kp}.viscosity`, 0, MAX_VISCOSITY) }),
-      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) })
+      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) }),
+      ...(key.drag !== undefined && { drag: number(key.drag, `${kp}.drag`, 0, 1) })
     };
   });
   const blend = (from, to, t) => (Array.isArray(from) ? [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t] : from + (to - from) * t);
@@ -386,7 +387,8 @@ function readEffect(effect, path, source) {
   const look = effect.look.map((layer, i) => readLook(layer, `${path}.look[${i}]`, context));
   const gravity = effect.gravity === undefined ? [0, 0.3] : pair(effect.gravity, `${path}.gravity`, -2, 2);
   const adhesion = liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0;
-  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity });
+  const drag = number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1);
+  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity, drag });
   const most = { yield: yieldStress, viscosity, adhesion };
   if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
   if (effect.slip !== undefined && !most.viscosity && !most.yield) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
@@ -414,7 +416,7 @@ function readEffect(effect, path, source) {
     substeps: integer(effect.substeps ?? 2, `${path}.substeps`, 1, 16), iterations: integer(effect.iterations ?? (liquid ? 40 : 30), `${path}.iterations`, 1, 200),
     buoyancy: number(effect.buoyancy ?? 0.15, `${path}.buoyancy`, -2, 2), weight: number(effect.weight ?? 0, `${path}.weight`, -2, 2),
     vorticity: number(effect.vorticity ?? 0.25, `${path}.vorticity`, 0, 2), dissipation: number(effect.dissipation ?? 0.03, `${path}.dissipation`, 0, 1),
-    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag: number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1),
+    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag,
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
