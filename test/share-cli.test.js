@@ -7,7 +7,7 @@ import { PassThrough } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createBundle, formatJSON, embedBundleRecipe } from '../src/export.js';
+import { createBundle, formatJSON, embedBundleRecipe, withRates } from '../src/export.js';
 import { createSequence } from '../src/sequence.js';
 import { renderProject } from '../src/core.js';
 import { createSceneBundle } from '../src/scene-export.js';
@@ -35,7 +35,7 @@ function cli(args, { input, cwd = root, status = 0 } = {}) {
   assert.equal(status ? result.stdout : result.stderr, '');
   return result;
 }
-const summary = project => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
+const summary = (project, recipe) => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project, recipe), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }) });
 function chunks(png) {
   const found = [];
   for (let at = 8; at < png.length;) {
@@ -97,7 +97,7 @@ test('CLI render embeds source in every PNG only on request, preserving every ot
     const input = source === '-' ? JSON.stringify(recipe) : undefined;
     const old = cli(['render', source, '--out', plain], { input });
     // The folder once, and its files relative to it without each frame, which the summary already names.
-    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project), directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), check: checkDelivery(bundle.project, { recipe }) }) + '\n');
+    assert.equal(old.stdout, JSON.stringify({ ok: true, ...summary(bundle.project, recipe), directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), check: checkDelivery(bundle.project, { recipe }) }) + '\n');
     await checkBundle(plain, bundle);
     const carried = cli(['render', source, '--out', embedded, '--embed-recipe'], { input });
     assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);
