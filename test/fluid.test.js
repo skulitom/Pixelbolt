@@ -33,7 +33,8 @@ const GOLDEN = {
   'dam-break': '3e8958e3c2833e522717a72843feb4564b9162e3d2cd9fbe049468d22c4bdb9e',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
   'slime-burst': '70d4d5860e9cd806e1cdf396c8cc2ca518b39f08a0b80dee473048cf3bf1e5bb',
-  'honey-drop': '8b588089a4bc6d37405252c63b4d0b009806c95ad016506c675ecfecb116e010'
+  'honey-drop': '8b588089a4bc6d37405252c63b4d0b009806c95ad016506c675ecfecb116e010',
+  aquarium: '3a3d53a17ff1bdfd638709a3a651f466fc2c23d17001ec79cb6d8d88dc2712d6'
 };
 const examples = new Map();
 const example = async name => {
@@ -226,6 +227,90 @@ test('whitewater throws spray where water lands and sheds drops off a fast strea
   const bad = (effect, where, message) => assert.throws(() => compileFluid({ ...gas(null), effects: { pool: effect } }), error => error.path === where && message.test(error.message));
   bad({ frames: 2, emitters: [{ at: [8, 8], rate: 1, density: 1 }], whitewater: [], look: body }, 'fluid.effects.pool.whitewater', /applies to liquids/);
   bad({ kind: 'liquid', frames: 2, emitters: [], fill: [{ x: 0, y: 8, w: 16, h: 8 }], whitewater: [{ impact: 1, speed: 2, colors: ['w'] }], look: body }, 'fluid.effects.pool.whitewater[0]', /exactly one of impact/);
+});
+
+// A pool 16 wide filling rows 4–23 of a 16 × 24 canvas, drawn in s, so every w pixel is a bubble.
+const bubblePool = (effect, extra = {}) => compileFluid({ ...gas(null), height: 24, ...extra, effects: { pool: { kind: 'liquid', frames: 40, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 4, w: 16, h: 20 }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }], ...effect } } });
+const whitePixels = recipe => recipe.frames.map(frame => (frame.ops ?? []).filter(op => op.op === 'grid').flatMap(op => op.rows.flatMap((row, j) => [...row].flatMap((char, i) => (char === 'w' ? [[op.x + i, op.y + j]] : [])))));
+const oneBubble = (sparks, effect = {}, extra = {}) => whitePixels(bubblePool({ emitters: [{ at: [8, 20], radius: 0.5, burst: 1, density: 0, sparks: { count: 1, life: 80, colors: ['w'], rise: 0.5, ...sparks } }], ...effect }, extra).recipe);
+
+test('a bubble rises through still water at its own speed, rides the currents and slides along what stops it', () => {
+  // Through still water it rises half a pixel a frame, straight up, and ends where it reaches the surface.
+  const still = oneBubble({});
+  assert.deepEqual(still.slice(0, 30).map(list => list.length), Array(30).fill(1));
+  still.slice(0, 30).forEach(([[x, y]], f) => { assert.equal(x, 8); assert.equal(y, 20 - Math.floor((f + 1) / 2), `frame ${f}`); });
+  assert.deepEqual(still.slice(-4), [[], [], [], []]);
+  // A current carries it: water steered right carries a bubble that follows the flow, but not one that ignores it.
+  const current = follow => oneBubble({ rise: 0.3, follow }, { emitters: [{ at: [8, 20], radius: 0.5, burst: 1, density: 0, sparks: { count: 1, life: 80, colors: ['w'], rise: 0.3, follow } }, { at: [8, 16], area: [16, 12], rate: 1, density: 0, velocity: [0.5, 0] }] });
+  assert.ok(current(1)[20][0][0] >= 11, JSON.stringify(current(1)[20]));
+  assert.ok(current(0).slice(0, 30).every(([[x]]) => x === 8));
+  // Under a shelf too wide to find a way round it waits, a pixel below it, instead of ending there.
+  const shelf = oneBubble({}, { obstacles: [{ symbol: 'shelf', x: 1, y: 10 }] }, { symbols: { shelf: ['kkkkkkkkkkkkkk'] } });
+  assert.deepEqual(shelf.slice(20).map(list => list.map(p => p.join())), Array(20).fill(['8,11']));
+  // Under a ceiling that climbs to the left, it slides up the slope, past the end and on up to the surface.
+  const slope = oneBubble({}, { obstacles: [{ symbol: 'slope', x: 4, y: 8 }] }, { symbols: { slope: ['kkkkkkkkkk', '..kkkkkkkk', '....kkkkkk', '......kkkk'] } });
+  const path = slope.flat();
+  assert.ok(path.some(([x, y]) => x < 4 && y < 9), JSON.stringify(path));
+  assert.ok(path.every(([x, y]) => !(y >= 8 && y <= 11 && x >= 4 + 2 * (y - 8))), 'never inside the obstacle');
+  assert.deepEqual(slope.slice(-3), [[], [], []]);
+  // A spark without rise still ends where it meets an obstacle.
+  assert.ok(oneBubble({ rise: undefined, gravity: [0, -0.1] }, { obstacles: [{ symbol: 'shelf', x: 1, y: 10 }] }, { symbols: { shelf: ['kkkkkkkkkkkkkk'] } }).slice(25).every(list => !list.length));
+});
+
+test('bubbles waiting under a ceiling merge into larger ones, and a bubble bursts at the surface with pop', () => {
+  // Three bubbles two pixels across collect under the shelf: two merge into one three pixels across (their air, up to
+  // twelve square pixels); the third waits beside it.
+  const merged = whitePixels(bubblePool({ emitters: [{ at: [8, 20], area: [4, 1], burst: 1, density: 0, sparks: { count: 3, life: 80, colors: ['w'], size: 2, rise: 0.5 } }], obstacles: [{ symbol: 'shelf', x: 1, y: 10 }] }, { symbols: { shelf: ['kkkkkkkkkkkkkk'] } }).recipe);
+  const block = merged[39].map(p => p.join());
+  for (let y = 11; y <= 13; y++) for (let x = 6; x <= 8; x++) assert.ok(block.includes(`${x},${y}`), `${x},${y} in ${block}`);
+  assert.ok(merged[39].every(([, y]) => y >= 11 && y <= 13));
+  // With pop, a bubble reaching the surface is drawn as a ring for a frame, then two droplets, then nothing.
+  const popped = oneBubble({ pop: true }), burst = popped.findIndex(list => list.length === 4);
+  assert.ok(burst > 20, JSON.stringify(popped));
+  assert.deepEqual(popped[burst + 1].length, 2);
+  assert.ok(popped.slice(burst + 2).every(list => !list.length));
+});
+
+test('a plunging stream drives bubbles into the pool it lands in, never into the stream, and still water makes none', () => {
+  // A jet pours into a pool from the upper left and lands in its middle; a drain keeps the level. Whitewater bubbles
+  // start only in the pool's water, two pixels from any air, never in the stream falling through rows 3 to 11.
+  const plunge = (emitters, whitewater) => bubblePool({ frames: 30, seed: 2, substeps: 3, fill: [{ x: 0, y: 14, w: 24, h: 10 }], emitters, whitewater }, { width: 24 });
+  const layer = { speed: 1.5, chance: 0.05, life: [20, 30], colors: ['w'], rise: 0.4 };
+  const { recipe, metadata } = plunge([{ at: [2, 3], area: [2, 2], rate: 1, velocity: [1.5, 0] }, { at: [12, 22], area: [24, 2], rate: 1, density: -0.06 }], [layer]);
+  assert.ok(metadata.effects.pool.sparks.spawned >= 10, JSON.stringify(metadata.effects.pool.sparks));
+  const white = whitePixels(recipe).flat();
+  assert.ok(white.length > 0 && white.every(([, y]) => y >= 12), JSON.stringify(white.filter(([, y]) => y < 12)));
+  // Without the jet the pool lies still and makes no bubbles.
+  assert.equal(plunge([], [layer]).metadata.effects.pool.sparks.spawned, 0);
+});
+
+test('bubbles with lift push the water up over a column of them', () => {
+  // A bubble a frame rises from the middle of a still tank. Each with lift hands its buoyancy to the water around it, so
+  // the surface over the column bulges up several pixels; without lift it stays flat.
+  const bulge = lift => {
+    const { recipe } = compileFluid({ ...gas(null), width: 32, height: 24, effects: { tank: { kind: 'liquid', frames: 60, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 8, w: 32, h: 16 }],
+      emitters: [{ at: [16, 22], area: [2, 1], rate: 1, density: 0, sparks: { count: 1, life: 60, colors: ['w'], rise: 0.5, ...(lift && { lift }) } }], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+    let sum = 0;
+    for (const frame of recipe.frames.slice(30)) {
+      const grid = frame.ops.find(op => op.op === 'grid'), top = columns => grid.y + grid.rows.findIndex(row => columns.some(x => row[x - grid.x] === 's'));
+      sum += (top([0, 1, 2, 3]) + top([28, 29, 30, 31])) / 2 - top([14, 15, 16, 17]);
+    }
+    return sum / 30;
+  };
+  assert.equal(bulge(0), 0);
+  assert.ok(bulge(1) >= 2, `bulge ${bulge(1)}`);
+});
+
+test('bubble settings apply to bubbles in liquids, with paths an agent can act on', () => {
+  const fails = (effect, where, message) => assert.throws(() => compileFluid({ ...gas(null), effects: { pool: { frames: 2, look: smoke, ...effect } } }), error => error instanceof PixelError && error.path === where && message.test(error.message), where);
+  const water = { kind: 'liquid', fill: [{ x: 0, y: 8, w: 16, h: 8 }] }, sparks = extra => [{ at: [8, 12], rate: 1, density: 0, sparks: { count: 1, colors: ['w'], ...extra } }];
+  fails({ emitters: sparks({ rise: 0.5 }) }, 'fluid.effects.pool.emitters[0].sparks.rise', /applies to liquids/);
+  fails({ ...water, emitters: sparks({ wobble: 0.5 }) }, 'fluid.effects.pool.emitters[0].sparks.wobble', /set rise/);
+  fails({ ...water, emitters: sparks({ lift: 0.5 }) }, 'fluid.effects.pool.emitters[0].sparks.lift', /set rise/);
+  fails({ ...water, emitters: sparks({ rise: 5 }) }, 'fluid.effects.pool.emitters[0].sparks.rise', /0 to 4/);
+  fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], pop: true }] }, 'fluid.effects.pool.whitewater[0].pop', /set rise/);
+  fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], rise: 0.5, throw: 2 }] }, 'fluid.effects.pool.whitewater[0].throw', /bubbles start at rest/);
+  fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], rise: 0.5, gravity: [0, -1] }] }, 'fluid.effects.pool.whitewater[0].gravity', /bubbles start at rest/);
 });
 
 test('emitters can fall off toward their rim, orbit on an ellipse and lay a smooth trail', () => {

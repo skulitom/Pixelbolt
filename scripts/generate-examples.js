@@ -529,7 +529,34 @@ const honeyDrop = fluidSource('honey-drop', 40, 48, { H: '#fff3b0', y: '#f7c948'
   look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 }],
   cleanup: { strays: true }
 }, { spoon, bowl });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop };
+// An aquarium whose bubbles behave like air. An air stone sends up a column of bubbles that rise at their own speed and
+// sway, and lift the water over them into a low dome. A second stone, under a rock ledge, sends bubbles up against the
+// ledge's underside: they run up it to its lip and rise from there. The filter's stream plunges into the tank and drives
+// bubbles into the water where it lands (whitewater with rise), which the flow carries down before they rise and end at
+// the surface. An intake under the ledge takes back what the filter pours in.
+const dune = '33333333332222333333332221110000111122222221111111111111', sway = '22333322211112';
+const tankSand = shapeRows(56, 7, (x, y) => (y >= +dune[x] ? (y === +dune[x] ? 's' : (x * 3 + y * 5) % 11 === 0 ? 'S' : 'd') : null));
+const tankLedge = shapeRows(18, 11, (x, y) => {
+  const under = 3 + Math.floor(x / 3), top = x < 3 ? 3 - x : x > 15 ? 0 : 1;
+  if (y < top || y > Math.min(10, under)) return null;
+  return y === top ? 'l' : y === under ? 'R' : (x * 7 + y * 3) % 9 === 0 ? 'R' : 'r';
+});
+const aquarium = fluidSource('aquarium', 56, 48, { ...water, s: '#e8c98a', d: '#c9a464', S: '#9c7a45', l: '#9e97ad', r: '#6b6478', R: '#45405a', g: '#8a8f99', G: '#5e6270', h: '#3f5f8f', p: '#9aa4b0', k: '#3b4150', e: '#4fa65a', E: '#2f6e3d' }, {
+  kind: 'liquid', frames: 48, duration: 70, loop: true, warmup: 2, seed: 4, walls: ['left', 'right', 'bottom'], flip: 0.6, drag: 0.04,
+  obstacles: [{ symbol: 'hose', x: 4, y: 7, solid: false }, { symbol: 'sand', x: 0, y: 41 }, { symbol: 'ledge', x: 38, y: 24 }, { symbol: 'stone', x: 5, y: 40 }, { symbol: 'nook', x: 52, y: 40 },
+    { symbol: 'spout', x: 36, y: 3 }, { symbol: 'weed', x: 13, y: 30, solid: false }, { symbol: 'weed', x: 19, y: 33, solid: false }],
+  fill: [{ x: 0, y: 18, w: 56, h: 30 }],
+  emitters: [{ name: 'filter', at: [35, 5], area: [2, 2], rate: 1, velocity: [-0.9, 0.4] }, { name: 'intake', at: [46, 39], area: [8, 3], rate: 1, density: -0.12 },
+    { name: 'air-stone', at: [7, 39], radius: 1, rate: 1, density: 0, sparks: { count: 0.6, life: [50, 60], colors: ['w'], rise: 0.55, wobble: 0.5, lift: 1, pop: true } },
+    { name: 'under-ledge', at: [54, 39], radius: 1, rate: 1, density: 0, sparks: { count: 0.3, life: [60, 80], colors: ['w'], rise: 0.5, wobble: 0.3, pop: true } }],
+  whitewater: [{ speed: 1.2, chance: 0.03, life: [24, 48], colors: ['w', 'c'], rise: 0.45, wobble: 0.4 }],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['c', 'b', 'B'], thresholds: [1, 2, 14], dither: 0 }], cleanup: { strays: true }
+}, {
+  sand: tankSand, ledge: tankLedge, stone: ['.gg.', 'gGGg'], nook: ['.ggg', 'gGGG'], hose: shapeRows(1, 34, () => 'h'),
+  spout: shapeRows(20, 4, (x, y) => (y === 0 || y === 3 || (x === 0 && y === 1) ? 'k' : x === 0 ? null : 'p')),
+  weed: shapeRows(5, 14, (x, y) => (x === +sway[y] ? (y % 3 === 0 ? 'E' : 'e') : x === +sway[y] + 1 && y % 4 === 1 ? 'e' : null))
+});
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

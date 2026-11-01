@@ -27,7 +27,7 @@ const PER_CELL = 4, LEVEL = 0.5;
 // How far along a row the depth bands look for a shallower surface (see renderFields).
 const DEPTH_REACH = 3;
 // Salts keep each random draw independent, so changing one setting does not reshuffle the others.
-const SALT = { flicker: 1, noiseX: 2, noiseY: 3, spawn: 4, jitterX: 5, jitterY: 6, drain: 7, sparks: 8, sparkX: 9, sparkY: 10, angle: 11, speed: 12, life: 13 };
+const SALT = { flicker: 1, noiseX: 2, noiseY: 3, spawn: 4, jitterX: 5, jitterY: 6, drain: 7, sparks: 8, sparkX: 9, sparkY: 10, angle: 11, speed: 12, life: 13, wobble: 14 };
 // Whitewater layers draw from their own streams, keyed apart from the emitters (which are numbered from 0).
 const WHITEWATER = 1000;
 // Gas advection schemes and the thickest viscosity a source may ask for, in square pixels per frame.
@@ -94,37 +94,55 @@ function readCycle(value, path, frames, loop, orbit) {
 
 function readSparks(value, path, context, burst) {
   const { palette, liquid } = context;
-  fields(value, ['count', 'life', 'colors', 'size', 'trail', 'angle', 'speed', 'gravity', 'drag', 'follow', 'pop'], path);
+  fields(value, ['count', 'life', 'colors', 'size', 'trail', 'angle', 'speed', 'gravity', 'drag', 'follow', 'pop', 'rise', 'wobble', 'lift'], path);
   if (!Array.isArray(value.colors) || !value.colors.length || value.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, spread over each spark's life`);
   if (value.pop !== undefined && !liquid) fail(`${path}.pop`, 'pop bursts bubbles that reach the surface; it applies to liquids');
+  if (value.rise !== undefined && !liquid) fail(`${path}.rise`, 'rise makes the spark a bubble that rises through a liquid; it applies to liquids');
+  if (value.wobble !== undefined && value.rise === undefined) fail(`${path}.wobble`, 'wobble sways a bubble from side to side as it rises; set rise to make the spark a bubble');
+  if (value.lift !== undefined && value.rise === undefined) fail(`${path}.lift`, 'lift lets a bubble push the water up around it; set rise to make the spark a bubble');
+  const bubble = readBubble(value, path);
   return {
     count: number(value.count, `${path}.count`, 0.01, burst ? 256 : 16), life: range(value.life ?? [8, 16], `${path}.life`, 1, 256, true),
     colors: value.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette)),
     size: integer(value.size ?? 1, `${path}.size`, 1, 3), trail: value.trail === undefined ? false : boolean(value.trail, `${path}.trail`),
     angle: range(value.angle ?? [0, 360], `${path}.angle`, -3600, 3600), speed: range(value.speed ?? 0, `${path}.speed`, 0, 16),
     gravity: value.gravity === undefined ? [0, 0] : pair(value.gravity, `${path}.gravity`, -2, 2), drag: number(value.drag ?? 0.05, `${path}.drag`, 0, 1),
-    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`),
+    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`), ...bubble,
     // In a liquid, a spark that rides the flow out of the water flies on as a droplet (see moveSparks), falling with the
-    // liquid's gravity unless it has its own.
-    fling: liquid, inherit: liquid && value.gravity === undefined
+    // liquid's gravity unless it has its own. A bubble ends where it leaves the water instead.
+    fling: liquid && bubble.rise === null, inherit: liquid && bubble.rise === null && value.gravity === undefined
+  };
+}
+// A bubble is air in the water (see moveBubble): `rise` is how fast it rises through still water, against the liquid's
+// gravity, `wobble` how far it sways from side to side as it goes, and `lift` the share of its buoyancy it hands to the
+// water around it (see stepLiquid). Sparks and whitewater without `rise` are not bubbles.
+function readBubble(value, path) {
+  return {
+    rise: value.rise === undefined ? null : number(value.rise, `${path}.rise`, 0, 4), wobble: value.wobble === undefined ? 0 : number(value.wobble, `${path}.wobble`, 0, 2),
+    lift: value.lift === undefined ? 0 : number(value.lift, `${path}.lift`, 0, 1)
   };
 }
 
 // Whitewater: spray and foam thrown off a liquid by its own motion. A particle at the surface throws a droplet where its
 // velocity changes sharply within a frame (`impact`: a drop landing, a fall hitting a pool) or where it moves fast
-// (`speed`: a stream shedding drops). Droplets are sparks; with follow 0 they are spray, otherwise foam on the flow.
+// (`speed`: a stream shedding drops). Droplets are sparks; with follow 0 they are spray, otherwise foam on the flow. With
+// `rise` the layer makes bubbles instead, under the surface: air a plunging stream or a landing drop drives into a pool.
 function readWhitewater(layer, path, context, gravity) {
   const { palette } = context;
-  fields(layer, ['impact', 'speed', 'chance', 'throw', 'spread', 'life', 'colors', 'size', 'trail', 'gravity', 'drag', 'follow'], path);
+  fields(layer, ['impact', 'speed', 'chance', 'throw', 'spread', 'life', 'colors', 'size', 'trail', 'gravity', 'drag', 'follow', 'rise', 'wobble', 'lift', 'pop'], path);
   if ((layer.impact === undefined) === (layer.speed === undefined)) fail(path, 'use exactly one of impact (water whose speed changes sharply, such as where a drop lands) or speed (fast water, such as a stream shedding drops)');
   if (!Array.isArray(layer.colors) || !layer.colors.length || layer.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, spread over each droplet's life`);
+  const bubbles = layer.rise !== undefined;
+  for (const key of ['wobble', 'lift', 'pop']) if (layer[key] !== undefined && !bubbles) fail(`${path}.${key}`, `${key} applies to bubbles; set rise to make this layer bubbles under the surface`);
+  // Bubbles start at rest in the water, which carries them; throw, spread and gravity shape spray thrown into the air.
+  for (const key of ['throw', 'spread', 'gravity']) if (layer[key] !== undefined && bubbles) fail(`${path}.${key}`, `${key} shapes spray thrown off the surface; bubbles start at rest under it, ride the flow and rise by rise`);
   return {
     impact: layer.impact === undefined ? null : number(layer.impact, `${path}.impact`, 0.05, 32), speed: layer.speed === undefined ? null : number(layer.speed, `${path}.speed`, 0.05, 32),
     chance: number(layer.chance ?? 0.1, `${path}.chance`, 0.001, 1), throw: number(layer.throw ?? 1, `${path}.throw`, 0, 4), spread: number(layer.spread ?? 20, `${path}.spread`, 0, 180),
     life: range(layer.life ?? [6, 12], `${path}.life`, 1, 256, true), colors: layer.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette)),
     size: integer(layer.size ?? 1, `${path}.size`, 1, 3), trail: layer.trail === undefined ? false : boolean(layer.trail, `${path}.trail`),
-    gravity: layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), inherit: layer.gravity === undefined, drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
-    follow: number(layer.follow ?? 0, `${path}.follow`, 0, 2), pop: false
+    gravity: bubbles ? [0, 0] : layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), inherit: !bubbles && layer.gravity === undefined, drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
+    follow: number(layer.follow ?? (bubbles ? 1 : 0), `${path}.follow`, 0, 2), pop: layer.pop === undefined ? false : boolean(layer.pop, `${path}.pop`), ...readBubble(layer, path)
   };
 }
 
@@ -1718,6 +1736,13 @@ function stepLiquid(state, effect, dt) {
   uOld.set(u); vOld.set(v);
   for (let k = 0; k < u.length; k++) u[k] += dt * effect.gravity[0];
   for (let k = 0; k < v.length; k++) v[k] += dt * effect.gravity[1];
+  // Bubbles with lift hand that share of their buoyancy to the water around them, as if that much of it weighed nothing:
+  // a column of bubbles drives an upwelling.
+  const lifts = state.lifts;
+  if (lifts) for (let b = 0; b < lifts.length; b += 3) {
+    const x = lifts[b], y = lifts[b + 1], a = lifts[b + 2] * dt;
+    splat(u, null, W + 1, H, x, y - 0.5, -a * effect.gravity[0]); splat(v, null, W, H + 1, x - 0.5, y, -a * effect.gravity[1]);
+  }
   if (effect.drag) { const keep = 1 - effect.drag * dt; for (let k = 0; k < u.length; k++) u[k] *= keep; for (let k = 0; k < v.length; k++) v[k] *= keep; }
   if (effect.yield) strainForce(state, effect, dt);
   countCells(state);
@@ -1868,7 +1893,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
     if (e.radius !== null) { const d = e.radius * Math.sqrt(r(SALT.sparkX)), a = 360 * r(SALT.sparkY); x += d * cosDeg(a); y += d * sinDeg(a); }
     else { x += (r(SALT.sparkX) - 0.5) * e.area[0]; y += (r(SALT.sparkY) - 0.5) * e.area[1]; }
     const angle = pick(s.angle, r(SALT.angle)), speed = pick(s.speed, r(SALT.speed));
-    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)) });
+    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)), ...(s.rise !== null && bubbleOf(s, r)) });
     total.alive++; total.spawned++;
   }
   return true;
@@ -1879,10 +1904,15 @@ const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
 function moveSparks(list, g, density, total, liquid, pops, gravity) {
   const { W, H, u, v, pixels: solid } = g;
+  let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
     const p = list[k], s = p.s;
     p.age++;
     let fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
+    if (s.rise !== null) {
+      if (moveBubble(p, g, density, gravity, fx, fy, pops)) waiting ||= p.under; else { list.splice(k, 1); total.alive--; }
+      continue;
+    }
     // A liquid's grid holds no flow out in the air (no air is simulated), so a spark riding it would hang where it left
     // the water. Once out, an emitter's spark keeps the flow's velocity as its own and flies on as a droplet: it falls,
     // and ends where it falls back in, as spray does.
@@ -1908,29 +1938,131 @@ function moveSparks(list, g, density, total, liquid, pops, gravity) {
     if (p.age >= p.life || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
+  if (waiting) mergeBubbles(list, g, total);
+}
+
+// ---- Bubbles ----------------------------------------------------------------------------------------------------------
+// A bubble's state: how much air it holds (in square pixels, so its size is the square root, 1 to 3 pixels across) and
+// where its sway starts.
+function bubbleOf(s, r) {
+  return { vol: s.size * s.size, size: s.size, phase: s.wobble ? 360 * r(SALT.wobble) : 0, under: false };
+}
+// How far along a ceiling a bubble looks for a way up, in pixels, and how many degrees its sway turns each frame (a sway
+// every eight frames).
+const BUBBLE_REACH = 5, SWAY = 45;
+const bubbleSize = vol => Math.min(3, Math.floor(Math.sqrt(vol) + 0.5));
+// Whether a bubble of `size` centred at (x, y) lies in open cells: no obstacle pixel under it, and nothing past a closed edge.
+function bubbleFits(g, x, y, size) {
+  const { W, H, pixels: solid, walls } = g, half = (size - 1) / 2, x0 = Math.floor(x - half), y0 = Math.floor(y - half);
+  for (let j = y0; j < y0 + size; j++) for (let i = x0; i < x0 + size; i++) {
+    if (i < 0 ? walls.left : i >= W ? walls.right : j < 0 ? walls.top : j >= H ? walls.bottom : solid[j * W + i]) return false;
+  }
+  return true;
+}
+// Air in the water. A bubble rises against the liquid's gravity at `rise` pixels per frame relative to the water, so it
+// rises steadily through still water and the currents carry it (`follow`); what is left of its launch speed fades by
+// `drag`, and `wobble` sways it from side to side. It never enters an obstacle or a closed edge: it keeps the part of its
+// move that is free, sliding along whatever stops it, and under a ceiling it slides toward the nearest way up within
+// BUBBLE_REACH pixels (up a slope, out from under a ledge) or waits there, where bubbles that touch merge. It ends where it
+// reaches the air (bursting, with `pop`), at the end of its life, or off the canvas. Returns whether it lives on.
+function moveBubble(p, g, density, gravity, fx, fy, pops) {
+  const s = p.s, { W, H, pixels: solid } = g, x = p.x, y = p.y, ci = Math.floor(x), cj = Math.floor(y);
+  // An obstacle that has moved onto it, or one it was born inside, takes it.
+  if (ci >= 0 && cj >= 0 && ci < W && cj < H && solid[cj * W + ci]) return false;
+  const gx = gravity ? gravity[0] : 0, gy = gravity ? gravity[1] : 0, pull = Math.sqrt(gx * gx + gy * gy), ux = pull ? -gx / pull : 0, uy = pull ? -gy / pull : 0;
+  p.vx = (p.vx + s.gravity[0]) * (1 - s.drag); p.vy = (p.vy + s.gravity[1]) * (1 - s.drag);
+  const sway = s.wobble ? s.wobble * (sinDeg(p.phase + SWAY * p.age) - sinDeg(p.phase + SWAY * (p.age - 1))) : 0;
+  const size = p.size, clear = (x0, y0, x1, y1) => bubbleFits(g, x1, y1, size) && !crossesSolid(solid, W, H, x0, y0, x1, y1);
+  let nx = x + fx + p.vx + s.rise * ux - sway * uy, ny = y + fy + p.vy + s.rise * uy + sway * ux;
+  p.px = x; p.py = y;
+  if (!Number.isFinite(nx + ny)) return false;
+  if (!clear(x, y, nx, ny)) {
+    if (clear(x, y, nx, y)) { ny = y; p.vy = 0; } else if (clear(x, y, x, ny)) { nx = x; p.vx = 0; } else { nx = x; ny = y; p.vx = 0; p.vy = 0; }
+  }
+  // Up is the axis nearest against gravity; across is the other one.
+  const vertical = Math.abs(uy) >= Math.abs(ux), ax = vertical ? 0 : Math.sign(ux), ay = vertical ? Math.sign(uy) : 0, bx = vertical ? 1 : 0, by = vertical ? 0 : 1;
+  p.under = s.rise > 0 && pull > 0 && !bubbleFits(g, nx + ax, ny + ay, size);
+  if (p.under) {
+    // The nearest place along the ceiling, within reach along a free path, where the way up is open: the higher side of a
+    // slope, or the edge of a ledge. Where both sides are as near, the side of its cell the bubble is on.
+    let best = 0;
+    for (let d = 1; d <= BUBBLE_REACH && !best; d++) {
+      const open = side => clear(nx, ny, nx + side * d * bx, ny + side * d * by) && bubbleFits(g, nx + side * d * bx + ax, ny + side * d * by + ay, size);
+      const left = open(-1), right = open(1);
+      if (left && right) best = (vertical ? nx - Math.floor(nx) : ny - Math.floor(ny)) < 0.5 ? -d : d;
+      else if (left) best = -d;
+      else if (right) best = d;
+    }
+    if (best) {
+      const step = Math.min(Math.abs(best), s.rise) * Math.sign(best), tx = nx + step * bx, ty = ny + step * by;
+      if (clear(nx, ny, tx, ty)) { nx = tx; ny = ty; }
+    }
+  }
+  p.x = nx; p.y = ny;
+  const i = Math.floor(nx), j = Math.floor(ny), wet = i >= 0 && j >= 0 && i < W && j < H && density[j * W + i] >= LEVEL;
+  if (!wet) {
+    if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0 });
+    return false;
+  }
+  return p.age < p.life;
+}
+// Bubbles waiting under a ceiling that touch merge into one bubble holding the air of both, as large as that air, where
+// their air was on average. A bubble holds at most twelve square pixels of air (it is drawn 3 pixels across from nine), so
+// a merge past that waits, as does one that would not fit there. The merged bubble lives as long as the longer-lived of
+// the two.
+function mergeBubbles(list, g, total) {
+  const waiting = list.filter(p => p.under);
+  for (let a = 0; a < waiting.length; a++) {
+    const p = waiting[a];
+    if (p.gone) continue;
+    for (let b = a + 1; b < waiting.length; b++) {
+      const q = waiting[b];
+      if (q.gone || q.s !== p.s || p.vol + q.vol > 12) continue;
+      const reach = (p.size + q.size) / 2, dx = q.x - p.x, dy = q.y - p.y;
+      if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+      const vol = p.vol + q.vol, size = bubbleSize(vol), mx = (p.x * p.vol + q.x * q.vol) / vol, my = (p.y * p.vol + q.y * q.vol) / vol;
+      const [x, y] = bubbleFits(g, mx, my, size) ? [mx, my] : bubbleFits(g, p.x, p.y, size) ? [p.x, p.y] : bubbleFits(g, q.x, q.y, size) ? [q.x, q.y] : [null, null];
+      if (x === null) continue;
+      p.vx = (p.vx * p.vol + q.vx * q.vol) / vol; p.vy = (p.vy * p.vol + q.vy * q.vol) / vol;
+      if (q.life - q.age > p.life - p.age) { p.age = q.age; p.life = q.life; }
+      p.x = x; p.y = y; p.vol = vol; p.size = size; q.gone = true;
+    }
+  }
+  for (let k = list.length - 1; k >= 0; k--) if (list[k].gone) { list.splice(k, 1); total.alive--; }
 }
 
 // Whitewater: each particle at the surface (in the air, or in a cell with air beside it) whose velocity changed by at
 // least `impact` this frame throws spray along that change, or one moving at `speed` throws it along its own motion. The
 // direction is tipped away from the water (down the density gradient) and turned by up to `spread` degrees, so spray
 // leaves a landing outward and up and a stream sideways. Each qualifying particle throws with the layer's chance, a
-// seeded draw keyed by the particle, so the same source throws the same droplets. Spray is drawn once it is out.
+// seeded draw keyed by the particle, so the same source throws the same droplets. Spray is drawn once it is out. A bubble
+// layer (`rise`) picks particles in the body of the water instead, two cells from air every way, and leaves a bubble at
+// rest in the water there: air a plunging stream or a landing drop has driven in, which the flow carries and which rises.
 function throwWhitewater(state, effect, density, list, cycle, total) {
   const { W, H, pixels: solid, geo } = state.g, air = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && density[j * W + i] < LEVEL;
   const at = (i, j) => (i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] ? density[j * W + i] : 0);
+  const spray = effect.whitewater.some(w => w.rise === null), bubbles = effect.whitewater.some(w => w.rise !== null);
   for (let k = 0; k < state.n; k++) {
     const x = state.x[k], y = state.y[k], i = Math.floor(x), j = Math.floor(y);
     // Beside a smooth obstacle a particle may sit in the open corner of a step's pixel; spray starts only from open cells.
     if (geo && solid[j * W + i]) continue;
-    if (!air(i, j) && !air(i - 1, j) && !air(i + 1, j) && !air(i, j - 1) && !air(i, j + 1)) continue;
+    const surface = air(i, j) || air(i - 1, j) || air(i + 1, j) || air(i, j - 1) || air(i, j + 1);
+    if (surface ? !spray : !bubbles) continue;
+    // Bubbles start in a body of water, two cells from air every way, not in a stream a few pixels thick.
+    if (!surface && (air(i - 2, j) || air(i + 2, j) || air(i, j - 2) || air(i, j + 2))) continue;
     const vx = state.vx[k], vy = state.vy[k], dx = vx - state.pvx[k], dy = vy - state.pvy[k];
     const nx = at(i - 1, j) - at(i + 1, j), ny = at(i, j - 1) - at(i, j + 1), out = Math.sqrt(nx * nx + ny * ny);
     for (let layer = 0; layer < effect.whitewater.length; layer++) {
       const w = effect.whitewater[layer], [ax, ay] = w.impact !== null ? [dx, dy] : [vx, vy], amount = Math.sqrt(ax * ax + ay * ay);
-      if (amount < (w.impact ?? w.speed)) continue;
+      if ((w.rise !== null) === surface || amount < (w.impact ?? w.speed)) continue;
       const r = salt => random(effect.seed, WHITEWATER + layer, cycle, state.id[k], salt);
       if (r(SALT.spawn) >= w.chance) continue;
       if (total.alive >= LIMITS.sparks) return false;
+      if (w.rise !== null) {
+        list.push({ s: w, x, y, vx: 0, vy: 0, age: 0, life: pickWhole(w.life, r(SALT.life)), ...bubbleOf(w, r) });
+        total.alive++; total.spawned++;
+        continue;
+      }
       let ux = ax / amount + (out ? nx / out : 0), uy = ay / amount + (out ? ny / out : 0);
       const tipped = Math.sqrt(ux * ux + uy * uy);
       if (tipped > 1e-6) { ux /= tipped; uy /= tipped; } else { ux = ax / amount; uy = ay / amount; }
@@ -2177,8 +2309,15 @@ function solveFrame(run, cycle) {
   const { state } = run, effect = run.effect.schedule ? { ...run.effect, ...run.effect.schedule[cycle] } : run.effect, dt = 1 / effect.substeps;
   // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
   if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
+  if (effect.liquid) state.lifts = liftsOf(run.sparks);
   for (let s = 0; s < effect.substeps; s++) effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
   if (effect.liquid) run.maxParticles = Math.max(run.maxParticles, state.n);
+}
+// Where the bubbles with lift are, and how much of their buoyancy each hands on (its share times its air), or null.
+function liftsOf(sparks) {
+  let lifts = null;
+  for (const p of sparks) if (p.s.lift) (lifts ??= []).push(p.x, p.y, p.s.lift * p.vol);
+  return lifts;
 }
 const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) : gasFields(run.state, run.base));
 // Sparks move with this frame's flow; then, while `spawning`, new ones join where their emitters were (`here`) and
@@ -2203,8 +2342,9 @@ function drawSparks(run, put) {
     const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
     p.seen = true;
     if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
-    const head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (s.size - 1) / 2), y0 = Math.floor(p.y - (s.size - 1) / 2);
-    for (let j = 0; j < s.size; j++) for (let i = 0; i < s.size; i++) put(x0 + i, y0 + j, head);
+    // A bubble is as large as the air it holds.
+    const size = p.size ?? s.size, head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (size - 1) / 2), y0 = Math.floor(p.y - (size - 1) / 2);
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) put(x0 + i, y0 + j, head);
   }
   // A popped bubble: the ring around its block, then a droplet off each upper corner.
   const { pops } = run;
