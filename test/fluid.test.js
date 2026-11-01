@@ -34,7 +34,8 @@ const GOLDEN = {
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
   'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
   'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
-  aquarium: '2944337f7829a7ecadafbcb8a67c83bfa4f1bcb734cac3e17593b4be6e28cafb'
+  aquarium: '2944337f7829a7ecadafbcb8a67c83bfa4f1bcb734cac3e17593b4be6e28cafb',
+  glug: '9bab4a31432d8d75c8b70aedaa46cc3f0a20b291dccce6349b7c7a2b90ac7e48'
 };
 const examples = new Map();
 const example = async name => {
@@ -312,6 +313,77 @@ test('bubble settings apply to bubbles in liquids, with paths an agent can act o
   fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], pop: true }] }, 'fluid.effects.pool.whitewater[0].pop', /set rise/);
   fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], rise: 0.5, throw: 2 }] }, 'fluid.effects.pool.whitewater[0].throw', /bubbles start at rest/);
   fails({ ...water, emitters: [], whitewater: [{ impact: 1, colors: ['w'], rise: 0.5, gravity: [0, -1] }] }, 'fluid.effects.pool.whitewater[0].gravity', /bubbles start at rest/);
+});
+
+// The drawn frames as full grids, so pixels can be counted in a box and compared between frames.
+const grids = (recipe, width, height) => recipe.frames.map(frame => {
+  const grid = Array.from({ length: height }, () => Array(width).fill('.'));
+  for (const op of (frame.ops ?? []).filter(o => o.op === 'grid')) op.rows.forEach((row, j) => [...row].forEach((char, i) => { if (char !== '.') grid[op.y + j][op.x + i] = char; }));
+  return grid;
+});
+const inBox = (grid, x0, x1, y0, y1) => { let n = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (grid[y][x] !== '.') n++; return n; };
+const flips = (list, from) => { let n = 0; for (let f = from + 1; f < list.length; f++) list[f].forEach((row, y) => row.forEach((char, x) => { if (char !== list[f - 1][y][x]) n++; })); return n / (list.length - from - 1); };
+// An upturned cup held under water in a tank (its inside, x 12–19 and y 15–20, starts dry), and an upside-down bottle,
+// full but for a sliver of air at the top, that pours out of a neck four pixels wide into the tank below.
+const cupSource = (air, extra = {}) => ({ ...gas(null), width: 32, height: 32, symbols: { cup: ['kkkkkkkkkk', ...Array(6).fill('k........k')] }, effects: { cup: {
+  kind: 'liquid', frames: 120, seed: 2, walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'cup', x: 11, y: 14, draw: 'none' }],
+  fill: [{ x: 0, y: 6, w: 32, h: 8 }, { x: 0, y: 14, w: 11, h: 18 }, { x: 21, y: 14, w: 11, h: 18 }, { x: 11, y: 21, w: 10, h: 11 }], emitters: [], ...(air && { air }), ...extra,
+  look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+const bottleRows = Array.from({ length: 27 }, (_, y) => Array.from({ length: 24 }, (_, x) => {
+  if ((y === 1 && x >= 5 && x <= 18) || (y >= 1 && y <= 20 && (x === 5 || x === 18))) return 'k';
+  if (y >= 21 && y <= 23 && ((x >= 5 && x < y - 14) || (x > 37 - y && x <= 18))) return 'k';
+  return y >= 24 && (x === 9 || x === 14) ? 'k' : '.';
+}).join(''));
+const bottleSource = air => ({ ...gas(null), width: 24, height: 48, symbols: { bottle: bottleRows }, effects: { bottle: {
+  kind: 'liquid', frames: 120, seed: 2, walls: ['left', 'right', 'bottom'], obstacles: [{ symbol: 'bottle', draw: 'none' }],
+  fill: [{ x: 6, y: 4, w: 12, h: 17 }, { x: 7, y: 21, w: 10, h: 1 }, { x: 8, y: 22, w: 8, h: 1 }, { x: 9, y: 23, w: 6, h: 1 }, { x: 10, y: 24, w: 4, h: 3 }], emitters: [], ...(air && { air }),
+  look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+
+test('with air on, an upturned cup keeps most of its air at any stiffness and comes to rest; without, it floods', () => {
+  const run = (air, extra) => grids(compileFluid(cupSource(air, extra)).recipe, 32, 32);
+  // Without air the trapped air has no pressure and the water fills the cup within a few frames.
+  assert.ok(inBox(run(null)[20], 12, 19, 15, 20) >= 44);
+  // Stiffness 40: under about fifteen pixels of water the pocket keeps about three quarters of its 48 pixels (the gas
+  // law says 73%), and the water settles as still as water does without air.
+  const soft = run({ stiffness: 40 });
+  for (let f = 60; f < 120; f++) assert.ok(48 - inBox(soft[f], 12, 19, 15, 20) >= 30, `frame ${f}: ${48 - inBox(soft[f], 12, 19, 15, 20)} dry`);
+  assert.ok(flips(soft, 80) <= 2, `${flips(soft, 80)} pixels change a frame`);
+  // A stiff pocket at one substep a frame is solved with the liquid, so it neither floods nor rings.
+  const stiff = run({ stiffness: 1000 }, { substeps: 1 });
+  for (let f = 40; f < 120; f++) assert.ok(48 - inBox(stiff[f], 12, 19, 15, 20) >= 44, `frame ${f}`);
+  assert.ok(flips(stiff, 80) <= 1.5, `${flips(stiff, 80)} pixels change a frame`);
+});
+
+test('with air on, a sealed bottle glugs as it pours; without, it empties in one go', () => {
+  const water = air => grids(compileFluid(bottleSource(air)).recipe, 24, 48).map(grid => inBox(grid, 6, 17, 2, 26));
+  // Without air the water pours out freely: 240 pixels of it are gone by frame 40.
+  assert.ok(water(null)[40] <= 5);
+  // With air the space it leaves at the top stretches and holds the rest back until air pushes up the neck as a bubble,
+  // and then it pours again: more than half is still in the bottle at frame 40, the level stands still for a while
+  // between pours, and it keeps pouring.
+  const glug = water({ stiffness: 40 });
+  assert.ok(glug[40] >= 120, `${glug[40]} left at frame 40`);
+  let hold = 0;
+  for (let a = 0; a < glug.length; a++) { let b = a; while (b + 1 < glug.length && glug[a] > 30 && Math.abs(glug[b + 1] - glug[a]) <= 3) b++; hold = Math.max(hold, b - a + 1); }
+  assert.ok(hold >= 6, `the longest hold is ${hold} frames`);
+  assert.ok(glug[119] < glug[40] / 2, `${glug[119]} left at the end`);
+});
+
+test('a pocket squeezed too small to show lets its air go, as bubbles when air says how to draw them', () => {
+  // Stiffness 2 cannot hold the cup's pocket under fifteen pixels of water: it shrinks below three cells and floods.
+  const squeezed = bubbles => compileFluid(cupSource({ stiffness: 2, ...(bubbles && { bubbles }) }));
+  const { recipe, metadata } = squeezed({ colors: ['w'], rise: 0.5 });
+  assert.ok(metadata.effects.cup.sparks.spawned >= 1, JSON.stringify(metadata.effects.cup.sparks));
+  assert.ok(inBox(grids(recipe, 32, 32)[119], 12, 19, 15, 20) >= 40);
+  assert.equal(squeezed(null).metadata.effects.cup.sparks.spawned, 0);
+  // Air is a liquid setting, with paths an agent can act on.
+  const fails = (effect, where, message) => assert.throws(() => compileFluid({ ...gas(null), effects: { pool: { frames: 2, look: smoke, ...effect } } }), error => error instanceof PixelError && error.path === where && message.test(error.message), where);
+  const water = { kind: 'liquid', emitters: [], fill: [{ x: 0, y: 8, w: 16, h: 8 }] };
+  fails({ emitters: [{ at: [8, 8], rate: 1, density: 1 }], air: {} }, 'fluid.effects.pool.air', /applies to liquids/);
+  fails({ ...water, air: 40 }, 'fluid.effects.pool.air', /expected \{ stiffness, bubbles \}/);
+  fails({ ...water, air: { stiffness: 1 } }, 'fluid.effects.pool.air.stiffness', /2 to 1000/);
+  fails({ ...water, air: { bubbles: { rise: 0.5 } } }, 'fluid.effects.pool.air.bubbles.colors', /palette keys/);
+  fails({ ...water, air: { bubbles: { colors: ['w'], throw: 1 } } }, 'fluid.effects.pool.air.bubbles.throw', /unknown/);
 });
 
 test('emitters can fall off toward their rim, orbit on an ellipse and lay a smooth trail', () => {

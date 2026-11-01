@@ -338,12 +338,12 @@ function readKeys(value, path, frames, base) {
 
 function readEffect(effect, path, source) {
   const { width, height, palette, symbols } = source;
-  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'light', 'outline', 'cleanup', 'keys'], path);
+  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'air', 'light', 'outline', 'cleanup', 'keys'], path);
   const kind = effect.kind ?? 'gas';
   if (!FLUID_KINDS.includes(kind)) fail(`${path}.kind`, 'expected gas (smoke, fire, steam, magic) or liquid (water, potions)');
   const liquid = kind === 'liquid';
   if (liquid && effect.advection !== undefined) fail(`${path}.advection`, 'advection applies to gases; a liquid\'s particles carry it');
-  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill', 'keys']) {
+  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill', 'keys', 'air']) {
     if (effect[key] !== undefined) fail(`${path}.${key}`, liquid ? `${key} applies to gases; liquids fall by gravity and keep their volume` : `${key} applies to liquids; gases rise by buoyancy`);
   }
   const advection = effect.advection ?? 'smooth';
@@ -439,8 +439,29 @@ function readEffect(effect, path, source) {
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
     tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion, schedule, most,
-    outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0)
+    outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0),
+    air: liquid && effect.air !== undefined ? readAir(effect.air, `${path}.air`, context) : null
   };
+}
+// Air pockets (see sealAir): `stiffness` is the head, in pixels of liquid, that squeezes a pocket to half its size, and
+// `bubbles` how the air of a pocket that shrinks too small to show is drawn as it escapes: bubbles, as a whitewater bubble
+// layer draws them. Without `bubbles` that air leaves unseen.
+function readAir(value, path, context) {
+  if (!isObject(value)) fail(path, 'expected { stiffness, bubbles }: air pockets that keep their air, squeezed to half their size under stiffness pixels of liquid');
+  fields(value, ['stiffness', 'bubbles'], path);
+  let bubbles = null;
+  if (value.bubbles !== undefined) {
+    const bp = `${path}.bubbles`, b = value.bubbles;
+    if (!isObject(b)) fail(bp, 'expected { colors, life, rise, wobble, lift, pop }: how the air of a pocket too small to show rises as bubbles');
+    fields(b, ['colors', 'life', 'rise', 'wobble', 'lift', 'pop'], bp);
+    if (!Array.isArray(b.colors) || !b.colors.length || b.colors.length > LIMITS.colors) fail(`${bp}.colors`, `expected 1–${LIMITS.colors} palette keys, spread over each bubble's life`);
+    bubbles = {
+      colors: b.colors.map((key, i) => paletteKey(key, `${bp}.colors[${i}]`, context.palette)), life: range(b.life ?? [30, 60], `${bp}.life`, 1, 256, true),
+      size: 1, trail: false, gravity: [0, 0], inherit: false, drag: 0.02, follow: 1, pop: b.pop === undefined ? false : boolean(b.pop, `${bp}.pop`),
+      ...readBubble({ ...b, rise: b.rise ?? 0.5 }, bp)
+    };
+  }
+  return { stiffness: number(value.stiffness ?? 40, `${path}.stiffness`, 2, 1000), bubbles };
 }
 
 // Setups that compile but make nothing, or look stuck, said in words: an emitter whose disc or box lies inside
@@ -843,8 +864,17 @@ function projectOpen(g, active, iterations, target) {
 // `iterations` / 3 steps, starting from the previous step's pressure. A smooth obstacle pushes on a liquid but never
 // pulls it, so the liquid can leave it (adhesion holds it on): a cell beside one that the solve leaves pulling is held
 // at zero pressure, as air is, and the solve runs again, up to twice.
+// With air pockets (see sealAir) the air cells of a sealed pocket hold its pressure instead of zero. In the flow's solve
+// each pocket (`g.pockets`) is one more unknown: its pressure P follows the gas law at the volume the solve leaves it,
+// linearised, P = Pn + P'·dt·dV/dt, where dV/dt is the flow out through its faces. With C = −1 / (P'·dt) that is the row
+// (C + Σ w)·P − Σ w·p_L = C·Pn − Σ w·u_out over its faces (open share w, liquid cell L, flow u_out away from it): the
+// pressure Poisson row of one big cell, plus C on its diagonal, so the system stays symmetric and positive definite, and
+// the pocket is as stable as the liquid at any stiffness. (As a pressure fixed from the volume at the start of the step,
+// a stiff pocket overshot and rang.) Its preconditioner is its diagonal. Later solves in the step (a thick liquid's) take
+// the pocket pressures as fixed (`g.airP`), as does a pocket squeezed past the gas law's range.
+const NONE = new Float64Array(0);
 function projectLiquid(g, active, iterations, target) {
-  const { W, H, N, u, v, p, div, geo, uFixed, vFixed } = g, X = W + 1, steps = Math.ceil(iterations / 3);
+  const { W, H, N, u, v, p, div, geo, uFixed, vFixed, airP, pockets } = g, X = W + 1, steps = Math.ceil(iterations / 3), m = pockets ? pockets.Pn.length : 0;
   if (!g.cg) g.cg = { diag: new Float64Array(N), ax: new Float64Array(N), ay: new Float64Array(N), solve: new Uint8Array(N), prec: new Float64Array(N), r: new Float64Array(N), z: new Float64Array(N), s: new Float64Array(N), q: new Float64Array(N) };
   const { diag, ax, ay, solve, prec, r, z, s, q } = g.cg;
   // The open share of each face: pixel faces are open or shut, a smooth obstacle's may be half open.
@@ -853,11 +883,31 @@ function projectLiquid(g, active, iterations, target) {
     const c = j * W + i, l = openU(j * X + i), rr = openU(j * X + i + 1), t = openV(c), b = openV(c + W);
     diag[c] = l + rr + t + b;
     solve[c] = active[c] && diag[c] > 0 ? 1 : 0;
-    if (!solve[c]) { p[c] = 0; div[c] = 0; continue; }
+    if (!solve[c]) { p[c] = airP ? airP[c] : 0; div[c] = 0; continue; }
     if (geo) {
       div[c] = rr * u[j * X + i + 1] - l * u[j * X + i] + b * v[c + W] - t * v[c] - target[c];
       if (g.uWall) div[c] += (1 - rr) * g.uWall[j * X + i + 1] - (1 - l) * g.uWall[j * X + i] + (1 - b) * g.vWall[c + W] - (1 - t) * g.vWall[c];
     } else div[c] = u[j * X + i + 1] - u[j * X + i] + v[c + W] - v[c] - target[c];
+    // A pocket's pressure beside the cell is known, so it moves to the right side.
+    if (airP) div[c] -= (i > 0 && !active[c - 1] ? l * airP[c - 1] : 0) + (i < W - 1 && !active[c + 1] ? rr * airP[c + 1] : 0) + (j > 0 && !active[c - W] ? t * airP[c - W] : 0) + (j < H - 1 && !active[c + W] ? b * airP[c + W] : 0);
+  }
+  // Each pocket's row: its faces to liquid cells (cell, pocket, open share), its diagonal and its right side.
+  const vector = () => (m ? new Float64Array(m) : NONE), faces = [], np = vector(), nd = vector(), nb = vector(), nr = vector(), nz = vector(), ns = vector(), nq = vector();
+  if (m) {
+    const { node, Pn, C } = pockets;
+    for (let n = 0; n < m; n++) { np[n] = Pn[n]; nd[n] = C[n]; nb[n] = C[n] * Pn[n]; }
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const c = j * W + i, n = node[c];
+      if (n < 0) continue;
+      // Each face that leaves the pocket, with the flow out through it (sign) and the cell beyond.
+      for (const [k, sign, d, inside, share, flow, walls] of [[j * X + i, -1, c - 1, i > 0, openU, u, g.uWall], [j * X + i + 1, 1, c + 1, i < W - 1, openU, u, g.uWall], [c, -1, c - W, j > 0, openV, v, g.vWall], [c + W, 1, c + W, j < H - 1, openV, v, g.vWall]]) {
+        const w = share(k);
+        if (walls) nb[n] -= sign * (1 - w) * walls[k];
+        if (!w || !inside || node[d] === n) continue;
+        nb[n] -= sign * w * flow[k];
+        if (active[d]) { nd[n] += w; faces.push(d, n, w); }
+      }
+    }
   }
   const touching = geo ? geo.touching : null;
   for (let pass = 0; pass < (touching ? 3 : 1); pass++) {
@@ -877,7 +927,7 @@ function projectLiquid(g, active, iterations, target) {
       if (e < 0.25 * diag[c]) e = diag[c];
       prec[c] = 1 / Math.sqrt(e);
     }
-    const times = (x, out) => {
+    const times = (x, out, xn, outn) => {
       for (let j = 0, c = 0; j < H; j++) for (let i = 0; i < W; i++, c++) {
         if (!solve[c]) { out[c] = 0; continue; }
         let t = diag[c] * x[c];
@@ -886,6 +936,13 @@ function projectLiquid(g, active, iterations, target) {
         if (i > 0 && ax[c - 1]) t -= ax[c - 1] * x[c - 1];
         if (j > 0 && ay[c - W]) t -= ay[c - W] * x[c - W];
         out[c] = t;
+      }
+      if (!m) return;
+      for (let n = 0; n < m; n++) outn[n] = nd[n] * xn[n];
+      for (let f = 0; f < faces.length; f += 3) {
+        const c = faces[f], n = faces[f + 1], w = faces[f + 2];
+        if (!solve[c]) continue;
+        out[c] -= w * xn[n]; outn[n] -= w * x[c];
       }
     };
     const precondition = (from, out) => {
@@ -904,42 +961,54 @@ function projectLiquid(g, active, iterations, target) {
         out[c] = t * prec[c];
       }
     };
-    // Solves diag·p − Σ coupling·p_neighbour = −div from the pressure already in p.
-    times(p, q);
+    // Solves diag·p − Σ coupling·p_neighbour = −div from the pressure already in p, and each pocket's row (none
+    // without pockets, when every loop over them is empty and the solve is the plain one).
+    times(p, q, np, nq);
     let rz = 0;
     for (let c = 0; c < N; c++) r[c] = solve[c] ? -div[c] - q[c] : 0;
+    for (let n = 0; n < m; n++) nr[n] = nb[n] - nq[n];
     precondition(r, z);
+    for (let n = 0; n < m; n++) nz[n] = nr[n] / nd[n];
     for (let c = 0; c < N; c++) { s[c] = z[c]; rz += r[c] * z[c]; }
+    for (let n = 0; n < m; n++) { ns[n] = nz[n]; rz += nr[n] * nz[n]; }
     for (let it = 0; it < steps && rz > 0; it++) {
-      times(s, q);
+      times(s, q, ns, nq);
       let sq = 0;
       for (let c = 0; c < N; c++) sq += s[c] * q[c];
+      for (let n = 0; n < m; n++) sq += ns[n] * nq[n];
       if (!(sq > 0)) break;
       const alpha = rz / sq;
       for (let c = 0; c < N; c++) if (solve[c]) { p[c] += alpha * s[c]; r[c] -= alpha * q[c]; }
+      for (let n = 0; n < m; n++) { np[n] += alpha * ns[n]; nr[n] -= alpha * nq[n]; }
       precondition(r, z);
+      for (let n = 0; n < m; n++) nz[n] = nr[n] / nd[n];
       let next = 0;
       for (let c = 0; c < N; c++) next += r[c] * z[c];
+      for (let n = 0; n < m; n++) next += nr[n] * nz[n];
       const beta = next / rz;
       rz = next;
       for (let c = 0; c < N; c++) s[c] = z[c] + beta * s[c];
+      for (let n = 0; n < m; n++) ns[n] = nz[n] + beta * ns[n];
     }
     if (!touching) break;
     let pulled = false;
     for (let c = 0; c < N; c++) if (solve[c] && touching[c] && p[c] < 0) { p[c] = 0; solve[c] = 0; pulled = true; }
     if (!pulled) break;
   }
+  // The pockets' cells take the pressure solved for them, which later solves in the step keep.
+  if (m) for (let c = 0; c < N; c++) if (pockets.node[c] >= 0) { p[c] = np[pockets.node[c]]; airP[c] = p[c]; }
+  // Every cell off the solve holds its pressure in p (zero, or a pocket's), so with pockets a face reads both sides.
   for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) {
     const k = j * X + i;
     if (uFixed[k]) continue;
     const l = i > 0 && active[j * W + i - 1], rr = i < W && active[j * W + i];
-    if (l || rr) u[k] -= (rr ? p[j * W + i] : 0) - (l ? p[j * W + i - 1] : 0);
+    if (airP) { if (l || rr) u[k] -= (i < W ? p[j * W + i] : 0) - (i > 0 ? p[j * W + i - 1] : 0); } else if (l || rr) u[k] -= (rr ? p[j * W + i] : 0) - (l ? p[j * W + i - 1] : 0);
   }
   for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) {
     const k = j * W + i;
     if (vFixed[k]) continue;
     const t = j > 0 && active[(j - 1) * W + i], b = j < H && active[j * W + i];
-    if (t || b) v[k] -= (b ? p[j * W + i] : 0) - (t ? p[(j - 1) * W + i] : 0);
+    if (airP) { if (t || b) v[k] -= (j < H ? p[j * W + i] : 0) - (j > 0 ? p[(j - 1) * W + i] : 0); } else if (t || b) v[k] -= (b ? p[j * W + i] : 0) - (t ? p[(j - 1) * W + i] : 0);
   }
 }
 
@@ -1456,6 +1525,7 @@ function createLiquid(effect, width, height) {
     pullU: effect.tension ? new Float64Array(U) : null, pullV: effect.tension ? new Float64Array(V) : null,
     cux: new Float64Array(1024), cuy: new Float64Array(1024), cvx: new Float64Array(1024), cvy: new Float64Array(1024), ea: new Float64Array(1024), eb: new Float64Array(1024), apic: effect.apic,
     cling: effect.most.adhesion ? clingField(g) : null, pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
+    air: effect.air ? { label: new Int32Array(N).fill(-1), before: new Int32Array(N).fill(-1), stack: new Int32Array(N), pressure: new Float64Array(N), regions: [], release: [] } : null,
     strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), flowU: new Float64Array(U), flowV: new Float64Array(V), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null
   };
   return state;
@@ -1766,7 +1836,9 @@ function stepLiquid(state, effect, dt) {
   // moves the particles without straining them. (Strained by it, the liquid stored springiness that only mended the
   // particles' spacing, and a resting slime rocked for ever.)
   const split = effect.yield > 0, spreading = split ? state.strain.none : target;
+  g.airP = effect.air ? sealAir(state, effect, dt) : null;
   project(g, fluid, effect.iterations, spreading);
+  g.pockets = null;
   // A thick liquid resists the flow the pressure solve has just made (a heap slumping under its own weight) before it
   // moves, then is made divergence-free again. That second solve starts from no pressure and leaves the first's in
   // place to start the next step from.
@@ -1787,7 +1859,11 @@ function stepLiquid(state, effect, dt) {
     strainRates(state, flowU, flowV);
     // The spreading's solve starts from the last step's, as the flow's starts from the last step's pressure.
     flowPressure.set(g.p); g.p.set(state.strain.spread);
+    // The pockets pushed in the flow's solve; this one only mends the spacing.
+    const airP = g.airP;
+    g.airP = null;
     project(g, fluid, effect.iterations, target);
+    g.airP = airP;
     state.strain.spread.set(g.p); g.p.set(flowPressure);
   }
   extrapolate(u, uValid, W + 1, H, 3); extrapolate(v, vValid, W, H + 1, 3);
@@ -1854,6 +1930,99 @@ function stepLiquid(state, effect, dt) {
     state.x[k] = nx; state.y[k] = ny;
   }
 }
+// ---- Air pockets -----------------------------------------------------------------------------------------------------
+// Air is every cell that is neither solid nor holding liquid. Air joined to an open canvas edge is at zero pressure, as
+// before. With `air` on, a sealed region of air is a pocket that keeps its air: it is tracked from step to step by the
+// cells it shares with the last step's regions (pockets that merge add their air; one that splits shares its air by
+// volume), and its pressure follows the gas law, in pixels of head: stiffness × (air / volume − 1), where its air is the
+// volume it had at zero pressure and its volume counts its empty cells and the empty share of the liquid cells around it.
+// A bubble is a pocket too small for the grid to show, so a sealed region becomes a pocket only once it holds
+// POCKET_START cells' worth. A smaller one with no pocket before it, air a splash or a pour has trapped, lets its air go
+// once, as bubbles (when `air.bubbles` says how to draw them) that start in the liquid at its edge, and closes as before;
+// gaps under POCKET_END between jostling particles just close. A pocket squeezed below POCKET_END, which the 3 × 3 blur
+// that draws the surface would fill in anyway, lets its air go the same way. Bubbles that rise into a pocket give it
+// their air back (see absorber). Returns each cell's pocket pressure in the solver's units.
+const POCKET_START = 12, POCKET_END = 3;
+function sealAir(state, effect, dt) {
+  const { g, fluid, cells, air } = state, { W, H, N, solid, uFixed, vFixed } = g, X = W + 1, room = g.geo ? g.geo.open : null;
+  const label = air.before, before = air.label, { stack, pressure } = air, old = air.regions, regions = [];
+  air.label = label; air.before = before;
+  label.fill(-1);
+  const open = c => !solid[c] && !fluid[c] && label[c] < 0;
+  for (let c0 = 0; c0 < N; c0++) {
+    if (!open(c0)) continue;
+    const id = regions.length, region = { volume: 0, open: false, x: 0, y: 0, cells: 0, air: 0, tracked: false, spent: false, edge: -1 };
+    regions.push(region);
+    let top = 0;
+    stack[top++] = c0; label[c0] = id;
+    while (top) {
+      const c = stack[--top], i = c % W, j = (c - i) / W;
+      region.cells++; region.x += i + 0.5; region.y += j + 0.5;
+      // Through every open face: to the next air cell, or out through an open canvas edge.
+      const reach = (fixed, inside, d) => {
+        if (fixed) return;
+        if (!inside) region.open = true;
+        else if (open(d)) { label[d] = id; stack[top++] = d; } else if (fluid[d] && (region.edge < 0 || cells[d] > cells[region.edge])) region.edge = d;
+      };
+      reach(uFixed[j * X + i], i > 0, c - 1); reach(uFixed[j * X + i + 1], i < W - 1, c + 1); reach(vFixed[c], j > 0, c - W); reach(vFixed[c + W], j < H - 1, c + W);
+    }
+    region.volume = region.cells;
+  }
+  // The empty share of each liquid cell goes to an air region beside it.
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const c = j * W + i;
+    if (!fluid[c] || solid[c]) continue;
+    const capacity = PER_CELL * (room ? room[c] : 1), empty = 1 - cells[c] / capacity;
+    if (!(empty > 0) || capacity < PER_CELL / 2) continue;
+    const r = i > 0 && !uFixed[j * X + i] && label[c - 1] >= 0 ? label[c - 1] : i < W - 1 && !uFixed[j * X + i + 1] && label[c + 1] >= 0 ? label[c + 1]
+      : j > 0 && !vFixed[c] && label[c - W] >= 0 ? label[c - W] : j < H - 1 && !vFixed[c + W] && label[c + W] >= 0 ? label[c + W] : -1;
+    if (r >= 0) regions[r].volume += empty;
+  }
+  // Which of the last step's pockets each region holds part of, and which regions hold part of one that has let its air go.
+  const links = new Set(), from = regions.map(() => []), into = old.map(() => []);
+  for (let c = 0; c < N; c++) {
+    const r = label[c], q = before[c];
+    if (r < 0 || q < 0 || !old[q]) continue;
+    if (old[q].spent) regions[r].spent = true;
+    if (!old[q].tracked || links.has(q * N + r)) continue;
+    links.add(q * N + r); from[r].push(q); into[q].push(r);
+  }
+  // Its air rises as bubbles from the fullest liquid cell beside it, if that is at least half full; one with no liquid
+  // around it (the last of a bottle draining) makes none.
+  const release = (region, volume) => {
+    region.spent = true;
+    const e = region.edge;
+    if (effect.air.bubbles && volume > 0.5 && e >= 0 && cells[e] >= PER_CELL / 2) air.release.push(e % W + 0.5, Math.floor(e / W) + 0.5, volume);
+  };
+  old.forEach((q, n) => { if (q.tracked && !into[n].length) release(q, q.volume); });
+  regions.forEach((region, r) => {
+    if (region.open) return;
+    if (from[r].length) {
+      for (const q of from[r]) { const shared = into[q].reduce((sum, n) => sum + regions[n].volume, 0); region.air += old[q].air * region.volume / shared; }
+      region.tracked = true;
+    } else if (region.volume >= POCKET_START) { region.air = region.volume; region.tracked = true; }
+    else if (region.volume >= POCKET_END && !region.spent) release(region, region.volume);
+    if (region.tracked && region.volume < POCKET_END) { release(region, region.volume); region.tracked = false; }
+  });
+  // The gas law, in pixels of head, scaled to the solver's pressure (gravity × depth per step): Pn now and its slope P'.
+  // A pocket inside the law's range is an unknown of the solve (see projectLiquid); one squeezed or stretched past four
+  // times pushes no harder and holds that pressure, so a nearly closed pocket cannot fling the liquid.
+  const [gx, gy] = effect.gravity, head = dt * Math.max(0.05, Math.sqrt(gx * gx + gy * gy)), stiffness = effect.air.stiffness;
+  const index = regions.map(() => -1), Pn = [], C = [];
+  pressure.fill(0);
+  regions.forEach((region, r) => {
+    if (!region.tracked) return;
+    const ratio = region.air / region.volume;
+    if (ratio > 0.25 && ratio < 4) { index[r] = Pn.length; Pn.push(stiffness * (ratio - 1) * head); C.push(region.volume / (stiffness * ratio * head * dt)); return; }
+    const held = stiffness * (Math.min(4, Math.max(0.25, ratio)) - 1) * head;
+    for (let c = 0; c < N; c++) if (label[c] === r) pressure[c] = held;
+  });
+  const node = air.node ??= new Int32Array(N);
+  for (let c = 0; c < N; c++) node[c] = label[c] >= 0 ? index[label[c]] : -1;
+  g.pockets = Pn.length ? { node, Pn: Float64Array.from(Pn), C: Float64Array.from(C) } : null;
+  air.regions = regions;
+  return pressure;
+}
 function liquidFields(state, out) {
   const { g, splat: count, blur, speedSum } = state, { W, H, pixels: solid, geo } = g, [density, , speed] = out;
   count.fill(0); speedSum.fill(0);
@@ -1904,7 +2073,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
-function moveSparks(list, g, density, total, liquid, pops, gravity) {
+function moveSparks(list, g, density, total, liquid, pops, gravity, absorb = null) {
   const { W, H, u, v, pixels: solid } = g;
   let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
@@ -1912,7 +2081,7 @@ function moveSparks(list, g, density, total, liquid, pops, gravity) {
     p.age++;
     let fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
     if (s.rise !== null) {
-      if (moveBubble(p, g, density, gravity, fx, fy, pops)) waiting ||= p.under; else { list.splice(k, 1); total.alive--; }
+      if (moveBubble(p, g, density, gravity, fx, fy, pops, absorb)) waiting ||= p.under; else { list.splice(k, 1); total.alive--; }
       continue;
     }
     // A liquid's grid holds no flow out in the air (no air is simulated), so a spark riding it would hang where it left
@@ -1970,7 +2139,7 @@ function bubbleFits(g, x, y, size) {
 // move that is free, sliding along whatever stops it, and under a ceiling it slides toward the nearest way up within
 // BUBBLE_REACH pixels (up a slope, out from under a ledge) or waits there, where bubbles that touch merge. It ends where it
 // reaches the air (bursting, with `pop`), at the end of its life, or off the canvas. Returns whether it lives on.
-function moveBubble(p, g, density, gravity, fx, fy, pops) {
+function moveBubble(p, g, density, gravity, fx, fy, pops, absorb) {
   const s = p.s, { W, H, pixels: solid } = g, x = p.x, y = p.y, ci = Math.floor(x), cj = Math.floor(y);
   // An obstacle that has moved onto it, or one it was born inside, takes it.
   if (ci >= 0 && cj >= 0 && ci < W && cj < H && solid[cj * W + ci]) return false;
@@ -2004,12 +2173,14 @@ function moveBubble(p, g, density, gravity, fx, fy, pops) {
     }
   }
   p.x = nx; p.y = ny;
-  const i = Math.floor(nx), j = Math.floor(ny), wet = i >= 0 && j >= 0 && i < W && j < H && density[j * W + i] >= LEVEL;
-  if (!wet) {
+  const i = Math.floor(nx), j = Math.floor(ny), inside = i >= 0 && j >= 0 && i < W && j < H, wet = inside && density[j * W + i] >= LEVEL;
+  if (p.fresh) p.fresh--;
+  else if (!wet) {
     if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0 });
+    if (absorb && inside) absorb(i, j, p.vol);
     return false;
   }
-  return p.age < p.life;
+  return p.age < p.life && inside;
 }
 // Bubbles waiting under a ceiling that touch merge into one bubble holding the air of both, as large as that air, where
 // their air was on average. A bubble holds at most twelve square pixels of air (it is drawn 3 pixels across from nine), so
@@ -2261,6 +2432,7 @@ const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1
 const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid))) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
 const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
+const AIR_FULL = `more than ${LIMITS.sparks} sparks and bubbles are alive at once; lower the sparks' count or life, or the air bubbles' life`;
 const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`;
 
 // One running simulation of an effect, shared by compileFluid and the live runner: the solver's state, the fields the
@@ -2400,6 +2572,7 @@ function solveFrame(run, cycle) {
   // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
   if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
   if (effect.liquid) state.lifts = liftsOf(run.sparks);
+  if (state.air) state.air.release.length = 0;
   for (let s = 0; s < effect.substeps; s++) effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt);
   if (effect.liquid) run.maxParticles = Math.max(run.maxParticles, state.n);
 }
@@ -2414,14 +2587,45 @@ const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) :
 // whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
 function sparkFrame(run, here, cycle, spawning) {
   const { effect, state, base, sparks, totals } = run;
-  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null);
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null, state.air ? absorber(state) : null);
   let full = null;
   if (spawning) {
     effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
     if (!full && effect.whitewater.length && !throwWhitewater(state, effect, base[0], sparks, cycle, totals)) full = WHITEWATER_FULL;
+    if (!full && state.air && state.air.release.length && !releaseAir(state.air, effect, sparks, cycle, totals)) full = AIR_FULL;
   }
   totals.maxAlive = Math.max(totals.maxAlive, totals.alive);
   return full;
+}
+// A bubble that rises into a pocket gives it its air: the pocket at the cell where it ended or beside it, as the last
+// step found them.
+function absorber(state) {
+  const { air, g } = state, { W, H } = g;
+  return (i, j, vol) => {
+    for (const [x, y] of [[i, j], [i, j - 1], [i, j + 1], [i - 1, j], [i + 1, j]]) {
+      const r = x >= 0 && y >= 0 && x < W && y < H ? air.label[y * W + x] : -1, region = r >= 0 ? air.regions[r] : null;
+      if (region && region.tracked) { region.air += vol; return; }
+    }
+  };
+}
+// The air of pockets that this frame's steps let go rises as bubbles from where each pocket was: up to nine square pixels
+// of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
+// two frames a bubble lives on where the gap it came from has not closed yet.
+const POCKETS = 3000;
+function releaseAir(air, effect, list, cycle, total) {
+  const s = effect.air.bubbles, out = air.release;
+  for (let k = 0, n = 0; k < out.length; k += 3) {
+    let volume = out[k + 2];
+    for (let m = 0; volume > 0.5; m++, n++) {
+      if (total.alive >= LIMITS.sparks) return false;
+      const vol = Math.min(9, volume), r = salt => random(effect.seed, POCKETS, cycle, n, salt), size = bubbleSize(vol);
+      volume -= vol;
+      list.push({ s, x: out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), y: out[k + 1], vx: 0, vy: 0, age: 0, life: pickWhole(s.life, r(SALT.life)), ...bubbleOf(s, r), vol, size, fresh: 2 });
+      total.alive++; total.spawned++;
+    }
+  }
+  out.length = 0;
+  return true;
 }
 // Draws the sparks through `put(x, y, code)`: a spark is a size × size block in the colour for its age, and a trail
 // streaks back to where it was a frame ago in the next colour of its list. Popped bubbles follow and age a frame.

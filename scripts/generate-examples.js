@@ -561,7 +561,26 @@ const aquarium = fluidSource('aquarium', 56, 48, { ...water, s: '#e8c98a', d: '#
   spout: shapeRows(20, 4, (x, y) => (y === 0 || y === 3 || (x === 0 && y === 1) ? 'k' : x === 0 ? null : 'p')),
   weed: shapeRows(5, 14, (x, y) => (x === +sway[y] ? (y % 3 === 0 ? 'E' : 'e') : x === +sway[y] + 1 && y % 4 === 1 ? 'e' : null))
 });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium };
+// A bottle turned upside down over a glass glugs as it pours (air pockets): the air at its top keeps its amount, so as
+// water leaves, it stretches and holds the rest back until outside air pushes up the neck as a big bubble that rises
+// through the water and joins it, and the next pour follows. Air the pour drives into the glass rises as bubbles (or,
+// where a lot is trapped at once, as a pocket). One-shot: it ends with the bottle empty and the glass settled.
+const glugBottle = shapeRows(16, 33, (x, y) => {
+  if (y === 0) return 'G';
+  if (y <= 22) return x === 0 || x === 15 ? (x === 0 && y > 2 && y < 20 ? 'h' : 'G') : null;
+  if (y <= 26) return x === y - 22 || x === 37 - y ? 'G' : null;
+  return x === 4 || x === 11 ? 'G' : null;
+});
+const glug = fluidSource('glug', 40, 56, { ...water, G: '#3f7f5f', h: '#bfe8cf', q: '#c7d6e6', Q: '#8fa4bd', t: '#5a4638' }, {
+  kind: 'liquid', frames: 110, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], flip: 0.7,
+  air: { stiffness: 40, bubbles: { colors: ['w'], rise: 0.6, wobble: 0.3 } },
+  obstacles: [{ symbol: 'bottle', x: 12, y: 1 }, { symbol: 'glass', x: 7, y: 39 }, { symbol: 'table', x: 0, y: 55 }],
+  fill: [{ x: 13, y: 4, w: 14, h: 20 }, { x: 14, y: 24, w: 12, h: 1 }, { x: 15, y: 25, w: 10, h: 1 }, { x: 16, y: 26, w: 8, h: 1 }, { x: 17, y: 27, w: 6, h: 1 }, { x: 17, y: 28, w: 6, h: 6 }], emitters: [],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['c', 'b'], thresholds: [1, 2], dither: 0 }], cleanup: { strays: true }
+}, {
+  bottle: glugBottle, glass: shapeRows(26, 16, (x, y) => (x === 1 || x === 24 ? 'q' : y === 15 || x === 0 || x === 25 ? 'Q' : null)), table: shapeRows(40, 1, () => 't')
+});
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, glug };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

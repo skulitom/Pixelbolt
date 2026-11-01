@@ -520,6 +520,15 @@ const fluid = {
       emitters: { ...array(fluidEmitter, 16), description: '1–16 sources; a liquid with a fill may have none.' },
       look: { ...array(fluidLook, 8), minItems: 1, description: 'Layers drawn in order, later over earlier, each mapping one field to palette colours.' },
       whitewater: { ...array(fluidWhitewater, 4), description: 'Liquid: up to four layers of spray or foam thrown off the water where it lands or runs fast, drawn over it like sparks.' },
+      air: { ...object({
+        stiffness: num(2, 1000, 'Pixels of liquid head that squeeze a pocket to half its size: under h pixels of liquid a pocket keeps stiffness / (stiffness + h) of its size, and a pocket the liquid pulls on stretches the same way. Default 40; 1000 barely gives. Stable at any setting.'),
+        bubbles: { ...object({
+          colors: keys('Palette keys spread over each bubble\'s life.'),
+          life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each bubble lives; [min, max] picks per bubble. Default [30, 60].' },
+          rise: num(0, 4, 'Pixels per frame each rises through still water; default 0.5.'), wobble: num(0, 2, 'Pixels each sways from side to side; default 0.'),
+          lift: num(0, 1, 'Share of each one\'s buoyancy handed to the water; default 0.'), pop: { type: 'boolean', description: 'Burst where they reach the surface; default false.' }
+        }, ['colors']), description: 'How the air of a pocket squeezed too small to show (under three cells) rises as bubbles, as large as the air it held, as sparks with rise do. Without it that air leaves unseen.' }
+      }), description: 'Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank\'s air pushes on its water.' },
       light: vector(-1, 1, 'Direction toward the light for the light and shadow fields; default [-1, -1], the upper left.'),
       outline: { ...key, description: 'Palette key for a one-pixel outline around the fluid.' },
       cleanup: { ...object({ strays: bool, corners: bool }), description: 'De-Stray (specks and pinholes take their surroundings\' colour; a liquid\'s lone pixel is a drop, and stays) and De-Corner cleanup of the fluid before outline and sparks.' }
