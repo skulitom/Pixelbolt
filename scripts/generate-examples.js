@@ -346,8 +346,8 @@ const water = { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff' }, stone 
 const waterLook = (deep, band = 4) => [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, band, deep], dither: 0 }];
 // Spray thrown up where water lands; in a liquid it ends where it falls back into the water.
 const spray = (name, at, start, count, angle, extra = {}) => ({ name, at, area: [2, 1], burst: 1, start, density: 0, sparks: { count, life: [12, 20], colors: ['w', 'w', 'c'], angle, speed: [2.8, 4], gravity: [0, 0.55], drag: 0.02, follow: 0, ...extra } });
-// A round drop falls and speeds up; where it lands, whitewater throws a crown of spray streaks and drops off the crater's
-// rims, and the crater springs back as a hump in the middle. A low flip share and drag calm the waves, and a slow drain
+// A round drop falls and speeds up; where it lands, whitewater throws a crown of droplets off the crater's rims, which
+// arc up and fall back into the pool, and the crater springs back as a hump in the middle. A low flip share and drag calm the waves, and a slow drain
 // at the bottom takes back the drop's water, so the pool settles flat at its old level instead of a fraction of a pixel
 // higher.
 const splash = fluidSource('splash', 48, 40, water, {
@@ -355,8 +355,8 @@ const splash = fluidSource('splash', 48, 40, water, {
   fill: [{ x: 0, y: 28, w: 48, h: 12 }, { at: [24, 5], radius: 3, velocity: [0, 0.5] }],
   emitters: [{ name: 'settle', at: [24, 38], area: [48, 2], rate: 1, start: 12, end: 29, density: -0.017 },
     { name: 'rebound', at: [24, 31], area: [4, 3], rate: 1, start: 15, end: 17, density: 0, velocity: [0, -2] }],
-  whitewater: [{ impact: 1.5, chance: 0.45, throw: 1.8, spread: 30, life: [12, 20], colors: ['w', 'w', 'c'], trail: true },
-    { impact: 2.5, chance: 0.3, throw: 1.6, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
+  whitewater: [{ impact: 1.5, chance: 0.45, throw: 1.3, spread: 30, life: [12, 20], colors: ['w', 'w', 'c'] },
+    { impact: 2.5, chance: 0.3, throw: 1.2, spread: 20, life: [12, 20], colors: ['w', 'w', 'c'], size: 2 }],
   look: waterLook(9, 5), cleanup: { strays: true }
 });
 // A stream runs along the cliff top and pours over the mossy lip in one unbroken arc that falls clear of the cliff face,
@@ -386,13 +386,13 @@ const waterfall = fluidSource('waterfall', 48, 64, { ...water, ...stone, L: '#7b
 });
 // A drop gathers under the stalactite, falls and splashes; a slow soak drains as much as each drop adds.
 const drip = fluidSource('drip', 16, 32, { ...water, ...stone }, {
-  kind: 'liquid', frames: 24, duration: 70, loop: true, seed: 2, warmup: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.4], flip: 0, drag: 0.04, tension: 2,
+  kind: 'liquid', frames: 24, duration: 70, loop: true, seed: 2, warmup: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.4], flip: 0, drag: 0.04, tension: 3,
   obstacles: [{ symbol: 'rock', x: 0, y: 0 }, { symbol: 'ground', x: 0, y: 29 }], fill: [{ x: 1, y: 25, w: 14, h: 4 }],
-  // A bead hangs at the tip, held still by velocity [0, 0], and swells when the wider emitter joins; when both stop,
-  // the drop falls, speeding up, as one compact two-pixel-wide drop with a highlight on top (strong cohesion and little
-  // drag keep it whole). A pair of droplets flies out either side where it lands. The soak drains the row above the
+  // A bead hangs at the tip, held still by velocity [0, 0], and swells round when the wider emitter joins; when both
+  // stop, the drop falls, speeding up, as one round bead about three pixels across with a highlight on top (strong
+  // cohesion and little drag keep it whole). A pair of droplets flies out either side where it lands. The soak drains the row above the
   // pool's level, so each drop's water runs off and the surface settles flat between drops.
-  emitters: [{ name: 'bead', at: [8, 7.5], radius: 1.4, rate: 1, end: 8, velocity: [0, 0] }, { name: 'swell', at: [8, 8], radius: 1.5, rate: 1, start: 4, end: 8, velocity: [0, 0] },
+  emitters: [{ name: 'bead', at: [8, 7.5], radius: 1.4, rate: 1, end: 8, velocity: [0, 0] }, { name: 'swell', at: [8, 8.5], radius: 2, rate: 1, start: 4, end: 8, velocity: [0, 0] },
     spray('spray-left', [6.5, 25.5], 18, 2, [220, 250], { life: [8, 14], speed: [1.3, 2], gravity: [0, 0.5] }),
     { name: 'soak', at: [8, 26], area: [14, 2], rate: 1, density: -0.1 },
     spray('spray-right', [9.5, 25.5], 18, 2, [290, 320], { life: [8, 14], speed: [1.3, 2], gravity: [0, 0.5] })],

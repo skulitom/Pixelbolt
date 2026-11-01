@@ -1905,7 +1905,10 @@ function moveSparks(list, g, density, total, liquid, pops, gravity) {
     const soaked = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !solid[y * W + x] && density[y * W + x] >= LEVEL;
     const sunk = p.foam && (wet ? !dry(i - 1, j) && !dry(i + 1, j) && !dry(i, j - 1) && !dry(i, j + 1) : !soaked(i - 1, j) && !soaked(i + 1, j) && !soaked(i, j - 1) && !soaked(i, j + 1));
     if (popped) pops.push({ x: p.x, y: p.y, size: s.size, code: sparkColor(p), age: 0 });
-    if (p.age >= p.life || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
+    // Spray still in the air when its life runs out flies on, for up to its life again, until it falls back in, hits
+    // something or leaves the canvas, so a droplet never vanishes in mid-air.
+    const spent = p.age >= (liquid && !s.follow && p.out && !wet ? 2 * p.life : p.life);
+    if (spent || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
 }
@@ -2118,8 +2121,10 @@ function renderFields(effect, base, width, height, drawn = null) {
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
 // spreading solve one more, sharp advection about thirty.
 const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
-// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
-const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
+// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
+// spray may fly on for its life again).
+const sparkSpan = (s, liquid) => (liquid && !s.follow ? 2 : 1) * s.life[1];
+const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid))) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
 const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
 const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`;

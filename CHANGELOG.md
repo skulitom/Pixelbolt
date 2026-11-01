@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Drops and spray
+
+- A liquid's spray (whitewater, and emitter sparks with `follow: 0`) still in the air when its `life` runs out flies on, for up to its life again, until it falls back in, hits an obstacle or leaves the canvas, as the docs say spray ends. Before, a droplet thrown high simply vanished in mid-air: 7 of the splash example's 23 droplets did, and 10 of dam-break's 50. A loop simulates that much longer past its recorded cycle, so the droplets still wrap round to its first frames.
+- The splash example throws its spray softer (1.3 and 1.2 times the impact instead of 1.8 and 1.6) and without trails: droplets arc a few pixels up as dots and fall back into the pool, where they climbed to the top of the canvas as one-pixel sticks.
+- The drip example's drop swells round under the stalactite (a wider swelling emitter and `tension` 3) and falls as a bead about three pixels across, where it fell as a two-pixel-wide stick.
+- The splash, drip, waterfall and dam-break golden hashes and GIFs are updated; the rest are unchanged.
+- Still open: splash's ball flattens for a frame as it falls and sits on the pool as a hump for two frames before the crater opens, which more substeps or cohesion don't change.
+
 ### Cleaner liquid edges
 
 - A liquid's outline is tidied before it is coloured. A gap one pixel wide with liquid on two sides and liquid or an obstacle on a third is filled, and a lone pixel standing on a straight edge (open air on three sides, liquid either side of its foot) is trimmed, so a resting surface no longer shows dents and pimples that come and go from frame to frame, and the highlight line no longer drops a pixel under each dent. A lone drop, a stream's tip and a two-pixel step stay. Honey and honey-drop had about 0.7 and 0.4 such bumps a frame and now have none; dam-break's fall from 0.43 to 0.09 and its dents from 0.39 to 0.16.

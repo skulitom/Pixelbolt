@@ -750,7 +750,7 @@
                           "minItems": 2
                         }
                       ],
-                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]."
+                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]. In a liquid, spray (follow 0) still in the air then flies on, for up to as long again, until it falls back in."
                     },
                     "colors": {
                       "type": "array",
@@ -997,7 +997,7 @@
                       "minItems": 2
                     }
                   ],
-                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]."
+                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]. Spray still in the air then flies on, for up to as long again, until it falls back in."
                 },
                 "colors": {
                   "type": "array",

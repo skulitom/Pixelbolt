@@ -452,7 +452,7 @@ const fluidEmitter = object({
   }), description: 'Gas: throw this emitter\'s smoke and heat (it needs a positive density or temperature) on heavy carriers, one per covered cell (each frame for a rate emitter, whose amounts are then thrown every frame; an orbiting one throws once a frame), launched with its velocity, vortex, expand (outward) and noise. A puff of gas cannot be thrown through still air, but dust can: carriers keep their momentum, slow by drag, hand their smoke to the air as they go and drop the rest where they meet an obstacle. For dust waves, skid smoke, dash trails.' },
   sparks: { ...object({
     count: num(0.01, 256, 'Sparks per frame for a rate emitter (at most 16; fractions spawn on some frames), or in all for a burst; follows pulse and flicker.'),
-    life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each spark lives; [min, max] picks per spark. Default [8, 16].' },
+    life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each spark lives; [min, max] picks per spark. Default [8, 16]. In a liquid, spray (follow 0) still in the air then flies on, for up to as long again, until it falls back in.' },
     colors: keys('Palette keys spread over each spark\'s life, from birth to death.'),
     size: int(1, 3, 'Pixels across each spark; default 1. 2 reads at 1× (bubbles, embers, spray).'),
     trail: { type: 'boolean', description: 'Streak back to where the spark was a frame earlier, in the next colour of its list: flying debris, rising embers.' },
@@ -474,7 +474,7 @@ const fluidWhitewater = { ...object({
   speed: num(0.05, 32, 'Throw where a particle moves at least this many pixels per frame: a fast stream shedding drops. Use impact or speed.'),
   chance: num(0.001, 1, 'Share of qualifying surface particles that throw a droplet each frame (a seeded draw per particle); default 0.1.'),
   throw: num(0, 4, 'Droplet speed as a share of the impact or speed; default 1.'), spread: num(0, 180, 'Degrees of random turn either way; default 20.'),
-  life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each droplet lives; [min, max] picks per droplet. Default [6, 12].' },
+  life: { oneOf: [int(1, 256), pairOf(int(1, 256))], description: 'Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]. Spray still in the air then flies on, for up to as long again, until it falls back in.' },
   colors: keys('Palette keys spread over each droplet\'s life, from birth to death.'), size: int(1, 3, 'Pixels across each droplet; default 1.'),
   trail: { type: 'boolean', description: 'Streak back to where the droplet was a frame earlier, in the next colour of its list.' },
   gravity: vector(-2, 2, 'The droplet\'s own acceleration [x, y]; default the effect\'s gravity.'), drag: num(0, 1, 'Share of the droplet\'s speed lost each frame; default 0.02.'),
