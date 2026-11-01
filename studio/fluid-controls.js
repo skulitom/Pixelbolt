@@ -17,7 +17,8 @@ export const FLUID_PRESETS = [
   { file: 'tesla-coil', title: 'Tesla coil', note: 'Electric gas · loop' }, { file: 'plasma-globe', title: 'Plasma globe', note: 'Electric gas · loop' },
   { file: 'ice-melt', title: 'Ice cube melting', note: 'Heat · one-shot' }, { file: 'pond-freeze', title: 'Pond freezing', note: 'Heat · one-shot' },
   { file: 'boiling-pot', title: 'Boiling pot', note: 'Heat, vapour · loop' }, { file: 'frost-window', title: 'Frosted window', note: 'Frost · one-shot' },
-  { file: 'dry-ice', title: 'Dry-ice fog', note: 'Sublimation · one-shot' }
+  { file: 'dry-ice', title: 'Dry-ice fog', note: 'Sublimation · one-shot' },
+  { file: 'lightning-pond', title: 'Lightning into a pond', note: 'Arcs into water · one-shot' }
 ];
 // Each slider sets one setting of the preset's effect; Strength scales every emitter's rate or burst. A slider's range
 // and step must hold every preset's value exactly: a range input clamps to its range and snaps to its step.

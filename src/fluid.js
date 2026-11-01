@@ -15,7 +15,7 @@
 import { PixelError, renderProject, parseColor } from './core.js';
 import { fields } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, random, sinDeg, cosDeg } from './craft.js';
-import { readElectric, readElectrode, createElectric, stepElectric, electricFields, electricWork, ELECTRODE_FIELDS } from './electric.js';
+import { readElectric, readElectrode, createElectric, stepElectric, electricFields, electricWork, ELECTRODE_FIELDS, MATTER } from './electric.js';
 
 export const FLUID_KINDS = ['gas', 'liquid'];
 export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow', 'strand', 'ionization', 'current'];
@@ -196,6 +196,7 @@ function readLook(layer, path, context) {
   if (layer.field === 'temperature' && liquid && !context.heat) fail(`${path}.field`, 'liquids have no temperature without heat; use density, speed or depth');
   if (layer.field === 'strand' && !liquid) fail(`${path}.field`, 'strands are thin strings of liquid particles; a gas has density, temperature and speed');
   if ((layer.field === 'ionization' || layer.field === 'current') && !context.electric) fail(`${path}.field`, `${layer.field} is drawn from plasma; give the effect electric settings and an electrode (an obstacle with a voltage)`);
+  if ((layer.field === 'ionization' || layer.field === 'current') && liquid) fail(`${path}.field`, `a liquid's plasma burns in the air over it; draw ${layer.field} in the vapour's look`);
   if (!Array.isArray(layer.colors) || !layer.colors.length || layer.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, from the lowest level to the highest`);
   const colors = layer.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette));
   if (!Array.isArray(layer.thresholds) || layer.thresholds.length !== colors.length) fail(`${path}.thresholds`, `expected ${colors.length} thresholds, one per colour`);
@@ -448,7 +449,9 @@ function readEffect(effect, path, source) {
   if (!ADVECTION.includes(advection)) fail(`${path}.advection`, 'expected smooth (plain semi-Lagrangian, the default) or sharp (MacCormack with a limiter: crisper edges and swirls)');
   const viscosity = number(effect.viscosity ?? 0, `${path}.viscosity`, 0, MAX_VISCOSITY), yieldStress = liquid ? number(effect.yield ?? 0, `${path}.yield`, 0, 16) : 0;
   if (!liquid && effect.whitewater !== undefined) fail(`${path}.whitewater`, 'whitewater is spray and foam thrown off a liquid; it applies to liquids');
-  if (liquid && effect.electric !== undefined) fail(`${path}.electric`, 'electricity drives plasma in gases; liquids carry no current');
+  // Over a liquid an arc runs through the air (the vapour's gas) and the water, and heats both, so it needs heat and vapour.
+  const unwired = liquid && !(effect.heat !== undefined && effect.vapour !== undefined), WETS = 'an arc over a liquid runs through the air over it (the vapour gas) and boils the water it strikes; give the liquid heat and vapour';
+  if (unwired && effect.electric !== undefined) fail(`${path}.electric`, WETS);
   const frames = integer(effect.frames, `${path}.frames`, 1, 256), loop = effect.loop === undefined ? false : boolean(effect.loop, `${path}.loop`);
   const durations = Array.isArray(effect.duration)
     ? (effect.duration.length === frames ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${frames}`))
@@ -457,7 +460,6 @@ function readEffect(effect, path, source) {
   if (loop && frames < 4) fail(`${path}.frames`, 'a looping effect needs at least 4 frames');
   const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647);
   const context = { frames, loop, liquid, palette, seed, electric: false, heat };
-  const vapour = effect.vapour === undefined ? null : readVapour(effect.vapour, `${path}.vapour`, context);
   let iceLook = null;
   if (effect.ice !== undefined) {
     fields(effect.ice, ['look'], `${path}.ice`);
@@ -487,16 +489,16 @@ function readEffect(effect, path, source) {
     const track = obstacle.keys === undefined ? null : readTrack(obstacle.keys, `${op}.keys`, frames, { x, y }, rows, width, height);
     // An electrode or metal (electric.js): solid, or for an electrode a decoration the gas flows through.
     const electric = readElectrode(obstacle, op, frames);
-    if (electric && liquid) fail(`${op}.${electric.conductor ? 'conductor' : 'voltage'}`, 'electrodes and conductors drive plasma in gases; liquids carry no current');
+    if (electric && unwired) fail(`${op}.${electric.conductor ? 'conductor' : 'voltage'}`, WETS);
     obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, props: { ...readSurface(obstacle, op, context, blocks), voltage: electric ? electric.voltage : null, conductor: electric ? electric.conductor : null }, ...(electric && { electric }) });
   });
-  // Electricity (gases): settings of its own, defaults when only an obstacle has a voltage or conducts.
-  const electric = liquid || (effect.electric === undefined && !obstacles.some(o => o.electric)) ? null : readElectric(effect.electric ?? {}, `${path}.electric`, obstacles);
+  // Electricity: settings of its own, defaults when only an obstacle has a voltage or conducts. Over a liquid its plasma
+  // burns in the vapour's gas, which the vapour's look draws.
+  const electric = effect.electric === undefined && !obstacles.some(o => o.electric) ? null : readElectric(effect.electric ?? {}, `${path}.electric`, obstacles, liquid);
   context.electric = !!electric;
+  const vapour = effect.vapour === undefined ? null : readVapour(effect.vapour, `${path}.vapour`, context);
   const moving = obstacles.some(o => o.track), layout = buildLayout(obstacles, width, height, placementsAt(obstacles, 0));
   const { solid, front, smooth, owner } = layout;
-  // Ice joins the solid layer as whole pixels; heat meets obstacles that stay put and meet the liquid pixel by pixel.
-  if (heat && (moving || smooth)) fail(`${path}.heat`, `heat needs still pixel obstacles: ${moving ? 'take the keys off its obstacles' : 'give its obstacles surface: "pixels"'}`);
   const walls = listed(effect.walls, 'walls', 4).map((edge, i) => {
     if (!FLUID_WALLS.includes(edge)) fail(`${path}.walls[${i}]`, `expected ${FLUID_WALLS.join(', ')}`);
     return edge;
@@ -1001,6 +1003,33 @@ function projectOpen(g, active, iterations, target) {
 // a stiff pocket overshot and rang.) Its preconditioner is its diagonal. Later solves in the step (a thick liquid's) take
 // the pocket pressures as fixed (`g.airP`), as does a pocket squeezed past the gas law's range.
 const NO_POCKETS = new Float64Array(0);
+// A body of liquid sealed in on every side by solids (obstacles, ice) with no air beside it, no open edge and no pocket:
+// nothing can take up a change in its volume, so its pressure is known only up to a constant and the solve has an
+// answer only when what the body asks for (its crowded cells' spreading, a wall moving in) sums to zero. Asked for more,
+// conjugate gradients ran off to huge pressures (water caught between ice and a smooth slope). Each sealed body gives
+// up the sum, shared evenly over its cells. A cell of a body with a face to anything off the solve (air, a pocket, an
+// open edge) holds the body's pressure, so its row has slack: its open faces outnumber its couplings.
+function sealedBodies(g, solve, diag, ax, ay, div) {
+  const { W, N } = g, body = g.cg.body ??= new Int32Array(N), order = g.cg.order ??= new Int32Array(N);
+  body.fill(-1);
+  for (let c0 = 0; c0 < N; c0++) {
+    if (!solve[c0] || body[c0] >= 0) continue;
+    let end = 0, sealed = true, sum = 0;
+    order[end++] = c0; body[c0] = c0;
+    for (let at = 0; at < end; at++) {
+      const c = order[at], i = c % W, left = i > 0 ? ax[c - 1] : 0, up = c >= W ? ay[c - W] : 0;
+      if (diag[c] - ax[c] - ay[c] - left - up > 1e-9) sealed = false;
+      sum += div[c];
+      if (ax[c] && body[c + 1] < 0) { body[c + 1] = c0; order[end++] = c + 1; }
+      if (ay[c] && body[c + W] < 0) { body[c + W] = c0; order[end++] = c + W; }
+      if (left && body[c - 1] < 0) { body[c - 1] = c0; order[end++] = c - 1; }
+      if (up && body[c - W] < 0) { body[c - W] = c0; order[end++] = c - W; }
+    }
+    if (!sealed) continue;
+    const mean = sum / end;
+    for (let at = 0; at < end; at++) div[order[at]] -= mean;
+  }
+}
 function projectLiquid(g, active, iterations, target) {
   const { W, H, N, u, v, p, div, geo, uFixed, vFixed, airP, pockets } = g, X = W + 1, steps = Math.ceil(iterations / 3), m = pockets ? pockets.Pn.length : 0;
   if (!g.cg) g.cg = { diag: new Float64Array(N), ax: new Float64Array(N), ay: new Float64Array(N), solve: new Uint8Array(N), prec: new Float64Array(N), r: new Float64Array(N), z: new Float64Array(N), s: new Float64Array(N), q: new Float64Array(N) };
@@ -1045,6 +1074,7 @@ function projectLiquid(g, active, iterations, target) {
       ax[c] = solve[c] && i < W - 1 && solve[c + 1] ? openU(j * X + i + 1) : 0;
       ay[c] = solve[c] && j < H - 1 && solve[c + W] ? openV(c + W) : 0;
     }
+    sealedBodies(g, solve, diag, ax, ay, div);
     // MIC(0), tuning 0.97, with the plain diagonal wherever the factor would fall below a quarter of it.
     for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
       const c = j * W + i;
@@ -1656,8 +1686,9 @@ function gasFields(state, out) {
 
 // ---- Liquid -----------------------------------------------------------------------------------------------------------
 function createLiquid(effect, width, height) {
-  // With heat, ice joins the obstacles in the solver's solid cells, so the grid keeps a mask of its own.
-  const g = effect.heat ? createGrid(width, height, Uint8Array.from(effect.solid), effect.walls) : gridFor(effect, width, height), N = g.N, U = g.u.length, V = g.v.length, solids = solidLayer(effect, effect.layout, placementsAt(effect.obstacles, 0), width, height);
+  // With heat, ice joins the obstacles in the solver's solid cells, so the grid keeps a mask of its own (beside smooth
+  // obstacles, the mask its geometry is traced from: see heatMasks).
+  const g = effect.heat && !effect.smooth ? createGrid(width, height, Uint8Array.from(effect.solid), effect.walls) : gridFor(effect, width, height), N = g.N, U = g.u.length, V = g.v.length, solids = solidLayer(effect, effect.layout, placementsAt(effect.obstacles, 0), width, height);
   g.release = true;
   const state = {
     g, solids, n: 0, next: 0, keys: effect.heat ? PHASE_KEYS : PARTICLE_KEYS, ...(effect.heat && { energy: new Float64Array(1024), frozen: new Float64Array(1024), fall: new Float64Array(1024) }),
@@ -1670,10 +1701,12 @@ function createLiquid(effect, width, height) {
     cling: effect.most.adhesion ? clingField(solids) : null, grip: effect.most.adhesion ? gripFields(solids, effect.obstacles) : null, carry: null,
     strands: effect.look.some(layer => layer.field === STRAND),
     pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
-    air: effect.air ? { label: new Int32Array(N).fill(-1), before: new Int32Array(N).fill(-1), stack: new Int32Array(N), pressure: new Float64Array(N), regions: [], release: [] } : null,
+    air: effect.air ? { label: new Int32Array(N).fill(-1), before: new Int32Array(N).fill(-1), stack: new Int32Array(N), pressure: new Float64Array(N), regions: [], release: [], made: [] } : null,
     strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), flowU: new Float64Array(U), flowV: new Float64Array(V), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null
   };
-  if (effect.heat) state.heat = createHeat(effect, width, height);
+  if (effect.heat) state.heat = createHeat(effect, g);
+  // An arc over the liquid runs through its air, the vapour's gas (see electricStep).
+  if (effect.electric) state.electric = createElectric(effect, width, height);
   return state;
 }
 // Adhesion makes the liquid hold on to walls and obstacles (and anything beyond a closed edge). A pull toward them would
@@ -2260,12 +2293,19 @@ function sealAir(state, effect, dt) {
     if (effect.air.bubbles && volume > 0.5 && e >= 0 && cells[e] >= PER_CELL / 2) air.release.push(e % W + 0.5, Math.floor(e / W) + 0.5, volume);
   };
   old.forEach((q, n) => { if (q.tracked && !into[n].length) release(q, q.volume); });
+  // Bubbles that gathered under a ceiling into a pocket's worth (see carvePocket) bring their air to the region their cells
+  // are in now: a new pocket starts with it, one they joined adds it, and in open air it is gone (vented).
+  const made = new Float64Array(regions.length);
+  for (let k = 0; k < air.made.length; k += 2) { const r = label[air.made[k]]; if (r >= 0) made[r] += air.made[k + 1]; }
+  air.made.length = 0;
   regions.forEach((region, r) => {
     if (region.open) return;
     if (from[r].length) {
       for (const q of from[r]) { const shared = into[q].reduce((sum, n) => sum + regions[n].volume, 0); region.air += old[q].air * region.volume / shared; }
+      region.air += made[r];
       region.tracked = true;
-    } else if (region.volume >= POCKET_START) { region.air = region.volume; region.tracked = true; }
+    } else if (made[r]) { region.air = made[r]; region.tracked = true; }
+    else if (region.volume >= POCKET_START) { region.air = region.volume; region.tracked = true; }
     else if (region.volume >= POCKET_END && !region.spent) release(region, region.volume);
     if (region.tracked && region.volume < POCKET_END) { release(region, region.volume); region.tracked = false; }
   });
@@ -2428,10 +2468,14 @@ function warmAir(T, open, hot, W, H, rate) {
     T[c] = t;
   }
 }
-function createHeat(effect, W, H) {
-  const N = W * H, h = effect.heat;
+// The heat of a liquid on grid `g`. `layout`, `base` (its obstacle pixels) and `places` follow the obstacles as they move
+// (see moveObstacles); `mask` is the obstacles' pixels and the ice's, the solver's solid cells (or, beside smooth
+// obstacles, the pixels its geometry is traced from).
+function createHeat(effect, grid) {
+  const { W, H, N } = grid, h = effect.heat;
   const P = {
-    heat: h, base: effect.solid, water: new Uint16Array(N), ice: new Uint16Array(N), sumT: new Float64Array(N), Tc: new Float64Array(N), flux: new Float64Array(N),
+    heat: h, layout: effect.layout, base: effect.solid, places: placementsAt(effect.obstacles, 0), mask: grid.geo ? Uint8Array.from(effect.solid) : grid.solid,
+    water: new Uint16Array(N), ice: new Uint16Array(N), sumT: new Float64Array(N), Tc: new Float64Array(N), flux: new Float64Array(N),
     obstacleT: new Float64Array(N), owner: Int16Array.from(effect.layout.owner), iceSpeed: new Float64Array(N), iceMoving: false, input: new Float64Array(N),
     pending: new Float64Array(N), frost: new Float64Array(N), escaped: 0, added: 0, removed: 0, converting: false, step: 0,
     spawnEnergy: energyOf(h, h.ambient, false), spawnFrozen: 0, vapour: null
@@ -2481,28 +2525,40 @@ function labelRegions(V, W, H, walls) {
   V.sums = new Float64Array(V.closed.length);
 }
 // The solid layer after a step's changes: ICE joins the obstacles in the liquid's solid mask and owners, moving at its
-// piece's speed while it settles, and what clings to solids reads the new layer. Then the vapour's walls: those and the
-// cells the liquid fills. Vapour in a cell that liquid or ice has taken moves to the open cells beside it.
-function heatMasks(state, effect) {
-  const P = state.heat, g = state.g, { W, H, N, walls } = g, { base, water, ice, owner } = P, layout = effect.layout;
+// piece's speed while it settles, and what clings to solids reads the new layer. Beside smooth obstacles the grid's
+// geometry is traced again from the obstacles' pixels and the ice's (ice meets the liquid pixel by pixel, so nothing is
+// smoothed where it touches a smooth obstacle). `moved` says the obstacles have moved this frame (moveObstacles), and
+// 'layout' that they cover other cells: the layer takes their places and velocities, and what clings reads it anew.
+// Then the vapour's walls: those and the cells the liquid fills. Vapour in a cell that liquid, ice or an obstacle has
+// taken moves to the open cells beside it.
+function heatMasks(state, effect, moved = false) {
+  const P = state.heat, g = state.g, { W, H, N, walls } = g, { base, water, ice, owner, mask, layout } = P;
   let changed = false;
   for (let c = 0; c < N; c++) {
     const frozen = !base[c] && ice[c] >= ICE_CELL, s = base[c] || frozen ? 1 : 0;
     owner[c] = frozen ? ICE : layout.owner[c];
-    if (s !== g.solid[c]) { g.solid[c] = s; changed = true; }
+    if (s !== mask[c]) { mask[c] = s; changed = true; }
+  }
+  if (changed || moved === 'layout') {
+    if (!layout.smooth) fixFaces(W, H, mask, walls, g.uFixed, g.vFixed);
+    else {
+      const geo = smoothGeometry(mask, layout.smooth, W, H, walls);
+      for (let k = 0; k < g.uFixed.length; k++) g.uFixed[k] = geo.uOpen[k] ? 0 : 1;
+      for (let k = 0; k < g.vFixed.length; k++) g.vFixed[k] = geo.vOpen[k] ? 0 : 1;
+      g.geo = geo; g.solid = geo.solid; g.pixels = geo.pixels; g.weights ??= new Float64Array(N);
+    }
   }
   const moving = P.iceMoving;
-  if (changed || moving || P.iceHook.moving) {
-    if (changed) fixFaces(W, H, g.solid, walls, g.uFixed, g.vFixed);
+  if (changed || moved || moving || P.iceHook.moving) {
     P.iceHook.moving = moving;
-    const solids = state.solids = solidLayer(effect, { solid: g.solid, owner }, placementsAt(effect.obstacles, 0), W, H, P.iceHook);
-    if (state.cling) { if (changed) { state.cling = clingField(solids); state.grip = gripFields(solids, effect.obstacles); } state.carry = carryFields(solids); }
-    // Faces against settling ice carry its speed, as a moving obstacle's do.
-    if (moving || g.moved) {
+    const solids = state.solids = solidLayer(effect, { solid: mask, owner }, P.places, W, H, P.iceHook);
+    if (state.cling) { if (changed || moved === 'layout') { state.cling = clingField(solids); state.grip = gripFields(solids, effect.obstacles); } state.carry = carryFields(solids); }
+    // Faces against moving obstacles and settling ice carry their speed.
+    if (solids.moving || g.moved) {
       if (!g.uWall) { g.uWall = new Float64Array(g.u.length); g.vWall = new Float64Array(g.v.length); } else { g.uWall.fill(0); g.vWall.fill(0); }
       g.moved = false;
       const X = W + 1, of = c => (c >= 0 ? solids.velocity(c) : null);
-      if (moving) {
+      if (solids.moving) {
         for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const s = of(i > 0 ? j * W + i - 1 : -1) ?? of(i < W ? j * W + i : -1); if (s) { g.uWall[j * X + i] = s[0]; g.moved = true; } }
         for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i, s = of(j > 0 ? k - W : -1) ?? of(j < H ? k : -1); if (s) { g.vWall[k] = s[1]; g.moved = true; } }
       }
@@ -2512,14 +2568,14 @@ function heatMasks(state, effect) {
   const V = P.vapour;
   if (!V) return;
   const vg = V.g, m = V.d;
-  let moved = false;
+  let walled = false;
   for (let c = 0; c < N; c++) {
     const taken = !base[c] && water[c] + ice[c] >= ICE_CELL;
     V.liquid[c] = taken && ice[c] < ICE_CELL ? 1 : 0;
     const s = base[c] || taken ? 1 : 0;
-    if (s !== vg.solid[c]) { vg.solid[c] = s; V.open[c] = 1 - s; moved = true; }
+    if (s !== vg.solid[c]) { vg.solid[c] = s; V.open[c] = 1 - s; walled = true; }
   }
-  if (!moved) return;
+  if (!walled) return;
   fixFaces(W, H, vg.solid, walls, vg.uFixed, vg.vFixed);
   for (let c = 0; c < N; c++) {
     if (!vg.solid[c] || !(m[c] > 0)) continue;
@@ -2547,8 +2603,10 @@ function balance(V, g) {
 function stepVapour(state, effect, dt) {
   const P = state.heat, V = P.vapour, s = effect.vapour, h = effect.heat, g = V.g, L = state.g, { W, H, N, u, v, uFixed, vFixed, uWall, vWall } = g, X = W + 1, { d: m, T } = V;
   const scale = s.expansion / PER_CELL, { base, obstacleT, Tc } = P;
-  for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * X + i; uWall[k] = uFixed[k] && ((i > 0 && V.liquid[j * W + i - 1]) || (i < W && V.liquid[j * W + i])) ? L.u[k] : 0; }
-  for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vWall[k] = vFixed[k] && ((j > 0 && V.liquid[k - W]) || (j < H && V.liquid[k])) ? L.v[k] : 0; }
+  // Faces against the liquid move with it, and those between a moving obstacle and the air with the obstacle.
+  const lu = L.uWall, lv = L.vWall, edge = (a, b) => (base[a] && V.open[b]) || (base[b] && V.open[a]);
+  for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * X + i, c = j * W + i; uWall[k] = !uFixed[k] ? 0 : (i > 0 && V.liquid[c - 1]) || (i < W && V.liquid[c]) ? L.u[k] : lu && i > 0 && i < W && edge(c - 1, c) ? lu[k] : 0; }
+  for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vWall[k] = !vFixed[k] ? 0 : (j > 0 && V.liquid[k - W]) || (j < H && V.liquid[k]) ? L.v[k] : lv && j > 0 && j < H && edge(k - W, k) ? lv[k] : 0; }
   // Solid cells read as their own temperature (the liquid's, an obstacle's or the air's) and hold no vapour.
   for (let c = 0; c < N; c++) if (g.solid[c]) { m[c] = 0; T[c] = base[c] ? (obstacleT[c] === obstacleT[c] ? obstacleT[c] : h.ambient) : Tc[c]; }
   stepGas(V, s, dt, {
@@ -2620,6 +2678,16 @@ const endedOf = run => {
   if (!pockets && !steam) return null;
   return p => { if (p.steam && steam) ventBubble(run, p); else if (pockets) pockets(p); };
 };
+// Electricity over a liquid (stage 3 of physics-model.md section 11, before heat): the electric layer solves through the
+// air, the vapour's gas, whose flow carries the plasma and whose temperature its current heats, and through the water and
+// ice, cells holding ICE_CELL particles or more, as they stood after the last step. The Joule heat of the water's and ice's
+// cells goes into every particle there through `input`, so an arc that strikes the water boils it where it lands.
+function electricStep(state, effect, dt) {
+  const P = state.heat, E = state.electric, { N } = state.g, { water, ice, input } = P, base = P.base, matter = P.matter ??= new Uint8Array(N);
+  for (let c = 0; c < N; c++) matter[c] = base[c] || water[c] + ice[c] < ICE_CELL ? 0 : ice[c] >= ICE_CELL ? MATTER.ice : MATTER.water;
+  input.fill(0);
+  stepElectric(E, P.vapour, effect, dt, { matter, warm: (c, heat) => { input[c] += heat; } });
+}
 // Each step, before the liquid moves (physics-model.md, section 11): heat flows, particles change phase, vapour condenses
 // or deposits, and the solid layer follows; on a frame's first step, unheld ice settles. Rates are per frame, scaled by
 // the step. `effect` carries this frame's keyed settings (gravity).
@@ -2636,6 +2704,8 @@ function heatStep(run, effect, dt, first) {
     // `input` is heat another stage puts into the water and ice of a cell, per frame (zero until one does: Joule heat
     // from an arc that reaches the water is the plan, physics-model.md section 10).
     let gain = h.conduct * (Tc[c] - t) + P.input[c];
+    // A particle in the open corner of a smooth obstacle's pixel touches that obstacle.
+    if (base[c] && obstacleT[c] === obstacleT[c]) gain += h.contact * (obstacleT[c] - t);
     for (const [di, dj] of SIDES) {
       const x = i + di, y = j + dj;
       if (x < 0 || y < 0 || x >= W || y >= H) { if (!closedAt(x, y)) gain += h.air * (h.ambient - t); continue; }
@@ -2679,7 +2749,7 @@ function heatStep(run, effect, dt, first) {
     // Water chilled from above stays liquid until the ice creeping from a cold shore reaches it, a cell a step.
     if (e < h.freeze - (h.grain ? 0.25 * h.grain * random(seed, PHASE, state.id[k], PHASE_SALT.grain) : 0)) {
       const c = j * W + i, seeded = (x, y) => x >= 0 && y >= 0 && x < W && y < H && (ice[y * W + x] > 0 || (base[y * W + x] && obstacleT[y * W + x] < h.freeze));
-      if (ice[c] || e < h.freeze - SUPERCOOL || seeded(i - 1, j) || seeded(i + 1, j) || seeded(i, j - 1) || seeded(i, j + 1)) { frozen[k] = 1; state.vx[k] = 0; state.vy[k] = 0; continue; }
+      if (ice[c] || e < h.freeze - SUPERCOOL || (base[c] && obstacleT[c] < h.freeze) || seeded(i - 1, j) || seeded(i + 1, j) || seeded(i, j - 1) || seeded(i, j + 1)) { frozen[k] = 1; state.vx[k] = 0; state.vy[k] = 0; continue; }
     }
     if (!V) { if (e > top) energy[k] = top; continue; }
     // Each particle boils after its own seeded share of `vaporize` (half to all of it, and half again), so a pot heated
@@ -2853,6 +2923,8 @@ function heatFields(run) {
     const i = c % W, j = (c - i) / W, x = (u[j * (W + 1) + i] + u[j * (W + 1) + i + 1]) * 0.5, y = (v[c] + v[c + W]) * 0.5;
     vd[c] = V.open[c] ? V.d[c] * scale : 0; vt[c] = V.open[c] ? V.T[c] : 0; vs[c] = Math.sqrt(x * x + y * y);
   }
+  // Plasma burns in the air, so the vapour's look draws it.
+  if (state.electric) electricFields(state.electric, V, run.vapourBase[4], run.vapourBase[5]);
 }
 // A frame of a liquid with heat: vapour first, the water over it, then the ice, each through its own look, and the
 // outline round the water and ice.
@@ -2899,7 +2971,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
-function moveSparks(list, g, density, total, liquid, pops, gravity, ended = null) {
+function moveSparks(list, g, density, total, liquid, pops, gravity, ended = null, gather = null) {
   const { W, H, u, v, pixels: solid } = g;
   let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
@@ -2938,7 +3010,7 @@ function moveSparks(list, g, density, total, liquid, pops, gravity, ended = null
     if (spent || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
-  if (waiting) mergeBubbles(list, g, total);
+  if (waiting) mergeBubbles(list, g, total, gather);
 }
 
 // ---- Bubbles ----------------------------------------------------------------------------------------------------------
@@ -3036,20 +3108,23 @@ function moveBubble(p, g, density, gravity, fx, fy, pops) {
 // Bubbles waiting under a ceiling that touch merge into one bubble holding the air of both, as large as that air, where
 // their air was on average. A bubble holds at most twelve square pixels of air (it is drawn 3 pixels across from nine), so
 // a merge past that waits, as does one that would not fit there. The merged bubble lives as long as the longer-lived of
-// the two.
-function mergeBubbles(list, g, total) {
+// the two. With air pockets on, two that touch but cannot merge, holding GATHER square pixels of air or more between them,
+// become a pocket instead (`gather`, see gatherOf), and both end: under a flat ceiling no bubble of three pixels fits, so
+// bubbles there stop growing at six.
+const GATHER = 8;
+function mergeBubbles(list, g, total, gather = null) {
   const waiting = list.filter(p => p.under);
   for (let a = 0; a < waiting.length; a++) {
     const p = waiting[a];
     if (p.gone) continue;
     for (let b = a + 1; b < waiting.length; b++) {
       const q = waiting[b];
-      if (q.gone || q.s !== p.s || p.vol + q.vol > 12) continue;
+      if (q.gone) continue;
       const reach = (p.size + q.size) / 2, dx = q.x - p.x, dy = q.y - p.y;
       if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
       const vol = p.vol + q.vol, size = bubbleSize(vol), mx = (p.x * p.vol + q.x * q.vol) / vol, my = (p.y * p.vol + q.y * q.vol) / vol;
-      const [x, y] = bubbleFits(g, mx, my, size) ? [mx, my] : bubbleFits(g, p.x, p.y, size) ? [p.x, p.y] : bubbleFits(g, q.x, q.y, size) ? [q.x, q.y] : [null, null];
-      if (x === null) continue;
+      const [x, y] = q.s !== p.s || vol > 12 ? [null, null] : bubbleFits(g, mx, my, size) ? [mx, my] : bubbleFits(g, p.x, p.y, size) ? [p.x, p.y] : bubbleFits(g, q.x, q.y, size) ? [q.x, q.y] : [null, null];
+      if (x === null) { if (gather && vol >= GATHER && gather(p, q)) { p.gone = q.gone = true; break; } continue; }
       p.vx = (p.vx * p.vol + q.vx * q.vol) / vol; p.vy = (p.vy * p.vol + q.vy * q.vol) / vol;
       if (q.life - q.age > p.life - p.age) { p.age = q.age; p.life = q.life; }
       p.x = x; p.y = y; p.vol = vol; p.size = size; q.gone = true;
@@ -3311,12 +3386,13 @@ const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater drople
 function createRun(effect, width, height, path) {
   const N = width * height, state = effect.liquid ? createLiquid(effect, width, height) : createGas(effect, width, height);
   if (effect.liquid) { fillLiquid(state, effect); if (state.full) crowded(path); }
-  const fieldSet = () => [new Float64Array(N), new Float64Array(N), new Float64Array(N)], base = [...fieldSet(), ...Array.from({ length: effect.electric ? 3 : 1 }, () => new Float64Array(N))];
+  // A gas's plasma has two fields more (ionization and current, after the strand's place); over a liquid the vapour's.
+  const fieldSet = (electric = false) => Array.from({ length: electric ? 6 : 3 }, () => new Float64Array(N)), base = [...fieldSet(), ...Array.from({ length: effect.electric && !effect.liquid ? 3 : 1 }, () => new Float64Array(N))];
   const run = { effect, view: effect, layout: effect.layout, state, base, sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0, fields: base };
   // A liquid with heat also has the ice's fields and the vapour's, which a loop's seam blends with the rest. What the
   // fills made is where the ledger starts (it counts what emitters add from here on), and a frozen fill is solid at once.
   if (state.heat) {
-    run.iceBase = fieldSet(); run.vapourBase = fieldSet(); run.fields = [...base, ...run.iceBase, ...run.vapourBase];
+    run.iceBase = fieldSet(); run.vapourBase = fieldSet(!!effect.electric); run.fields = [...base, ...run.iceBase, ...run.vapourBase];
     state.heat.added = 0; tally(state); heatMasks(state, effect);
   }
   return run;
@@ -3327,15 +3403,19 @@ function createRun(effect, width, height, path) {
 // beside smooth obstacles the closed share of a part-open face carries it. Fluid in the cells it now covers is shoved
 // along its move to the first open cell, never through another solid (or lost, where there is none). A jump (a key
 // with no `over`), an obstacle appearing or vanishing, and the place a loop comes round to are cuts, not moves: they
-// push nothing, and fluid where an obstacle lands is lost.
+// push nothing, and fluid where an obstacle lands is lost. With heat the grid stays and heatMasks reshapes it, with the
+// ice, and builds the solid layer; ice stops what is pushed as an obstacle does.
 function moveObstacles(run, cycle) {
-  const { effect, state } = run, places = placementsAt(effect.obstacles, cycle), key = layoutKey(places), before = run.layout;
+  const { effect, state } = run, places = placementsAt(effect.obstacles, cycle), key = layoutKey(places), before = run.layout, P = state.heat;
   let g = state.g;
   const { W, H } = g, X = W + 1, changed = key !== before.key;
   if (changed) {
     const layout = buildLayout(effect.obstacles, W, H, places);
     run.layout = layout;
     run.view = { ...effect, solid: layout.solid, front: layout.front, smooth: layout.smooth };
+  }
+  if (P) { P.places = places; if (changed) { P.layout = run.layout; P.base = run.layout.solid; } heatMasks(state, effect, changed ? 'layout' : 'moved'); }
+  else if (changed) {
     const next = gridFor(run.view, W, H);
     next.u.set(g.u); next.v.set(g.v); next.p.set(g.p); next.release = g.release;
     if (g.visc) next.visc = g.visc;
@@ -3344,8 +3424,8 @@ function moveObstacles(run, cycle) {
     if (state.open) for (let c = 0; c < g.N; c++) state.open[c] = g.solid[c] ? 0 : 1;
   }
   // The solid layer for this frame; what clings to the solids reads it.
-  const layout = run.layout, owner = layout.owner, solids = state.solids = solidLayer(effect, layout, places, W, H), { speed } = solids;
-  if (state.cling) {
+  const layout = run.layout, owner = layout.owner, solids = P ? state.solids : state.solids = solidLayer(effect, layout, places, W, H), { speed } = solids;
+  if (state.cling && !P) {
     if (changed) { state.cling = clingField(solids); state.grip = gripFields(solids, effect.obstacles); }
     state.carry = carryFields(solids);
   }
@@ -3357,7 +3437,7 @@ function moveObstacles(run, cycle) {
   }
   if (effect.liquid && solids.moving) state.wake ??= { cells: [], left: new Uint8Array(g.N), mark: new Uint8Array(g.N) };
   const of = c => (c >= 0 ? solids.velocity(c) : null);
-  if (solids.moving || g.moved || changed) {
+  if (!P && (solids.moving || g.moved || changed)) {
     if (!g.uWall) { g.uWall = new Float64Array(g.u.length); g.vWall = new Float64Array(g.v.length); } else { g.uWall.fill(0); g.vWall.fill(0); }
     g.moved = false;
     for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const s = of(i > 0 ? j * W + i - 1 : -1) ?? of(i < W ? j * W + i : -1); if (s) { g.uWall[j * X + i] = s[0]; g.moved = true; } }
@@ -3394,7 +3474,7 @@ function moveObstacles(run, cycle) {
       }
     });
   });
-  const passed = c => swept[c] >= 0 && !layout.solid[c] && !before.solid[c];
+  const passed = c => swept[c] >= 0 && !layout.solid[c] && !before.solid[c], solid = P ? P.mask : layout.solid;
   // The first open cell along a move from (x, y), passing only through cells the same obstacle has just covered or
   // passed over; -1 where another solid or the canvas edge comes first.
   const landing = (x, y, o, s) => {
@@ -3403,7 +3483,7 @@ function moveObstacles(run, cycle) {
       const px = x + 0.5 * step * ux, py = y + 0.5 * step * uy;
       if (px < 0 || py < 0 || px >= W || py >= H) return -1;
       const c = Math.floor(py) * W + Math.floor(px);
-      if (!layout.solid[c]) { if (passed(c) && swept[c] === o) continue; return c; }
+      if (!solid[c]) { if (passed(c) && swept[c] === o) continue; return c; }
       if (!covered(c) || owner[c] !== o) return -1;
     }
     return -1;
@@ -3474,6 +3554,7 @@ function solveFrame(run, cycle) {
   for (let s = 0; s < effect.substeps; s++) {
     state.phase = (s + 1) / effect.substeps;
     if (!effect.liquid) { stepGas(state, effect, dt); continue; }
+    if (state.electric) electricStep(state, effect, dt);
     if (state.heat) heatStep(run, effect, dt, s === 0);
     stepLiquid(state, effect, dt);
     if (vapour) stepVapour(state, effect, dt);
@@ -3497,7 +3578,9 @@ const drawFrame = (run, width, height, drawn = null) => (run.state.heat ? render
 // whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
 function sparkFrame(run, here, cycle, spawning) {
   const { effect, state, base, sparks, totals } = run;
-  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null, endedOf(run));
+  const gravity = effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null;
+  run.gravity = gravity;
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, gravity, endedOf(run), gatherOf(run));
   let full = null;
   if (spawning) {
     effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
@@ -3519,6 +3602,61 @@ function addAir(state, i, j, amount) {
 }
 // A bubble that rises into a pocket gives it its air.
 const bubbleEnded = state => p => { if (p.end === 'air') addAir(state, Math.floor(p.x), Math.floor(p.y), p.vol); };
+// With air pockets on, bubbles waiting under a ceiling that touch and hold more air together than a bubble can (see
+// mergeBubbles) become a pocket there (physics-model.md section 7): carvePocket clears the cells under the ceiling for
+// their air. A boil's bubbles, which carry vapour, stay bubbles. Null without pockets.
+const gatherOf = run => {
+  const { state } = run;
+  if (!state.air) return null;
+  return (p, q) => !p.steam && !q.steam && carvePocket(state, run.gravity, (p.x * p.vol + q.x * q.vol) / (p.vol + q.vol), (p.y * p.vol + q.y * q.vol) / (p.vol + q.vol), p.vol + q.vol);
+};
+// Clears a pocket for `vol` square pixels of air at (x, y), under a ceiling: as many whole cells as the air fills, the
+// highest first (against `gravity`, the nearest axis, as a bubble rises) and then the nearest along the ceiling, each
+// beside one already taken, down to six cells below the start. The liquid in them moves along gravity, in its own
+// column, to the first cell below that stays liquid, where it crowds the cells until the pressure spreads it: the water
+// under the pocket gives way and rises elsewhere (a particle with only solid below stays, and the pocket is a cell
+// smaller). The pocket's air reaches sealAir through `air.made`. Returns false, changing nothing, where there is not
+// room for POCKET_START cells.
+function carvePocket(state, gravity, x, y, vol) {
+  const { g, air } = state, { W, H, N } = g, solid = g.solid, [gx, gy] = gravity, vertical = Math.abs(gy) >= Math.abs(gx);
+  // Down along gravity, as a cell step, and across.
+  const down = vertical ? (gy >= 0 ? W : -W) : gx >= 0 ? 1 : -1, i0 = Math.floor(x), j0 = Math.floor(y);
+  if (i0 < 0 || j0 < 0 || i0 >= W || j0 >= H || solid[j0 * W + i0]) return false;
+  const want = Math.max(POCKET_START, Math.round(vol)), take = air.carve ??= new Uint8Array(N), cells = [];
+  // How far down along gravity a cell lies from the start, and how far across.
+  const depth = c => { const i = c % W, j = (c - i) / W; return vertical ? (gy >= 0 ? j - j0 : j0 - j) : gx >= 0 ? i - i0 : i0 - i; };
+  const across = c => { const i = c % W, j = (c - i) / W; return vertical ? Math.abs(i - i0) : Math.abs(j - j0); };
+  const near = c => { const i = c % W; return [i > 0 ? c - 1 : -1, i < W - 1 ? c + 1 : -1, c >= W ? c - W : -1, c + W < N ? c + W : -1]; };
+  let frontier = [j0 * W + i0];
+  take[frontier[0]] = 2;
+  while (cells.length < want && frontier.length) {
+    let best = 0;
+    for (let k = 1; k < frontier.length; k++) {
+      const a = frontier[k], b = frontier[best], da = depth(a), db = depth(b);
+      if (da < db || (da === db && (across(a) < across(b) || (across(a) === across(b) && a < b)))) best = k;
+    }
+    const c = frontier[best];
+    frontier.splice(best, 1);
+    take[c] = 1; cells.push(c);
+    for (const d of near(c)) if (d >= 0 && !take[d] && !solid[d] && depth(d) <= depth(cells[0]) + 6) { take[d] = 2; frontier.push(d); }
+  }
+  const room = cells.length >= POCKET_START;
+  for (const c of frontier) take[c] = 0;
+  if (!room) { for (const c of cells) take[c] = 0; return false; }
+  // Each particle in a cleared cell goes down its column to the first cell that stays liquid (not cleared, not solid).
+  for (let k = 0; k < state.n; k++) {
+    const i = Math.floor(state.x[k]), j = Math.floor(state.y[k]);
+    if (i < 0 || j < 0 || i >= W || j >= H || take[j * W + i] !== 1) continue;
+    let c = j * W + i, steps = 0;
+    while (c >= 0 && c < N && take[c] === 1 && steps++ < H) { const next = c + down; if (next < 0 || next >= N || (!vertical && Math.floor(next / W) !== Math.floor(c / W))) { c = -1; break; } c = next; }
+    if (c < 0 || c >= N || solid[c] || take[c]) continue;
+    const ci = c % W, cj = (c - ci) / W;
+    state.x[k] += ci - i; state.y[k] += cj - j;
+  }
+  for (const c of cells) take[c] = 0;
+  air.made.push(cells[0], vol);
+  return true;
+}
 // The air of pockets that this frame's steps let go rises as bubbles from where each pocket was: up to nine square pixels
 // of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
 // two frames a bubble lives on where the gap it came from has not closed yet.
@@ -3624,7 +3762,7 @@ function simulate(effect, context) {
       if (base[1][c] > peak.temperature) peak.temperature = base[1][c];
       if (base[2][c] > peak.speed) peak.speed = base[2][c];
     }
-    if (effect.electric) for (let c = 0; c < N; c++) { if (base[4][c] > peak.ionization) peak.ionization = base[4][c]; if (base[5][c] > peak.current) peak.current = base[5][c]; }
+    if (effect.electric) { const plasma = liquid ? run.vapourBase : base; for (let c = 0; c < N; c++) { if (plasma[4][c] > peak.ionization) peak.ionization = plasma[4][c]; if (plasma[5][c] > peak.current) peak.current = plasma[5][c]; } }
     chars[frame] = drawFrame(run, width, height);
     figures[frame] = measureFrame(chars[frame], base, run.view.solid, width, height, liquid ? state.n : null);
     if (state.heat) Object.assign(figures[frame], heatAmounts(run));

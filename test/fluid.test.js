@@ -45,7 +45,8 @@ const GOLDEN = {
   'pond-freeze': '6676dd153bd17314fc0c1209608137b4ea7fa54296112ab9bb34f1288b94309c',
   'boiling-pot': '35b3ff330c85304f9cc0954f65602486ac94ecd9bce0cc1e9ffc2ae51f13bfcb',
   'frost-window': '8adcbc649c29ecf4d93fc5407b97d5a0bf0d3cfeb8d2a9a79b207ba165d88f5e',
-  'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1'
+  'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1',
+  'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263'
 };
 const examples = new Map();
 const example = async name => {
@@ -495,8 +496,8 @@ test('a hot obstacle warms the air of a gas effect; heat is opt-in and checked w
   rejects(tank({ heat: { frost: 0 }, vapour: {} }), 'fluid.effects.e.heat.frost', /under freeze/);
   rejects(tank({ heat: { evaporation: 0.1 } }), 'fluid.effects.e.heat.evaporation', /give the effect a vapour/);
   rejects(tank({ heat: {}, fill: [{ x: 0, y: 0, w: 4, h: 4, vapour: 1 }] }), 'fluid.effects.e.fill[0].vapour', /vapour/);
-  rejects(tank({ heat: {}, obstacles: [{ symbol: 'bar', surface: 'smooth' }] }), 'fluid.effects.e.heat', /surface: "pixels"/);
-  rejects(tank({ heat: {}, obstacles: [{ symbol: 'bar', keys: [{ frame: 1, x: 2 }] }] }), 'fluid.effects.e.heat', /keys/);
+  // Heat meets keyed and smooth obstacles too.
+  for (const obstacle of [{ symbol: 'bar', surface: 'smooth', temperature: 1 }, { symbol: 'bar', keys: [{ frame: 1, x: 2, over: 2 }], temperature: 1 }]) assert.doesNotThrow(() => compileFluid(tank({ heat: {}, obstacles: [obstacle] })));
 });
 
 test('a live runner runs phase changes as compiled: ice melts on the plate a frame at a time', async () => {
@@ -614,9 +615,13 @@ test('adhesion keeps a film under a ledge, APIC keeps a thick liquid turning', (
 // A bar 4 pixels wide dipped 16 pixels into a pool and lifted 24 pixels over frames 20–50, drawn by density (and strands
 // when asked): per frame, the pixels drawn above the pool's surface, those within a pixel of the bar, and whether drawn
 // liquid joins the bar's tip to the pool once the tip is clear of it.
-const dip = (settings, { strands = false, lift = [{ frame: 20, y: -14, over: 30 }], frames = 70, seed = 1 } = {}) => {
-  const look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, ...(strands ? [{ field: 'strand', colors: ['w'], thresholds: [0.5], dither: 0 }] : [])];
-  const { recipe } = compileFluid({ ...gas(null), width: 40, height: 44, symbols: { bar: Array(30).fill('kkkk') }, effects: { e: { kind: 'liquid', frames, seed, walls: ['left', 'right', 'bottom'], ...settings, obstacles: [{ symbol: 'bar', x: 18, y: 10, draw: 'none', keys: lift }], fill: [{ x: 0, y: 24, w: 40, h: 20 }], emitters: [], look } } });
+// A bar lifted out of a pool, as a spoon is: per frame, what is drawn above the pool, the coat on the bar and whether a
+// string joins it to the pool. `bar` adds fields to the bar (a temperature); `warm` also draws liquid at 0.15 or more as
+// 'r' and keeps the compiled recipe and metadata on `dip`.
+const dip = (settings, { strands = false, lift = [{ frame: 20, y: -14, over: 30 }], frames = 70, seed = 1, bar = {}, warm = false } = {}) => {
+  const look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }, ...(strands ? [{ field: 'strand', colors: ['w'], thresholds: [0.5], dither: 0 }] : []), ...(warm ? [{ field: 'temperature', colors: ['r'], thresholds: [0.15], dither: 0 }] : [])];
+  const { recipe, metadata } = compileFluid({ ...gas(null), width: 40, height: 44, symbols: { bar: Array(30).fill('kkkk') }, effects: { e: { kind: 'liquid', frames, seed, walls: ['left', 'right', 'bottom'], ...settings, obstacles: [{ symbol: 'bar', x: 18, y: 10, draw: 'none', keys: lift, ...bar }], fill: [{ x: 0, y: 24, w: 40, h: 20 }], emitters: [], look } } });
+  if (warm) { dip.recipe = recipe; dip.metadata = metadata; }
   return recipe.frames.map((_, f) => {
     const cells = drawn(recipe, f), set = new Set(cells.map(([x, y]) => y * 40 + x)), tip = 40 - Math.max(0, Math.min(24, Math.round(24 * (f - 20) / 30)));
     let surface = 44;
@@ -667,6 +672,122 @@ test('an obstacle can have its own adhesion: a sticky spoon beside a non-stick p
   assert.ok(drawn(edge, 30).filter(([x, y]) => y === 0 && x < 24).length >= 8, 'film under the closed top edge');
   // With no obstacle of its own adhesion, nothing changes.
   assert.deepEqual(compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe, compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6, adhesion: 2 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe);
+});
+
+// ---- The features together (physics-model.md) ------------------------------------------------------------------------
+// A rod charged over a pool grounded through the canvas's closed bottom edge: water 'b', steam 's', plasma 'v' and
+// current 'c' and 'W', which the vapour's look draws in the air.
+const strike = (extra = {}) => compileFluid({ format: 'pixelforge-fluid', version: 1, name: 'arc', width: 24, height: 32,
+  palette: { b: '#2f6fc0', s: '#a9b3c6', v: '#3b2a8c', c: '#8fe9ff', W: '#ffffff', k: '#222222' }, symbols: { rod: ['kk', 'kk', 'kk'] },
+  effects: { e: { kind: 'liquid', frames: 30, seed: 2, walls: ['left', 'right', 'bottom'], heat: { air: 0.02, conduct: 0.1, latent: 0.5, vaporize: 1 },
+    vapour: { expansion: 6, buoyancy: 0.5, cooling: 0.05, look: [{ field: 'density', colors: ['s'], thresholds: [0.3] }, { field: 'ionization', colors: ['v'], thresholds: [0.1] }, { field: 'current', colors: ['c', 'W'], thresholds: [0.25, 0.8] }] },
+    obstacles: [{ symbol: 'rod', x: 11, y: 2, voltage: -60, resistance: 10 }], electric: { breakdown: 2.5, growth: 20, heating: 0.05, ground: ['bottom'] },
+    fill: [{ x: 0, y: 22, w: 24, h: 10 }], emitters: [], look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }], ...extra } } });
+
+test('an arc that strikes water lands on it, boils it where it lands and keeps the ledger', () => {
+  const { recipe, metadata } = strike(), effect = metadata.effects.e, f = effect.figures;
+  assert.ok(effect.peak.current > 1 && effect.peak.ionization === 1, JSON.stringify(effect.peak));
+  // The arc reaches the water: current runs in the air just over it.
+  const water = cellsOf(recipe, 'b'), current = recipe.frames.map((_, k) => [...cellsOf(recipe, 'W')[k], ...cellsOf(recipe, 'c')[k]]);
+  const landed = current.findIndex((cells, k) => cells.some(([x, y]) => water[k].some(([wx, wy]) => wx === x && wy === y + 1)));
+  assert.ok(landed >= 0 && landed < 12, `the arc lands on frame ${landed}`);
+  // No special case: the current through the water heats it, and it boils off as steam from where the arc landed.
+  assert.ok(f.vapour.slice(0, landed + 1).every(v => v === 0), 'no steam before the strike');
+  assert.ok(Math.max(...f.vapour) > 4 && f.water.at(-1) < f.water[0] - 4, `water ${f.water[0]} to ${f.water.at(-1)}, vapour up to ${Math.max(...f.vapour)}`);
+  for (const total of ledger(f)) assert.ok(Math.abs(total - f.water[0]) < 0.02, `the ledger holds: ${total}`);
+  assert.ok(cellsOf(recipe, 's').at(-1).length >= 6, 'steam rises over the pool');
+  // Electricity over a liquid needs its air and water to carry the heat: heat and vapour, with paths an agent can act on.
+  const rejects = (extra, where, pattern) => assert.throws(() => strike(extra), error => error.path === where && pattern.test(error.message), where);
+  rejects({ vapour: undefined }, 'fluid.effects.e.electric', /heat and vapour/);
+  rejects({ vapour: undefined, electric: undefined }, 'fluid.effects.e.obstacles[0].voltage', /heat and vapour/);
+  rejects({ look: [{ field: 'ionization', colors: ['v'], thresholds: [0.1] }] }, 'fluid.effects.e.look[0].field', /vapour's look/);
+});
+
+test('heat flows through keyed and smooth solids: a hot piston boils what it pushes into, ice melts down a smooth slope', () => {
+  // A piston at 2 pressed into water from above (keys): it pushes the water aside and steams it where it touches.
+  const piston = heatTank({ walls: ['left', 'right', 'bottom'], heat: { contact: 0.2, conduct: 0.12, latent: 0.3, vaporize: 1 }, vapour: { expansion: 6, buoyancy: 0.5, look: [{ field: 'density', colors: ['s'], thresholds: [0.3] }] },
+    obstacles: [{ symbol: 'piston', x: 8, y: 6, temperature: 2, keys: [{ frame: 4, y: 14, over: 16 }] }], fill: [{ x: 0, y: 14, w: 24, h: 10 }] }, { symbols: { piston: ['rrrrrrrr', 'rrrrrrrr'] } });
+  const f = figuresOf(piston.metadata);
+  assert.ok(f.vapour[5] === 0 && f.vapour.at(-1) > 3, `vapour ${f.vapour.join(' ')}`);
+  for (const total of ledger(f)) assert.ok(Math.abs(total - 240) < 0.02, `the ledger holds: ${total}`);
+  assert.ok(cellsOf(piston.recipe, 'b').at(-1).every(([x, y]) => !(x >= 8 && x < 16 && (y === 14 || y === 15))), 'no water where the piston stands');
+  // An ice cube dropped on a hot smooth slope settles on it, melts, and its water runs down the slope to the corner.
+  const slope = Array.from({ length: 12 }, (_, j) => Array.from({ length: 24 }, (_, i) => (i <= 2 * j ? 'r' : '.')).join(''));
+  const melt = heatTank({ frames: 60, walls: ['left', 'right', 'bottom'], heat: { contact: 0.2, conduct: 0.15, latent: 0.3 }, obstacles: [{ symbol: 'slope', x: 0, y: 12, temperature: 0.8, surface: 'smooth' }],
+    fill: [{ x: 4, y: 4, w: 6, h: 6, frozen: true, temperature: -0.6 }] }, { symbols: { slope } });
+  const m = figuresOf(melt.metadata), last = cellsOf(melt.recipe, 'b').at(-1);
+  assert.ok(m.ice.at(-1) === 0 && m.water.at(-1) > 30, `ice ${m.ice.at(-1)}, water ${m.water.at(-1)}`);
+  for (const total of ledger(m)) assert.ok(Math.abs(total - 36) < 0.02, `the ledger holds: ${total}`);
+  const mean = (cells, axis) => cells.reduce((sum, cell) => sum + cell[axis], 0) / cells.length;
+  assert.ok(last.length >= 20 && last.every(([x]) => x >= 11) && mean(last, 0) >= 18 && mean(last, 1) >= 19, `the water lies in the corner: ${JSON.stringify(last)}`);
+});
+
+test('honey clings to a heated spoon as it is lifted, and the coat it carries is warm', () => {
+  const honey = { viscosity: 12, apic: true, tension: 0.3, adhesion: 4 };
+  const heated = [{ ...honey, heat: { contact: 0.2, conduct: 0.05, air: 0.01 } }, { bar: { temperature: 0.45 } }];
+  // Heat changes nothing about how it clings: the coat is lifted as from a cold spoon.
+  const hot = dip(...heated);
+  assert.ok(hot[65].coat >= 10, `coat ${hot.map(frame => frame.coat).join(' ')}`);
+  assert.deepEqual(hot, dip(honey));
+  // The honey on the spoon is drawn warm, and none far from it is.
+  dip(heated[0], { ...heated[1], warm: true });
+  const warm = cellsOf(dip.recipe, 'r');
+  assert.ok(warm[65].filter(([x, y]) => x >= 16 && x <= 23 && y < 22).length >= 8, `${warm[65].length} warm pixels`);
+  assert.ok(warm[65].every(([x]) => x >= 12 && x <= 27), 'warmth stays near the spoon');
+  const f = figuresOf(dip.metadata);
+  assert.ok(f.water.every(w => w === f.water[0]), 'no honey is made or lost');
+});
+
+// A cup held mouth down, half in a tank: its top stands out of the water, with a plug that is pulled at frame 50.
+const ventSource = air => ({ ...gas(null), width: 32, height: 32, symbols: { cup: ['kkkk..kkkk', ...Array(12).fill('k........k')], plug: ['kk'] }, effects: { e: {
+  kind: 'liquid', frames: 80, seed: 2, walls: ['left', 'right', 'bottom'], ...(air && { air }),
+  obstacles: [{ symbol: 'cup', x: 11, y: 10, draw: 'none' }, { symbol: 'plug', x: 15, y: 10, draw: 'none', keys: [{ frame: 50, show: false }] }],
+  fill: [{ x: 0, y: 16, w: 11, h: 16 }, { x: 21, y: 16, w: 11, h: 16 }, { x: 11, y: 23, w: 10, h: 9 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+// An upturned cup under water with a bubbler below it (bubbles 'w').
+const bellSource = air => ({ ...gas(null), width: 24, height: 24, symbols: { cup: ['kkkkkkkkkkkk', ...Array(6).fill('k..........k')] }, effects: { e: {
+  kind: 'liquid', frames: 110, seed: 3, walls: ['left', 'right', 'bottom'], ...(air && { air }), obstacles: [{ symbol: 'cup', x: 6, y: 8, draw: 'none' }], fill: [{ x: 0, y: 4, w: 24, h: 20 }],
+  emitters: [{ at: [12, 21], radius: 0.5, rate: 1, density: 0, end: 70, sparks: { count: 0.5, life: 250, colors: ['w'], rise: 0.6, wobble: 0.3 } }],
+  look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } });
+
+test('bubbles gathering under a ceiling become a pocket that keeps their air, and a pocket that reaches open air vents', () => {
+  // Without pockets the bubbles wait under the cup, merging up to six pixels of air (no bigger one fits under it).
+  const dryUnder = grid => { let n = 0; for (let y = 9; y <= 11; y++) for (let x = 7; x <= 16; x++) if (grid[y][x] === '.') n++; return n; };
+  assert.ok(grids(compileFluid(bellSource(null)).recipe, 24, 24).every(grid => dryUnder(grid) === 0), 'no air under the cup without pockets');
+  // With pockets they gather into one under the cup, which the later bubbles join: it grows and keeps its air.
+  const { recipe, metadata } = compileFluid(bellSource({ stiffness: 40 })), frames = grids(recipe, 24, 24), pocket = frames.map(dryUnder);
+  assert.ok(pocket[60] >= 10 && pocket[109] >= 20, `the pocket holds ${pocket.join(' ')}`);
+  assert.ok(pocket.slice(80).every(n => n >= pocket[79] - 3), 'it keeps its air');
+  // The water it pushed out of the cup raised the level outside; none is made or lost.
+  const amount = metadata.effects.e.figures.amount, surface = grid => grid.findIndex(row => row.slice(0, 5).some(char => char !== '.'));
+  assert.ok(Math.abs(amount.at(-1) - amount[0]) < 1, `amount ${amount[0]} to ${amount.at(-1)}`);
+  assert.ok(surface(frames[109]) < surface(frames[0]), 'the water outside rises');
+  // A pocket whose region reaches open air vents: the cup holds its air while plugged, then water gulps up inside it.
+  const inside = air => grids(compileFluid(ventSource(air)).recipe, 32, 32).map(grid => inBox(grid, 12, 19, 11, 22));
+  const held = inside({ stiffness: 40 });
+  assert.ok(held.slice(20, 50).every(n => n <= 20), `held ${held.join(' ')}`);
+  assert.ok(Math.max(...held.slice(52, 70)) >= 40, `vented ${held.join(' ')}`);
+  assert.ok(inside(null)[10] >= 40, 'without pockets the cup floods at once');
+});
+
+test('an ice cube floats in a sealed jar with an air pocket, keeps its matter, and bubbles slide under it', () => {
+  const { recipe, metadata } = heatTank({ frames: 80, seed: 2, air: { stiffness: 40 }, heat: { ambient: 0.1, air: 0, conduct: 0.02, contact: 0, latent: 2 },
+    fill: [{ x: 0, y: 10, w: 24, h: 14, temperature: 0.1 }, { x: 8, y: 7, w: 8, h: 5, frozen: true, temperature: -1 }],
+    emitters: [{ at: [12, 21], radius: 0.5, rate: 1, density: 0, sparks: { count: 0.4, life: 120, colors: ['w'], rise: 0.6, wobble: 0.3 } }] });
+  const f = figuresOf(metadata), ice = cellsOf(recipe, 'i'), bubbles = cellsOf(recipe, 'w');
+  for (const total of ledger(f)) assert.ok(Math.abs(total - 376) < 0.02, `the ledger holds: ${total}`);
+  assert.ok(f.ice.every(n => n === 40), 'the cube stays ice');
+  let under = 0, beside = 0;
+  ice.forEach((cells, frame) => {
+    const x0 = Math.min(...cells.map(([x]) => x)), x1 = Math.max(...cells.map(([x]) => x)), y0 = Math.min(...cells.map(([, y]) => y)), y1 = Math.max(...cells.map(([, y]) => y));
+    // The cube floats: it sits in the water with its top above it.
+    if (frame > 10) assert.ok(y0 <= 10 && y1 >= 11, `frame ${frame}: the cube spans rows ${y0} to ${y1}`);
+    for (const [x, y] of bubbles[frame]) {
+      assert.ok(!(x >= x0 && x <= x1 && y >= y0 && y <= y1), `frame ${frame}: a bubble inside the ice at ${x},${y}`);
+      if (y === y1 + 1 && x >= x0 && x <= x1) under++;
+      if ((x === x0 - 1 || x === x1 + 1 || x === x0 - 2 || x === x1 + 2) && y >= y0 && y <= y1) beside++;
+    }
+  });
+  assert.ok(under >= 3 && beside >= 2, `bubbles wait under the cube (${under}) and slide up past it (${beside})`);
 });
 
 test('strands draw liquid stretched thinner than the density can, and nothing else', () => {

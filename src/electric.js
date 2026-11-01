@@ -21,6 +21,12 @@
 // potentials are solved together with the field: one solve per electrode with a resistance (its potential set to 1,
 // the others to 0), one for the ideal electrodes when any is not at 0 V, combined by a small implicit circuit solve.
 //
+// Over a liquid (a liquid with heat and vapour) the gas is the air over the water, the vapour's gas, and the field is
+// solved through the water and ice too: water conducts moderately and takes an arc that reaches it as a grounded edge
+// does (its surface is where the arc's foot slides, and it grows no streamers of its own), ice hardly conducts, and the
+// Joule heat of the water's and ice's cells goes to the liquid (fluid.js puts it into every particle there), so an arc
+// that strikes a pool boils it where it lands.
+//
 // Browser-compatible and deterministic, as the rest of the fluid compiler: only + − × ÷ and sqrt, craft.js's seeded
 // hash, fixed iteration counts (the solve may stop early once converged, at the same step on every engine), and cells,
 // markers and links visited in a fixed order.
@@ -39,10 +45,16 @@ const CHANNEL = 0.5, FADED = 0.02, OUT = 0.5, MEMORY = 0.75, HOT = 0.25;
 // Conductivity of every state, as docs/physics-model.md section 10 sets them: neutral air hardly conducts until it breaks
 // down; plasma conducts PLASMA times its ionization squared, so an arc carrying current I runs at about I / PLASMA volts a
 // pixel, far below breakdown, and a fading afterglow stops carrying current well before it stops glowing; metal
-// (electrodes and conductors) most of all. Liquid water (moderate) and ice (low) are for when liquids carry current: until
-// then an electric effect is a gas, and every solid but an electrode or metal insulates.
+// (electrodes and conductors) most of all; liquid water moderately and ice hardly at all. Every other solid insulates.
 export const CONDUCTIVITY = { air: 0.00008, plasma: 8, water: 0.5, ice: 0.0008, metal: 64 };
 const PLASMA = CONDUCTIVITY.plasma, CORNER = 0.5, DIAGONAL = 0.7071067811865476;
+// What a cell that conducts holds besides gas: an electrode's or conductor's metal, or a liquid's water or ice. A liquid
+// marks its cells with `MATTER.water` and `MATTER.ice` (see stepElectric).
+const GAS = 0, METAL = 1, WATER = 2, FROZEN = 3;
+export const MATTER = { water: WATER, ice: FROZEN };
+const MATTER_SIGMA = [0, CONDUCTIVITY.metal, CONDUCTIVITY.water, CONDUCTIVITY.ice];
+// Metal and water are what an arc lands on and slides along; ice is not.
+const lands = m => m === METAL || m === WATER;
 const SALT = { pick: 21 };
 
 const fail = (path, message) => { throw new PixelError(path, message); };
@@ -94,7 +106,8 @@ function schedule(value, path, frames) {
   return values;
 }
 
-export function readElectric(value, path, obstacles) {
+// Over a liquid (`liquid`), the water's conductivity makes the field slower to solve, so it takes more steps by default.
+export function readElectric(value, path, obstacles, liquid = false) {
   if (obstacles.filter(o => o.electric && o.electric.voltage).length > LIMITS.electrodes) fail(path, `at most ${LIMITS.electrodes} obstacles may have a voltage`);
   fields(value, ['breakdown', 'focus', 'growth', 'recombine', 'sustain', 'memory', 'heating', 'ionize', 'ground', 'iterations'], path);
   const ground = value.ground ?? [];
@@ -104,7 +117,7 @@ export function readElectric(value, path, obstacles) {
     growth: integer(value.growth ?? 8, `${path}.growth`, 1, 256), recombine: number(value.recombine ?? 0.3, `${path}.recombine`, 0, 1),
     sustain: number(value.sustain ?? 0.5, `${path}.sustain`, 0.001, 1000), memory: number(value.memory ?? 8, `${path}.memory`, 0, 256),
     heating: number(value.heating ?? 0.2, `${path}.heating`, 0, 16), ionize: number(value.ionize ?? 2, `${path}.ionize`, 0, 64),
-    ground: Object.fromEntries(EDGES.map(edge => [edge, ground.includes(edge)])), iterations: integer(value.iterations ?? 24, `${path}.iterations`, 1, 200)
+    ground: Object.fromEntries(EDGES.map(edge => [edge, ground.includes(edge)])), iterations: integer(value.iterations ?? (liquid ? 48 : 24), `${path}.iterations`, 1, 200)
   };
 }
 
@@ -124,7 +137,7 @@ export function createElectric(effect, width, height) {
   effect.obstacles.forEach((o, index) => { if (o.electric && o.electric.voltage) electrodes.push({ index, ...o.electric, phi: o.electric.voltage[0] }); });
   const E = {
     config, W: width, H: height, N, electrodes, cycle: 0, step: 0,
-    kind: new Uint8Array(N), which: new Int8Array(N).fill(-1), metal: new Uint8Array(N), free: new Uint8Array(N),
+    kind: new Uint8Array(N), which: new Int8Array(N).fill(-1), metal: new Uint8Array(N), matter: null, free: new Uint8Array(N),
     sigma: new Float64Array(N), diag: new Float64Array(N), kE: new Float64Array(N), kS: new Float64Array(N), kSE: new Float64Array(N), kSW: new Float64Array(N), ground: new Float64Array(N),
     phi: new Float64Array(N), fixed: null, basis: electrodes.map(() => null),
     ion: new Float64Array(N), current: new Float64Array(N),
@@ -132,14 +145,16 @@ export function createElectric(effect, width, height) {
     cg: { b: new Float64Array(N), r: new Float64Array(N), z: new Float64Array(N), s: new Float64Array(N), q: new Float64Array(N) },
     layoutKey: null
   };
+  E.matter = E.metal;
   return E;
 }
 
 // Which cells are electrodes, metal or insulators, for the obstacles' places now. Every solid of the shared solid layer
-// (obstacles, ice, whatever comes next) insulates unless it is an electrode or metal.
+// (obstacles, ice, whatever comes next) insulates unless it is an electrode or metal; over a liquid, `solid` is the
+// obstacles alone, and the water and ice join each step as matter that conducts (see stepElectric).
 function buildMasks(E, effect, layout, solid) {
   const { W, H, N, kind, which, metal } = E;
-  kind.fill(OPEN); which.fill(-1); metal.fill(0);
+  kind.fill(OPEN); which.fill(-1); metal.fill(GAS);
   for (let c = 0; c < N; c++) if (solid[c]) kind[c] = INSULATOR;
   const slot = new Map(E.electrodes.map((e, n) => [e.index, n]));
   effect.obstacles.forEach((o, i) => {
@@ -153,7 +168,7 @@ function buildMasks(E, effect, layout, solid) {
         if (row[k] === '.' || row[k] === ' ') continue;
         const c = y * W + at.x + k;
         if (slot.has(i)) { if (which[c] < 0) { kind[c] = HELD; which[c] = slot.get(i); } }
-        else if (kind[c] !== HELD) { kind[c] = OPEN; metal[c] = 1; }
+        else if (kind[c] !== HELD) { kind[c] = OPEN; metal[c] = METAL; }
       }
     });
   });
@@ -164,8 +179,8 @@ function buildMasks(E, effect, layout, solid) {
 // Conductances between neighbouring cells: series (harmonic) means of the two cells' conductivities, half as much across
 // a corner, and none through an insulator or across a corner both of whose side cells are insulators.
 function assemble(E) {
-  const { W, H, N, kind, metal, sigma, ion, diag, kE, kS, kSE, kSW, ground, config } = E, { air, metal: conductor } = CONDUCTIVITY;
-  for (let c = 0; c < N; c++) sigma[c] = kind[c] === INSULATOR ? 0 : kind[c] === HELD || metal[c] ? conductor : air + PLASMA * ion[c] * ion[c];
+  const { W, H, N, kind, matter, sigma, ion, diag, kE, kS, kSE, kSW, ground, config } = E, { air, metal: conductor } = CONDUCTIVITY;
+  for (let c = 0; c < N; c++) sigma[c] = kind[c] === INSULATOR ? 0 : kind[c] === HELD ? conductor : matter[c] ? MATTER_SIGMA[matter[c]] : air + PLASMA * ion[c] * ion[c];
   const link = (a, b, w) => { const sa = sigma[a], sb = sigma[b]; return sa && sb ? w * 2 * sa * sb / (sa + sb) : 0; };
   diag.fill(0); ground.fill(0);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
@@ -333,6 +348,12 @@ function field(E, dt) {
   const A = supplied.map((n, a) => supplied.map((m, b) => G[b][n] + (a === b ? electrodes[n].charge / dt + 1 / electrodes[n].resistance : 0)));
   const rhs = supplied.map(n => { const e = electrodes[n]; return e.charge * e.phi / dt + e.voltage[cycle] / e.resistance - I0[n]; });
   const at = dense(A, rhs);
+  // A network of conductors driven by its supplies holds every potential between theirs (a stored charge drives too), so
+  // a supplied electrode never goes past them. A field solve that has not converged (a long channel laid in one step, a
+  // pool's water) can ask for more; it is held to that range.
+  let lo = 0, hi = 0;
+  electrodes.forEach((e, n) => { for (const v of e.resistance ? [e.voltage[cycle], ...(e.charge ? [e.phi] : [])] : [idealAt[n]]) { if (v < lo) lo = v; if (v > hi) hi = v; } });
+  for (let a = 0; a < at.length; a++) at[a] = at[a] < lo ? lo : at[a] > hi ? hi : at[a];
   supplied.forEach((n, a) => { electrodes[n].phi = at[a]; const B = E.basis[n]; for (let c = 0; c < N; c++) phi[c] += at[a] * B[c]; });
   electrodes.forEach((e, n) => { if (!e.resistance) e.phi = idealAt[n]; });
 }
@@ -372,8 +393,8 @@ const sample = (a, nx, ny, fx, fy) => {
 const join = (a, b) => { if (a !== b && !a.links.includes(b)) { a.links.push(b); b.links.push(a); } };
 const part = (a, b) => { a.links.splice(a.links.indexOf(b), 1); b.links.splice(b.links.indexOf(a), 1); };
 const cellOf = (E, m) => Math.floor(m.y) * E.W + Math.floor(m.x);
-const anchorAt = (E, c) => E.kind[c] === HELD || E.metal[c] === 1;
-// Whether cell (i, j) has an electrode or metal cell among its eight neighbours.
+const anchorAt = (E, c) => E.kind[c] === HELD || lands(E.matter[c]);
+// Whether cell (i, j) has an electrode, metal or water cell among its eight neighbours.
 function touches(E, i, j) {
   const { W, H } = E;
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
@@ -381,6 +402,20 @@ function touches(E, i, j) {
     if ((di || dj) && x >= 0 && y >= 0 && x < W && y < H && anchorAt(E, y * W + x)) return true;
   }
   return false;
+}
+
+// Whether cell (i, j) has water among its eight neighbours (and no electrode or metal, which a foot slides along).
+function onWater(E, i, j) {
+  const { W, H, matter, kind } = E;
+  let wet = false;
+  for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+    const x = i + di, y = j + dj;
+    if (!(di || dj) || x < 0 || y < 0 || x >= W || y >= H) continue;
+    const c = y * W + x;
+    if (kind[c] === HELD || matter[c] === METAL) return false;
+    if (matter[c] === WATER) wet = true;
+  }
+  return wet;
 }
 
 // Markers ride the flow. A channel moves as one string: each marker takes the mean of the flow at itself and at the
@@ -429,6 +464,9 @@ function moveMarkers(E, g, dt) {
     // A marker carried out through an open edge leaves.
     if (x < 0 || y < 0 || x >= W || y >= H) { for (const o of [...m.links]) part(m, o); continue; }
     const oi = Math.floor(m.x), oj = Math.floor(m.y);
+    // An arc's foot on water stays where it struck: dragged along the surface by the steam it raises, it drew long
+    // channels over the water that the next stroke ran down.
+    if (onWater(E, oi, oj)) { list[kept++] = m; continue; }
     if (touches(E, oi, oj)) {
       if (open(i, j) && touches(E, i, j)) { m.x = x; m.y = y; list[kept++] = m; continue; }
       // Hop while at least half a cell of the move is left, each time to the neighbouring cell beside the metal that goes
@@ -455,13 +493,15 @@ function moveMarkers(E, g, dt) {
 }
 
 // Merges markers that share a cell (the earlier one stays, with the stronger ionization and both one's links) and puts
-// a marker in the middle of every link longer than SPLIT.
+// a marker in the middle of every link longer than SPLIT. Over a liquid, a marker whose cell the water or ice has taken
+// goes out: plasma burns in the air.
 function tidy(E) {
-  const { owner } = E, list = E.markers;
+  const { owner, matter } = E, list = E.markers;
   owner.fill(-1);
   let kept = 0;
   for (let k = 0; k < list.length; k++) {
     const m = list[k], c = cellOf(E, m);
+    if (matter[c] >= WATER) { for (const n of [...m.links]) part(m, n); continue; }
     if (owner[c] < 0) { owner[c] = kept; list[kept++] = m; continue; }
     const o = list[owner[c]];
     if (m.ion > o.ion) o.ion = m.ion;
@@ -492,7 +532,7 @@ function tidy(E) {
 // Ionization from the markers and the lines between them (each cell takes the strongest), and, with `ionize`, from heat.
 // `line` notes, for a cell a line crosses without a marker of its own, the marker at the line's nearer end.
 function raster(E, T) {
-  const { N, W, ion, owner, line, markers, config, kind } = E;
+  const { N, W, ion, owner, line, markers, config, kind, matter } = E;
   const { trace } = E;
   ion.fill(0); trace.fill(0); owner.fill(-1); line.fill(-1);
   markers.forEach((m, k) => { const c = cellOf(E, m); owner[c] = k; if (m.ion > ion[c]) ion[c] = m.ion; if (m.trace > trace[c]) trace[c] = m.trace; });
@@ -501,7 +541,7 @@ function raster(E, T) {
     const level = a.ion < b.ion ? a.ion : b.ion, left = a.trace < b.trace ? a.trace : b.trace, ax = Math.floor(a.x), ay = Math.floor(a.y), bx = Math.floor(b.x), by = Math.floor(b.y);
     traceLine(ax, ay, bx, by, (x, y) => {
       const c = y * W + x;
-      if (kind[c] !== OPEN || E.metal[c] || owner[c] >= 0) return;
+      if (kind[c] !== OPEN || matter[c] || owner[c] >= 0) return;
       if (level > ion[c]) ion[c] = level;
       if (left > trace[c]) trace[c] = left;
       if (line[c] < 0) { const da = (x - ax) * (x - ax) + (y - ay) * (y - ay), db = (x - bx) * (x - bx) + (y - by) * (y - by); line[c] = da <= db ? a.k : b.k; }
@@ -511,7 +551,7 @@ function raster(E, T) {
   // accident; 0 turns it off), fully ionized half as hot again.
   if (config.ionize) {
     const start = config.ionize, full = 1.5 * start;
-    for (let c = 0; c < N; c++) if (T[c] > start) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }
+    for (let c = 0; c < N; c++) if (T[c] > start && matter[c] < WATER) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }
   }
 }
 
@@ -532,21 +572,21 @@ function power(x, p) {
 // from that one's, when the two differ by more than the breakdown field: the cell that bridges a gap joins both sides.
 const RELAX = 4, SWEEPS = 3, DART = 16, MARK = 0.25;
 function grow(E, T, seed, dt) {
-  const { W, H, N, kind, metal, ion, phi, config, markers, owner, line, diag, kE, kS, kSE, kSW } = E, ground = config.ground;
+  const { W, H, N, kind, matter, ion, phi, config, markers, owner, line, diag, kE, kS, kSE, kSW } = E, ground = config.ground;
   if (!E.weight) { E.weight = new Float64Array(N); E.source = new Int32Array(N); E.drop = new Float64Array(N); E.room = new Float64Array(N); }
   const { weight, source, drop, room } = E, charged = [];
-  const conducts = c => kind[c] === HELD || metal[c] || ion[c] >= CHANNEL;
+  const conducts = c => kind[c] === HELD || (matter[c] ? lands(matter[c]) : ion[c] >= CHANNEL);
   const grounded = (i, j) => (i === 0 && ground.left) || (i === W - 1 && ground.right) || (j === 0 && ground.top) || (j === H - 1 && ground.bottom);
   // The chance weight of cell (i, j), noting the conductor it would grow from and the field across to it.
   // A burning arc (plasma carrying at least `sustain`) grows no branches: only electrodes, metal, leaders and broken
-  // channels do.
-  const seeds = c => kind[c] === HELD || metal[c] || (ion[c] >= CHANNEL && E.current[c] < config.sustain);
+  // channels do. Water takes an arc that reaches it but, like a grounded edge, grows none of its own.
+  const seeds = c => kind[c] === HELD || (matter[c] ? matter[c] === METAL : ion[c] >= CHANNEL && E.current[c] < config.sustain);
   // `drop` keeps each cell's field and `room` how far it is over the breakdown an old channel's trace leaves there, for
   // the dart cascade below.
   const rate = (i, j) => {
     const c = j * W + i;
     drop[c] = 0; room[c] = 0;
-    if (kind[c] !== OPEN || metal[c] || ion[c] >= CHANNEL) return 0;
+    if (kind[c] !== OPEN || matter[c] || ion[c] >= CHANNEL) return 0;
     let e = 0, from = -1;
     const here = phi[c];
     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
@@ -599,7 +639,7 @@ function grow(E, T, seed, dt) {
     const x0 = i - RELAX < 0 ? 0 : i - RELAX, x1 = i + RELAX >= W ? W - 1 : i + RELAX, y0 = j - RELAX < 0 ? 0 : j - RELAX, y1 = j + RELAX >= H ? H - 1 : j + RELAX;
     for (let s = 0; s < SWEEPS; s++) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const n = y * W + x;
-      if (kind[n] !== OPEN || metal[n] || ion[n] >= CHANNEL || !diag[n]) continue;
+      if (kind[n] !== OPEN || matter[n] || ion[n] >= CHANNEL || !diag[n]) continue;
       let sum = 0;
       if (kE[n]) sum += kE[n] * phi[n + 1];
       if (kS[n]) sum += kS[n] * phi[n + W];
@@ -674,10 +714,17 @@ function charge(E, charged) {
 }
 
 // One step of electricity in a gas: move and draw the plasma, solve the field, heat the gas, keep or lose the plasma,
-// then grow it where the field breaks the gas down.
-export function stepElectric(E, state, effect, dt) {
+// then grow it where the field breaks the gas down. Over a liquid, `liquid` is { matter, warm }: `matter[c]` is
+// MATTER.water or MATTER.ice where the liquid holds cell c this step (0 in its air), and `warm(c, heat)` takes the Joule
+// heat of those cells, per frame; `state` is the air's gas and the obstacles of `E.layout` its insulators.
+export function stepElectric(E, state, effect, dt, liquid = null) {
   const { g, T } = state, config = E.config, layout = E.layout ?? effect.layout, solids = state.solids ?? layout;
   if (E.layoutKey !== layout.key || E.solids !== solids) { buildMasks(E, effect, layout, solids.solid); E.solids = solids; }
+  const { N, kind, metal } = E;
+  if (liquid) {
+    const matter = E.matter = E.wet ??= new Uint8Array(N);
+    for (let c = 0; c < N; c++) matter[c] = kind[c] === OPEN && !metal[c] ? liquid.matter[c] : metal[c];
+  }
   moveMarkers(E, g, dt);
   tidy(E);
   raster(E, T);
@@ -686,9 +733,17 @@ export function stepElectric(E, state, effect, dt) {
     field(E, dt);
     currents(E);
   }
-  const { N, current, markers } = E;
-  // Current heats the gas: `heating` × current² a frame.
-  if (config.heating && E.electrodes.length) for (let c = 0; c < N; c++) if (E.kind[c] === OPEN && !E.metal[c] && current[c]) T[c] += config.heating * current[c] * current[c] * dt;
+  const { current, markers, matter } = E;
+  // Current heats the gas, `heating` × current² a frame, and over a liquid its water and ice. Joule heat is current² ÷
+  // conductivity, so water and ice, which conduct worse than a channel of full plasma, take that much more for the same
+  // current (water 16 times): the current spreads out as soon as it enters a pool, and the water at the arc's foot boils.
+  if (config.heating && E.electrodes.length) {
+    for (let c = 0; c < N; c++) {
+      if (kind[c] !== OPEN || !current[c]) continue;
+      const heat = config.heating * current[c] * current[c];
+      if (!matter[c]) T[c] += heat * dt; else if (matter[c] >= WATER) liquid.warm(c, heat * PLASMA / MATTER_SIGMA[matter[c]]);
+    }
+  }
   // Current keeps plasma ionized (fully from `sustain`); otherwise it recombines, more slowly the hotter it is.
   for (const m of markers) {
     const c = cellOf(E, m), t = T[c] > 0 ? T[c] : 0, lit = current[c] / config.sustain, drive = (lit >= OUT ? lit : 0) + (m.feed ?? 0), held = drive >= 1 ? 1 : drive;
@@ -707,10 +762,10 @@ export function stepElectric(E, state, effect, dt) {
   E.step++;
 }
 
-// The ionization (0–1) and current (per cell) fields the look reads.
+// The ionization (0–1) and current (per cell) fields the look reads: current where it runs through the gas only.
 export function electricFields(E, state, ionization, current) {
   const { N } = E;
   raster(E, state.T);
   ionization.set(E.ion);
-  for (let c = 0; c < N; c++) current[c] = E.kind[c] === OPEN && !E.metal[c] ? E.current[c] : 0;
+  for (let c = 0; c < N; c++) current[c] = E.kind[c] === OPEN && !E.matter[c] ? E.current[c] : 0;
 }

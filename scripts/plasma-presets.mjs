@@ -1,6 +1,7 @@
-// Electric gas presets for examples/: plasma that electrodes break down, current heats and buoyancy lifts. Each is an
-// ordinary pixelforge-fluid source (a gas effect with electrodes and `electric` settings); scripts/generate-examples.js
-// writes them as examples/<name>.fluid.json and showcase/fluid/build.mjs renders their GIFs.
+// Electric presets for examples/: plasma that electrodes break down, current heats and buoyancy lifts. Each is an
+// ordinary pixelforge-fluid source (a gas effect with electrodes and `electric` settings, or a liquid with heat and
+// vapour whose air carries the arcs); scripts/generate-examples.js writes them as examples/<name>.fluid.json and
+// showcase/fluid/build.mjs renders their GIFs.
 const fluidSource = (name, width, height, palette, effect, symbols) => ({ format: 'pixelforge-fluid', version: 1, name, width, height, palette, symbols, effects: { [name]: effect } });
 const shapeRows = (w, h, at) => Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => at(x, y) ?? '.').join(''));
 // A straight run of pixels `thick` wide from (x0, y0) to (x1, y1), as a test for shapeRows.
@@ -112,4 +113,37 @@ const plasmaGlobe = fluidSource('plasma-globe', 64, 64, { ...arc, m: '#c06cf0', 
   })
 });
 
-export const plasmaPresets = { 'jacobs-ladder': jacobsLadder, lightning, 'tesla-coil': teslaCoil, 'plasma-globe': plasmaGlobe };
+// Lightning into a pond: a leader forks down from the cloud and strikes the water, which conducts and is grounded
+// through the mud lining its bowl. The current spreads through the pond and heats it most at the arc's foot, so the
+// water there boils and a puff of steam rises from where it struck (a liquid with heat and vapour; the arcs burn in the
+// vapour's air and its look draws them). A second stroke follows a moment later, the steam drifts off and the pond is
+// still. The grassy banks are earth that does not conduct, so every strike goes to the water.
+const surface = 54, bowl = (x, y) => (x - 31.5) * (x - 31.5) / 576 + (y - surface + 6) * (y - surface + 6) / 324;
+const lightningPond = fluidSource('lightning-pond', 64, 72, { ...arc, k: '#1d2030', g: '#2c3044', B: '#1d3f7a', P: '#2f6fc0', p: '#5fb4e8', s: '#7d8aa3', S: '#c3cad8', m: '#3a2f2c', M: '#2a2220', n: '#3f6b3a', N: '#2c4a2a' }, {
+  kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], flip: 0.6, drag: 0.04, tension: 1.5,
+  heat: { air: 0.02, conduct: 0.08, latent: 0.4, vaporize: 1 },
+  vapour: {
+    expansion: 8, buoyancy: 0.5, vorticity: 0.3, cooling: 0.12, dissipation: 0.02,
+    look: [
+      { field: 'density', colors: ['s'], thresholds: [0.3], dither: 0.5 }, { field: 'density', colors: ['S'], thresholds: [0.8], dither: 0.4 },
+      ...arcLook('v', 'b', 'c', 'W', [0.25, 0.8])
+    ]
+  },
+  obstacles: [
+    { symbol: 'cloud', x: 0, y: 0, solid: false, draw: 'under' },
+    { symbol: 'charge', x: 26, y: 6, solid: false, draw: 'none', voltage: [{ frame: 0, voltage: -180 }, { frame: 8, voltage: 0 }, { frame: 16, voltage: -180 }, { frame: 21, voltage: 0 }], resistance: 20 },
+    { symbol: 'banks', x: 0, y: surface - 2 },
+    { symbol: 'bed', x: 0, y: surface - 2, voltage: 0 }
+  ],
+  electric: { breakdown: 2.5, focus: 2, growth: 40, recombine: 0.5, memory: 12, heating: 0.05 },
+  fill: [{ x: 0, y: surface, w: 64, h: 16 }], emitters: [],
+  look: [{ field: 'density', colors: ['P'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['p', 'P', 'B'], thresholds: [1, 2, 6], dither: 0 }],
+  cleanup: { strays: true }
+}, {
+  cloud: lightning.symbols.cloud, charge: lightning.symbols.charge,
+  banks: shapeRows(64, 20, (x, y) => { const Y = y + surface - 2; if (Y < surface) return null; return bowl(x, Y) >= 1.12 || (Y < surface + 3 && bowl(x, Y) >= 1) ? (Y === surface ? 'n' : Y === surface + 1 ? 'N' : 'm') : null; }),
+  // The mud lining the bowl below its rim, at 0 V: a strike's current runs through the water into the earth.
+  bed: shapeRows(64, 20, (x, y) => { const Y = y + surface - 2; return Y >= surface + 3 && bowl(x, Y) >= 1 && bowl(x, Y) < 1.12 ? 'M' : null; })
+});
+
+export const plasmaPresets = { 'jacobs-ladder': jacobsLadder, lightning, 'tesla-coil': teslaCoil, 'plasma-globe': plasmaGlobe, 'lightning-pond': lightningPond };

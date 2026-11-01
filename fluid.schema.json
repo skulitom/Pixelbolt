@@ -519,7 +519,7 @@
                       "minItems": 1
                     }
                   ],
-                  "description": "Gas: an electrode at this many volts, or keys that change it on cue (strikes, pulses); a loop repeats them. Arcs run between electrodes at different voltages."
+                  "description": "An electrode at this many volts, or keys that change it on cue (strikes, pulses); a loop repeats them. Arcs run between electrodes at different voltages, through a gas or the air over a liquid with heat and vapour."
                 },
                 "resistance": {
                   "type": "number",
@@ -535,7 +535,7 @@
                 },
                 "conductor": {
                   "type": "boolean",
-                  "description": "Gas: metal at no set voltage, which arcs jump to and through."
+                  "description": "Metal at no set voltage, which arcs jump to and through (a gas, or a liquid with heat and vapour)."
                 },
                 "adhesion": {
                   "type": "number",
@@ -1040,7 +1040,7 @@
             },
             "required": [],
             "additionalProperties": false,
-            "description": "Gas: electricity and plasma. Obstacles with a voltage are electrodes; the field between them breaks the gas down into branching channels that conduct, glow, heat the gas and recombine. Defaults apply when only an obstacle has a voltage."
+            "description": "Electricity and plasma. Obstacles with a voltage are electrodes; the field between them breaks the gas down into branching channels that conduct, glow, heat the gas and recombine. Defaults apply when only an obstacle has a voltage. A liquid with heat and vapour carries it too: arcs burn in the air over it (drawn by the vapour's look), land on the water, which conducts, and their current heats the water where they land, so it boils; ice hardly conducts."
           },
           "look": {
             "type": "array",
@@ -1059,7 +1059,7 @@
                     "ionization",
                     "current"
                   ],
-                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
+                  "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases, and over a liquid in the vapour look: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases and vapours: the current through each pixel; peak.current in the metadata gives the brightest)."
                 },
                 "colors": {
                   "type": "array",
@@ -1373,7 +1373,7 @@
             },
             "required": [],
             "additionalProperties": false,
-            "description": "Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank's air pushes on its water."
+            "description": "Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Bubbles gathering under a ceiling, two that touch with eight square pixels of air or more between them, become a pocket there, and a pocket that reaches open air vents. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank's air pushes on its water."
           },
           "heat": {
             "type": "object",
@@ -1469,7 +1469,7 @@
             },
             "required": [],
             "additionalProperties": false,
-            "description": "Liquid: phase changes. Each particle carries heat; water below freeze turns to ice where it touches ice or a cold solid (or 0.5 below freeze anywhere), ice holds still or settles as a piece and floats, and a cell of ice is solid to the flow, to bubbles and to air pockets. With vapour, water boils into steam, and steam condenses or frosts back. Water, ice and vapour are counted every frame in the figures (water, ice, vapour, added, taken). Needs still pixel obstacles."
+            "description": "Liquid: phase changes. Each particle carries heat; water below freeze turns to ice where it touches ice or a cold solid (or 0.5 below freeze anywhere), ice holds still or settles as a piece and floats, and a cell of ice is solid to the flow, to bubbles and to air pockets. With vapour, water boils into steam, and steam condenses or frosts back. Water, ice and vapour are counted every frame in the figures (water, ice, vapour, added, taken). Obstacles may move on keys or be smooth: a hot spoon, a heated piston or a smooth hot plate work as a still one does."
           },
           "vapour": {
             "type": "object",
@@ -1621,7 +1621,7 @@
                         "ionization",
                         "current"
                       ],
-                      "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
+                      "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases, and over a liquid in the vapour look: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases and vapours: the current through each pixel; peak.current in the metadata gives the brightest)."
                     },
                     "colors": {
                       "type": "array",
@@ -1739,7 +1739,7 @@
                         "ionization",
                         "current"
                       ],
-                      "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases: the current through each pixel; peak.current in the metadata gives the brightest)."
+                      "description": "density (smoke or water; water is 1 inside), temperature (gas heat; a liquid's water, ice or vapour with heat), speed (pixels per frame; foam, fast flow; a liquid has speed where there is water, a gas wherever its air moves, smoke or not), depth (pixels down from the liquid surface, 1 on the top row; from the third row down it follows the shallowest surface within three pixels along the row), light or shadow (0–1: how sharply density falls toward or away from the light; these only recolour pixels earlier layers drew), strand (liquids: 1 along a one-pixel path through liquid stretched thinner than the density can draw, a string joining two pieces or hanging at least 3 pixels off one, such as honey pulled up after a spoon), ionization (electric gases, and over a liquid in the vapour look: plasma, 0–1, 1 in a live channel, fading as it recombines) or current (electric gases and vapours: the current through each pixel; peak.current in the metadata gives the brightest)."
                     },
                     "colors": {
                       "type": "array",
