@@ -325,18 +325,19 @@ function readSurface(obstacle, op, liquid, blocks) {
 }
 // The solid layer of a W × H layout with the obstacles at `places` on one frame. `solid` and `owner` are per cell, and
 // `ownerAt(x, y)` answers beyond the canvas too. `velocity(c)` is a solid cell's [vx, vy] in pixels per frame, or null
-// where it stands still (ice, a still obstacle, one that jumped this frame); `speed` holds each obstacle's. For a moving
-// one, `ahead(c)` is how far its whole-pixel place is ahead of where it really is, [dx, dy]. `props(owner)` is an owner's
-// surface properties, or null (the effect's, for ice and closed edges).
-function solidLayer(effect, layout, places, W, H) {
+// where it stands still (a still obstacle, one that jumped this frame, resting ice); `speed` holds each obstacle's.
+// `ahead(c)` is how far a moving cell's whole-pixel place is ahead of where it really is, [dx, dy]. `props(owner)` is an
+// owner's surface properties, or null (the effect's, for ice and closed edges). Ice that settles or floats is a moving
+// solid too: `ice`, when given, is { moving, velocity(c) } for the ICE cells, whole cells with nothing ahead.
+function solidLayer(effect, layout, places, W, H, ice = null) {
   const { solid, owner } = layout, { walls, obstacles } = effect;
   const speed = obstacles.map((o, i) => { const at = places[i]; return o.blocks && at.show && (at.vx || at.vy) ? [at.vx, at.vy] : null; });
-  const beyond = closed => (closed ? EDGE : NONE);
+  const beyond = closed => (closed ? EDGE : NONE), still = [0, 0];
   return {
-    W, H, N: W * H, solid, owner, speed, moving: speed.some(Boolean),
+    W, H, N: W * H, solid, owner, speed, moving: speed.some(Boolean) || !!ice?.moving,
     ownerAt: (x, y) => (x < 0 ? beyond(walls.left) : x >= W ? beyond(walls.right) : y < 0 ? beyond(walls.top) : y >= H ? beyond(walls.bottom) : owner[y * W + x]),
-    velocity: c => (owner[c] >= 0 ? speed[owner[c]] : null),
-    ahead: c => { const at = places[owner[c]]; return [at.dx, at.dy]; },
+    velocity: c => (owner[c] >= 0 ? speed[owner[c]] : owner[c] === ICE && ice ? ice.velocity(c) : null),
+    ahead: c => { if (owner[c] < 0) return still; const at = places[owner[c]]; return [at.dx, at.dy]; },
     props: o => (o >= 0 ? obstacles[o].props : null)
   };
 }
