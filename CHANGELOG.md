@@ -279,6 +279,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - `substeps` goes up to 16 (it stopped at 4), for fast liquids that need finer steps. Time grows with it: the waterfall steps live in about 2 ms at 2 substeps, 7 ms at 8 and 17 ms at 16, and the work budget counts every step.
 - A liquid `fill` can be an ellipse (`radius: [x, y]` with `at`), and an effect may list 64 fills (it stopped at 16). A jelly dome wider than it is tall is one fill, an ellipse cut by a box, where it took a stack of 2-row strips with steps down its sides.
 - A fluid obstacle may hang off the canvas, or be moved partly or wholly off it by its keys, by up to its own size past an edge (it had to fit inside on every frame it showed): what hangs off is clipped, as the edge clips the fluid. A press's rod can reach down from above the board and a conveyor's load can slide in and out. The frames copy only the part on the canvas, so rendering clips nothing, and an obstacle that is off the canvas whenever it shows is pointed out under `warnings`.
+- A live run's `render()` also returns `fluid`: one string per row, `#` where the look layers drew the fluid itself. An outline, a spark or a decoration drawn with the liquid's own key showed up in `keys` as liquid, so counting a pocket's slime by key counted them too.
 
 ### Fixes
 

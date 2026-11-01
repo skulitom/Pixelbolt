@@ -1752,7 +1752,7 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
 // Each look layer maps one field to palette colours: a colour is fully on from its threshold up, and `dither` feathers
 // it in below, through the pattern, over that share of the gap to the previous threshold. Later layers draw over
 // earlier ones; obstacles never hold fluid. Then optional cleanup and a one-pixel outline.
-function renderFields(effect, base, width, height) {
+function renderFields(effect, base, width, height, drawn = null) {
   // Colour codes are 16-bit: a palette key may be any single character, such as an accented letter.
   const N = width * height, { solid, front } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
   const [density] = base, covered = new Uint8Array(N);
@@ -1815,6 +1815,8 @@ function renderFields(effect, base, width, height) {
   if (effect.cleanup.strays || effect.cleanup.corners) {
     for (const change of cleanupIds(chars, width, height, { ...effect.cleanup, allowed: c => !solid[c] })) chars[change.index] = change.id;
   }
+  // `drawn`, when given, marks the cells the look layers drew the fluid on (after cleanup, before the outline).
+  if (drawn) for (let c = 0; c < N; c++) drawn[c] = chars[c] ? 1 : 0;
   if (effect.outline) {
     // The outline may cover an obstacle drawn under the fluid, never one drawn over it.
     const filled = Uint16Array.from(chars);
@@ -2338,16 +2340,19 @@ export function createLiveFluid(source, options = {}) {
     // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
     // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
     // pixel ('.' empty); where a translucent colour blends over another, the pixel is a mix and the key its top layer.
+    // `fluid` marks with '#' the pixels the look layers drew the fluid on (under any spark, whitewater or decoration drawn
+    // over it), so a page can tell the fluid from an outline, a spark or an obstacle drawn with the same palette key.
     render() {
       if (stamped !== run.layout.key) stampLayers(run.layout);
-      const chars = renderFields(run.view, run.base, width, height);
+      const drawn = new Uint8Array(N), chars = renderFields(run.view, run.base, width, height, drawn);
       for (let k = 0; k < overlay.length; k += 2) chars[overlay[k]] = overlay[k + 1];
       const rgba = under.slice(), codes = underKeys.slice();
       for (let c = 0; c < N; c++) if (chars[c]) { composite(rgba, c * 4, colours.get(chars[c])); codes[c] = chars[c]; }
       for (let k = 0; k < over.length; k += 2) { composite(rgba, over[k] * 4, colours.get(over[k + 1])); codes[over[k]] = over[k + 1]; }
-      const keys = [];
+      const keys = [], fluid = [];
       for (let j = 0; j < height; j++) { let row = ''; for (let i = 0; i < width; i++) { const code = codes[j * width + i]; row += code ? String.fromCharCode(code) : '.'; } keys.push(row); }
-      return { rgba, keys };
+      for (let j = 0; j < height; j++) { let row = ''; for (let i = 0; i < width; i++) row += drawn[j * width + i] ? '#' : '.'; fluid.push(row); }
+      return { rgba, keys, fluid };
     }
   };
   if (warmup) live.step(warmup); else fieldsOf(run);

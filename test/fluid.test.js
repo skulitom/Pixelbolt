@@ -984,6 +984,24 @@ test('live frames use only palette colours, and keys name each pixel\'s colour',
   }
 });
 
+test('a live frame marks the pixels the fluid itself is drawn on, apart from an outline or decoration in its key (P-031)', () => {
+  // Slime outlined in its own key 'w', with lamps (decorations) drawn in 'w' in the air above it and over the pool:
+  // keys can't tell them apart, the mask can. It matches where the same run with no outline and no lamps draws
+  // anything, so it keeps the slime under the lamp over the pool.
+  const tank = extra => ({ ...gas(null), width: 32, height: 24, symbols: { lamp: ['www', 'www'] }, effects: { e: { kind: 'liquid', frames: 12, walls: FLUID_WALLS, emitters: [], fill: [{ x: 4, y: 12, w: 24, h: 10 }], look: [{ field: 'density', colors: ['w', 's'], thresholds: [0.5, 1.2], dither: 0 }], ...extra } } });
+  const marked = createLiveFluid(tank({ outline: 'w', obstacles: [{ symbol: 'lamp', x: 14, y: 4, solid: false }, { symbol: 'lamp', x: 8, y: 20, solid: false }] }), { warmup: 0 }), plain = createLiveFluid(tank({}), { warmup: 0 });
+  for (let f = 0; f < 12; f++) {
+    const shown = marked.step().render(), bare = plain.step().render();
+    assert.deepEqual(shown.fluid, bare.keys.map(row => row.replace(/[^.]/g, '#')), `frame ${f}`);
+  }
+  const { keys, fluid } = marked.render(), cells = test => keys.flatMap((row, y) => [...row].map((key, x) => (test(key, fluid[y][x], x, y) ? 1 : 0))).reduce((a, b) => a + b, 0);
+  assert.equal(cells((key, mark, x, y) => key === 'w' && mark === '.' && y >= 4 && y < 6 && x >= 14 && x < 17), 6, 'the lamp is not fluid');
+  assert.ok(cells((key, mark, x, y) => key === 'w' && mark === '.' && y >= 6 && y < 20) > 20, 'the outline is not fluid');
+  assert.equal(cells((key, mark, x, y) => key === 'w' && mark === '#' && y >= 20 && y < 22 && x >= 8 && x < 11), 6, 'the slime under the lamp over the pool is');
+  assert.ok(cells((key, mark) => mark === '#' && key !== '.') > 150, 'the slime is');
+  assert.ok(fluid.every(row => /^[#.]{32}$/.test(row)) && fluid.length === 24);
+});
+
 test('live runs stay inside the limits instead of stopping at them', () => {
   // A canvas flooded by puffs holds at most 32,768 particles.
   const tank = { ...gas(null), width: 128, height: 128, effects: { tank: { kind: 'liquid', frames: 8, substeps: 1, iterations: 1, walls: ['left', 'right', 'bottom'], emitters: [{ at: [2, 2], radius: 1, rate: 1, density: 0 }], look: smoke } } };
