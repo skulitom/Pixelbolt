@@ -189,6 +189,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - `pixel_compile` takes `{"preset": "<name>"}` in place of `source`, and the CLI `compile --preset <name> --out <new.json>`; both are byte-identical to compiling the preset's file. `pixelbolt presets [name]` prints the listing or one source.
 - The quick start, the server instructions and the first sentence of the fluid and fx schemas say to start fire, smoke, explosions, splashes and spells from a preset, and to get fewer frames by keeping N evenly spaced frames with one `pixel_patch` call (the quick start has the call for 8 of the smoke puff's 19), never by lowering `frames`, which stops the effect before it ends. The quick start no longer lists the slime fluid among ready-made effects: it is a drop of liquid, not a character.
 - The MCPB bundle ships every top-level example and the labs' preset lists, so the presets work in Claude Desktop too.
+- Over MCP the listing measures each preset once: the facts are kept in the export directory's `.presets` folder, in one file for the engine's exact code (its version, `src/` and the labs' lists), under a hash of each preset's resolved source. A later listing reads them in about 50 ms instead of compiling every preset again (5-7 s here, 14-18 s on CI runners); a changed preset or engine is measured again, a damaged file is measured afresh, and a folder that can't be written costs only speed.
 
 ### Godot TileSets with weights, collision, plain tiles and several sets
 

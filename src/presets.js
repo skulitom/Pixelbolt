@@ -3,7 +3,8 @@
 // top-level examples/*.fluid.json, *.fx.json, *.wave.json or *.poses.json source, or a plain recipe whose animations
 // all loop (a coin spin, a flickering ember) and that no source there compiles to. Titles and notes come from the
 // Fluid and Effects labs' lists where those have one; anything else is described from its own name and animations.
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, mkdir, rename, rm } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PixelError, renderProject } from './core.js';
@@ -108,29 +109,76 @@ function about(entry, source, animations) {
 }
 
 // One line of facts per preset, from compiling it: what an agent compares with the request before picking one.
-async function summarize(entry) {
-  const { source } = await loadPreset(entry), recipe = compilePreset(source).recipe, project = renderProject(recipe);
-  const colors = new Set();
+// Everything but the name, kind and file depends only on the engine and the preset's resolved source, so a cache
+// (`store`, from openCache) keeps those facts under a key of both, and `fresh` says they were measured this time.
+async function summarize(entry, store) {
+  const { source } = await loadPreset(entry), id = store?.key(entry, source), known = id === undefined ? undefined : store.cached[id];
+  const hit = typeof known?.for === 'string' && typeof known.size === 'string' && Number.isInteger(known.frames) && Number.isInteger(known.colors) && typeof known.animations === 'object';
+  const facts = hit ? known : measure(entry, source);
+  return { summary: { name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, ...facts }, id, facts, fresh: !hit };
+}
+function measure(entry, source) {
+  const recipe = compilePreset(source).recipe, project = renderProject(recipe), colors = new Set();
   for (const frame of project.frames) for (let i = 0; i < frame.data.length; i += 4) if (frame.data[i + 3]) colors.add(((frame.data[i] << 24) | (frame.data[i + 1] << 16) | (frame.data[i + 2] << 8) | frame.data[i + 3]) >>> 0);
   const animations = Object.entries(project.animations), shown = animations.slice(0, 12);
   return {
-    name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, for: about(entry, source, animations),
+    for: about(entry, source, animations),
     size: `${project.width}x${project.height}`, frames: project.frames.length, plays: plays(animations), colors: colors.size,
     animations: Object.fromEntries(shown.map(([name, item]) => [name, `${item.frames.length} frames, ${item.loop ? 'loop' : 'one-shot'}`])),
     ...(animations.length > shown.length && { moreAnimations: animations.length - shown.length })
   };
 }
 
+// The engine a listing was measured with: the package version and every file that can change a preset's facts (the
+// compilers and renderer in src/, and the labs' lists the titles come from), so a cache never outlives an engine
+// change, released or not. Read once per process.
+const ENGINE_FILES = [new URL('../package.json', import.meta.url), new URL('../studio/effects-controls.js', import.meta.url), new URL('../studio/fluid-controls.js', import.meta.url)];
+let engine;
+async function engineFingerprint() {
+  engine ??= (async () => {
+    const src = fileURLToPath(new URL('./', import.meta.url)), files = (await readdir(src)).filter(name => name.endsWith('.js')).sort().map(name => path.join(src, name));
+    const hash = createHash('sha256');
+    for (const file of [...ENGINE_FILES.map(url => fileURLToPath(url)), ...files]) hash.update(`${path.basename(file)}\0`).update(await readFile(file)).update('\0');
+    return hash.digest('hex');
+  })();
+  return engine;
+}
+
+// The cache a listing reads and writes in `directory` (the MCP server's export directory gives `.presets` in it): one
+// JSON file per engine, mapping a hash of each preset's resolved source to its facts. A missing or damaged file is
+// measured afresh; a new file replaces the folder's others whole (written beside them, then renamed), so servers that
+// share the directory never read half a file.
+async function openCache(directory) {
+  const fingerprint = await engineFingerprint(), file = path.join(directory, `${fingerprint}.json`);
+  let cached = {};
+  try { const read = JSON.parse(await readFile(file, 'utf8')); if (read && typeof read === 'object' && !Array.isArray(read)) cached = read; } catch { /* measured afresh */ }
+  const key = (entry, source) => createHash('sha256').update(JSON.stringify([entry.kind, entry.base, source])).digest('hex');
+  async function save(entries) {
+    await mkdir(directory, { recursive: true });
+    const temp = path.join(directory, `${randomUUID()}.tmp`);
+    await writeFile(temp, JSON.stringify(entries));
+    await rename(temp, file);
+    for (const name of await readdir(directory)) if (/^[0-9a-f]{64}\.json$/.test(name) && name !== path.basename(file)) await rm(path.join(directory, name), { force: true });
+  }
+  return { key, cached, save };
+}
+
 // The whole listing. A preset that fails to compile is listed with its error, so one broken file hides nothing else.
 // Measuring compiles every preset; past `budget` milliseconds (a slow machine, a growing folder) the rest are listed by
-// name, kind and file only, so the call stays well inside the MCP server's time limit.
-export async function listPresets({ budget = 20000 } = {}) {
-  const presets = [], start = Date.now();
-  let unmeasured = 0;
+// name, kind and file only, so the call stays well inside the MCP server's time limit. With `cache`, a folder, each
+// preset is measured once per engine and source, and later listings read its facts from there.
+export async function listPresets({ budget = 20000, cache } = {}) {
+  const presets = [], start = Date.now(), store = cache === undefined ? undefined : await openCache(cache), kept = {};
+  let unmeasured = 0, added = 0;
   for (const entry of await presetEntries()) {
     if (Date.now() - start > budget) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, unmeasured: true }); unmeasured++; continue; }
-    try { presets.push(await summarize(entry)); }
-    catch (error) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, error: error.message }); }
+    try {
+      const { summary, id, facts, fresh } = await summarize(entry, store);
+      presets.push(summary);
+      if (store) { kept[id] = facts; if (fresh) added++; }
+    } catch (error) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, error: error.message }); }
   }
+  // Only presets in this listing are kept, so the file never grows past the folder; a failed write costs only speed.
+  if (store && (added || Object.keys(kept).length !== Object.keys(store.cached).length)) await store.save(kept).catch(() => {});
   return { guide: PRESET_GUIDE, presets, ...(unmeasured && { note: `${unmeasured} presets were listed without measuring them, to keep this call short; pixel_compile one by name to see it.` }) };
 }
