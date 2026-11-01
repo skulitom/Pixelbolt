@@ -299,9 +299,9 @@ function buildLayout(obstacles, width, height, places) {
   return { key: layoutKey(places), places, solid, front, smooth, owner };
 }
 
-// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag, moving
-// there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and follows
-// the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
+// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag,
+// moving there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and
+// follows the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
 const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity', 'drag'];
 function readKeys(value, path, frames, base) {
   if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity, drag }');
@@ -1541,7 +1541,21 @@ function burstFill(state, effect, fill, f) {
     piece[c] = best;
   }
   // A cell beside a piece numbered lower becomes the gap between them.
-  const kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
+  let kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
+  // Liquid breaks into blobs, not shards: twice over, a cell with four or fewer of its eight neighbours in its own piece
+  // is trimmed off (its water goes back to the piece, as a gap's does), so the straight-cut pieces fly as rounded blobs,
+  // where an elastic liquid would keep their corners all the way down. A piece of six cells or fewer stays whole.
+  for (let pass = 0; pass < 2; pass++) {
+    const left = new Int16Array(W * H).fill(-1), size = seeds.map(() => 0);
+    for (const c of kept) { left[c] = piece[c]; size[piece[c]]++; }
+    kept = kept.filter(c => {
+      if (size[piece[c]] <= 6) return true;
+      const x = c % W, y = (c - x) / W;
+      let same = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && x + dx >= 0 && y + dy >= 0 && x + dx < W && y + dy < H && left[c + dy * W + dx] === piece[c]) same++;
+      return same > 4;
+    });
+  }
   // The middle of the whole shape on the canvas, obstacles' pixels included.
   let cx = 0, cy = 0, area = 0;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (fill.inside(i + 0.5, j + 0.5)) { cx += i + 0.5; cy += j + 0.5; area++; }

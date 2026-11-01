@@ -460,14 +460,15 @@ const slime = fluidSource('slime', 32, 32, { G: '#1f6a3f', g: '#3fa34d', l: '#8b
 }, { ground: Array.from({ length: 4 }, (_, y) => shapeRows(32, 1, x => (y === 0 ? (x % 2 ? 'r' : 'R') : y === 2 && x % 4 === 1 ? 'R' : 'r'))[0]) });
 // Wet snow on a house's 45-degree roof slides off as one slab, pours over the eave and settles in a drift against the
 // wall. The roof is a smooth obstacle, so the snow (a soft yield-stress liquid with slip) slides down its pixel steps
-// instead of catching on them; a key firms the snow once it has landed, so the drift stays put rather than skidding on.
+// instead of catching on them; a key firms the snow over ten frames as it lands, so the falling column slumps into a
+// rounded drift and stops there, rather than spreading into a thin sheet or freezing as a column.
 const roofSlab = shapeRows(22, 24, (x, y) => (y === x ? 't' : y === x + 1 ? 'r' : y === x + 2 || (y > x + 2 && x < 2) ? 'R' : null));
 const roofWall = shapeRows(20, 22, (x, y) => (y < x - 9 ? null : x >= 8 && x <= 12 && y >= 10 && y <= 14 ? (x === 10 || y === 12 ? 'M' : 'y') : y % 4 === 0 ? 'M' : 'm'));
 // The snow starts lying on the roof: one-row strips over its top pixels (y = x + 4), seven rows deep from column 8 to 20.
 const roofSnowFill = Array.from({ length: 19 }, (_, i) => i + 5).flatMap(y => { const x0 = Math.max(y - 3, 8), x1 = Math.min(y + 3, 20); return x1 >= x0 ? [{ x: x0, y, w: x1 - x0 + 1, h: 1 }] : []; });
 const roofSnow = fluidSource('roof-snow', 56, 44, { w: '#f4f8ff', s: '#b8c8e8', S: '#7f93bf', o: '#2a3150', r: '#a3483a', R: '#6f2f2a', t: '#c96a4f', m: '#6b5a6e', M: '#4a3d52', y: '#f2d27a', g: '#3d4a3a', G: '#2c3528' }, {
   kind: 'liquid', frames: 48, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], yield: 0.9, slip: true, apic: true, tension: 1.2,
-  keys: [{ frame: 28, yield: 4, over: 4 }],
+  keys: [{ frame: 24, yield: 3, over: 10 }],
   // The house is drawn in front of the snow's outline, so the outline stops at the wall instead of covering its edge.
   obstacles: [{ symbol: 'wall', x: 2, y: 18 }, { symbol: 'slab', x: 2, y: 6, surface: 'smooth' }, { symbol: 'ground', x: 0, y: 40 }],
   fill: roofSnowFill, emitters: [],

@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Slime and snow heaps
+
+- A burst fill's pieces have their corners rounded off before they fly: twice over, a cell with four or fewer of its eight neighbours in its own piece is trimmed, its water going back to the piece as a gap's does, so the volume is kept and a piece of six cells or fewer stays whole. The straight cuts made every piece a sharp-edged shard, and an elastic liquid kept those corners all the way down: the slime-burst example's pieces landed as flat, notched slabs and now fly as blobs and settle as domes. The trimmed water crowds the pieces for the first frames, so they swell back as they fly.
+- The roof-snow example firms its snow gradually over frames 24-34 (yield 3) instead of at frame 28, so the falling column slumps into a rounded drift about five rows high at the wall and stops, where it spread into a wedge about three rows high. Firming it sooner or all at once froze the column as a tower or a toppling arch.
+- The slime-burst and roof-snow golden hashes and GIFs are updated.
+- Still open: the slime example's rebound is a tall bullet with straight sides for three frames before it settles into a dome, and its second wobble is a single pixel. Its tension and yield don't change that shape; it comes from the elastic model.
+
 ### Bubbles that behave like air
 
 - A liquid's spark with `rise` is a bubble that behaves like air. It rises `rise` pixels per frame through still water, against the liquid's gravity (keys included), on top of the flow that carries it, so it rises steadily, a current sweeps it along and a plunging stream drags it down first. Where it meets an obstacle or a closed edge it slides along it instead of ending: up a sloping ceiling, out from under a ledge within five pixels, or it waits there; bubbles waiting under the same ceiling that touch merge into one holding the air of both, up to three pixels across. It ends where it reaches the air (bursting there with `pop`) or at the end of its life. `wobble` sways it from side to side, and `lift` (0–1) hands that share of its buoyancy to the water around it as a force, so a column of bubbles drives an upwelling: about a bubble a frame with `lift: 1` raises a dome a few pixels high on the surface over it.

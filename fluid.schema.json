@@ -400,7 +400,7 @@
                     "speed"
                   ],
                   "additionalProperties": false,
-                  "description": "Break the fill into seeded pieces with a one-pixel gap between them, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps goes to their pieces, so the volume is kept."
+                  "description": "Break the fill into seeded pieces with a one-pixel gap between them and rounded corners, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps and corners goes to their pieces, so the volume is kept."
                 }
               },
               "required": [],
