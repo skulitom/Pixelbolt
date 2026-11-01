@@ -983,11 +983,11 @@
                 "maximum": 256,
                 "description": "Frames a spent channel keeps guiding new strikes, which run down it at once (a restrike on the same channel). 0: none. Default 8."
               },
-              "heat": {
+              "heating": {
                 "type": "number",
                 "minimum": 0,
                 "maximum": 16,
-                "description": "Temperature added a frame per unit of current squared, so buoyancy lifts an arc. Default 0.2."
+                "description": "Temperature added a frame per unit of current squared (Joule heating), so buoyancy lifts an arc. Default 0.2."
               },
               "ionize": {
                 "type": "number",

@@ -190,7 +190,7 @@
         "recombine": 0.7,
         "sustain": 0.4,
         "memory": 0,
-        "heat": 1.5
+        "heating": 1.5
       },
       "look": [
         { "field": "ionization", "colors": ["v", "b"], "thresholds": [0.06, 0.35], "dither": 0.4 },

@@ -65,11 +65,11 @@ test('with no voltage, or a field below breakdown, nothing ionizes', () => {
   assert.equal(effectOf(compileFluid(source({ obstacles: [{ symbol: 'plate', x: 7, y: 2, voltage: 0 }] }))).peak.ionization, 0);
 });
 
-test('electricity adds no smoke and no heat but its own: the same smoke with arcs and heat 0 matches the smoke without', () => {
-  // Smoke in a closed box between the plates. With heat 0 the arcs leave the gas alone, so density and temperature
-  // follow exactly the run with no voltage; with heat, current warms the gas.
-  const run = (top, heat) => effectOf(compileFluid(source({
-    walls: ['left', 'right', 'top', 'bottom'], obstacles: plates(top), electric: { ...electric, heat },
+test('electricity adds no smoke and no heat but its own: the same smoke with arcs and heating 0 matches the smoke without', () => {
+  // Smoke in a closed box between the plates. With heating 0 the arcs leave the gas alone, so density and temperature
+  // follow exactly the run with no voltage; with heating, current warms the gas.
+  const run = (top, heating) => effectOf(compileFluid(source({
+    walls: ['left', 'right', 'top', 'bottom'], obstacles: plates(top), electric: { ...electric, heating },
     emitters: [{ at: [12, 12], radius: 4, burst: 1, density: 1 }], look: [{ field: 'density', colors: ['s'], thresholds: [0.2] }, ...look]
   })));
   const still = run(0, 0), arcs = run(40, 0), hot = run(40, 1);

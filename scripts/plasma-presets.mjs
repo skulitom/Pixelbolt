@@ -38,7 +38,7 @@ const jacobsLadder = fluidSource('jacobs-ladder', 40, 64, { ...arc, G: '#c4c8cf'
     { symbol: 'posts', x: 0, y: 53 }
   ],
   emitters: [],
-  electric: { breakdown: 4, focus: 3, growth: 6, recombine: 0.7, sustain: 0.4, memory: 0, heat: 1.5 },
+  electric: { breakdown: 4, focus: 3, growth: 6, recombine: 0.7, sustain: 0.4, memory: 0, heating: 1.5 },
   look: arcLook('v', 'b', 'c', 'W', [0.25, 0.8])
 }, {
   'rod-left': ladderRod(-1), 'rod-right': ladderRod(1),
@@ -56,7 +56,7 @@ const lightning = fluidSource('lightning', 64, 96, { ...arc, k: '#1d2030', g: '#
     { symbol: 'ground', x: 0, y: 92, voltage: 0 }
   ],
   emitters: [],
-  electric: { breakdown: 2.5, focus: 2, growth: 40, recombine: 0.5, memory: 12, heat: 0.01 },
+  electric: { breakdown: 2.5, focus: 2, growth: 40, recombine: 0.5, memory: 12, heating: 0.01 },
   look: arcLook('v', 'b', 'c', 'W', [0.25, 0.8])
 }, {
   cloud: shapeRows(64, 14, (x, y) => { const d = (x - 32) * (x - 32) / 900 + (y - 2) * (y - 2) / 110; return d < 1 ? (d < 0.6 ? 'k' : 'g') : null; }),
@@ -74,7 +74,7 @@ const teslaCoil = fluidSource('tesla-coil', 96, 64, { ...arc, m: '#c06cf0', p: '
     { symbol: 'rod', x: 60, y: 38, voltage: 0 }
   ],
   emitters: [],
-  electric: { breakdown: 3, focus: 1.2, growth: 40, recombine: 0.9, sustain: 0.4, memory: 2, heat: 0.05, ground: ['left', 'right', 'bottom'] },
+  electric: { breakdown: 3, focus: 1.2, growth: 40, recombine: 0.9, sustain: 0.4, memory: 2, heating: 0.05, ground: ['left', 'right', 'bottom'] },
   look: [
     { field: 'ionization', colors: ['p', 'm'], thresholds: [0.06, 0.45], dither: 0.4 },
     { field: 'current', colors: ['c', 'W'], thresholds: [0.4, 1.2], dither: 0, halo: { color: 'p', width: 1 } }
@@ -97,7 +97,7 @@ const plasmaGlobe = fluidSource('plasma-globe', 64, 64, { ...arc, m: '#c06cf0', 
     { symbol: 'stand', x: 0, y: 0 }
   ],
   emitters: [],
-  electric: { breakdown: 3, focus: 3, growth: 60, recombine: 0.6, sustain: 2, memory: 2, heat: 0.005 },
+  electric: { breakdown: 3, focus: 3, growth: 60, recombine: 0.6, sustain: 2, memory: 2, heating: 0.005 },
   look: [
     { field: 'ionization', colors: ['p'], thresholds: [0.1], dither: 0.4 },
     { field: 'current', colors: ['m', 'W'], thresholds: [0.6, 4], dither: 0 }

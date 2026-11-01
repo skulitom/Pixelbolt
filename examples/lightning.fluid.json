@@ -72,7 +72,7 @@
         { "symbol": "ground", "x": 0, "y": 92, "voltage": 0 }
       ],
       "emitters": [],
-      "electric": { "breakdown": 2.5, "focus": 2, "growth": 40, "recombine": 0.5, "memory": 12, "heat": 0.01 },
+      "electric": { "breakdown": 2.5, "focus": 2, "growth": 40, "recombine": 0.5, "memory": 12, "heating": 0.01 },
       "look": [
         { "field": "ionization", "colors": ["v", "b"], "thresholds": [0.06, 0.35], "dither": 0.4 },
         {

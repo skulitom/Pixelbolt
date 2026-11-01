@@ -136,7 +136,7 @@
         "recombine": 0.9,
         "sustain": 0.4,
         "memory": 2,
-        "heat": 0.05,
+        "heating": 0.05,
         "ground": ["left", "right", "bottom"]
       },
       "look": [

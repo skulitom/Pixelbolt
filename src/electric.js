@@ -13,7 +13,7 @@
 // it down again. A growing leader is kept ionized by the current that charges it; current through a cell keeps it
 // ionized (fully from `sustain`, and not at all below half of it, so a starved arc goes out); otherwise plasma recombines
 // at `recombine` a frame (slower when hot), fading as an afterglow, and leaves a trace for `memory` frames that a new
-// strike runs down at once (a dart leader). Current heats the gas (`heat` × current²), so buoyancy lifts an arc. Gas
+// strike runs down at once (a dart leader). Current heats the gas (`heating` × current²), so buoyancy lifts an arc. Gas
 // hotter than `ionize` (2 on the shared heat scale, above every flame) is plasma too: an arc's hot air, a fireball's core.
 //
 // A supply with `resistance` sags as current flows, so a long arc starves and a shorter path takes over, and with
@@ -96,14 +96,14 @@ function schedule(value, path, frames) {
 
 export function readElectric(value, path, obstacles) {
   if (obstacles.filter(o => o.electric && o.electric.voltage).length > LIMITS.electrodes) fail(path, `at most ${LIMITS.electrodes} obstacles may have a voltage`);
-  fields(value, ['breakdown', 'focus', 'growth', 'recombine', 'sustain', 'memory', 'heat', 'ionize', 'ground', 'iterations'], path);
+  fields(value, ['breakdown', 'focus', 'growth', 'recombine', 'sustain', 'memory', 'heating', 'ionize', 'ground', 'iterations'], path);
   const ground = value.ground ?? [];
   if (!Array.isArray(ground) || ground.length > 4 || ground.some(edge => !EDGES.includes(edge)) || new Set(ground).size !== ground.length) fail(`${path}.ground`, `expected distinct edges from ${EDGES.join(', ')}`);
   return {
     breakdown: number(value.breakdown ?? 3, `${path}.breakdown`, 0.01, 1000), focus: number(value.focus ?? 2, `${path}.focus`, 0.5, 8),
     growth: integer(value.growth ?? 8, `${path}.growth`, 1, 256), recombine: number(value.recombine ?? 0.3, `${path}.recombine`, 0, 1),
     sustain: number(value.sustain ?? 0.5, `${path}.sustain`, 0.001, 1000), memory: number(value.memory ?? 8, `${path}.memory`, 0, 256),
-    heat: number(value.heat ?? 0.2, `${path}.heat`, 0, 16), ionize: number(value.ionize ?? 2, `${path}.ionize`, 0, 64),
+    heating: number(value.heating ?? 0.2, `${path}.heating`, 0, 16), ionize: number(value.ionize ?? 2, `${path}.ionize`, 0, 64),
     ground: Object.fromEntries(EDGES.map(edge => [edge, ground.includes(edge)])), iterations: integer(value.iterations ?? 24, `${path}.iterations`, 1, 200)
   };
 }
@@ -687,8 +687,8 @@ export function stepElectric(E, state, effect, dt) {
     currents(E);
   }
   const { N, current, markers } = E;
-  // Current heats the gas: `heat` × current² a frame.
-  if (config.heat && E.electrodes.length) for (let c = 0; c < N; c++) if (E.kind[c] === OPEN && !E.metal[c] && current[c]) T[c] += config.heat * current[c] * current[c] * dt;
+  // Current heats the gas: `heating` × current² a frame.
+  if (config.heating && E.electrodes.length) for (let c = 0; c < N; c++) if (E.kind[c] === OPEN && !E.metal[c] && current[c]) T[c] += config.heating * current[c] * current[c] * dt;
   // Current keeps plasma ionized (fully from `sustain`); otherwise it recombines, more slowly the hotter it is.
   for (const m of markers) {
     const c = cellOf(E, m), t = T[c] > 0 ? T[c] : 0, lit = current[c] / config.sustain, drive = (lit >= OUT ? lit : 0) + (m.feed ?? 0), held = drive >= 1 ? 1 : drive;

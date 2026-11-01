@@ -203,7 +203,7 @@
         "recombine": 0.6,
         "sustain": 2,
         "memory": 2,
-        "heat": 0.005
+        "heating": 0.005
       },
       "look": [
         { "field": "ionization", "colors": ["p"], "thresholds": [0.1], "dither": 0.4 },

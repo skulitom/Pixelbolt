@@ -498,7 +498,7 @@ const fluidElectric = { ...object({
   recombine: num(0, 1, 'Share of ionization lost a frame where no current holds it (slower in hot gas): the afterglow. Default 0.3.'),
   sustain: num(0.001, 1000, 'Current that keeps a channel fully ionized; below half of it a channel goes out. Default 0.5.'),
   memory: num(0, 256, 'Frames a spent channel keeps guiding new strikes, which run down it at once (a restrike on the same channel). 0: none. Default 8.'),
-  heat: num(0, 16, 'Temperature added a frame per unit of current squared, so buoyancy lifts an arc. Default 0.2.'),
+  heating: num(0, 16, 'Temperature added a frame per unit of current squared (Joule heating), so buoyancy lifts an arc. Default 0.2.'),
   ionize: num(0, 64, 'Gas hotter than this is plasma too, fully at half as hot again: an arc\'s hot air, a fireball\'s core. Default 2, above every flame on the shared heat scale; 0 turns it off.'),
   ground: { ...array({ enum: FLUID_WALLS }, 4), uniqueItems: true, description: 'Canvas edges held at 0 V, the world beyond: arcs that reach them strike them.' },
   iterations: int(1, 200, 'Conjugate-gradient steps of the field solve each step; default 24.')
