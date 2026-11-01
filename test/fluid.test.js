@@ -23,18 +23,18 @@ const GOLDEN = {
   'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
   'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
   torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
-  splash: '66ef64ae3bcca306d31d6428da3a4c5a3a9a1f500e466dfe6e2b5e82010b484a',
-  waterfall: 'f1efd4b19f0e3c05a48b7a2f6505e50fe5292b214fcd5f5cce93c5868d4e648d',
-  drip: '540bd60355c8e1a3dabfc4550b753d5e0f214658c11156f37a90456e44825070',
-  potion: 'a2aaefe06559d19c55724e023f2717c3904858e722d4bb0f17f7afc61bd0f8ce',
-  honey: '66506170ee87776f7e128b1c99944a275e52da3a5ee8af24cf7ff163993035ab',
-  slime: '825c482db016721d22cc8c173d14708977f4a9f05f8d9d0a180549422476e04f',
-  'roof-snow': 'ceef673d9afc22b22e6b2a955e21b39ebda85f81052aec5dbe9a2acb62413add',
-  'dam-break': '3e8958e3c2833e522717a72843feb4564b9162e3d2cd9fbe049468d22c4bdb9e',
+  splash: 'f362e686056ea3721f0f1f4174bf73876605ec918f7282c284fa406b3c72ac19',
+  waterfall: '42054eac098009b35d5c361b5e48f3e67edddeddb024c1d26f0907fdfcd4bf3e',
+  drip: 'b99226dae273742dc7bfe66a3ea90857fe43666988ee4a51710856aa0dd1ae23',
+  potion: 'f3fd74ffac7e811f40d72a9911ef227c37fb23e8fcb66fff035343a6cd094e13',
+  honey: 'da303b6a9dff25af000c7f1e78560c244141d378a849b62ca7dda584d8565f19',
+  slime: '2918ba24014dc39991528890620881a36ff71da3eb76e86307ea1856c39d1def',
+  'roof-snow': 'e848d67df62f7ad7951b26ac6297af8f32343bf688496d109ea4b114805486de',
+  'dam-break': 'f1652ff5e69451024d7a94cd3f95fef93e817995d6c7269f29fb781a02359eb2',
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
-  'slime-burst': '70d4d5860e9cd806e1cdf396c8cc2ca518b39f08a0b80dee473048cf3bf1e5bb',
-  'honey-drop': '8b588089a4bc6d37405252c63b4d0b009806c95ad016506c675ecfecb116e010',
-  aquarium: '3a3d53a17ff1bdfd638709a3a651f466fc2c23d17001ec79cb6d8d88dc2712d6'
+  'slime-burst': 'c56b008e0b8659d3e310198f34cb67920be09029e1bb2124cb1a0842567b72df',
+  'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
+  aquarium: '2944337f7829a7ecadafbcb8a67c83bfa4f1bcb734cac3e17593b4be6e28cafb'
 };
 const examples = new Map();
 const example = async name => {
@@ -58,7 +58,8 @@ test('every fluid example compiles to its golden recipe, using only its palette 
     assert.equal(sha(recipe), GOLDEN[name], `${name} compiled differently; if the change is intended, update GOLDEN and rebuild the GIFs`);
     const keys = new Set(Object.keys(source.palette)), colours = new Set(Object.values(source.palette).map(hex => hex.toLowerCase()));
     for (const frame of recipe.frames) for (const op of frame.ops ?? []) {
-      assert.ok(['grid', 'stamp'].includes(op.op), `${name} ${frame.name}: ${op.op}`);
+      // An obstacle partly off the canvas (dam-break's plank as it lifts away) is drawn as a copy of its visible part.
+      assert.ok(['grid', 'stamp', 'copy'].includes(op.op), `${name} ${frame.name}: ${op.op}`);
       if (op.op === 'grid') for (const row of op.rows) for (const char of row) assert.ok(char === '.' || keys.has(char), `${name} ${frame.name} draws ${char}`);
     }
     // No colour outside the palette, by construction: every opaque pixel is a palette colour.
@@ -612,6 +613,13 @@ test('keys change a liquid on cue: a held heap gives way, a clinging film drops'
   // A key at frame 0 is the same as the setting itself, spray that falls by the effect's gravity included.
   const sideways = extra => compileFluid(goo({ frames: 24, walls: FLUID_WALLS, whitewater: [{ impact: 0.5, chance: 0.5, colors: ['w'], life: 10 }], ...extra }, [{ at: [24, 8], radius: 4, velocity: [0, 3] }])).recipe;
   assert.deepEqual(sideways({ gravity: [0, 0.3], keys: [{ frame: 0, gravity: [0.3, 0.1] }] }), sideways({ gravity: [0.3, 0.1] }));
+  assert.deepEqual(sideways({ keys: [{ frame: 0, drag: 0.1 }] }), sideways({ drag: 0.1 }));
+  // Drag keyed in calms a slosh from its frame on, and changes nothing before it.
+  const slosh = keys => compileFluid(goo({ frames: 40, walls: FLUID_WALLS, ...(keys && { keys }) }, [{ x: 0, y: 12, w: 14, h: 20 }])).recipe;
+  const [free, calmed] = [slosh(null), slosh([{ frame: 12, drag: 0.2, over: 4 }])];
+  assert.deepEqual(calmed.frames.slice(0, 12), free.frames.slice(0, 12), 'nothing changes before the key');
+  const moving = recipe => recipe.frames.slice(30).reduce((sum, frame, i) => { const a = new Set(drawn(recipe, 30 + i).map(([x, y]) => y * 48 + x)), b = new Set(drawn(recipe, 29 + i).map(([x, y]) => y * 48 + x)); return sum + [...a].filter(c => !b.has(c)).length + [...b].filter(c => !a.has(c)).length; }, 0);
+  assert.ok(moving(calmed) < moving(free) / 2, `pixels changing over frames 30-39: ${moving(calmed)} with drag, ${moving(free)} without`);
   // A thick liquid may get its viscosity from a key alone, and slip with it; a live runner follows the keys.
   const source = goo({ frames: 30, slip: true, keys: [{ frame: 10, viscosity: 16 }, { frame: 20, gravity: [0.3, 0] }] }, [{ x: 18, y: 14, w: 12, h: 12 }]);
   const { recipe } = compileFluid(source), live = createLiveFluid(source, { warmup: 0 });
@@ -846,7 +854,7 @@ test('fluid sources fail early with paths an agent can act on', async () => {
   bad(e => { e.keys = [{ frame: 2, yield: 1 }]; }, 'fluid.effects.plume.keys', /applies to liquids/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 6, yield: 1 }] }); }, 'fluid.effects.plume.keys[0].frame', /0 to 5/);
   bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3, yield: 1 }, { frame: 2, yield: 0 }] }); }, 'fluid.effects.plume.keys[1].frame', /frame order/);
-  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity/);
+  bad(e => { Object.assign(e, { kind: 'liquid', keys: [{ frame: 3 }] }); }, 'fluid.effects.plume.keys[0]', /at least one of yield, viscosity, adhesion, gravity, drag/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]', /moves the obstacle/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 3, x: 2 }, { frame: 1, x: 4 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[1].frame', /frame order/);
   bad((e, s) => { s.symbols = { slab: ['kkkk'] }; e.obstacles = [{ symbol: 'slab', keys: [{ frame: 2, x: 17 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0].x', /from -4 to 16/);
@@ -1027,7 +1035,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: '767b87bfa1aa7412f8f4615d7604267178449cd873cc5a56ee35fa928cc837ab' };
+const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: 'bf3294d461cc55da5a41445ea95fb71b3fa77d25f1670fed2efdffaa0fdba9b9' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
@@ -1279,7 +1287,8 @@ test('a liquid fill can be an ellipse, and a fill list holds 64 shapes', () => {
   assert.equal(ellipse.particles[0], 4 * inside(24, 16, 12, 6, 32));
   assert.deepEqual(ellipse.box[0], [12, 10, 35, 21]);
   assert.equal(dome.particles[0], 4 * inside(24, 16, 12, 6, 16));
-  assert.deepEqual(dome.box[0], [12, 10, 35, 15]);
+  // The dome's widest row stuck out a lone pixel at each end, which the liquid's outline trims.
+  assert.deepEqual(dome.box[0], [13, 10, 34, 15]);
   // Equal radii are the disc a number gives.
   assert.deepEqual(first([{ at: [24, 16], radius: [6, 6] }]), first([{ at: [24, 16], radius: 6 }]));
   // Thirty one-row strips (a dome drawn row by row) fit; 65 entries don't.

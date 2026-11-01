@@ -11,11 +11,36 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A new preset, [aquarium](examples/aquarium.fluid.json), shows them: an air stone's column with `lift`, bubbles from a stone under a rock ledge running up its underside to the lip, and bubbles driven in where the filter's stream plunges.
 - Sparks and whitewater without `rise` behave as before, so every other preset keeps its golden hash and GIF.
 
+### Example setup: dam-break and roof-snow
+
+- Liquid `keys` can change `drag`. Drag slows all motion alike and lets water level as it calms, so it ends a one-shot at rest where thickening (a `viscosity` key) holds whatever shape the liquid has.
+- The dam-break example's gate lifts off the top over six frames from frame 4, so the water bursts out under it, instead of standing for fourteen frames and vanishing in one. Its slosh (about ninety frames to swing back in a tank this long and shallow) was stopped by thickening the water over frames 45-55, which froze it about seven rows higher at the far wall for the last twenty frames; drag now comes in over frames 16-24, while the wave crosses the tank, so the wave still runs up the far wall and the water settles within about a row of level by frame 50.
+- The roof-snow example's snow starts lying on the roof, seven rows deep, and slides off from the first frame, instead of starting as a block in the air that drops onto the roof. The key that firms it moves to frame 28 to fit.
+- honey-drop is unchanged: with the cleaner liquid edges its landed drop already flattens into the pool within a few frames.
+- The dam-break and roof-snow golden hashes and GIFs are updated.
+
+### Drops and spray
+
+- A liquid's spray (whitewater, and emitter sparks with `follow: 0`) still in the air when its `life` runs out flies on, for up to its life again, until it falls back in, hits an obstacle or leaves the canvas, as the docs say spray ends. Before, a droplet thrown high simply vanished in mid-air: 7 of the splash example's 23 droplets did, and 10 of dam-break's 50. A loop simulates that much longer past its recorded cycle, so the droplets still wrap round to its first frames.
+- The splash example throws its spray softer (1.3 and 1.2 times the impact instead of 1.8 and 1.6) and without trails: droplets arc a few pixels up as dots and fall back into the pool, where they climbed to the top of the canvas as one-pixel sticks.
+- The drip example's drop swells round under the stalactite (a wider swelling emitter and `tension` 3) and falls as a bead about three pixels across, where it fell as a two-pixel-wide stick.
+- The splash, drip, waterfall and dam-break golden hashes and GIFs are updated; the rest are unchanged.
+- Still open: splash's ball flattens for a frame as it falls and sits on the pool as a hump for two frames before the crater opens, which more substeps or cohesion don't change.
+
+### Cleaner liquid edges
+
+- A liquid's outline is tidied before it is coloured. A gap one pixel wide with liquid on two sides and liquid or an obstacle on a third is filled, and a lone pixel standing on a straight edge (open air on three sides, liquid either side of its foot) is trimmed, so a resting surface no longer shows dents and pimples that come and go from frame to frame, and the highlight line no longer drops a pixel under each dent. A lone drop, a stream's tip and a two-pixel step stay. Honey and honey-drop had about 0.7 and 0.4 such bumps a frame and now have none; dam-break's fall from 0.43 to 0.09 and its dents from 0.39 to 0.16.
+- A liquid's `depth` runs through every pixel its own layers draw, thin fast water drawn by a `speed` layer included, instead of starting a new surface under each such pixel.
+- A liquid that touches an obstacle on the side toward the `light` (or away from it) is lit (or shaded) in full there, and obstacles further off take no part in the sample. Before, an obstacle counted as empty two pixels away, so a pool in a stepped bowl showed light and dark pixels by turns along the bowl as the sample landed on the bowl or on liquid; honey-drop's bowl now has an even rim. Gases are lit as before.
+- The roof-snow example draws its house in front of the snow's outline (`draw` left at `over`), so the outline no longer covers the house's right-hand column once the drift settles against it.
+- The ten liquid examples' golden hashes and GIFs are updated; gases are unchanged.
+- Still open: honey's pool shows a dark pixel or two under the rope, where depth counts the rope above it, and whitewater still draws spray and foam as single pixels and dashes.
+
 ### Cohesive and elastic liquids come to rest
 
 - Cohesion (`tension`) is a force on the grid before the pressure solve, as gravity is, instead of a velocity added to each particle after it. That velocity stayed on the particles and built up step after step, so a resting liquid kept a speed it never moved by (slime-burst read 0.16 px a frame and a still pool's peak speed 0.15, though no pixel changed), and with APIC a high-tension drop at rest trembled for good (about 12 changed pixels a frame at tension 3, now about 4). Half of the force is the density difference across each face, which the pressure balances exactly at rest; half is sampled at the particles and spread onto the faces as their velocities are, which keeps a small falling drop round: with the first half alone, the drip's drop fell as a pixel-wide streak.
 - A yield-stress liquid stops rocking. The slime example rocked from side to side for good, 4-9 pixels changing every frame from frame 500 to 700 whatever the seed; now 0-2, and its particles settle to about 0.02 px a frame rms. Two causes. A particle's strain was turned with the flow by a straight step along the tangent, which grows it a little every step; a Cayley rotation now turns it and keeps its size. And the spreading that evens out the particles (crowded cells spread, sparse ones inside draw particles in) strained the liquid as well, storing springiness that had only mended the spacing; it now has a pressure solve of its own after the flow's, which moves the particles without straining them. That solve makes the yield-stress examples 18-25% slower to compile (cohesion's spreading onto the faces adds 2-11% to the other liquids), and the work budget counts it: the studio's slime course warms up live for at most 102 frames, not 132.
-- The ten liquid examples' golden hashes and GIFs are updated; gases are unchanged. They look much as they did: slime-burst's pieces gather into a rounder heap, the waterfall's foot splits into strands a little more, and splash throws a little more spray.
+- The ten liquid examples' golden hashes and GIFs are updated; gases are unchanged. They look much as they did: slime-burst's heaps settle flatter and lumpier than before, the waterfall's foot splits into strands a little more, and splash throws a little more spray.
 - Still open: how soon an elastic heap rests varies a lot with its seed (over twelve seeds the slime changes about 1 pixel a frame on average from frame 100 to 900, down from 6), and water standing in a box keeps rippling by a pixel or two for a while, with or without cohesion.
 
 ### Liquid fixes: settling, drops, sparks and carriers

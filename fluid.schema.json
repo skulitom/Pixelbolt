@@ -284,6 +284,11 @@
                   },
                   "maxItems": 2,
                   "minItems": 2
+                },
+                "drag": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
                 }
               },
               "required": [
@@ -293,7 +298,7 @@
             },
             "maxItems": 16,
             "minItems": 1,
-            "description": "Liquid: change yield, viscosity, adhesion or gravity at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
+            "description": "Liquid: change yield, viscosity, adhesion, gravity or drag at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0, and drag (not viscosity, which freezes a slosh tilted) calms a one-shot so it ends at rest. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
           },
           "fill": {
             "type": "array",
@@ -750,7 +755,7 @@
                           "minItems": 2
                         }
                       ],
-                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]."
+                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]. In a liquid, spray (follow 0) still in the air then flies on, for up to as long again, until it falls back in."
                     },
                     "colors": {
                       "type": "array",
@@ -1015,7 +1020,7 @@
                       "minItems": 2
                     }
                   ],
-                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]."
+                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]. Spray still in the air then flies on, for up to as long again, until it falls back in."
                 },
                 "colors": {
                   "type": "array",

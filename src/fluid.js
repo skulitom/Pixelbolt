@@ -299,12 +299,12 @@ function buildLayout(obstacles, width, height, places) {
   return { key: layoutKey(places), places, solid, front, smooth, owner };
 }
 
-// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion or gravity, moving
+// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag, moving
 // there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and follows
 // the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
-const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity'];
+const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity', 'drag'];
 function readKeys(value, path, frames, base) {
-  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity }');
+  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity, drag }');
   let last = -1;
   const keys = value.map((key, i) => {
     const kp = `${path}[${i}]`;
@@ -316,7 +316,8 @@ function readKeys(value, path, frames, base) {
     return {
       frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256),
       ...(key.yield !== undefined && { yield: number(key.yield, `${kp}.yield`, 0, 16) }), ...(key.viscosity !== undefined && { viscosity: number(key.viscosity, `${kp}.viscosity`, 0, MAX_VISCOSITY) }),
-      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) })
+      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) }),
+      ...(key.drag !== undefined && { drag: number(key.drag, `${kp}.drag`, 0, 1) })
     };
   });
   const blend = (from, to, t) => (Array.isArray(from) ? [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t] : from + (to - from) * t);
@@ -404,7 +405,8 @@ function readEffect(effect, path, source) {
   const look = effect.look.map((layer, i) => readLook(layer, `${path}.look[${i}]`, context));
   const gravity = effect.gravity === undefined ? [0, 0.3] : pair(effect.gravity, `${path}.gravity`, -2, 2);
   const adhesion = liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0;
-  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity });
+  const drag = number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1);
+  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity, drag });
   const most = { yield: yieldStress, viscosity, adhesion };
   if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
   if (effect.slip !== undefined && !most.viscosity && !most.yield) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
@@ -432,7 +434,7 @@ function readEffect(effect, path, source) {
     substeps: integer(effect.substeps ?? 2, `${path}.substeps`, 1, 16), iterations: integer(effect.iterations ?? (liquid ? 40 : 30), `${path}.iterations`, 1, 200),
     buoyancy: number(effect.buoyancy ?? 0.15, `${path}.buoyancy`, -2, 2), weight: number(effect.weight ?? 0, `${path}.weight`, -2, 2),
     vorticity: number(effect.vorticity ?? 0.25, `${path}.vorticity`, 0, 2), dissipation: number(effect.dissipation ?? 0.03, `${path}.dissipation`, 0, 1),
-    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag: number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1),
+    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag,
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
@@ -1935,7 +1937,10 @@ function moveSparks(list, g, density, total, liquid, pops, gravity) {
     const soaked = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !solid[y * W + x] && density[y * W + x] >= LEVEL;
     const sunk = p.foam && (wet ? !dry(i - 1, j) && !dry(i + 1, j) && !dry(i, j - 1) && !dry(i, j + 1) : !soaked(i - 1, j) && !soaked(i + 1, j) && !soaked(i, j - 1) && !soaked(i, j + 1));
     if (popped) pops.push({ x: p.x, y: p.y, size: s.size, code: sparkColor(p), age: 0 });
-    if (p.age >= p.life || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
+    // Spray still in the air when its life runs out flies on, for up to its life again, until it falls back in, hits
+    // something or leaves the canvas, so a droplet never vanishes in mid-air.
+    const spent = p.age >= (liquid && !s.follow && p.out && !wet ? 2 * p.life : p.life);
+    if (spent || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
   if (waiting) mergeBubbles(list, g, total);
@@ -2075,18 +2080,80 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
 }
 
 // ---- Fields to pixels -------------------------------------------------------------------------------------------------
+// A liquid's outline, read in one pass from the cells it covers: a gap one pixel wide with liquid on two sides and liquid
+// or an obstacle on a third is filled, and a lone pixel standing on a straight edge (liquid on one side, open air on the
+// other three, and liquid either side of its foot) is trimmed. Particles jostling at a resting surface otherwise draw
+// it with dents and pimples that come and go every frame. A lone drop, a stream's tip and a two-pixel step stay. A
+// walled canvas edge counts as an obstacle.
+const SIDES = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+function liquidOutline(wet, solid, walls, width, height) {
+  const out = Uint8Array.from(wet);
+  const inside = (x, y) => x >= 0 && y >= 0 && x < width && y < height;
+  const liquid = (x, y) => inside(x, y) && wet[y * width + x] === 1;
+  const wall = (x, y) => (inside(x, y) ? solid[y * width + x] === 1 : x < 0 ? walls.left : x >= width ? walls.right : y < 0 ? walls.top : walls.bottom);
+  for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+    const c = j * width + i;
+    if (solid[c]) continue;
+    let wets = 0, walled = 0, foot = null;
+    for (const side of SIDES) {
+      if (liquid(i + side[0], j + side[1])) { wets++; foot = side; } else if (wall(i + side[0], j + side[1])) walled++;
+    }
+    if (!wet[c]) { if (wets >= 2 && wets + walled >= 3) out[c] = 1; continue; }
+    if (wets !== 1 || walled) continue;
+    const [dx, dy] = foot, x = i + dx, y = j + dy;
+    if (liquid(x - dy, y + dx) && liquid(x + dy, y - dx)) out[c] = 0;
+  }
+  return out;
+}
+
+// A bilinear sample over the open cells only: obstacle cells drop out and the rest are weighted up to make up for them
+// (off the canvas counts as empty). With no open cell in reach it returns `fallback`.
+function openSample(a, solid, nx, ny, fx, fy, fallback) {
+  const i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
+  let sum = 0, weight = 0;
+  for (const [di, dj, w] of [[0, 0, (1 - s) * (1 - t)], [1, 0, s * (1 - t)], [0, 1, (1 - s) * t], [1, 1, s * t]]) {
+    const x = i + di, y = j + dj;
+    if (x < 0 || y < 0 || x >= nx || y >= ny) { weight += w; continue; }
+    if (solid[y * nx + x]) continue;
+    sum += a[y * nx + x] * w; weight += w;
+  }
+  return weight > 1e-9 ? sum / weight : fallback;
+}
+
 // Each look layer maps one field to palette colours: a colour is fully on from its threshold up, and `dither` feathers
 // it in below, through the pattern, over that share of the gap to the previous threshold. Later layers draw over
 // earlier ones; obstacles never hold fluid. Then optional cleanup and a one-pixel outline.
 function renderFields(effect, base, width, height, drawn = null) {
   // Colour codes are 16-bit: a palette key may be any single character, such as an accented letter.
-  const N = width * height, { solid, front } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
-  const [density] = base, covered = new Uint8Array(N);
+  const N = width * height, { solid, front, liquid } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
+  let [density] = base, wet = new Uint8Array(N), filled = null;
+  for (let c = 0; c < N; c++) wet[c] = !solid[c] && density[c] >= LEVEL ? 1 : 0;
+  if (liquid) {
+    // A liquid covers every cell a layer of its own draws (density, temperature or speed: a thin, fast stream is drawn
+    // by its speed), so a stream's depth runs on through it instead of starting a new surface under each thin pixel.
+    for (const layer of effect.look) {
+      if (layer.field > 2) continue;
+      const field = base[layer.field], { thresholds, gaps, dither, threshold } = layer;
+      for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+        const c = j * width + i;
+        if (!wet[c] && !solid[c] && field[c] >= thresholds[0] - (1 - threshold(i, j)) * dither * gaps[0]) wet[c] = 1;
+      }
+    }
+    const outline = liquidOutline(wet, solid, effect.walls, width, height);
+    // A filled gap is drawn as liquid at the surface level, so the layers colour it like the cells around it.
+    for (let c = 0; c < N; c++) if (outline[c] && !wet[c]) {
+      if (!filled) { filled = []; density = Float64Array.from(density); }
+      filled.push(c);
+      if (density[c] < LEVEL) density[c] = LEVEL;
+    }
+    wet = outline;
+  }
+  const covered = new Uint8Array(N);
   for (let i = 0; i < width; i++) {
     let run = 0, under = 0;
     for (let j = 0; j < height; j++) {
       const c = j * width + i;
-      if (!solid[c] && density[c] >= LEVEL) { if (!run) under = j > 0 && solid[c - width] ? 1 : 0; run++; } else run = 0;
+      if (wet[c]) { if (!run) under = j > 0 && solid[c - width] ? 1 : 0; run++; } else run = 0;
       runs[c] = run; covered[c] = run ? under : 0;
     }
   }
@@ -2118,26 +2185,47 @@ function renderFields(effect, base, width, height, drawn = null) {
   }
   // Light and shadow are the share by which density falls two pixels toward the light and two pixels away from it:
   // 1 on a rim that faces the light (or faces away), 0 inside, whatever the density, so a thinning puff keeps its form.
+  // A liquid against an obstacle is lit (or shaded) in full where it touches it on the side toward the light (or away
+  // from it), and obstacles further off take no part in the sample: a pool in a stepped bowl gets an even rim along the
+  // bowl instead of light and dark pixels by turns as the sample lands on the bowl or on liquid.
   const lit = new Float64Array(N), shade = new Float64Array(N), [lx, ly] = effect.light;
+  const sx = lx >= 0.38 ? 1 : lx <= -0.38 ? -1 : 0, sy = ly >= 0.38 ? 1 : ly <= -0.38 ? -1 : 0;
   if (effect.look.some(layer => layer.field >= 4)) for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
     const c = j * width + i, here = density[c], x = i + 0.5, y = j + 0.5;
     if (here <= 0) continue;
+    if (liquid) {
+      const touches = (dx, dy) => (dx && i + dx >= 0 && i + dx < width && solid[c + dx]) || (dy && j + dy >= 0 && j + dy < height && solid[c + dy * width]);
+      lit[c] = touches(sx, sy) ? 1 : Math.max(0, 1 - openSample(density, solid, width, height, x + 2 * lx - 0.5, y + 2 * ly - 0.5, here) / here);
+      shade[c] = touches(-sx, -sy) ? 1 : Math.max(0, 1 - openSample(density, solid, width, height, x - 2 * lx - 0.5, y - 2 * ly - 0.5, here) / here);
+      continue;
+    }
     lit[c] = Math.max(0, 1 - bilinearZero(density, width, height, x + 2 * lx - 0.5, y + 2 * ly - 0.5) / here);
     shade[c] = Math.max(0, 1 - bilinearZero(density, width, height, x - 2 * lx - 0.5, y - 2 * ly - 0.5) / here);
   }
-  const sources = [base[0], base[1], base[2], depth, lit, shade];
-  // Light and shadow only recolour pixels that earlier layers drew.
+  const sources = [density, base[1], base[2], depth, lit, shade];
+  // A filled gap that no layer coloured (a look whose first colour starts above the surface level) takes the colour of
+  // a neighbour, along the edge first.
+  const patch = () => {
+    if (filled) for (const c of filled) if (!chars[c]) for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1], [0, -1]]) {
+      const x = c % width + dx, y = Math.floor(c / width) + dy, n = y * width + x;
+      if (x >= 0 && y >= 0 && x < width && y < height && wet[n] && chars[n]) { chars[c] = chars[n]; break; }
+    }
+    filled = null;
+  };
+  // Light and shadow only recolour pixels that earlier layers drew. A liquid draws only inside its outline.
   for (const layer of effect.look) {
     const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field >= 4;
+    if (shading) patch();
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
-      if (solid[c] || (shading && !chars[c]) || value < thresholds[0] - dither * gaps[0]) continue;
+      if (solid[c] || (liquid && !wet[c]) || (shading && !chars[c]) || value < thresholds[0] - dither * gaps[0]) continue;
       const feather = (1 - threshold(i, j)) * dither;
       let level = 0;
       while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
       if (level) chars[c] = colors[level - 1];
     }
   }
+  patch();
   if (effect.cleanup.strays || effect.cleanup.corners) {
     // An obstacle is neither fluid nor air: a corner pixel tucked against one is not a step in the fluid's edge, so
     // cleanup never opens a hole between the fluid and a wall.
@@ -2167,8 +2255,10 @@ function renderFields(effect, base, width, height, drawn = null) {
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
 // spreading solve one more, sharp advection about thirty.
 const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
-// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
-const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
+// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
+// spray may fly on for its life again; a bubble never does).
+const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1) * s.life[1];
+const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid))) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
 const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
 const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`;
