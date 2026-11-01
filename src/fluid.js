@@ -2287,7 +2287,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
-function moveSparks(list, g, density, total, liquid, pops, gravity, absorb = null) {
+function moveSparks(list, g, density, total, liquid, pops, gravity, ended = null) {
   const { W, H, u, v, pixels: solid } = g;
   let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
@@ -2295,7 +2295,7 @@ function moveSparks(list, g, density, total, liquid, pops, gravity, absorb = nul
     p.age++;
     let fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
     if (s.rise !== null) {
-      if (moveBubble(p, g, density, gravity, fx, fy, pops, absorb)) waiting ||= p.under; else { list.splice(k, 1); total.alive--; }
+      if (moveBubble(p, g, density, gravity, fx, fy, pops)) waiting ||= p.under; else { if (ended) ended(p); list.splice(k, 1); total.alive--; }
       continue;
     }
     // A liquid's grid holds no flow out in the air (no air is simulated), so a spark riding it would hang where it left
@@ -2335,6 +2335,17 @@ function moveSparks(list, g, density, total, liquid, pops, gravity, absorb = nul
 function bubbleOf(s, r) {
   return { vol: s.size * s.size, size: s.size, phase: s.wobble ? 360 * r(SALT.wobble) : 0, under: false };
 }
+// Makes a bubble at (x, y), at rest in the water, in `list` (a run's sparks, counted in `total`, its totals): `s` are its
+// settings (as readSparks reads them, with rise), `r` a seeded draw for its life and sway, and `extra` fields of the
+// caller's own, such as another amount of air (`vol` and `size`) or a boil's vapour. Every stage that makes bubbles goes
+// through it. Returns false, adding nothing, at the spark limit. When a bubble ends, moveSparks hands it to its `ended`
+// hook with `end` set: 'air' where it reached the air (above water, or in a pocket), 'life', 'solid' or 'edge'.
+function addBubble(list, total, s, x, y, r, extra = null) {
+  if (total.alive >= LIMITS.sparks) return false;
+  list.push({ s, x, y, vx: 0, vy: 0, age: 0, life: pickWhole(s.life, r(SALT.life)), ...bubbleOf(s, r), ...extra });
+  total.alive++; total.spawned++;
+  return true;
+}
 // How far along a ceiling a bubble looks for a way up, in pixels, and how many degrees its sway turns each frame (a sway
 // every eight frames).
 const BUBBLE_REACH = 5, SWAY = 45;
@@ -2353,17 +2364,29 @@ function bubbleFits(g, x, y, size) {
 // move that is free, sliding along whatever stops it, and under a ceiling it slides toward the nearest way up within
 // BUBBLE_REACH pixels (up a slope, out from under a ledge) or waits there, where bubbles that touch merge. It ends where it
 // reaches the air (bursting, with `pop`), at the end of its life, or off the canvas. Returns whether it lives on.
-function moveBubble(p, g, density, gravity, fx, fy, pops, absorb) {
-  const s = p.s, { W, H, pixels: solid } = g, x = p.x, y = p.y, ci = Math.floor(x), cj = Math.floor(y);
-  // An obstacle that has moved onto it, or one it was born inside, takes it.
-  if (ci >= 0 && cj >= 0 && ci < W && cj < H && solid[cj * W + ci]) return false;
+function moveBubble(p, g, density, gravity, fx, fy, pops) {
+  const s = p.s, { W, H, pixels: solid } = g, ci = Math.floor(p.x), cj = Math.floor(p.y);
   const gx = gravity ? gravity[0] : 0, gy = gravity ? gravity[1] : 0, pull = Math.sqrt(gx * gx + gy * gy), ux = pull ? -gx / pull : 0, uy = pull ? -gy / pull : 0;
+  // A solid that has moved onto it (a ledge coming down, drifting ice) pushes it out to the nearest open spot below or
+  // beside it, within two pixels; with none, or where it was born inside one, the solid takes it.
+  if (ci >= 0 && cj >= 0 && ci < W && cj < H && solid[cj * W + ci]) {
+    const vertical = Math.abs(uy) >= Math.abs(ux), [bx, by] = vertical ? [0, -Math.sign(uy)] : [-Math.sign(ux), 0], [sx, sy] = vertical ? [1, 0] : [0, 1];
+    let out = null;
+    for (let d = 1; d <= 2 && !out && p.age > 1; d++) for (const [ox, oy] of [[bx * d, by * d], [sx * d, sy * d], [-sx * d, -sy * d]]) {
+      if (!bubbleFits(g, p.x + ox, p.y + oy, p.size)) continue;
+      out = [ox, oy];
+      break;
+    }
+    if (!out) { p.end = 'solid'; return false; }
+    p.x += out[0]; p.y += out[1];
+  }
+  const x = p.x, y = p.y;
   p.vx = (p.vx + s.gravity[0]) * (1 - s.drag); p.vy = (p.vy + s.gravity[1]) * (1 - s.drag);
   const sway = s.wobble ? s.wobble * (sinDeg(p.phase + SWAY * p.age) - sinDeg(p.phase + SWAY * (p.age - 1))) : 0;
   const size = p.size, clear = (x0, y0, x1, y1) => bubbleFits(g, x1, y1, size) && !crossesSolid(solid, W, H, x0, y0, x1, y1);
   let nx = x + fx + p.vx + s.rise * ux - sway * uy, ny = y + fy + p.vy + s.rise * uy + sway * ux;
   p.px = x; p.py = y;
-  if (!Number.isFinite(nx + ny)) return false;
+  if (!Number.isFinite(nx + ny)) { p.end = 'edge'; return false; }
   if (!clear(x, y, nx, ny)) {
     if (clear(x, y, nx, y)) { ny = y; p.vy = 0; } else if (clear(x, y, x, ny)) { nx = x; p.vx = 0; } else { nx = x; ny = y; p.vx = 0; p.vy = 0; }
   }
@@ -2391,10 +2414,12 @@ function moveBubble(p, g, density, gravity, fx, fy, pops, absorb) {
   if (p.fresh) p.fresh--;
   else if (!wet) {
     if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0 });
-    if (absorb && inside) absorb(i, j, p.vol);
+    p.end = inside ? 'air' : 'edge';
     return false;
   }
-  return p.age < p.life && inside;
+  if (!inside) { p.end = 'edge'; return false; }
+  if (p.age >= p.life) { p.end = 'life'; return false; }
+  return true;
 }
 // Bubbles waiting under a ceiling that touch merge into one bubble holding the air of both, as large as that air, where
 // their air was on average. A bubble holds at most twelve square pixels of air (it is drawn 3 pixels across from nine), so
@@ -2449,8 +2474,7 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
       if (r(SALT.spawn) >= w.chance) continue;
       if (total.alive >= LIMITS.sparks) return false;
       if (w.rise !== null) {
-        list.push({ s: w, x, y, vx: 0, vy: 0, age: 0, life: pickWhole(w.life, r(SALT.life)), ...bubbleOf(w, r) });
-        total.alive++; total.spawned++;
+        addBubble(list, total, w, x, y, r);
         continue;
       }
       let ux = ax / amount + (out ? nx / out : 0), uy = ay / amount + (out ? ny / out : 0);
@@ -2820,7 +2844,7 @@ const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) :
 // whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
 function sparkFrame(run, here, cycle, spawning) {
   const { effect, state, base, sparks, totals } = run;
-  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null, state.air ? absorber(state) : null);
+  moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null, state.air ? bubbleEnded(state) : null);
   let full = null;
   if (spawning) {
     effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
@@ -2830,17 +2854,18 @@ function sparkFrame(run, here, cycle, spawning) {
   totals.maxAlive = Math.max(totals.maxAlive, totals.alive);
   return full;
 }
-// A bubble that rises into a pocket gives it its air: the pocket at the cell where it ended or beside it, as the last
-// step found them.
-function absorber(state) {
+// Adds `amount` of air (square pixels at zero pressure) to the pocket at cell (i, j) or beside it, as the last step found
+// them, and returns whether there was one: a bubble rising into a pocket, or vapour boiling into it, raises its pressure.
+function addAir(state, i, j, amount) {
   const { air, g } = state, { W, H } = g;
-  return (i, j, vol) => {
-    for (const [x, y] of [[i, j], [i, j - 1], [i, j + 1], [i - 1, j], [i + 1, j]]) {
-      const r = x >= 0 && y >= 0 && x < W && y < H ? air.label[y * W + x] : -1, region = r >= 0 ? air.regions[r] : null;
-      if (region && region.tracked) { region.air += vol; return; }
-    }
-  };
+  for (const [x, y] of [[i, j], [i, j - 1], [i, j + 1], [i - 1, j], [i + 1, j]]) {
+    const r = x >= 0 && y >= 0 && x < W && y < H ? air.label[y * W + x] : -1, region = r >= 0 ? air.regions[r] : null;
+    if (region && region.tracked) { region.air += amount; return true; }
+  }
+  return false;
 }
+// A bubble that rises into a pocket gives it its air.
+const bubbleEnded = state => p => { if (p.end === 'air') addAir(state, Math.floor(p.x), Math.floor(p.y), p.vol); };
 // The air of pockets that this frame's steps let go rises as bubbles from where each pocket was: up to nine square pixels
 // of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
 // two frames a bubble lives on where the gap it came from has not closed yet.
@@ -2850,11 +2875,9 @@ function releaseAir(air, effect, list, cycle, total) {
   for (let k = 0, n = 0; k < out.length; k += 3) {
     let volume = out[k + 2];
     for (let m = 0; volume > 0.5; m++, n++) {
-      if (total.alive >= LIMITS.sparks) return false;
-      const vol = Math.min(9, volume), r = salt => random(effect.seed, POCKETS, cycle, n, salt), size = bubbleSize(vol);
+      const vol = Math.min(9, volume), r = salt => random(effect.seed, POCKETS, cycle, n, salt);
       volume -= vol;
-      list.push({ s, x: out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), y: out[k + 1], vx: 0, vy: 0, age: 0, life: pickWhole(s.life, r(SALT.life)), ...bubbleOf(s, r), vol, size, fresh: 2 });
-      total.alive++; total.spawned++;
+      if (!addBubble(list, total, s, out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), out[k + 1], r, { vol, size: bubbleSize(vol), fresh: 2 })) return false;
     }
   }
   out.length = 0;

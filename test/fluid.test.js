@@ -256,6 +256,11 @@ test('a bubble rises through still water at its own speed, rides the currents an
   assert.ok(path.some(([x, y]) => x < 4 && y < 9), JSON.stringify(path));
   assert.ok(path.every(([x, y]) => !(y >= 8 && y <= 11 && x >= 4 + 2 * (y - 8))), 'never inside the obstacle');
   assert.deepEqual(slope.slice(-3), [[], [], []]);
+  // A shelf that comes down onto a waiting bubble pushes it ahead and the bubble waits under it again: a moving solid
+  // (a lowered ledge, drifting ice) never swallows one.
+  const lowered = oneBubble({}, { obstacles: [{ symbol: 'shelf', x: 1, y: 10, keys: [{ frame: 24, y: 13, over: 6 }] }] }, { symbols: { shelf: ['kkkkkkkkkkkkkk'] } });
+  assert.deepEqual(lowered[22].map(p => p.join()), ['8,11']);
+  assert.deepEqual(lowered.slice(32).map(list => list.map(p => p.join())), Array(8).fill(['8,14']));
   // A spark without rise still ends where it meets an obstacle.
   assert.ok(oneBubble({ rise: undefined, gravity: [0, -0.1] }, { obstacles: [{ symbol: 'shelf', x: 1, y: 10 }] }, { symbols: { shelf: ['kkkkkkkkkkkkkk'] } }).slice(25).every(list => !list.length));
 });
