@@ -42,10 +42,10 @@ Gas `temperature` already defines it: 0 is ambient (room air), and the fire pres
 
 | Event | Default | Note |
 |---|---|---|
-| freeze | −0.5 | melt a little above (−0.45), so ice doesn't flicker at the threshold |
+| freeze | −0.5 | ice melts at the same −0.5, but only once it has taken up its latent heat (and water freezes only once it has given it up), so the latent plateau is the gap that stops flicker; no separate melt threshold |
 | ambient | 0 | `ambient` per effect (default 0) is what everything relaxes toward |
 | boil | 0.5 | below the flame range, so a flame boils water and the steam vent's 0.8 is steam |
-| dew (condense) | 0.4 | vapour below it, or touching something below it, condenses |
+| dew (condense) | 0.4 | vapour touching something below it condenses; defaults to `boil` − 0.1 |
 | flame | 0.3 to 1 | existing fire looks |
 | ionize (thermal) | 2 | above every flame preset, so fire never turns into plasma by accident; arcs reach 2 to 4 |
 
@@ -96,8 +96,8 @@ One function builds the solid layer each step; every feature goes through it. It
 ## 9. Heat flow and phase changes
 
 - Heat is carried by whatever holds it: particles, ice cells, and the gas temperature field. Heat flows by conduction (between neighbours and across contact: particle to air, particle to solid, air to solid), relaxes toward `ambient` at a rate (gas `cooling` is this rate), and comes from sources: emitter and fill temperatures, obstacle `temperature`, and Joule heating from current.
-- Freezing and melting turn particles into ice and back. A cell holding enough ice becomes solid in the solid layer.
-- Evaporation and condensation move ¼ units between particles and the vapour field. Condensed particles appear at seeded positions on cold surfaces and in cold vapour. Boiling inside the liquid makes bubbles (vapour bubbles, section 7) before vapour leaves the surface: a boil should look like a boil.
+- Freezing and melting turn particles into ice and back. A cell holding enough ice becomes solid in the solid layer. Ice needs a seed: water below freeze turns to ice only where it touches ice or a solid colder than freeze, or once it is well below (0.5), so a pond chilled from above freezes in from its cold shore instead of all at once. Ice that touches no solid and has nothing under it settles as one piece; water flanking most of it holds it up (it floats).
+- Evaporation and condensation move ¼ units between particles and the vapour field. Vapour touching a cold solid or ice gathers there as dew, drawn as water, and drips off as a drop once a cell holds a cell's worth; onto cold water it joins the water a particle at a time. Condensing in open cold vapour (mist) is not settled: done plainly, every steam plume rains. Boiling inside the liquid makes bubbles (vapour bubbles, section 7) before vapour leaves the surface: a boil should look like a boil.
 - Sublimation (ice to vapour) and deposition (vapour to ice) are per-material switches. Deposition grows only from cells touching cold solid or existing ice, with seeded noise, so frost spreads in fingers.
 
 ## 10. Electricity and plasma
