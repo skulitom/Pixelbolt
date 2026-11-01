@@ -40,7 +40,12 @@ const GOLDEN = {
   'jacobs-ladder': 'bbfed6cfff448a421c65fbf48ec2663cf4a67cbe80b63719df8f4fc5a24785e9',
   lightning: '250b1b7a0304836ee52fe095c176545bb17f6ee84607e5de23ef9b9b9e19622f',
   'tesla-coil': '6b81e18ffef9e1d745322812f74717a4ef68706ff01833331f52f5c99b6dd21c',
-  'plasma-globe': '1174d7927c466c40c968c1c9678022f7e040c1839f76250f9364559d8a83fd58'
+  'plasma-globe': '1174d7927c466c40c968c1c9678022f7e040c1839f76250f9364559d8a83fd58',
+  'ice-melt': 'b6aef461b8c1aeb5228570abe8d1e00f6dcaaa881bbc5f330130b02a0446ade1',
+  'pond-freeze': '6676dd153bd17314fc0c1209608137b4ea7fa54296112ab9bb34f1288b94309c',
+  'boiling-pot': '35b3ff330c85304f9cc0954f65602486ac94ecd9bce0cc1e9ffc2ae51f13bfcb',
+  'frost-window': '8adcbc649c29ecf4d93fc5407b97d5a0bf0d3cfeb8d2a9a79b207ba165d88f5e',
+  'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1'
 };
 const examples = new Map();
 const example = async name => {
@@ -92,8 +97,12 @@ test('looping examples close their loop and one-shot examples end empty or at re
     } else {
       // A liquid one-shot settles: its last frames barely change. (Over the last four frames, since a pixel at the
       // look's threshold may still flip in a liquid that is still settling, and the splash ends on its last ripples, a
-      // pixel high across a 48-pixel pool.)
-      const last = animation.frames.slice(-5).map(index => project.frames[index]), moves = last.slice(1).map((frame, k) => changed(last[k], frame));
+      // pixel high across a 48-pixel pool.) Steam over a hot puddle or fog off dry ice may still drift: only the water and
+      // ice have to settle, so pixels in the vapour's own colours are left out.
+      const { source } = await example(name), vapour = Object.values(source.effects)[0].vapour, misty = new Set();
+      if (vapour) for (const layer of vapour.look ?? []) for (const key of layer.colors) misty.add(parseColor(source.palette[key]).join());
+      const clear = frame => (misty.size ? { data: frame.data.map((value, i) => (misty.has(Array.from(frame.data.subarray(i - (i % 4), i - (i % 4) + 4)).join()) ? 0 : value)) } : frame);
+      const last = animation.frames.slice(-5).map(index => clear(project.frames[index])), moves = last.slice(1).map((frame, k) => changed(last[k], frame));
       assert.ok(moves.reduce((a, b) => a + b, 0) / moves.length <= 16, `${name} still moves ${moves.join(', ')} pixels a frame at the end`);
     }
   }
@@ -394,6 +403,109 @@ test('a pocket squeezed too small to show lets its air go, as bubbles when air s
   fails({ ...water, air: { stiffness: 1 } }, 'fluid.effects.pool.air.stiffness', /2 to 1000/);
   fails({ ...water, air: { bubbles: { rise: 0.5 } } }, 'fluid.effects.pool.air.bubbles.colors', /palette keys/);
   fails({ ...water, air: { bubbles: { colors: ['w'], throw: 1 } } }, 'fluid.effects.pool.air.bubbles.throw', /unknown/);
+});
+
+// Phase changes: a closed 24 × 24 tank drawing water 'b', ice 'i', frost 'f', vapour 's' and bubbles 'w'.
+const heatTank = (effect, extra = {}) => compileFluid({ format: 'pixelforge-fluid', version: 1, name: 'heat', width: 24, height: 24,
+  palette: { b: '#2f6fc0', i: '#b9e2f5', f: '#9fc6e6', s: '#a9b3c6', w: '#ffffff', k: '#222222', r: '#cc3333' },
+  symbols: { plate: ['r'.repeat(24)], shelf: ['k'.repeat(24)], bar: Array(16).fill('kk') }, ...extra,
+  effects: { e: { kind: 'liquid', frames: 40, walls: FLUID_WALLS, emitters: [], look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }],
+    ice: { look: [{ field: 'density', colors: ['i'], thresholds: [0.5], dither: 0 }] }, ...effect } } });
+const figuresOf = metadata => Object.values(metadata.effects)[0].figures;
+const ledger = f => f.water.map((w, i) => w + f.ice[i] + f.vapour[i] + f.taken[i] - f.added[i]);
+const cellsOf = (recipe, key) => recipe.frames.map(frame => (frame.ops ?? []).filter(op => op.op === 'grid').flatMap(op => op.rows.flatMap((row, j) => [...row].flatMap((char, i) => (char === key ? [[op.x + i, op.y + j]] : [])))));
+
+test('an ice cube on a hot plate melts into a puddle of the same amount, settling onto the plate as it melts', () => {
+  const { recipe, metadata } = heatTank({ frames: 80, heat: { contact: 0.2, conduct: 0.15, latent: 0.3 }, obstacles: [{ symbol: 'plate', x: 0, y: 23, temperature: 0.45 }], fill: [{ x: 8, y: 15, w: 8, h: 8, frozen: true, temperature: -0.6 }] });
+  const f = figuresOf(metadata);
+  assert.equal(f.ice[0], 64); assert.equal(f.water[0], 0);
+  assert.equal(f.ice.at(-1), 0, 'all of the ice melts');
+  assert.equal(f.water.at(-1), 64, 'into as much water as there was ice');
+  assert.ok(f.water.every((w, i) => i === 0 || w >= f.water[i - 1] - 0.01), 'without vapour, water only grows as the ice melts');
+  for (const total of ledger(f)) assert.ok(Math.abs(total - 64) < 0.02, `the ledger holds: ${total}`);
+  // While any is left, the ice settles: under the bottom of each of its columns lies the plate, water (it floats once the
+  // meltwater is deep enough) or, within a pixel, more of either; never open air.
+  const ice = cellsOf(recipe, 'i'), water = cellsOf(recipe, 'b');
+  ice.forEach((cells, frame) => {
+    const at = new Set(cells.map(([x, y]) => `${x},${y}`)), wet = new Set(water[frame].map(([x, y]) => `${x},${y}`)), held = (x, y) => y >= 23 || wet.has(`${x},${y}`) || at.has(`${x},${y}`);
+    for (const [x, y] of cells) if (!at.has(`${x},${y + 1}`)) assert.ok(held(x, y + 1) || held(x, y + 2), `frame ${frame}: the ice at ${x},${y} hangs in the air`);
+  });
+});
+
+test('ice is solid to the flow and to bubbles: water rests on an ice shelf and bubbles under it wait there', () => {
+  // A shelf of ice across the tank, far colder than the water above it and slow to trade heat, so neither changes.
+  const effect = { heat: { ambient: 0.3, air: 0, conduct: 0.01, contact: 0, latent: 8 }, fill: [{ x: 0, y: 12, w: 24, h: 2, frozen: true, temperature: -4 }, { x: 0, y: 2, w: 24, h: 8, temperature: 0.3 }, { x: 0, y: 14, w: 24, h: 10, temperature: 0.3 }],
+    emitters: [{ at: [12, 21], radius: 0.5, rate: 1, density: 0, sparks: { count: 0.5, life: 60, colors: ['w'], rise: 0.6 } }] };
+  const { recipe, metadata } = heatTank(effect), f = figuresOf(metadata);
+  assert.ok(f.ice.every(ice => ice === 48), 'the shelf stays ice');
+  const water = cellsOf(recipe, 'b'), ice = cellsOf(recipe, 'i'), bubbles = cellsOf(recipe, 'w');
+  for (let frame = 10; frame < 40; frame++) {
+    assert.ok(water[frame].some(([, y]) => y < 12), `frame ${frame}: water still stands on the shelf`);
+    assert.ok(ice[frame].filter(([, y]) => y === 12 || y === 13).length >= 44, `frame ${frame}: the shelf is drawn whole`);
+    assert.ok(bubbles[frame].every(([, y]) => y > 13), `frame ${frame}: a bubble passed through the ice`);
+  }
+  assert.ok(bubbles.slice(20).some(cells => cells.some(([, y]) => y === 14)), 'bubbles wait under the shelf');
+});
+
+test('frost grows only from cold surfaces: from a frozen bar into humid air, never beside a warm one or in mid-air', () => {
+  const effect = { gravity: [0, 0], heat: { ambient: -0.7, air: 0, contact: 0.2, frost: -0.8, deposit: 1 }, vapour: { expansion: 4, buoyancy: 0, vorticity: 0, spread: 0.1, iterations: 4 },
+    ice: { look: [{ field: 'density', colors: ['f'], thresholds: [0.25], dither: 0 }] }, fill: [{ x: 0, y: 0, w: 24, h: 24, vapour: 1 }],
+    obstacles: [{ symbol: 'bar', x: 2, y: 4, temperature: -2 }, { symbol: 'bar', x: 20, y: 4, temperature: 0 }] };
+  const { recipe, metadata } = heatTank(effect), f = figuresOf(metadata), frost = cellsOf(recipe, 'f');
+  assert.ok(f.ice.at(-1) > 4, 'frost grows');
+  for (const total of ledger(f)) assert.ok(Math.abs(total - ledger(f)[0]) < 0.02, 'the ledger holds');
+  frost.forEach((cells, frame) => {
+    // Every frost pixel joins the cold bar (columns 2-3, rows 4-19) through frost, eight ways round.
+    const set = new Set(cells.map(([x, y]) => `${x},${y}`)), seen = new Set(), stack = cells.filter(([x, y]) => x >= 1 && x <= 4 && y >= 3 && y <= 20);
+    for (const [x, y] of stack) seen.add(`${x},${y}`);
+    while (stack.length) { const [x, y] = stack.pop(); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const k = `${x + dx},${y + dy}`; if (set.has(k) && !seen.has(k)) { seen.add(k); stack.push([x + dx, y + dy]); } } }
+    assert.equal(seen.size, set.size, `frame ${frame}: frost that does not grow from the cold bar`);
+    assert.ok(cells.every(([x]) => x < 18), `frame ${frame}: frost beside the warm bar`);
+  });
+});
+
+test('a pond chilled from above freezes in from its cold shore, and a sealed pot keeps its matter as it boils', async () => {
+  const pond = await example('pond-freeze'), surface = 20, iceKeys = new Set(['i', 'I', 'W']);
+  const iceAt = (recipe, frame) => recipe.frames[frame].ops.filter(op => op.op === 'grid').flatMap(op => op.rows.flatMap((row, j) => [...row].flatMap((char, i) => (iceKeys.has(char) && op.y + j === surface ? [op.x + i] : []))));
+  const early = iceAt(pond.recipe, 14), late = iceAt(pond.recipe, 79);
+  assert.ok(early.length && early.every(x => x < 20 || x > 35), 'early ice lies along the shores, the middle still open');
+  assert.ok(late.filter(x => x >= 20 && x <= 35).length >= 14, 'the ice closes over the middle');
+  const pot = await example('boiling-pot'), f = figuresOf(pot.metadata), [effect] = Object.values(pot.metadata.effects);
+  for (const total of ledger(f)) assert.ok(Math.abs(total - 260) < 0.02, `the pot's water and vapour stay 260: ${total}`);
+  assert.ok(Math.max(...f.vapour) > 2 && effect.sparks.spawned > 20, 'it boils, in bubbles');
+  const dry = figuresOf((await example('dry-ice')).metadata);
+  assert.ok(dry.water.every(w => w === 0), 'dry ice never melts into water');
+  assert.ok(dry.ice.at(-1) < dry.ice[0] && Math.max(...dry.vapour) > 4, 'it turns straight into fog');
+});
+
+test('a hot obstacle warms the air of a gas effect; heat is opt-in and checked with paths an agent can act on', () => {
+  const plume = temperature => compileFluid(gas({ frames: 12, obstacles: [{ symbol: 'lid', x: 0, y: 15, ...(temperature !== undefined && { temperature }) }], emitters: [{ at: [8, 8], radius: 2, rate: 1, density: 0.5 }], look: smoke }, { symbols: { lid: ['k'.repeat(16)] } }));
+  assert.ok(Object.values(plume(1).metadata.effects)[0].peak.temperature > 0.3, 'the hot floor warms the air');
+  assert.equal(Object.values(plume().metadata.effects)[0].peak.temperature, 0);
+  const rejects = (source, where, pattern) => assert.throws(() => compileFluid(source), error => error.path === where && pattern.test(error.message), where);
+  const tank = (effect, extra) => ({ format: 'pixelforge-fluid', version: 1, name: 'h', width: 16, height: 16, palette: { b: '#2f6fc0', k: '#000' }, symbols: { bar: ['kk'] }, ...extra, effects: { e: { kind: 'liquid', frames: 4, fill: [{ x: 0, y: 8, w: 16, h: 8 }], emitters: [], look: [{ field: 'density', colors: ['b'], thresholds: [0.5] }], ...effect } } });
+  rejects(gas({ frames: 4, heat: {}, emitters: [{ at: [8, 8], rate: 1, density: 1 }], look: smoke }), 'fluid.effects.plume.heat', /liquid/);
+  rejects(tank({ vapour: {} }), 'fluid.effects.e.heat', /give the liquid heat/);
+  rejects(tank({ obstacles: [{ symbol: 'bar', temperature: 1 }] }), 'fluid.effects.e.obstacles[0].temperature', /give the liquid heat/);
+  rejects(tank({ fill: [{ x: 0, y: 8, w: 16, h: 8, frozen: true }] }), 'fluid.effects.e.fill[0].frozen', /heat/);
+  rejects(tank({ emitters: [{ at: [8, 4], rate: 1, temperature: 1 }] }), 'fluid.effects.e.emitters[0].temperature', /heat/);
+  rejects(tank({ look: [{ field: 'temperature', colors: ['b'], thresholds: [0.5] }] }), 'fluid.effects.e.look[0].field', /without heat/);
+  rejects(tank({ heat: { boil: -1 } }), 'fluid.effects.e.heat.boil', /above the freezing point/);
+  rejects(tank({ heat: { dew: 1 }, vapour: {} }), 'fluid.effects.e.heat.dew', /under boil/);
+  rejects(tank({ heat: { frost: 0 }, vapour: {} }), 'fluid.effects.e.heat.frost', /under freeze/);
+  rejects(tank({ heat: { evaporation: 0.1 } }), 'fluid.effects.e.heat.evaporation', /give the effect a vapour/);
+  rejects(tank({ heat: {}, fill: [{ x: 0, y: 0, w: 4, h: 4, vapour: 1 }] }), 'fluid.effects.e.fill[0].vapour', /vapour/);
+  rejects(tank({ heat: {}, obstacles: [{ symbol: 'bar', surface: 'smooth' }] }), 'fluid.effects.e.heat', /surface: "pixels"/);
+  rejects(tank({ heat: {}, obstacles: [{ symbol: 'bar', keys: [{ frame: 1, x: 2 }] }] }), 'fluid.effects.e.heat', /keys/);
+});
+
+test('a live runner runs phase changes as compiled: ice melts on the plate a frame at a time', async () => {
+  const { source } = await example('ice-melt'), live = createLiveFluid(source, { warmup: 0 }), ice = keys => keys.join('').split('').filter(ch => ch === 'i' || ch === 'I' || ch === 'W').length, first = live.render().keys;
+  live.step(40);
+  assert.ok(ice(first) > 80 && ice(live.render().keys) < ice(first) / 2, 'the ice shrinks');
+  live.puff({ x: 24, y: 10, radius: 2 });
+  live.step(2);
+  assert.ok(live.particles > 0);
 });
 
 test('emitters can fall off toward their rim, orbit on an ellipse and lay a smooth trail', () => {
@@ -1097,7 +1209,11 @@ test('the fluid schema lists exactly the fields the compiler reads', async () =>
     [emitter.properties.carry.properties, (s, key) => { s.effects.plume.emitters[0].carry = { [key]: 0 }; }, 'fluid.effects.plume.emitters[0].carry'],
     [effect.properties.keys.items.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', keys: [{ frame: 0, yield: 1, [key]: 0 }] }); }, 'fluid.effects.plume.keys[0]'],
     [effect.properties.obstacles.items.properties.keys.items.properties, (s, key) => { s.effects.plume.obstacles = [{ symbol: 'lid', keys: [{ frame: 0, x: 0, [key]: 0 }] }]; }, 'fluid.effects.plume.obstacles[0].keys[0]'],
-    [effect.properties.fill.items.properties.burst.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2, burst: { speed: 1, [key]: 0 } }] }); }, 'fluid.effects.plume.fill[0].burst']
+    [effect.properties.fill.items.properties.burst.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2, burst: { speed: 1, [key]: 0 } }] }); }, 'fluid.effects.plume.fill[0].burst'],
+    [effect.properties.heat.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2 }], heat: { [key]: 0 }, vapour: {} }); }, 'fluid.effects.plume.heat'],
+    [effect.properties.vapour.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2 }], heat: {}, vapour: { [key]: 0 } }); }, 'fluid.effects.plume.vapour'],
+    [effect.properties.vapour.properties.bubbles.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2 }], heat: {}, vapour: { bubbles: { colors: ['s'], [key]: 0 } } }); }, 'fluid.effects.plume.vapour.bubbles'],
+    [effect.properties.ice.properties, (s, key) => { Object.assign(s.effects.plume, { kind: 'liquid', fill: [{ x: 0, y: 0, w: 2, h: 2 }], heat: {}, ice: { [key]: 0 } }); }, 'fluid.effects.plume.ice']
   ];
   for (const [properties, put, where] of levels) {
     for (const key of Object.keys(properties)) { const source = base(); put(source, key); assert.equal(unknown(source, `${where}.${key}`), false, `${where}.${key} is in the schema but the compiler rejects it`); }

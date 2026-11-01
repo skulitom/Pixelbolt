@@ -598,7 +598,78 @@ const glug = fluidSource('glug', 40, 56, { ...water, G: '#3f7f5f', h: '#bfe8cf',
 }, {
   bottle: glugBottle, glass: shapeRows(26, 16, (x, y) => (x === 1 || x === 24 ? 'q' : y === 15 || x === 0 || x === 25 ? 'Q' : null)), table: shapeRows(40, 1, () => 't')
 });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, 'honey-dipper': honeyDipper, glug };
+// Phase changes (heat). Temperatures are on the gas scale: 0 is room air, water freezes at -0.5 and boils at 0.5.
+const iceColours = { I: '#6f9fcf', i: '#b9e2f5', W: '#f6fdff' }, steamColours = { s: '#a9b3c6', S: '#e3e9f2' };
+// Ice drawn crisp, a cell at a time: a light top edge and a blue shade away from the light.
+const iceLook = [{ field: 'density', colors: ['i'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['I'], thresholds: [0.5], dither: 0 }, { field: 'light', colors: ['W'], thresholds: [0.5], dither: 0 }];
+const steamLook = (faint, thick) => [{ field: 'density', colors: ['s'], thresholds: [faint], dither: 0.5 }, { field: 'density', colors: ['S'], thresholds: [thick], dither: 0.4 }];
+// An ice cube on a hot griddle melts from the bottom and sides, settles into its meltwater as it goes, and leaves a
+// puddle pooled between the griddle's lips that steams in wisps. Every cell's worth of ice becomes a cell's worth of water
+// or vapour (the figures' water, ice and vapour).
+const griddle = shapeRows(34, 4, (x, y) => (y === 3 ? (x % 3 === 1 ? 'o' : 'r') : x === 0 || x === 33 ? (y === 0 ? 'G' : 'g') : null));
+const iceMelt = fluidSource('ice-melt', 48, 40, { ...water, ...iceColours, ...steamColours, k: '#1e1b24', g: '#45404f', G: '#6a6477', r: '#b8322f', o: '#f0772b' }, {
+  kind: 'liquid', frames: 72, duration: 70, seed: 2, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], flip: 0.6, drag: 0.04, tension: 1.5,
+  heat: { air: 0.04, conduct: 0.15, contact: 0.15, latent: 0.6, vaporize: 2, evaporation: 0.06 },
+  vapour: { expansion: 10, buoyancy: 0.4, weight: -0.25, vorticity: 0.35, cooling: 0.05, dissipation: 0.08, look: steamLook(0.35, 0.8) },
+  ice: { look: iceLook },
+  obstacles: [{ symbol: 'griddle', x: 7, y: 31, temperature: 1 }, { symbol: 'hob', x: 0, y: 35 }],
+  fill: [{ x: 19, y: 24, w: 10, h: 10, frozen: true, temperature: -0.7 }], emitters: [],
+  look: waterLook(9), cleanup: { strays: true }
+}, { griddle, hob: shapeRows(48, 5, (x, y) => (y === 0 ? 'G' : y < 3 ? 'g' : 'k')) });
+// A pond freezes in from its snowy shore. The snow at the waterline is the cold edge and the freezing air chills the
+// surface below its freezing point, but ice needs a seed, so the surface stays open water until the ice creeping in
+// from each shore reaches it; then the sheet thickens downward. The water has no surface highlight, so the white line is
+// the ice.
+const pondBowl = (x, y) => { const d = (x - 27.5) * (x - 27.5) / 676 + (y + 4) * (y + 4) / 400; return d >= 1 ? (y < 2 || d < 1.1 ? 'm' : 'M') : null; };
+const pondFreeze = fluidSource('pond-freeze', 56, 36, { ...water, ...iceColours, m: '#5a4a44', M: '#3d322f', n: '#e8eef8', N: '#b7c4d9', k: '#16263f' }, {
+  kind: 'liquid', frames: 80, duration: 70, seed: 4, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], flip: 0.5, drag: 0.08,
+  heat: { ambient: -1.7, air: 0.03, conduct: 0.12, contact: 0.2, latent: 0.3, grain: 0.6 },
+  ice: { look: iceLook },
+  obstacles: [{ symbol: 'shore', x: 0, y: 17, temperature: -2.5 }, { symbol: 'bed', x: 0, y: 22 }],
+  fill: [{ x: 0, y: 20, w: 56, h: 16, temperature: -0.48 }], emitters: [],
+  look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['b', 'B'], thresholds: [1, 6], dither: 0 }], outline: 'k', cleanup: { strays: true }
+}, { shore: shapeRows(56, 5, (x, y) => (y === 0 ? (pondBowl(x, 0) ? 'n' : null) : pondBowl(x, y - 1) ? (y === 1 ? 'N' : 'm') : null)), bed: shapeRows(56, 14, (x, y) => pondBowl(x, y + 4)) });
+// A lidded pot boils over a flame, a closed cycle that loops: bubbles (that lift the water around them) rise from the
+// hot base and let their vapour out at the surface, the steam curls up, beads as dew under the cold lid and on the warm
+// walls, and drips back in. Water plus vapour stays the same every frame.
+const boilingPot = fluidSource('boiling-pot', 40, 48, { ...water, ...steamColours, k: '#1e1b24', P: '#7d8796', g: '#45404f', G: '#6a6477', L: '#a7b4c6', l: '#d6e0ec', r: '#b8322f', o: '#f0772b' }, {
+  kind: 'liquid', frames: 48, duration: 70, loop: true, warmup: 3, seed: 5, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3], flip: 0.6, drag: 0.04, tension: 1.5,
+  heat: { air: 0.03, conduct: 0.1, contact: 0.06, latent: 0.5, vaporize: 3, dew: 0.35, condense: 0.5 },
+  vapour: { expansion: 5, buoyancy: 0.6, vorticity: 0.3, cooling: 0.03, look: steamLook(0.3, 0.8), bubbles: { colors: ['c'], rise: 0.8, wobble: 0.4, lift: 0.3 } },
+  obstacles: [{ symbol: 'pot', x: 5, y: 13, temperature: 0.1 }, { symbol: 'base', x: 7, y: 40, temperature: 1.5 }, { symbol: 'lid', x: 4, y: 10, temperature: -0.35 }, { symbol: 'stove', x: 0, y: 44 }, { symbol: 'flame', x: 7, y: 41, solid: false }],
+  fill: [{ x: 7, y: 30, w: 26, h: 10, temperature: 0.4 }], emitters: [],
+  look: waterLook(8), cleanup: { strays: true }
+}, {
+  pot: shapeRows(30, 28, x => (x === 0 || x === 29 ? 'k' : x === 1 || x === 28 ? 'P' : null)), base: shapeRows(26, 1, () => 'P'),
+  lid: shapeRows(32, 3, (x, y) => (y === 0 ? (x >= 14 && x <= 17 ? 'k' : null) : y === 1 ? (x >= 13 && x <= 18 ? 'k' : 'L') : 'l')),
+  stove: shapeRows(40, 4, (x, y) => (y === 0 ? 'G' : 'g')), flame: shapeRows(26, 3, (x, y) => ((x + y) % 4 < 2 ? (y === 2 ? 'o' : 'r') : null))
+});
+// Frost creeps across a cold window (seen from the front): the humid air's vapour turns straight into ice where it
+// touches the frozen frame or frost already there, never in mid-air, in a ragged rime that grows inward.
+const windowFrame = shapeRows(40, 40, (x, y) => (x < 3 || y < 3 || x >= 37 || y >= 37 || x === 19 || x === 20 || y === 19 || y === 20 ? (x < 1 || y < 1 || x >= 39 || y >= 39 ? 'k' : 'p') : null));
+const frostWindow = fluidSource('frost-window', 40, 40, { ...iceColours, p: '#8a5a36', k: '#3a2618', f: '#9fc6e6' }, {
+  kind: 'liquid', frames: 64, duration: 70, seed: 7, walls: ['left', 'right', 'top', 'bottom'], gravity: [0, 0],
+  heat: { ambient: -0.7, air: 0.01, conduct: 0.15, contact: 0.2, frost: -0.8, deposit: 1, grain: 0.5 },
+  vapour: { expansion: 4, buoyancy: 0, vorticity: 0, cooling: 0.02, spread: 0.1, iterations: 4 },
+  ice: { look: [{ field: 'density', colors: ['f', 'W'], thresholds: [0.25, 0.5], dither: 0 }] },
+  obstacles: [{ symbol: 'frame', x: 0, y: 0, temperature: -1.7 }],
+  fill: [{ x: 0, y: 0, w: 40, h: 40, vapour: 1 }], emitters: [],
+  look: [{ field: 'density', colors: ['f'], thresholds: [0.5], dither: 0 }]
+}, { frame: windowFrame });
+// A block of dry ice on a table turns straight into heavy, cold fog (it sublimates, never melting): the fog billows over
+// the tabletop, pours off its edge in a curtain and curls along the floor while the block shrinks.
+const dryTable = shapeRows(36, 21, (x, y) => (y === 0 ? 'T' : y === 1 ? 't' : x === 2 || x === 3 || x === 32 || x === 33 ? 't' : null));
+const dryIce = fluidSource('dry-ice', 56, 40, { ...iceColours, T: '#a8794e', t: '#6e4a2e', f: '#8f9bb3', F: '#c8d1e2', V: '#eef2fa', k: '#2b2735' }, {
+  kind: 'liquid', frames: 64, duration: 70, seed: 3, walls: ['left', 'right', 'bottom'], gravity: [0, 0.3],
+  heat: { freeze: -1, boil: -0.5, air: 0.15, conduct: 0.1, contact: 0.1, latent: 0.15, vaporize: 0.45, sublimate: true },
+  vapour: { expansion: 16, buoyancy: 0.6, weight: 1.2, vorticity: 0.45, cooling: 0.01, dissipation: 0.008, spread: 0.03,
+    look: [{ field: 'density', colors: ['f'], thresholds: [0.15], dither: 0.6 }, { field: 'density', colors: ['F', 'V'], thresholds: [0.55, 1.1], dither: 0.5 }] },
+  ice: { look: iceLook },
+  obstacles: [{ symbol: 'table', x: 4, y: 19 }, { symbol: 'floor', x: 0, y: 38 }],
+  fill: [{ x: 12, y: 13, w: 12, h: 6, frozen: true, temperature: -1 }], emitters: [],
+  look: [{ field: 'density', colors: ['i'], thresholds: [0.5], dither: 0 }]
+}, { table: dryTable, floor: shapeRows(56, 2, () => 'k') });
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, 'honey-dipper': honeyDipper, glug, 'ice-melt': iceMelt, 'pond-freeze': pondFreeze, 'boiling-pot': boilingPot, 'frost-window': frostWindow, 'dry-ice': dryIce };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
