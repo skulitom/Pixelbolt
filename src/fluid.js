@@ -305,6 +305,42 @@ function buildLayout(obstacles, width, height, places) {
   return { key: layoutKey(places), places, solid, front, smooth, owner };
 }
 
+// ---- The solid layer -------------------------------------------------------------------------------------------------
+// What every fluid feature asks of the solids, answered in one place (docs/physics-model.md, section 6): which cells are
+// solid, who owns each one, how fast each solid cell moves, and what each solid does to the fluid touching it. An owner
+// is an obstacle's index, ICE (frozen liquid; reserved, nothing makes it yet) or, beyond the canvas, EDGE (a closed edge);
+// NONE is open. Features read solids through it, never through obstacles, so whatever they do at a solid they do at
+// every kind of solid: liquid clings to ice and closed edges with the effect's adhesion, and they stand still.
+const NONE = -1, ICE = -2, EDGE = -3;
+// Surface properties: what a solid does to the fluid touching it, read for each obstacle here, into one object. One it
+// leaves unset is null and takes the effect's value, as ice and closed edges always do. A new property (a hot plate's
+// temperature, an electrode's voltage) is read here and looked up through the layer's `props`, leaving the features that
+// read the others alone.
+const SURFACE_FIELDS = ['adhesion'];
+function readSurface(obstacle, op, liquid, blocks) {
+  // Its own adhesion, in place of the effect's, for liquid touching it: a sticky spoon beside a non-stick pan.
+  if (obstacle.adhesion !== undefined && !liquid) fail(`${op}.adhesion`, 'adhesion holds a liquid to what it touches; it applies to liquids');
+  for (const key of SURFACE_FIELDS) if (obstacle[key] !== undefined && !blocks) fail(`${op}.${key}`, 'the fluid never meets a decoration (solid: false), so it has no surface');
+  return { adhesion: obstacle.adhesion === undefined ? null : number(obstacle.adhesion, `${op}.adhesion`, 0, 4) };
+}
+// The solid layer of a W × H layout with the obstacles at `places` on one frame. `solid` and `owner` are per cell, and
+// `ownerAt(x, y)` answers beyond the canvas too. `velocity(c)` is a solid cell's [vx, vy] in pixels per frame, or null
+// where it stands still (ice, a still obstacle, one that jumped this frame); `speed` holds each obstacle's. For a moving
+// one, `ahead(c)` is how far its whole-pixel place is ahead of where it really is, [dx, dy]. `props(owner)` is an owner's
+// surface properties, or null (the effect's, for ice and closed edges).
+function solidLayer(effect, layout, places, W, H) {
+  const { solid, owner } = layout, { walls, obstacles } = effect;
+  const speed = obstacles.map((o, i) => { const at = places[i]; return o.blocks && at.show && (at.vx || at.vy) ? [at.vx, at.vy] : null; });
+  const beyond = closed => (closed ? EDGE : NONE);
+  return {
+    W, H, N: W * H, solid, owner, speed, moving: speed.some(Boolean),
+    ownerAt: (x, y) => (x < 0 ? beyond(walls.left) : x >= W ? beyond(walls.right) : y < 0 ? beyond(walls.top) : y >= H ? beyond(walls.bottom) : owner[y * W + x]),
+    velocity: c => (owner[c] >= 0 ? speed[owner[c]] : null),
+    ahead: c => { const at = places[owner[c]]; return [at.dx, at.dy]; },
+    props: o => (o >= 0 ? obstacles[o].props : null)
+  };
+}
+
 // Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag,
 // moving there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and
 // follows the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
@@ -372,7 +408,7 @@ function readEffect(effect, path, source) {
   };
   listed(effect.obstacles, 'obstacles', LIMITS.obstacles).forEach((obstacle, i) => {
     const op = `${path}.obstacles[${i}]`;
-    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid', 'keys', 'adhesion'], op);
+    fields(obstacle, ['symbol', 'x', 'y', 'draw', 'surface', 'solid', 'keys', ...SURFACE_FIELDS], op);
     if (typeof obstacle.symbol !== 'string' || !Object.hasOwn(symbols, obstacle.symbol)) fail(`${op}.symbol`, `unknown symbol ${JSON.stringify(obstacle.symbol)}`);
     // It may hang off any edge by up to its own size; what hangs off is clipped.
     const rows = symbols[obstacle.symbol], x = integer(obstacle.x ?? 0, `${op}.x`, -rows[0].length, width), y = integer(obstacle.y ?? 0, `${op}.y`, -rows.length, height);
@@ -385,11 +421,7 @@ function readEffect(effect, path, source) {
     if (!blocks && draw === 'none') fail(`${op}.draw`, 'a decoration (solid: false) is only drawn; draw it over or under the fluid');
     if (!blocks && surface === 'smooth') fail(`${op}.surface`, 'surface shapes how the fluid meets an obstacle; the fluid never meets a decoration (solid: false)');
     const track = obstacle.keys === undefined ? null : readTrack(obstacle.keys, `${op}.keys`, frames, { x, y }, rows, width, height);
-    // Its own adhesion, in place of the effect's, for what touches it: a sticky spoon beside a non-stick pan.
-    if (obstacle.adhesion !== undefined && !liquid) fail(`${op}.adhesion`, 'adhesion holds a liquid to what it touches; it applies to liquids');
-    if (obstacle.adhesion !== undefined && !blocks) fail(`${op}.adhesion`, 'the fluid never meets a decoration (solid: false), so nothing clings to it');
-    const sticky = obstacle.adhesion === undefined ? null : number(obstacle.adhesion, `${op}.adhesion`, 0, 4);
-    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, adhesion: sticky });
+    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, props: readSurface(obstacle, op, liquid, blocks) });
   });
   const moving = obstacles.some(o => o.track), layout = buildLayout(obstacles, width, height, placementsAt(obstacles, 0));
   const { solid, front, smooth, owner } = layout;
@@ -419,7 +451,7 @@ function readEffect(effect, path, source) {
   const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity, drag });
   const most = { yield: yieldStress, viscosity, adhesion };
   if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
-  for (const o of obstacles) if (o.adhesion > most.adhesion) most.adhesion = o.adhesion;
+  for (const o of obstacles) if (o.props.adhesion > most.adhesion) most.adhesion = o.props.adhesion;
   if (effect.slip !== undefined && !most.viscosity && !most.yield) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
   const whitewater = listed(effect.whitewater, 'whitewater', LIMITS.whitewater).map((layer, i) => readWhitewater(layer, `${path}.whitewater[${i}]`, context, gravity));
   let cleanup = { strays: false, corners: false };
@@ -1415,7 +1447,7 @@ function moveCarriers(state, dt) {
 // ---- Gas --------------------------------------------------------------------------------------------------------------
 function createGas(effect, width, height) {
   const g = gridFor(effect, width, height), N = g.N;
-  const state = { g, d: new Float64Array(N), T: new Float64Array(N), source: new Float64Array(N), d1: new Float64Array(N), T1: new Float64Array(N), curl: new Float64Array(N), magnitude: new Float64Array(N), open: new Uint8Array(N) };
+  const state = { g, solids: solidLayer(effect, effect.layout, placementsAt(effect.obstacles, 0), width, height), d: new Float64Array(N), T: new Float64Array(N), source: new Float64Array(N), d1: new Float64Array(N), T1: new Float64Array(N), curl: new Float64Array(N), magnitude: new Float64Array(N), open: new Uint8Array(N) };
   if (effect.emitters.some(e => e.carry)) { state.carriers = []; state.carriedD = new Float64Array(N); state.carriedT = new Float64Array(N); }
   for (let c = 0; c < N; c++) state.open[c] = g.solid[c] ? 0 : 1;
   return state;
@@ -1459,16 +1491,16 @@ function gasFields(state, out) {
 
 // ---- Liquid -----------------------------------------------------------------------------------------------------------
 function createLiquid(effect, width, height) {
-  const g = gridFor(effect, width, height), N = g.N, U = g.u.length, V = g.v.length;
+  const g = gridFor(effect, width, height), N = g.N, U = g.u.length, V = g.v.length, solids = solidLayer(effect, effect.layout, placementsAt(effect.obstacles, 0), width, height);
   g.release = true;
   const state = {
-    g, n: 0, next: 0, x: new Float64Array(1024), y: new Float64Array(1024), vx: new Float64Array(1024), vy: new Float64Array(1024), id: new Float64Array(1024),
+    g, solids, n: 0, next: 0, x: new Float64Array(1024), y: new Float64Array(1024), vx: new Float64Array(1024), vy: new Float64Array(1024), id: new Float64Array(1024),
     pvx: new Float64Array(1024), pvy: new Float64Array(1024),
     uw: new Float64Array(U), vw: new Float64Array(V), uOld: new Float64Array(U), vOld: new Float64Array(V), uValid: new Uint8Array(U), vValid: new Uint8Array(V),
     fluid: new Uint8Array(N), cells: new Uint16Array(N), target: new Float64Array(N), splat: new Float64Array(N), blur: new Float64Array(N), speedSum: new Float64Array(N),
     pullU: effect.tension ? new Float64Array(U) : null, pullV: effect.tension ? new Float64Array(V) : null,
     cux: new Float64Array(1024), cuy: new Float64Array(1024), cvx: new Float64Array(1024), cvy: new Float64Array(1024), ea: new Float64Array(1024), eb: new Float64Array(1024), apic: effect.apic,
-    cling: effect.most.adhesion ? clingField(g) : null, grip: effect.most.adhesion ? gripFields(g, effect.layout.owner, effect.obstacles) : null, carry: null,
+    cling: effect.most.adhesion ? clingField(solids) : null, grip: effect.most.adhesion ? gripFields(solids, effect.obstacles) : null, carry: null,
     strands: effect.look.some(layer => layer.field === STRAND),
     pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
     strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), flowU: new Float64Array(U), flowV: new Float64Array(V), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null
@@ -1481,11 +1513,12 @@ function createLiquid(effect, width, height) {
 // away faster than 2 × adhesion × closeness pixels per frame, and then only by the excess. Closeness is the solids
 // blurred over a cell, ¼ in the middle of a cell beside a solid. Particles still slide along a solid freely, so a film
 // stays under a ledge, on a spoon or down a jar's side while the rest of the liquid falls or drains away. Away is
-// measured from a moving obstacle as it moves, so what clings to a spoon is lifted with it (see carryFields).
-// `value(c)` weighs each solid cell (c is -1 beyond a closed edge); the default counts every solid as 1.
-function clingField(g, value = null) {
-  const { W, H, pixels: solid, walls } = g, field = new Float64Array(W * H);
-  const solidAt = (x, y) => (x < 0 ? walls.left : x >= W ? walls.right : y < 0 ? walls.top : y >= H ? walls.bottom : solid[y * W + x]) ? (value ? value(x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x) : 1) : 0;
+// measured from a moving solid as it moves, so what clings to a spoon is lifted with it (see carryFields). Every solid
+// of the solid layer counts, closed edges included. `value(owner)` weighs each solid by its owner; the default counts
+// every one as 1.
+function clingField(solids, value = null) {
+  const { W, H, solid, ownerAt } = solids, field = new Float64Array(W * H);
+  const solidAt = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? ownerAt(x, y) === EDGE : solid[y * W + x]) ? (value ? value(ownerAt(x, y)) : 1) : 0;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     let sum = 0;
     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) sum += solidAt(i + di, j + dj) * (di ? 1 : 2) * (dj ? 1 : 2);
@@ -1493,31 +1526,31 @@ function clingField(g, value = null) {
   }
   return field;
 }
-// Obstacles with their own adhesion: closeness to the solids that take the effect's adhesion (`plain`: the rest, and
+// Solids with their own adhesion: closeness to the solids that take the effect's adhesion (`plain`: the rest, ice and
 // closed edges) and to those with their own, weighed by it (`own`). Each step the hold is the effect's adhesion times
-// `plain` plus `own`. Null when no obstacle has its own.
-function gripFields(g, owner, obstacles) {
-  if (!obstacles.some(o => o.adhesion !== null)) return null;
-  const mine = c => c >= 0 && owner[c] >= 0 && obstacles[owner[c]].adhesion !== null;
-  return { plain: clingField(g, c => (mine(c) ? 0 : 1)), own: clingField(g, c => (mine(c) ? obstacles[owner[c]].adhesion : 0)), grip: new Float64Array(g.N) };
+// `plain` plus `own`. Null when no solid has its own.
+function gripFields(solids, obstacles) {
+  if (!obstacles.some(o => o.props.adhesion !== null)) return null;
+  const own = o => solids.props(o)?.adhesion ?? null;
+  return { plain: clingField(solids, o => (own(o) === null ? 1 : 0)), own: clingField(solids, o => own(o) ?? 0), grip: new Float64Array(solids.N) };
 }
-// The moving obstacles near each cell, two pixels round, for what clings to them: how near (`near`), and summed with the
+// The moving solids near each cell, two pixels round, for what clings to them: how near (`near`), and summed with the
 // same weights their velocity (`u`, `v`) and how far their whole-pixel place is ahead of where they really are (`du`,
 // `dv`), so a particle reads the velocity as u / near. An obstacle moves in whole pixels, jumping a pixel at a time, but
 // clinging is measured from where it really is along its move, so a film on it moves smoothly instead of being left a
 // pixel behind at each jump. Null while nothing moves.
-function carryFields(g, owner, speed, places) {
-  if (!speed.some(Boolean)) return null;
-  const { W, H, N } = g, f = () => new Float64Array(N), near = f(), u = f(), v = f(), du = f(), dv = f();
+function carryFields(solids) {
+  if (!solids.moving) return null;
+  const { W, H, N } = solids, f = () => new Float64Array(N), near = f(), u = f(), v = f(), du = f(), dv = f();
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     let sum = 0, su = 0, sv = 0, sdu = 0, sdv = 0;
     for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
       const x = i + di, y = j + dj;
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
-      const o = owner[y * W + x], s = o >= 0 ? speed[o] : null;
+      const at = y * W + x, s = solids.velocity(at);
       if (!s) continue;
-      const w = (3 - (di < 0 ? -di : di)) * (3 - (dj < 0 ? -dj : dj));
-      sum += w; su += w * s[0]; sv += w * s[1]; sdu += w * places[o].dx; sdv += w * places[o].dy;
+      const w = (3 - (di < 0 ? -di : di)) * (3 - (dj < 0 ? -dj : dj)), [ax, ay] = solids.ahead(at);
+      sum += w; su += w * s[0]; sv += w * s[1]; sdu += w * ax; sdv += w * ay;
     }
     const c = j * W + i;
     near[c] = sum; u[c] = su; v[c] = sv; du[c] = sdu; dv[c] = sdv;
@@ -2473,20 +2506,22 @@ function moveObstacles(run, cycle) {
     if (g.sharp) next.sharp = g.sharp;
     state.g = g = next;
     if (state.open) for (let c = 0; c < g.N; c++) state.open[c] = g.solid[c] ? 0 : 1;
-    if (state.cling) { state.cling = clingField(g); state.grip = gripFields(g, layout.owner, effect.obstacles); }
   }
-  const layout = run.layout, owner = layout.owner;
-  const speed = effect.obstacles.map((o, i) => { const at = places[i]; return o.blocks && at.show && (at.vx || at.vy) ? [at.vx, at.vy] : null; });
-  if (state.cling) state.carry = carryFields(g, owner, speed, places);
+  // The solid layer for this frame; what clings to the solids reads it.
+  const layout = run.layout, owner = layout.owner, solids = state.solids = solidLayer(effect, layout, places, W, H), { speed } = solids;
+  if (state.cling) {
+    if (changed) { state.cling = clingField(solids); state.grip = gripFields(solids, effect.obstacles); }
+    state.carry = carryFields(solids);
+  }
   // A frame older, the wake lets go of the cells it has held for WAKE frames, and of those an obstacle now covers.
   const { wake } = state;
   if (wake && wake.cells.length) {
     for (const c of wake.cells) if (wake.left[c] && (g.solid[c] || !--wake.left[c])) wake.left[c] = 0;
     wake.cells = wake.cells.filter(c => wake.left[c]);
   }
-  if (effect.liquid && speed.some(Boolean)) state.wake ??= { cells: [], left: new Uint8Array(g.N), mark: new Uint8Array(g.N) };
-  const of = c => (c >= 0 && owner[c] >= 0 ? speed[owner[c]] : null);
-  if (speed.some(Boolean) || g.moved || changed) {
+  if (effect.liquid && solids.moving) state.wake ??= { cells: [], left: new Uint8Array(g.N), mark: new Uint8Array(g.N) };
+  const of = c => (c >= 0 ? solids.velocity(c) : null);
+  if (solids.moving || g.moved || changed) {
     if (!g.uWall) { g.uWall = new Float64Array(g.u.length); g.vWall = new Float64Array(g.v.length); } else { g.uWall.fill(0); g.vWall.fill(0); }
     g.moved = false;
     for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const s = of(i > 0 ? j * W + i - 1 : -1) ?? of(i < W ? j * W + i : -1); if (s) { g.uWall[j * X + i] = s[0]; g.moved = true; } }

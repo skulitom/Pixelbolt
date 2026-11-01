@@ -469,6 +469,9 @@ test('an obstacle can have its own adhesion: a sticky spoon beside a non-stick p
   assert.ok(stuck >= 8 && free === 0, `own adhesion: ${stuck} held, ${free} on the plain slab`);
   const [plain, nonstick] = film({ adhesion: 4 }, {}, { adhesion: 0 });
   assert.ok(plain >= 8 && nonstick === 0, `effect adhesion: ${plain} held, ${nonstick} on the non-stick slab`);
+  // Every other solid takes the effect's adhesion, a closed edge included: a film stays under the closed top edge.
+  const { recipe: edge } = compileFluid(goo({ adhesion: 4, walls: FLUID_WALLS, obstacles: [{ symbol: 'slab', x: 26, y: 6, adhesion: 0 }] }, [{ x: 2, y: 0, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } }));
+  assert.ok(drawn(edge, 30).filter(([x, y]) => y === 0 && x < 24).length >= 8, 'film under the closed top edge');
   // With no obstacle of its own adhesion, nothing changes.
   assert.deepEqual(compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe, compileFluid(goo({ adhesion: 2, obstacles: [{ symbol: 'slab', x: 14, y: 6, adhesion: 2 }] }, [{ x: 14, y: 7, w: 20, h: 3 }], { symbols: { slab: ['k'.repeat(20)] } })).recipe);
 });
