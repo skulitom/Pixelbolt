@@ -529,7 +529,23 @@ const honeyDrop = fluidSource('honey-drop', 40, 48, { H: '#fff3b0', y: '#f7c948'
   look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 }],
   cleanup: { strays: true }
 }, { spoon, bowl });
-const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop };
+// A honey dipper is lifted out of a jar of honey. The dipper is sticky (its own adhesion) and the jar nearly non-stick,
+// so the honey clings to the dipper as it rises: it draws the surface up into a peak, a glossy string joins the dipper's
+// tip to the peak, thins and snaps, and what is left of it curls back into the peak while the dipper keeps its coat. The
+// string is a `strand` layer, which draws liquid stretched thinner than the density can, in a pale gloss.
+const honeyDipper = fluidSource('honey-dipper', 40, 60, { H: '#fff3b0', y: '#f7c948', a: '#e09a1f', A: '#a85f0e', b: '#6e4426', B: '#9c6a3c', n: '#c79a5b', q: '#c7d6e6', k: '#1b1a26' }, {
+  kind: 'liquid', frames: 56, duration: 70, seed: 5, iterations: 24, walls: ['left', 'right', 'bottom'], viscosity: 16, apic: true, adhesion: 0.5, tension: 0.25,
+  obstacles: [{ symbol: 'jar', x: 7, y: 38 }, { symbol: 'dipper', x: 16, y: -5, adhesion: 2.5, keys: [{ frame: 4, y: -35, over: 30 }] }],
+  fill: [{ x: 9, y: 44, w: 22, h: 15 }], emitters: [],
+  look: [{ field: 'density', colors: ['a'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['H', 'y', 'a', 'A'], thresholds: [1, 2, 3, 7], dither: 0 }, { field: 'shadow', colors: ['A'], thresholds: [0.65], dither: 0 }, { field: 'light', colors: ['y', 'H'], thresholds: [0.4, 0.75], dither: 0 },
+    { field: 'strand', colors: ['y'], thresholds: [0.5], dither: 0 }],
+  cleanup: { strays: true }
+}, {
+  // A grooved head on a long handle that runs off the top of the canvas as the dipper rises.
+  dipper: [...Array.from({ length: 48 }, (_, y) => (y % 7 === 3 ? '...bb...' : '...nB...')), '..bnBb..', '.bbbbbb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bBBBBb.', 'bnnnnnnb', 'bBBBBBBb', '.bbbbbb.'],
+  jar
+});
+const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, 'honey-dipper': honeyDipper };
 
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.

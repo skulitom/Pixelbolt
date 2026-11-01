@@ -4,6 +4,16 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Sticky liquids move with what they touch, and stretch into strings
+
+- A liquid moves with an obstacle it touches. Adhesion used to treat a moving obstacle as if it stood still: it held liquid where the obstacle had been, and each whole-pixel jump left the liquid a pixel behind, so a bar dipped 16 pixels into honey and lifted out kept a pixel or two of it, and a stirring stick dragged nothing. Now adhesion is measured from where the obstacle really is along its move (between its whole-pixel jumps), and away from it means away from where it is going, so a lifted spoon keeps a coat and draws the honey under it up after it. Water barely follows, and a cut (a key with no `over`) carries nothing.
+- The cells a moving obstacle leaves stay liquid for 24 frames wherever liquid or solid closes them in, so liquid flows in behind it instead of leaving a hole a thick liquid takes many frames to close; air reaching them ends that. A trailing face holds still for a step against a cell it has already packed too full, so liquid running off a lifted spoon gathers under it instead of being packed against its pixels.
+- A part-open face beside a moving smooth obstacle is dragged toward the obstacle's velocity, not toward rest, so a viscous liquid is dragged along a moving smooth obstacle as along a pixel one.
+- Obstacles take their own `adhesion` (0–4), which replaces the effect's for liquid touching them: a sticky spoon beside a non-stick pan.
+- A `strand` look field (liquids) draws liquid stretched thinner than the density can. A string one particle wide is spread over three pixels by the density's blur and vanished long before it broke; the strand field is 1 along a one-pixel path through cells that hold particles but too little density, where it joins two pieces of drawn liquid or hangs at least 3 pixels off one. Nubs, fringes and loose particles are left out, so a resting pool and a falling drop draw exactly as before.
+- A new example, [honey dipper](examples/honey-dipper.fluid.json), lifts a sticky dipper out of a nearly non-stick jar: the honey is drawn up into a peak, a glossy string joins the dipper's tip to it, thins and snaps, and its end curls back into the peak.
+- No existing example has a moving obstacle in a liquid or a strand layer, so their golden hashes and GIFs are unchanged.
+
 ### Cohesive and elastic liquids come to rest
 
 - Cohesion (`tension`) is a force on the grid before the pressure solve, as gravity is, instead of a velocity added to each particle after it. That velocity stayed on the particles and built up step after step, so a resting liquid kept a speed it never moved by (slime-burst read 0.16 px a frame and a still pool's peak speed 0.15, though no pixel changed), and with APIC a high-tension drop at rest trembled for good (about 12 changed pixels a frame at tension 3, now about 4). Half of the force is the density difference across each face, which the pressure balances exactly at rest; half is sampled at the particles and spread onto the faces as their velocities are, which keeps a small falling drop round: with the first half alone, the drip's drop fell as a pixel-wide streak.
