@@ -499,7 +499,7 @@ const fluidElectric = { ...object({
   sustain: num(0.001, 1000, 'Current that keeps a channel fully ionized; below half of it a channel goes out. Default 0.5.'),
   memory: num(0, 256, 'Frames a spent channel keeps guiding new strikes, which run down it at once (a restrike on the same channel). 0: none. Default 8.'),
   heat: num(0, 16, 'Temperature added a frame per unit of current squared, so buoyancy lifts an arc. Default 0.2.'),
-  ionize: num(0.01, 64, 'Gas hotter than this is plasma too, fully at half as hot again: a fireball\'s or a star\'s core. 2 is above every flame. Default none.'),
+  ionize: num(0, 64, 'Gas hotter than this is plasma too, fully at half as hot again: an arc\'s hot air, a fireball\'s core. Default 2, above every flame on the shared heat scale; 0 turns it off.'),
   ground: { ...array({ enum: FLUID_WALLS }, 4), uniqueItems: true, description: 'Canvas edges held at 0 V, the world beyond: arcs that reach them strike them.' },
   iterations: int(1, 200, 'Conjugate-gradient steps of the field solve each step; default 24.')
 }), description: 'Gas: electricity and plasma. Obstacles with a voltage are electrodes; the field between them breaks the gas down into branching channels that conduct, glow, heat the gas and recombine. Defaults apply when only an obstacle has a voltage.' };

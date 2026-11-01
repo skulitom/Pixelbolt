@@ -436,7 +436,7 @@ function readEffect(effect, path, source) {
     // An electrode or metal (electric.js): solid, or for an electrode a decoration the gas flows through.
     const electric = readElectrode(obstacle, op, frames);
     if (electric && liquid) fail(`${op}.${electric.conductor ? 'conductor' : 'voltage'}`, 'electrodes and conductors drive plasma in gases; liquids carry no current');
-    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, props: readSurface(obstacle, op, liquid, blocks), ...(electric && { electric }) });
+    obstacles.push({ symbol: obstacle.symbol, x, y, draw, blocks, smooth: surface === 'smooth', rows, track, props: { ...readSurface(obstacle, op, liquid, blocks), voltage: electric ? electric.voltage : null, conductor: electric ? electric.conductor : null }, ...(electric && { electric }) });
   });
   // Electricity (gases): settings of its own, defaults when only an obstacle has a voltage or conducts.
   const electric = liquid || (effect.electric === undefined && !obstacles.some(o => o.electric)) ? null : readElectric(effect.electric ?? {}, `${path}.electric`, obstacles);

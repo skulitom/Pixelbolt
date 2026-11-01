@@ -13,8 +13,8 @@
 // it down again. A growing leader is kept ionized by the current that charges it; current through a cell keeps it
 // ionized (fully from `sustain`, and not at all below half of it, so a starved arc goes out); otherwise plasma recombines
 // at `recombine` a frame (slower when hot), fading as an afterglow, and leaves a trace for `memory` frames that a new
-// strike runs down at once (a dart leader). Current heats the gas (`heat` × current²), so buoyancy lifts an arc. With
-// `ionize`, gas hotter than that is plasma too (a fireball's core).
+// strike runs down at once (a dart leader). Current heats the gas (`heat` × current²), so buoyancy lifts an arc. Gas
+// hotter than `ionize` (2 on the shared heat scale, above every flame) is plasma too: an arc's hot air, a fireball's core.
 //
 // A supply with `resistance` sags as current flows, so a long arc starves and a shorter path takes over, and with
 // `charge` it stores charge that a strike drains and the supply refills, so strikes come in bursts. The electrodes'
@@ -36,10 +36,13 @@ const LIMITS = { electrodes: 8, markers: 16384, keys: 16 };
 // trace fall below FADED; current under OUT × sustain keeps no plasma. Breakdown is lowered by up to MEMORY in partly
 // ionized gas or along a trace, and by temperature as 1 / (1 + HOT × T).
 const CHANNEL = 0.5, FADED = 0.02, OUT = 0.5, MEMORY = 0.75, HOT = 0.25;
-// Conductivity of fully ionized gas (so an arc carrying current I runs at I / PLASMA volts a pixel, far below breakdown),
-// of neutral gas (PLASMA / NEUTRAL) and of metal (electrodes and conductors). Partly ionized gas conducts as the square
-// of its ionization, so a fading afterglow stops carrying current well before it stops glowing.
-const PLASMA = 8, NEUTRAL = 100000, METAL = 64, CORNER = 0.5, DIAGONAL = 0.7071067811865476;
+// Conductivity of every state, as docs/physics-model.md section 10 sets them: neutral air hardly conducts until it breaks
+// down; plasma conducts PLASMA times its ionization squared, so an arc carrying current I runs at about I / PLASMA volts a
+// pixel, far below breakdown, and a fading afterglow stops carrying current well before it stops glowing; metal
+// (electrodes and conductors) most of all. Liquid water (moderate) and ice (low) are for when liquids carry current: until
+// then an electric effect is a gas, and every solid but an electrode or metal insulates.
+export const CONDUCTIVITY = { air: 0.00008, plasma: 8, water: 0.5, ice: 0.0008, metal: 64 };
+const PLASMA = CONDUCTIVITY.plasma, CORNER = 0.5, DIAGONAL = 0.7071067811865476;
 const SALT = { pick: 21 };
 
 const fail = (path, message) => { throw new PixelError(path, message); };
@@ -100,7 +103,7 @@ export function readElectric(value, path, obstacles) {
     breakdown: number(value.breakdown ?? 3, `${path}.breakdown`, 0.01, 1000), focus: number(value.focus ?? 2, `${path}.focus`, 0.5, 8),
     growth: integer(value.growth ?? 8, `${path}.growth`, 1, 256), recombine: number(value.recombine ?? 0.3, `${path}.recombine`, 0, 1),
     sustain: number(value.sustain ?? 0.5, `${path}.sustain`, 0.001, 1000), memory: number(value.memory ?? 8, `${path}.memory`, 0, 256),
-    heat: number(value.heat ?? 0.2, `${path}.heat`, 0, 16), ionize: value.ionize === undefined ? 0 : number(value.ionize, `${path}.ionize`, 0.01, 64),
+    heat: number(value.heat ?? 0.2, `${path}.heat`, 0, 16), ionize: number(value.ionize ?? 2, `${path}.ionize`, 0, 64),
     ground: Object.fromEntries(EDGES.map(edge => [edge, ground.includes(edge)])), iterations: integer(value.iterations ?? 24, `${path}.iterations`, 1, 200)
   };
 }
@@ -161,8 +164,8 @@ function buildMasks(E, effect, layout, solid) {
 // Conductances between neighbouring cells: series (harmonic) means of the two cells' conductivities, half as much across
 // a corner, and none through an insulator or across a corner both of whose side cells are insulators.
 function assemble(E) {
-  const { W, H, N, kind, metal, sigma, ion, diag, kE, kS, kSE, kSW, ground, config } = E, floor = PLASMA / NEUTRAL;
-  for (let c = 0; c < N; c++) sigma[c] = kind[c] === INSULATOR ? 0 : kind[c] === HELD || metal[c] ? METAL : floor + PLASMA * ion[c] * ion[c];
+  const { W, H, N, kind, metal, sigma, ion, diag, kE, kS, kSE, kSW, ground, config } = E, { air, metal: conductor } = CONDUCTIVITY;
+  for (let c = 0; c < N; c++) sigma[c] = kind[c] === INSULATOR ? 0 : kind[c] === HELD || metal[c] ? conductor : air + PLASMA * ion[c] * ion[c];
   const link = (a, b, w) => { const sa = sigma[a], sb = sigma[b]; return sa && sb ? w * 2 * sa * sb / (sa + sb) : 0; };
   diag.fill(0); ground.fill(0);
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
@@ -504,7 +507,8 @@ function raster(E, T) {
       if (line[c] < 0) { const da = (x - ax) * (x - ax) + (y - ay) * (y - ay), db = (x - bx) * (x - bx) + (y - by) * (y - by); line[c] = da <= db ? a.k : b.k; }
     });
   }
-  // Thermal plasma on the shared heat scale: none at `ionize` (2 is above every flame), fully ionized half as hot again.
+  // Thermal plasma on the shared heat scale: none at `ionize` (by default 2, above every flame, so fire never ionizes by
+  // accident; 0 turns it off), fully ionized half as hot again.
   if (config.ionize) {
     const start = config.ionize, full = 1.5 * start;
     for (let c = 0; c < N; c++) if (T[c] > start) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }

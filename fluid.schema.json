@@ -991,9 +991,9 @@
               },
               "ionize": {
                 "type": "number",
-                "minimum": 0.01,
+                "minimum": 0,
                 "maximum": 64,
-                "description": "Gas hotter than this is plasma too, fully at half as hot again: a fireball's or a star's core. 2 is above every flame. Default none."
+                "description": "Gas hotter than this is plasma too, fully at half as hot again: an arc's hot air, a fireball's core. Default 2, above every flame on the shared heat scale; 0 turns it off."
               },
               "ground": {
                 "type": "array",
