@@ -28,7 +28,7 @@ const PER_CELL = 4, LEVEL = 0.5;
 // How far along a row the depth bands look for a shallower surface (see renderFields).
 const DEPTH_REACH = 3;
 // Salts keep each random draw independent, so changing one setting does not reshuffle the others.
-const SALT = { flicker: 1, noiseX: 2, noiseY: 3, spawn: 4, jitterX: 5, jitterY: 6, drain: 7, sparks: 8, sparkX: 9, sparkY: 10, angle: 11, speed: 12, life: 13 };
+const SALT = { flicker: 1, noiseX: 2, noiseY: 3, spawn: 4, jitterX: 5, jitterY: 6, drain: 7, sparks: 8, sparkX: 9, sparkY: 10, angle: 11, speed: 12, life: 13, wobble: 14 };
 // Whitewater layers draw from their own streams, keyed apart from the emitters (which are numbered from 0).
 const WHITEWATER = 1000;
 // Gas advection schemes and the thickest viscosity a source may ask for, in square pixels per frame.
@@ -97,37 +97,55 @@ function readCycle(value, path, frames, loop, orbit) {
 
 function readSparks(value, path, context, burst) {
   const { palette, liquid } = context;
-  fields(value, ['count', 'life', 'colors', 'size', 'trail', 'angle', 'speed', 'gravity', 'drag', 'follow', 'pop'], path);
+  fields(value, ['count', 'life', 'colors', 'size', 'trail', 'angle', 'speed', 'gravity', 'drag', 'follow', 'pop', 'rise', 'wobble', 'lift'], path);
   if (!Array.isArray(value.colors) || !value.colors.length || value.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, spread over each spark's life`);
   if (value.pop !== undefined && !liquid) fail(`${path}.pop`, 'pop bursts bubbles that reach the surface; it applies to liquids');
+  if (value.rise !== undefined && !liquid) fail(`${path}.rise`, 'rise makes the spark a bubble that rises through a liquid; it applies to liquids');
+  if (value.wobble !== undefined && value.rise === undefined) fail(`${path}.wobble`, 'wobble sways a bubble from side to side as it rises; set rise to make the spark a bubble');
+  if (value.lift !== undefined && value.rise === undefined) fail(`${path}.lift`, 'lift lets a bubble push the water up around it; set rise to make the spark a bubble');
+  const bubble = readBubble(value, path);
   return {
     count: number(value.count, `${path}.count`, 0.01, burst ? 256 : 16), life: range(value.life ?? [8, 16], `${path}.life`, 1, 256, true),
     colors: value.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette)),
     size: integer(value.size ?? 1, `${path}.size`, 1, 3), trail: value.trail === undefined ? false : boolean(value.trail, `${path}.trail`),
     angle: range(value.angle ?? [0, 360], `${path}.angle`, -3600, 3600), speed: range(value.speed ?? 0, `${path}.speed`, 0, 16),
     gravity: value.gravity === undefined ? [0, 0] : pair(value.gravity, `${path}.gravity`, -2, 2), drag: number(value.drag ?? 0.05, `${path}.drag`, 0, 1),
-    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`),
+    follow: number(value.follow ?? 1, `${path}.follow`, 0, 2), pop: value.pop === undefined ? false : boolean(value.pop, `${path}.pop`), ...bubble,
     // In a liquid, a spark that rides the flow out of the water flies on as a droplet (see moveSparks), falling with the
-    // liquid's gravity unless it has its own.
-    fling: liquid, inherit: liquid && value.gravity === undefined
+    // liquid's gravity unless it has its own. A bubble ends where it leaves the water instead.
+    fling: liquid && bubble.rise === null, inherit: liquid && bubble.rise === null && value.gravity === undefined
+  };
+}
+// A bubble is air in the water (see moveBubble): `rise` is how fast it rises through still water, against the liquid's
+// gravity, `wobble` how far it sways from side to side as it goes, and `lift` the share of its buoyancy it hands to the
+// water around it (see stepLiquid). Sparks and whitewater without `rise` are not bubbles.
+function readBubble(value, path) {
+  return {
+    rise: value.rise === undefined ? null : number(value.rise, `${path}.rise`, 0, 4), wobble: value.wobble === undefined ? 0 : number(value.wobble, `${path}.wobble`, 0, 2),
+    lift: value.lift === undefined ? 0 : number(value.lift, `${path}.lift`, 0, 1)
   };
 }
 
 // Whitewater: spray and foam thrown off a liquid by its own motion. A particle at the surface throws a droplet where its
 // velocity changes sharply within a frame (`impact`: a drop landing, a fall hitting a pool) or where it moves fast
-// (`speed`: a stream shedding drops). Droplets are sparks; with follow 0 they are spray, otherwise foam on the flow.
+// (`speed`: a stream shedding drops). Droplets are sparks; with follow 0 they are spray, otherwise foam on the flow. With
+// `rise` the layer makes bubbles instead, under the surface: air a plunging stream or a landing drop drives into a pool.
 function readWhitewater(layer, path, context, gravity) {
   const { palette } = context;
-  fields(layer, ['impact', 'speed', 'chance', 'throw', 'spread', 'life', 'colors', 'size', 'trail', 'gravity', 'drag', 'follow'], path);
+  fields(layer, ['impact', 'speed', 'chance', 'throw', 'spread', 'life', 'colors', 'size', 'trail', 'gravity', 'drag', 'follow', 'rise', 'wobble', 'lift', 'pop'], path);
   if ((layer.impact === undefined) === (layer.speed === undefined)) fail(path, 'use exactly one of impact (water whose speed changes sharply, such as where a drop lands) or speed (fast water, such as a stream shedding drops)');
   if (!Array.isArray(layer.colors) || !layer.colors.length || layer.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys, spread over each droplet's life`);
+  const bubbles = layer.rise !== undefined;
+  for (const key of ['wobble', 'lift', 'pop']) if (layer[key] !== undefined && !bubbles) fail(`${path}.${key}`, `${key} applies to bubbles; set rise to make this layer bubbles under the surface`);
+  // Bubbles start at rest in the water, which carries them; throw, spread and gravity shape spray thrown into the air.
+  for (const key of ['throw', 'spread', 'gravity']) if (layer[key] !== undefined && bubbles) fail(`${path}.${key}`, `${key} shapes spray thrown off the surface; bubbles start at rest under it, ride the flow and rise by rise`);
   return {
     impact: layer.impact === undefined ? null : number(layer.impact, `${path}.impact`, 0.05, 32), speed: layer.speed === undefined ? null : number(layer.speed, `${path}.speed`, 0.05, 32),
     chance: number(layer.chance ?? 0.1, `${path}.chance`, 0.001, 1), throw: number(layer.throw ?? 1, `${path}.throw`, 0, 4), spread: number(layer.spread ?? 20, `${path}.spread`, 0, 180),
     life: range(layer.life ?? [6, 12], `${path}.life`, 1, 256, true), colors: layer.colors.map((key, i) => paletteKey(key, `${path}.colors[${i}]`, palette)),
     size: integer(layer.size ?? 1, `${path}.size`, 1, 3), trail: layer.trail === undefined ? false : boolean(layer.trail, `${path}.trail`),
-    gravity: layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), inherit: layer.gravity === undefined, drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
-    follow: number(layer.follow ?? 0, `${path}.follow`, 0, 2), pop: false
+    gravity: bubbles ? [0, 0] : layer.gravity === undefined ? gravity : pair(layer.gravity, `${path}.gravity`, -2, 2), inherit: !bubbles && layer.gravity === undefined, drag: number(layer.drag ?? 0.02, `${path}.drag`, 0, 1),
+    follow: number(layer.follow ?? (bubbles ? 1 : 0), `${path}.follow`, 0, 2), pop: layer.pop === undefined ? false : boolean(layer.pop, `${path}.pop`), ...readBubble(layer, path)
   };
 }
 
@@ -287,12 +305,12 @@ function buildLayout(obstacles, width, height, places) {
   return { key: layoutKey(places), places, solid, front, smooth, owner };
 }
 
-// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion or gravity, moving
-// there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and follows
-// the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
-const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity'];
+// Keys change a liquid over time: from a key's frame on it takes the key's yield, viscosity, adhesion, gravity or drag,
+// moving there in a straight line over `over` frames (0: at once). Each setting starts from the effect's own value and
+// follows the keys that name it, in order. Returns each frame's settings; a loop follows them every cycle.
+const KEYED = ['yield', 'viscosity', 'adhesion', 'gravity', 'drag'];
 function readKeys(value, path, frames, base) {
-  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity }');
+  if (!Array.isArray(value) || !value.length || value.length > 16) fail(path, 'expected 1–16 keys, each { frame, over, and any of yield, viscosity, adhesion, gravity, drag }');
   let last = -1;
   const keys = value.map((key, i) => {
     const kp = `${path}[${i}]`;
@@ -304,7 +322,8 @@ function readKeys(value, path, frames, base) {
     return {
       frame, over: integer(key.over ?? 0, `${kp}.over`, 0, 256),
       ...(key.yield !== undefined && { yield: number(key.yield, `${kp}.yield`, 0, 16) }), ...(key.viscosity !== undefined && { viscosity: number(key.viscosity, `${kp}.viscosity`, 0, MAX_VISCOSITY) }),
-      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) })
+      ...(key.adhesion !== undefined && { adhesion: number(key.adhesion, `${kp}.adhesion`, 0, 4) }), ...(key.gravity !== undefined && { gravity: pair(key.gravity, `${kp}.gravity`, -2, 2) }),
+      ...(key.drag !== undefined && { drag: number(key.drag, `${kp}.drag`, 0, 1) })
     };
   });
   const blend = (from, to, t) => (Array.isArray(from) ? [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t] : from + (to - from) * t);
@@ -396,7 +415,8 @@ function readEffect(effect, path, source) {
   const look = effect.look.map((layer, i) => readLook(layer, `${path}.look[${i}]`, context));
   const gravity = effect.gravity === undefined ? [0, 0.3] : pair(effect.gravity, `${path}.gravity`, -2, 2);
   const adhesion = liquid ? number(effect.adhesion ?? 0, `${path}.adhesion`, 0, 4) : 0;
-  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity });
+  const drag = number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1);
+  const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity, drag });
   const most = { yield: yieldStress, viscosity, adhesion };
   if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
   for (const o of obstacles) if (o.adhesion > most.adhesion) most.adhesion = o.adhesion;
@@ -425,7 +445,7 @@ function readEffect(effect, path, source) {
     substeps: integer(effect.substeps ?? 2, `${path}.substeps`, 1, 16), iterations: integer(effect.iterations ?? (liquid ? 40 : 30), `${path}.iterations`, 1, 200),
     buoyancy: number(effect.buoyancy ?? 0.15, `${path}.buoyancy`, -2, 2), weight: number(effect.weight ?? 0, `${path}.weight`, -2, 2),
     vorticity: number(effect.vorticity ?? 0.25, `${path}.vorticity`, 0, 2), dissipation: number(effect.dissipation ?? 0.03, `${path}.dissipation`, 0, 1),
-    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag: number(effect.drag ?? (liquid ? 0 : 0.02), `${path}.drag`, 0, 1),
+    cooling: number(effect.cooling ?? 0.08, `${path}.cooling`, 0, 1), drag,
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
@@ -1569,7 +1589,21 @@ function burstFill(state, effect, fill, f) {
     piece[c] = best;
   }
   // A cell beside a piece numbered lower becomes the gap between them.
-  const kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
+  let kept = cells.filter(c => { const x = c % W, y = (c - x) / W, n = piece[c]; return !((x > 0 && piece[c - 1] >= 0 && piece[c - 1] < n) || (x < W - 1 && piece[c + 1] >= 0 && piece[c + 1] < n) || (y > 0 && piece[c - W] >= 0 && piece[c - W] < n) || (y < H - 1 && piece[c + W] >= 0 && piece[c + W] < n)); });
+  // Liquid breaks into blobs, not shards: twice over, a cell with four or fewer of its eight neighbours in its own piece
+  // is trimmed off (its water goes back to the piece, as a gap's does), so the straight-cut pieces fly as rounded blobs,
+  // where an elastic liquid would keep their corners all the way down. A piece of six cells or fewer stays whole.
+  for (let pass = 0; pass < 2; pass++) {
+    const left = new Int16Array(W * H).fill(-1), size = seeds.map(() => 0);
+    for (const c of kept) { left[c] = piece[c]; size[piece[c]]++; }
+    kept = kept.filter(c => {
+      if (size[piece[c]] <= 6) return true;
+      const x = c % W, y = (c - x) / W;
+      let same = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && x + dx >= 0 && y + dy >= 0 && x + dx < W && y + dy < H && left[c + dy * W + dx] === piece[c]) same++;
+      return same > 4;
+    });
+  }
   // The middle of the whole shape on the canvas, obstacles' pixels included.
   let cx = 0, cy = 0, area = 0;
   for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (fill.inside(i + 0.5, j + 0.5)) { cx += i + 0.5; cy += j + 0.5; area++; }
@@ -1786,6 +1820,13 @@ function stepLiquid(state, effect, dt) {
   uOld.set(u); vOld.set(v);
   for (let k = 0; k < u.length; k++) u[k] += dt * effect.gravity[0];
   for (let k = 0; k < v.length; k++) v[k] += dt * effect.gravity[1];
+  // Bubbles with lift hand that share of their buoyancy to the water around them, as if that much of it weighed nothing:
+  // a column of bubbles drives an upwelling.
+  const lifts = state.lifts;
+  if (lifts) for (let b = 0; b < lifts.length; b += 3) {
+    const x = lifts[b], y = lifts[b + 1], a = lifts[b + 2] * dt;
+    splat(u, null, W + 1, H, x, y - 0.5, -a * effect.gravity[0]); splat(v, null, W, H + 1, x - 0.5, y, -a * effect.gravity[1]);
+  }
   if (effect.drag) { const keep = 1 - effect.drag * dt; for (let k = 0; k < u.length; k++) u[k] *= keep; for (let k = 0; k < v.length; k++) v[k] *= keep; }
   if (effect.yield) strainForce(state, effect, dt);
   countCells(state);
@@ -2034,7 +2075,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
     if (e.radius !== null) { const d = e.radius * Math.sqrt(r(SALT.sparkX)), a = 360 * r(SALT.sparkY); x += d * cosDeg(a); y += d * sinDeg(a); }
     else { x += (r(SALT.sparkX) - 0.5) * e.area[0]; y += (r(SALT.sparkY) - 0.5) * e.area[1]; }
     const angle = pick(s.angle, r(SALT.angle)), speed = pick(s.speed, r(SALT.speed));
-    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)) });
+    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)), ...(s.rise !== null && bubbleOf(s, r)) });
     total.alive++; total.spawned++;
   }
   return true;
@@ -2045,10 +2086,15 @@ const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
 function moveSparks(list, g, density, total, liquid, pops, gravity) {
   const { W, H, u, v, pixels: solid } = g;
+  let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
     const p = list[k], s = p.s;
     p.age++;
     let fx = s.follow ? sampleU(g, u, p.x, p.y) * s.follow : 0, fy = s.follow ? sampleV(g, v, p.x, p.y) * s.follow : 0;
+    if (s.rise !== null) {
+      if (moveBubble(p, g, density, gravity, fx, fy, pops)) waiting ||= p.under; else { list.splice(k, 1); total.alive--; }
+      continue;
+    }
     // A liquid's grid holds no flow out in the air (no air is simulated), so a spark riding it would hang where it left
     // the water. Once out, an emitter's spark keeps the flow's velocity as its own and flies on as a droplet: it falls,
     // and ends where it falls back in, as spray does.
@@ -2071,32 +2117,137 @@ function moveSparks(list, g, density, total, liquid, pops, gravity) {
     const soaked = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !solid[y * W + x] && density[y * W + x] >= LEVEL;
     const sunk = p.foam && (wet ? !dry(i - 1, j) && !dry(i + 1, j) && !dry(i, j - 1) && !dry(i, j + 1) : !soaked(i - 1, j) && !soaked(i + 1, j) && !soaked(i, j - 1) && !soaked(i, j + 1));
     if (popped) pops.push({ x: p.x, y: p.y, size: s.size, code: sparkColor(p), age: 0 });
-    if (p.age >= p.life || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
+    // Spray still in the air when its life runs out flies on, for up to its life again, until it falls back in, hits
+    // something or leaves the canvas, so a droplet never vanishes in mid-air.
+    const spent = p.age >= (liquid && !s.follow && p.out && !wet ? 2 * p.life : p.life);
+    if (spent || !finite || hit || popped || (wet && p.out) || sunk || p.x < -16 || p.y < -16 || p.x > W + 16 || p.y > H + 16) { list.splice(k, 1); total.alive--; }
     else if (liquid && inside && !wet && !s.follow) p.out = true;
   }
+  if (waiting) mergeBubbles(list, g, total);
+}
+
+// ---- Bubbles ----------------------------------------------------------------------------------------------------------
+// A bubble's state: how much air it holds (in square pixels, so its size is the square root, 1 to 3 pixels across) and
+// where its sway starts.
+function bubbleOf(s, r) {
+  return { vol: s.size * s.size, size: s.size, phase: s.wobble ? 360 * r(SALT.wobble) : 0, under: false };
+}
+// How far along a ceiling a bubble looks for a way up, in pixels, and how many degrees its sway turns each frame (a sway
+// every eight frames).
+const BUBBLE_REACH = 5, SWAY = 45;
+const bubbleSize = vol => Math.min(3, Math.floor(Math.sqrt(vol) + 0.5));
+// Whether a bubble of `size` centred at (x, y) lies in open cells: no obstacle pixel under it, and nothing past a closed edge.
+function bubbleFits(g, x, y, size) {
+  const { W, H, pixels: solid, walls } = g, half = (size - 1) / 2, x0 = Math.floor(x - half), y0 = Math.floor(y - half);
+  for (let j = y0; j < y0 + size; j++) for (let i = x0; i < x0 + size; i++) {
+    if (i < 0 ? walls.left : i >= W ? walls.right : j < 0 ? walls.top : j >= H ? walls.bottom : solid[j * W + i]) return false;
+  }
+  return true;
+}
+// Air in the water. A bubble rises against the liquid's gravity at `rise` pixels per frame relative to the water, so it
+// rises steadily through still water and the currents carry it (`follow`); what is left of its launch speed fades by
+// `drag`, and `wobble` sways it from side to side. It never enters an obstacle or a closed edge: it keeps the part of its
+// move that is free, sliding along whatever stops it, and under a ceiling it slides toward the nearest way up within
+// BUBBLE_REACH pixels (up a slope, out from under a ledge) or waits there, where bubbles that touch merge. It ends where it
+// reaches the air (bursting, with `pop`), at the end of its life, or off the canvas. Returns whether it lives on.
+function moveBubble(p, g, density, gravity, fx, fy, pops) {
+  const s = p.s, { W, H, pixels: solid } = g, x = p.x, y = p.y, ci = Math.floor(x), cj = Math.floor(y);
+  // An obstacle that has moved onto it, or one it was born inside, takes it.
+  if (ci >= 0 && cj >= 0 && ci < W && cj < H && solid[cj * W + ci]) return false;
+  const gx = gravity ? gravity[0] : 0, gy = gravity ? gravity[1] : 0, pull = Math.sqrt(gx * gx + gy * gy), ux = pull ? -gx / pull : 0, uy = pull ? -gy / pull : 0;
+  p.vx = (p.vx + s.gravity[0]) * (1 - s.drag); p.vy = (p.vy + s.gravity[1]) * (1 - s.drag);
+  const sway = s.wobble ? s.wobble * (sinDeg(p.phase + SWAY * p.age) - sinDeg(p.phase + SWAY * (p.age - 1))) : 0;
+  const size = p.size, clear = (x0, y0, x1, y1) => bubbleFits(g, x1, y1, size) && !crossesSolid(solid, W, H, x0, y0, x1, y1);
+  let nx = x + fx + p.vx + s.rise * ux - sway * uy, ny = y + fy + p.vy + s.rise * uy + sway * ux;
+  p.px = x; p.py = y;
+  if (!Number.isFinite(nx + ny)) return false;
+  if (!clear(x, y, nx, ny)) {
+    if (clear(x, y, nx, y)) { ny = y; p.vy = 0; } else if (clear(x, y, x, ny)) { nx = x; p.vx = 0; } else { nx = x; ny = y; p.vx = 0; p.vy = 0; }
+  }
+  // Up is the axis nearest against gravity; across is the other one.
+  const vertical = Math.abs(uy) >= Math.abs(ux), ax = vertical ? 0 : Math.sign(ux), ay = vertical ? Math.sign(uy) : 0, bx = vertical ? 1 : 0, by = vertical ? 0 : 1;
+  p.under = s.rise > 0 && pull > 0 && !bubbleFits(g, nx + ax, ny + ay, size);
+  if (p.under) {
+    // The nearest place along the ceiling, within reach along a free path, where the way up is open: the higher side of a
+    // slope, or the edge of a ledge. Where both sides are as near, the side of its cell the bubble is on.
+    let best = 0;
+    for (let d = 1; d <= BUBBLE_REACH && !best; d++) {
+      const open = side => clear(nx, ny, nx + side * d * bx, ny + side * d * by) && bubbleFits(g, nx + side * d * bx + ax, ny + side * d * by + ay, size);
+      const left = open(-1), right = open(1);
+      if (left && right) best = (vertical ? nx - Math.floor(nx) : ny - Math.floor(ny)) < 0.5 ? -d : d;
+      else if (left) best = -d;
+      else if (right) best = d;
+    }
+    if (best) {
+      const step = Math.min(Math.abs(best), s.rise) * Math.sign(best), tx = nx + step * bx, ty = ny + step * by;
+      if (clear(nx, ny, tx, ty)) { nx = tx; ny = ty; }
+    }
+  }
+  p.x = nx; p.y = ny;
+  const i = Math.floor(nx), j = Math.floor(ny), wet = i >= 0 && j >= 0 && i < W && j < H && density[j * W + i] >= LEVEL;
+  if (!wet) {
+    if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0 });
+    return false;
+  }
+  return p.age < p.life;
+}
+// Bubbles waiting under a ceiling that touch merge into one bubble holding the air of both, as large as that air, where
+// their air was on average. A bubble holds at most twelve square pixels of air (it is drawn 3 pixels across from nine), so
+// a merge past that waits, as does one that would not fit there. The merged bubble lives as long as the longer-lived of
+// the two.
+function mergeBubbles(list, g, total) {
+  const waiting = list.filter(p => p.under);
+  for (let a = 0; a < waiting.length; a++) {
+    const p = waiting[a];
+    if (p.gone) continue;
+    for (let b = a + 1; b < waiting.length; b++) {
+      const q = waiting[b];
+      if (q.gone || q.s !== p.s || p.vol + q.vol > 12) continue;
+      const reach = (p.size + q.size) / 2, dx = q.x - p.x, dy = q.y - p.y;
+      if (Math.abs(dx) > reach || Math.abs(dy) > reach) continue;
+      const vol = p.vol + q.vol, size = bubbleSize(vol), mx = (p.x * p.vol + q.x * q.vol) / vol, my = (p.y * p.vol + q.y * q.vol) / vol;
+      const [x, y] = bubbleFits(g, mx, my, size) ? [mx, my] : bubbleFits(g, p.x, p.y, size) ? [p.x, p.y] : bubbleFits(g, q.x, q.y, size) ? [q.x, q.y] : [null, null];
+      if (x === null) continue;
+      p.vx = (p.vx * p.vol + q.vx * q.vol) / vol; p.vy = (p.vy * p.vol + q.vy * q.vol) / vol;
+      if (q.life - q.age > p.life - p.age) { p.age = q.age; p.life = q.life; }
+      p.x = x; p.y = y; p.vol = vol; p.size = size; q.gone = true;
+    }
+  }
+  for (let k = list.length - 1; k >= 0; k--) if (list[k].gone) { list.splice(k, 1); total.alive--; }
 }
 
 // Whitewater: each particle at the surface (in the air, or in a cell with air beside it) whose velocity changed by at
 // least `impact` this frame throws spray along that change, or one moving at `speed` throws it along its own motion. The
 // direction is tipped away from the water (down the density gradient) and turned by up to `spread` degrees, so spray
 // leaves a landing outward and up and a stream sideways. Each qualifying particle throws with the layer's chance, a
-// seeded draw keyed by the particle, so the same source throws the same droplets. Spray is drawn once it is out.
+// seeded draw keyed by the particle, so the same source throws the same droplets. Spray is drawn once it is out. A bubble
+// layer (`rise`) picks particles in the body of the water instead, two cells from air every way, and leaves a bubble at
+// rest in the water there: air a plunging stream or a landing drop has driven in, which the flow carries and which rises.
 function throwWhitewater(state, effect, density, list, cycle, total) {
   const { W, H, pixels: solid, geo } = state.g, air = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && density[j * W + i] < LEVEL;
   const at = (i, j) => (i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] ? density[j * W + i] : 0);
+  const spray = effect.whitewater.some(w => w.rise === null), bubbles = effect.whitewater.some(w => w.rise !== null);
   for (let k = 0; k < state.n; k++) {
     const x = state.x[k], y = state.y[k], i = Math.floor(x), j = Math.floor(y);
     // Beside a smooth obstacle a particle may sit in the open corner of a step's pixel; spray starts only from open cells.
     if (geo && solid[j * W + i]) continue;
-    if (!air(i, j) && !air(i - 1, j) && !air(i + 1, j) && !air(i, j - 1) && !air(i, j + 1)) continue;
+    const surface = air(i, j) || air(i - 1, j) || air(i + 1, j) || air(i, j - 1) || air(i, j + 1);
+    if (surface ? !spray : !bubbles) continue;
+    // Bubbles start in a body of water, two cells from air every way, not in a stream a few pixels thick.
+    if (!surface && (air(i - 2, j) || air(i + 2, j) || air(i, j - 2) || air(i, j + 2))) continue;
     const vx = state.vx[k], vy = state.vy[k], dx = vx - state.pvx[k], dy = vy - state.pvy[k];
     const nx = at(i - 1, j) - at(i + 1, j), ny = at(i, j - 1) - at(i, j + 1), out = Math.sqrt(nx * nx + ny * ny);
     for (let layer = 0; layer < effect.whitewater.length; layer++) {
       const w = effect.whitewater[layer], [ax, ay] = w.impact !== null ? [dx, dy] : [vx, vy], amount = Math.sqrt(ax * ax + ay * ay);
-      if (amount < (w.impact ?? w.speed)) continue;
+      if ((w.rise !== null) === surface || amount < (w.impact ?? w.speed)) continue;
       const r = salt => random(effect.seed, WHITEWATER + layer, cycle, state.id[k], salt);
       if (r(SALT.spawn) >= w.chance) continue;
       if (total.alive >= LIMITS.sparks) return false;
+      if (w.rise !== null) {
+        list.push({ s: w, x, y, vx: 0, vy: 0, age: 0, life: pickWhole(w.life, r(SALT.life)), ...bubbleOf(w, r) });
+        total.alive++; total.spawned++;
+        continue;
+      }
       let ux = ax / amount + (out ? nx / out : 0), uy = ay / amount + (out ? ny / out : 0);
       const tipped = Math.sqrt(ux * ux + uy * uy);
       if (tipped > 1e-6) { ux /= tipped; uy /= tipped; } else { ux = ax / amount; uy = ay / amount; }
@@ -2109,18 +2260,80 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
 }
 
 // ---- Fields to pixels -------------------------------------------------------------------------------------------------
+// A liquid's outline, read in one pass from the cells it covers: a gap one pixel wide with liquid on two sides and liquid
+// or an obstacle on a third is filled, and a lone pixel standing on a straight edge (liquid on one side, open air on the
+// other three, and liquid either side of its foot) is trimmed. Particles jostling at a resting surface otherwise draw
+// it with dents and pimples that come and go every frame. A lone drop, a stream's tip and a two-pixel step stay. A
+// walled canvas edge counts as an obstacle.
+const SIDES = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+function liquidOutline(wet, solid, walls, width, height) {
+  const out = Uint8Array.from(wet);
+  const inside = (x, y) => x >= 0 && y >= 0 && x < width && y < height;
+  const liquid = (x, y) => inside(x, y) && wet[y * width + x] === 1;
+  const wall = (x, y) => (inside(x, y) ? solid[y * width + x] === 1 : x < 0 ? walls.left : x >= width ? walls.right : y < 0 ? walls.top : walls.bottom);
+  for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+    const c = j * width + i;
+    if (solid[c]) continue;
+    let wets = 0, walled = 0, foot = null;
+    for (const side of SIDES) {
+      if (liquid(i + side[0], j + side[1])) { wets++; foot = side; } else if (wall(i + side[0], j + side[1])) walled++;
+    }
+    if (!wet[c]) { if (wets >= 2 && wets + walled >= 3) out[c] = 1; continue; }
+    if (wets !== 1 || walled) continue;
+    const [dx, dy] = foot, x = i + dx, y = j + dy;
+    if (liquid(x - dy, y + dx) && liquid(x + dy, y - dx)) out[c] = 0;
+  }
+  return out;
+}
+
+// A bilinear sample over the open cells only: obstacle cells drop out and the rest are weighted up to make up for them
+// (off the canvas counts as empty). With no open cell in reach it returns `fallback`.
+function openSample(a, solid, nx, ny, fx, fy, fallback) {
+  const i = Math.floor(fx), j = Math.floor(fy), s = fx - i, t = fy - j;
+  let sum = 0, weight = 0;
+  for (const [di, dj, w] of [[0, 0, (1 - s) * (1 - t)], [1, 0, s * (1 - t)], [0, 1, (1 - s) * t], [1, 1, s * t]]) {
+    const x = i + di, y = j + dj;
+    if (x < 0 || y < 0 || x >= nx || y >= ny) { weight += w; continue; }
+    if (solid[y * nx + x]) continue;
+    sum += a[y * nx + x] * w; weight += w;
+  }
+  return weight > 1e-9 ? sum / weight : fallback;
+}
+
 // Each look layer maps one field to palette colours: a colour is fully on from its threshold up, and `dither` feathers
 // it in below, through the pattern, over that share of the gap to the previous threshold. Later layers draw over
 // earlier ones; obstacles never hold fluid. Then optional cleanup and a one-pixel outline.
 function renderFields(effect, base, width, height, drawn = null) {
   // Colour codes are 16-bit: a palette key may be any single character, such as an accented letter.
-  const N = width * height, { solid, front } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
-  const [density] = base, covered = new Uint8Array(N);
+  const N = width * height, { solid, front, liquid } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
+  let [density] = base, wet = new Uint8Array(N), filled = null;
+  for (let c = 0; c < N; c++) wet[c] = !solid[c] && density[c] >= LEVEL ? 1 : 0;
+  if (liquid) {
+    // A liquid covers every cell a layer of its own draws (density, temperature or speed: a thin, fast stream is drawn
+    // by its speed), so a stream's depth runs on through it instead of starting a new surface under each thin pixel.
+    for (const layer of effect.look) {
+      if (layer.field > 2) continue;
+      const field = base[layer.field], { thresholds, gaps, dither, threshold } = layer;
+      for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+        const c = j * width + i;
+        if (!wet[c] && !solid[c] && field[c] >= thresholds[0] - (1 - threshold(i, j)) * dither * gaps[0]) wet[c] = 1;
+      }
+    }
+    const outline = liquidOutline(wet, solid, effect.walls, width, height);
+    // A filled gap is drawn as liquid at the surface level, so the layers colour it like the cells around it.
+    for (let c = 0; c < N; c++) if (outline[c] && !wet[c]) {
+      if (!filled) { filled = []; density = Float64Array.from(density); }
+      filled.push(c);
+      if (density[c] < LEVEL) density[c] = LEVEL;
+    }
+    wet = outline;
+  }
+  const covered = new Uint8Array(N);
   for (let i = 0; i < width; i++) {
     let run = 0, under = 0;
     for (let j = 0; j < height; j++) {
       const c = j * width + i;
-      if (!solid[c] && density[c] >= LEVEL) { if (!run) under = j > 0 && solid[c - width] ? 1 : 0; run++; } else run = 0;
+      if (wet[c]) { if (!run) under = j > 0 && solid[c - width] ? 1 : 0; run++; } else run = 0;
       runs[c] = run; covered[c] = run ? under : 0;
     }
   }
@@ -2152,26 +2365,48 @@ function renderFields(effect, base, width, height, drawn = null) {
   }
   // Light and shadow are the share by which density falls two pixels toward the light and two pixels away from it:
   // 1 on a rim that faces the light (or faces away), 0 inside, whatever the density, so a thinning puff keeps its form.
+  // A liquid against an obstacle is lit (or shaded) in full where it touches it on the side toward the light (or away
+  // from it), and obstacles further off take no part in the sample: a pool in a stepped bowl gets an even rim along the
+  // bowl instead of light and dark pixels by turns as the sample lands on the bowl or on liquid.
   const lit = new Float64Array(N), shade = new Float64Array(N), [lx, ly] = effect.light;
+  const sx = lx >= 0.38 ? 1 : lx <= -0.38 ? -1 : 0, sy = ly >= 0.38 ? 1 : ly <= -0.38 ? -1 : 0;
   if (effect.look.some(layer => layer.field === LIGHT || layer.field === SHADOW)) for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
     const c = j * width + i, here = density[c], x = i + 0.5, y = j + 0.5;
     if (here <= 0) continue;
+    if (liquid) {
+      const touches = (dx, dy) => (dx && i + dx >= 0 && i + dx < width && solid[c + dx]) || (dy && j + dy >= 0 && j + dy < height && solid[c + dy * width]);
+      lit[c] = touches(sx, sy) ? 1 : Math.max(0, 1 - openSample(density, solid, width, height, x + 2 * lx - 0.5, y + 2 * ly - 0.5, here) / here);
+      shade[c] = touches(-sx, -sy) ? 1 : Math.max(0, 1 - openSample(density, solid, width, height, x - 2 * lx - 0.5, y - 2 * ly - 0.5, here) / here);
+      continue;
+    }
     lit[c] = Math.max(0, 1 - bilinearZero(density, width, height, x + 2 * lx - 0.5, y + 2 * ly - 0.5) / here);
     shade[c] = Math.max(0, 1 - bilinearZero(density, width, height, x - 2 * lx - 0.5, y - 2 * ly - 0.5) / here);
   }
-  const sources = [base[0], base[1], base[2], depth, lit, shade, base[3]];
-  // Light and shadow only recolour pixels that earlier layers drew.
+  const sources = [density, base[1], base[2], depth, lit, shade, base[3]];
+  // A filled gap that no layer coloured (a look whose first colour starts above the surface level) takes the colour of
+  // a neighbour, along the edge first.
+  const patch = () => {
+    if (filled) for (const c of filled) if (!chars[c]) for (const [dx, dy] of [[-1, 0], [1, 0], [0, 1], [0, -1]]) {
+      const x = c % width + dx, y = Math.floor(c / width) + dy, n = y * width + x;
+      if (x >= 0 && y >= 0 && x < width && y < height && wet[n] && chars[n]) { chars[c] = chars[n]; break; }
+    }
+    filled = null;
+  };
+  // Light and shadow only recolour pixels that earlier layers drew. A liquid draws only inside its outline, but for its
+  // strands, which are thinner than any outline.
   for (const layer of effect.look) {
-    const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field === LIGHT || layer.field === SHADOW;
+    const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field === LIGHT || layer.field === SHADOW, strands = layer.field === STRAND;
+    if (shading) patch();
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
-      if (solid[c] || (shading && !chars[c]) || value < thresholds[0] - dither * gaps[0]) continue;
+      if (solid[c] || (liquid && !wet[c] && !strands) || (shading && !chars[c]) || value < thresholds[0] - dither * gaps[0]) continue;
       const feather = (1 - threshold(i, j)) * dither;
       let level = 0;
       while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
       if (level) chars[c] = colors[level - 1];
     }
   }
+  patch();
   if (effect.cleanup.strays || effect.cleanup.corners) {
     // An obstacle is neither fluid nor air: a corner pixel tucked against one is not a step in the fluid's edge, so
     // cleanup never opens a hole between the fluid and a wall.
@@ -2201,8 +2436,10 @@ function renderFields(effect, base, width, height, drawn = null) {
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
 // spreading solve one more, sharp advection about thirty.
 const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0);
-// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark.
-const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? e.sparks.life[1] : 0)), ...effect.whitewater.map(w => w.life[1])) : effect.frames;
+// A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
+// spray may fly on for its life again; a bubble never does).
+const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1) * s.life[1];
+const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid))) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
 const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
 const WHITEWATER_FULL = `more than ${LIMITS.sparks} sparks and whitewater droplets are alive at once; lower the whitewater chance or life`;
@@ -2358,9 +2595,16 @@ function solveFrame(run, cycle) {
   const { state } = run, effect = run.effect.schedule ? { ...run.effect, ...run.effect.schedule[cycle] } : run.effect, dt = 1 / effect.substeps;
   // Whitewater measures how much each particle's velocity changes over the frame's steps, not what emitters set.
   if (effect.liquid && effect.whitewater.length) { state.pvx.set(state.vx.subarray(0, state.n)); state.pvy.set(state.vy.subarray(0, state.n)); }
+  if (effect.liquid) state.lifts = liftsOf(run.sparks);
   // `phase`: how much of the frame has passed at the end of each step, for what clings to moving obstacles.
   for (let s = 0; s < effect.substeps; s++) { state.phase = (s + 1) / effect.substeps; effect.liquid ? stepLiquid(state, effect, dt) : stepGas(state, effect, dt); }
   if (effect.liquid) run.maxParticles = Math.max(run.maxParticles, state.n);
+}
+// Where the bubbles with lift are, and how much of their buoyancy each hands on (its share times its air), or null.
+function liftsOf(sparks) {
+  let lifts = null;
+  for (const p of sparks) if (p.s.lift) (lifts ??= []).push(p.x, p.y, p.s.lift * p.vol);
+  return lifts;
 }
 const fieldsOf = run => (run.effect.liquid ? liquidFields(run.state, run.base) : gasFields(run.state, run.base));
 // Sparks move with this frame's flow; then, while `spawning`, new ones join where their emitters were (`here`) and
@@ -2385,8 +2629,9 @@ function drawSparks(run, put) {
     const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
     p.seen = true;
     if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
-    const head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (s.size - 1) / 2), y0 = Math.floor(p.y - (s.size - 1) / 2);
-    for (let j = 0; j < s.size; j++) for (let i = 0; i < s.size; i++) put(x0 + i, y0 + j, head);
+    // A bubble is as large as the air it holds.
+    const size = p.size ?? s.size, head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (size - 1) / 2), y0 = Math.floor(p.y - (size - 1) / 2);
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) put(x0 + i, y0 + j, head);
   }
   // A popped bubble: the ring around its block, then a droplet off each upper corner.
   const { pops } = run;

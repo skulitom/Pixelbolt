@@ -284,6 +284,11 @@
                   },
                   "maxItems": 2,
                   "minItems": 2
+                },
+                "drag": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
                 }
               },
               "required": [
@@ -293,7 +298,7 @@
             },
             "maxItems": 16,
             "minItems": 1,
-            "description": "Liquid: change yield, viscosity, adhesion or gravity at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
+            "description": "Liquid: change yield, viscosity, adhesion, gravity or drag at a chosen frame, so the decisive moment lands where you want it: a heap held up by its yield gives way when a key drops it, a blob held under a ledge by adhesion drops when a key sets adhesion to 0, and drag (not viscosity, which freezes a slosh tilted) calms a one-shot so it ends at rest. Each setting starts from the effect's own value and follows the keys that name it, in frame order; a loop repeats them every cycle."
           },
           "fill": {
             "type": "array",
@@ -395,7 +400,7 @@
                     "speed"
                   ],
                   "additionalProperties": false,
-                  "description": "Break the fill into seeded pieces with a one-pixel gap between them, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps goes to their pieces, so the volume is kept."
+                  "description": "Break the fill into seeded pieces with a one-pixel gap between them and rounded corners, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps and corners goes to their pieces, so the volume is kept."
                 }
               },
               "required": [],
@@ -756,7 +761,7 @@
                           "minItems": 2
                         }
                       ],
-                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]."
+                      "description": "Frames each spark lives; [min, max] picks per spark. Default [8, 16]. In a liquid, spray (follow 0) still in the air then flies on, for up to as long again, until it falls back in."
                     },
                     "colors": {
                       "type": "array",
@@ -846,6 +851,24 @@
                     "pop": {
                       "type": "boolean",
                       "description": "Liquid only: the spark pops where it leaves the liquid, drawn as a ring around it for one frame and two droplets the next (bubbles bursting at the surface)."
+                    },
+                    "rise": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 4,
+                      "description": "Liquid: makes the spark a bubble that behaves like air. It rises this many pixels per frame through still water, against the liquid's gravity, on top of the flow that carries it (follow); it slides along any obstacle or closed edge it meets instead of ending there, up a sloping ceiling and out from under a ledge within 5 pixels, or waits under it, where waiting bubbles that touch merge into larger ones (up to 3 pixels across); it ends where it reaches the air, bursting there with pop. About 0.3–0.8."
+                    },
+                    "wobble": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2,
+                      "description": "With rise: pixels the bubble sways from side to side as it rises, once every eight frames from a seeded start. Default 0."
+                    },
+                    "lift": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "With rise: share of its buoyancy the bubble hands to the water around it, as if that much of the water weighed nothing. A column of bubbles then drives an upwelling: 1 with about a bubble a frame raises a dome on the surface over it, 0.3 a slight bump. Default 0."
                     }
                   },
                   "required": [
@@ -1004,7 +1027,7 @@
                       "minItems": 2
                     }
                   ],
-                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]."
+                  "description": "Frames each droplet lives; [min, max] picks per droplet. Default [6, 12]. Spray still in the air then flies on, for up to as long again, until it falls back in."
                 },
                 "colors": {
                   "type": "array",
@@ -1049,7 +1072,29 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 2,
-                  "description": "How much the flow carries the droplet: 0 (default) is spray, drawn once it has left the water and ending where it falls back in; above 0 is foam carried on the flow, ending once it is carried under."
+                  "description": "How much the flow carries the droplet: 0 (default) is spray, drawn once it has left the water and ending where it falls back in; above 0 is foam carried on the flow, ending once it is carried under. Bubbles default to 1."
+                },
+                "rise": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4,
+                  "description": "Makes the layer bubbles instead of spray: air a plunging stream (speed) or a landing drop (impact) drives into a pool. They start under the surface, where water lies two pixels deep on every side, at rest in the water; they rise this many pixels per frame against the liquid's gravity, ride the flow, slide under obstacles and end at the surface, as sparks with rise do. throw, spread and gravity shape spray only."
+                },
+                "wobble": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2,
+                  "description": "Bubbles: pixels each sways from side to side as it rises, once every eight frames. Default 0."
+                },
+                "lift": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Bubbles: share of each one's buoyancy handed to the water around it (see the sparks' lift). Default 0."
+                },
+                "pop": {
+                  "type": "boolean",
+                  "description": "Bubbles: burst where they reach the surface, a ring for one frame and two droplets the next. Default false: they vanish there."
                 }
               },
               "required": [
@@ -1068,7 +1113,7 @@
                   ]
                 }
               ],
-              "description": "Spray and foam thrown off the liquid by its own motion, from particles at the surface, tipped away from the water."
+              "description": "Spray and foam thrown off the liquid by its own motion, from particles at the surface, tipped away from the water; or, with rise, bubbles driven under it."
             },
             "maxItems": 4,
             "description": "Liquid: up to four layers of spray or foam thrown off the water where it lands or runs fast, drawn over it like sparks."
