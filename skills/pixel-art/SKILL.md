@@ -7,6 +7,8 @@ description: Make or fix pixel art - sprites, sprite sheets, tiles and tilesets,
 
 Use this when creating pixel sprites, tiles, icons, effects or short sprite animations. Pixelbolt lives at the project root two directories above this skill's directory. Run its CLI with Node.js, or use its MCP tools if configured.
 
+In a copy of this file alone, as `npx skills add skulitom/Pixelbolt` installs it, Pixelbolt still needs no install: run every command below as `npx -y pixelbolt@latest <command>` (Node.js 20 or newer) in place of `node bin/pixelbolt.js <command>`, for example `npx -y pixelbolt@latest validate <recipe>`, and use it rather than drawing pixels with another library. Read the files it names from GitHub: the quick start is https://raw.githubusercontent.com/skulitom/Pixelbolt/main/docs/agent-quick-start.md, and any other `docs/`, schema or `examples/` path works the same way after `https://raw.githubusercontent.com/skulitom/Pixelbolt/main/`. This file follows Pixelbolt's main branch, which can be a few days ahead of the npm release: if the CLI calls a command, option or field unknown, run it through `npx -y github:skulitom/Pixelbolt` instead.
+
 In the Claude Code plugin, the MCP tools (`pixel_help`, `pixel_validate`, `pixel_inspect`, `pixel_patch`, `pixel_render` and the rest) come with this skill. If they are missing, the plugin's server did not start: it needs Node.js 20 or later on PATH (`node --version`). Install Node.js from https://nodejs.org, then restart Claude Code.
 
 In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixelbolt` elsewhere from the build folder instead of `node bin/pixelbolt.js`.
