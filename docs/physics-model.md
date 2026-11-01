@@ -62,7 +62,7 @@ Temperature is a temperature, not an energy: every phase has the same heat capac
 
 One grid per effect, one cell per pixel. Every feature reads and writes these shared layers rather than keeping a private copy:
 
-- **Solid layer**: which cells are solid, who owns each one (an obstacle index, `ICE`, or a closed edge beyond the canvas), each solid cell's velocity (a moving obstacle's, from its keys; zero for ice), and each solid's surface properties (section 6).
+- **Solid layer**: which cells are solid, who owns each one (an obstacle index, `ICE`, or a closed edge beyond the canvas), each solid cell's velocity (a moving obstacle's, from its keys; a piece of ice's own while it settles or floats, zero once it rests), and each solid's surface properties (section 6).
 - **Liquid**: particles with position, velocity, the APIC slopes, and, when heat is on, temperature and phase progress. `fluid` (cells holding particles) is the pressure solve's active set; `wet` (density ≥ `LEVEL`) is what looks and sparks treat as water.
 - **Gas**: face velocities, `smoke` density, `vapour` matter, `temperature`, `ionization`. In a gas effect it covers every open cell. In a liquid effect it covers the air cells (section 7) and costs nothing unless a feature needs it.
 - **Electric**: potential, conductivity and current (section 10), only when something has a voltage.
@@ -77,7 +77,7 @@ One function builds the solid layer each step; every feature goes through it. It
   - `surface`: pixels or smooth.
   - `temperature` (phase changes): a hot plate or a cold window. In a gas effect it heats or cools the air.
   - `voltage` and `conductor` (plasma).
-- Ice takes its surface properties from its liquid: water sticks to its own ice with the effect's adhesion, and ice conducts electricity poorly.
+- Ice takes its surface properties from its liquid: water sticks to its own ice with the effect's adhesion, and ice conducts electricity poorly. Ice that settles or floats is a moving solid like a keyed obstacle, so what clings to it moves with it and bubbles slide under it as it drifts.
 - Whatever a feature does at a solid it does at every kind of solid. Bubbles slide under ice as under a ledge, sticky liquid clings to ice, air pockets are bounded by ice, and arcs treat ice as an insulator. Never special-case "obstacle" when the rule is about "solid".
 
 ## 7. Air
