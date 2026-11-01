@@ -398,10 +398,10 @@ function readKeys(value, path, frames, base) {
 // Heat for a liquid's phase changes, on the gas temperature scale (docs/physics-model.md, section 3): 0 is the room's air,
 // water freezes at −0.5 and boils at 0.5, and steam beads below 0.4. See the phase section below for each setting.
 function readHeat(value, path, vapour) {
-  fields(value, ['ambient', 'air', 'conduct', 'contact', 'freeze', 'boil', 'latent', 'vaporize', 'evaporation', 'sublimate', 'dew', 'condense', 'frost', 'deposit', 'grain'], path);
+  fields(value, ['ambient', 'air', 'conduct', 'contact', 'freeze', 'boil', 'latent', 'vaporize', 'evaporation', 'sublimate', 'dew', 'condense', 'frost', 'deposit', 'branch', 'grain'], path);
   const freeze = number(value.freeze ?? -0.5, `${path}.freeze`, -8, 8), boil = number(value.boil ?? 0.5, `${path}.boil`, -8, 16);
   if (boil <= freeze) fail(`${path}.boil`, 'the boiling point must lie above the freezing point');
-  for (const key of ['evaporation', 'sublimate', 'dew', 'frost']) if (value[key] !== undefined && !vapour) fail(`${path}.${key}`, `${key} turns water or ice into vapour or back; give the effect a vapour`);
+  for (const key of ['evaporation', 'sublimate', 'dew', 'frost', 'branch']) if (value[key] !== undefined && !vapour) fail(`${path}.${key}`, `${key} turns water or ice into vapour or back; give the effect a vapour`);
   const frost = value.frost === undefined ? null : number(value.frost, `${path}.frost`, -16, 16), dew = number(value.dew ?? boil - 0.1, `${path}.dew`, -16, 16);
   if (dew > boil) fail(`${path}.dew`, 'vapour condenses below the boiling point; keep dew at or under boil');
   if (frost !== null && frost > freeze) fail(`${path}.frost`, 'vapour turns straight to ice below the freezing point; keep frost at or under freeze');
@@ -411,7 +411,7 @@ function readHeat(value, path, vapour) {
     latent: number(value.latent ?? 0.5, `${path}.latent`, 0.02, 8), vaporize: number(value.vaporize ?? 1, `${path}.vaporize`, 0.02, 16),
     evaporation: number(value.evaporation ?? 0, `${path}.evaporation`, 0, 1), sublimate: value.sublimate === undefined ? false : boolean(value.sublimate, `${path}.sublimate`),
     dew: vapour ? dew : null, condense: number(value.condense ?? 0.2, `${path}.condense`, 0, 1),
-    frost, deposit: number(value.deposit ?? 0.1, `${path}.deposit`, 0, 1), grain: number(value.grain ?? 0, `${path}.grain`, 0, 1)
+    frost, deposit: number(value.deposit ?? 0.1, `${path}.deposit`, 0, 1), branch: number(value.branch ?? 0.5, `${path}.branch`, 0, 1), grain: number(value.grain ?? 0, `${path}.grain`, 0, 1)
   };
 }
 // Vapour: a gas on the same grid that moves through the cells holding neither liquid nor ice. `bubbles` are the bubbles a
@@ -2441,7 +2441,13 @@ function strandField(state, density, out) {
 // inside the water makes bubbles (addBubble) that carry their vapour up. Vapour touching anything colder than `dew` beads
 // up as dew and drips back; touching ice or an obstacle colder than `frost` it grows into ice; with `sublimate`, ice
 // turns straight into vapour at its surface. Matter is kept exactly and counted each frame (see heatAmounts).
-const PHASE = 3000, PHASE_SALT = { grain: 1, evaporate: 2, spawnX: 3, spawnY: 4, frost: 5, boil: 6 }, ICE_CELL = Math.ceil(LEVEL * PER_CELL);
+const PHASE = 3000, PHASE_SALT = { grain: 1, evaporate: 2, spawnX: 3, spawnY: 4, frost: 5, boil: 6, nucleus: 7, branch: 8, lean: 9, site: 10 }, ICE_CELL = Math.ceil(LEVEL * PER_CELL);
+// Frost grows as fingers (see heatStep): the eight directions in turn round the compass, so two a step apart are 45
+// degrees apart; the share of the cells beside a flat cold side a finger starts from, the chance a frame that one starts
+// anywhere else beside it, and how far from other frost that may be; how readily a stem, a branch and a twig grow
+// on (REACH, by generation), so branches stay shorter than their stem; how readily ice with no direction of its own (a
+// cube, a frozen fill) and a frost cell that already holds frost take more.
+const COMPASS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]], SITES = 0.04, NUCLEI = 0.003, SPACING = 5, REACH = [1, 0.35, 0.12], ROUND = 0.15, THICKEN = 0.04;
 // How far below freezing water freezes with no ice or cold solid to start it.
 const SUPERCOOL = 0.5;
 // How fast an obstacle's temperature warms or chills the air touching it, per frame (a gas effect's, or a liquid's air).
@@ -2761,7 +2767,7 @@ function heatStep(run, effect, dt, first) {
     if (surface(i, j)) { const to = vent(i, j); if (to !== -2) { removeParticle(state, k); ventVapour(state, effect, to, 1, t, dt); continue; } }
     // Boiled inside the water: a bubble that carries its vapour up and lets it out at the surface (see ventBubble). With
     // no bubbles set, or at the spark limit, the particle waits at the boil until it reaches the surface.
-    if (!bubbles || !addBubble(run.sparks, run.totals, bubbles, state.x[k], state.y[k], salt => random(seed, PHASE, step, state.id[k], salt), { steam: 1 })) { if (e > mine) energy[k] = mine; continue; }
+    if (!bubbles || !addBubble(run.sparks, run.totals, bubbles, state.x[k], state.y[k], salt => random(seed, PHASE, step, state.id[k], salt), { steam: 1, born: run.clock })) { if (e > mine) energy[k] = mine; continue; }
     removeParticle(state, k);
   }
   if (V) {
@@ -2789,21 +2795,66 @@ function heatStep(run, effect, dt, first) {
         if (base[n]) { if (obstacleT[n] < firm) firm = obstacleT[n]; } else if (ice[n] >= ICE_CELL) { if (Tc[n] < firm) firm = Tc[n]; } else if (water[n] + ice[n] >= ICE_CELL && Tc[n] < coldest) coldest = Tc[n];
       }
       if (firm < coldest) coldest = firm;
-      // Frost grows off any of the eight neighbours that is ice or a solid colder than `frost` (so it creeps round corners
-      // and spreads at 45 degrees too), fastest where it touches at one point, so its edge stays ragged.
-      let touching = 0, rime = firm, gone = 0;
-      if (h.frost !== null) for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
-        const x = i + di, y = j + dj;
-        if (!(di || dj) || x < 0 || y < 0 || x >= W || y >= H) continue;
-        const n = y * W + x, cold = base[n] ? obstacleT[n] : ice[n] >= ICE_CELL ? Tc[n] : Infinity;
-        if (cold < h.frost) { touching++; if (cold < rime) rime = cold; }
+      // Frost grows as fingers (physics-model.md section 9), off any of the eight neighbours that is frost or a solid
+      // colder than `frost`, into air below freezing. Each frost cell keeps the direction it grew in (`frostDir`), its
+      // generation (`frostGen`: a stem, a branch, a twig) and its length along its finger (`frostLen`). Vapour turns to
+      // frost in the cell straight ahead of a finger's tip, as readily as its generation's REACH, or, by a seeded draw
+      // (`branch`, a third as often off a branch, never off a twig, and only off every other cell), in one 45 degrees to
+      // its side: a branch of the next generation that grows straight on its own way. Never beside or behind a tip, so a
+      // finger stays a pixel wide and forks like a fern, its branches shorter than its stem and a pixel apart. A cell
+      // touching frost of another finger takes none, so fingers stop short of each other; a frost cell thickens slowly
+      // into solid ice; ice with no direction (a cube) frosts over slowly every way. The vapour diffusing to the tips feeds
+      // them, so they reach out into the humid air.
+      let weight = 0, rime = firm, gone = 0, from = -1, best = 0, frosty = 0, walls = 0, ox = 0, oy = 0, gen = 0, parent = -1, wall = -1, length = 0;
+      if (h.frost !== null && V.T[c] < h.freeze) {
+        const dirs = P.frostDir ??= new Int8Array(N).fill(-1), gens = P.frostGen ??= new Uint8Array(N), lens = P.frostLen ??= new Uint8Array(N), touched = P.touched ??= new Int32Array(8);
+        for (let k = 0; k < 8; k++) {
+          const x = i + COMPASS[k][0], y = j + COMPASS[k][1];
+          if (x < 0 || y < 0 || x >= W || y >= H) continue;
+          const n = y * W + x, cold = base[n] ? obstacleT[n] : ice[n] ? Tc[n] : Infinity;
+          if (!(cold < h.frost)) continue;
+          if (cold < rime) rime = cold;
+          // The step from that neighbour to this cell, as a direction.
+          const step = (k + 4) % 8;
+          if (base[n]) { walls++; wall = n; ox += COMPASS[step][0]; oy += COMPASS[step][1]; continue; }
+          touched[frosty++] = n;
+          const d = dirs[n], turn = d < 0 ? -1 : Math.min((step - d + 8) % 8, (d - step + 8) % 8), at = gens[n];
+          // A branch sprouts only off every other cell of a finger (its length from where it started is odd), so side
+          // branches lie a pixel apart instead of merging into a band.
+          const w = d < 0 ? ROUND : turn === 0 ? REACH[at < 2 ? at : 2] : turn === 1 && at < 2 && lens[n] % 2 === 1 && random(seed, PHASE, n, step, PHASE_SALT.branch) < h.branch * (at ? 0.3 : 1) ? REACH[at + 1] : 0;
+          weight += w;
+          if (w > best) { best = w; from = step; gen = turn === 1 ? at + 1 : at; parent = n; length = turn === 1 ? 0 : (lens[n] + 1) & 255; }
+        }
+        // A finger starts off a cold obstacle at seeded sites: SITES of the open cells beside a flat side (each touches three
+        // of the obstacle's cells) and nine times as many in a corner, where the cold is on two sides (it touches five).
+        // Elsewhere along a bare stretch of cold surface (no frost within SPACING pixels) one starts by a seeded draw each
+        // step, NUCLEI a frame beside a flat side, so every cold surface frosts in time. A finger grows straight out from
+        // the surface, or out of a corner along its diagonal, leaning a step either way by a seeded draw off a flat side:
+        // corners first, fingers apart, instead of a rim.
+        const bare = () => { for (let y = j - SPACING; y <= j + SPACING; y++) for (let x = i - SPACING; x <= i + SPACING; x++) if (x >= 0 && y >= 0 && x < W && y < H && ice[y * W + x]) return false; return true; };
+        const site = (walls - 2) * (walls - 2);
+        if (walls > 2 && !frosty && (random(seed, PHASE, c, PHASE_SALT.site) < SITES * site || (random(seed, PHASE, step, c, PHASE_SALT.nucleus) < NUCLEI * dt * site && bare()))) {
+          let out = COMPASS.findIndex(([x, y]) => x === Math.sign(ox) && y === Math.sign(oy));
+          if (out >= 0 && walls <= 3) out = (out + 8 + Math.floor(3 * random(seed, PHASE, c, PHASE_SALT.lean)) - 1) % 8;
+          if (out >= 0) { weight += 1; best = 1; from = out; gen = 0; parent = wall; length = 0; }
+        }
+        // A cell that has started taking frost, and has not a particle of it yet, goes on as it started.
+        if (!ice[c] && dirs[c] >= 0 && REACH[gens[c] < 2 ? gens[c] : 2] > best) { best = REACH[gens[c] < 2 ? gens[c] : 2]; weight = best; from = dirs[c]; gen = gens[c]; length = lens[c]; parent = -1; }
+        // A cell touching frost of another finger (any not beside the one it grows from) takes none, so fingers stop short
+        // of each other.
+        const px = parent % W, py = (parent - px) / W, other = n => n !== parent && (base[parent] || Math.abs(n % W - px) > 1 || Math.abs((n - n % W) / W - py) > 1);
+        if (ice[c]) weight = THICKEN;
+        else if (parent >= 0) for (let k = 0; k < frosty; k++) if (other(touched[k])) { weight = 0; break; }
+        if (weight > 1) weight = 1;
       }
-      if (touching) {
-        const tip = touching === 1 ? 1 : touching === 2 ? 0.5 : touching === 3 ? 0.2 : 0.05, grain = h.grain ? 1 - h.grain + 2 * h.grain * random(seed, PHASE, c, PHASE_SALT.frost) : 1;
-        gone = Math.min(m[c], h.deposit * dt * m[c] * tip * grain);
+      if (weight) {
+        const grain = h.grain ? 1 - h.grain + 2 * h.grain * random(seed, PHASE, c, PHASE_SALT.frost) : 1;
+        gone = Math.min(m[c], h.deposit * dt * m[c] * weight * grain);
         firm = rime;
         P.frost[c] += gone;
-      } else if (!h.sublimate && coldest < h.dew) {
+        if (!ice[c] && from >= 0) { P.frostDir[c] = from; P.frostGen[c] = gen; P.frostLen[c] = length; }
+      } else if (!h.sublimate && coldest < h.dew && !(h.frost !== null && rime < h.frost)) {
+        // (Vapour beside a surface cold enough to frost waits for a finger to reach it rather than beading as dew.)
         gone = h.condense * dt * m[c];
         P.pending[c] += gone;
       }
@@ -3097,7 +3148,7 @@ function moveBubble(p, g, density, gravity, fx, fy, pops) {
   const i = Math.floor(nx), j = Math.floor(ny), inside = i >= 0 && j >= 0 && i < W && j < H, wet = inside && density[j * W + i] >= LEVEL;
   if (p.fresh) p.fresh--;
   else if (!wet) {
-    if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0 });
+    if (s.pop) pops.push({ x: nx, y: ny, size, code: sparkColor(p), age: 0, born: p.born });
     p.end = inside ? 'air' : 'edge';
     return false;
   }
@@ -3129,6 +3180,7 @@ function mergeBubbles(list, g, total, gather = null) {
       if (q.life - q.age > p.life - p.age) { p.age = q.age; p.life = q.life; }
       p.x = x; p.y = y; p.vol = vol; p.size = size; q.gone = true;
       if (q.steam) p.steam = (p.steam ?? 0) + q.steam;
+      if (q.vol > p.vol - q.vol && q.born !== undefined) p.born = q.born;
     }
   }
   for (let k = list.length - 1; k >= 0; k--) if (list[k].gone) { list.splice(k, 1); total.alive--; }
@@ -3374,7 +3426,11 @@ const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.m
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
 // spray may fly on for its life again; a bubble never does).
 const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1) * s.life[1];
-const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid))) : effect.frames;
+const sparkTail = effect => Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid)));
+// A boil's bubbles are made by the water, not by an emitter: a loop draws those born in its recorded cycle and simulates
+// on for up to another cycle, until they have all ended, drawing them from frame 0 again (see simulate).
+const boilTail = effect => (effect.loop && effect.vapour && effect.vapour.bubbles ? effect.frames : 0);
+const simulatedFrames = effect => effect.loop ? (effect.warmup + 1) * effect.frames + Math.max(sparkTail(effect), boilTail(effect)) : effect.frames;
 const crowded = path => fail(path, `more than ${LIMITS.particles} liquid particles; lower the emitters' density or rate, or the fill`);
 const SPARKS_FULL = `more than ${LIMITS.sparks} sparks are alive at once; lower the sparks' count or life`;
 const AIR_FULL = `more than ${LIMITS.sparks} sparks and bubbles are alive at once; lower the sparks' count or life, or the air bubbles' life`;
@@ -3676,10 +3732,10 @@ function releaseAir(air, effect, list, cycle, total) {
 }
 // Draws the sparks through `put(x, y, code)`: a spark is a size × size block in the colour for its age, and a trail
 // streaks back to where it was a frame ago in the next colour of its list. Popped bubbles follow and age a frame.
-function drawSparks(run, put) {
+function drawSparks(run, put, shown = null) {
   for (const p of run.sparks) {
     // Spray is drawn once it has left the water, and streaks back only from where it was already drawn.
-    if (p.hide && !p.out) continue;
+    if ((p.hide && !p.out) || (shown && !shown(p))) continue;
     const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
     p.seen = true;
     if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
@@ -3691,6 +3747,7 @@ function drawSparks(run, put) {
   const { pops } = run;
   for (let k = pops.length - 1; k >= 0; k--) {
     const b = pops[k], x0 = Math.floor(b.x - (b.size - 1) / 2), y0 = Math.floor(b.y - (b.size - 1) / 2);
+    if (shown && !shown(b)) { if (++b.age > 1) pops.splice(k, 1); continue; }
     if (b.age === 0) for (let i = 0; i < b.size; i++) { put(x0 + i, y0 - 1, b.code); put(x0 + i, y0 + b.size, b.code); put(x0 - 1, y0 + i, b.code); put(x0 + b.size, y0 + i, b.code); }
     else { put(x0 - 1, y0 - 1, b.code); put(x0 + b.size, y0 - 1, b.code); }
     if (++b.age > 1) pops.splice(k, 1);
@@ -3732,10 +3789,18 @@ function simulate(effect, context) {
   // A loop warms up for whole cycles under its periodic forcing, keeps the fields of the last cycle's closing frames,
   // and blends its own closing frames toward them: the last frame then flows into frame 0 as that cycle's did.
   const begin = effect.warmup * frames, total = simulatedFrames(effect), blend = effect.blend;
+  // A loop draws the boil bubbles born in its recorded cycle only, on every frame they live, wrapped round to frame 0 as
+  // sparks are; those born in its warm-up still carry their vapour and lift the water, unseen. Once none of its own is
+  // left, and no spark's tail is still to come, the run stops. (Drawn as they came, the warm-up's bubbles stood at frame
+  // 0 where the cycle's own should have been, and bubbles popped in and out where the loop repeats.)
+  const shown = loop && boilTail(effect) ? p => p.born === undefined || (p.born >= begin && p.born < begin + frames) : null, done = (effect.warmup + 1) * frames + sparkTail(effect);
   const tail = loop ? Array.from({ length: blend }, () => all.map(() => new Float64Array(N))) : [];
   const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []);
   const peak = { density: 0, temperature: 0, speed: 0, ...(effect.electric && { ionization: 0, current: 0 }) }, figures = Array.from({ length: frames }, () => null), layouts = Array.from({ length: frames }, () => effect.layout);
-  for (let t = 0; t < total; t++) {
+  let ran = 0;
+  for (let t = 0; t < total; t++, ran++) {
+    if (shown && t >= done && !run.sparks.some(p => p.born !== undefined && shown(p))) break;
+    run.clock = t;
     const cycle = loop ? t % frames : t, out = t - begin, recording = !loop || (out >= 0 && out < frames);
     if (effect.moving) moveObstacles(run, cycle);
     const here = emitFrame(run, t, cycle);
@@ -3750,7 +3815,7 @@ function simulate(effect, context) {
     if (full) fail(path, full);
     // Boiling bubbles live through a loop's warm-up too (they carry vapour); only the recorded cycle on draws them.
     const list = loop && out < 0 ? null : drawn[(loop ? out : t) % frames];
-    if (list) drawSparks(run, (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !run.view.front[y * width + x]) list.push(y * width + x, code); });
+    if (list) drawSparks(run, (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !run.view.front[y * width + x]) list.push(y * width + x, code); }, shown);
     if (!recording) continue;
     const frame = loop ? out : t;
     if (loop && frame >= frames - blend) {
@@ -3787,7 +3852,7 @@ function simulate(effect, context) {
   const round = value => Math.floor(value * 1000 + 0.5) / 1000;
   const { totals } = run;
   return {
-    output, steps: total * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed), ...(effect.electric && { ionization: round(peak.ionization), current: round(peak.current) }) },
+    output, steps: ran * effect.substeps, peak: { density: round(peak.density), ...(!liquid && { temperature: round(peak.temperature) }), speed: round(peak.speed), ...(effect.electric && { ionization: round(peak.ionization), current: round(peak.current) }) },
     ...(liquid && { particles: run.maxParticles }), sparks: { spawned: totals.spawned, maxAlive: totals.maxAlive }, figures: columns(figures)
   };
 }
