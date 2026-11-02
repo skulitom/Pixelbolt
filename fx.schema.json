@@ -631,7 +631,7 @@
                 },
                 "rest": {
                   "type": "boolean",
-                  "description": "A particle that lands on its floor or ground stays where it lands: no more sliding, sway or spin (with bounce, once a rebound is slower than half a pixel a frame). Snow, leaves and coins that settle."
+                  "description": "A particle that lands on its floor or ground stays where it lands: no more sliding, sway, spin or play: loop (with bounce, once a rebound is too slow to lift it: slower than its gravity or half a pixel a frame). Snow, leaves and coins that settle."
                 },
                 "shapes": {
                   "oneOf": [

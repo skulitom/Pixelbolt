@@ -707,9 +707,23 @@ test('rest keeps a landed particle where it lands: no slide, sway or spin, and w
   const landed = coin.findIndex(([, y]) => y === 12), still = coin.findLastIndex(([, y]) => y !== 12) + 1;
   assert.ok(landed > 0 && still > landed + 1 && still < 16, String(coin));
   assert.ok(coin.slice(still).every(([x, y]) => x === 12 && y === 12));
-  // A tumbling chip stops turning once it rests.
+  // Under strong gravity a rebound that can't lift it (slower than its gravity) rests it too, so it stops sliding.
+  const heavy = places(run({ at: [4, 0], angle: 0, speed: 1, gravity: [0, 2], floor: 12, bounce: 0.5, rest: true }, 16));
+  assert.ok(heavy.slice(-6).every(([x, y]) => x === heavy.at(-1)[0] && y === 12), String(heavy));
+  // A flake swaying up and down lies on its floor once it rests, never held above it.
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const bobbing = compileEffects(effects({ frames: 16, seed, emitters: [{ at: [12, 4], burst: 1, life: 40, gravity: [0, 1], floor: 20, sway: { amplitude: [0, 2], period: 8 }, rest: true, shapes: ['dot'] }] })).recipe;
+    assert.ok(places(bobbing).slice(-8).every(([, y]) => y === 20), `seed ${seed}: ${places(bobbing)}`);
+  }
+  // A tumbling chip stops turning once it rests, and a looping flutter holds its step.
   const chip = run({ at: [12, 4], gravity: [0, 1], floor: 8, spin: 45, rest: true, shapes: ['chip'] }).frames.map(frame => frame.ops[0].symbol);
   assert.equal(new Set(chip.slice(3)).size, 1, String(chip));
+  const flutter = run({ at: [12, 4], gravity: [0, 1], floor: 8, rest: true, play: 'loop', shapes: [['dot', 'warm', 'cool']] }).frames.map(frame => frame.ops[0].symbol);
+  assert.equal(new Set(flutter.slice(4)).size, 1, String(flutter));
+  // Children it lands with (when: floor) inherit the landing's velocity, as without rest.
+  const splash = rest => compileEffects(effects({ frames: 10, emitters: [{ name: 'p', ...thrown, burst: 1, life: 40, ...(rest && { rest }), shapes: ['dot'] }, { from: 'p', when: 'floor', burst: 1, inherit: 1, life: 6, shapes: ['cool'] }] })).recipe.frames.map(frame => stampsAt(frame.ops.filter(op => op.symbol === 'cool')));
+  assert.deepEqual(splash(true), splash(false));
+  assert.ok(new Set(splash(true).flat().map(String)).size > 1, String(splash(true)));
   // Children a resting parent trails spawn where it lies, not along the step it last moved.
   const trailing = compileEffects(effects({ frames: 8, emitters: [{ name: 'p', ...thrown, burst: 1, life: 40, rest: true, shapes: ['dot'] }, { from: 'p', when: 'life', rate: 2, life: 1, shapes: ['cool'] }] })).recipe;
   assert.deepEqual(stampsAt(trailing.frames.at(-1).ops.filter(op => op.symbol === 'cool')), [[7, 8], [7, 8]]);

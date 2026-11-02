@@ -6,7 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Particles that come to rest
 
-- An effect emitter with a `floor` or `ground` takes `rest: true`: a particle that lands stays where it lands, its slide, `sway` and `spin` stopped, so snow, leaves, petals and coins settle instead of shimmering sideways on the floor. With `bounce`, a particle bounces until a rebound is slower than half a pixel a frame, then rests; children it trails while it lives spawn where it lies. Without `rest` every effect draws as before.
+- An effect emitter with a `floor` or `ground` takes `rest: true`: a particle that lands stays where it lands, lying on its floor with its slide, `sway`, `spin` and `play: "loop"` stopped, so snow, leaves, petals and coins settle instead of shimmering sideways on the floor. With `bounce`, a particle bounces until a rebound can't lift it (slower than its gravity or half a pixel a frame), then rests; children it lands with still inherit the landing's velocity, and children it trails spawn where it lies. Without `rest` every effect draws as before.
 
 ### Poke the pixels: a live fluid toy
 

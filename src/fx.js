@@ -346,7 +346,8 @@ function readEmitter(emitter, path, context, earlier) {
     // up as they fly out. It turns with a turned copy, as launch angles do.
     kick: emitter.kick === undefined ? null : pair(emitter.kick, `${path}.kick`, -64, 64),
     bounce: number(emitter.bounce ?? 0, `${path}.bounce`, 0, 1),
-    // rest: a particle that lands stays where it lands (no slide, sway or spin); with bounce, once a rebound is slow.
+    // rest: a particle that lands stays where it lands (no slide, sway, spin or loop); with bounce, once a rebound
+    // can't lift it.
     rest: flag(emitter.rest, `${path}.rest`),
     dissolve: emitter.dissolve === undefined ? 0 : number(emitter.dissolve, `${path}.dissolve`, 0, 1),
     threshold: ditherThreshold(pattern, [0, 0], seed)
@@ -582,8 +583,8 @@ function simulate(effect, context) {
     // particle turns with its velocity in every frame, warm-up included, so a loop's frame 0 continues its last frame.
     const places = alive.map(p => {
       const e = p.emitter, sway = e.sway;
-      // A particle at rest on its floor holds the sway it had when it stopped.
-      const age = p.still ?? p.age, sx = sway ? sway.amplitude[0] * sinDeg(360 * age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * age / sway.period + p.phase) : 0;
+      // A particle at rest holds the sideways sway it had when it stopped, and lies on its floor.
+      const age = p.still ?? p.age, sx = sway ? sway.amplitude[0] * sinDeg(360 * age / sway.period + p.phase) : 0, sy = sway && p.still === undefined ? sway.amplitude[1] * cosDeg(360 * age / sway.period + p.phase) : 0;
       const x = p.x + sx, y = p.floor !== null && p.y + sy > p.floor ? p.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
       p.trail.push([X, Y]);
       if (p.trail.length > 17) p.trail.shift();
@@ -630,7 +631,7 @@ function simulate(effect, context) {
         return;
       }
       const sequence = e.face ? e.variants[p.facing] : p.variant;
-      const step = e.play === 'loop' ? (p.age + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
+      const step = e.play === 'loop' ? ((p.still ?? p.age) + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
       // A spinning particle draws its symbol turned to the nearest 45° step (the other way in a mirrored copy), its middle
       // pixel kept on the particle.
       const k = e.spin ? (((Math.round((p.turn + p.spin * (p.still ?? p.age)) / 45) % 8) + 8) % 8) : 0, turned = k ? spun(sequence[step], view?.mirror ? 8 - k : k) : null;
@@ -693,8 +694,12 @@ function simulate(effect, context) {
         p.y = p.floor;
         if (p.vy > 0) p.vy = -p.vy * e.bounce;
         if (!p.landed) { p.landed = true; if (children[p.index].floor.length) events.push([p, 'floor']); }
-        // With rest, a landing that rebounds slower than half a pixel a frame (every landing, without bounce) stops it.
-        if (e.rest && p.vy > -0.5) { p.vx = 0; p.vy = 0; p.still = p.age; }
+        // With rest, a landing whose rebound can't lift it (slower than its gravity or half a pixel a frame; every
+        // landing, without bounce) stops it. Children it lands with (when: floor) still inherit the landing's velocity.
+        if (e.rest && p.vy > -Math.max(0.5, e.gravity[1])) {
+          if (events.at(-1)?.[0] === p) events[events.length - 1] = [{ ...p }, 'floor'];
+          p.vx = 0; p.vy = 0; p.still = p.age;
+        }
       }
     }
     // In the parents' drawing order.
