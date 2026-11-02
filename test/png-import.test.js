@@ -17,8 +17,8 @@ const chunk = (type, data = Buffer.alloc(0)) => {
   return bytes;
 };
 const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
-// rows: one array of samples per row. Row y uses filter y % 5 unless `filters` says otherwise.
-function png({ type, depth = 8, rows, plte, trns, interlace = 0, filters, before = [], after = [] }) {
+// rows: one array of samples per row. Row y uses filter y % 5.
+function png({ type, depth = 8, rows, plte, trns, interlace = 0, before = [], after = [] }) {
   const channels = CHANNELS[type] ?? 1, width = rows[0].length / channels, height = rows.length, bits = channels * depth;
   const stride = Math.ceil(width * bits / 8), bpp = Math.max(1, bits >> 3);
   const packed = rows.map(samples => {
@@ -29,7 +29,7 @@ function png({ type, depth = 8, rows, plte, trns, interlace = 0, filters, before
   });
   const raw = Buffer.alloc((stride + 1) * height);
   packed.forEach((row, y) => {
-    const filter = filters ? filters[y] : y % 5, up = packed[y - 1];
+    const filter = y % 5, up = packed[y - 1];
     raw[y * (stride + 1)] = filter;
     for (let x = 0; x < stride; x++) {
       const a = x >= bpp ? row[x - bpp] : 0, b = up ? up[x] : 0, c = up && x >= bpp ? up[x - bpp] : 0;

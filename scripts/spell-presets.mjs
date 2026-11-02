@@ -1,4 +1,4 @@
-// Reviewed pixelforge-fx effects built from shape layers: five spells (the fireball a seamless loop in eight directions)
+// Reviewed pixelforge-fx effects built from shape layers: eight spells (the fireball a seamless loop in eight directions)
 // and a set of cel-shaded water effects, written to examples/<name>.fx.json by scripts/generate-examples.js. Their
 // compiled pixels are pinned in test/shapes.test.js.
 export const spellPresets = {

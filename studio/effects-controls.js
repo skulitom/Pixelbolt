@@ -23,8 +23,8 @@ export const EFFECT_PRESETS = [
 // Both controls are relative, so every preset starts at 1: Strength scales the chosen effect's emitter rates and
 // bursts, Speed its frame timing (2 plays twice as fast).
 export const EFFECT_SLIDERS = [
-  { key: 'strength', label: 'Strength (particles)', min: 0.25, max: 2, step: 0.05, initial: 1, show: v => `× ${v.toFixed(2)}` },
-  { key: 'speed', label: 'Speed', min: 0.5, max: 2, step: 0.05, initial: 1, show: v => `× ${v.toFixed(2)}` }
+  { key: 'strength', label: 'Strength (particles)', min: 0.25, max: 2, step: 0.05, show: v => `× ${v.toFixed(2)}` },
+  { key: 'speed', label: 'Speed', min: 0.5, max: 2, step: 0.05, show: v => `× ${v.toFixed(2)}` }
 ];
 const round = value => Math.round(value * 1000) / 1000;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
