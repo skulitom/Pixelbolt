@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.10.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
+
+## 0.11.0 (2026-11-02)
+
 ### Fixes from a review before the release
 
 Five reviewers read everything since 0.10.0 (liquids, heat and electricity, tile sets, effects, and what ships); what they confirmed is fixed here.
@@ -413,11 +420,6 @@ Five reviewers read everything since 0.10.0 (liquids, heat and electricity, tile
 
 - `turn: { angles, about, mirror }` on a `pixelforge-fx` effect compiles a copy for each angle, named `<effect>-<angle>` (and `-mirror`), with its geometry turned instead of its pixels rotated: places, spawn offsets, launch angles, attract points, tilts, slash arcs, beam, bolt, stream and trail points, drift. Gravity, floors, sway and the looks' light stay put, so sparks still fall and highlights stay upper left; the copy at 0 is the effect as drawn, pixel for pixel. Layer noise turns with each copy, so a quarter turn is the drawn copy turned, pixel for pixel. `examples/fireball.fx.json` now flies in eight directions on a 56 × 56 canvas, anchored at the ball.
 - The fireball reads as a comet: a smaller white-hot core inside yellow and orange bands, a round front with no scraps of flame ahead of it, and a tail that leaves the head orange and cools to red before breaking into wisps. Its head had been one big flat white disc that the tail's dark red met head-on.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.10.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
 ### Bigger live fluids, finer steps and round fills
 
