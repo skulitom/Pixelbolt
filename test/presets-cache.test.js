@@ -56,7 +56,7 @@ test('a damaged cache, a malformed entry and presets no longer listed are measur
   const again = await listPresets({ budget: BUDGET, cache: dir });
   const kept = JSON.parse(await readFile(file, 'utf8'));
   assert.deepEqual(kept[key], original, 'the malformed entry was measured again');
-  if (second) assert.equal(kept[second].name, undefined, 'an entry that would rename a preset is measured again');
+  if (second) assert.equal(kept[second]?.name, undefined, 'an entry that would rename a preset is measured again (or, past the budget, not kept)');
   assert.equal(kept['0'.repeat(64)], undefined, 'a key no listed preset has is dropped');
   assert.ok(again.presets.some(entry => JSON.stringify(factsOf(entry)) === JSON.stringify(original)), 'the listing shows the re-measured facts');
   assert.ok(again.presets.every(entry => entry.name !== 'other'));
