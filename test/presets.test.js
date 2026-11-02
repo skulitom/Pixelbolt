@@ -65,10 +65,12 @@ before(async () => {
 });
 
 test('the presets listing covers every source and looping recipe in examples/, measured from the files themselves', async t => {
-  const mcp = session({ directory: await temp(t, 'presets-list'), root: examples });
+  const directory = await temp(t, 'presets-list'), mcp = session({ directory, root: examples });
   await mcp.init();
   const { guide, presets } = reply(await mcp.call('pixel_help', { topic: 'presets' }));
   await mcp.close();
+  // The measurements are kept in the export directory for the next listing (presets-cache.test.js).
+  assert.equal((await readdir(path.join(directory, '.presets'))).filter(name => /^[0-9a-f]{64}\.json$/.test(name)).length, 1);
   assert.match(guide, /pixel_compile \{"preset": "<name>"\}/);
   assert.deepEqual(presets.map(entry => entry.file.slice('examples/'.length)).sort(), [...sources, ...recipes].sort());
   assert.equal(new Set(presets.map(entry => entry.name.toLowerCase())).size, presets.length, 'names are unique');

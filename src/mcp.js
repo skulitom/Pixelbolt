@@ -347,7 +347,7 @@ export function createToolRunner({ directory, root, version }) {
         // Markdown topics come back as written; JSON ones without the files' indentation.
         if (args.topic !== undefined && !TOPICS.includes(args.topic)) throw new PixelError('topic', `expected one of ${TOPICS.join(', ')}`);
         if (args.name !== undefined && args.topic !== 'preset') throw new PixelError('name', 'name goes with topic "preset": the preset whose source to return');
-        if (args.topic === 'presets') return { content: [textContent(await listPresets())] };
+        if (args.topic === 'presets') return { content: [textContent(await listPresets({ cache: path.join(path.resolve(directory), '.presets') }))] };
         if (args.topic === 'preset') {
           const entry = await findPreset(args.name, 'name'), { source, inlined } = await loadPreset(entry);
           return { content: [textContent({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry), source })] };
