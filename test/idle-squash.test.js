@@ -38,11 +38,11 @@ const refused = (source, pattern) => {
 
 // The silhouette of one rendered frame: its box, and how many pixels of its lowest row are opaque.
 function silhouette({ data }, width, height) {
-  let left = width, right = -1, top = height, lowest = -1, opaque = 0;
-  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3]) { opaque++; left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); lowest = y; }
+  let left = width, right = -1, top = height, lowest = -1;
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3]) { left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); lowest = y; }
   let contact = 0;
   for (let x = 0; x < width; x++) if (lowest >= 0 && data[(lowest * width + x) * 4 + 3]) contact++;
-  return { lowest, width: right - left + 1, height: lowest - top + 1, contact, opaque };
+  return { lowest, width: right - left + 1, height: lowest - top + 1, contact };
 }
 const idleFrames = (project, name = 'idle') => project.animations[name].frames.map(index => project.frames[index]);
 

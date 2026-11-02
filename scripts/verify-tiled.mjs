@@ -118,7 +118,7 @@ function tiledModel(recipe, atlas) {
     sets.push({ name: recipe.name, type: 'corner', colors, wang, layered: true });
   }
   const sheet = project.sheet, size = [recipe.width * scale, recipe.height * scale];
-  return { name: recipe.name, frames, kinds, covered, animated, sets, size, scale,
+  return { frames, kinds, covered, animated, sets, size,
     grid: { tileWidth: size[0], tileHeight: size[1], margin: sheet.padding * scale, spacing: sheet.padding * 2 * scale, columns: sheet.columns, tileCount: sheet.columns * Math.ceil(frames.length / sheet.columns), imageWidth: atlas.meta.size.w, imageHeight: atlas.meta.size.h },
     probability: i => (kinds[i] && !covered.has(i) ? weight(i) / heaviest.get(kinds[i].key) : 1),
     polygons: i => shapes(frames[i].tile?.collision).map(points => points.map(([x, y]) => [x * scale, y * scale])),
@@ -185,7 +185,7 @@ export async function verifyTiled({ tiled = findTiled(), keep = false, log = con
     const add = async (key, recipe, files, { tsx, png, atlas, paints = [] }) => {
       for (const [file, bytes] of files) await put(`${key}/${file}`, bytes);
       const model = tiledModel(recipe, atlas);
-      cases.push({ key, recipe, model, tsx: `${key}/${tsx}`, png, paints: paints.map(paint => ({ ...paint, ...paintCase(model, paint.set, paint.rows, paint.keys) })) });
+      cases.push({ key, model, tsx: `${key}/${tsx}`, png, paints: paints.map(paint => ({ ...paint, ...paintCase(model, paint.set, paint.rows, paint.keys) })) });
     };
     for (const source of GODOT_TILE_SOURCES) {
       const recipe = godotTileRecipe(source), bundle = await createBundle(recipe), { name } = bundle.project;

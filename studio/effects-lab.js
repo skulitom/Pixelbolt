@@ -67,7 +67,6 @@ function showFrames() {
   position = Math.min(position, frames.length - 1); nextAt = 0;
   const playback = project.animations[animation], effect = metadata.effects[animation], colors = new Set(), spawned = (effect.emitters ?? []).reduce((sum, e) => sum + e.spawned, 0);
   for (const index of playback.frames) { const data = project.frames[index].data; for (let i = 0; i < data.length; i += 4) if (data[i + 3]) colors.add(data[i] << 16 | data[i + 1] << 8 | data[i + 2]); }
-  $('status').dataset.effect = animation;
   $('status').textContent = `${frames.length} frames · ${playback.loop === false ? 'plays once' : 'loops'} · ${colors.size} palette colours · ${spawned ? `${spawned} particles · ` : ''}${effect.layers ? `${effect.layers.length} shape layers · ` : ''}compiled in ${$('status').dataset.ms} ms in this browser`;
   // The compiler's review of the chosen effect: a loop that jumps, or drawing cut off at a canvas edge (another seed can do it).
   const mine = warnings.filter(text => text.startsWith(`fx.effects.${base()}:`)).map(text => text.slice(text.indexOf(':') + 2));

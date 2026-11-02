@@ -685,7 +685,7 @@ function tileModel(recipe, atlas, { id, terrainSet, texture, frameFile }) {
 // Loads exported TileSets in a real Godot 4: the physics layer, terrain sets, and per source every tile's terrain,
 // peering bits, probability, collision polygons, animation frames, durations and pixels. Then paints GODOT_TILE_MAPS
 // with Godot's terrain painter and checks each cell got the tile whose mask Pixelbolt's tilemap gives it. A scene's
-// TileSet holds two sets as two sources and terrain sets, painted together on one layer.
+// TileSet holds three sets as three sources and terrain sets, painted together on one layer.
 export async function verifyGodotTiles({ godot = findGodot(), keep = false, log = console.log } = {}) {
   if (!godot) throw new Error('Godot 4 was not found: pass --godot <path> or set GODOT');
   const version = godotRun(godot, ['--version']).output.trim().split('\n')[0];
