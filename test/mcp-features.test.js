@@ -46,6 +46,17 @@ test('MCP keeps what an agent reads small: brief tool schemas, a quick start, an
     for (const topic of topics) assert.ok(quick.includes(`\`${topic}\``), `the quick start names topic ${topic}`);
     assert.match((await help('guide'))[0], /^# Pixelbolt agent authoring guide/);
     assert.match((await help('workflow'))[0], /^# Deliberate pixel art/);
+    // The long documents list their sections, and name returns one under the document's title, so a client that keeps
+    // only the start of a long reply still reaches the fluid section at the workflow's end.
+    const workflow = (await help('workflow'))[0];
+    assert.match(workflow.split('\n')[2], /KB in all\. To read one section, .*Fluid effects \(\d+ KB\)/);
+    const section = async (topic, name) => (await mcp.request('tools/call', { name: 'pixel_help', arguments: { topic, name } })).result.content[0].text;
+    const fluidText = await section('workflow', 'fluid');
+    assert.match(fluidText, /^# Deliberate pixel art[^\n]*\n\n## Fluid effects\n/);
+    assert.ok(!fluidText.includes('\n## Particle effects') && Buffer.byteLength(fluidText) < Buffer.byteLength(workflow) / 2);
+    assert.match(await section('guide', 'Calling the tool'), /\n## Calling the tool\n/);
+    const missing = await mcp.call('pixel_help', { topic: 'guide', name: 'no such part' });
+    assert.equal(missing.result.isError, true); assert.equal(missing.info.path, 'name'); assert.match(missing.info.error, /its sections are Project, Frames and layers/);
     assert.equal(JSON.parse((await help('schema'))[0]).title, 'Pixelbolt project');
     // The quick start's recipe and the example topic are valid recipes that draw without warnings.
     const recipe = JSON.parse(quick.match(/```json\n([\s\S]*?)\n```/)[1]), example = JSON.parse((await help('example'))[0]);

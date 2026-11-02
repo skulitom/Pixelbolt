@@ -578,7 +578,7 @@
                       "minItems": 2
                     }
                   ],
-                  "description": "Degrees each particle's symbol turns a frame, from a seeded start, drawn in 45° RotSprite steps: shards, rocks and leaves that tumble. A number or [min, max]; the turned symbols join the recipe as <symbol>_r<degrees>. Not with face. [min, max] picks per particle."
+                  "description": "Degrees each particle's symbol turns a frame, from a seeded start, drawn in 45° RotSprite steps: shards, rocks and leaves that tumble. A number or [min, max]; the turned symbols join the recipe as <symbol>_r<degrees>, so the symbol's visible width plus height may be at most 360. Not with face. [min, max] picks per particle."
                 },
                 "turbulence": {
                   "type": "object",

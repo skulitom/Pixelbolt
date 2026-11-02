@@ -85,6 +85,26 @@ const HELP_TOPICS = {
 };
 // The presets topics are built from examples/ when asked: every shipped source and looping recipe (presets.js).
 const TOPICS = [...Object.keys(HELP_TOPICS), 'presets', 'preset'];
+// The guide and the workflow are long (the workflow passes 150 KB, more than many clients keep of one reply), so each
+// opens with its sections and their sizes, and `name` returns one `## ` section under the document's title.
+const SECTIONED = new Set(['guide', 'workflow']);
+function helpDocument(topic, text, name) {
+  const lines = text.split('\n'), sections = [];
+  let fenced = false;
+  lines.forEach((line, index) => {
+    if (line.startsWith('```')) fenced = !fenced;
+    else if (!fenced && line.startsWith('## ')) sections.push({ heading: line.slice(3).trim(), index });
+  });
+  const end = i => sections[i + 1]?.index ?? lines.length;
+  if (name === undefined) {
+    const listed = sections.map((section, i) => `${section.heading} (${Math.ceil(Buffer.byteLength(lines.slice(section.index, end(i)).join('\n')) / 1024)} KB)`);
+    return [lines[0], '', `> ${Math.ceil(Buffer.byteLength(text) / 1024)} KB in all. To read one section, call pixel_help with topic "${topic}" and name set to its heading: ${listed.join('; ')}.`, ...lines.slice(1)].join('\n');
+  }
+  const wanted = name.trim().toLowerCase(), headings = sections.map(section => section.heading.toLowerCase());
+  const i = wanted ? (headings.includes(wanted) ? headings.indexOf(wanted) : headings.findIndex(heading => heading.startsWith(wanted))) : -1;
+  if (i < 0) throw new PixelError('name', `topic ${topic} has no section "${name}"; its sections are ${sections.map(section => section.heading).join(', ')}`);
+  return [lines[0], '', ...lines.slice(sections[i].index, end(i))].join('\n').trimEnd() + '\n';
+}
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-normals': compileNormals };
 
 const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern, first: info.first, frames: info.frames, fps: info.fps.label, seconds: info.seconds, width: info.width, height: info.height, alpha: info.alpha, placement: info.placement, loop: info.loop, notes: info.notes, ffmpeg: info.commands });
@@ -344,15 +364,16 @@ export function createToolRunner({ directory, root, version }) {
     try {
       const { project: spec, revision, changes, ...options } = args;
       if (name === 'pixel_help') {
-        // Markdown topics come back as written; JSON ones without the files' indentation.
+        // Markdown topics come back as written (the guide and workflow with their sections listed first); JSON ones without the files' indentation.
         if (args.topic !== undefined && !TOPICS.includes(args.topic)) throw new PixelError('topic', `expected one of ${TOPICS.join(', ')}`);
-        if (args.name !== undefined && args.topic !== 'preset') throw new PixelError('name', 'name goes with topic "preset": the preset whose source to return');
+        if (args.name !== undefined && args.topic !== 'preset' && !SECTIONED.has(args.topic)) throw new PixelError('name', 'name goes with topic "preset" (the preset whose source to return) or "guide" and "workflow" (the section to return)');
         if (args.topic === 'presets') return { content: [textContent(await listPresets({ cache: path.join(path.resolve(directory), '.presets') }))] };
         if (args.topic === 'preset') {
           const entry = await findPreset(args.name, 'name'), { source, inlined } = await loadPreset(entry);
           return { content: [textContent({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry), source })] };
         }
         const file = args.topic === undefined ? QUICK_START : HELP_TOPICS[args.topic], text = await readFile(new URL(file, import.meta.url), 'utf8');
+        if (SECTIONED.has(args.topic)) return { content: [textContent(helpDocument(args.topic, text.replace(/\r\n/g, '\n'), args.name))] };
         return { content: [textContent(file.endsWith('.json') ? JSON.parse(text) : text)] };
       } else if (name === 'pixel_validate') {
         const { recipe, resolved, sources } = await recipeFrom(spec, revision), project = renderProject(recipe);
@@ -581,7 +602,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     overlay: { type: 'object', description: 'A saved pixelforge-overlay to apply instead of changes.' }
   } };
   const tools = [
-    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: presets (ready-made fire, smoke, explosions, spells, characters and more to compile instead of drawing), preset with name (one preset\'s source), guide (the full authoring reference and every tool option), workflow (art workflow: poses, scenes, particles, fluids, lighting), schema (the recipe JSON Schema), example (a complete recipe), or poses, scenes, autotile, fx, fluid, wave or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: TOPICS }, name: { type: 'string', description: 'With topic preset: which one.' } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
+    { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: presets (ready-made fire, smoke, explosions, spells, characters and more to compile instead of drawing), preset with name (one preset\'s source), guide (the full authoring reference and every tool option), workflow (art workflow: poses, scenes, particles, fluids, lighting; both list their sections, and name returns one), schema (the recipe JSON Schema), example (a complete recipe), or poses, scenes, autotile, fx, fluid, wave or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: TOPICS }, name: { type: 'string', description: 'With topic preset: which one; with guide or workflow: a section heading.' } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Returns its revision id, size, frame timing, animations and clipping, without images or files.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_inspect', description: 'Look at pixel art, a sprite or an animation frame by frame to check how it looks, without exporting. Returns a PNG contact sheet of every frame (or the chosen frames, or one animation in playback order) with each cell\'s name and duration. grid: true adds palette-key text grids for exact pixels, region zooms in, and view picks a tile, onion or motion review. Use this while iterating; call pixel_render to export.', inputSchema: inspectInput, annotations: { title: 'Inspect pixel art frames', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Pass revision or project plus changes applied in order, such as {"set": "frames[blink].duration", "value": 120} or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}; other paths look like palette.k or frames[blink].layers[body].ops[2].x2. The patch is atomic and must validate. Returns the new revision, every frame whose pixels changed and a before/after PNG.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },

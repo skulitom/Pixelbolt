@@ -138,8 +138,15 @@ test('a layered set has a tile for every mix of its terrains at the four corners
     [{ frame: 'shore-{mask}' }, /autotile\.frame: expected a frame name template containing \{corners\}/],
     [{ layers: layers.slice(0, 1) }, /autotile\.layers: expected 2–4 layers, bottom first/],
     [{ layers: [layers[0], { ...layers[1], key: 'w' }] }, /autotile\.layers\[1\]\.key: expected one letter or digit, unique among the layers/],
+    // Tile names must differ in more than letter case, and keys spell them; a digit key can't start one.
+    [{ layers: [layers[0], { ...layers[1], key: 'W' }] }, /autotile\.layers\[1\]\.key: expected one letter or digit, unique among the layers ignoring letter case/],
+    [{ frame: '{corners}', layers: [{ ...layers[0], key: '1' }, ...layers.slice(1)] }, /autotile\.frame: makes "1111" for corners 1111, which is no frame name: .*put a letter before \{corners\}, as in tiles-\{corners\}/],
     [{ layers: [layers[0], { name: 'sand', key: 's' }] }, /autotile\.layers\[1\]: give the layer a terrain, template rows or ops/]
   ]) assert.throws(() => compileAutotile({ ...shore, ...change }), message, JSON.stringify(change));
+  // Four layers make 256 tiles, as many frames as a recipe holds, so they leave no room for variants.
+  const fourth = { name: 'rock', key: 'r', terrain: { fill: 'g' } };
+  assert.equal(compileAutotile({ ...shore, layers: [...layers.map(({ variants, weight, ...layer }) => layer), fourth] }).recipe.frames.length, 256);
+  assert.throws(() => compileAutotile({ ...shore, layers: [...layers, fourth] }), /autotile\.layers\[\d\]\.variants: 4 layers make 256 tiles, as many frames as a recipe holds, so there is no room for \d+ variants?: use 3 layers \(81 tiles\), or leave the variants out/);
 });
 
 test('a layered map draws the same from the compiled tiles as from one map per terrain', () => {

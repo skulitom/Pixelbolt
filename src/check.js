@@ -173,7 +173,11 @@ function framesFix(key, want, named, direction, project, recipe, total) {
 // and fade, fluids that settle) and scattered particles change unevenly by design, so only loops are judged, and
 // the ground and steps only where every frame is a body: its drawn pixels cover at least SOLID of its box. A recipe
 // without animations (an icon or item sheet) plays its frames as one loop only by default, so it gets no notes.
-const MOTION_ENTRIES = 64, MOTION_NOTES = 8, MOTION_PAIRS = 6, SOLID = 0.4;
+// The outline of a spell, a flame or a splash wanders by a few pixels every frame while its compiler keeps the loop
+// seamless, so a loop is judged by its whole silhouette and by its largest body, and a lift, uneven or join note
+// needs both; an uneven step or a jump at the loop must also redraw REDRAW times the pixels of a usual step, and a
+// tall body's lowest row may wobble a row for every WOBBLE rows of its height.
+const MOTION_ENTRIES = 64, MOTION_NOTES = 8, MOTION_PAIRS = 6, SOLID = 0.4, REDRAW = 1.5, WOBBLE = 12;
 const median = values => { const sorted = [...values].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
 const largestStep = steps => steps.reduce((most, item) => Math.max(most, item.step), 0);
 const series = (items, limit) => items.length > limit ? `${items.slice(0, limit).join(', ')} and ${items.length - limit} more` : items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : items[0];
@@ -195,10 +199,76 @@ function samePixels(frames) {
   return (a, b) => kind(a) === kind(b);
 }
 
+// The box of a frame's largest body, its largest group of drawn pixels touching side or corner, with that group's
+// pixel count: [x, y, w, h, count], or null for an empty frame.
+function largestBody({ data }, width, height) {
+  const size = width * height, seen = new Uint8Array(size), stack = new Int32Array(size);
+  let best = null;
+  for (let start = 0; start < size; start++) {
+    if (seen[start] || !data[start * 4 + 3]) continue;
+    let top = 0, count = 0, x0 = width, y0 = height, x1 = -1, y1 = -1;
+    seen[start] = 1; stack[top++] = start;
+    while (top) {
+      const c = stack[--top], x = c % width, y = (c - x) / width;
+      count++;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const X = x + dx, Y = y + dy, n = Y * width + X;
+        if ((dx || dy) && X >= 0 && Y >= 0 && X < width && Y < height && !seen[n] && data[n * 4 + 3]) { seen[n] = 1; stack[top++] = n; }
+      }
+    }
+    if (!best || count > best[4]) best = [x0, y0, x1 - x0 + 1, y1 - y0 + 1, count];
+  }
+  return best;
+}
+
+// What one loop's boxes say: its steps between neighbouring played frames (and the wrap from the last back to the
+// first), whether every frame is a body (its pixels, count(i), cover at least SOLID of its box), and whether it leaves
+// its ground row, steps unevenly or jumps at the wrap. A pair that shows one source frame twice is a hold on purpose
+// (an attack hold, a pingpong turn), and an empty frame has no outline.
+function judgeLoop(box, count, order) {
+  const lowest = box.map(item => item && item[1] + item[3] - 1), steps = [];
+  for (let i = 0; i < order.length; i++) {
+    const j = (i + 1) % order.length, a = box[i], b = box[j];
+    if (!a || !b || order[i] === order[j]) continue;
+    const step = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[0] + a[2] - b[0] - b[2]), Math.abs(a[1] + a[3] - b[1] - b[3]));
+    steps.push({ from: i, to: j, wrap: j === 0, step, sources: [order[i], order[j]].sort((x, y) => x - y).join() });
+  }
+  const inner = steps.filter(item => !item.wrap), wrap = steps.find(item => item.wrap), most = largestStep(inner);
+  const solid = box.every((item, i) => !item || count(i) >= SOLID * item[2] * item[3]);
+  // The ground is the lowest row at least half the frames stand on (on a tie, the one lower on screen). A body whose
+  // frames leave it by 2 rows or more lifts or sinks; a wobble of one row, or no common row at all (a projectile, a
+  // swirl), is left alone.
+  const rows = lowest.filter(row => row !== null), counts = new Map();
+  for (const row of rows) counts.set(row, (counts.get(row) ?? 0) + 1);
+  const [ground, standing] = [...counts].reduce((best, entry) => (entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best), [null, 0]);
+  const heights = box.filter(Boolean).map(item => item[3]), wobble = heights.length ? Math.max(1, Math.floor(median(heights) / WOBBLE)) : 1;
+  const away = lowest.reduce((far, row, i) => (row !== null && Math.abs(row - ground) > (far === null ? wobble : Math.abs(lowest[far] - ground)) ? i : far), null);
+  const lifts = solid && rows.length > 0 && standing * 2 >= rows.length && away !== null;
+  const typical = inner.length ? median(steps.map(item => item.step)) : 0, uneven = solid && inner.length > 0 && most >= 3 && most >= 2 * typical;
+  // A pingpong's wrap plays its first step backwards (the turn), which the uneven note already weighs.
+  const turn = wrap !== undefined && inner.some(item => item.sources === wrap.sources);
+  const within = inner.length ? median(inner.map(item => item.step)) : 0, joins = solid && wrap !== undefined && !turn && inner.length > 0 && wrap.step >= 3 && wrap.step >= 2 * within;
+  return { lowest, steps, inner, wrap, most, rows, ground, standing, away, lifts, typical, uneven, within, joins };
+}
+
+// The pixels two frames differ in (fully transparent pixels are equal whatever their colour).
+function redrawnPixels(a, b) {
+  let n = 0;
+  for (let i = 0; i < a.length; i += 4) if ((a[i + 3] || b[i + 3]) && (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3])) n++;
+  return n;
+}
+
 // boxes: frame -> silhouette, and drawn: frame -> its count of pixels with alpha > 0, both from the scan in
 // checkDelivery, so each source frame is measured once. recipe: whether it names its animations and sets loop.
+// A single body judges the same by its silhouette and by its largest body, while sparks, embers or drops breaking off
+// a spell, a flame or a splash move the silhouette without the body making that move (see REDRAW and WOBBLE).
 function reviewMotion(project, names, boxes, drawn, recipe) {
-  const motion = {}, notes = [], same = samePixels(project.frames), named = recipe?.animations !== undefined;
+  const motion = {}, notes = [], same = samePixels(project.frames), named = recipe?.animations !== undefined, bodies = new Map();
+  const bodyOf = frame => { if (!bodies.has(frame)) bodies.set(frame, largestBody(frame, project.width, project.height)); return bodies.get(frame); };
   for (const key of names) {
     const { frames: order, loop } = project.animations[key];
     if (order.length < 2) continue;
@@ -206,39 +276,24 @@ function reviewMotion(project, names, boxes, drawn, recipe) {
     motion[key] = { box: box.slice(0, MOTION_ENTRIES), lowest: lowest.slice(0, MOTION_ENTRIES), ...(order.length > MOTION_ENTRIES && { omitted: order.length - MOTION_ENTRIES }) };
     if (!named || !loop) continue;
     const label = i => JSON.stringify(project.frames[order[i]].name), own = [];
-    // Neighbouring played frames, and for a loop the wrap from the last back to the first. A pair that shows one
-    // source frame twice is a hold on purpose (an attack hold, a pingpong turn), and an empty frame has no outline.
-    const steps = [];
-    for (let i = 0; i < order.length; i++) {
-      const j = (i + 1) % order.length, a = box[i], b = box[j];
-      if (!a || !b || order[i] === order[j]) continue;
-      const step = Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1]), Math.abs(a[0] + a[2] - b[0] - b[2]), Math.abs(a[1] + a[3] - b[1] - b[3]));
-      steps.push({ from: i, to: j, wrap: j === 0, step, sources: [order[i], order[j]].sort((x, y) => x - y).join() });
-    }
+    const whole = judgeLoop(box, i => drawn.get(project.frames[order[i]]), order), { steps, inner, wrap, most, rows, ground, standing, away, typical, within } = whole;
+    const core = order.map(index => bodyOf(project.frames[index])), body = judgeLoop(core, i => core[i][4], order);
     // Pingpong plays a pair both ways; it is named once.
     const once = list => { const seen = new Set(); return list.filter(item => !seen.has(item.sources) && seen.add(item.sources)); };
-    const inner = steps.filter(item => !item.wrap), wrap = steps.find(item => item.wrap), most = largestStep(inner);
-    const solid = box.every((item, i) => !item || drawn.get(project.frames[order[i]]) >= SOLID * item[2] * item[3]);
-    // The ground is the lowest row at least half the frames stand on (on a tie, the one lower on screen). A body whose
-    // frames leave it by 2 rows or more lifts or sinks; a wobble of one row, or no common row at all (a projectile, a
-    // swirl), is left alone.
-    const rows = lowest.filter(row => row !== null), counts = new Map();
-    for (const row of rows) counts.set(row, (counts.get(row) ?? 0) + 1);
-    const [ground, standing] = [...counts].reduce((best, entry) => (entry[1] > best[1] || (entry[1] === best[1] && entry[0] > best[0]) ? entry : best), [null, 0]);
-    const away = lowest.reduce((far, row, i) => (row !== null && Math.abs(row - ground) > (far === null ? 1 : Math.abs(lowest[far] - ground)) ? i : far), null);
     // A loop by default may be a one-shot whose recipe leaves out loop: false; a jump or a fast strike is then intended. It goes on the animation's first lift, uneven or join note.
     let hint = recipe.animations[key]?.loop === undefined ? ` If it should play once, set animations.${key}.loop to false.` : '';
-    if (solid && rows.length && standing * 2 >= rows.length && away !== null) own.push(`"${key}" loops, but its lowest visible row leaves row ${ground} (where ${standing} of its ${rows.length}${rows.length === order.length ? '' : ' drawn'} frames stand) for row ${lowest[away]}${lowest[away] > ground ? ' below it' : ''} (${label(away)}): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run's flight frames or something that floats may leave the ground on purpose.`);
+    if (whole.lifts && body.lifts) own.push(`"${key}" loops, but its lowest visible row leaves row ${ground} (where ${standing} of its ${rows.length}${rows.length === order.length ? '' : ' drawn'} frames stand) for row ${lowest[away]}${lowest[away] > ground ? ' below it' : ''} (${label(away)}): a body that stands on the ground should keep its lowest row on one row in every frame (squash it onto that row rather than lifting or sinking it). A hop, a jump, a run's flight frames or something that floats may leave the ground on purpose.`);
     if (own.length) { own[0] += hint; hint = ''; }
-    const typical = inner.length ? median(steps.map(item => item.step)) : 0, uneven = solid && inner.length > 0 && most >= 3 && most >= 2 * typical;
+    // How many pixels each step redraws, against the median step: a hand-drawn hop or a jump back to the start redraws
+    // much more than its neighbours, a boiling projectile about as much in every frame.
+    const redrawn = new Map(), redraw = item => { if (!redrawn.has(item)) redrawn.set(item, redrawnPixels(project.frames[order[item.from]].data, project.frames[order[item.to]].data)); return redrawn.get(item); };
+    const stands = item => redraw(item) >= REDRAW * median(steps.map(redraw));
+    const uneven = whole.uneven && body.uneven && inner.some(item => item.step === most && stands(item)), joins = whole.joins && body.joins && stands(wrap);
     if (uneven) {
       const top = once(inner.filter(item => item.step === most)).map(item => `from ${label(item.from)} to ${label(item.to)}`);
       own.push(`"${key}" moves unevenly: ${series(top, 3)} the silhouette moves ${most} px, while the median step is ${typical} px. Space the frames so each step changes the silhouette by a similar amount, or add in-between frames.${hint}`);
       hint = '';
     }
-    // A pingpong's wrap plays its first step backwards (the turn), which the uneven note already weighs.
-    const turn = wrap !== undefined && inner.some(item => item.sources === wrap.sources);
-    const within = inner.length ? median(inner.map(item => item.step)) : 0, joins = solid && wrap !== undefined && !turn && inner.length > 0 && wrap.step >= 3 && wrap.step >= 2 * within;
     if (joins) own.push(`"${key}" jumps when it loops: from ${label(wrap.from)} back to ${label(wrap.to)} the silhouette moves ${wrap.step} px, while the median step is ${within} px. Make the last frame lead into the first.${hint}`);
     // Pixel-identical frames share a silhouette, so only neighbours that don't move are compared. With another
     // duration, an identical frame changes the timing on purpose: a hold, like a repeated frame name.

@@ -85,7 +85,7 @@ function readFill(fill, { tile, palette, path, seed }) {
     const lp = `${path}.speckle[${i}]`;
     fields(layer, ['color', 'amount', 'size', 'seed'], lp);
     const color = paletteKey(layer.color, `${lp}.color`, palette), amount = share(layer.amount, `${lp}.amount`);
-    const size = whole(layer.size ?? 4, `${lp}.size`, 1, tile), salt = whole(layer.seed ?? i, `${lp}.seed`, 0, 2147483647);
+    const size = whole(layer.size ?? Math.min(4, tile), `${lp}.size`, 1, tile), salt = whole(layer.seed ?? i, `${lp}.seed`, 0, 2147483647);
     const big = cellsFor(tile, size), small = cellsFor(tile, Math.max(1, size / 2));
     const values = [];
     for (let y = 0; y < tile; y++) for (let x = 0; x < tile; x++) values.push({ x, y, value: periodicNoise(fillSeed, 0x51ec + salt, tile, big, x, y) * 0.7 + periodicNoise(fillSeed, 0x7e11 + salt, tile, small, x, y) * 0.3 });
@@ -105,7 +105,7 @@ function readSide(spec, { tile, palette, path, seed, side, round }) {
   const field = key => (Object.hasOwn(spec.own, key) ? `${path}.${side}.${key}` : `${path}.all.${key}`);
   const value = { ...spec.all, ...spec.own };
   const depth = whole(value.depth ?? 0, field('depth'), 0, q - 1), jitter = whole(value.jitter ?? 0, field('jitter'), 0, q - 1);
-  const size = whole(value.size ?? 4, field('size'), 1, tile);
+  const size = whole(value.size ?? Math.min(4, tile), field('size'), 1, tile);
   const bands = value.bands === undefined ? [] : paletteKeys(value.bands, field('bands'), palette, 0, q);
   const outside = value.outside === undefined ? [] : paletteKeys(value.outside, field('outside'), palette, 0, q);
   let tufts = null;
@@ -179,10 +179,17 @@ export function drawTerrain(spec, map, mode = 'blob') {
       const cx = Math.floor(x / tile), cy = Math.floor(y / tile), lx = x - cx * tile, ly = y - cy * tile;
       let best = null;
       if (inAt(x, y)) {
-        // Inside: the band of the nearest edge straight up, down or across, or the fill.
+        // Inside: the band of the nearest edge straight up, down or across, or the fill. A band looks no further than
+        // its own cell into a neighbouring terrain cell: near the border that cell's shape depends on a diagonal its
+        // quarter's tile does not record (a cell left of the one below an open side), so a band seen there would be
+        // drawn in some maps and not in the template.
         for (const side of ORDER) {
           const { bands } = sides[side], [dx, dy] = DIR[side];
-          for (let k = 1; k <= bands.length && (!best || k < best.k); k++) if (!inAt(x + dx * k, y + dy * k)) { best = { k, key: bands[k - 1] }; break; }
+          for (let k = 1; k <= bands.length && (!best || k < best.k); k++) {
+            const tx = x + dx * k, ty = y + dy * k, nx = Math.floor(tx / tile), ny = Math.floor(ty / tile);
+            if ((nx !== cx || ny !== cy) && filled(nx, ny)) break;
+            if (!inAt(tx, ty)) { best = { k, key: bands[k - 1] }; break; }
+          }
         }
         row += best ? best.key : fill[ly][lx];
         continue;
@@ -295,8 +302,10 @@ function beside([x, y], side, tile) {
 // a join is a seam when neither side continues the template: the pixel after the join is not the one the template
 // has after the first quarter, and the pixel before it is not the one the template has before the second. A seam is
 // `shape` when the pair also disagrees about which pixels are clear (a broken outline or edge), `texture` otherwise.
-// `drawn` maps a template's name to the rows a terrain drew for it before any ops: a terrain cannot seam, so its pixels
-// are trusted and only joins that ops changed are judged (cardinal inner corners aside, which no drawing can mend).
+// `drawn` maps a template's name to the rows a terrain drew for it before any ops: a terrain cannot seam with itself, so
+// its pixels are trusted and only joins that ops changed are judged (cardinal inner corners aside, which no drawing can
+// mend). Two terrains (a variant's) can: where their tiles meet, an edge each draws in another place is a seam
+// (`terrains`), and another fill or colour is not.
 export function templateSeams(templates, tile, mode = 'blob', drawn = {}) {
   const q = tile / 2, scale = q / (SMALL / 2), names = Object.keys(templates), seams = [];
   const untouched = (name, points) => drawn[name] !== undefined && points.every(([x, y]) => drawn[name][y][x] === templates[name][y][x]);
@@ -318,7 +327,16 @@ export function templateSeams(templates, tile, mode = 'blob', drawn = {}) {
         const [first, next] = [at.first, at.next].map(([x, y]) => A[y][x]), [second, previous] = [at.second, at.previous].map(([x, y]) => B[y][x]);
         // A side whose continuation is only assumed cannot vouch for the join.
         if ((!after.assumed && second === next) || (!before.assumed && first === previous)) continue;
-        if (!join.corner && untouched(a, [at.first, at.next]) && untouched(b, [at.second, at.previous])) continue;
+        // Two templates drawn by terrains (a set and a variant whose terrain changes it) each meet themselves without a
+        // seam, so their pair is one of theirs wherever it agrees with either on one side. Where both sides differ,
+        // only an edge drawn in another place breaks the join: another fill or colour switches at it, as a variant
+        // is meant to.
+        if (!join.corner && a !== b && untouched(a, [at.first, at.second]) && untouched(b, [at.first, at.second])) {
+          const ownSecond = A[at.second[1]][at.second[0]], ownFirst = B[at.first[1]][at.first[0]];
+          if (second !== ownSecond && first !== ownFirst && clear(second) !== clear(ownSecond) && clear(first) !== clear(ownFirst)) pixels.push({ first: at.first, second: at.second, shape: true, terrains: true });
+          continue;
+        }
+        if (!join.corner && a === b && untouched(a, [at.first, at.next]) && untouched(b, [at.second, at.previous])) continue;
         const shape = (after.assumed || clear(second) !== clear(next)) && (before.assumed || clear(first) !== clear(previous));
         pixels.push({ first: at.first, second: at.second, ...(!after.assumed && { next: at.next }), ...(!before.assumed && { previous: at.previous }), shape });
       }
@@ -340,9 +358,18 @@ export function seamWarnings(report, tile, label = templateLabel) {
   const masks = list => `mask${list.length === 1 ? '' : 's'} ${list.slice(0, 3).join(', ')}${list.length > 3 ? ` and ${list.length - 3} more` : ''}`;
   const point = ([x, y]) => `[${x}, ${y}]`, whose = name => (report.templates > 1 ? ` of ${label(name)}` : '');
   const pixelCount = n => `${n} pixel${n === 1 ? '' : 's'}`;
-  const shape = report.seams.filter(seam => !seam.corner && seam.pixels.some(p => p.shape));
+  // Two terrains that draw an edge in different places: one warning for each pair of templates.
+  const pairs = new Map();
+  for (const seam of report.seams) for (const p of seam.pixels) if (p.terrains) {
+    const key = [seam.a, seam.b].sort().join('\u0000'), pair = pairs.get(key) ?? { names: [seam.a, seam.b].sort(), pixels: 0, joins: new Set(), example: seam };
+    pair.pixels++; pair.joins.add(seam); pairs.set(key, pair);
+  }
+  for (const { names, pixels, joins, example } of pairs.values()) {
+    warnings.push(`Seam: ${label(names[0])} and ${label(names[1])} come from terrains that draw the edge in different places, so their tiles break it where they meet: ${pixelCount(pixels)} along ${joins.size} quarter join${joins.size === 1 ? '' : 's'} (for example the ${q}×${q} quarter at ${point(example.to)} of ${label(example.b)} stitched ${example.axis === 'x' ? 'right of' : 'below'} the one at ${point(example.from)} of ${label(example.a)}, in tiles with ${masks(example.masks)}). A variant's tiles mix with the set's, so its terrain should change only what lies inside the edges: the fill (fill.seed, speckle), not edges, round or the terrain's seed.`);
+  }
+  const shape = report.seams.filter(seam => !seam.corner && seam.pixels.some(p => p.shape && !p.terrains));
   for (const seam of shape.slice(0, 6)) {
-    const broken = seam.pixels.filter(p => p.shape), shown = broken.slice(0, 3), more = broken.length > 3 ? ` (and ${broken.length - 3} more along the join)` : '';
+    const broken = seam.pixels.filter(p => p.shape && !p.terrains), shown = broken.slice(0, 3), more = broken.length > 3 ? ` (and ${broken.length - 3} more along the join)` : '';
     // Each fix copies the pixel the template has on the other side of a quarter it does continue.
     const fixes = [shown.every(p => p.next) && shown.map(p => `${point(p.second)} match ${point(p.next)}`).join(' and '), shown.every(p => p.previous) && shown.map(p => `${point(p.first)} match ${point(p.previous)}`).join(' and ')].filter(Boolean);
     warnings.push(`Seam in tiles with ${masks(seam.masks)}: the ${q}×${q} quarter at ${point(seam.to)}${whose(seam.b)} is stitched ${seam.axis === 'x' ? 'right of' : 'below'} the one at ${point(seam.from)}${whose(seam.a)}, and ${pixelCount(broken.length)} break${broken.length === 1 ? 's' : ''} the edge there. Make ${fixes.join(', or ')}${more}: tiles are stitched from template quarters, so the template has to repeat every ${tile} pixels, and its inner-corner tile has to meet the island's edges.`);

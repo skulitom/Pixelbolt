@@ -36,6 +36,12 @@ export const LAYER_DEPTHS = ['front', 'back', 'split'];
 export const SHAPE_WORK = 400_000_000;
 
 const fail = (path, message) => { throw new PixelError(path, message); };
+// Counts `n` pixels visited against the compile's shared budget (painting, and measuring an aura's distance field),
+// refusing the layer at `path` that crosses it.
+const spendWork = (work, n, path) => {
+  work.spent += n;
+  if (work.spent > SHAPE_WORK) fail(path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
+};
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const number = (value, path, min, max) => {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) fail(path, `expected a number from ${min} to ${max}`);
@@ -195,7 +201,7 @@ function readLook(look, path, palette, seed) {
 }
 
 function readLayer(layer, path, context, index) {
-  const { frames, lookNames, seed, loop, symbols, sequences, view } = context;
+  const { frames, lookNames, seed, loop, symbols, sequences, view, work } = context;
   if (!isObject(layer)) fail(path, 'expected a layer object');
   if (!SHAPE_KINDS.includes(layer.kind)) fail(`${path}.kind`, `expected ${SHAPE_KINDS.join(', ')}`);
   const kind = layer.kind;
@@ -300,7 +306,7 @@ function readLayer(layer, path, context, index) {
     const { noise, noiseKeys } = noisy(0.5);
     // Noise stretches the reach by up to half its share, so the field is measured that far out.
     Object.assign(out, { symbol: name, width, rise, noise, noiseKeys, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
-      fields: (rings ?? (animated ? sequences[name] : [symbols[name]])).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated)) });
+      fields: (rings ?? (animated ? sequences[name] : [symbols[name]])).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated, work)) });
     if (out.fields.every(field => !field)) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
   }
   if (kind === 'trail') {
@@ -353,13 +359,17 @@ function ellipseRows(rx, ry, disc) {
 }
 // An aura's distance field around a sprite, measured once: for each pixel of the sprite's box widened by the reach,
 // the distance to the nearest visible pixel, with distances upward divided by `rise` so the glow reaches that much
-// higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity.
-function auraField(rows, reach, rise, path, emptyOk = false) {
+// higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity. The steps it takes
+// count against the compile's shared shape work (`work`), as painting does: an aura on each frame of a long animation,
+// or many auras, are refused instead of measuring for minutes.
+function auraField(rows, reach, rise, path, emptyOk = false, work = null) {
   const w = rows[0].length, h = rows.length, side = Math.ceil(reach), up = Math.ceil(reach * rise), W = w + 2 * side, H = h + up + side;
   const solid = [];
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (rows[j][i] !== '.' && rows[j][i] !== ' ') solid.push([i, j]);
   if (!solid.length) { if (emptyOk) return null; fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug'); }
-  if (solid.length * (2 * side + 1) * (up + side + 1) > 64_000_000) fail(`${path}.width`, 'this sprite with this width and rise would take too long to measure; lower width or rise');
+  const steps = solid.length * (2 * side + 1) * (up + side + 1);
+  if (steps > 64_000_000) fail(`${path}.width`, 'this sprite with this width and rise would take too long to measure; lower width or rise');
+  if (work) spendWork(work, steps, path);
   const d = new Float64Array(W * H).fill(Infinity);
   for (const [i, j] of solid) for (let b = -up; b <= side; b++) {
     const dy = b < 0 ? b / rise : b, row = (j + b + up) * W + i + side;
@@ -403,7 +413,7 @@ export function readShapes(effect, path, context) {
     for (const key of ['looks', 'cleanup']) if (effect[key] !== undefined) fail(`${path}.${key}`, `${key} colours shape layers and blob particles; add layers too`);
     return null;
   }
-  const { palette, seed, frames, loop, symbols, sequences, view } = context;
+  const { palette, seed, frames, loop, symbols, sequences, view, work } = context;
   if (effect.looks === undefined && effect.layers === undefined) fail(`${path}.looks`, 'blob particles are drawn into the effect\'s looks; add looks: named colour ramps');
   if (!isObject(effect.looks) || !Object.keys(effect.looks).length || Object.keys(effect.looks).length > LIMITS.looks) fail(`${path}.looks`, `expected 1–${LIMITS.looks} named looks: colour ramps that cut the layers' fields into bands, drawn in order`);
   const looks = Object.entries(effect.looks).map(([name, look]) => {
@@ -411,7 +421,7 @@ export function readShapes(effect, path, context) {
     return { name, ...readLook(look, `${path}.looks.${name}`, palette, seed) };
   });
   if (effect.layers !== undefined && (!Array.isArray(effect.layers) || !effect.layers.length || effect.layers.length > LIMITS.layers)) fail(`${path}.layers`, `expected 1–${LIMITS.layers} shape layers`);
-  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, sequences, view, lookNames: looks.map(l => l.name) }, i));
+  const layers = (effect.layers ?? []).map((layer, i) => readLayer(layer, `${path}.layers[${i}]`, { frames, seed, loop, symbols, sequences, view, work, lookNames: looks.map(l => l.name) }, i));
   let cleanup = { strays: false, corners: false };
   if (effect.cleanup !== undefined) {
     fields(effect.cleanup, ['strays', 'corners'], `${path}.cleanup`);
@@ -707,12 +717,14 @@ const PAINTERS = {
   // count too, so a smear drawn from the strike on still shows the wind-up behind it.
   // With pivots, each step between two frames is an arc round the pivot (angle and distance moving evenly), and the
   // stroke lies inside the point's path, so its outer edge is where the tip went: a blade's crescent smear.
+  // A trail spanning a loop reads its places round the cycle (each at most once), so frame 0 still shows the smear of
+  // the last frames and the frame after the last is frame 0 again.
   trail(layer, s, put) {
-    const path = [], centres = [];
-    for (let f = Math.max(0, s.f - layer.length); f <= s.f; f++) {
-      const p = layer.points[f];
+    const path = [], centres = [], n = layer.points.length;
+    for (let f = layer.cycle ? s.f - Math.min(layer.length, n - 1) : Math.max(0, s.f - layer.length); f <= s.f; f++) {
+      const at = layer.cycle ? ((f % n) + n) % n : f, p = layer.points[at];
       if (!p) continue;
-      const x = p[0] + s.cx, y = p[1] + s.cy, last = path[path.length - 1], c = layer.pivots?.[f];
+      const x = p[0] + s.cx, y = p[1] + s.cy, last = path[path.length - 1], c = layer.pivots?.[at];
       if (!last || last[0] !== x || last[1] !== y) { path.push([x, y]); centres.push(c ? [c[0] + s.cx, c[1] + s.cy] : null); }
     }
     const w = sample(layer.width, s.q) / 2;
@@ -812,10 +824,7 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
       const put = (i, j, value) => { if (i >= 0 && j >= 0 && i < width && j <= bottom) { const c = j * width + i; if (value > scratch[c]) scratch[c] = value; } };
       // Painters visit only the canvas (width × rows down to bottom) and count what they visit.
       put.width = width; put.bottom = bottom;
-      put.spend = n => {
-        work.spent += n;
-        if (work.spent > SHAPE_WORK) fail(layer.path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
-      };
+      put.spend = n => spendWork(work, n, layer.path);
       // Reveals measure to the end of the frame, so the first frame of a window already shows the shape under way.
       // A keyed squash draws this frame's squash through a copy of the layer, so painters read it as they always have.
       const flow = layer.flow ? flowFields(layer, p, q) : null;

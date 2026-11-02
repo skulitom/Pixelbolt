@@ -437,6 +437,36 @@ test('a trail follows a pose point frame for frame and, with a pivot, sweeps rou
 });
 const compileEffectsError = run => { try { run(); } catch (error) { return `${error.path}: ${error.message}`; } return 'compiled'; };
 
+test('measuring an aura counts against the shape work, so an aura on every frame of a long animation is refused, not measured for minutes', () => {
+  // A 52 × 52 body, each frame's field about 63 million steps (just under the cap on one field), in an animation of
+  // eight frames: past the 400 million steps the shape layers share, at the seventh field.
+  const block = Array.from({ length: 52 }, () => 'w'.repeat(52));
+  const body = { version: 1, name: 'body', width: 64, height: 64, palette: { w: '#ffffff' }, symbols: { b: block },
+    frames: Array.from({ length: 8 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'stamp', symbol: 'b', x: 6 + (i % 2), y: 6 }] })), animations: { walk: { frames: Array.from({ length: 8 }, (_, i) => `f${i}`) } } };
+  const source = frames => ({ format: 'pixelforge-fx', version: 1, name: 'fx', width: 64, height: 64, palette: { o: '#e83', y: '#fd6' },
+    symbols: { body: { recipe: { ...body, animations: { walk: { frames: body.animations.walk.frames.slice(0, frames) } } }, animation: 'walk' } },
+    effects: { glow: { frames: 1, looks: { fire: { colors: ['o', 'y'], thresholds: [0.3, 0.7] } }, layers: [{ kind: 'aura', symbol: 'body', at: [0, 0], width: 32, rise: 4, noise: 1 }] } } });
+  assert.match(compileEffectsError(() => compileEffects(source(8))), /^fx\.effects\.glow\.layers\[0\]: .*the shape layers would visit more than 400,000,000 pixels to draw/);
+  // One frame of it is measured and drawn as before.
+  assert.ok(compileEffects({ ...source(1), effects: { glow: { ...source(1).effects.glow, edges: ['left', 'right', 'top', 'bottom'] } } }).recipe.frames[0].ops.length);
+});
+
+test('a trail spanning a loop reads its places round the cycle, so frame 0 continues the smear and the loop has no seam', () => {
+  // A tip circling its middle once a cycle: the path closes, so every frame should smear the same way.
+  const points = [[10, 0], [7, 7], [0, 10], [-7, 7], [-10, 0], [-7, -7], [0, -10], [7, -7]];
+  const loop = (layer, extra = {}) => compileEffects(effects({ frames: 8, loop: true, ...extra, looks: { steel: { colors: ['w'], thresholds: [0.1] } }, layers: [{ kind: 'trail', at: [16, 16], width: 4, ...layer }] }, { width: 32, height: 32 }));
+  const { recipe, metadata, warnings } = loop({ points, length: 3 });
+  const drawn = recipe.frames.map(f => cellsOf(gridIn(f)).length);
+  // Frame 0 smears back through the last frames' places, as frame 4 does through its own (a half turn away).
+  assert.ok(drawn[0] > 0 && drawn[0] === drawn[4], `${drawn}`);
+  assert.deepEqual(cellsOf(gridIn(recipe.frames[0])).map(c => [32 - c.x, 32 - c.y]).sort().join(), cellsOf(gridIn(recipe.frames[4])).map(c => [c.x, c.y]).sort().join());
+  assert.deepEqual([metadata.effects.burst.seam.jump, warnings], [0, undefined]);
+  // Each place is read at most once a cycle, however long the smear: a length past the frame count draws all of them.
+  assert.deepEqual(loop({ points, length: 16 }).recipe.frames.map(f => cellsOf(gridIn(f)).length), loop({ points, length: 7 }).recipe.frames.map(f => cellsOf(gridIn(f)).length));
+  // A shorter window in a loop is an event drawn as in a one-shot: its first frame has one place, so nothing.
+  assert.equal(cellsOf(gridIn(loop({ points, length: 3, frames: [0, 7] }).recipe.frames[0])).length, 0);
+});
+
 test('the swing trail example compiles from the swing\'s pose source to the pixels that were approved', async () => {
   const { resolveReferences } = await import('../src/resolve.js');
   const { createHash } = await import('node:crypto');
@@ -646,6 +676,15 @@ test('spin turns each particle\'s symbol in 45° RotSprite steps from a seeded s
   names.slice(1).forEach((name, i) => assert.equal((step(name) - step(names[i]) + 8) % 8, 2, String(names)));
   for (const name of names.filter(n => n !== 'chip')) assert.deepEqual(recipe.symbols[name], rotateRows(recipe.symbols.chip, Number(name.split('_r')[1]), [1, 1]).rows);
   assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, shapes: [['dot'], ['warm']], face: true, spin: 10 }] })), /use one or the other/);
+  // Turned 45°, a symbol must still fit the 256 rows and columns of a recipe symbol: its visible width plus height may
+  // be at most 360, checked up front with the emitter's path; clear borders don't count.
+  const rock = (w, h, border = 0) => [...Array(border).fill('.'.repeat(w + 2 * border)), ...Array.from({ length: h }, () => '.'.repeat(border) + 'w'.repeat(w) + '.'.repeat(border)), ...Array(border).fill('.'.repeat(w + 2 * border))];
+  const spinning = rows => compileEffects(effects({ frames: 2, edges: ['left', 'right', 'top', 'bottom'], emitters: [{ at: [12, 12], burst: 1, life: 2, spin: 45, shapes: ['rock'] }] }, { symbols: { rock: rows } }));
+  for (const rows of [rock(200, 160), rock(180, 180, 30)]) {
+    const turned = Object.entries(spinning(rows).recipe.symbols).filter(([name]) => name.startsWith('rock_r')).map(([, symbol]) => symbol);
+    assert.ok(turned.length && turned.every(symbol => symbol.length <= 256 && symbol[0].length <= 256 && symbol.length >= 250), String(turned.map(symbol => symbol.length)));
+  }
+  assert.match(compileEffectsError(() => spinning(rock(200, 161))), /^fx\.effects\.burst\.emitters\[0\]\.spin: fx\.effects\.burst\.emitters\[0\]\.spin: spin turns rock in 45° steps, and turned 45° its visible 200 × 161 pixels would pass the 256 rows and columns a symbol may have; a spinning symbol's visible width plus height may be at most 360 pixels$/);
 });
 
 test('curve runs a path and keyed drift through a smooth curve that still passes every point', async () => {

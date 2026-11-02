@@ -121,7 +121,7 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 128,
-                        "description": "Clump size in pixels; default 4."
+                        "description": "Clump size in pixels; default 4, or the tile size on a 2-pixel tile."
                       },
                       "seed": {
                         "type": "integer",
@@ -177,7 +177,7 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 128,
-                  "description": "Pixels between the jitter's turns; default 4."
+                  "description": "Pixels between the jitter's turns; default 4, or the tile size on a 2-pixel tile."
                 },
                 "bands": {
                   "type": "array",
@@ -257,7 +257,7 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 128,
-                  "description": "Pixels between the jitter's turns; default 4."
+                  "description": "Pixels between the jitter's turns; default 4, or the tile size on a 2-pixel tile."
                 },
                 "bands": {
                   "type": "array",
@@ -337,7 +337,7 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 128,
-                  "description": "Pixels between the jitter's turns; default 4."
+                  "description": "Pixels between the jitter's turns; default 4, or the tile size on a 2-pixel tile."
                 },
                 "bands": {
                   "type": "array",
@@ -417,7 +417,7 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 128,
-                  "description": "Pixels between the jitter's turns; default 4."
+                  "description": "Pixels between the jitter's turns; default 4, or the tile size on a 2-pixel tile."
                 },
                 "bands": {
                   "type": "array",
@@ -497,7 +497,7 @@
                   "type": "integer",
                   "minimum": 1,
                   "maximum": 128,
-                  "description": "Pixels between the jitter's turns; default 4."
+                  "description": "Pixels between the jitter's turns; default 4, or the tile size on a 2-pixel tile."
                 },
                 "bands": {
                   "type": "array",
@@ -608,7 +608,7 @@
           "key": {
             "type": "string",
             "pattern": "^[a-zA-Z0-9]$",
-            "description": "One letter or digit: the terrain's character in maps and tile names."
+            "description": "One letter or digit, unique among the layers ignoring letter case: the terrain's character in maps and tile names."
           },
           "terrain": {
             "type": "object",

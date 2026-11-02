@@ -137,6 +137,17 @@ test('shade and haze have nothing in a Tiled map to become, and the export says 
   assert.deepEqual(files.get('scene.tmx').toString().split('\n').filter(line => line.startsWith('  <object ')).map(line => line.match(/name="(\w+)"/)[1]), [...Array(9).fill('floor'), 'far']);
 });
 
+test('names are written as XML can hold them: markup escaped, tabs and line breaks as references, other control characters replaced', async () => {
+  const block = { version: 1, name: 'block', width: 4, height: 4, frames: [{ name: 'f', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color: '#408040' }] }] };
+  const { files } = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'named', width: 8, height: 8, assets: { 'a&b "<c>"': block },
+    instances: [{ name: 'bell\u0007 \ud800', asset: 'a&b "<c>"', at: [0, 0] }, { name: 'two\tlines\nhere', asset: 'a&b "<c>"', at: [4, 4] }] });
+  const map = files.get('scene.tmx').toString(), tsx = files.get('assets/0/tileset.tsx').toString();
+  assert.match(map, /<objectgroup draworder="index" id="1" name="bell\ufffd \ufffd, two&#9;lines&#10;here">/);
+  assert.match(map, /<object id="1" name="bell\ufffd \ufffd" gid="1" x="0" y="4" width="4" height="4"\/>/);
+  assert.match(tsx, /<tileset version="1\.10" name="a&amp;b &quot;&lt;c&gt;&quot;" /);
+  assert.doesNotMatch(map + tsx, /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/);
+});
+
 test('renderScene lists what it drew, in drawing order, for the Tiled map', async () => {
   const scene = prepareScene(await tiledScene()), view = renderScene(scene, { lit: false, draws: true }), name = draw => scene.instances[draw.instance].name;
   assert.equal(renderScene(scene).draws, undefined);

@@ -402,6 +402,8 @@ function readHeat(value, path, vapour) {
   const freeze = number(value.freeze ?? -0.5, `${path}.freeze`, -8, 8), boil = number(value.boil ?? 0.5, `${path}.boil`, -8, 16);
   if (boil <= freeze) fail(`${path}.boil`, 'the boiling point must lie above the freezing point');
   for (const key of ['evaporation', 'sublimate', 'dew', 'frost', 'branch']) if (value[key] !== undefined && !vapour) fail(`${path}.${key}`, `${key} turns water or ice into vapour or back; give the effect a vapour`);
+  if (value.condense !== undefined && !vapour) fail(`${path}.condense`, 'condense is how fast vapour beads up as dew on what is colder than dew; give the effect a vapour');
+  for (const [key, what] of [['deposit', 'how fast vapour grows into frost'], ['branch', 'how often a frost finger forks']]) if (value[key] !== undefined && value.frost === undefined) fail(`${path}.${key}`, `${key} is ${what}; set frost (at or below freeze) for vapour to frost over what is colder`);
   const frost = value.frost === undefined ? null : number(value.frost, `${path}.frost`, -16, 16), dew = number(value.dew ?? boil - 0.1, `${path}.dew`, -16, 16);
   if (dew > boil) fail(`${path}.dew`, 'vapour condenses below the boiling point; keep dew at or under boil');
   if (frost !== null && frost > freeze) fail(`${path}.frost`, 'vapour turns straight to ice below the freezing point; keep frost at or under freeze');
@@ -464,6 +466,8 @@ function readEffect(effect, path, source) {
   if (effect.ice !== undefined) {
     fields(effect.ice, ['look'], `${path}.ice`);
     if (!Array.isArray(effect.ice.look) || !effect.ice.look.length || effect.ice.look.length > LIMITS.looks) fail(`${path}.ice.look`, `expected 1–${LIMITS.looks} layers that map the ice's fields to palette colours`);
+    // Plasma never enters ice: it burns in the air over the liquid.
+    effect.ice.look.forEach((layer, i) => { if (isObject(layer) && (layer.field === 'ionization' || layer.field === 'current')) fail(`${path}.ice.look[${i}].field`, `plasma never enters ice; it burns in the air over the liquid, so draw ${layer.field} in the vapour's look`); });
     iceLook = effect.ice.look.map((layer, i) => readLook(layer, `${path}.ice.look[${i}]`, { ...context, liquid: false }));
   }
   const obstacles = [];
@@ -548,6 +552,11 @@ function readEffect(effect, path, source) {
   obstacles.forEach((o, i) => {
     const shown = (o.track ?? [{ x: o.x, y: o.y, show: true }]).filter(at => at.show);
     if (shown.length && !shown.some(at => showsOnCanvas(o.rows, at.x, at.y, width, height))) warnings.push(`${path}.obstacles[${i}] has no visible pixel on the canvas whenever it shows, so it ${!o.blocks ? 'draws' : o.draw === 'none' ? 'blocks' : 'blocks and draws'} nothing: move its x and y (or its keys) onto the ${width} × ${height} canvas`);
+  });
+  // Heat moves by temperature, which holds at the boil, so water that boils under the surface stays there: only bubbles
+  // carry it up. Without them or evaporation, water heated from below by an obstacle hotter than the boil never steams.
+  if (vapour && !vapour.bubbles && !heat.evaporation) obstacles.forEach((o, i) => {
+    if (o.props.temperature !== null && o.props.temperature > heat.boil) warnings.push(`${path}.obstacles[${i}] is hotter than heat.boil, but water turns to vapour only at its surface: water it heats under the surface waits at the boil, so a pool heated from below never steams; give vapour.bubbles (bubbles carry the boil up and let it out) or heat.evaporation`);
   });
   return {
     warnings,
@@ -2448,6 +2457,19 @@ const PHASE = 3000, PHASE_SALT = { grain: 1, evaporate: 2, spawnX: 3, spawnY: 4,
 // on (REACH, by generation), so branches stay shorter than their stem; how readily ice with no direction of its own (a
 // cube, a frozen fill) and a frost cell that already holds frost take more.
 const COMPASS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]], SITES = 0.04, NUCLEI = 0.003, SPACING = 5, REACH = [1, 0.35, 0.12], ROUND = 0.15, THICKEN = 0.04;
+// A frost cell that has lost its ice (melted, sublimated, settled away, pushed off by an obstacle) forgets its finger, so
+// the empty cell it leaves never goes on taking frost as a finger's tip would. A cell that has started taking frost and
+// holds none yet keeps its direction until it does (`frostIce` notes the cells that have held frost).
+function forgetFrost(P) {
+  const dirs = P.frostDir;
+  if (!dirs) return;
+  const { ice, frostIce: had } = P;
+  for (let c = 0; c < dirs.length; c++) {
+    if (dirs[c] < 0) continue;
+    if (ice[c]) had[c] = 1;
+    else if (had[c]) { dirs[c] = -1; P.frostGen[c] = 0; P.frostLen[c] = 0; had[c] = 0; }
+  }
+}
 // How far below freezing water freezes with no ice or cold solid to start it.
 const SUPERCOOL = 0.5;
 // How fast an obstacle's temperature warms or chills the air touching it, per frame (a gas effect's, or a liquid's air).
@@ -2546,8 +2568,12 @@ function heatMasks(state, effect, moved = false) {
     if (s !== mask[c]) { mask[c] = s; changed = true; }
   }
   if (changed || moved === 'layout') {
-    if (!layout.smooth) fixFaces(W, H, mask, walls, g.uFixed, g.vFixed);
-    else {
+    if (!layout.smooth) {
+      // No smooth obstacle shows any more (one vanished on its keys, or left the canvas): the solver meets the pixels
+      // again. (Left traced, the geometry of the smooth obstacle that had gone still held the water up, a ghost.)
+      if (g.geo) { g.geo = null; g.solid = mask; g.pixels = mask; }
+      fixFaces(W, H, mask, walls, g.uFixed, g.vFixed);
+    } else {
       const geo = smoothGeometry(mask, layout.smooth, W, H, walls);
       for (let k = 0; k < g.uFixed.length; k++) g.uFixed[k] = geo.uOpen[k] ? 0 : 1;
       for (let k = 0; k < g.vFixed.length; k++) g.vFixed[k] = geo.vOpen[k] ? 0 : 1;
@@ -2702,6 +2728,7 @@ function heatStep(run, effect, dt, first) {
   const { energy, frozen } = state, seed = effect.seed, step = P.step++;
   surfaceTemperatures(state.solids, obstacleT);
   tally(state);
+  forgetFrost(P);
   // Heat flows (each coefficient at most 0.2 a frame, so no particle overshoots its neighbours).
   const closedAt = (x, y) => (x < 0 ? walls.left : x >= W ? walls.right : y < 0 ? walls.top : walls.bottom);
   flux.fill(0);
@@ -2805,13 +2832,15 @@ function heatStep(run, effect, dt, first) {
       // touching frost of another finger takes none, so fingers stop short of each other; a frost cell thickens slowly
       // into solid ice; ice with no direction (a cube) frosts over slowly every way. The vapour diffusing to the tips feeds
       // them, so they reach out into the humid air.
-      let weight = 0, rime = firm, gone = 0, from = -1, best = 0, frosty = 0, walls = 0, ox = 0, oy = 0, gen = 0, parent = -1, wall = -1, length = 0;
+      let weight = 0, rime = firm, gone = 0, from = -1, best = 0, frosty = 0, walls = 0, ox = 0, oy = 0, gen = 0, parent = -1, wall = -1, length = 0, near = false;
       if (h.frost !== null && V.T[c] < h.freeze) {
         const dirs = P.frostDir ??= new Int8Array(N).fill(-1), gens = P.frostGen ??= new Uint8Array(N), lens = P.frostLen ??= new Uint8Array(N), touched = P.touched ??= new Int32Array(8);
+        P.frostIce ??= new Uint8Array(N);
         for (let k = 0; k < 8; k++) {
           const x = i + COMPASS[k][0], y = j + COMPASS[k][1];
           if (x < 0 || y < 0 || x >= W || y >= H) continue;
           const n = y * W + x, cold = base[n] ? obstacleT[n] : ice[n] ? Tc[n] : Infinity;
+          if (ice[n] || cold < h.frost) near = true;
           if (!(cold < h.frost)) continue;
           if (cold < rime) rime = cold;
           // The step from that neighbour to this cell, as a direction.
@@ -2838,8 +2867,9 @@ function heatStep(run, effect, dt, first) {
           if (out >= 0 && walls <= 3) out = (out + 8 + Math.floor(3 * random(seed, PHASE, c, PHASE_SALT.lean)) - 1) % 8;
           if (out >= 0) { weight += 1; best = 1; from = out; gen = 0; parent = wall; length = 0; }
         }
-        // A cell that has started taking frost, and has not a particle of it yet, goes on as it started.
-        if (!ice[c] && dirs[c] >= 0 && REACH[gens[c] < 2 ? gens[c] : 2] > best) { best = REACH[gens[c] < 2 ? gens[c] : 2]; weight = best; from = dirs[c]; gen = gens[c]; length = lens[c]; parent = -1; }
+        // A cell that has started taking frost, and has not a particle of it yet, goes on as it started, while frost or a
+        // cold solid is beside it (never in mid-air).
+        if (!ice[c] && dirs[c] >= 0 && near && REACH[gens[c] < 2 ? gens[c] : 2] > best) { best = REACH[gens[c] < 2 ? gens[c] : 2]; weight = best; from = dirs[c]; gen = gens[c]; length = lens[c]; parent = -1; }
         // A cell touching frost of another finger (any not beside the one it grows from) takes none, so fingers stop short
         // of each other.
         const px = parent % W, py = (parent - px) / W, other = n => n !== parent && (base[parent] || Math.abs(n % W - px) > 1 || Math.abs((n - n % W) / W - py) > 1);
@@ -2873,9 +2903,12 @@ function heatStep(run, effect, dt, first) {
 // frame, speeding up with gravity; obstacles, other ice and water flanking most of it hold it up (ice floats), and water
 // in the cells it falls into is pushed aside along the row. So an ice cube whose underside melts settles into its puddle
 // instead of hanging over it. While it moves, its cells carry its speed in the solid layer, so what clings to it moves
-// with it. Pieces are the 4-connected cells holding any ice; gravity along y only.
+// with it. Pieces are the 4-connected cells holding any ice, and frost joins them across corners too: a finger grows at 45
+// degrees, its cells touching only at a corner, and it is one piece with the frost it grew from (taken four ways, its
+// branches broke off and fell). Gravity along y only.
+const DIAGONALS = [[1, 1], [-1, 1], [1, -1], [-1, -1]];
 function settleIce(state, effect) {
-  const P = state.heat, g = state.g, { W, H, N, walls } = g, { base, water, ice, iceSpeed } = P, [gx, gy] = effect.gravity;
+  const P = state.heat, g = state.g, { W, H, N, walls } = g, { base, water, ice, iceSpeed } = P, [gx, gy] = effect.gravity, dirs = P.frostDir;
   const was = P.iceMoving;
   P.iceMoving = false;
   if (was) iceSpeed.fill(0);
@@ -2897,6 +2930,10 @@ function settleIce(state, effect) {
         if (x < 0 || y < 0 || x >= W || y >= H) { if (x < 0 ? walls.left : x >= W ? walls.right : y < 0 ? walls.top : walls.bottom) held = true; continue; }
         const e = y * W + x;
         if (base[e]) held = true; else if (ice[e] && piece[e] < 0) { piece[e] = id; stack.push(e); }
+      }
+      if (dirs) for (const [di, dj] of DIAGONALS) {
+        const x = i + di, y = j + dj, e = y * W + x;
+        if (x >= 0 && y >= 0 && x < W && y < H && ice[e] && piece[e] < 0 && (dirs[d] >= 0 || dirs[e] >= 0)) { piece[e] = id; stack.push(e); }
       }
     }
     pieces.push({ cells, held, speed: 0 });
@@ -2929,6 +2966,13 @@ function settleIce(state, effect) {
   });
   cover.fill(0);
   pieces.forEach(p => { if (p.move) for (const c of p.cells) { cover[c + dir * p.move * W] = 1; iceSpeed[c + dir * p.move * W] = dir * p.move; P.iceMoving = true; } });
+  // Frost that settles keeps its fingers: each cell's direction, generation and length move with it.
+  if (dirs) pieces.forEach(p => {
+    if (!p.move) return;
+    const shift = dir * p.move * W, kept = p.cells.map(c => [dirs[c], P.frostGen[c], P.frostLen[c], P.frostIce[c]]);
+    for (const c of p.cells) { dirs[c] = -1; P.frostGen[c] = 0; P.frostLen[c] = 0; P.frostIce[c] = 0; }
+    p.cells.forEach((c, k) => { const e = c + shift; [dirs[e], P.frostGen[e], P.frostLen[e], P.frostIce[e]] = kept[k]; });
+  });
   for (let k = 0; k < state.n; k++) {
     if (!state.frozen[k]) continue;
     const p = pieces[piece[Math.floor(state.y[k]) * W + Math.floor(state.x[k])]];
@@ -3002,8 +3046,9 @@ function renderHeat(run, width, height, drawn = null) {
 
 // ---- Sparks -----------------------------------------------------------------------------------------------------------
 // Single pixels carried by the flow: embers, sparkles, debris, bubbles. A looping effect spawns them during the
-// recorded cycle only and draws the part of a life that runs past the end at the start, so they loop exactly.
-function spawnSparks(list, e, index, cycle, here, seed, total) {
+// recorded cycle only (bubbles that push the water from its warm-up on, see pushesWater) and draws the part of a life that
+// runs past the end at the start, so they loop exactly. `born`, in a loop, is the frame such a bubble is born on.
+function spawnSparks(list, e, index, cycle, here, seed, total, born) {
   // The count follows the emitter's pulse and flicker, rounded up or down by a seeded draw.
   const s = e.sparks, n = Math.floor(s.count * here.flicker(here.x, here.y) / e.strength + random(seed, index, cycle, SALT.sparks));
   for (let k = 0; k < n; k++) {
@@ -3013,7 +3058,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total) {
     if (e.radius !== null) { const d = e.radius * Math.sqrt(r(SALT.sparkX)), a = 360 * r(SALT.sparkY); x += d * cosDeg(a); y += d * sinDeg(a); }
     else { x += (r(SALT.sparkX) - 0.5) * e.area[0]; y += (r(SALT.sparkY) - 0.5) * e.area[1]; }
     const angle = pick(s.angle, r(SALT.angle)), speed = pick(s.speed, r(SALT.speed));
-    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)), ...(s.rise !== null && bubbleOf(s, r)) });
+    list.push({ s, x, y, vx: cosDeg(angle) * speed, vy: sinDeg(angle) * speed, age: 0, life: pickWhole(s.life, r(SALT.life)), ...(s.rise !== null && bubbleOf(s, r)), ...(s.rise !== null && born !== undefined && { born }) });
     total.alive++; total.spawned++;
   }
   return true;
@@ -3193,10 +3238,13 @@ function mergeBubbles(list, g, total, gather = null) {
 // seeded draw keyed by the particle, so the same source throws the same droplets. Spray is drawn once it is out. A bubble
 // layer (`rise`) picks particles in the body of the water instead, two cells from air every way, and leaves a bubble at
 // rest in the water there: air a plunging stream or a landing drop has driven in, which the flow carries and which rises.
-function throwWhitewater(state, effect, density, list, cycle, total) {
+// `throws(layer)` says whether a layer throws this frame (a loop's warm-up makes only bubbles that push the water, see
+// pushesWater), and `born`, in a loop, tags those bubbles with their frame.
+function throwWhitewater(state, effect, density, list, cycle, total, throws = () => true, born = undefined) {
   const { W, H, pixels: solid, geo } = state.g, air = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && density[j * W + i] < LEVEL;
   const at = (i, j) => (i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] ? density[j * W + i] : 0);
-  const spray = effect.whitewater.some(w => w.rise === null), bubbles = effect.whitewater.some(w => w.rise !== null);
+  const spray = effect.whitewater.some(w => w.rise === null && throws(w)), bubbles = effect.whitewater.some(w => w.rise !== null && throws(w));
+  if (!spray && !bubbles) return true;
   for (let k = 0; k < state.n; k++) {
     const x = state.x[k], y = state.y[k], i = Math.floor(x), j = Math.floor(y);
     // Beside a smooth obstacle a particle may sit in the open corner of a step's pixel; spray starts only from open cells.
@@ -3209,12 +3257,12 @@ function throwWhitewater(state, effect, density, list, cycle, total) {
     const nx = at(i - 1, j) - at(i + 1, j), ny = at(i, j - 1) - at(i, j + 1), out = Math.sqrt(nx * nx + ny * ny);
     for (let layer = 0; layer < effect.whitewater.length; layer++) {
       const w = effect.whitewater[layer], [ax, ay] = w.impact !== null ? [dx, dy] : [vx, vy], amount = Math.sqrt(ax * ax + ay * ay);
-      if ((w.rise !== null) === surface || amount < (w.impact ?? w.speed)) continue;
+      if ((w.rise !== null) === surface || amount < (w.impact ?? w.speed) || !throws(w)) continue;
       const r = salt => random(effect.seed, WHITEWATER + layer, cycle, state.id[k], salt);
       if (r(SALT.spawn) >= w.chance) continue;
       if (total.alive >= LIMITS.sparks) return false;
       if (w.rise !== null) {
-        addBubble(list, total, w, x, y, r);
+        addBubble(list, total, w, x, y, r, born !== undefined && pushesWater(effect, w) ? { born } : null);
         continue;
       }
       let ux = ax / amount + (out ? nx / out : 0), uy = ay / amount + (out ? ny / out : 0);
@@ -3424,9 +3472,17 @@ function renderFields(effect, base, width, height, drawn = null) {
 // spreading solve one more, sharp advection about thirty.
 const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0) + electricWork(effect) + (effect.vapour ? effect.vapour.iterations + 20 : effect.heat ? 4 : 0);
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
-// spray may fly on for its life again; a bubble never does).
+// spray may fly on for its life again; a bubble never does), the bubbles of air pockets included.
 const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1) * s.life[1];
-const sparkTail = effect => Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid)));
+const sparkTail = effect => Math.max(0, ...effect.emitters.map(e => (e.sparks ? sparkSpan(e.sparks, effect.liquid) : 0)), ...effect.whitewater.map(w => sparkSpan(w, effect.liquid)), effect.air && effect.air.bubbles ? effect.air.bubbles.life[1] : 0);
+// Whether bubbles with these settings (an emitter's sparks or a whitewater layer) change the water: they lift it, or,
+// with air pockets on, give their air to pockets and gather into them (as an air pocket's own bubbles do). A loop makes
+// those through its warm-up and after its cycle as well, unseen, as a boil's bubbles, so the water they lift and the
+// pockets they gather into are there at frame 0 as in the cycle. (Made in the recorded cycle only, the warm-up had none:
+// an aerator's dome was missing at frame 0, and the seam's blend lowered the water under bubbles still rising through
+// it, which hung in the air.) Other bubbles change nothing but themselves, and a loop makes them in its cycle only.
+const pushesWater = (effect, s) => s.rise !== null && (s.lift > 0 || !!effect.air);
+const makesBubbles = effect => effect.emitters.some(e => e.sparks && pushesWater(effect, e.sparks)) || effect.whitewater.some(w => pushesWater(effect, w)) || !!(effect.air && effect.air.bubbles);
 // A boil's bubbles are made by the water, not by an emitter: a loop draws those born in its recorded cycle and simulates
 // on for up to another cycle, until they have all ended, drawing them from frame 0 again (see simulate).
 const boilTail = effect => (effect.loop && effect.vapour && effect.vapour.bubbles ? effect.frames : 0);
@@ -3631,17 +3687,20 @@ const fieldsOf = run => {
 // A frame's pixels from the fields.
 const drawFrame = (run, width, height, drawn = null) => (run.state.heat ? renderHeat(run, width, height, drawn) : renderFields(run.view, run.base, width, height, drawn));
 // Sparks move with this frame's flow; then, while `spawning`, new ones join where their emitters were (`here`) and
-// whitewater where the water throws it. Returns the message for the spark limit if it kept any out, or null.
-function sparkFrame(run, here, cycle, spawning) {
+// whitewater where the water throws it, and while `bubbling` the bubbles that push the water do (see pushesWater; a
+// loop makes those from its warm-up on, tagged with the frame they are born on). Returns the message for the spark
+// limit if it kept any out, or null.
+function sparkFrame(run, here, cycle, spawning, bubbling = spawning) {
   const { effect, state, base, sparks, totals } = run;
   const gravity = effect.liquid ? (effect.schedule ? effect.schedule[cycle].gravity : effect.gravity) : null;
   run.gravity = gravity;
   moveSparks(sparks, state.g, base[0], totals, effect.liquid, run.pops, gravity, endedOf(run), gatherOf(run));
   let full = null;
-  if (spawning) {
-    effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals)) full = SPARKS_FULL; });
-    if (!full && effect.whitewater.length && !throwWhitewater(state, effect, base[0], sparks, cycle, totals)) full = WHITEWATER_FULL;
-    if (!full && state.air && state.air.release.length && !releaseAir(state.air, effect, sparks, cycle, totals)) full = AIR_FULL;
+  if (spawning || bubbling) {
+    const born = effect.loop ? run.clock : undefined, throws = s => (pushesWater(effect, s) ? bubbling : spawning);
+    effect.emitters.forEach((e, index) => { if (!full && here[index] && e.sparks && throws(e.sparks) && !spawnSparks(sparks, e, index, cycle, here[index], effect.seed, totals, pushesWater(effect, e.sparks) ? born : undefined)) full = SPARKS_FULL; });
+    if (!full && effect.whitewater.length && !throwWhitewater(state, effect, base[0], sparks, cycle, totals, throws, born)) full = WHITEWATER_FULL;
+    if (!full && bubbling && state.air && state.air.release.length && !releaseAir(state.air, effect, sparks, cycle, totals, born)) full = AIR_FULL;
   }
   totals.maxAlive = Math.max(totals.maxAlive, totals.alive);
   return full;
@@ -3715,16 +3774,16 @@ function carvePocket(state, gravity, x, y, vol) {
 }
 // The air of pockets that this frame's steps let go rises as bubbles from where each pocket was: up to nine square pixels
 // of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
-// two frames a bubble lives on where the gap it came from has not closed yet.
+// two frames a bubble lives on where the gap it came from has not closed yet. `born` tags a loop's bubbles with their frame.
 const POCKETS = 3000;
-function releaseAir(air, effect, list, cycle, total) {
+function releaseAir(air, effect, list, cycle, total, born = undefined) {
   const s = effect.air.bubbles, out = air.release;
   for (let k = 0, n = 0; k < out.length; k += 3) {
     let volume = out[k + 2];
     for (let m = 0; volume > 0.5; m++, n++) {
       const vol = Math.min(9, volume), r = salt => random(effect.seed, POCKETS, cycle, n, salt);
       volume -= vol;
-      if (!addBubble(list, total, s, out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), out[k + 1], r, { vol, size: bubbleSize(vol), fresh: 2 })) return false;
+      if (!addBubble(list, total, s, out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), out[k + 1], r, { vol, size: bubbleSize(vol), fresh: 2, ...(born !== undefined && { born }) })) return false;
     }
   }
   out.length = 0;
@@ -3789,11 +3848,13 @@ function simulate(effect, context) {
   // A loop warms up for whole cycles under its periodic forcing, keeps the fields of the last cycle's closing frames,
   // and blends its own closing frames toward them: the last frame then flows into frame 0 as that cycle's did.
   const begin = effect.warmup * frames, total = simulatedFrames(effect), blend = effect.blend;
-  // A loop draws the boil bubbles born in its recorded cycle only, on every frame they live, wrapped round to frame 0 as
-  // sparks are; those born in its warm-up still carry their vapour and lift the water, unseen. Once none of its own is
-  // left, and no spark's tail is still to come, the run stops. (Drawn as they came, the warm-up's bubbles stood at frame
-  // 0 where the cycle's own should have been, and bubbles popped in and out where the loop repeats.)
-  const shown = loop && boilTail(effect) ? p => p.born === undefined || (p.born >= begin && p.born < begin + frames) : null, done = (effect.warmup + 1) * frames + sparkTail(effect);
+  // A loop draws the bubbles born in its recorded cycle only (a boil's, and those of emitters, whitewater and air pockets
+  // that push the water, see pushesWater), on every frame they live, wrapped round to frame 0 as sparks are; those born
+  // in its warm-up still carry their vapour and lift the water, unseen. Once none of its own is left, and no spark's tail
+  // is still to come, the run stops. (Drawn as they came, the warm-up's bubbles stood at frame 0 where the cycle's own
+  // should have been, and bubbles popped in and out where the loop repeats.)
+  const bubbling = loop && makesBubbles(effect);
+  const shown = loop && (boilTail(effect) || bubbling) ? p => p.born === undefined || (p.born >= begin && p.born < begin + frames) : null, done = (effect.warmup + 1) * frames + sparkTail(effect);
   const tail = loop ? Array.from({ length: blend }, () => all.map(() => new Float64Array(N))) : [];
   const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []);
   const peak = { density: 0, temperature: 0, speed: 0, ...(effect.electric && { ionization: 0, current: 0 }) }, figures = Array.from({ length: frames }, () => null), layouts = Array.from({ length: frames }, () => effect.layout);
@@ -3807,13 +3868,20 @@ function simulate(effect, context) {
     solveFrame(run, cycle);
     if (liquid && state.full) crowded(path);
     if (state.overflow) fail(path, `more than ${LIMITS.carriers} carriers are in the air at once; lower the carrying emitters' size or rate, or raise their release`);
-    if (loop && out < -blend && !run.sparks.length) continue;
+    if (loop && out < -blend && !run.sparks.length && !bubbling) continue;
     fieldsOf(run);
-    if (loop && out >= -blend && out < 0) { tail[out + blend].forEach((field, f) => field.set(all[f])); continue; }
-    // A looping effect spawns sparks during the recorded cycle only; those still alive after it are drawn from frame 0.
-    const full = sparkFrame(run, here, cycle, recording);
+    // The warm-up's closing frames keep their fields for the seam; its bubbles move on through them (held still there,
+    // they waited `blend` frames under the water while it flowed on).
+    if (loop && out >= -blend && out < 0) {
+      tail[out + blend].forEach((field, f) => field.set(all[f]));
+      if (run.sparks.length || bubbling) { const full = sparkFrame(run, here, cycle, false, bubbling); if (full) fail(path, full); }
+      continue;
+    }
+    // A looping effect spawns sparks during the recorded cycle only (bubbles that push the water from the warm-up on, unseen
+    // until the cycle); those still alive after it are drawn from frame 0.
+    const full = sparkFrame(run, here, cycle, recording, recording || bubbling);
     if (full) fail(path, full);
-    // Boiling bubbles live through a loop's warm-up too (they carry vapour); only the recorded cycle on draws them.
+    // Bubbles live through a loop's warm-up too (they carry vapour and lift the water); only the recorded cycle on draws them.
     const list = loop && out < 0 ? null : drawn[(loop ? out : t) % frames];
     if (list) drawSparks(run, (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !run.view.front[y * width + x]) list.push(y * width + x, code); }, shown);
     if (!recording) continue;

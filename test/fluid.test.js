@@ -34,7 +34,7 @@ const GOLDEN = {
   'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
   'slime-burst': 'fb30f6c339a62342f57d72af1ba2c9379aa22658d8b656a7a9d7204d17c36beb',
   'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
-  aquarium: '2944337f7829a7ecadafbcb8a67c83bfa4f1bcb734cac3e17593b4be6e28cafb',
+  aquarium: 'be360781c73342bba3e8b5df0b1f2b78439d5489f42a96f1f61bd4805e852116',
   'honey-dipper': '474e5a74a7a78b72d83d9adc50e363f670c5039f0e2a7c14d0aa22001610aa9e',
   glug: '9bab4a31432d8d75c8b70aedaa46cc3f0a20b291dccce6349b7c7a2b90ac7e48',
   'jacobs-ladder': 'bbfed6cfff448a421c65fbf48ec2663cf4a67cbe80b63719df8f4fc5a24785e9',
@@ -43,7 +43,7 @@ const GOLDEN = {
   'plasma-globe': '1174d7927c466c40c968c1c9678022f7e040c1839f76250f9364559d8a83fd58',
   'ice-melt': 'b6aef461b8c1aeb5228570abe8d1e00f6dcaaa881bbc5f330130b02a0446ade1',
   'pond-freeze': '6676dd153bd17314fc0c1209608137b4ea7fa54296112ab9bb34f1288b94309c',
-  'boiling-pot': '18e2075bb9d19e732db48fb5bc5c026758e20ce2a9bdb52fa0d4212329b7ccb3',
+  'boiling-pot': 'd9b96f8d738f9f4dcea1a7299d2eb070fa2ce49004977b392aea36da0caad2ae',
   'frost-window': 'fe9f08f38e6dda36e214fbd58d5d4bf01beb30bc83eb4c539b57eacbf7ebaed2',
   'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1',
   'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263'
@@ -768,6 +768,39 @@ test('bubbles gathering under a ceiling become a pocket that keeps their air, an
   assert.ok(held.slice(20, 50).every(n => n <= 20), `held ${held.join(' ')}`);
   assert.ok(Math.max(...held.slice(52, 70)) >= 40, `vented ${held.join(' ')}`);
   assert.ok(inside(null)[10] >= 40, 'without pockets the cup floods at once');
+});
+
+test('a loop draws the bubbles its air pockets let go across the seam, as it does other sparks', () => {
+  // Two pours trap air in a pool, which rises as bubbles 'w' living 60 to 80 frames.
+  const { recipe, metadata } = compileFluid({ format: 'pixelforge-fluid', version: 1, name: 'pour', width: 32, height: 40, palette: { b: '#2f6fc0', w: '#ffffff', k: '#222222' },
+    symbols: { bar: ['kkkkkk'], post: ['k', 'k', 'k'] }, effects: { pour: {
+      kind: 'liquid', frames: 48, loop: true, warmup: 2, seed: 7, walls: ['left', 'right', 'bottom'], air: { stiffness: 40, bubbles: { colors: ['w'], rise: 0.4, life: [60, 80] } },
+      obstacles: [{ symbol: 'bar', x: 6, y: 26 }, { symbol: 'bar', x: 18, y: 30 }, { symbol: 'post', x: 12, y: 20 }], fill: [{ x: 0, y: 22, w: 32, h: 18 }],
+      emitters: [{ at: [10, 3], radius: 2, rate: 1, velocity: [0, 3] }, { at: [22, 3], radius: 2, rate: 1, velocity: [0, 3], pulse: { period: 16, amplitude: 1 } }, { at: [16, 38], area: [32, 3], rate: 1, density: -0.08 }],
+      look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }] } } });
+  // It simulates on after its cycle for as long as a bubble lives, and those still rising are drawn from frame 0 (cut
+  // off at the end of the cycle, they popped out where the loop repeats, and frame 0 had almost none).
+  assert.equal(metadata.effects.pour.steps, (3 * 48 + 80) * 2);
+  const bubbles = grids(recipe, 32, 40).map(grid => grid.flat().filter(char => char === 'w').length), head = bubbles.slice(0, 3).reduce((a, b) => a + b), end = bubbles.slice(-3).reduce((a, b) => a + b);
+  assert.ok(end >= 12 && head >= end / 2 && head <= end * 2, `bubble pixels ${bubbles.join(' ')}`);
+});
+
+test('a loop\'s bubbles live through its warm-up, so the water they lift and the pockets they gather into are there from frame 0', () => {
+  // An aerator: a column of bubbles with lift raises a dome over it. Made in the recorded cycle only, the dome was missing
+  // at frame 0 and the seam's blend lowered the water under bubbles still rising through it: they hung in the air.
+  const aerator = compileFluid({ format: 'pixelforge-fluid', version: 1, name: 'aerator', width: 32, height: 32, palette: { b: '#2f6fc0', w: '#ffffff' }, effects: { e: {
+    kind: 'liquid', frames: 48, loop: true, warmup: 2, seed: 4, walls: ['left', 'right', 'bottom'], flip: 0.6, drag: 0.04, fill: [{ x: 0, y: 12, w: 32, h: 20 }],
+    emitters: [{ at: [16, 30], radius: 1, rate: 1, density: 0, sparks: { count: 1.5, life: [40, 50], colors: ['w'], rise: 0.6, lift: 1 } }],
+    look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }] } } });
+  // No bubble is drawn over air with no water above it, at the seam or anywhere.
+  grids(aerator.recipe, 32, 32).forEach((grid, frame) => {
+    for (let x = 0; x < 32; x++) for (let y = 0; y < 31 && (grid[y][x] === '.' || grid[y][x] === 'w'); y++) assert.ok(!(grid[y][x] === 'w' && grid[y + 1][x] === '.'), `frame ${frame}: a bubble in the air at ${x},${y}`);
+  });
+  // The bell as a loop: the pocket its bubbles gather under the cup is there from frame 0 and holds through the cycle.
+  const bell = bellSource({ stiffness: 40 }), { end, ...bubbler } = bell.effects.e.emitters[0];
+  Object.assign(bell.effects.e, { frames: 48, loop: true, warmup: 2, emitters: [{ ...bubbler, sparks: { ...bubbler.sparks, life: 60 } }] });
+  const dry = grids(compileFluid(bell).recipe, 24, 24).map(grid => { let n = 0; for (let y = 9; y <= 11; y++) for (let x = 7; x <= 16; x++) if (grid[y][x] === '.') n++; return n; });
+  assert.ok(dry.every(n => n >= 20), `the pocket holds ${dry.join(' ')}`);
 });
 
 test('an ice cube floats in a sealed jar with an air pocket, keeps its matter, and bubbles slide under it', () => {

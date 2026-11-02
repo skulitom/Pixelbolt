@@ -108,3 +108,10 @@ test('a cache folder that can\'t be written costs only speed', async t => {
   assert.ok(measured(listing).length > 0);
   assert.deepEqual(await readdir(dir), ['file']);
 });
+
+test('a listing never creates the export directory: pixel_help is read-only until something else makes it', async t => {
+  const dir = await temp(t), out = path.join(dir, 'output');
+  const listing = await listPresets({ budget: BUDGET, cache: path.join(out, '.presets') });
+  assert.ok(measured(listing).length > 0);
+  assert.deepEqual(await readdir(dir), [], 'no output folder made');
+});

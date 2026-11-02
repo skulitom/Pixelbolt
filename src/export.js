@@ -95,8 +95,23 @@ export async function createBundle(spec) {
   // A forced export over an earlier export of this recipe removes the frame and animation PNGs that export's atlas
   // lists and this one no longer has. Another recipe's export in the same folder keeps its PNGs, and so does a PNG
   // put in frames/ by hand.
-  return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/, listed: atlasFiles, peers: /\.atlas\.json$/ } };
+  return { project, atlas, files, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/, listed: atlasFiles, peers: /\.atlas\.json$/, resources: bundleResources(name) } };
 }
+// The top-level files an export writes only sometimes (a tile set's TileSet and Tiled tileset; an animated recipe's
+// SpriteFrames, CSS and player), each with how to tell that an export of this recipe wrote it: the text Pixelbolt writes
+// there, naming this recipe's sheet, which an editor that saves the file over changes. A forced export over an earlier
+// one removes those it no longer writes. player.js is every sprite's in the folder, so it goes only when no other
+// export is there.
+const bundleResources = name => {
+  const sheet = `\n[ext_resource type="Texture2D" path="${name}.png" id="1_sheet"]\n`, tileset = /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<tileset version="[\d.]+" name="([^"]*)" /;
+  return [
+    { file: `${name}.tileset.tres`, wrote: text => text.startsWith('[gd_resource type="TileSet" format=3]\n') && text.includes(sheet) },
+    { file: `${name}.tsx`, wrote: text => tileset.exec(text)?.[1] === name && text.includes(`\n <image source="${name}.png" `) && !text.includes('tiledversion=') },
+    { file: `${name}.tres`, wrote: text => text.startsWith('[gd_resource type="SpriteFrames" format=3]\n') && text.includes(sheet) },
+    { file: `${name}.css`, wrote: text => text.startsWith('/* Pixelbolt: ') && text.includes(`\n.pf-${name} {\n`) },
+    { file: 'player.js', shared: true, wrote: async text => text === await readFile(new URL('./runtime.js', import.meta.url), 'utf8') }
+  ];
+};
 // A recipe's frames as one sheet of a Godot TileSet (see tileSets in godot.js), or null when it is no tile set. It is
 // one when its autotile frames hold at least two masks, or when a frame has a tile field; then every other frame that
 // draws something, or has a tile field, is a plain tile. Each terrain's editor colour is the commonest opaque colour of
@@ -290,7 +305,8 @@ export async function sameFiles(targets, inputs) {
 // What an earlier export of the same thing left in this folder that this one does not write: a longer sequence's
 // later frames, or a renamed frame's or animation's PNG. Only a bundle that declares `owns` has any, and only when the
 // folder holds that bundle's own index file (`owns.marker`), which shows the earlier export was this kind. Nothing
-// outside `owns.folders` that fails `owns.match` is ever listed. Where `owns.listed` reads the files an export wrote
+// outside `owns.folders` that fails `owns.match` is ever listed, except an `owns.resources` file whose text shows the
+// earlier export wrote it (a tile set's .tsx after the recipe stops being one). Where `owns.listed` reads the files an export wrote
 // from its marker, only files the earlier marker lists are leftovers, and none that another export's marker in the
 // folder (`owns.peers`) lists: a sprite's frames are not another sprite's to remove. When the marker or a peer can't
 // be read, what it lists is unknown, so nothing goes.
@@ -298,13 +314,12 @@ async function leftovers(bundle, root) {
   const { owns } = bundle;
   if (!owns) return [];
   try { await access(path.join(root, owns.marker)); } catch { return []; }
-  let earlier = null, others = [];
+  let earlier = null, others = [], peers = [];
   if (owns.listed) {
     const listing = async file => { try { return owns.listed(JSON.parse(await readFile(path.join(root, file), 'utf8'))); } catch { return null; } };
     earlier = await listing(owns.marker);
     if (!earlier?.length) return [];
     // The marker under another spelling, where the folder ignores case, is the earlier export's own, not a peer's.
-    const peers = [];
     for (const file of await readdir(root).catch(() => [])) if (owns.peers.test(file) && file !== owns.marker && !await oneFile(root, file, owns.marker)) peers.push(file);
     const listings = await Promise.all(peers.map(listing));
     if (listings.includes(null)) return [];
@@ -312,6 +327,13 @@ async function leftovers(bundle, root) {
   }
   // Pixelbolt writes these extensions exactly, so a photo.PNG of someone else's beside them is never taken for one.
   const extensions = new Set([...bundle.files.keys()].map(name => path.posix.extname(name))), found = [];
+  // Top-level files the earlier export wrote and this one doesn't, each known by the text Pixelbolt writes there.
+  const writes = new Set([...bundle.files.keys()].map(fileKey));
+  for (const { file, wrote, shared } of owns.resources ?? []) {
+    if (writes.has(fileKey(file)) || (shared && peers.length)) continue;
+    const text = await stat(path.join(root, file)).then(info => (info.isFile() && info.size <= 16777216 ? readFile(path.join(root, file), 'utf8') : null), () => null);
+    if (text !== null && await wrote(text)) found.push(file);
+  }
   for (const folder of owns.folders) {
     let entries;
     try { entries = (await readdir(path.join(root, folder), { withFileTypes: true })).filter(entry => entry.isFile()); } catch { continue; }

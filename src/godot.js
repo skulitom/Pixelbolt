@@ -181,12 +181,15 @@ export function tileSets(sources) {
     // What a frame is as a tile: its terrain and mask, its corners' terrains, '' for a plain tile, or null for no tile.
     const kind = frame => (byFrame.has(frame) ? `${byFrame.get(frame).terrain} ${byFrame.get(frame).mask}` : cornered.has(frame) ? `corners ${cornered.get(frame).join()}` : plain.has(frame) ? '' : null);
     // Animated tiles: Godot plays a tile's frames from its own cell rightwards along the row, always looping.
-    const animated = new Map(), covered = new Set(), wrapped = [], unplayable = [];
+    const animated = new Map(), covered = new Set(), starts = new Set(), wrapped = [], unplayable = [];
     for (const [key, animation] of Object.entries(atlas.animations)) {
       const frames = animation.frames, first = kind(frames[0]);
-      if (frames.length < 2 || first === null || frames.some(frame => covered.has(frame) || kind(frame) !== first)) continue;
+      // A frame that starts an earlier animation stays a tile, so an animation that would hide it is left out.
+      if (frames.length < 2 || first === null || frames.some(frame => covered.has(frame) || kind(frame) !== first || (frame !== frames[0] && starts.has(frame)))) continue;
       // Its later frames are never tiles of their own, so a set whose animation can't play doesn't flicker between them.
-      for (const frame of frames.slice(1)) covered.add(frame);
+      // Its first frame is its tile, even where the animation comes back to it (a hold, or a loop that ends on it).
+      starts.add(frames[0]);
+      for (const frame of frames.slice(1)) if (frame !== frames[0]) covered.add(frame);
       const cells = frames.map(coords), [col, row] = cells[0];
       if (animation.loop && cells.every(([c, r], i) => c === col + i && r === row)) animated.set(frames[0], frames.map(frame => atlas.frames[frame].duration));
       // In sheet order but running onto the next row: more columns fix it.

@@ -70,6 +70,12 @@ test('a one-shot may rise: a puff whose lowest row moves gets no lift note', () 
   assert.deepEqual(kinds(check(ellipses('puff', 24, boxes)).notes), ['join', 'nearly']);
 });
 
+test('a tall body may wobble a row for every 12 of its height: 2 rows on a 26-row ball is a wobble, 3 rows a lift', () => {
+  const ball = bottoms => ellipses('ball', 40, bottoms.map((bottom, i) => { const x = 6 + [0, 1, 2, 3, 2, 1][i]; return [x, bottom - 25, x + 24, bottom + 1]; }));
+  assert.equal(check(ball([36, 36, 34, 36, 36, 36])).notes, undefined);
+  assert.deepEqual(kinds(check(ball([36, 36, 33, 36, 36, 36])).notes).slice(0, 1), ['lift']);
+});
+
 test('a loop whose lowest row wobbles by one row gets no lift note; two rows off its ground row gets one', () => {
   // Each frame also steps a pixel sideways (4, 5, 6, 7, 6, 5), so no two neighbours are the same picture.
   const rows = bottoms => bottoms.map((bottom, i) => { const x = 4 + [0, 1, 2, 3, 2, 1][i]; return [x, bottom - 5, x + 8, bottom + 1]; });
@@ -222,6 +228,35 @@ test('MCP pixel_render replies carry the motion and its notes in the check', asy
     assert.deepEqual(result.motion, { idle: { box: asBoxes(slimeBoxes), lowest: [27, 27, 27, 21, 18, 23, 27, 27] } });
     assert.deepEqual(kinds(result.notes), ['lift', 'uneven', 'nearly']);
   } finally { input.end(); await running; }
+});
+
+test('shipped spell loops, whose outline wanders while the compiler keeps them seamless, get no lift, uneven or join note', async () => {
+  const { compileEffects } = await import('../src/fx.js');
+  for (const element of ['poison', 'shadow', 'fire']) {
+    const { recipe, metadata } = compileEffects(JSON.parse(await readFile(new URL(`../examples/${element}-spells.fx.json`, import.meta.url), 'utf8')));
+    const project = renderProject(recipe);
+    for (const name of Object.keys(recipe.animations).filter(key => metadata.effects[key].loop)) {
+      // The compile's own seam review: the frame after the last is exactly the first.
+      assert.equal(metadata.effects[name].seam.jump, 0, name);
+      const notes = checkDelivery(project, { recipe, animation: name }).notes ?? [];
+      assert.deepEqual(kinds(notes).filter(kind => ['lift', 'uneven', 'join', 'nearly'].includes(kind)), [], `${name}: ${notes.join(' | ')}`);
+    }
+  }
+});
+
+test('a body that boils inside redraws as much in every frame, so a 3 px pop of its outline is no jump; a slide back to the start still is', () => {
+  // A ball whose inside churns (a 14 × 14 patch flickering between two colours) and whose right edge pops out 3 px in
+  // its last frame.
+  const boil = { version: 1, name: 'boil', width: 40, height: 40, palette: { g: '#33cc99', k: '#116644', m: '#88eecc' },
+    frames: Array.from({ length: 8 }, (_, i) => ({ name: `b${i}`, ops: [{ op: 'ellipse', x: 6, y: 6, w: i === 7 ? 27 : 24, h: 24, color: 'g', filled: true }, { op: 'rect', x: 11, y: 11, w: 14, h: 14, color: i % 2 ? 'm' : 'k' }] })),
+    animations: { idle: { frames: Array.from({ length: 8 }, (_, i) => `b${i}`) } } };
+  const result = check(boil);
+  // Its silhouette alone would read as an uneven step and a jump at the loop: 3 px against a median of 0.
+  assert.deepEqual(steps(result.motion.idle.box), [0, 0, 0, 0, 0, 0, 3, 3]);
+  assert.equal(result.notes, undefined);
+  // The ball sliding a pixel a frame and jumping back at the loop redraws far more at the wrap: still a join.
+  const slideBack = ellipses('slide', 40, [0, 1, 2, 3, 4, 5, 6, 7].map(x => [4 + x, 8, 28 + x, 32]));
+  assert.deepEqual(kinds(check(slideBack).notes), ['join', 'nearly']);
 });
 
 test('the play-once hint goes on a default loop\'s first note, a lift note included', () => {

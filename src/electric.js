@@ -121,11 +121,12 @@ export function readElectric(value, path, obstacles, liquid = false) {
   };
 }
 
-// Cell updates per cell per step, for the work budget: about four per conjugate-gradient step, for the ideal electrodes' solve and each supplied electrode's, plus the growth and markers.
+// Cell updates per cell per step, for the work budget: about four per conjugate-gradient step, for the ideal electrodes' solve and each supplied electrode's, plus the markers, and one for each
+// breakdown pick (each draws its cell from all of them).
 export const electricWork = effect => {
   if (!effect.electric) return 0;
   const supplied = effect.obstacles.filter(o => o.electric && o.electric.voltage && o.electric.resistance).length;
-  return 4 * effect.electric.iterations * (1 + supplied) + 20;
+  return 4 * effect.electric.iterations * (1 + supplied) + 20 + Math.max(1, Math.floor(effect.electric.growth / effect.substeps + 0.5));
 };
 
 // ---- State -------------------------------------------------------------------------------------------------------------
@@ -548,10 +549,12 @@ function raster(E, T) {
     });
   }
   // Thermal plasma on the shared heat scale: none at `ionize` (by default 2, above every flame, so fire never ionizes by
-  // accident; 0 turns it off), fully ionized half as hot again.
+  // accident; 0 turns it off), fully ionized half as hot again. Never inside an insulator: over a liquid the temperature
+  // field holds each obstacle at its own temperature, and a hot plain obstacle read as plasma grew arcs as if it were
+  // grounded metal. (An electrode the gas flows through, a decoration with a voltage, holds gas, which may ionize.)
   if (config.ionize) {
     const start = config.ionize, full = 1.5 * start;
-    for (let c = 0; c < N; c++) if (T[c] > start && matter[c] < WATER) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }
+    for (let c = 0; c < N; c++) if (T[c] > start && kind[c] !== INSULATOR && matter[c] < WATER) { const t = T[c] >= full ? 1 : (T[c] - start) / (full - start); if (t > ion[c]) ion[c] = t; }
   }
 }
 

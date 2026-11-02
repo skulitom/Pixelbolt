@@ -28,8 +28,14 @@ function maps(count, size, seed) {
   return Array.from({ length: count }, () => Array.from({ length: size }, (_, y) => Array.from({ length: size }, (_, x) => (x && y && x < size - 1 && y < size - 1 && next() < 0.62 ? '#' : '.')).join('')));
 }
 
+// A side shallower than another side's bands, beside a wall with jitter: the bottom outline's bands once looked across
+// the tile border into the cell below, where an inner corner (or not) depends on a cell the tile above does not know,
+// and drew a stray outline pixel at inner corners like the one in the first map.
+const steps = { seed: 4, fill: 'g', edges: { s: { bands: ['d', 'k'] }, w: { jitter: 1 } } };
+const uneven = { seed: 88, fill: 'g', edges: { n: { jitter: 1, size: 1, outside: ['s', 's'] }, e: { bands: ['k', 'k', 'd', 'k', 'L', 'k', 'k', 'k'], size: 2 }, s: { jitter: 6, size: 1, bands: ['k', 'L'], outside: ['s'] }, w: { jitter: 3, size: 4, bands: ['k'], outside: ['u', 'u'] } }, inner: 1 };
+
 test('a terrain draws a template whose tiles, stitched into any map, are the terrain drawn directly', () => {
-  for (const [spec, tile, map] of [[turf, 16, maps(3, 12, 5)], [small, 8, [TEST_MAP, ...maps(2, 16, 9)]]]) {
+  for (const [spec, tile, map] of [[turf, 16, maps(3, 12, 5)], [small, 8, [TEST_MAP, ...maps(2, 16, 9)]], [steps, 8, [['....', '..#.', '.##.', '....'], TEST_MAP, ...maps(2, 16, 13)]], [uneven, 16, maps(3, 10, 3)]]) {
     const rows = terrainTemplate(spec, { tile, palette }), drawn = readTerrain(spec, { tile, palette });
     assert.deepEqual([rows.length, rows[0].length], [tile * 3, tile * 2]);
     for (const rowsOfMap of map) {
@@ -112,6 +118,22 @@ test('variants change the terrain field by field, keep its edges and add their o
   assert.throws(() => compileAutotile(source({ template: terrainTemplate(turf, { tile: 16, palette }), frame: 'x-{mask}-{variant}', variants: [{ name: 'a', terrain: { seed: 1 } }] })), /variants\[0\]\.terrain: a variant's terrain changes the set's terrain/);
 });
 
+test('a variant whose terrain draws an edge in another place seams where its tiles meet the set\'s; another fill or colour does not', () => {
+  const edged = { fill: 'g', edges: { all: { depth: 1, bands: ['k'] } } }, variants = extra => source({ tile: 8, terrain: edged, frame: 'turf-{mask}-{variant}', variants: [{ name: 'a' }, extra] });
+  // Each terrain alone is seamless, but the outline steps two pixels wherever a deep tile meets a plain one: one
+  // warning for the pair of templates.
+  const deep = compileAutotile(variants({ name: 'deep', terrain: { edges: { all: { depth: 3 } } } }));
+  assert.ok(deep.metadata.seams.shape > 0);
+  assert.equal(deep.warnings.length, 1);
+  assert.match(deep.warnings[0], /^Seam: the template and variant deep's template come from terrains that draw the edge in different places, so their tiles break it where they meet: \d+ pixels along \d+ quarter joins .*its terrain should change only what lies inside the edges/);
+  // Another fill, or an outline of another colour, switches at the tile border, as a palette variant does.
+  for (const extra of [{ name: 'speckled', terrain: { fill: { color: 'g', speckle: [{ color: 'd', amount: 0.2, size: 2 }] } } }, { name: 'red', terrain: { edges: { all: { bands: ['y'] } } } }]) {
+    const compiled = compileAutotile(variants(extra));
+    assert.equal(compiled.warnings, undefined, extra.name);
+    assert.equal(compiled.metadata.seams.shape, 0, extra.name);
+  }
+});
+
 test('terrain mistakes name their path and what fits', () => {
   assert.throws(() => compileAutotile(source({ tile: 8, terrain: turf })), /autotile\.terrain\.edges\.n: depth 2 \(from edges\.all\) \+ jitter 1 \(from edges\.all\) \+ 2 bands \+ round 2 is 7 pixels, but an edge has to fit in half a tile \(4 pixels\)/);
   assert.throws(() => compileAutotile(source({ terrain: { fill: 'g', edges: { all: { bands: ['Q'] } } } })), /autotile\.terrain\.edges\.all\.bands\[0\]: "Q" is not in the palette/);
@@ -126,6 +148,10 @@ test('terrain mistakes name their path and what fits', () => {
   const pattern = Array.from({ length: 16 }, (_, y) => (y % 2 ? 'gd' : 'dg').repeat(8));
   const patterned = terrainTemplate({ fill: { pattern } }, { tile: 16, palette });
   assert.equal(patterned[16 + 5].slice(0, 16), pattern[5]);
+  // On the smallest tile, 2 pixels, a terrain that gives no sizes compiles: the edges' turns and the speckle's clumps,
+  // 4 pixels by default, are at most the tile. A size the source gives is still checked.
+  assert.equal(compileAutotile(source({ tile: 2, terrain: { fill: { color: 'g', speckle: [{ color: 'd', amount: 0.25 }] } } })).recipe.frames.length, 47);
+  assert.throws(() => compileAutotile(source({ tile: 2, terrain: { fill: 'g', edges: { all: { size: 4 } } } })), /autotile\.terrain\.edges\.all\.size: expected a whole number from 1 to 2/);
 });
 
 test('a cardinal set reports only the inner corners it cannot turn', () => {

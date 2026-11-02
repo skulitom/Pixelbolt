@@ -77,7 +77,7 @@ From a shell, the same commands are `node bin/pixelbolt.js validate | inspect | 
 
 - `presets`: the ready-made effects, characters and loops to compile instead of drawing; `preset` with a `name` returns one preset's source.
 - `guide`: the full authoring reference (every field and operation, inspection, patch paths, exports).
-- `workflow`: the art workflow for advanced formats: poses and motion review, scenes and tilemaps, particle effects, fluids, lighting and normal passes, PNG import.
+- `workflow`: the art workflow for advanced formats: poses and motion review, scenes and tilemaps, particle effects, fluids, lighting and normal passes, PNG import. With `name` (such as `"Fluid effects"`), one section.
 - `schema`: the recipe's complete JSON Schema.
 - `example`: a complete multi-frame recipe with layers.
 - `poses`, `scenes`, `autotile`, `fx`, `fluid`, `wave`, `normals`: the JSON Schema of each source format.

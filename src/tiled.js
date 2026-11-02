@@ -33,7 +33,11 @@ const WANG_TILES = { blob: 46, cardinal: 15, corner: 15 };
 // The Tiled map format this file is written in; every feature used has been read since Tiled 1.5.
 export const TILED_FORMAT = '1.10';
 
-const xml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Names (a scene's instance names and asset ids are any text) go in attributes: a tab or line break is written as a
+// character reference, which a parser keeps, and a character XML can't hold at all (other control characters, U+FFFE,
+// U+FFFF, half a surrogate pair) becomes U+FFFD, or Tiled can't read the file.
+const xml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  .replace(/[\t\n\r]/g, char => `&#${char.charCodeAt(0)};`).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd');
 const hex = ([r, g, b]) => `#${[r, g, b].map(channel => channel.toString(16).padStart(2, '0')).join('')}`;
 const number = value => String(Number(value.toFixed(6)));
 const popcount = mask => { let bits = 0; for (let m = mask; m; m &= m - 1) bits++; return bits; };

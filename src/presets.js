@@ -164,7 +164,9 @@ async function openCache(directory) {
   try { const read = JSON.parse(await readFile(file, 'utf8')); if (read && typeof read === 'object' && !Array.isArray(read)) cached = read; } catch { /* measured afresh */ }
   const key = (entry, source) => createHash('sha256').update(JSON.stringify([entry.kind, entry.base, source])).digest('hex');
   async function save(entries) {
-    await mkdir(directory, { recursive: true });
+    // Only inside a folder that already exists (the server's export directory), so a listing alone, which pixel_help
+    // gives as a read-only call, never creates the output folder in a user's project.
+    await mkdir(directory).catch(error => { if (error.code !== 'EEXIST') throw error; });
     const temp = path.join(directory, `${randomUUID()}.tmp`);
     try { await writeFile(temp, JSON.stringify(entries)); await rename(temp, file); } finally { await rm(temp, { force: true }); }
     const now = Date.now(), engines = [];
@@ -185,9 +187,12 @@ async function openCache(directory) {
 // preset is measured once per engine and source, and later listings read its facts from there, past the budget too.
 // The cache only ever saves time: when it can't be read or written, the listing measures as it would without it.
 export async function listPresets({ budget = 20000, cache } = {}) {
-  const presets = [], start = Date.now(), store = cache === undefined ? undefined : await openCache(cache).catch(() => undefined), kept = {};
+  const presets = [], store = cache === undefined ? undefined : await openCache(cache).catch(() => undefined), kept = {};
+  // The budget times the measuring, not the setup (hashing the engine, reading the folder), so a listing on a busy
+  // machine still measures its first preset.
+  const entries = await presetEntries(), start = Date.now();
   let unmeasured = 0, added = 0;
-  for (const entry of await presetEntries()) {
+  for (const entry of entries) {
     const measuring = Date.now() - start <= budget;
     try {
       const { summary, id, facts, fresh } = await summarize(entry, store, measuring);

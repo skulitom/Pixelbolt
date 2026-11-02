@@ -53,6 +53,8 @@ const SALT = { x: 1, y: 2, angle: 3, speed: 4, life: 5, variant: 6, remap: 7, ph
 export const SPRITE_PIXELS = ['all', 'edge', 'outline'];
 const clear = char => char === '.' || char === ' ';
 const LIMITS = { effects: 64, emitters: 16, spawned: 4096, alive: 1024, operations: 20000 };
+// The most visible width plus height a spinning particle's symbol may have, so its 45° turns fit a recipe symbol.
+const SPIN_SPAN = 360;
 // When a child emitter spawns: where a parent particle ends, where it first lands on its floor, or every frame it lives.
 export const FX_EVENTS = ['death', 'floor', 'life'];
 // Where an emitter's particles draw relative to a character standing in the effect: in front, behind, split by where
@@ -241,7 +243,14 @@ function readEmitter(emitter, path, context, earlier) {
   // that tumbles); the turned symbols join the recipe as <symbol>_r<degrees>.
   const spinRange = emitter.spin === undefined ? null : range(emitter.spin, `${path}.spin`, -180, 180), spin = spinRange && (spinRange[0] || spinRange[1]) ? spinRange : null;
   if (spin && face) fail(`${path}.spin`, 'face already turns the particle to its direction of travel; use one or the other');
-  if (spin) for (const name of variants.flat()) if (name.length > 59) fail(`${path}.spin`, `turned symbols are named <symbol>_r<degrees>; shorten ${name} to 59 characters or fewer`);
+  if (spin) for (const name of new Set(variants.flat())) {
+    if (name.length > 59) fail(`${path}.spin`, `turned symbols are named <symbol>_r<degrees>; shorten ${name} to 59 characters or fewer`);
+    // Turned 45°, a symbol's visible pixels span (width + height) / √2 each way, and a recipe symbol has at most 256
+    // rows and columns: a visible width plus height of 360 turns into at most 254.
+    let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;
+    symbols[name].forEach((row, j) => { for (let i = 0; i < row.length; i++) if (!clear(row[i])) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } });
+    if (x1 >= 0 && x1 - x0 + y1 - y0 + 2 > SPIN_SPAN) fail(`${path}.spin`, `spin turns ${name} in 45° steps, and turned 45° its visible ${x1 - x0 + 1} × ${y1 - y0 + 1} pixels would pass the 256 rows and columns a symbol may have; a spinning symbol's visible width plus height may be at most ${SPIN_SPAN} pixels`);
+  }
   // sweep: 2–8 keys in degrees added to the launch angle over the emitter's window, start to end, so a flamethrower
   // swings across or a fountain sways.
   const sweep = emitter.sweep === undefined ? null : Array.isArray(emitter.sweep) && emitter.sweep.length >= 2 && emitter.sweep.length <= 8 ? emitter.sweep.map((v, i) => number(v, `${path}.sweep[${i}]`, -3600, 3600)) : fail(`${path}.sweep`, 'expected 2–8 keys in degrees added to the launch angle from start to end, such as [-30, 30]');
@@ -894,7 +903,8 @@ export function compileEffects(source) {
   // nextFrames: for each loop, the frame that follows its last, rendered only to review the seam.
   // loopNotes: warnings found while reading, such as a stream spanning a loop whose head keys don't close.
   const frames = [], nextFrames = [], loopNotes = [], animations = {}, metadata = { format: 'pixelforge-fx-metadata', version: 1, effects: {} }, seen = new Map();
-  // Shape painting shares one work budget across every effect and frame (shapes.js SHAPE_WORK).
+  // Shape painting, and measuring auras' distance fields, share one work budget across every effect and frame
+  // (shapes.js SHAPE_WORK).
   // touching: the canvas sides each animation may draw on (its effect's edges, turned with a turned copy).
   const shapeWork = { spent: 0 }, pointed = new Set(), touching = new Map();
   let totalFrames = 0;
@@ -924,7 +934,7 @@ export function compileEffects(source) {
         ? (effect.duration.length === count ? effect.duration.map((d, i) => integer(d, `${path}.duration[${i}]`, 1, 60000)) : fail(`${path}.duration`, `expected one duration or ${count}`))
         : isObject(effect.duration) ? curve(effect.duration, `${path}.duration`, count)
           : Array(count).fill(integer(effect.duration ?? 100, `${path}.duration`, 1, 60000));
-      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view, spun };
+      const seed = integer(effect.seed ?? 1, `${path}.seed`, 0, 2147483647), context = { frames: count, loop, seed, symbols, sequences, palette, width, height, path, view, spun, work: shapeWork };
       // Shape layers (rings, slashes, beams, bolts, glyphs, stars, bursts, auras, trails) draw between `behind` particles and
       // the rest. A trail that follows a point of an animation takes that point's place in each frame as its points.
       const shapes = readShapes(Array.isArray(effect.layers) ? { ...effect, layers: effect.layers.map((layer, i) => turnLayer(followed(layer, `${path}.layers[${i}]`, count), view)) } : effect, path, context);

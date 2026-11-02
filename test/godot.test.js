@@ -321,6 +321,27 @@ test('an animation over one mask\'s frames side by side in a row becomes an anim
   }
 });
 
+test('a tile animation that comes back to its first frame keeps that frame as its still tile', async () => {
+  // A hold on the first frame, and a loop that ends on it: neither plays in a Godot tile, and each tile stays, still.
+  const palette = { r: '#c03020', o: '#f08020', y: '#ffd040' }, fill = color => [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color }];
+  for (const frames of [['lava-1', 'lava-1', 'lava-2', 'lava-3'], ['lava-1', 'lava-2', 'lava-3', 'lava-1']]) {
+    const recipe = { version: 1, name: 'lava', width: 4, height: 4, palette, sheet: { columns: 4 },
+      frames: [{ name: 'lava-1', tile: { weight: 2 }, ops: fill('r') }, { name: 'lava-2', ops: fill('o') }, { name: 'lava-3', ops: fill('y') }, { name: 'rock', tile: { collision: [[0, 0], [4, 0], [4, 4], [0, 4]] }, ops: fill('r') }],
+      animations: { flow: { frames, loop: true } } };
+    const bundle = await createBundle(recipe), { tiles } = readTileSet(bundle.files.get('lava.tileset.tres').toString());
+    assert.deepEqual(Object.keys(tiles).sort(), ['0:0', '3:0'], frames.join());
+    assert.equal(tiles['0:0']['animation_frame_0/duration'], undefined);
+    assert.deepEqual(bundle.project.warnings, ['lava.tileset.tres: animation flow became still tiles of its first frame: Godot animates a tile by playing the frames after it in the sheet once each, in order, looping']);
+  }
+  // A frame that starts one animation and appears later in another stays the first animation's tile.
+  const strip = { version: 1, name: 'strip', width: 4, height: 4, palette, sheet: { columns: 4 },
+    frames: ['a', 'b', 'c', 'd'].map((name, i) => ({ name, tile: { weight: 1 }, ops: fill('roy'[i % 3]) })),
+    animations: { one: { frames: ['b', 'c'], loop: true }, two: { frames: ['a', 'b'], loop: true } } };
+  const { tiles } = readTileSet((await createBundle(strip)).files.get('strip.tileset.tres').toString());
+  assert.deepEqual(Object.keys(tiles).sort(), ['0:0', '1:0', '3:0']);
+  assert.equal(tiles['1:0']['animation_frame_1/duration'], '0.1');
+});
+
 test('only an autotile set on a grid gets a TileSet, and what can\'t be one is said', async () => {
   const { recipe } = compileAutotile(turfSource);
   // A sprite, a single tile and a set of one mask's variants have no TileSet and no warning about one.

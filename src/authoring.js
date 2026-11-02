@@ -694,7 +694,8 @@ function compileLayers(source, { tile, mode, palette }) {
     const lp = `autotile.layers[${i}]`;
     fields(layer, ['name', 'key', 'terrain', 'template', 'ops', 'weight', 'variants', 'collision'], lp);
     if (typeof layer.name !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_-]{0,31}$/.test(layer.name) || read.some(other => other.name === layer.name)) fail(`${lp}.name`, 'expected 1–32 letters, digits, underscores or hyphens, starting with a letter, unique among the layers: the terrain\'s name in engines');
-    if (typeof layer.key !== 'string' || !/^[a-zA-Z0-9]$/.test(layer.key) || read.some(other => other.key === layer.key)) fail(`${lp}.key`, 'expected one letter or digit, unique among the layers: the terrain\'s character in maps and tile names');
+    // Frame names must differ in more than letter case, and keys spell them.
+    if (typeof layer.key !== 'string' || !/^[a-zA-Z0-9]$/.test(layer.key) || read.some(other => other.key.toLowerCase() === layer.key.toLowerCase())) fail(`${lp}.key`, 'expected one letter or digit, unique among the layers ignoring letter case (tile names are, and keys spell them): the terrain\'s character in maps and tile names');
     if (layer.template !== undefined && layer.terrain !== undefined) fail(`${lp}.terrain`, 'give template rows or a terrain, not both');
     const symbol = `template-${layer.name}`;
     claim(symbol, `${lp}.name`);
@@ -716,6 +717,15 @@ function compileLayers(source, { tile, mode, palette }) {
   });
   const solid = read.filter(layer => layer.collision), differs = solid.find(layer => layer.collision.oneWay !== solid[0].collision.oneWay);
   if (differs) fail(`autotile.layers[${read.indexOf(differs)}].collision.oneWay`, 'engines keep one oneWay per tile: give every solid layer the same oneWay');
+  // A recipe holds at most 256 frames, and four layers make 256 tiles.
+  const extra = read.reduce((sum, layer) => sum + (layer.variants?.length ?? 0), 0);
+  const tiles = read.length * read.length * read.length * read.length;
+  if (tiles + extra > 256) fail(`autotile.layers[${read.findIndex(layer => layer.variants)}].variants`, `${read.length} layers make ${tiles} tiles, as many frames as a recipe holds, so there is no room for ${extra} variant${extra === 1 ? '' : 's'}: use 3 layers (81 tiles), or leave the variants out`);
+  // The frame template and the keys make every name; a key that is a digit can't start one.
+  const frameName = (name, corners) => {
+    if (/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(name) && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(name)) return name;
+    fail('autotile.frame', `makes ${JSON.stringify(name)} for corners ${corners}, which is no frame name: names are 1–64 letters, digits, underscores or hyphens, starting with a letter${/^[0-9]/.test(name) && source.frame.startsWith('{corners}') ? '; a layer key is a digit, so put a letter before {corners}, as in tiles-{corners}' : ''}`);
+  };
   if (source.preview !== undefined) {
     fields(source.preview, ['background'], 'autotile.preview');
     if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
@@ -725,10 +735,10 @@ function compileLayers(source, { tile, mode, palette }) {
   for (let code = 0; code < n * places[3]; code++) {
     const corners = places.map(place => Math.floor(code / place) % n), ops = [];
     for (let layer = 0; layer < n; layer++) if (corners.includes(layer)) ops.push({ op: 'autotile', symbol: `template-${read[layer].name}`, mask: corners.reduce((bits, c, k) => (c >= layer ? bits | (1 << k) : bits), 0), mode: 'corner' });
-    const name = source.frame.replaceAll('{corners}', corners.map(c => read[c].key).join('')), names = corners.map(c => read[c].name);
+    const keys = corners.map(c => read[c].key).join(''), name = frameName(source.frame.replaceAll('{corners}', keys), keys), names = corners.map(c => read[c].name);
     const box = layeredCollision(corners, read, tile), only = corners.every(c => c === corners[0]) ? read[corners[0]] : null;
     frames.push({ name, tile: { corners: names, ...(only?.variants && weighed(only.weight)), ...box }, ops });
-    for (const variant of only?.variants ?? []) variantFrames.push({ name: `${name}-${variant.name}`, tile: { corners: names, ...weighed(variant.weight), ...box }, ops: [{ op: 'autotile', symbol: variant.symbol, mask: 15, mode: 'corner' }] });
+    for (const variant of only?.variants ?? []) variantFrames.push({ name: frameName(`${name}-${variant.name}`, keys), tile: { corners: names, ...weighed(variant.weight), ...box }, ops: [{ op: 'autotile', symbol: variant.symbol, mask: 15, mode: 'corner' }] });
   }
   frames.push(...variantFrames);
   const recipe = { version: 1, name: source.name, width: tile, height: tile, palette, ...(source.ramps !== undefined && { ramps: source.ramps }), symbols, frames, ...(source.sheet !== undefined && { sheet: source.sheet }) };

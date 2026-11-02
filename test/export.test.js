@@ -10,6 +10,7 @@ import { encodePNG, encodeAPNG } from '../src/png.js';
 import { createBundle, writeBundle, createZip, formatJSON } from '../src/export.js';
 import { renderProject } from '../src/core.js';
 import { createSequence } from '../src/sequence.js';
+import { compileAutotile } from '../src/authoring.js';
 
 export function pngChunks(buffer) {
   const result = []; let at = 8;
@@ -88,6 +89,30 @@ test('a forced export replaces an earlier export of the recipe without leaving i
   await mkdir(path.join(other, 'frames')); await writeFile(path.join(other, 'frames', 'hand-drawn.png'), 'mine');
   assert.equal((await writeBundle(await createBundle(tiny), other, { force: true })).removed, undefined);
   await access(path.join(other, 'frames', 'hand-drawn.png'));
+});
+test('a forced export removes the TileSet, Tiled tileset, SpriteFrames, CSS and player its earlier export wrote and it does not', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const { recipe } = compileAutotile({ format: 'pixelforge-autotile', version: 1, name: 'turf', tile: 4, palette: { g: '#4a9a4a', k: '#1b1528' }, frame: 'turf-{mask}', terrain: { fill: 'g', edges: { all: { bands: ['k'] } } } });
+  const top = async () => (await readdir(dir)).filter(file => !['frames', 'animations'].includes(file)).sort();
+  await writeBundle(await createBundle(recipe), dir);
+  assert.deepEqual(await top(), ['README.txt', 'preview.html', 'turf.atlas.json', 'turf.pixel.json', 'turf.png', 'turf.tileset.tres', 'turf.tsx']);
+  // sheet.trim leaves no grid, so no TileSet or .tsx: the earlier ones go rather than describe a sheet that has changed.
+  const trimmed = { ...recipe, sheet: { trim: true } };
+  assert.deepEqual((await writeBundle(await createBundle(trimmed), dir, { force: true })).removed, ['turf.tileset.tres', 'turf.tsx'].map(file => path.join(dir, file)));
+  // Back on a grid it is a still tile set again, with no flipbook of its tiles: its SpriteFrames, CSS, player and APNG go.
+  assert.deepEqual((await writeBundle(await createBundle(recipe), dir, { force: true })).removed, ['animations/default.png', 'player.js', 'turf.css', 'turf.tres'].map(file => path.join(dir, ...file.split('/'))));
+  assert.deepEqual(await top(), ['README.txt', 'preview.html', 'turf.atlas.json', 'turf.pixel.json', 'turf.png', 'turf.tileset.tres', 'turf.tsx']);
+  // A TileSet Godot has saved over (its header gains a uid) is the user's now, and stays; so does a file of another name.
+  const tres = path.join(dir, 'turf.tileset.tres');
+  await writeFile(tres, (await readFile(tres, 'utf8')).replace('[gd_resource type="TileSet" format=3]', '[gd_resource type="TileSet" format=3 uid="uid://b2x"]'));
+  await writeFile(path.join(dir, 'turf.tsx.bak'), await readFile(path.join(dir, 'turf.tsx')));
+  assert.deepEqual((await writeBundle(await createBundle(trimmed), dir, { force: true })).removed, [path.join(dir, 'turf.tsx')]);
+  await access(tres); await access(path.join(dir, 'turf.tsx.bak'));
+  // player.js is every sprite's in the folder: with another export beside it, it stays.
+  await writeBundle(await createBundle(tiny), dir, { force: true });
+  assert.deepEqual((await writeBundle(await createBundle(recipe), dir, { force: true })).removed, ['animations/default.png', 'turf.css', 'turf.tres'].map(file => path.join(dir, ...file.split('/'))));
+  await access(path.join(dir, 'player.js'));
 });
 test('a forced export removes only what its own earlier export wrote, never another recipe\'s export in the same folder', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
