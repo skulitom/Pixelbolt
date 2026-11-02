@@ -629,6 +629,10 @@
                   "maximum": 1,
                   "description": "Share of downward speed returned at the floor or ground; default 0 (they settle)."
                 },
+                "rest": {
+                  "type": "boolean",
+                  "description": "A particle that lands on its floor or ground stays where it lands: no more sliding, sway or spin (with bounce, once a rebound is slower than half a pixel a frame). Snow, leaves and coins that settle."
+                },
                 "shapes": {
                   "oneOf": [
                     {

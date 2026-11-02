@@ -103,7 +103,7 @@ function readSprite(sprite, path, symbols, sequences, [x, y], loop) {
 
 // `earlier` holds the effect's emitters read so far: a child names one of them as its parent.
 function readEmitter(emitter, path, context, earlier) {
-  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground', 'kick', 'depth'], path);
+  fields(emitter, ['name', 'at', 'area', 'ring', 'line', 'burst', 'rate', 'start', 'end', 'life', 'angle', 'speed', 'gravity', 'drag', 'attract', 'sway', 'floor', 'bounce', 'rest', 'shapes', 'face', 'play', 'remaps', 'tint', 'trail', 'dissolve', 'pattern', 'from', 'when', 'inherit', 'behind', 'cue', 'blob', 'sprite', 'release', 'turbulence', 'path', 'curve', 'ease', 'spin', 'sweep', 'throttle', 'ground', 'kick', 'depth'], path);
   const { frames, symbols, sequences, palette, loop, seed, looks } = context;
   // A sprite emitter spawns on a symbol's pixels, its top-left corner at `at` (whole pixels); with release, every one of
   // them leaves once while the rest stays drawn.
@@ -308,6 +308,7 @@ function readEmitter(emitter, path, context, earlier) {
     sway = { amplitude: pair(emitter.sway.amplitude, `${path}.sway.amplitude`, 0, 32), period: number(emitter.sway.period ?? 8, `${path}.sway.period`, 1, 256) };
   }
   if (emitter.bounce !== undefined && emitter.floor === undefined && emitter.ground === undefined) fail(`${path}.bounce`, 'bounce applies at a floor or ground');
+  if (emitter.rest !== undefined && emitter.floor === undefined && emitter.ground === undefined) fail(`${path}.rest`, 'rest applies at a floor or ground');
   if (emitter.floor !== undefined && emitter.ground !== undefined) fail(`${path}.ground`, 'a particle lands on one floor: a canvas row (floor) or pixels below where it was born (ground), not both');
   // turbulence pushes each particle by a smooth seeded field that stays put, `scale` pixels to a swirl, so smoke and
   // embers wander organically instead of swinging in step. A still field keeps loops seamless.
@@ -345,6 +346,8 @@ function readEmitter(emitter, path, context, earlier) {
     // up as they fly out. It turns with a turned copy, as launch angles do.
     kick: emitter.kick === undefined ? null : pair(emitter.kick, `${path}.kick`, -64, 64),
     bounce: number(emitter.bounce ?? 0, `${path}.bounce`, 0, 1),
+    // rest: a particle that lands stays where it lands (no slide, sway or spin); with bounce, once a rebound is slow.
+    rest: flag(emitter.rest, `${path}.rest`),
     dissolve: emitter.dissolve === undefined ? 0 : number(emitter.dissolve, `${path}.dissolve`, 0, 1),
     threshold: ditherThreshold(pattern, [0, 0], seed)
   };
@@ -579,7 +582,8 @@ function simulate(effect, context) {
     // particle turns with its velocity in every frame, warm-up included, so a loop's frame 0 continues its last frame.
     const places = alive.map(p => {
       const e = p.emitter, sway = e.sway;
-      const sx = sway ? sway.amplitude[0] * sinDeg(360 * p.age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * p.age / sway.period + p.phase) : 0;
+      // A particle at rest on its floor holds the sway it had when it stopped.
+      const age = p.still ?? p.age, sx = sway ? sway.amplitude[0] * sinDeg(360 * age / sway.period + p.phase) : 0, sy = sway ? sway.amplitude[1] * cosDeg(360 * age / sway.period + p.phase) : 0;
       const x = p.x + sx, y = p.floor !== null && p.y + sy > p.floor ? p.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
       p.trail.push([X, Y]);
       if (p.trail.length > 17) p.trail.shift();
@@ -629,7 +633,7 @@ function simulate(effect, context) {
       const step = e.play === 'loop' ? (p.age + p.offset) % sequence.length : e.play === 'once' ? Math.min(p.age, sequence.length - 1) : share(sequence.length);
       // A spinning particle draws its symbol turned to the nearest 45° step (the other way in a mirrored copy), its middle
       // pixel kept on the particle.
-      const k = e.spin ? (((Math.round((p.turn + p.spin * p.age) / 45) % 8) + 8) % 8) : 0, turned = k ? spun(sequence[step], view?.mirror ? 8 - k : k) : null;
+      const k = e.spin ? (((Math.round((p.turn + p.spin * (p.still ?? p.age)) / 45) % 8) + 8) % 8) : 0, turned = k ? spun(sequence[step], view?.mirror ? 8 - k : k) : null;
       const symbol = turned ? turned.name : sequence[step], rows = turned ? turned.rows : symbols[symbol], w = rows[0].length, h = rows.length;
       const left = X - (turned ? turned.pivot[0] : Math.floor(w / 2)), top = Y - (turned ? turned.pivot[1] : Math.floor(h / 2));
       if (left >= width || top >= height || left + w <= 0 || top + h <= 0) { culled++; return; }
@@ -669,6 +673,8 @@ function simulate(effect, context) {
       const p = alive[i], e = p.emitter;
       p.age++;
       if (p.age >= p.life) { if (children[p.index].death.length) events.push([p, 'death']); alive.splice(i, 1); continue; }
+      // At rest on its floor (rest), nothing moves it again, and children it trails spawn where it lies.
+      if (p.still !== undefined) { p.px = p.x; p.py = p.y; continue; }
       p.vx += e.gravity[0]; p.vy += e.gravity[1];
       if (e.turbulence) { const { strength, x, y } = e.turbulence; p.vx += (x(p.x, p.y) - 0.5) * 2 * strength; p.vy += (y(p.x, p.y) - 0.5) * 2 * strength; }
       if (e.attract) {
@@ -687,6 +693,8 @@ function simulate(effect, context) {
         p.y = p.floor;
         if (p.vy > 0) p.vy = -p.vy * e.bounce;
         if (!p.landed) { p.landed = true; if (children[p.index].floor.length) events.push([p, 'floor']); }
+        // With rest, a landing that rebounds slower than half a pixel a frame (every landing, without bounce) stops it.
+        if (e.rest && p.vy > -0.5) { p.vx = 0; p.vy = 0; p.still = p.age; }
       }
     }
     // In the parents' drawing order.
