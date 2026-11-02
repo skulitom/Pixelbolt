@@ -272,12 +272,18 @@ function findJoins(mode) {
   }
   return [...found.values()].map(join => ({ ...join, masks: [...join.masks].sort((a, b) => a - b) }));
 }
-const BLOB_JOINS = findJoins('blob'), joinKey = join => `${join.axis}:${join.first}|${join.second}|${join.across}`;
-const blobKeys = new Set(BLOB_JOINS.map(joinKey));
+const joinKey = join => `${join.axis}:${join.first}|${join.second}|${join.across}`;
 // A cardinal set has no inner-corner tiles, so some of its joins put a fill quarter beside an edge quarter where a
 // blob set would turn the corner. Those joins (`corner`) can only be seamless when the edges run to the tile border.
 // A corner set's tiles are a blob set's quarters, moved: its joins are the blob joins, with corner masks.
-export const JOINS = { blob: BLOB_JOINS, cardinal: findJoins('cardinal').map(join => ({ ...join, corner: !blobKeys.has(joinKey(join)) })), corner: findJoins('corner') };
+// Each mode's joins are found on first use, so loading the engine for anything else doesn't wait for them.
+const joinCache = {};
+const joinsOf = mode => (joinCache[mode] ??= mode === 'cardinal' ? cardinalJoins() : findJoins(mode));
+function cardinalJoins() {
+  const blobKeys = new Set(joinsOf('blob').map(joinKey));
+  return findJoins('cardinal').map(join => ({ ...join, corner: !blobKeys.has(joinKey(join)) }));
+}
+export const JOINS = { get blob() { return joinsOf('blob'); }, get cardinal() { return joinsOf('cardinal'); }, get corner() { return joinsOf('corner'); } };
 
 // The quarter that naturally lies on one side of the quarter at [x, y] (its top-left), as the template continues. In
 // the island the next quarter over, which repeats every tile (so past the island's right edge comes its middle). The
