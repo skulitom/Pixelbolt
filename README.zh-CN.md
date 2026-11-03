@@ -43,19 +43,14 @@ node bin/pixelbolt.js render hero.pixel.json --out output/hero
 
 **Claude Desktop：** 从最新发布（Release）下载 [`pixelbolt.mcpb`](https://github.com/skulitom/Pixelbolt/releases/latest/download/pixelbolt.mcpb) 并打开它（或在“设置 → 扩展”（Settings → Extensions）中从文件安装）。选择一个存放配方和生成素材的工作区，然后让智能体调用 `pixel_help`。
 
-**Claude Code、Codex、Cursor 等 MCP 客户端：** 先克隆仓库，再把服务器加入智能体的 MCP 配置。把 `/absolute/path/to/Pixelbolt` 换成你的检出目录的绝对路径；在 Windows 上请使用正斜杠，例如 `C:/DEV/Pixelbolt`：
+**Claude Code、Codex、Cursor 等 MCP 客户端：** npm 包可以直接运行服务器，无需克隆仓库（需要 Node.js 20 或更新版本）。把下面的配置加入智能体的 MCP 配置，并把 `/absolute/path/to/pixelbolt-output` 换成存放导出素材的文件夹。请使用绝对路径，因为不同客户端会在不同的文件夹里启动服务器；在 Windows 上请使用正斜杠，例如 `C:/Art/pixelbolt-output`：
 
 ```json
 {
   "mcpServers": {
     "pixelbolt": {
-      "command": "node",
-      "args": [
-        "/absolute/path/to/Pixelbolt/bin/pixelbolt.js",
-        "mcp",
-        "--out",
-        "/absolute/path/to/Pixelbolt/output"
-      ]
+      "command": "npx",
+      "args": ["-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-output"]
     }
   }
 }
@@ -65,9 +60,44 @@ node bin/pixelbolt.js render hero.pixel.json --out output/hero
 
 ```toml
 [mcp_servers.pixelbolt]
-command = "node"
-args = ["/absolute/path/to/Pixelbolt/bin/pixelbolt.js", "mcp", "--out", "/absolute/path/to/Pixelbolt/output"]
+command = "npx"
+args = ["-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-output"]
 ```
+
+如果想运行检出的仓库（例如可能比 npm 更新的 `main` 分支），先克隆仓库，再使用 `"command": "node"` 和 `"args": ["/absolute/path/to/Pixelbolt/bin/pixelbolt.js", "mcp", "--out", "/absolute/path/to/Pixelbolt/output"]`。
+
+**Kimi Code、DeepSeek Harness 和 OpenCode：** 三者都使用同一个 `npx` 服务器，只是配置格式不同：
+
+- **Kimi Code CLI：** 把上面的 `mcpServers` 配置放进 `~/.kimi-code/mcp.json`（或受信任项目中的 `.kimi-code/mcp.json`）；用 `/mcp` 查看。
+- **OpenCode：** 在 `opencode.json`（项目中的，或 `~/.config/opencode/opencode.json`）的 `mcp` 下添加，整条命令写成一个数组；`opencode mcp list` 会显示它已连接：
+
+  ```json
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+      "pixelbolt": {
+        "type": "local",
+        "command": ["npx", "-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-output"]
+      }
+    }
+  }
+  ```
+
+- **DeepSeek Harness：** 把下面的内容加入 `~/.dsh/cordis.patch.yml`；工具会以 `mcp__pixelbolt__pixel_render` 这样的名称出现：
+
+  ```yaml
+  - insert:
+      - id: mcp-pixelbolt
+        name: '@deepseek-ai/dsh-mcp-client'
+        config:
+          serverName: pixelbolt
+          transport: stdio
+          command: npx
+          args: ['-y', 'pixelbolt@latest', 'mcp', '--out', '/absolute/path/to/pixelbolt-output']
+          env: {}
+  ```
+
+这三个客户端也会读取 `~/.agents/skills/` 中的技能，因此运行 `npx -y pixelbolt@latest skill install --dir "$HOME/.agents/skills"` 即可同时获得像素画技能。2026 年 11 月 3 日在 Windows 上用 Pixelbolt 0.11.0 检查过：OpenCode 1.19.5 显示服务器已连接，DeepSeek Harness 0.2.1-rc.5 接受了该配置；Kimi Code 2.4.1 需要登录后才会加载服务器，因此它的配置依据其官方文档。
 
 Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pixelbolt`。
 
