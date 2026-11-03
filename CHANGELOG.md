@@ -23,7 +23,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Docs and skill text
 
-- The pixel art skill's paragraph for a copy of SKILL.md alone (as `npx skills add skulitom/Pixelbolt` installs it) runs only released code: when the CLI calls a command, option or field unknown, the skill says to check its spelling (`npx -y pixelbolt@latest help` lists the commands and options, `schema` the recipe's fields) and to leave out one spelled as the skill or the GitHub docs give it, which is newer than the release, instead of running Pixelbolt from GitHub's main branch with `npx -y github:skulitom/Pixelbolt`. It also says to skip the paragraph where `bin/pixelbolt.js` is two directories above the skill (a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio), and says only that copy comes from main.
+- The pixel art skill's paragraph for a copy of SKILL.md alone (as `npx skills add skulitom/Pixelbolt` installs it) runs only released code: when the CLI calls a command, option or field unknown, the skill says to check its spelling and where it goes (`npx -y pixelbolt@latest help` lists the commands and options, `schema` the recipe's fields) and to leave out one written where and as the skill or the GitHub docs give it, which is newer than the release, instead of running Pixelbolt from GitHub's main branch with `npx -y github:skulitom/Pixelbolt`. It also says to skip the paragraph where `bin/pixelbolt.js` is two directories above the skill (a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio), and says only that copy comes from main.
 
 ## 0.11.0 (2026-11-02)
 

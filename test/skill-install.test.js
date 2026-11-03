@@ -106,7 +106,7 @@ test('the installed skill reaches every guide, schema and example it names, and 
   assert.match(alone, /Skip this paragraph where `bin\/pixelbolt\.js` is two directories above this file/);
   assert.match(alone, /That copy comes from Pixelbolt's main branch/);
   assert.doesNotMatch(shipped, /This file follows Pixelbolt's main/);
-  assert.doesNotMatch(shipped, /\bgithub:|\bgit\+(?:https?|ssh):/);
+  assert.doesNotMatch(shipped, /\bgithub:|\bgit\+(?:https?|ssh):|npx (?:-y |--yes )?skulitom\//);
 });
 
 test('the installed skill\'s validate, inspect, render and gif commands work on a bundled example from the user\'s project, offline', async t => {
