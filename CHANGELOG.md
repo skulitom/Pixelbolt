@@ -6,7 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
-- A recipe `tilemap` whose legend draws `symbol`s with `autotile: "corner"` is refused on an odd cell width or height and on an iso map, as corner templates and a scene's corner frames already were, instead of drawing its tiles at half-pixel positions with no error. The agent guide says corner maps need an even, square cell.
+- A recipe `tilemap` whose legend draws `symbol`s with `autotile: "corner"` is refused on an odd cell width or height and on an iso map, as corner templates and a scene's corner frames already were. With no error, an odd cell drew its tiles at half-pixel positions, and an iso map drew them on a grid corner tiles don't support. The agent guide says corner maps need an even, square cell.
 
 ### Particles that come to rest
 

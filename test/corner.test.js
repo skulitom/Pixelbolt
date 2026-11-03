@@ -113,6 +113,10 @@ test('a recipe tilemap of corner symbols needs an even square cell, as corner te
   assert.throws(() => renderProject(map([3, 3])), /frames\[0\]\.ops\[0\]\.tile: corner tiles sit where four cells meet, half a cell up and left of one; use an even cell width and height/);
   assert.throws(() => renderProject(map([4, 3])), /use an even cell width and height/);
   assert.throws(() => renderProject(map([4, 2], 'iso')), /frames\[0\]\.ops\[0\]\.legend: corner tiles sit where four square cells meet; an iso map takes symbols without autotile corner/);
+  // A corner template on an iso map meets the same check first.
+  const template = { ...map([4, 2], 'iso'), symbols: { t: Array(12).fill('a'.repeat(12)) } };
+  template.frames[0].ops[0].legend = { '#': { template: 't', autotile: 'corner' } };
+  assert.throws(() => renderProject(template), /legend: corner tiles sit where four square cells meet; an iso map takes symbols without autotile corner/);
   // On an even square cell they draw, each tile half a cell up and left of the cell it was found from.
   const { frames } = renderProject(map([4, 4]));
   const painted = [];
