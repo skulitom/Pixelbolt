@@ -464,6 +464,9 @@ try {
     await second.evaluate(`(() => { const source = document.getElementById('source'); source.focus(); source.select(); })()`);
     await second.page('Input.insertText', { text: coin.replace('"name": "coin"', '"name": "tab-b"') });
     await second.until(`Object.values(localStorage).some(value => value.includes('tab-b.json'))`, "the second tab's draft");
+    // Each tab's process keeps its own copy of localStorage, and another tab's write reaches it a moment later, so the
+    // first tab waits for the second tab's draft too before the walk checks that both are kept.
+    await until(`Object.values(localStorage).some(value => value.includes('tab-b.json'))`, "the second tab's draft to reach the first tab");
     assert.equal(await kept(studio), 'tab-a.json, tab-b.json', 'one tab\'s edits replaced the other\'s draft');
     assert.equal(await evaluate(`document.getElementById('source').value.includes('"name": "tab-a"')`), true);
     // The second tab closes. A new tab is offered its draft, never that of the first tab, which is still open. A tab
@@ -481,6 +484,8 @@ try {
     assert.equal(await kept(third), 'tab-a.json');
     await third.close();
     await click('#examples .example:nth-child(1)'); await until(`!document.getElementById('source').value.includes('"name": "tab-a"')`, 'a sample to replace the first tab\'s edit');
+    // The third tab took over tab-b's draft and then dropped it; the first tab waits until both changes reach it.
+    await until(`!Object.values(localStorage).some(value => value.includes('tab-b.json'))`, "the third tab's changes to tab-b's draft to reach the first tab");
     assert.equal(await evaluate(`localStorage.length`), 0);
     await studio.reload(); await ready(); assert.equal(await offered(studio), 'nothing');
   });
