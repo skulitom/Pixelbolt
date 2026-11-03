@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fixes
+
+- A recipe `tilemap` whose legend draws `symbol`s with `autotile: "corner"` is refused on an odd cell width or height and on an iso map, as corner templates and a scene's corner frames already were. With no error, an odd cell drew its tiles at half-pixel positions, and an iso map drew them on a grid corner tiles don't support. The agent guide says corner maps need an even, square cell.
+
 ### Particles that come to rest
 
 - An effect emitter with a `floor` or `ground` takes `rest: true`: a particle that lands stays where it lands, lying on its floor with its slide, `sway`, `spin` and `play: "loop"` stopped, so snow, leaves, petals and coins settle instead of shimmering sideways on the floor. With `bounce`, a particle bounces until a rebound can't lift it (slower than its gravity or half a pixel a frame), then rests; children it lands with still inherit the landing's velocity, and children it trails spawn where it lies. Without `rest` every effect draws as before.

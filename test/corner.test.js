@@ -105,6 +105,28 @@ test('scene tilemaps place corner frames where four cells meet', () => {
   assert.throws(() => renderProject({ ...recipe, frames: [{ name: 'map', ops: [{ op: 'tilemap', tile: [15, 15], rows: ['#'], legend: { '#': { template: 'template', autotile: 'corner' } } }] }] }), /tile: corner tiles sit where four cells meet/);
 });
 
+test('a recipe tilemap of corner symbols needs an even square cell, as corner templates and scene frames do', () => {
+  // Sixteen 3 x 3 symbols, one for each corner mask (P-069: these drew at half-pixel positions with no error).
+  const symbols = Object.fromEntries(Array.from({ length: 16 }, (_, mask) => [`t-${mask}`, ['aaa', 'aaa', 'aaa']]));
+  const map = (tile, layout) => ({ version: 1, name: 'corners', width: 12, height: 12, palette: { a: '#336699' }, symbols,
+    frames: [{ name: 'map', ops: [{ op: 'tilemap', tile, ...(layout && { layout }), rows: ['##', '##'], legend: { '#': { symbol: 't-{mask}', autotile: 'corner' } } }] }] });
+  assert.throws(() => renderProject(map([3, 3])), /frames\[0\]\.ops\[0\]\.tile: corner tiles sit where four cells meet, half a cell up and left of one; use an even cell width and height/);
+  assert.throws(() => renderProject(map([4, 3])), /use an even cell width and height/);
+  assert.throws(() => renderProject(map([4, 2], 'iso')), /frames\[0\]\.ops\[0\]\.legend: corner tiles sit where four square cells meet; an iso map takes symbols without autotile corner/);
+  // A corner template on an iso map meets the same check first.
+  const template = { ...map([4, 2], 'iso'), symbols: { t: Array(12).fill('a'.repeat(12)) } };
+  template.frames[0].ops[0].legend = { '#': { template: 't', autotile: 'corner' } };
+  assert.throws(() => renderProject(template), /legend: corner tiles sit where four square cells meet; an iso map takes symbols without autotile corner/);
+  // On an even square cell they draw, each tile half a cell up and left of the cell it was found from.
+  const { frames } = renderProject(map([4, 4]));
+  const painted = [];
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if (frames[0].data[(y * 12 + x) * 4 + 3]) painted.push([x, y]);
+  // The nine corner points of a 2 x 2 map sit at -2, 2 and 6 px on each axis; each 3 x 3 tile covers 3 px from its point.
+  const expected = [];
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if ([-2, 2, 6].some(p => x >= p && x < p + 3) && [-2, 2, 6].some(p => y >= p && y < p + 3)) expected.push([x, y]);
+  assert.deepEqual(painted, expected);
+});
+
 // ---- Layered sets: transitions between terrains ----
 const shore = JSON.parse(await readFile(new URL('../examples/shore.autotile.json', import.meta.url), 'utf8'));
 
