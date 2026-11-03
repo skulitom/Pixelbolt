@@ -17,6 +17,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - Every CLI command, MCP tool worker and page that loads the engine starts about 100 ms sooner: the seam check's tables of tile joins are built the first time a seam check runs, not whenever the engine loads (`pixelbolt help` 229 ms to 127 ms on the PC that measured it). Seam checks report exactly as before.
 
+### Docs and skill text
+
+- The pixel art skill's paragraph for a copy of SKILL.md alone (as `npx skills add skulitom/Pixelbolt` installs it) runs only released code: when the CLI calls a command, option or field unknown, main has it and the npm release doesn't yet, so the skill says to leave it out, with `npx -y pixelbolt@latest help` and `schema` showing what the release takes, instead of running Pixelbolt from GitHub's main branch with `npx -y github:skulitom/Pixelbolt`. It also says to skip the paragraph where `bin/pixelbolt.js` is two directories above the skill (a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio), and says only that copy comes from main.
+
 ## 0.11.0 (2026-11-02)
 
 ### Fixes from a review before the release
