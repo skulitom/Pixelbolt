@@ -8,7 +8,7 @@ Give Claude Code the pixel art skill in one line (Node.js 20 or newer):
 npx -y pixelbolt@latest skill install
 ```
 
-For Codex, Cursor and the other agents the open [skills CLI](https://skills.sh) supports: `npx skills add skulitom/Pixelbolt`. It copies the skill file alone, which then runs Pixelbolt through npx. The CLI reports installs to the skills.sh leaderboard unless `DISABLE_TELEMETRY=1` is set.
+For Codex, Cursor and the other agents the open [skills CLI](https://skills.sh) supports: `npx skills add skulitom/Pixelbolt`. It copies the skill file alone, which then runs Pixelbolt through npx. The CLI reports installs to the skills.sh leaderboard unless `DISABLE_TELEMETRY=1` is set. The skills CLI needs Node.js 22.20 or newer.
 
 **Pixel art and sprite animation that your AI agent can make, check and fix.** Pixelbolt turns an editable JSON recipe into sprites, tiles, icons, effects and short animations, and exports them as PNG sprite sheets, texture atlases, animated PNGs, GIFs and frames for a video editor. Agents drive it through a local MCP server or the command line; you can open, play and edit the same recipe in a local browser studio.
 
@@ -330,11 +330,13 @@ command = "npx"
 args = ["-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-output"]
 ```
 
+On Windows, a client that starts the server without a shell can't run `npx` (Kimi Code reports `spawn npx ENOENT`). Use `"command": "cmd"` with `"args": ["/c", "npx", "-y", "pixelbolt@latest", "mcp", "--out", "C:/Art/pixelbolt-output"]` there instead.
+
 To run a checkout instead (for example `main`, which can be ahead of npm), clone the repository and use `"command": "node"` with `"args": ["/absolute/path/to/Pixelbolt/bin/pixelbolt.js", "mcp", "--out", "/absolute/path/to/Pixelbolt/output"]`.
 
 **Kimi Code, DeepSeek Harness and OpenCode.** Each takes the same `npx` server in its own format:
 
-- **Kimi Code CLI:** put the `mcpServers` block above in `~/.kimi-code/mcp.json` (or `.kimi-code/mcp.json` in a trusted project); `/mcp` shows it.
+- **Kimi Code CLI:** put the `mcpServers` block above in `~/.kimi-code/mcp.json` (or `.kimi-code/mcp.json` in a trusted project), in the `cmd /c` form on Windows; `/mcp` shows it.
 - **OpenCode:** add it under `mcp` in `opencode.json` (the project's, or `~/.config/opencode/opencode.json`), with the whole command as one array; `opencode mcp list` shows it connected:
 
   ```json
@@ -363,7 +365,7 @@ To run a checkout instead (for example `main`, which can be ahead of npm), clone
           env: {}
   ```
 
-All three also read skills from `~/.agents/skills/`, so `npx -y pixelbolt@latest skill install --dir "$HOME/.agents/skills"` gives them the pixel art skill as well. Checked on 3 November 2026 with Pixelbolt 0.11.0 on Windows: OpenCode 1.19.5 lists the server as connected and DeepSeek Harness 0.2.1-rc.5 accepts the patch; Kimi Code 2.4.1 loads servers only after you sign in, so its line follows Kimi Code's documentation.
+All three also read skills from `~/.agents/skills/`, so `npx -y pixelbolt@latest skill install --dir "$HOME/.agents/skills"` gives them the pixel art skill as well (in cmd.exe, `--dir "%USERPROFILE%\.agents\skills"`). Checked on 3 November 2026 with Pixelbolt 0.11.0 on Windows: OpenCode 1.19.5 lists the server as connected; Kimi Code 2.4.1 finds all eight tools through `cmd /c` (a bare `npx` fails there); DeepSeek Harness 0.2.1-rc.5 accepts the patch, though the server wasn't started from it, because it needs a DeepSeek key to start.
 
 The eight tools are:
 

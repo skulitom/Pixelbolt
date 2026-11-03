@@ -43,7 +43,7 @@ node bin/pixelbolt.js render hero.pixel.json --out output/hero
 
 **Claude Desktop：** 从最新发布（Release）下载 [`pixelbolt.mcpb`](https://github.com/skulitom/Pixelbolt/releases/latest/download/pixelbolt.mcpb) 并打开它（或在“设置 → 扩展”（Settings → Extensions）中从文件安装）。选择一个存放配方和生成素材的工作区，然后让智能体调用 `pixel_help`。
 
-**Claude Code、Codex、Cursor 等 MCP 客户端：** npm 包可以直接运行服务器，无需克隆仓库（需要 Node.js 20 或更新版本）。把下面的配置加入智能体的 MCP 配置，并把 `/absolute/path/to/pixelbolt-output` 换成存放导出素材的文件夹。请使用绝对路径，因为不同客户端会在不同的文件夹里启动服务器；在 Windows 上请使用正斜杠，例如 `C:/Art/pixelbolt-output`：
+**Claude Code、Codex、Cursor 等 MCP 客户端：** npm 包可以直接运行服务器，无需克隆仓库（需要 Node.js 20 或更新版本）。把下面的配置加入智能体的 MCP 设置，并把 `/absolute/path/to/pixelbolt-output` 换成存放导出素材的文件夹。请使用绝对路径，因为不同客户端会在不同的文件夹里启动服务器；在 Windows 上请使用正斜杠，例如 `C:/Art/pixelbolt-output`：
 
 ```json
 {
@@ -64,11 +64,13 @@ command = "npx"
 args = ["-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-output"]
 ```
 
+在 Windows 上，不通过 shell 启动服务器的客户端无法运行 `npx`（Kimi Code 会报告 `spawn npx ENOENT`）。这时请改用 `"command": "cmd"` 和 `"args": ["/c", "npx", "-y", "pixelbolt@latest", "mcp", "--out", "C:/Art/pixelbolt-output"]`。
+
 如果想运行检出的仓库（例如可能比 npm 更新的 `main` 分支），先克隆仓库，再使用 `"command": "node"` 和 `"args": ["/absolute/path/to/Pixelbolt/bin/pixelbolt.js", "mcp", "--out", "/absolute/path/to/Pixelbolt/output"]`。
 
 **Kimi Code、DeepSeek Harness 和 OpenCode：** 三者都使用同一个 `npx` 服务器，只是配置格式不同：
 
-- **Kimi Code CLI：** 把上面的 `mcpServers` 配置放进 `~/.kimi-code/mcp.json`（或受信任项目中的 `.kimi-code/mcp.json`）；用 `/mcp` 查看。
+- **Kimi Code CLI：** 把上面的 `mcpServers` 配置放进 `~/.kimi-code/mcp.json`（或受信任项目中的 `.kimi-code/mcp.json`），在 Windows 上使用 `cmd /c` 形式；用 `/mcp` 查看。
 - **OpenCode：** 在 `opencode.json`（项目中的，或 `~/.config/opencode/opencode.json`）的 `mcp` 下添加，整条命令写成一个数组；`opencode mcp list` 会显示它已连接：
 
   ```json
@@ -97,7 +99,7 @@ args = ["-y", "pixelbolt@latest", "mcp", "--out", "/absolute/path/to/pixelbolt-o
           env: {}
   ```
 
-这三个客户端也会读取 `~/.agents/skills/` 中的技能，因此运行 `npx -y pixelbolt@latest skill install --dir "$HOME/.agents/skills"` 即可同时获得像素画技能。2026 年 11 月 3 日在 Windows 上用 Pixelbolt 0.11.0 检查过：OpenCode 1.19.5 显示服务器已连接，DeepSeek Harness 0.2.1-rc.5 接受了该配置；Kimi Code 2.4.1 需要登录后才会加载服务器，因此它的配置依据其官方文档。
+这三个客户端也会读取 `~/.agents/skills/` 中的技能，因此运行 `npx -y pixelbolt@latest skill install --dir "$HOME/.agents/skills"` 即可让它们同时获得像素画技能（在 cmd.exe 中使用 `--dir "%USERPROFILE%\.agents\skills"`）。2026 年 11 月 3 日在 Windows 上用 Pixelbolt 0.11.0 检查过：OpenCode 1.19.5 显示服务器已连接；Kimi Code 2.4.1 通过 `cmd /c` 找到了全部八个工具（直接用 `npx` 会失败）；DeepSeek Harness 0.2.1-rc.5 接受了该配置，但需要 DeepSeek 密钥才能启动，因此没有从它启动服务器。
 
 Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pixelbolt`。
 
