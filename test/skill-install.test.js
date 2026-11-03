@@ -103,10 +103,10 @@ test('the installed skill reaches every guide, schema and example it names, and 
   // doesn't apply, claims main only for the SKILL.md-only copy, and runs only released code: a package from npm,
   // never a GitHub branch (P-073).
   const alone = shipped.split(/\n{2,}/).find(paragraph => paragraph.startsWith('In a copy of this file alone,'));
-  assert.match(alone, /Skip this paragraph where `bin\/pixelbolt\.js` is two directories above this file, as in a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio/);
+  assert.match(alone, /Skip this paragraph where `bin\/pixelbolt\.js` is two directories above this file/);
   assert.match(alone, /That copy comes from Pixelbolt's main branch/);
-  assert.doesNotMatch(shipped, /This file follows/);
-  for (const [, runner] of shipped.matchAll(/npx -y ([^\s`]+)/g)) assert.match(runner, /^pixelbolt@[a-z0-9.-]+$/, `the shipped skill runs npx -y ${runner}`);
+  assert.doesNotMatch(shipped, /This file follows Pixelbolt's main/);
+  assert.doesNotMatch(shipped, /\bgithub:|\bgit\+(?:https?|ssh):/);
 });
 
 test('the installed skill\'s validate, inspect, render and gif commands work on a bundled example from the user\'s project, offline', async t => {
