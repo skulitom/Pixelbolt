@@ -542,9 +542,10 @@ export function renderProject(spec, options = {}) {
         const iso = op.layout === 'iso';
         if (iso && tile.some(n => n % 2)) fail(`${p}.tile`, 'an iso tile has an even width and height');
         const expanded = expandTilemap(op, { path: p, fail, kinds: ['symbol', 'template'], text: 'symbol', masked: kind => kind !== 'template', exists: (kind, key) => own(symbols, key) });
-        // Corner tiles sit half a cell up and left of the cell they were found from.
-        if (expanded.cells.some(cell => cell.mode === 'corner')) {
-          if (iso) fail(`${p}.legend`, 'corner tiles sit where four square cells meet; an iso map takes symbols');
+        // Corner tiles sit half a cell up and left of the cell they were found from: a template's cells say so with
+        // mode, a symbol's with corner.
+        if (expanded.cells.some(cell => cell.mode === 'corner' || cell.corner)) {
+          if (iso) fail(`${p}.legend`, 'corner tiles sit where four square cells meet; an iso map takes symbols without autotile corner');
           if (tile.some(n => n % 2)) fail(`${p}.tile`, 'corner tiles sit where four cells meet, half a cell up and left of one; use an even cell width and height');
         }
         const sample = paletteSampler();
