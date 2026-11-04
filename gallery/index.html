@@ -483,7 +483,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <main>
 <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Pixelbolt</a></nav>
 <h1>66 pixel art effects, sprites and scenes, every one a recipe</h1>
-<figure class="montage"><img src="montage.gif" width="1536" height="192" alt="Looping pixel art: Campfire, Torch, Steam Vent, Potion, Honey, Drip, Plasma Globe, Boiling Pot." decoding="async"></figure>
+<figure class="montage"><picture><source srcset="montage-still.png" media="(prefers-reduced-motion: reduce)"><img src="montage.gif" width="1536" height="192" alt="Looping pixel art: Campfire, Torch, Steam Vent, Potion, Honey, Drip, Plasma Globe, Boiling Pot." decoding="async"></picture></figure>
 <p class="lead">These are JSON recipes rendered by Pixelbolt 0.11.0. Open any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="https://github.com/skulitom/Pixelbolt">source, setup and documentation</a>.</p>
 <nav aria-label="Gallery groups"><ul class="jump"><li><a href="#phase-changes">Phase changes</a></li><li><a href="#electricity">Electricity</a></li><li><a href="#fire-smoke-gas">Fire, smoke and gas</a></li><li><a href="#liquids">Liquids</a></li><li><a href="#particle-spell-effects">Particle and spell effects</a></li><li><a href="#waves">Waves</a></li><li><a href="#characters-motion">Characters and motion</a></li><li><a href="#hand-drawn-sprites">Hand-drawn sprites</a></li><li><a href="#tile-sets">Tile sets</a></li><li><a href="#scenes">Scenes</a></li></ul></nav>
 <p class="muted">One-shot effects play once in a game; here their previews loop, with a 0.8 s pause before each replay. Each card shows up to four animations; the recipe includes those listed under “also”. Export commands write sprite sheets, atlases, Godot files and frames; tile sets include terrain exports, and scenes include asset bundles and numbered scene frames.</p>
@@ -493,7 +493,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <div class="cards"><article class="card" id="ice-melt">
 <h4>Ice Melt</h4>
 <p>An ice cube on a hot griddle melts and settles into a puddle that steams.</p>
-<div class="previews"><figure class="stage"><img src="gifs/ice-melt--ice-melt.gif" width="288" height="240" alt="An ice cube on a hot griddle melts and settles into a puddle that steams" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/ice-melt--ice-melt-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ice-melt--ice-melt.gif" width="288" height="240" alt="An ice cube on a hot griddle melts and settles into a puddle that steams" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">48 × 40 px · 72 frames · one-shot · 13 colours</p>
 
@@ -505,7 +505,7 @@ npx -y pixelbolt@0.11.0 render ice-melt.json --out ice-melt</code></pre></detail
 <article class="card" id="pond-freeze">
 <h4>Pond Freeze</h4>
 <p>A pond freezes in from its snowy shore until the ice closes over the middle.</p>
-<div class="previews"><figure class="stage"><img src="gifs/pond-freeze--pond-freeze.gif" width="336" height="216" alt="A pond freezes in from its snowy shore until the ice closes over the middle" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/pond-freeze--pond-freeze-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/pond-freeze--pond-freeze.gif" width="336" height="216" alt="A pond freezes in from its snowy shore until the ice closes over the middle" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">56 × 36 px · 80 frames · one-shot · 10 colours</p>
 
@@ -517,7 +517,7 @@ npx -y pixelbolt@0.11.0 render pond-freeze.json --out pond-freeze</code></pre></
 <article class="card" id="boiling-pot">
 <h4>Boiling Pot</h4>
 <p>A lidded pot boils: bubbles rise, steam beads under the cold lid and drips back.</p>
-<div class="previews"><figure class="stage"><img src="gifs/boiling-pot--boiling-pot.gif" width="240" height="288" alt="A lidded pot boils: bubbles rise, steam beads under the cold lid and drips back" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/boiling-pot--boiling-pot-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/boiling-pot--boiling-pot.gif" width="240" height="288" alt="A lidded pot boils: bubbles rise, steam beads under the cold lid and drips back" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">40 × 48 px · 48 frames · loop · 14 colours</p>
 
@@ -529,7 +529,7 @@ npx -y pixelbolt@0.11.0 render boiling-pot.json --out boiling-pot</code></pre></
 <article class="card" id="frost-window">
 <h4>Frost Window</h4>
 <p>Frost creeps across a cold window from its frame.</p>
-<div class="previews"><figure class="stage"><img src="gifs/frost-window--frost-window.gif" width="320" height="320" alt="Frost creeps across a cold window from its frame" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/frost-window--frost-window-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/frost-window--frost-window.gif" width="320" height="320" alt="Frost creeps across a cold window from its frame" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 40 px · 64 frames · one-shot · 4 colours</p>
 
@@ -541,7 +541,7 @@ npx -y pixelbolt@0.11.0 render frost-window.json --out frost-window</code></pre>
 <article class="card" id="dry-ice">
 <h4>Dry Ice</h4>
 <p>Dry ice on a table turns into heavy fog that pours off the edge onto the floor.</p>
-<div class="previews"><figure class="stage"><img src="gifs/dry-ice--dry-ice.gif" width="336" height="240" alt="Dry ice on a table turns into heavy fog that pours off the edge onto the floor" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/dry-ice--dry-ice-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/dry-ice--dry-ice.gif" width="336" height="240" alt="Dry ice on a table turns into heavy fog that pours off the edge onto the floor" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">56 × 40 px · 64 frames · one-shot · 9 colours</p>
 
@@ -554,7 +554,7 @@ npx -y pixelbolt@0.11.0 render dry-ice.json --out dry-ice</code></pre></details>
 <div class="cards"><article class="card" id="jacobs-ladder">
 <h4>Jacob&#39;s Ladder</h4>
 <p>A Jacob&#39;s ladder: an arc strikes where two rods are closest, climbs on its own hot air, stretches wide at the top and goes out.</p>
-<div class="previews"><figure class="stage"><img src="gifs/jacobs-ladder--jacobs-ladder.gif" width="160" height="256" alt="A Jacob&#39;s ladder: an arc strikes where two rods are closest, climbs on its own hot air, stretches wide at the top and goes out" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/jacobs-ladder--jacobs-ladder-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/jacobs-ladder--jacobs-ladder.gif" width="160" height="256" alt="A Jacob&#39;s ladder: an arc strikes where two rods are closest, climbs on its own hot air, stretches wide at the top and goes out" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">40 × 64 px · 22 frames · loop · 7 colours</p>
 
@@ -566,7 +566,7 @@ npx -y pixelbolt@0.11.0 render jacobs-ladder.json --out jacobs-ladder</code></pr
 <article class="card" id="lightning">
 <h4>Lightning</h4>
 <p>Lightning: a branching leader steps down from a cloud, the return stroke flashes white and fades, and a second stroke runs down the same channel.</p>
-<div class="previews"><figure class="stage"><img src="gifs/lightning--lightning.gif" width="256" height="384" alt="Lightning: a branching leader steps down from a cloud, the return stroke flashes white and fades, and a second stroke runs down the same channel" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/lightning--lightning-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning--lightning.gif" width="256" height="384" alt="Lightning: a branching leader steps down from a cloud, the return stroke flashes white and fades, and a second stroke runs down the same channel" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 96 px · 32 frames · one-shot · 8 colours</p>
 
@@ -578,7 +578,7 @@ npx -y pixelbolt@0.11.0 render lightning.json --out lightning</code></pre></deta
 <article class="card" id="tesla-coil">
 <h4>Tesla Coil</h4>
 <p>A Tesla coil&#39;s top load strikes a grounded rod in pulses, each arc fading before the next.</p>
-<div class="previews"><figure class="stage"><img src="gifs/tesla-coil--tesla-coil.gif" width="384" height="256" alt="A Tesla coil&#39;s top load strikes a grounded rod in pulses, each arc fading before the next" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/tesla-coil--tesla-coil-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/tesla-coil--tesla-coil.gif" width="384" height="256" alt="A Tesla coil&#39;s top load strikes a grounded rod in pulses, each arc fading before the next" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">96 × 64 px · 24 frames · loop · 8 colours</p>
 
@@ -590,7 +590,7 @@ npx -y pixelbolt@0.11.0 render tesla-coil.json --out tesla-coil</code></pre></de
 <article class="card" id="plasma-globe">
 <h4>Plasma Globe</h4>
 <p>A plasma globe: violet filaments run from the central ball to the glass, flicker and wander.</p>
-<div class="previews"><figure class="stage"><img src="gifs/plasma-globe--plasma-globe.gif" width="256" height="256" alt="A plasma globe: violet filaments run from the central ball to the glass, flicker and wander" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/plasma-globe--plasma-globe-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/plasma-globe--plasma-globe.gif" width="256" height="256" alt="A plasma globe: violet filaments run from the central ball to the glass, flicker and wander" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">64 × 64 px · 24 frames · loop · 7 colours</p>
 
@@ -602,7 +602,7 @@ npx -y pixelbolt@0.11.0 render plasma-globe.json --out plasma-globe</code></pre>
 <article class="card" id="lightning-pond">
 <h4>Lightning Pond</h4>
 <p>Lightning into a pond: arcs into water.</p>
-<div class="previews"><figure class="stage"><img src="gifs/lightning-pond--lightning-pond.gif" width="256" height="288" alt="Lightning into a pond: arcs into water · one-shot. A simulated liquid, not a character." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/lightning-pond--lightning-pond-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-pond--lightning-pond.gif" width="256" height="288" alt="Lightning into a pond: arcs into water · one-shot. A simulated liquid, not a character." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 72 px · 48 frames · one-shot · 15 colours</p>
 
@@ -615,7 +615,7 @@ npx -y pixelbolt@0.11.0 render lightning-pond.json --out lightning-pond</code></
 <div class="cards"><article class="card" id="campfire">
 <h4>Campfire</h4>
 <p>A campfire simulated by Pixelbolt&#39;s fluid compiler: flames lick up from the logs, embers drift up and smoke curls away.</p>
-<div class="previews"><figure class="stage"><img src="gifs/campfire--campfire.gif" width="192" height="288" alt="A campfire simulated by Pixelbolt&#39;s fluid compiler: flames lick up from the logs, embers drift up and smoke curls away" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/campfire--campfire-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/campfire--campfire.gif" width="192" height="288" alt="A campfire simulated by Pixelbolt&#39;s fluid compiler: flames lick up from the logs, embers drift up and smoke curls away" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">32 × 48 px · 24 frames · loop · 9 colours</p>
 
@@ -627,7 +627,7 @@ npx -y pixelbolt@0.11.0 render campfire.json --out campfire</code></pre></detail
 <article class="card" id="torch">
 <h4>Torch</h4>
 <p>A torch: a small flame flickers on a wooden handle with a metal cup.</p>
-<div class="previews"><figure class="stage"><img src="gifs/torch--torch.gif" width="128" height="256" alt="A torch: a small flame flickers on a wooden handle with a metal cup" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/torch--torch-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/torch--torch.gif" width="128" height="256" alt="A torch: a small flame flickers on a wooden handle with a metal cup" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">16 × 32 px · 16 frames · loop · 9 colours</p>
 
@@ -639,7 +639,7 @@ npx -y pixelbolt@0.11.0 render torch.json --out torch</code></pre></details>
 <article class="card" id="steam-vent">
 <h4>Steam Vent</h4>
 <p>Steam puffs rhythmically from a pipe, rises, curls and thins.</p>
-<div class="previews"><figure class="stage"><img src="gifs/steam-vent--steam-vent.gif" width="192" height="288" alt="Steam puffs rhythmically from a pipe, rises, curls and thins" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/steam-vent--steam-vent-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/steam-vent--steam-vent.gif" width="192" height="288" alt="Steam puffs rhythmically from a pipe, rises, curls and thins" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">32 × 48 px · 24 frames · loop · 7 colours</p>
 
@@ -651,7 +651,7 @@ npx -y pixelbolt@0.11.0 render steam-vent.json --out steam-vent</code></pre></de
 <article class="card" id="magic-swirl">
 <h4>Magic Swirl</h4>
 <p>A magic swirl: two glowing sources orbit and leave purple mana that spirals.</p>
-<div class="previews"><figure class="stage"><img src="gifs/magic-swirl--magic-swirl.gif" width="288" height="288" alt="A magic swirl: two glowing sources orbit and leave purple mana that spirals" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/magic-swirl--magic-swirl-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/magic-swirl--magic-swirl.gif" width="288" height="288" alt="A magic swirl: two glowing sources orbit and leave purple mana that spirals" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">48 × 48 px · 24 frames · loop · 5 colours</p>
 
@@ -663,7 +663,7 @@ npx -y pixelbolt@0.11.0 render magic-swirl.json --out magic-swirl</code></pre></
 <article class="card" id="explosion">
 <h4>Explosion</h4>
 <p>An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke.</p>
-<div class="previews"><figure class="stage"><img src="gifs/explosion--explosion.gif" width="256" height="256" alt="An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/explosion--explosion-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/explosion--explosion.gif" width="256" height="256" alt="An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 64 px · 32 frames · one-shot · 8 colours</p>
 
@@ -675,7 +675,7 @@ npx -y pixelbolt@0.11.0 render explosion.json --out explosion</code></pre></deta
 <article class="card" id="smoke-puff">
 <h4>Smoke Puff</h4>
 <p>A cartoon smoke puff, outlined and lit from the upper left, billows out in lobes and thins away.</p>
-<div class="previews"><figure class="stage"><img src="gifs/smoke-puff--smoke-puff.gif" width="256" height="256" alt="A cartoon smoke puff, outlined and lit from the upper left, billows out in lobes and thins away" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/smoke-puff--smoke-puff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/smoke-puff--smoke-puff.gif" width="256" height="256" alt="A cartoon smoke puff, outlined and lit from the upper left, billows out in lobes and thins away" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">32 × 32 px · 19 frames · one-shot · 5 colours</p>
 
@@ -687,7 +687,7 @@ npx -y pixelbolt@0.11.0 render smoke-puff.json --out smoke-puff</code></pre></de
 <article class="card" id="dust-wave">
 <h4>Dust Wave</h4>
 <p>A stone drops onto the ground and throws a wave of dust out both ways that billows, slows and thins away.</p>
-<div class="previews"><figure class="stage"><img src="gifs/dust-wave--dust-wave.gif" width="256" height="128" alt="A stone drops onto the ground and throws a wave of dust out both ways that billows, slows and thins away" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/dust-wave--dust-wave-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/dust-wave--dust-wave.gif" width="256" height="128" alt="A stone drops onto the ground and throws a wave of dust out both ways that billows, slows and thins away" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 32 px · 26 frames · one-shot · 8 colours</p>
 
@@ -700,7 +700,7 @@ npx -y pixelbolt@0.11.0 render dust-wave.json --out dust-wave</code></pre></deta
 <div class="cards"><article class="card" id="waterfall">
 <h4>Waterfall</h4>
 <p>A waterfall: water pours off a mossy ledge in a foaming arc, splashes into a basin and spills over its lip.</p>
-<div class="previews"><figure class="stage"><img src="gifs/waterfall--waterfall.gif" width="192" height="256" alt="A waterfall: water pours off a mossy ledge in a foaming arc, splashes into a basin and spills over its lip" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/waterfall--waterfall-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/waterfall--waterfall.gif" width="192" height="256" alt="A waterfall: water pours off a mossy ledge in a foaming arc, splashes into a basin and spills over its lip" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">48 × 64 px · 24 frames · loop · 9 colours</p>
 
@@ -712,7 +712,7 @@ npx -y pixelbolt@0.11.0 render waterfall.json --out waterfall</code></pre></deta
 <article class="card" id="drip">
 <h4>Drip</h4>
 <p>A drop falls from a stalactite and splashes into a small pool.</p>
-<div class="previews"><figure class="stage"><img src="gifs/drip--drip.gif" width="128" height="256" alt="A drop falls from a stalactite and splashes into a small pool" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/drip--drip-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/drip--drip.gif" width="128" height="256" alt="A drop falls from a stalactite and splashes into a small pool" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">16 × 32 px · 24 frames · loop · 4 colours</p>
 
@@ -724,7 +724,7 @@ npx -y pixelbolt@0.11.0 render drip.json --out drip</code></pre></details>
 <article class="card" id="potion">
 <h4>Potion</h4>
 <p>A green potion bubbles in a round flask: the surface heaves and bubbles rise and pop.</p>
-<div class="previews"><figure class="stage"><img src="gifs/potion--potion.gif" width="256" height="320" alt="A green potion bubbles in a round flask: the surface heaves and bubbles rise and pop" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/potion--potion-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/potion--potion.gif" width="256" height="320" alt="A green potion bubbles in a round flask: the surface heaves and bubbles rise and pop" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">32 × 40 px · 24 frames · loop · 7 colours</p>
 
@@ -736,7 +736,7 @@ npx -y pixelbolt@0.11.0 render potion.json --out potion</code></pre></details>
 <article class="card" id="splash">
 <h4>Splash</h4>
 <p>A drop falls into a pool, throws up a crown and spray, and the waves settle.</p>
-<div class="previews"><figure class="stage"><img src="gifs/splash--splash.gif" width="288" height="240" alt="A drop falls into a pool, throws up a crown and spray, and the waves settle" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/splash--splash-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/splash--splash.gif" width="288" height="240" alt="A drop falls into a pool, throws up a crown and spray, and the waves settle" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">48 × 40 px · 40 frames · one-shot · 4 colours</p>
 
@@ -748,7 +748,7 @@ npx -y pixelbolt@0.11.0 render splash.json --out splash</code></pre></details>
 <article class="card" id="honey">
 <h4>Honey</h4>
 <p>Glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the calm surface.</p>
-<div class="previews"><figure class="stage"><img src="gifs/honey--honey.gif" width="240" height="288" alt="Glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the calm surface" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/honey--honey-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/honey--honey.gif" width="240" height="288" alt="Glossy honey runs off a dipper into a jar as one unbroken rope that folds into a mound on the calm surface" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">40 × 48 px · 24 frames · loop · 9 colours</p>
 
@@ -760,7 +760,7 @@ npx -y pixelbolt@0.11.0 render honey.json --out honey</code></pre></details>
 <article class="card" id="slime">
 <h4>Slime</h4>
 <p>A blob of green slime drops, squashes flat, springs up tall, wobbles and settles into a dome that holds its shape.</p>
-<div class="previews"><figure class="stage"><img src="gifs/slime--slime.gif" width="256" height="256" alt="A blob of green slime drops, squashes flat, springs up tall, wobbles and settles into a dome that holds its shape" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/slime--slime-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/slime--slime.gif" width="256" height="256" alt="A blob of green slime drops, squashes flat, springs up tall, wobbles and settles into a dome that holds its shape" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">32 × 32 px · 40 frames · one-shot · 7 colours</p>
 
@@ -772,7 +772,7 @@ npx -y pixelbolt@0.11.0 render slime.json --out slime</code></pre></details>
 <article class="card" id="roof-snow">
 <h4>Roof Snow</h4>
 <p>Wet snow slides off a house&#39;s roof as one slab, pours over the eave and settles in a drift against the wall.</p>
-<div class="previews"><figure class="stage"><img src="gifs/roof-snow--roof-snow.gif" width="336" height="264" alt="Wet snow slides off a house&#39;s roof as one slab, pours over the eave and settles in a drift against the wall" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/roof-snow--roof-snow-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/roof-snow--roof-snow.gif" width="336" height="264" alt="Wet snow slides off a house&#39;s roof as one slab, pours over the eave and settles in a drift against the wall" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">56 × 44 px · 48 frames · one-shot · 12 colours</p>
 
@@ -784,7 +784,7 @@ npx -y pixelbolt@0.11.0 render roof-snow.json --out roof-snow</code></pre></deta
 <article class="card" id="dam-break">
 <h4>Dam Break</h4>
 <p>A plank dam lifts and the water behind it bursts out as a wave, rolls over a rock, splashes off the far wall and settles level.</p>
-<div class="previews"><figure class="stage"><img src="gifs/dam-break--dam-break.gif" width="256" height="144" alt="A plank dam lifts and the water behind it bursts out as a wave, rolls over a rock, splashes off the far wall and settles level" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/dam-break--dam-break-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/dam-break--dam-break.gif" width="256" height="144" alt="A plank dam lifts and the water behind it bursts out as a wave, rolls over a rock, splashes off the far wall and settles level" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 36 px · 70 frames · one-shot · 9 colours</p>
 
@@ -796,7 +796,7 @@ npx -y pixelbolt@0.11.0 render dam-break.json --out dam-break</code></pre></deta
 <article class="card" id="slime-burst">
 <h4>Slime Burst</h4>
 <p>A ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds.</p>
-<div class="previews"><figure class="stage"><img src="gifs/slime-burst--slime-burst.gif" width="336" height="240" alt="A ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/slime-burst--slime-burst-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/slime-burst--slime-burst.gif" width="336" height="240" alt="A ball of green slime bursts in mid-air into chunks that fly out, land and wobble into mounds" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">56 × 40 px · 40 frames · one-shot · 7 colours</p>
 
@@ -808,7 +808,7 @@ npx -y pixelbolt@0.11.0 render slime-burst.json --out slime-burst</code></pre></
 <article class="card" id="honey-drop">
 <h4>Honey Drop</h4>
 <p>Stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey.</p>
-<div class="previews"><figure class="stage"><img src="gifs/honey-drop--honey-drop.gif" width="240" height="288" alt="Stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/honey-drop--honey-drop-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/honey-drop--honey-drop.gif" width="240" height="288" alt="Stiff honey clings under a wooden spoon, then thins, stretches, lets go and drops into a bowl of honey" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 48 px · 44 frames · one-shot · 9 colours</p>
 
@@ -820,7 +820,7 @@ npx -y pixelbolt@0.11.0 render honey-drop.json --out honey-drop</code></pre></de
 <article class="card" id="aquarium">
 <h4>Aquarium</h4>
 <p>An aquarium: bubbles rise from an air stone and run up under a rock ledge, and a filter&#39;s stream plunges in and drives bubbles into the water.</p>
-<div class="previews"><figure class="stage"><img src="gifs/aquarium--aquarium.gif" width="336" height="288" alt="An aquarium: bubbles rise from an air stone and run up under a rock ledge, and a filter&#39;s stream plunges in and drives bubbles into the water" loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/aquarium--aquarium-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/aquarium--aquarium.gif" width="336" height="288" alt="An aquarium: bubbles rise from an air stone and run up under a rock ledge, and a filter&#39;s stream plunges in and drives bubbles into the water" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">56 × 48 px · 48 frames · loop · 17 colours</p>
 
@@ -832,7 +832,7 @@ npx -y pixelbolt@0.11.0 render aquarium.json --out aquarium</code></pre></detail
 <article class="card" id="honey-dipper">
 <h4>Honey Dipper</h4>
 <p>A honey dipper is lifted out of a jar; the honey clings to it, draws up into a peak and joins it by a thin string that snaps.</p>
-<div class="previews"><figure class="stage"><img src="gifs/honey-dipper--honey-dipper.gif" width="240" height="360" alt="A honey dipper is lifted out of a jar; the honey clings to it, draws up into a peak and joins it by a thin string that snaps" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/honey-dipper--honey-dipper-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/honey-dipper--honey-dipper.gif" width="240" height="360" alt="A honey dipper is lifted out of a jar; the honey clings to it, draws up into a peak and joins it by a thin string that snaps" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 60 px · 56 frames · one-shot · 9 colours</p>
 
@@ -844,7 +844,7 @@ npx -y pixelbolt@0.11.0 render honey-dipper.json --out honey-dipper</code></pre>
 <article class="card" id="glug">
 <h4>Glug</h4>
 <p>A bottle upside down over a glass glugs as it pours: it holds its water back, a big bubble pushes up its neck, and it pours again.</p>
-<div class="previews"><figure class="stage"><img src="gifs/glug--glug.gif" width="240" height="336" alt="A bottle upside down over a glass glugs as it pours: it holds its water back, a big bubble pushes up its neck, and it pours again" loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/glug--glug-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/glug--glug.gif" width="240" height="336" alt="A bottle upside down over a glass glugs as it pours: it holds its water back, a big bubble pushes up its neck, and it pours again" loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 56 px · 110 frames · one-shot · 8 colours</p>
 
@@ -858,10 +858,10 @@ npx -y pixelbolt@0.11.0 render glug.json --out glug</code></pre></details>
 <div class="cards"><article class="card" id="effects">
 <h3>Effects</h3>
 <p>Particles: sparks, embers, dust, leaves, shards.</p>
-<div class="previews"><figure class="stage"><img src="gifs/effects--sparks.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: sparks." loading="lazy" decoding="async"><figcaption>sparks · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/effects--embers.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: embers." loading="lazy" decoding="async"><figcaption>embers · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/effects--dust.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: dust." loading="lazy" decoding="async"><figcaption>dust · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/effects--leaves.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: leaves." loading="lazy" decoding="async"><figcaption>leaves · one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/effects--sparks-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/effects--sparks.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: sparks." loading="lazy" decoding="async"></picture><figcaption>sparks · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/effects--embers-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/effects--embers.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: embers." loading="lazy" decoding="async"></picture><figcaption>embers · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/effects--dust-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/effects--dust.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: dust." loading="lazy" decoding="async"></picture><figcaption>dust · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/effects--leaves-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/effects--leaves.gif" width="288" height="240" alt="Particles: sparks, embers, dust, leaves, shards. Animation: leaves." loading="lazy" decoding="async"></picture><figcaption>leaves · one-shot, looped here</figcaption></figure></div>
 <p class="muted">also: shatter.</p>
 <p class="facts">48 × 40 px · 60 frames · loops and one-shots · 12 colours</p>
 
@@ -873,7 +873,7 @@ npx -y pixelbolt@0.11.0 render effects.json --out effects</code></pre></details>
 <article class="card" id="fire-explosion">
 <h3>Fire Explosion</h3>
 <p>Fire explosion: fireball and smoke.</p>
-<div class="previews"><figure class="stage"><img src="gifs/fire-explosion--fire-explosion.gif" width="384" height="384" alt="Fire explosion: fireball and smoke · one-shot." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/fire-explosion--fire-explosion-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fire-explosion--fire-explosion.gif" width="384" height="384" alt="Fire explosion: fireball and smoke · one-shot." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 96 px · 16 frames · one-shot · 9 colours</p>
 
@@ -885,10 +885,10 @@ npx -y pixelbolt@0.11.0 render fire-explosion.json --out fire-explosion</code></
 <article class="card" id="fire-spells">
 <h3>Fire Spells</h3>
 <p>Fire spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/fire-spells--projectile-0.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/fire-spells--impact.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/fire-spells--area.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/fire-spells--buff.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/fire-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fire-spells--projectile-0.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/fire-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fire-spells--impact.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/fire-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fire-spells--area.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/fire-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fire-spells--buff.gif" width="256" height="256" alt="Fire spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315.</p>
 <p class="facts">64 × 64 px · 107 frames · loops and one-shots · 9 colours</p>
 
@@ -900,7 +900,7 @@ npx -y pixelbolt@0.11.0 render fire-spells.json --out fire-spells</code></pre></
 <article class="card" id="fireball">
 <h3>Fireball</h3>
 <p>Fireball: loop · eight directions.</p>
-<div class="previews"><figure class="stage"><img src="gifs/fireball--fireball-0.gif" width="336" height="336" alt="Fireball: loop · eight directions." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/fireball--fireball-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fireball--fireball-0.gif" width="336" height="336" alt="Fireball: loop · eight directions." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 <p class="muted">also: fireball-45, fireball-90, fireball-135, fireball-180, fireball-225, fireball-270, fireball-315.</p>
 <p class="facts">56 × 56 px · 64 frames · loop · 5 colours</p>
 
@@ -912,7 +912,7 @@ npx -y pixelbolt@0.11.0 render fireball.json --out fireball</code></pre></detail
 <article class="card" id="fluid-blast">
 <h3>Fluid Blast</h3>
 <p>Particles and effect shapes: blast.</p>
-<div class="previews"><figure class="stage"><img src="gifs/fluid-blast--blast.gif" width="384" height="384" alt="Particles and effect shapes: blast." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/fluid-blast--blast-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/fluid-blast--blast.gif" width="384" height="384" alt="Particles and effect shapes: blast." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 96 px · 32 frames · one-shot · 8 colours</p>
 
@@ -924,7 +924,7 @@ npx -y pixelbolt@0.11.0 render fluid-blast.json --out fluid-blast</code></pre></
 <article class="card" id="healing-circle">
 <h3>Healing Circle</h3>
 <p>Healing circle: magic circle and pillar.</p>
-<div class="previews"><figure class="stage"><img src="gifs/healing-circle--healing-circle.gif" width="384" height="288" alt="Healing circle: magic circle and pillar · one-shot." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/healing-circle--healing-circle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/healing-circle--healing-circle.gif" width="384" height="288" alt="Healing circle: magic circle and pillar · one-shot." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 72 px · 18 frames · one-shot · 7 colours</p>
 
@@ -936,8 +936,8 @@ npx -y pixelbolt@0.11.0 render healing-circle.json --out healing-circle</code></
 <article class="card" id="hero-magic">
 <h3>Hero Magic</h3>
 <p>Particles and effect shapes: teleport, aura.</p>
-<div class="previews"><figure class="stage"><img src="gifs/hero-magic--teleport.gif" width="240" height="312" alt="Particles and effect shapes: teleport, aura. Animation: teleport." loading="lazy" decoding="async"><figcaption>teleport · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/hero-magic--aura.gif" width="240" height="312" alt="Particles and effect shapes: teleport, aura. Animation: aura." loading="lazy" decoding="async"><figcaption>aura · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/hero-magic--teleport-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero-magic--teleport.gif" width="240" height="312" alt="Particles and effect shapes: teleport, aura. Animation: teleport." loading="lazy" decoding="async"></picture><figcaption>teleport · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hero-magic--aura-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero-magic--aura.gif" width="240" height="312" alt="Particles and effect shapes: teleport, aura. Animation: aura." loading="lazy" decoding="async"></picture><figcaption>aura · loop</figcaption></figure></div>
 
 <p class="facts">40 × 52 px · 26 frames · loops and one-shots · 17 colours</p>
 
@@ -949,10 +949,10 @@ npx -y pixelbolt@0.11.0 render hero-magic.json --out hero-magic</code></pre></de
 <article class="card" id="holy-spells">
 <h3>Holy Spells</h3>
 <p>Holy spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/holy-spells--projectile-0.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/holy-spells--impact.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/holy-spells--area.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/holy-spells--buff.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/holy-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/holy-spells--projectile-0.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/holy-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/holy-spells--impact.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/holy-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/holy-spells--area.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/holy-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/holy-spells--buff.gif" width="256" height="256" alt="Holy spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315, buff-back, buff-front.</p>
 <p class="facts">64 × 64 px · 124 frames · loops and one-shots · 6 colours</p>
 
@@ -964,10 +964,10 @@ npx -y pixelbolt@0.11.0 render holy-spells.json --out holy-spells</code></pre></
 <article class="card" id="ice-spells">
 <h3>Ice Spells</h3>
 <p>Ice spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/ice-spells--projectile-0.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/ice-spells--impact.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/ice-spells--area.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/ice-spells--buff.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/ice-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ice-spells--projectile-0.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/ice-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ice-spells--impact.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/ice-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ice-spells--area.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/ice-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ice-spells--buff.gif" width="256" height="256" alt="Ice spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315, buff-back, buff-front.</p>
 <p class="facts">64 × 64 px · 134 frames · loops and one-shots · 7 colours</p>
 
@@ -979,10 +979,10 @@ npx -y pixelbolt@0.11.0 render ice-spells.json --out ice-spells</code></pre></de
 <article class="card" id="lightning-spells">
 <h3>Lightning Spells</h3>
 <p>Lightning spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/lightning-spells--projectile-0.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/lightning-spells--impact.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/lightning-spells--area.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/lightning-spells--buff.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/lightning-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-spells--projectile-0.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/lightning-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-spells--impact.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/lightning-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-spells--area.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/lightning-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-spells--buff.gif" width="256" height="256" alt="Lightning spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315.</p>
 <p class="facts">64 × 64 px · 106 frames · loops and one-shots · 5 colours</p>
 
@@ -994,7 +994,7 @@ npx -y pixelbolt@0.11.0 render lightning-spells.json --out lightning-spells</cod
 <article class="card" id="lightning-strike">
 <h3>Lightning Strike</h3>
 <p>Lightning strike: bolt and flash.</p>
-<div class="previews"><figure class="stage"><img src="gifs/lightning-strike--lightning-strike.gif" width="384" height="416" alt="Lightning strike: bolt and flash · one-shot." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/lightning-strike--lightning-strike-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/lightning-strike--lightning-strike.gif" width="384" height="416" alt="Lightning strike: bolt and flash · one-shot." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 104 px · 12 frames · one-shot · 5 colours</p>
 
@@ -1006,7 +1006,7 @@ npx -y pixelbolt@0.11.0 render lightning-strike.json --out lightning-strike</cod
 <article class="card" id="meteor">
 <h3>Meteor</h3>
 <p>Meteor: moving emitters.</p>
-<div class="previews"><figure class="stage"><img src="gifs/meteor--meteor.gif" width="256" height="256" alt="Meteor: moving emitters · one-shot." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/meteor--meteor-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/meteor--meteor.gif" width="256" height="256" alt="Meteor: moving emitters · one-shot." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">64 × 64 px · 22 frames · one-shot · 8 colours</p>
 
@@ -1018,10 +1018,10 @@ npx -y pixelbolt@0.11.0 render meteor.json --out meteor</code></pre></details>
 <article class="card" id="poison-spells">
 <h3>Poison Spells</h3>
 <p>Poison spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/poison-spells--projectile-0.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/poison-spells--impact.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/poison-spells--area.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/poison-spells--buff.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/poison-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/poison-spells--projectile-0.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/poison-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/poison-spells--impact.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/poison-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/poison-spells--area.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/poison-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/poison-spells--buff.gif" width="256" height="256" alt="Poison spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315.</p>
 <p class="facts">64 × 64 px · 110 frames · loops and one-shots · 10 colours</p>
 
@@ -1033,10 +1033,10 @@ npx -y pixelbolt@0.11.0 render poison-spells.json --out poison-spells</code></pr
 <article class="card" id="shadow-spells">
 <h3>Shadow Spells</h3>
 <p>Shadow spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/shadow-spells--projectile-0.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/shadow-spells--impact.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/shadow-spells--area.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/shadow-spells--buff.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/shadow-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shadow-spells--projectile-0.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/shadow-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shadow-spells--impact.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/shadow-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shadow-spells--area.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/shadow-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shadow-spells--buff.gif" width="256" height="256" alt="Shadow spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315.</p>
 <p class="facts">64 × 64 px · 105 frames · loops and one-shots · 6 colours</p>
 
@@ -1048,7 +1048,7 @@ npx -y pixelbolt@0.11.0 render shadow-spells.json --out shadow-spells</code></pr
 <article class="card" id="shield">
 <h3>Shield</h3>
 <p>Shield bubble: boiling ring and halo.</p>
-<div class="previews"><figure class="stage"><img src="gifs/shield--shield.gif" width="288" height="288" alt="Shield bubble: boiling ring and halo · loop." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/shield--shield-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shield--shield.gif" width="288" height="288" alt="Shield bubble: boiling ring and halo · loop." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">48 × 48 px · 12 frames · loop · 5 colours</p>
 
@@ -1060,7 +1060,7 @@ npx -y pixelbolt@0.11.0 render shield.json --out shield</code></pre></details>
 <article class="card" id="slash-hit">
 <h3>Slash Hit</h3>
 <p>Slash hit: crescent and sparks.</p>
-<div class="previews"><figure class="stage"><img src="gifs/slash-hit--slash-hit.gif" width="320" height="256" alt="Slash hit: crescent and sparks · one-shot." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/slash-hit--slash-hit-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/slash-hit--slash-hit.gif" width="320" height="256" alt="Slash hit: crescent and sparks · one-shot." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">80 × 64 px · 9 frames · one-shot · 6 colours</p>
 
@@ -1072,7 +1072,7 @@ npx -y pixelbolt@0.11.0 render slash-hit.json --out slash-hit</code></pre></deta
 <article class="card" id="swing-trail">
 <h3>Swing Trail</h3>
 <p>Particles and effect shapes: swing.</p>
-<div class="previews"><figure class="stage"><img src="gifs/swing-trail--swing.gif" width="320" height="320" alt="Particles and effect shapes: swing." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/swing-trail--swing-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/swing-trail--swing.gif" width="320" height="320" alt="Particles and effect shapes: swing." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 40 px · 7 frames · one-shot · 12 colours</p>
 
@@ -1084,7 +1084,7 @@ npx -y pixelbolt@0.11.0 render swing-trail.json --out swing-trail</code></pre></
 <article class="card" id="vortex">
 <h3>Vortex</h3>
 <p>Vortex: swirl and turbulence.</p>
-<div class="previews"><figure class="stage"><img src="gifs/vortex--vortex.gif" width="256" height="256" alt="Vortex: swirl and turbulence · loop." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/vortex--vortex-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/vortex--vortex.gif" width="256" height="256" alt="Vortex: swirl and turbulence · loop." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">64 × 64 px · 16 frames · loop · 7 colours</p>
 
@@ -1096,10 +1096,10 @@ npx -y pixelbolt@0.11.0 render vortex.json --out vortex</code></pre></details>
 <article class="card" id="water">
 <h3>Water</h3>
 <p>Cel water: geyser, whip, ring, dome, curl.</p>
-<div class="previews"><figure class="stage"><img src="gifs/water--geyser.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: geyser." loading="lazy" decoding="async"><figcaption>geyser · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/water--whip.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: whip." loading="lazy" decoding="async"><figcaption>whip · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/water--ring.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: ring." loading="lazy" decoding="async"><figcaption>ring · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/water--dome.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: dome." loading="lazy" decoding="async"><figcaption>dome · one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/water--geyser-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water--geyser.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: geyser." loading="lazy" decoding="async"></picture><figcaption>geyser · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water--whip-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water--whip.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: whip." loading="lazy" decoding="async"></picture><figcaption>whip · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water--ring-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water--ring.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: ring." loading="lazy" decoding="async"></picture><figcaption>ring · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water--dome-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water--dome.gif" width="256" height="272" alt="Cel water: geyser, whip, ring, dome, curl. Animation: dome." loading="lazy" decoding="async"></picture><figcaption>dome · one-shot, looped here</figcaption></figure></div>
 <p class="muted">also: curl.</p>
 <p class="facts">64 × 68 px · 74 frames · one-shot · 5 colours</p>
 
@@ -1111,10 +1111,10 @@ npx -y pixelbolt@0.11.0 render water.json --out water</code></pre></details>
 <article class="card" id="water-spells">
 <h3>Water Spells</h3>
 <p>Water spells: projectile, impact, area, buff.</p>
-<div class="previews"><figure class="stage"><img src="gifs/water-spells--projectile-0.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"><figcaption>projectile-0 · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/water-spells--impact.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"><figcaption>impact · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/water-spells--area.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"><figcaption>area · one-shot, looped here</figcaption></figure>
-<figure class="stage"><img src="gifs/water-spells--buff.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"><figcaption>buff · loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/water-spells--projectile-0-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-spells--projectile-0.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: projectile-0." loading="lazy" decoding="async"></picture><figcaption>projectile-0 · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water-spells--impact-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-spells--impact.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: impact." loading="lazy" decoding="async"></picture><figcaption>impact · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water-spells--area-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-spells--area.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: area." loading="lazy" decoding="async"></picture><figcaption>area · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/water-spells--buff-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-spells--buff.gif" width="256" height="256" alt="Water spells: projectile, impact, area, buff. Animation: buff." loading="lazy" decoding="async"></picture><figcaption>buff · loop</figcaption></figure></div>
 <p class="muted">also: projectile-45, projectile-90, projectile-135, projectile-180, projectile-225, projectile-270, projectile-315.</p>
 <p class="facts">64 × 64 px · 105 frames · loops and one-shots · 6 colours</p>
 
@@ -1127,7 +1127,7 @@ npx -y pixelbolt@0.11.0 render water-spells.json --out water-spells</code></pre>
 <div class="cards"><article class="card" id="interference">
 <h3>Interference</h3>
 <p>A looping wave pattern: resonate.</p>
-<div class="previews"><figure class="stage"><img src="gifs/interference--resonate.gif" width="288" height="180" alt="A looping wave pattern: resonate." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/interference--resonate-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/interference--resonate.gif" width="288" height="180" alt="A looping wave pattern: resonate." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">48 × 30 px · 40 frames · loop · 3 colours</p>
 
@@ -1139,7 +1139,7 @@ npx -y pixelbolt@0.11.0 render interference.json --out interference</code></pre>
 <article class="card" id="portal">
 <h3>Portal</h3>
 <p>A looping wave pattern: open.</p>
-<div class="previews"><figure class="stage"><img src="gifs/portal--open.gif" width="228" height="336" alt="A looping wave pattern: open." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/portal--open-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/portal--open.gif" width="228" height="336" alt="A looping wave pattern: open." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">38 × 56 px · 40 frames · loop · 8 colours</p>
 
@@ -1152,10 +1152,10 @@ npx -y pixelbolt@0.11.0 render portal.json --out portal</code></pre></details>
 <div class="cards"><article class="card" id="hero">
 <h3>Hero</h3>
 <p>A rig whose motion templates make idle, walk, run, jump, attack, hurt.</p>
-<div class="previews"><figure class="stage"><img src="gifs/hero--idle.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: idle." loading="lazy" decoding="async"><figcaption>idle · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/hero--walk.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: walk." loading="lazy" decoding="async"><figcaption>walk · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/hero--run.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: run." loading="lazy" decoding="async"><figcaption>run · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/hero--jump.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: jump." loading="lazy" decoding="async"><figcaption>jump · one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/hero--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero--idle.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hero--walk-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero--walk.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: walk." loading="lazy" decoding="async"></picture><figcaption>walk · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hero--run-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero--run.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: run." loading="lazy" decoding="async"></picture><figcaption>run · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hero--jump-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hero--jump.gif" width="256" height="288" alt="A rig whose motion templates make idle, walk, run, jump, attack, hurt. Animation: jump." loading="lazy" decoding="async"></picture><figcaption>jump · one-shot, looped here</figcaption></figure></div>
 <p class="muted">also: attack, hurt.</p>
 <p class="facts">32 × 36 px · 36 frames · loops and one-shots · 14 colours</p>
 
@@ -1167,7 +1167,7 @@ npx -y pixelbolt@0.11.0 render hero.json --out hero</code></pre></details>
 <article class="card" id="slime-idle">
 <h3>Slime Idle</h3>
 <p>A rig whose motion templates make idle.</p>
-<div class="previews"><figure class="stage"><img src="gifs/slime-idle--idle.gif" width="256" height="256" alt="A rig whose motion templates make idle." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/slime-idle--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/slime-idle--idle.gif" width="256" height="256" alt="A rig whose motion templates make idle." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">32 × 32 px · 8 frames · loop · 5 colours</p>
 
@@ -1179,7 +1179,7 @@ npx -y pixelbolt@0.11.0 render slime-idle.json --out slime-idle</code></pre></de
 <article class="card" id="swing">
 <h3>Swing</h3>
 <p>Posed parts: swing.</p>
-<div class="previews"><figure class="stage"><img src="gifs/swing--swing.gif" width="320" height="320" alt="Posed parts: swing." loading="lazy" decoding="async"><figcaption>one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/swing--swing-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/swing--swing.gif" width="320" height="320" alt="Posed parts: swing." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">40 × 40 px · 5 frames · one-shot · 6 colours</p>
 
@@ -1192,7 +1192,7 @@ npx -y pixelbolt@0.11.0 render swing.json --out swing</code></pre></details>
 <div class="cards"><article class="card" id="coin">
 <h3>Coin</h3>
 <p>A hand-drawn recipe: spin.</p>
-<div class="previews"><figure class="stage"><img src="gifs/coin--spin.gif" width="192" height="192" alt="A hand-drawn recipe: spin." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/coin--spin-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/coin--spin.gif" width="192" height="192" alt="A hand-drawn recipe: spin." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">24 × 24 px · 6 frames · loop · 4 colours</p>
 
@@ -1204,7 +1204,7 @@ npx -y pixelbolt@0.11.0 render coin.json --out coin</code></pre></details>
 <article class="card" id="ember">
 <h3>Ember</h3>
 <p>A hand-drawn recipe: burn.</p>
-<div class="previews"><figure class="stage"><img src="gifs/ember--burn.gif" width="192" height="192" alt="A hand-drawn recipe: burn." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/ember--burn-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ember--burn.gif" width="192" height="192" alt="A hand-drawn recipe: burn." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">24 × 24 px · 4 frames · loop · 5 colours</p>
 
@@ -1216,7 +1216,7 @@ npx -y pixelbolt@0.11.0 render ember.json --out ember</code></pre></details>
 <article class="card" id="shrine">
 <h3>Shrine</h3>
 <p>A hand-drawn recipe: pulse.</p>
-<div class="previews"><figure class="stage"><img src="gifs/shrine--pulse.gif" width="288" height="240" alt="A hand-drawn recipe: pulse." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/shrine--pulse-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/shrine--pulse.gif" width="288" height="240" alt="A hand-drawn recipe: pulse." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">48 × 40 px · 2 frames · loop · 15 colours</p>
 
@@ -1228,9 +1228,9 @@ npx -y pixelbolt@0.11.0 render shrine.json --out shrine</code></pre></details>
 <article class="card" id="forest-spirit">
 <h3>Forest Spirit</h3>
 <p>A hand-drawn forest spirit: idle, bob and blink.</p>
-<div class="previews"><figure class="stage"><img src="gifs/forest-spirit--idle.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: idle." loading="lazy" decoding="async"><figcaption>idle · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/forest-spirit--bob.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: bob." loading="lazy" decoding="async"><figcaption>bob · loop</figcaption></figure>
-<figure class="stage"><img src="gifs/forest-spirit--blink.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: blink." loading="lazy" decoding="async"><figcaption>blink · one-shot, looped here</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/forest-spirit--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/forest-spirit--idle.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/forest-spirit--bob-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/forest-spirit--bob.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: bob." loading="lazy" decoding="async"></picture><figcaption>bob · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/forest-spirit--blink-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/forest-spirit--blink.gif" width="192" height="192" alt="A hand-drawn forest spirit: idle, bob and blink. Animation: blink." loading="lazy" decoding="async"></picture><figcaption>blink · one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">24 × 24 px · 6 frames · loops and one-shots · 7 colours</p>
 
@@ -1283,7 +1283,7 @@ npx -y pixelbolt@0.11.0 render shore.json --out shore</code></pre></details>
 <div class="cards"><article class="card" id="forest-spirit-lit">
 <h3>Forest Spirit Lit</h3>
 <p>A forest spirit lit through its normal pass.</p>
-<div class="previews"><figure class="stage"><img src="gifs/forest-spirit-lit.gif" width="288" height="160" alt="A forest spirit lit through its normal pass." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/forest-spirit-lit-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/forest-spirit-lit.gif" width="288" height="160" alt="A forest spirit lit through its normal pass." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">72 × 40 px · 30 frames · loop · 16 colours</p>
 <p class="muted">Scene size; frame and colour counts describe the displayed GIF.</p>
@@ -1298,7 +1298,7 @@ npx -y pixelbolt@0.11.0 sequence forest-spirit-lit.scene.json --out forest-spiri
 <article class="card" id="room">
 <h3>Diorama room</h3>
 <p>A dungeon diorama with a waterfall, torches and a hero breaking a pot.</p>
-<div class="previews"><figure class="stage"><img src="gifs/room.gif" width="960" height="768" alt="A dungeon diorama with a waterfall, torches and a hero breaking a pot." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/room-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/room.gif" width="960" height="768" alt="A dungeon diorama with a waterfall, torches and a hero breaking a pot." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">160 × 128 px · 48 frames · loop · 31 colours</p>
 <p class="muted">Scene size; frame and colour counts describe the displayed GIF.</p>
@@ -1312,7 +1312,7 @@ node bin/pixelbolt.js sequence showcase/diorama/art/room.scene.json --out room/f
 <article class="card" id="room-night">
 <h3>Diorama by torchlight</h3>
 <p>Torches and candles flicker; the room flashes when the hero breaks a pot.</p>
-<div class="previews"><figure class="stage"><img src="gifs/room-night.gif" width="960" height="768" alt="Torches and candles flicker; the room flashes when the hero breaks a pot." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/room-night-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/room-night.gif" width="960" height="768" alt="Torches and candles flicker; the room flashes when the hero breaks a pot." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">160 × 128 px · 48 frames · loop · 31 colours</p>
 <p class="muted">Scene size; frame and colour counts describe the displayed GIF.</p>
@@ -1326,7 +1326,7 @@ node bin/pixelbolt.js sequence showcase/diorama/art/room-night.scene.json --out 
 <article class="card" id="wave-scene">
 <h3>Wave scene</h3>
 <p>Paired cyan waves and a violet portal in a small game scene.</p>
-<div class="previews"><figure class="stage"><img src="gifs/wave-scene.gif" width="1440" height="960" alt="Paired cyan waves and a violet portal in a small game scene." loading="lazy" decoding="async"><figcaption>loop</figcaption></figure></div>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/wave-scene-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/wave-scene.gif" width="1440" height="960" alt="Paired cyan waves and a violet portal in a small game scene." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">240 × 160 px · 40 frames · loop · 283 colours</p>
 <p class="muted">Scene size; frame and colour counts describe the displayed GIF.</p>

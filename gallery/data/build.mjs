@@ -33,9 +33,9 @@ const extras = [
   { name: 'forest-spirit', kind: 'recipe', file: 'examples/forest-spirit.json', for: 'A hand-drawn forest spirit: idle, bob and blink.' },
   ...['ground', 'meadow', 'shore'].map(name => ({ name, kind: 'autotile', file: `examples/${name}.autotile.json`, for: ({ ground: 'Side-view platformer ground with slopes, stones and collision boxes, on its test map.', meadow: 'A top-down meadow over dirt with rare flowers, on its test map.', shore: 'A layered shore of water, sand and grass, on its test map.' })[name] })),
   { name: 'forest-spirit-lit', kind: 'scene', file: 'examples/forest-spirit-lit.scene.json', for: 'A forest spirit lit through its normal pass.' },
-  { name: 'room', title: 'Diorama room', kind: 'scene', file: 'showcase/diorama/art/room.scene.json', copyGif: 'docs/images/diorama/room.gif', for: 'A dungeon diorama with a waterfall, torches and a hero breaking a pot.' },
-  { name: 'room-night', title: 'Diorama by torchlight', kind: 'scene', file: 'showcase/diorama/art/room-night.scene.json', copyGif: 'docs/images/diorama/room-night.gif', for: 'Torches and candles flicker; the room flashes when the hero breaks a pot.' },
-  { name: 'wave-scene', title: 'Wave scene', kind: 'scene', file: 'showcase/waves/scene.scene.json', copyGif: 'showcase/waves/scene.gif', for: 'Paired cyan waves and a violet portal in a small game scene.' }
+  { name: 'room', title: 'Diorama room', kind: 'scene', file: 'showcase/diorama/art/room.scene.json', copyGif: 'docs/images/diorama/room.gif', copyStill: 'docs/images/diorama/room.png', for: 'A dungeon diorama with a waterfall, torches and a hero breaking a pot.' },
+  { name: 'room-night', title: 'Diorama by torchlight', kind: 'scene', file: 'showcase/diorama/art/room-night.scene.json', copyGif: 'docs/images/diorama/room-night.gif', copyStill: 'docs/images/diorama/room-night.png', for: 'Torches and candles flicker; the room flashes when the hero breaks a pot.' },
+  { name: 'wave-scene', title: 'Wave scene', kind: 'scene', file: 'showcase/waves/scene.scene.json', copyGif: 'showcase/waves/scene.gif', copyStill: 'showcase/waves/scene.png', for: 'Paired cyan waves and a violet portal in a small game scene.' }
 ];
 const candidates = 'campfire torch steam-vent magic-swirl waterfall potion honey drip plasma-globe jacobs-ladder tesla-coil boiling-pot aquarium vortex shield portal'.split(' ');
 const omitted = [
@@ -254,18 +254,20 @@ async function makePiece(input, readmeAlts) {
   piece.images = [];
   if (piece.kind === 'scene') {
     piece.size = `${original.width}x${original.height}`;
-    const target = path.join(gallery, 'gifs', `${piece.name}.gif`);
-    if (piece.copyGif) await copyEngineFile(piece.copyGif, target);
+    const target = path.join(gallery, 'gifs', `${piece.name}.gif`), still = `gifs/${piece.name}-still.png`;
+    if (piece.copyGif) { await copyEngineFile(piece.copyGif, target); await copyEngineFile(piece.copyStill, path.join(gallery, still)); }
     else {
       const scale = scaleFor(original.width, original.height), frames = path.join(directory, 'gallery-frames');
       run(['sequence', source, '--out', frames, '--fps', '25', '--size', `${original.width * scale}x${original.height * scale}`, '--scale', String(scale)], directory);
       run(['gif-frames', frames, '--fps', '25', '--out', target, '--loops', '0'], directory);
+      const numbered = (await fs.readdir(frames)).filter(name => name.endsWith('.png')).sort();
+      await fs.copyFile(path.join(frames, numbered[Math.floor(numbered.length / 2)]), path.join(gallery, still));
     }
     const facts = gifFacts(await fs.readFile(target));
     piece.frames = facts.frames; piece.plays = facts.plays; piece.colors = facts.colors;
     piece.animations = { scene: { frames: facts.frames, durationMs: facts.durationMs, plays: facts.plays } };
     piece.shownAnimations = ['scene']; piece.alsoAnimations = [];
-    piece.images.push({ animation: 'scene', path: `gifs/${piece.name}.gif`, ...facts });
+    piece.images.push({ animation: 'scene', path: `gifs/${piece.name}.gif`, still, ...facts });
     piece.factsNote = 'Scene size; frame and colour counts describe the displayed GIF.';
   } else {
     const recipeFile = piece.preset || piece.kind === 'autotile' ? path.join(directory, `${piece.name}.json`) : source;
@@ -295,7 +297,14 @@ async function makePiece(input, readmeAlts) {
       else await fs.writeFile(path.join(gallery, image), loopedOneShot(sequence, frames, project, scale));
       const facts = still ? { width: project.width * scale, height: project.height * scale, frames: 1, plays: 'still' } : gifFacts(await fs.readFile(path.join(gallery, image)));
       if (!still && !sequence.loop) { assert(facts.plays === 'loop', `${image}: a one-shot preview must loop`); facts.plays = 'one-shot, looped here'; }
-      piece.images.push({ animation, path: image, scale, ...facts });
+      // Visitors who ask for reduced motion get the middle frame as a still, as the guides do.
+      let stillImage;
+      if (!still) {
+        stillImage = `gifs/${piece.name}--${animation}-still.png`;
+        const middle = frames[Math.floor(frames.length / 2)];
+        await fs.writeFile(path.join(gallery, stillImage), api.encodePNG(enlarge(middle.data, project.width, project.height, scale), project.width * scale, project.height * scale));
+      }
+      piece.images.push({ animation, path: image, ...(stillImage ? { still: stillImage } : {}), scale, ...facts });
     }
   }
   piece.gifPaths = piece.images.filter(i => i.path.endsWith('.gif')).map(i => i.path);
@@ -370,10 +379,13 @@ async function makeMontage() {
   assert(gif.colors <= 256 && !gif.transparent && gif.delays.reduce((a, b) => a + b, 0) === duration, 'Montage palette, opacity or timing changed');
   assert(gif.data.length <= 3_000_000, `Montage exceeds 3 MB: ${gif.data.length} bytes`);
   await fs.writeFile(path.join(gallery, 'montage.gif'), gif.data);
+  const still = canvas(768, 96);
+  selected.forEach((c, cell) => drawCell(still, 768, 96, c.project, frameAt(c.project, c.animation, Math.floor(c.duration / 2)), { x: cell * 96, y: 0, width: 96, height: 96 }));
+  await fs.writeFile(path.join(gallery, 'montage-still.png'), api.encodePNG(still, 768, 96));
   const preview = canvas(1200, 630);
   selected.forEach((c, i) => drawCell(preview, 1200, 630, c.project, frameAt(c.project, c.animation, Math.floor(c.duration / 2)), { x: i % 4 * 300 + 12, y: Math.floor(i / 4) * 315 + 12, width: 276, height: 291 }));
   await fs.writeFile(path.join(gallery, 'preview.png'), api.encodePNG(preview, 1200, 630));
-  return { path: 'montage.gif', width: 768, height: 96, durationMs: duration, frames: frames.length, colors: colors.size, background: '#1b1d2a', bytes: gif.data.length, pieces: selected.map(c => ({ name: c.name, animation: c.animation, durationMs: c.duration, repeats: duration / c.duration })), preview: 'preview.png' };
+  return { path: 'montage.gif', width: 768, height: 96, durationMs: duration, frames: frames.length, colors: colors.size, background: '#1b1d2a', bytes: gif.data.length, pieces: selected.map(c => ({ name: c.name, animation: c.animation, durationMs: c.duration, repeats: duration / c.duration })), still: 'montage-still.png', preview: 'preview.png' };
 }
 
 function page(manifest) {
@@ -386,7 +398,7 @@ function page(manifest) {
     mainEntity: { '@type': 'ItemList', numberOfItems: count, itemListElement: manifest.pieces.map((p, i) => ({ '@type': 'ListItem', position: i + 1, name: p.title, url: `${SITE}gallery/#${p.name}` })) } };
   let imageIndex = 1; // The montage is the first image; defer everything after the first six.
   function card(p, level) {
-    const images = p.images.map(i => `<figure class="stage"><img src="${esc(i.path)}" width="${i.width * 2}" height="${i.height * 2}" alt="${esc(p.alt + (p.images.length > 1 ? ` Animation: ${i.animation}.` : ''))}"${imageIndex++ >= 6 ? ' loading="lazy"' : ''} decoding="async"><figcaption>${p.images.length > 1 ? `${esc(i.animation)} · ` : ''}${esc(i.plays)}</figcaption></figure>`).join('\n');
+    const images = p.images.map(i => `<figure class="stage">${i.still ? `<picture><source srcset="${esc(i.still)}" media="(prefers-reduced-motion: reduce)">` : ''}<img src="${esc(i.path)}" width="${i.width * 2}" height="${i.height * 2}" alt="${esc(p.alt + (p.images.length > 1 ? ` Animation: ${i.animation}.` : ''))}"${imageIndex++ >= 6 ? ' loading="lazy"' : ''} decoding="async">${i.still ? '</picture>' : ''}<figcaption>${p.images.length > 1 ? `${esc(i.animation)} · ` : ''}${esc(i.plays)}</figcaption></figure>`).join('\n');
     const open = p.playground ? `<a class="open" href="${esc(p.playground)}">Open in the playground</a>` : `Too long for a link: <a href="${esc(p.download)}" download>download the recipe</a> and use Open file in the <a href="${SITE}playground/">playground</a>.`;
     return `<article class="card" id="${esc(p.name)}">
 <h${level}>${esc(p.title)}</h${level}>
@@ -464,7 +476,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <main>
 <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Pixelbolt</a></nav>
 <h1>${esc(heading)}</h1>
-<figure class="montage"><img src="montage.gif" width="1536" height="192" alt="${esc(montageAlt)}" decoding="async"></figure>
+<figure class="montage"><picture><source srcset="${manifest.montage.still}" media="(prefers-reduced-motion: reduce)"><img src="montage.gif" width="1536" height="192" alt="${esc(montageAlt)}" decoding="async"></picture></figure>
 <p class="lead">These are JSON recipes rendered by Pixelbolt ${VERSION}. Open any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="${REPO}">source, setup and documentation</a>.</p>
 <nav aria-label="Gallery groups"><ul class="jump">${groups.map(g => `<li><a href="#${g.id}">${esc(g.name)}</a></li>`).join('')}</ul></nav>
 <p class="muted">One-shot effects play once in a game; here their previews loop, with a 0.8 s pause before each replay. Each card shows up to four animations; the recipe includes those listed under “also”. Export commands write sprite sheets, atlases, Godot files and frames; tile sets include terrain exports, and scenes include asset bundles and numbered scene frames.</p>
@@ -483,7 +495,7 @@ ${sections}
 async function checkPage(html) {
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
   let count = 0;
-  for (const [, encoded] of html.matchAll(/\b(?:src|href)="([^"]+)"/g)) {
+  for (const [, encoded] of html.matchAll(/\b(?:src|href|srcset)="([^"]+)"/g)) {
     const value = encoded.replaceAll('&amp;', '&');
     if (/^[a-z][a-z\d+.-]*:|^\/\//i.test(value)) continue;
     if (value.startsWith('#')) { assert(ids.has(value.slice(1)), `Missing anchor: ${value}`); continue; }

@@ -113,6 +113,7 @@
         "repeats": 1
       }
     ],
+    "still": "montage-still.png",
     "preview": "preview.png"
   },
   "omitted": [
@@ -185,6 +186,7 @@
         {
           "animation": "ice-melt",
           "path": "gifs/ice-melt--ice-melt.gif",
+          "still": "gifs/ice-melt--ice-melt-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -312,6 +314,7 @@
         {
           "animation": "pond-freeze",
           "path": "gifs/pond-freeze--pond-freeze.gif",
+          "still": "gifs/pond-freeze--pond-freeze-still.png",
           "scale": 3,
           "width": 168,
           "height": 108,
@@ -447,6 +450,7 @@
         {
           "animation": "boiling-pot",
           "path": "gifs/boiling-pot--boiling-pot.gif",
+          "still": "gifs/boiling-pot--boiling-pot-still.png",
           "scale": 3,
           "width": 120,
           "height": 144,
@@ -550,6 +554,7 @@
         {
           "animation": "frost-window",
           "path": "gifs/frost-window--frost-window.gif",
+          "still": "gifs/frost-window--frost-window-still.png",
           "scale": 4,
           "width": 160,
           "height": 160,
@@ -669,6 +674,7 @@
         {
           "animation": "dry-ice",
           "path": "gifs/dry-ice--dry-ice.gif",
+          "still": "gifs/dry-ice--dry-ice-still.png",
           "scale": 3,
           "width": 168,
           "height": 120,
@@ -788,6 +794,7 @@
         {
           "animation": "jacobs-ladder",
           "path": "gifs/jacobs-ladder--jacobs-ladder.gif",
+          "still": "gifs/jacobs-ladder--jacobs-ladder-still.png",
           "scale": 2,
           "width": 80,
           "height": 128,
@@ -865,6 +872,7 @@
         {
           "animation": "lightning",
           "path": "gifs/lightning--lightning.gif",
+          "still": "gifs/lightning--lightning-still.png",
           "scale": 2,
           "width": 128,
           "height": 192,
@@ -952,6 +960,7 @@
         {
           "animation": "tesla-coil",
           "path": "gifs/tesla-coil--tesla-coil.gif",
+          "still": "gifs/tesla-coil--tesla-coil-still.png",
           "scale": 2,
           "width": 192,
           "height": 128,
@@ -1031,6 +1040,7 @@
         {
           "animation": "plasma-globe",
           "path": "gifs/plasma-globe--plasma-globe.gif",
+          "still": "gifs/plasma-globe--plasma-globe-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -1110,6 +1120,7 @@
         {
           "animation": "lightning-pond",
           "path": "gifs/lightning-pond--lightning-pond.gif",
+          "still": "gifs/lightning-pond--lightning-pond-still.png",
           "scale": 2,
           "width": 128,
           "height": 144,
@@ -1213,6 +1224,7 @@
         {
           "animation": "campfire",
           "path": "gifs/campfire--campfire.gif",
+          "still": "gifs/campfire--campfire-still.png",
           "scale": 3,
           "width": 96,
           "height": 144,
@@ -1292,6 +1304,7 @@
         {
           "animation": "torch",
           "path": "gifs/torch--torch.gif",
+          "still": "gifs/torch--torch-still.png",
           "scale": 4,
           "width": 64,
           "height": 128,
@@ -1363,6 +1376,7 @@
         {
           "animation": "steam-vent",
           "path": "gifs/steam-vent--steam-vent.gif",
+          "still": "gifs/steam-vent--steam-vent-still.png",
           "scale": 3,
           "width": 96,
           "height": 144,
@@ -1442,6 +1456,7 @@
         {
           "animation": "magic-swirl",
           "path": "gifs/magic-swirl--magic-swirl.gif",
+          "still": "gifs/magic-swirl--magic-swirl-still.png",
           "scale": 3,
           "width": 144,
           "height": 144,
@@ -1521,6 +1536,7 @@
         {
           "animation": "explosion",
           "path": "gifs/explosion--explosion.gif",
+          "still": "gifs/explosion--explosion-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -1608,6 +1624,7 @@
         {
           "animation": "smoke-puff",
           "path": "gifs/smoke-puff--smoke-puff.gif",
+          "still": "gifs/smoke-puff--smoke-puff-still.png",
           "scale": 4,
           "width": 128,
           "height": 128,
@@ -1682,6 +1699,7 @@
         {
           "animation": "dust-wave",
           "path": "gifs/dust-wave--dust-wave.gif",
+          "still": "gifs/dust-wave--dust-wave-still.png",
           "scale": 2,
           "width": 128,
           "height": 64,
@@ -1763,6 +1781,7 @@
         {
           "animation": "waterfall",
           "path": "gifs/waterfall--waterfall.gif",
+          "still": "gifs/waterfall--waterfall-still.png",
           "scale": 2,
           "width": 96,
           "height": 128,
@@ -1842,6 +1861,7 @@
         {
           "animation": "drip",
           "path": "gifs/drip--drip.gif",
+          "still": "gifs/drip--drip-still.png",
           "scale": 4,
           "width": 64,
           "height": 128,
@@ -1921,6 +1941,7 @@
         {
           "animation": "potion",
           "path": "gifs/potion--potion.gif",
+          "still": "gifs/potion--potion-still.png",
           "scale": 4,
           "width": 128,
           "height": 160,
@@ -2000,6 +2021,7 @@
         {
           "animation": "splash",
           "path": "gifs/splash--splash.gif",
+          "still": "gifs/splash--splash-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -2095,6 +2117,7 @@
         {
           "animation": "honey",
           "path": "gifs/honey--honey.gif",
+          "still": "gifs/honey--honey-still.png",
           "scale": 3,
           "width": 120,
           "height": 144,
@@ -2174,6 +2197,7 @@
         {
           "animation": "slime",
           "path": "gifs/slime--slime.gif",
+          "still": "gifs/slime--slime-still.png",
           "scale": 4,
           "width": 128,
           "height": 128,
@@ -2269,6 +2293,7 @@
         {
           "animation": "roof-snow",
           "path": "gifs/roof-snow--roof-snow.gif",
+          "still": "gifs/roof-snow--roof-snow-still.png",
           "scale": 3,
           "width": 168,
           "height": 132,
@@ -2372,6 +2397,7 @@
         {
           "animation": "dam-break",
           "path": "gifs/dam-break--dam-break.gif",
+          "still": "gifs/dam-break--dam-break-still.png",
           "scale": 2,
           "width": 128,
           "height": 72,
@@ -2497,6 +2523,7 @@
         {
           "animation": "slime-burst",
           "path": "gifs/slime-burst--slime-burst.gif",
+          "still": "gifs/slime-burst--slime-burst-still.png",
           "scale": 3,
           "width": 168,
           "height": 120,
@@ -2592,6 +2619,7 @@
         {
           "animation": "honey-drop",
           "path": "gifs/honey-drop--honey-drop.gif",
+          "still": "gifs/honey-drop--honey-drop-still.png",
           "scale": 3,
           "width": 120,
           "height": 144,
@@ -2691,6 +2719,7 @@
         {
           "animation": "aquarium",
           "path": "gifs/aquarium--aquarium.gif",
+          "still": "gifs/aquarium--aquarium-still.png",
           "scale": 3,
           "width": 168,
           "height": 144,
@@ -2794,6 +2823,7 @@
         {
           "animation": "honey-dipper",
           "path": "gifs/honey-dipper--honey-dipper.gif",
+          "still": "gifs/honey-dipper--honey-dipper-still.png",
           "scale": 3,
           "width": 120,
           "height": 180,
@@ -2905,6 +2935,7 @@
         {
           "animation": "glug",
           "path": "gifs/glug--glug.gif",
+          "still": "gifs/glug--glug-still.png",
           "scale": 3,
           "width": 120,
           "height": 168,
@@ -3090,6 +3121,7 @@
         {
           "animation": "sparks",
           "path": "gifs/effects--sparks.gif",
+          "still": "gifs/effects--sparks-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -3113,6 +3145,7 @@
         {
           "animation": "embers",
           "path": "gifs/effects--embers.gif",
+          "still": "gifs/effects--embers-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -3143,6 +3176,7 @@
         {
           "animation": "dust",
           "path": "gifs/effects--dust.gif",
+          "still": "gifs/effects--dust-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -3168,6 +3202,7 @@
         {
           "animation": "leaves",
           "path": "gifs/effects--leaves.gif",
+          "still": "gifs/effects--leaves-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -3243,6 +3278,7 @@
         {
           "animation": "fire-explosion",
           "path": "gifs/fire-explosion--fire-explosion.gif",
+          "still": "gifs/fire-explosion--fire-explosion-still.png",
           "scale": 2,
           "width": 192,
           "height": 192,
@@ -3364,6 +3400,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/fire-spells--projectile-0.gif",
+          "still": "gifs/fire-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -3386,6 +3423,7 @@
         {
           "animation": "impact",
           "path": "gifs/fire-spells--impact.gif",
+          "still": "gifs/fire-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -3412,6 +3450,7 @@
         {
           "animation": "area",
           "path": "gifs/fire-spells--area.gif",
+          "still": "gifs/fire-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -3445,6 +3484,7 @@
         {
           "animation": "buff",
           "path": "gifs/fire-spells--buff.gif",
+          "still": "gifs/fire-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -3561,6 +3601,7 @@
         {
           "animation": "fireball-0",
           "path": "gifs/fireball--fireball-0.gif",
+          "still": "gifs/fireball--fireball-0-still.png",
           "scale": 3,
           "width": 168,
           "height": 168,
@@ -3632,6 +3673,7 @@
         {
           "animation": "blast",
           "path": "gifs/fluid-blast--blast.gif",
+          "still": "gifs/fluid-blast--blast-still.png",
           "scale": 2,
           "width": 192,
           "height": 192,
@@ -3719,6 +3761,7 @@
         {
           "animation": "healing-circle",
           "path": "gifs/healing-circle--healing-circle.gif",
+          "still": "gifs/healing-circle--healing-circle-still.png",
           "scale": 2,
           "width": 192,
           "height": 144,
@@ -3797,6 +3840,7 @@
         {
           "animation": "teleport",
           "path": "gifs/hero-magic--teleport.gif",
+          "still": "gifs/hero-magic--teleport-still.png",
           "scale": 3,
           "width": 120,
           "height": 156,
@@ -3825,6 +3869,7 @@
         {
           "animation": "aura",
           "path": "gifs/hero-magic--aura.gif",
+          "still": "gifs/hero-magic--aura-still.png",
           "scale": 3,
           "width": 120,
           "height": 156,
@@ -3954,6 +3999,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/holy-spells--projectile-0.gif",
+          "still": "gifs/holy-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -3976,6 +4022,7 @@
         {
           "animation": "impact",
           "path": "gifs/holy-spells--impact.gif",
+          "still": "gifs/holy-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4004,6 +4051,7 @@
         {
           "animation": "area",
           "path": "gifs/holy-spells--area.gif",
+          "still": "gifs/holy-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4034,6 +4082,7 @@
         {
           "animation": "buff",
           "path": "gifs/holy-spells--buff.gif",
+          "still": "gifs/holy-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4175,6 +4224,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/ice-spells--projectile-0.gif",
+          "still": "gifs/ice-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4197,6 +4247,7 @@
         {
           "animation": "impact",
           "path": "gifs/ice-spells--impact.gif",
+          "still": "gifs/ice-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4223,6 +4274,7 @@
         {
           "animation": "area",
           "path": "gifs/ice-spells--area.gif",
+          "still": "gifs/ice-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4259,6 +4311,7 @@
         {
           "animation": "buff",
           "path": "gifs/ice-spells--buff.gif",
+          "still": "gifs/ice-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4392,6 +4445,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/lightning-spells--projectile-0.gif",
+          "still": "gifs/lightning-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4414,6 +4468,7 @@
         {
           "animation": "impact",
           "path": "gifs/lightning-spells--impact.gif",
+          "still": "gifs/lightning-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4438,6 +4493,7 @@
         {
           "animation": "area",
           "path": "gifs/lightning-spells--area.gif",
+          "still": "gifs/lightning-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4472,6 +4528,7 @@
         {
           "animation": "buff",
           "path": "gifs/lightning-spells--buff.gif",
+          "still": "gifs/lightning-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4553,6 +4610,7 @@
         {
           "animation": "lightning-strike",
           "path": "gifs/lightning-strike--lightning-strike.gif",
+          "still": "gifs/lightning-strike--lightning-strike-still.png",
           "scale": 2,
           "width": 192,
           "height": 208,
@@ -4620,6 +4678,7 @@
         {
           "animation": "meteor",
           "path": "gifs/meteor--meteor.gif",
+          "still": "gifs/meteor--meteor-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4747,6 +4806,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/poison-spells--projectile-0.gif",
+          "still": "gifs/poison-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4769,6 +4829,7 @@
         {
           "animation": "impact",
           "path": "gifs/poison-spells--impact.gif",
+          "still": "gifs/poison-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4795,6 +4856,7 @@
         {
           "animation": "area",
           "path": "gifs/poison-spells--area.gif",
+          "still": "gifs/poison-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4831,6 +4893,7 @@
         {
           "animation": "buff",
           "path": "gifs/poison-spells--buff.gif",
+          "still": "gifs/poison-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4962,6 +5025,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/shadow-spells--projectile-0.gif",
+          "still": "gifs/shadow-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -4984,6 +5048,7 @@
         {
           "animation": "impact",
           "path": "gifs/shadow-spells--impact.gif",
+          "still": "gifs/shadow-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5010,6 +5075,7 @@
         {
           "animation": "area",
           "path": "gifs/shadow-spells--area.gif",
+          "still": "gifs/shadow-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5043,6 +5109,7 @@
         {
           "animation": "buff",
           "path": "gifs/shadow-spells--buff.gif",
+          "still": "gifs/shadow-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5122,6 +5189,7 @@
         {
           "animation": "shield",
           "path": "gifs/shield--shield.gif",
+          "still": "gifs/shield--shield-still.png",
           "scale": 3,
           "width": 144,
           "height": 144,
@@ -5189,6 +5257,7 @@
         {
           "animation": "slash-hit",
           "path": "gifs/slash-hit--slash-hit.gif",
+          "still": "gifs/slash-hit--slash-hit-still.png",
           "scale": 2,
           "width": 160,
           "height": 128,
@@ -5253,6 +5322,7 @@
         {
           "animation": "swing",
           "path": "gifs/swing-trail--swing.gif",
+          "still": "gifs/swing-trail--swing-still.png",
           "scale": 4,
           "width": 160,
           "height": 160,
@@ -5315,6 +5385,7 @@
         {
           "animation": "vortex",
           "path": "gifs/vortex--vortex.gif",
+          "still": "gifs/vortex--vortex-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5406,6 +5477,7 @@
         {
           "animation": "geyser",
           "path": "gifs/water--geyser.gif",
+          "still": "gifs/water--geyser-still.png",
           "scale": 2,
           "width": 128,
           "height": 136,
@@ -5436,6 +5508,7 @@
         {
           "animation": "whip",
           "path": "gifs/water--whip.gif",
+          "still": "gifs/water--whip-still.png",
           "scale": 2,
           "width": 128,
           "height": 136,
@@ -5464,6 +5537,7 @@
         {
           "animation": "ring",
           "path": "gifs/water--ring.gif",
+          "still": "gifs/water--ring-still.png",
           "scale": 2,
           "width": 128,
           "height": 136,
@@ -5492,6 +5566,7 @@
         {
           "animation": "dome",
           "path": "gifs/water--dome.gif",
+          "still": "gifs/water--dome-still.png",
           "scale": 2,
           "width": 128,
           "height": 136,
@@ -5621,6 +5696,7 @@
         {
           "animation": "projectile-0",
           "path": "gifs/water-spells--projectile-0.gif",
+          "still": "gifs/water-spells--projectile-0-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5643,6 +5719,7 @@
         {
           "animation": "impact",
           "path": "gifs/water-spells--impact.gif",
+          "still": "gifs/water-spells--impact-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5668,6 +5745,7 @@
         {
           "animation": "area",
           "path": "gifs/water-spells--area.gif",
+          "still": "gifs/water-spells--area-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5702,6 +5780,7 @@
         {
           "animation": "buff",
           "path": "gifs/water-spells--buff.gif",
+          "still": "gifs/water-spells--buff-still.png",
           "scale": 2,
           "width": 128,
           "height": 128,
@@ -5781,6 +5860,7 @@
         {
           "animation": "resonate",
           "path": "gifs/interference--resonate.gif",
+          "still": "gifs/interference--resonate-still.png",
           "scale": 3,
           "width": 144,
           "height": 90,
@@ -5876,6 +5956,7 @@
         {
           "animation": "open",
           "path": "gifs/portal--open.gif",
+          "still": "gifs/portal--open-still.png",
           "scale": 3,
           "width": 114,
           "height": 168,
@@ -5996,6 +6077,7 @@
         {
           "animation": "idle",
           "path": "gifs/hero--idle.gif",
+          "still": "gifs/hero--idle-still.png",
           "scale": 4,
           "width": 128,
           "height": 144,
@@ -6014,6 +6096,7 @@
         {
           "animation": "walk",
           "path": "gifs/hero--walk.gif",
+          "still": "gifs/hero--walk-still.png",
           "scale": 4,
           "width": 128,
           "height": 144,
@@ -6036,6 +6119,7 @@
         {
           "animation": "run",
           "path": "gifs/hero--run.gif",
+          "still": "gifs/hero--run-still.png",
           "scale": 4,
           "width": 128,
           "height": 144,
@@ -6060,6 +6144,7 @@
         {
           "animation": "jump",
           "path": "gifs/hero--jump.gif",
+          "still": "gifs/hero--jump-still.png",
           "scale": 4,
           "width": 128,
           "height": 144,
@@ -6131,6 +6216,7 @@
         {
           "animation": "idle",
           "path": "gifs/slime-idle--idle.gif",
+          "still": "gifs/slime-idle--idle-still.png",
           "scale": 4,
           "width": 128,
           "height": 128,
@@ -6194,6 +6280,7 @@
         {
           "animation": "swing",
           "path": "gifs/swing--swing.gif",
+          "still": "gifs/swing--swing-still.png",
           "scale": 4,
           "width": 160,
           "height": 160,
@@ -6254,6 +6341,7 @@
         {
           "animation": "spin",
           "path": "gifs/coin--spin.gif",
+          "still": "gifs/coin--spin-still.png",
           "scale": 4,
           "width": 96,
           "height": 96,
@@ -6315,6 +6403,7 @@
         {
           "animation": "burn",
           "path": "gifs/ember--burn.gif",
+          "still": "gifs/ember--burn-still.png",
           "scale": 4,
           "width": 96,
           "height": 96,
@@ -6374,6 +6463,7 @@
         {
           "animation": "pulse",
           "path": "gifs/shrine--pulse.gif",
+          "still": "gifs/shrine--pulse-still.png",
           "scale": 3,
           "width": 144,
           "height": 120,
@@ -6419,6 +6509,7 @@
         {
           "animation": "idle",
           "path": "gifs/forest-spirit--idle.gif",
+          "still": "gifs/forest-spirit--idle-still.png",
           "scale": 4,
           "width": 96,
           "height": 96,
@@ -6440,6 +6531,7 @@
         {
           "animation": "bob",
           "path": "gifs/forest-spirit--bob.gif",
+          "still": "gifs/forest-spirit--bob-still.png",
           "scale": 4,
           "width": 96,
           "height": 96,
@@ -6458,6 +6550,7 @@
         {
           "animation": "blink",
           "path": "gifs/forest-spirit--blink.gif",
+          "still": "gifs/forest-spirit--blink-still.png",
           "scale": 4,
           "width": 96,
           "height": 96,
@@ -6655,6 +6748,7 @@
         {
           "animation": "scene",
           "path": "gifs/forest-spirit-lit.gif",
+          "still": "gifs/forest-spirit-lit-still.png",
           "width": 144,
           "height": 80,
           "frames": 30,
@@ -6722,6 +6816,7 @@
       "kind": "scene",
       "file": "showcase/diorama/art/room.scene.json",
       "copyGif": "docs/images/diorama/room.gif",
+      "copyStill": "docs/images/diorama/room.png",
       "for": "A dungeon diorama with a waterfall, torches and a hero breaking a pot.",
       "group": "Scenes",
       "groupId": "scenes",
@@ -6742,6 +6837,7 @@
         {
           "animation": "scene",
           "path": "gifs/room.gif",
+          "still": "gifs/room-still.png",
           "width": 480,
           "height": 384,
           "frames": 48,
@@ -6827,6 +6923,7 @@
       "kind": "scene",
       "file": "showcase/diorama/art/room-night.scene.json",
       "copyGif": "docs/images/diorama/room-night.gif",
+      "copyStill": "docs/images/diorama/room-night.png",
       "for": "Torches and candles flicker; the room flashes when the hero breaks a pot.",
       "group": "Scenes",
       "groupId": "scenes",
@@ -6847,6 +6944,7 @@
         {
           "animation": "scene",
           "path": "gifs/room-night.gif",
+          "still": "gifs/room-night-still.png",
           "width": 480,
           "height": 384,
           "frames": 48,
@@ -6932,6 +7030,7 @@
       "kind": "scene",
       "file": "showcase/waves/scene.scene.json",
       "copyGif": "showcase/waves/scene.gif",
+      "copyStill": "showcase/waves/scene.png",
       "for": "Paired cyan waves and a violet portal in a small game scene.",
       "group": "Scenes",
       "groupId": "scenes",
@@ -6953,6 +7052,7 @@
         {
           "animation": "scene",
           "path": "gifs/wave-scene.gif",
+          "still": "gifs/wave-scene-still.png",
           "width": 720,
           "height": 480,
           "frames": 40,
