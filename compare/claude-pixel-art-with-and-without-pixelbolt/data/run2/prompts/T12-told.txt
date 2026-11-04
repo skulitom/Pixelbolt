@@ -1,0 +1,1 @@
+I need a one-shot smoke puff effect in pixel art: 32x32 per frame, 8 frames, a puff that billows out and fades away. Save it as a sprite sheet smoke_sheet.png (256x32) and as an animated GIF smoke.gif. Transparent background, at most 6 colours. Use the Pixelbolt MCP tools for this.

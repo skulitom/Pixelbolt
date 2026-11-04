@@ -1,0 +1,5 @@
+Pixelbolt 0.9.0 (npm tarball SHA-1 18317396f740cf201461b6a83120bf8cd8d69c1b), measured 2026-10-23, Node 24.19.0
+- tools/list reply: 135,553 bytes of JSON-RPC for 8 tools, one page (no nextCursor: True)
+- pixel_help with no arguments: 117,905 characters of text content
+How: run `node bin/pixelbolt.js mcp`, send initialize, notifications/initialized, tools/list, then
+tools/call pixel_help {}, and measure the two replies (measure_sizes.py).

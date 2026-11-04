@@ -1,0 +1,1 @@
+I need a 32x32 pixel-art treasure chest sprite for my game: a closed wooden chest with gold trim, on a transparent background, at most 8 colours. Save it as chest.png in this folder.

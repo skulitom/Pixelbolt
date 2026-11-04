@@ -1,0 +1,6166 @@
+[
+ {
+  "model": "haiku",
+  "task": "T01",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.596
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 42,
+  "cost": 0.0084,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.008379385,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 24169,
+   "cache_read_input_tokens": 214316,
+   "output_tokens": 6427,
+   "output_tokens_details": {
+    "thinking_tokens": 4561
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 24169
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 2,
+   "mcp__pixelbolt__pixel_validate": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cp": 1
+  },
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "haiku",
+  "task": "T01",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.576
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 54,
+  "cost": 0.009,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.008991439999999998,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 27936,
+   "cache_read_input_tokens": 71514,
+   "output_tokens": 9567,
+   "output_tokens_details": {
+    "thinking_tokens": 5985
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 27936
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Bash:cd": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T02",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.406
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 52,
+  "cost": 0.0095,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.009485485,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 36623,
+   "cache_read_input_tokens": 107961,
+   "output_tokens": 7654,
+   "output_tokens_details": {
+    "thinking_tokens": 6606
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 36623
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cp": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T02",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.414
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 50,
+  "cost": 0.0077,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 9,
+  "is_error": false,
+  "stream_cost": 0.0076831550000000005,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 15139,
+   "cache_read_input_tokens": 168368,
+   "output_tokens": 8211,
+   "output_tokens_details": {
+    "thinking_tokens": 4249
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 15139
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 2,
+   "Bash:python": 3,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Edit": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T03",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.496
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 69,
+  "cost": 0.0114,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.0114088,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 29704,
+   "cache_read_input_tokens": 82950,
+   "output_tokens": 13731,
+   "output_tokens_details": {
+    "thinking_tokens": 12145
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 29704
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T03",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 10,
+    "opaque_share": [
+     0.578
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 70,
+  "cost": 0.0108,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.01081235,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 20656,
+   "cache_read_input_tokens": 93405,
+   "output_tokens": 14591,
+   "output_tokens_details": {
+    "thinking_tokens": 10017
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 20656
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cat": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T04",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": false,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "sword.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     0.129
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 43,
+  "cost": 0.0079,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.007945685000000001,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 24031,
+   "cache_read_input_tokens": 82601,
+   "output_tokens": 8230,
+   "output_tokens_details": {
+    "thinking_tokens": 7444
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 24031
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T04",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": false,
+   "size": false,
+   "crisp": false,
+   "palette": false,
+   "background": false,
+   "content": false
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "sword.png": "missing"
+  },
+  "exit": 0,
+  "duration_s": 85,
+  "cost": 0.0154,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.01538933,
+  "usage": {
+   "input_tokens": 26,
+   "cache_creation_input_tokens": 34138,
+   "cache_read_input_tokens": 335848,
+   "output_tokens": 15522,
+   "output_tokens_details": {
+    "thinking_tokens": 11937
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 34138
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 2,
+   "Bash:python3": 9,
+   "Write": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T05",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.513
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 25,
+  "cost": 0.0055,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.005515205,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 20643,
+   "cache_read_input_tokens": 84153,
+   "output_tokens": 4185,
+   "output_tokens_details": {
+    "thinking_tokens": 3254
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 20643
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T05",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.456
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 37,
+  "cost": 0.0066,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 10,
+  "is_error": false,
+  "stream_cost": 0.0066456549999999994,
+  "usage": {
+   "input_tokens": 20,
+   "cache_creation_input_tokens": 12873,
+   "cache_read_input_tokens": 210303,
+   "output_tokens": 5863,
+   "output_tokens_details": {
+    "thinking_tokens": 1757
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 12873
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 1,
+   "Bash:ls": 2,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Bash:python": 2,
+   "Read": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T06",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": false,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": false,
+  "info": {
+   "gif_matches_sheet": false
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 4,
+    "opaque_share": [
+     0.609,
+     0.531,
+     0.281,
+     0.094,
+     0.281,
+     0.531
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 46,
+  "cost": 0.0083,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 10,
+  "is_error": false,
+  "stream_cost": 0.008345000000000002,
+  "usage": {
+   "input_tokens": 18,
+   "cache_creation_input_tokens": 20342,
+   "cache_read_input_tokens": 222895,
+   "output_tokens": 7143,
+   "output_tokens_details": {
+    "thinking_tokens": 2508
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 20342
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "Bash:cd": 3,
+   "Bash:python": 1,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Edit": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T06",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": false
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     0.672,
+     0.562,
+     0.359,
+     0.094,
+     0.359,
+     0.562
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 4,
+    "opaque_share": [
+     0.672,
+     0.562,
+     0.359,
+     0.094,
+     0.359,
+     0.562
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 31,
+  "cost": 0.005,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.0049933799999999995,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 11288,
+   "cache_read_input_tokens": 114168,
+   "output_tokens": 4879,
+   "output_tokens_details": {
+    "thinking_tokens": 1946
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 11288
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 3,
+   "Bash:python": 1,
+   "Write": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T07",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 34,
+  "cost": 0.0059,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.005850265,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 25137,
+   "cache_read_input_tokens": 160294,
+   "output_tokens": 2208,
+   "output_tokens_details": {
+    "thinking_tokens": 960
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 25137
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T07",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.479,
+     0.469,
+     0.467,
+     0.469,
+     0.479,
+     0.457,
+     0.451,
+     0.457
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 6,
+    "opaque_share": [
+     0.479,
+     0.469,
+     0.467,
+     0.469,
+     0.479,
+     0.457,
+     0.451,
+     0.457
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 74,
+  "cost": 0.0102,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.010162790000000001,
+  "usage": {
+   "input_tokens": 22,
+   "cache_creation_input_tokens": 17628,
+   "cache_read_input_tokens": 255209,
+   "output_tokens": 10810,
+   "output_tokens_details": {
+    "thinking_tokens": 3412
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 17628
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 1,
+   "Bash:python": 2,
+   "Bash:mkdir": 1,
+   "Write": 3,
+   "Bash:[compound command]": 1,
+   "Bash:ls": 2,
+   "Glob": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T08",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": false,
+   "size": false,
+   "crisp": false,
+   "palette": false,
+   "background": false,
+   "content": false,
+   "frames": false,
+   "motion": false
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "walk_sheet.png": "missing",
+   "walk.gif": "missing"
+  },
+  "exit": 0,
+  "duration_s": 9,
+  "cost": 0.0023,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 2,
+  "is_error": false,
+  "stream_cost": 0.0023117899999999998,
+  "usage": {
+   "input_tokens": 4,
+   "cache_creation_input_tokens": 11710,
+   "cache_read_input_tokens": 31314,
+   "output_tokens": 1069,
+   "output_tokens_details": {
+    "thinking_tokens": 492
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 11710
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T08",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "walk_sheet.png": {
+    "format": "PNG",
+    "size": [
+     192,
+     32
+    ],
+    "colours": 10,
+    "opaque_share": [
+     0.193,
+     0.203,
+     0.215,
+     0.192,
+     0.219,
+     0.235
+    ]
+   },
+   "walk.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 10,
+    "opaque_share": [
+     0.193,
+     0.203,
+     0.215,
+     0.192,
+     0.219,
+     0.235
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 93,
+  "cost": 0.0141,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.014062900000000001,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 24448,
+   "cache_read_input_tokens": 210780,
+   "output_tokens": 17795,
+   "output_tokens_details": {
+    "thinking_tokens": 13548
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 24448
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 1,
+   "Bash:python": 3,
+   "Write": 1,
+   "Read": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T09",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 1.168
+  },
+  "files": {
+   "grass.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 49,
+  "cost": 0.0096,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.00956602,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 26056,
+   "cache_read_input_tokens": 153932,
+   "output_tokens": 9537,
+   "output_tokens_details": {
+    "thinking_tokens": 8298
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 26056
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "mcp__pixelbolt__pixel_inspect": 1
+  },
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "haiku",
+  "task": "T09",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": false,
+   "size": false,
+   "crisp": false,
+   "palette": false,
+   "background": false,
+   "content": false
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "grass.png": "missing"
+  },
+  "exit": 0,
+  "duration_s": 25,
+  "cost": 0.004,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.003984975,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 8947,
+   "cache_read_input_tokens": 110690,
+   "output_tokens": 3517,
+   "output_tokens_details": {
+    "thinking_tokens": 1367
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 8947
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:which": 1,
+   "Bash:python3": 3,
+   "Write": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T10",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.933
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 5,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 38,
+  "cost": 0.0086,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.008613375,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 36879,
+   "cache_read_input_tokens": 148200,
+   "output_tokens": 5041,
+   "output_tokens_details": {
+    "thinking_tokens": 3400
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 36879
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cp": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T10",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.952
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 7,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 55,
+  "cost": 0.0094,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.009390739999999998,
+  "usage": {
+   "input_tokens": 18,
+   "cache_creation_input_tokens": 17346,
+   "cache_read_input_tokens": 220419,
+   "output_tokens": 10033,
+   "output_tokens_details": {
+    "thinking_tokens": 5413
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 17346
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Write": 1,
+   "Bash:cd": 1,
+   "Bash:python": 4,
+   "Read": 3,
+   "Bash:mkdir": 1,
+   "Bash:rm": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T11",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.266,
+     0.258,
+     0.265,
+     0.272,
+     0.275,
+     0.273,
+     0.231,
+     0.269
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 7,
+    "opaque_share": [
+     0.266,
+     0.258,
+     0.265,
+     0.272,
+     0.275,
+     0.273,
+     0.231,
+     0.269
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 53,
+  "cost": 0.0113,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.011252765,
+  "usage": {
+   "input_tokens": 24,
+   "cache_creation_input_tokens": 27413,
+   "cache_read_input_tokens": 347174,
+   "output_tokens": 8704,
+   "output_tokens_details": {
+    "thinking_tokens": 3775
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 27413
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "Bash:pwd": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 3,
+   "Bash:for": 1,
+   "Bash:printf": 1,
+   "mcp__pixelbolt__pixel_render": 2,
+   "Bash:od": 1,
+   "Bash:python": 1
+  },
+  "pixelbolt_calls": 6
+ },
+ {
+  "model": "haiku",
+  "task": "T11",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.383,
+     0.383,
+     0.386,
+     0.386,
+     0.381,
+     0.388,
+     0.389,
+     0.385
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     120,
+     120,
+     120,
+     120,
+     120,
+     120,
+     120,
+     120
+    ],
+    "gif": true,
+    "colours": 6,
+    "opaque_share": [
+     0.383,
+     0.383,
+     0.386,
+     0.386,
+     0.381,
+     0.388,
+     0.389,
+     0.385
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 63,
+  "cost": 0.0108,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 12,
+  "is_error": false,
+  "stream_cost": 0.010829345,
+  "usage": {
+   "input_tokens": 24,
+   "cache_creation_input_tokens": 19237,
+   "cache_read_input_tokens": 293232,
+   "output_tokens": 10980,
+   "output_tokens_details": {
+    "thinking_tokens": 5276
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 19237
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 2,
+   "Bash:python": 5,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Read": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T12",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.457,
+     0.479,
+     0.43,
+     0.385,
+     0.254,
+     0.112,
+     0.0
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": null,
+    "durations": [
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.457,
+     0.479,
+     0.43,
+     0.385,
+     0.254,
+     0.112,
+     0.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 42,
+  "cost": 0.0102,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 14,
+  "is_error": false,
+  "stream_cost": 0.010197600000000001,
+  "usage": {
+   "input_tokens": 26,
+   "cache_creation_input_tokens": 25086,
+   "cache_read_input_tokens": 375425,
+   "output_tokens": 6610,
+   "output_tokens_details": {
+    "thinking_tokens": 3007
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 25086
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 2,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_patch": 2,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 2,
+   "Bash:python": 3,
+   "Write": 1
+  },
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "haiku",
+  "task": "T12",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 4,
+    "opaque_share": [
+     0.048,
+     0.085,
+     0.127,
+     0.164,
+     0.148,
+     0.057,
+     0.028,
+     0.007
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 4,
+    "opaque_share": [
+     0.048,
+     0.085,
+     0.127,
+     0.164,
+     0.148,
+     0.057,
+     0.028,
+     0.007
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 39,
+  "cost": 0.0065,
+  "timed_out": false,
+  "model_id": "claude-haiku-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 9,
+  "is_error": false,
+  "stream_cost": 0.006545624999999999,
+  "usage": {
+   "input_tokens": 18,
+   "cache_creation_input_tokens": 12845,
+   "cache_read_input_tokens": 186670,
+   "output_tokens": 6143,
+   "output_tokens_details": {
+    "thinking_tokens": 2068
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 12845
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cd": 1,
+   "Bash:python": 3,
+   "Write": 1,
+   "Read": 2,
+   "Edit": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T01",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.504
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 25,
+  "cost": 0.1071,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.10710729999999999,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 29813,
+   "cache_read_input_tokens": 67088,
+   "output_tokens": 2585,
+   "output_tokens_details": {
+    "thinking_tokens": 944
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 29813
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T01",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.539
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 32,
+  "cost": 0.096,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.09598609999999998,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 21174,
+   "cache_read_input_tokens": 116231,
+   "output_tokens": 3140,
+   "output_tokens_details": {
+    "thinking_tokens": 273
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 21174
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Write": 1,
+   "Bash:cd": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T02",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.477
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 23,
+  "cost": 0.0871,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.0871138,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 24275,
+   "cache_read_input_tokens": 60603,
+   "output_tokens": 2035,
+   "output_tokens_details": {
+    "thinking_tokens": 1222
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 24275
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T02",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.492
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 32,
+  "cost": 0.0571,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.057116600000000003,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 8297,
+   "cache_read_input_tokens": 87341,
+   "output_tokens": 2762,
+   "output_tokens_details": {
+    "thinking_tokens": 1225
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 8297
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Bash:cat": 1,
+   "Write": 1,
+   "Bash:cd": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T03",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": false,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 9,
+    "opaque_share": [
+     0.257
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 37,
+  "cost": 0.0845,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.0845339,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 13975,
+   "cache_read_input_tokens": 97864,
+   "output_tokens": 3979,
+   "output_tokens_details": {
+    "thinking_tokens": 2178
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 13975
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 2
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T03",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 9,
+    "opaque_share": [
+     0.637
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 33,
+  "cost": 0.0663,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.066324,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 9120,
+   "cache_read_input_tokens": 70680,
+   "output_tokens": 3644,
+   "output_tokens_details": {
+    "thinking_tokens": 859
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9120
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Read": 2,
+   "Write": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T04",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": false,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "sword.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.27
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 46,
+  "cost": 0.1038,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.10380139999999999,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 18219,
+   "cache_read_input_tokens": 105039,
+   "output_tokens": 4773,
+   "output_tokens_details": {
+    "thinking_tokens": 3687
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 18219
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 2
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T04",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": false,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "sword.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.383
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 21,
+  "cost": 0.0373,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 3,
+  "is_error": false,
+  "stream_cost": 0.037267499999999995,
+  "usage": {
+   "input_tokens": 4,
+   "cache_creation_input_tokens": 6845,
+   "cache_read_input_tokens": 29870,
+   "output_tokens": 1716,
+   "output_tokens_details": {
+    "thinking_tokens": 899
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 6845
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T05",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.576
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 16,
+  "cost": 0.0648,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.0648492,
+  "usage": {
+   "input_tokens": 6,
+   "cache_creation_input_tokens": 16624,
+   "cache_read_input_tokens": 57372,
+   "output_tokens": 1754,
+   "output_tokens_details": {
+    "thinking_tokens": 392
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 16624
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T05",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.457
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 19,
+  "cost": 0.0355,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 4,
+  "is_error": false,
+  "stream_cost": 0.0354868,
+  "usage": {
+   "input_tokens": 6,
+   "cache_creation_input_tokens": 6569,
+   "cache_read_input_tokens": 47523,
+   "output_tokens": 1430,
+   "output_tokens_details": {
+    "thinking_tokens": 270
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 6569
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 2,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T06",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.609,
+     0.453,
+     0.281,
+     0.094,
+     0.281,
+     0.453
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.609,
+     0.453,
+     0.281,
+     0.094,
+     0.281,
+     0.453
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 34,
+  "cost": 0.0756,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.075611,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 10238,
+   "cache_read_input_tokens": 115520,
+   "output_tokens": 3844,
+   "output_tokens_details": {
+    "thinking_tokens": 756
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 10238
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Bash:ls": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Read": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T06",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     0.641,
+     0.547,
+     0.375,
+     0.109,
+     0.375,
+     0.547
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 4,
+    "opaque_share": [
+     0.641,
+     0.547,
+     0.375,
+     0.109,
+     0.375,
+     0.547
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 33,
+  "cost": 0.0656,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.06564990000000001,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 8930,
+   "cache_read_input_tokens": 108509,
+   "output_tokens": 3245,
+   "output_tokens_details": {
+    "thinking_tokens": 414
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 8930
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 2,
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Write": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T07",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 20,
+  "cost": 0.0824,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.08239199999999999,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 21021,
+   "cache_read_input_tokens": 174215,
+   "output_tokens": 1239,
+   "output_tokens_details": {
+    "thinking_tokens": 52
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 21021
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 2,
+   "mcp__pixelbolt__pixel_help": 2,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "sonnet",
+  "task": "T07",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.273,
+     0.279,
+     0.288,
+     0.279,
+     0.273,
+     0.266,
+     0.255,
+     0.266
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 6,
+    "opaque_share": [
+     0.273,
+     0.279,
+     0.288,
+     0.279,
+     0.273,
+     0.266,
+     0.255,
+     0.266
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 34,
+  "cost": 0.0725,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.0725413,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 9445,
+   "cache_read_input_tokens": 109748,
+   "output_tokens": 3793,
+   "output_tokens_details": {
+    "thinking_tokens": 488
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9445
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 2,
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Write": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T08",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "walk_sheet.png": {
+    "format": "PNG",
+    "size": [
+     192,
+     32
+    ],
+    "colours": 10,
+    "opaque_share": [
+     0.188,
+     0.168,
+     0.188,
+     0.188,
+     0.168,
+     0.188
+    ]
+   },
+   "walk.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 10,
+    "opaque_share": [
+     0.188,
+     0.168,
+     0.188,
+     0.188,
+     0.168,
+     0.188
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 103,
+  "cost": 0.2657,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 15,
+  "is_error": false,
+  "stream_cost": 0.265672,
+  "usage": {
+   "input_tokens": 28,
+   "cache_creation_input_tokens": 37752,
+   "cache_read_input_tokens": 475960,
+   "output_tokens": 12364,
+   "output_tokens_details": {
+    "thinking_tokens": 4962
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 37752
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 2,
+   "Bash:cd": 1,
+   "Write": 2,
+   "Bash:python": 4,
+   "Bash:mv": 1,
+   "Bash:sed": 1,
+   "Edit": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T08",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "walk_sheet.png": {
+    "format": "PNG",
+    "size": [
+     192,
+     32
+    ],
+    "colours": 10,
+    "opaque_share": [
+     0.259,
+     0.286,
+     0.289,
+     0.259,
+     0.286,
+     0.285
+    ]
+   },
+   "walk.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 10,
+    "opaque_share": [
+     0.259,
+     0.286,
+     0.289,
+     0.259,
+     0.286,
+     0.285
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 47,
+  "cost": 0.0942,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 9,
+  "is_error": false,
+  "stream_cost": 0.0941573,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 11043,
+   "cache_read_input_tokens": 134818,
+   "output_tokens": 5304,
+   "output_tokens_details": {
+    "thinking_tokens": 917
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 11043
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 3,
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Bash:ls": 1,
+   "Write": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T09",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.36
+  },
+  "files": {
+   "grass.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 16,
+  "cost": 0.063,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.0630072,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 16561,
+   "cache_read_input_tokens": 79487,
+   "output_tokens": 1364,
+   "output_tokens_details": {
+    "thinking_tokens": 193
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 16561
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "mcp__pixelbolt__pixel_inspect": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T09",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 1.376
+  },
+  "files": {
+   "grass.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 20,
+  "cost": 0.0364,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 3,
+  "is_error": false,
+  "stream_cost": 0.0363852,
+  "usage": {
+   "input_tokens": 6,
+   "cache_creation_input_tokens": 6704,
+   "cache_read_input_tokens": 48332,
+   "output_tokens": 1478,
+   "output_tokens_details": {
+    "thinking_tokens": 175
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 6704
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cat": 1,
+   "Bash:python": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T10",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 1.171
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 6,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 56,
+  "cost": 0.1664,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.16639389999999998,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 35960,
+   "cache_read_input_tokens": 190199,
+   "output_tokens": 5745,
+   "output_tokens_details": {
+    "thinking_tokens": 2372
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 35960
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 1
+ },
+ {
+  "model": "sonnet",
+  "task": "T10",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.697
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 7,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 41,
+  "cost": 0.0764,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.0763828,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 9734,
+   "cache_read_input_tokens": 92478,
+   "output_tokens": 4278,
+   "output_tokens_details": {
+    "thinking_tokens": 1650
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9734
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Bash:ls": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T11",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.389,
+     0.389,
+     0.388,
+     0.387,
+     0.387,
+     0.388,
+     0.389,
+     0.389
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 7,
+    "opaque_share": [
+     0.389,
+     0.389,
+     0.388,
+     0.387,
+     0.387,
+     0.388,
+     0.389,
+     0.389
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 67,
+  "cost": 0.1504,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 16,
+  "is_error": false,
+  "stream_cost": 0.1503633,
+  "usage": {
+   "input_tokens": 22,
+   "cache_creation_input_tokens": 25450,
+   "cache_read_input_tokens": 339443,
+   "output_tokens": 5275,
+   "output_tokens_details": {
+    "thinking_tokens": 1055
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 25450
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "Bash:python": 4,
+   "Bash:cat": 1,
+   "Read": 4,
+   "Write": 1,
+   "Bash:sed": 1,
+   "Edit": 2
+  },
+  "pixelbolt_calls": 1
+ },
+ {
+  "model": "sonnet",
+  "task": "T11",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.366,
+     0.386,
+     0.383,
+     0.372,
+     0.358,
+     0.346,
+     0.341,
+     0.338
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 7,
+    "opaque_share": [
+     0.366,
+     0.386,
+     0.383,
+     0.372,
+     0.358,
+     0.346,
+     0.341,
+     0.338
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 41,
+  "cost": 0.0806,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.08055280000000001,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 10082,
+   "cache_read_input_tokens": 93878,
+   "output_tokens": 4594,
+   "output_tokens_details": {
+    "thinking_tokens": 654
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 10082
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Write": 1,
+   "Bash:python": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T12",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.457,
+     0.479,
+     0.43,
+     0.385,
+     0.254,
+     0.112,
+     0.0
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": null,
+    "durations": [
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60,
+     60
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.457,
+     0.479,
+     0.43,
+     0.385,
+     0.254,
+     0.112,
+     0.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 44,
+  "cost": 0.1045,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.10446710000000001,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 26301,
+   "cache_read_input_tokens": 202466,
+   "output_tokens": 1844,
+   "output_tokens_details": {
+    "thinking_tokens": 404
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 26301
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 2,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_patch": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "sonnet",
+  "task": "T12",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.021,
+     0.065,
+     0.152,
+     0.198,
+     0.211,
+     0.173,
+     0.142,
+     0.057
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     90,
+     90,
+     90,
+     90,
+     90,
+     90,
+     90,
+     90
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.021,
+     0.065,
+     0.152,
+     0.198,
+     0.211,
+     0.173,
+     0.142,
+     0.057
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 32,
+  "cost": 0.0666,
+  "timed_out": false,
+  "model_id": "claude-sonnet-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.06660469999999999,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 9137,
+   "cache_read_input_tokens": 70562,
+   "output_tokens": 3669,
+   "output_tokens_details": {
+    "thinking_tokens": 418
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9137
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Read": 2,
+   "Write": 1,
+   "Bash:python": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T01",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.648
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 38,
+  "cost": 0.2376,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.23758079999999998,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 31579,
+   "cache_read_input_tokens": 99829,
+   "output_tokens": 2984,
+   "output_tokens_details": {
+    "thinking_tokens": 850
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 31579
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T01",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "chest.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.551
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 49,
+  "cost": 0.2131,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.21306160000000002,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 22376,
+   "cache_read_input_tokens": 77408,
+   "output_tokens": 4283,
+   "output_tokens_details": {
+    "thinking_tokens": 854
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 22376
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 2,
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T02",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.555
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 33,
+  "cost": 0.2166,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.21661719999999998,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 30148,
+   "cache_read_input_tokens": 97086,
+   "output_tokens": 2321,
+   "output_tokens_details": {
+    "thinking_tokens": 1304
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 30148
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T02",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "potion.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.477
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 42,
+  "cost": 0.1306,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.13057919999999998,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 8703,
+   "cache_read_input_tokens": 70461,
+   "output_tokens": 3647,
+   "output_tokens_details": {
+    "thinking_tokens": 1377
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 8703
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:cat": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T03",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 9,
+    "opaque_share": [
+     0.408
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 82,
+  "cost": 0.2969,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.29691880000000004,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 24038,
+   "cache_read_input_tokens": 117744,
+   "output_tokens": 7657,
+   "output_tokens_details": {
+    "thinking_tokens": 6158
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 24038
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T03",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "knight.png": {
+    "format": "PNG",
+    "size": [
+     32,
+     32
+    ],
+    "colours": 9,
+    "opaque_share": [
+     0.541
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 69,
+  "cost": 0.2074,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.2074028,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 11742,
+   "cache_read_input_tokens": 143284,
+   "output_tokens": 5999,
+   "output_tokens_details": {
+    "thinking_tokens": 3407
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 11742
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 2,
+   "Write": 1,
+   "Bash:cd": 2,
+   "Read": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T04",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "sword.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.301
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 60,
+  "cost": 0.2267,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.22671059999999998,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 21264,
+   "cache_read_input_tokens": 114153,
+   "output_tokens": 4876,
+   "output_tokens_details": {
+    "thinking_tokens": 3942
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 21264
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T04",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {},
+  "files": {
+   "sword.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.258
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 48,
+  "cost": 0.1465,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.1464652,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 9446,
+   "cache_read_input_tokens": 71516,
+   "output_tokens": 4245,
+   "output_tokens_details": {
+    "thinking_tokens": 1922
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9446
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:mkdir": 1,
+   "Write": 1,
+   "Bash:python": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T05",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": false,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.592
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 51,
+  "cost": 0.2645,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.2644714,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 26000,
+   "cache_read_input_tokens": 212137,
+   "output_tokens": 4599,
+   "output_tokens_details": {
+    "thinking_tokens": 479
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 26000
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 3,
+   "mcp__pixelbolt__pixel_inspect": 2,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 6
+ },
+ {
+  "model": "opus",
+  "task": "T05",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": false,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": false,
+  "info": {},
+  "files": {
+   "tree.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 8,
+    "opaque_share": [
+     0.405
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 30,
+  "cost": 0.1,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.1000278,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 7672,
+   "cache_read_input_tokens": 67279,
+   "output_tokens": 2409,
+   "output_tokens_details": {
+    "thinking_tokens": 146
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 7672
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Write": 1,
+   "Bash:cd": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T06",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.656,
+     0.477,
+     0.203,
+     0.109,
+     0.203,
+     0.477
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.656,
+     0.477,
+     0.203,
+     0.109,
+     0.203,
+     0.477
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 96,
+  "cost": 0.351,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.35103180000000006,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 28207,
+   "cache_read_input_tokens": 195904,
+   "output_tokens": 8538,
+   "output_tokens_details": {
+    "thinking_tokens": 6027
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 28207
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_patch": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "opus",
+  "task": "T06",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "coin_sheet.png": {
+    "format": "PNG",
+    "size": [
+     96,
+     16
+    ],
+    "colours": 4,
+    "opaque_share": [
+     0.75,
+     0.672,
+     0.391,
+     0.203,
+     0.391,
+     0.672
+    ]
+   },
+   "coin.gif": {
+    "format": "GIF",
+    "size": [
+     16,
+     16
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 4,
+    "opaque_share": [
+     0.75,
+     0.672,
+     0.391,
+     0.203,
+     0.391,
+     0.672
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 59,
+  "cost": 0.1756,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 11,
+  "is_error": false,
+  "stream_cost": 0.17557540000000002,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 10693,
+   "cache_read_input_tokens": 156832,
+   "output_tokens": 4534,
+   "output_tokens_details": {
+    "thinking_tokens": 1301
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 10693
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 3,
+   "Write": 1,
+   "Bash:cd": 2,
+   "Read": 3,
+   "Edit": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T07",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140,
+     140
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273,
+     0.273
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 30,
+  "cost": 0.1682,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.1682494,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 20921,
+   "cache_read_input_tokens": 177042,
+   "output_tokens": 1409,
+   "output_tokens_details": {
+    "thinking_tokens": 86
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 20921
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 2,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "opus",
+  "task": "T07",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "slime_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 6,
+    "opaque_share": [
+     0.372,
+     0.368,
+     0.372,
+     0.369,
+     0.372,
+     0.369,
+     0.372,
+     0.368
+    ]
+   },
+   "slime.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 6,
+    "opaque_share": [
+     0.372,
+     0.368,
+     0.372,
+     0.369,
+     0.372,
+     0.369,
+     0.372,
+     0.368
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 45,
+  "cost": 0.1434,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 6,
+  "is_error": false,
+  "stream_cost": 0.14341600000000002,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 9309,
+   "cache_read_input_tokens": 90655,
+   "output_tokens": 3935,
+   "output_tokens_details": {
+    "thinking_tokens": 1149
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 9309
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Write": 1,
+   "Bash:cd": 2,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T08",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "walk_sheet.png": {
+    "format": "PNG",
+    "size": [
+     192,
+     32
+    ],
+    "colours": 11,
+    "opaque_share": [
+     0.164,
+     0.159,
+     0.167,
+     0.164,
+     0.159,
+     0.167
+    ]
+   },
+   "walk.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     80,
+     80,
+     80,
+     80,
+     80,
+     80
+    ],
+    "gif": true,
+    "colours": 11,
+    "opaque_share": [
+     0.164,
+     0.159,
+     0.167,
+     0.164,
+     0.159,
+     0.167
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 80,
+  "cost": 0.3644,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.3643944,
+  "usage": {
+   "input_tokens": 26,
+   "cache_creation_input_tokens": 33565,
+   "cache_read_input_tokens": 445327,
+   "output_tokens": 5370,
+   "output_tokens_details": {
+    "thinking_tokens": 927
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 33565
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 3,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_patch": 2,
+   "mcp__pixelbolt__pixel_render": 2,
+   "Bash:cd": 2
+  },
+  "pixelbolt_calls": 9
+ },
+ {
+  "model": "opus",
+  "task": "T08",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": false
+  },
+  "files": {
+   "walk_sheet.png": {
+    "format": "PNG",
+    "size": [
+     192,
+     32
+    ],
+    "colours": 11,
+    "opaque_share": [
+     0.272,
+     0.246,
+     0.269,
+     0.275,
+     0.246,
+     0.266
+    ]
+   },
+   "walk.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 6,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 11,
+    "opaque_share": [
+     0.272,
+     0.246,
+     0.269,
+     0.275,
+     0.246,
+     0.266
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 91,
+  "cost": 0.2938,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 13,
+  "is_error": false,
+  "stream_cost": 0.2938158,
+  "usage": {
+   "input_tokens": 14,
+   "cache_creation_input_tokens": 16533,
+   "cache_read_input_tokens": 149074,
+   "output_tokens": 9064,
+   "output_tokens_details": {
+    "thinking_tokens": 2739
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 16533
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Write": 1,
+   "Bash:cd": 4,
+   "Read": 3,
+   "Edit": 3
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T09",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.985
+  },
+  "files": {
+   "grass.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 39,
+  "cost": 0.1798,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 5,
+  "is_error": false,
+  "stream_cost": 0.17976180000000003,
+  "usage": {
+   "input_tokens": 10,
+   "cache_creation_input_tokens": 18643,
+   "cache_read_input_tokens": 110434,
+   "output_tokens": 3221,
+   "output_tokens_details": {
+    "thinking_tokens": 2070
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 18643
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T09",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 1.258
+  },
+  "files": {
+   "grass.png": {
+    "format": "PNG",
+    "size": [
+     16,
+     16
+    ],
+    "colours": 5,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 33,
+  "cost": 0.1198,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.11981739999999999,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 8372,
+   "cache_read_input_tokens": 106347,
+   "output_tokens": 2832,
+   "output_tokens_details": {
+    "thinking_tokens": 299
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 8372
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Bash:mkdir": 2,
+   "Write": 1,
+   "Bash:[compound command]": 1,
+   "Read": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T10",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.275
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 7,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 76,
+  "cost": 0.4231,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 11,
+  "is_error": false,
+  "stream_cost": 0.4231376,
+  "usage": {
+   "input_tokens": 22,
+   "cache_creation_input_tokens": 42651,
+   "cache_read_input_tokens": 450373,
+   "output_tokens": 5986,
+   "output_tokens_details": {
+    "thinking_tokens": 1725
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 42651
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_render": 2,
+   "Bash:cd": 3,
+   "mcp__pixelbolt__pixel_inspect": 1,
+   "Bash:rm": 1
+  },
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "opus",
+  "task": "T10",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true
+  },
+  "valid": true,
+  "info": {
+   "seam_ratio": 0.822
+  },
+  "files": {
+   "path_tiles.png": {
+    "format": "PNG",
+    "size": [
+     48,
+     48
+    ],
+    "colours": 7,
+    "opaque_share": [
+     1.0
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 71,
+  "cost": 0.2013,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 7,
+  "is_error": false,
+  "stream_cost": 0.20125579999999998,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 11754,
+   "cache_read_input_tokens": 117389,
+   "output_tokens": 5948,
+   "output_tokens_details": {
+    "thinking_tokens": 2729
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 11754
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Write": 1,
+   "Bash:cd": 2,
+   "Read": 2
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T11",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.219,
+     0.222,
+     0.225,
+     0.226,
+     0.214,
+     0.212,
+     0.22,
+     0.217
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110
+    ],
+    "gif": true,
+    "colours": 7,
+    "opaque_share": [
+     0.219,
+     0.222,
+     0.225,
+     0.226,
+     0.214,
+     0.212,
+     0.22,
+     0.217
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 90,
+  "cost": 0.3963,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 12,
+  "is_error": false,
+  "stream_cost": 0.39633100000000004,
+  "usage": {
+   "input_tokens": 24,
+   "cache_creation_input_tokens": 36719,
+   "cache_read_input_tokens": 404000,
+   "output_tokens": 6592,
+   "output_tokens_details": {
+    "thinking_tokens": 1684
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 36719
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 2,
+   "mcp__pixelbolt__pixel_compile": 3,
+   "Bash:python": 3,
+   "mcp__pixelbolt__pixel_patch": 1,
+   "mcp__pixelbolt__pixel_render": 1
+  },
+  "pixelbolt_calls": 7
+ },
+ {
+  "model": "opus",
+  "task": "T11",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "fire_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 7,
+    "opaque_share": [
+     0.294,
+     0.295,
+     0.291,
+     0.285,
+     0.274,
+     0.275,
+     0.282,
+     0.294
+    ]
+   },
+   "fire.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": 0,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 7,
+    "opaque_share": [
+     0.294,
+     0.295,
+     0.291,
+     0.285,
+     0.274,
+     0.275,
+     0.282,
+     0.294
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 70,
+  "cost": 0.2081,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 14,
+  "is_error": false,
+  "stream_cost": 0.2081098,
+  "usage": {
+   "input_tokens": 12,
+   "cache_creation_input_tokens": 13456,
+   "cache_read_input_tokens": 116509,
+   "output_tokens": 5874,
+   "output_tokens_details": {
+    "thinking_tokens": 1428
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 13456
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 1,
+   "Write": 1,
+   "Bash:cd": 2,
+   "Read": 3,
+   "Edit": 2,
+   "Bash:pwd": 1
+  },
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T12",
+  "arm": "with",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": true
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.371,
+     0.486,
+     0.444,
+     0.385,
+     0.254,
+     0.112,
+     0.021
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": null,
+    "durations": [
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100,
+     100
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.095,
+     0.371,
+     0.486,
+     0.444,
+     0.385,
+     0.254,
+     0.112,
+     0.021
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 34,
+  "cost": 0.1806,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {
+   "pixelbolt": "connected"
+  },
+  "result": "success",
+  "turns": 8,
+  "is_error": false,
+  "stream_cost": 0.1806038,
+  "usage": {
+   "input_tokens": 16,
+   "cache_creation_input_tokens": 19409,
+   "cache_read_input_tokens": 193274,
+   "output_tokens": 2242,
+   "output_tokens_details": {
+    "thinking_tokens": 327
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 19409
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "ToolSearch": 1,
+   "mcp__pixelbolt__pixel_help": 1,
+   "mcp__pixelbolt__pixel_compile": 1,
+   "mcp__pixelbolt__pixel_patch": 2,
+   "mcp__pixelbolt__pixel_render": 1,
+   "Bash:cd": 1
+  },
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "opus",
+  "task": "T12",
+  "arm": "without",
+  "pilot": false,
+  "checks": {
+   "files": true,
+   "size": true,
+   "crisp": true,
+   "palette": true,
+   "background": true,
+   "content": true,
+   "frames": true,
+   "motion": true
+  },
+  "valid": true,
+  "info": {
+   "gif_matches_sheet": false
+  },
+  "files": {
+   "smoke_sheet.png": {
+    "format": "PNG",
+    "size": [
+     256,
+     32
+    ],
+    "colours": 5,
+    "opaque_share": [
+     0.05,
+     0.181,
+     0.302,
+     0.372,
+     0.353,
+     0.193,
+     0.098,
+     0.03
+    ]
+   },
+   "smoke.gif": {
+    "format": "GIF",
+    "size": [
+     32,
+     32
+    ],
+    "n_frames": 8,
+    "loop": null,
+    "durations": [
+     70,
+     70,
+     80,
+     90,
+     100,
+     110,
+     120,
+     140
+    ],
+    "gif": true,
+    "colours": 5,
+    "opaque_share": [
+     0.05,
+     0.181,
+     0.302,
+     0.372,
+     0.38,
+     0.38,
+     0.38,
+     0.38
+    ]
+   }
+  },
+  "exit": 0,
+  "duration_s": 84,
+  "cost": 0.2649,
+  "timed_out": false,
+  "model_id": "claude-opus-5-5",
+  "mcp": {},
+  "result": "success",
+  "turns": 18,
+  "is_error": false,
+  "stream_cost": 0.26486040000000005,
+  "usage": {
+   "input_tokens": 24,
+   "cache_creation_input_tokens": 14995,
+   "cache_read_input_tokens": 264047,
+   "output_tokens": 6849,
+   "output_tokens_details": {
+    "thinking_tokens": 1434
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 0,
+    "ephemeral_5m_input_tokens": 14995
+   },
+   "inference_geo": "global",
+   "iterations": [],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "tools": {
+   "Bash:python": 7,
+   "Write": 2,
+   "Read": 3,
+   "Bash:cat": 1,
+   "Edit": 1
+  },
+  "pixelbolt_calls": 0
+ }
+]

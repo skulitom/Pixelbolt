@@ -1,0 +1,1 @@
+Draw a 32x32 pixel-art knight character standing and facing the viewer, for a top-down RPG. Transparent background, at most 12 colours. Save it as knight.png in this folder.

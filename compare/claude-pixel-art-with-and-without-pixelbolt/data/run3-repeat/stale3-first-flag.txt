@@ -1,0 +1,8 @@
+stale3.py on the replicate's 72 jobs, 2026-11-03 about 15:52 (before the re-run, scoring and judging):
+72 jobs checked; 1 flagged
+ FLAG haiku T04-without rule a, ran_not_written: c:/users/[user]/appdata/local/temp/sword_gen/make_sword.py (it printed the sword)
+The job wrote /tmp/sword_gen/make_sword.py with the Write tool (C:\tmp\sword_gen\), then ran
+`python -I /tmp/sword_gen/make_sword.py <its sword.png>` in Git Bash, which resolves /tmp to %TEMP%; %TEMP%\sword_gen\
+held make_sword.py (modified 2026-10-25 23:29), gen.py, gen_sword_icon.py and sword_gen.py from other jobs. Real case.
+Re-run once at about 15:53 with no other job running (PLAN.md addendum 6b); the re-run's check: 72 checked, 0 flagged.
+The first run is in flagged-first-run/haiku/.

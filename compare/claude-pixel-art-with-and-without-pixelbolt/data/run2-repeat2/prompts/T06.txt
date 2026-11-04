@@ -1,0 +1,1 @@
+Make a spinning gold coin animation in pixel art: 16x16 pixels per frame, 6 frames, looping. Save the frames side by side as a sprite sheet coin_sheet.png (96x16) and also as a looping animated GIF coin.gif. Transparent background, at most 6 colours.

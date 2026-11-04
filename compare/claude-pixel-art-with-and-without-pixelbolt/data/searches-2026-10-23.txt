@@ -1,0 +1,41 @@
+Searches for this page, Fri 2026-10-23, about 15:06 to 15:08 London, the WebSearch tool in standard mode (US results).
+For each: the result URLs in order, and what the tool's summary said. Pixelbolt or skulitom appeared in none.
+
+1. "can Claude make pixel art sprites"
+   shyft.ai/skills/pixel-plugin; cdn.jsdelivr.net willibrandon/pixel-plugin README; claudemarketplaces.com
+   opusgamelabs/game-creator game-assets; spritecook.ai/blog/claude-desktop-spritecook-plugin (June 10, 2026);
+   sourcepulse.org pixel-plugin; reddit.sentinel-team.org snapshot; spritecook.ai/docs/guide-generate-sprites;
+   spritecook.ai/docs/ai-game-assets; claudepluginhub.com game-creator; claudemarketplaces.com/mcp/ai.spritecook/generate
+   Summary: "Yes, but mostly through tools." It "didn't establish how well plain Claude, without tools, handles
+   pixel-precise sprite work. For that, you'd want ... direct testing."
+
+2. "Claude Code pixel art MCP server benchmark"
+   glama.ai/mcp/servers/mr9lhalsqc; glama.ai/mcp/servers/ly1xau145c; shyft.ai mcp-server-pixel-art;
+   claudemarket.ai/mcp/aitor-alt/pixel; designrevision.com best-mcp-servers-for-claude-code; glama steipete
+   claude-code-mcp logo; getdrio.com mcp-server-pixel-art-kfischer-okarin; tomevault.io willibrandon/pixel-mcp;
+   workingnotworking.com; firecrawl.dev best-mcp-servers-claude-code-codex
+   Summary: "I found no benchmark that compares pixel-art MCP servers for Claude Code." Named: a Glama "Pixel Art
+   MCP" (text prompt to palette-limited PNG through an image backend), pxcli-mcp (npx), willibrandon's Aseprite
+   pixel-mcp. "you'd likely have to run the candidate servers yourself on a fixed set of prompts and score the outputs."
+
+3. "does an MCP tool help Claude make better pixel art sprite animation"
+   pkg.go.dev willibrandon/pixel-mcp; glama.ai eypu8lc9wc, q5nfluslua; jsdelivr diivi/aseprite-mcp README;
+   glama.ai pkklvuhmfa, co3d0nyiy2, j3sif2kleb; images.glama.ai freema/pixelforge-mcp; glama.ai mr9lhalsqc;
+   github.com/rkdfx/aseprite-mcp
+   Summary: "none of them shows independently that the output is better"; "None of the results compares the same
+   prompt with and without an MCP tool, so 'better' is unproven here." "A useful test would be the same sprite and
+   animation prompts run with and without an Aseprite MCP server".
+
+4. "Claude Haiku Sonnet Opus pixel art sprite generation comparison"
+   morphllm.com comparisons; canaltech.com.br; claw.aguidetocloud.com; haimaker.ai; ai-solutions.daviesmeyer.com;
+   docs.orq.ai changelog; traeai.com; igmguru.com; aischool.lillytechsystems.com
+   Summary: "I found no comparisons of how the Haiku, Sonnet, and Opus tiers handle pixel art or sprite generation".
+
+5. "AI agent pixel art sprite sheet GIF benchmark valid output palette"
+   llamagen.ai "best ai pixel art generators 2026" in about ten languages
+   Summary: one vendor guide repeated; "not an independent benchmark, and it doesn't define any test for whether a
+   palette output is valid."
+
+New names for the next Pixelbolt refresh (not read yet): willibrandon/pixel-plugin (Claude Code plugin over
+pixel-mcp and Aseprite), pxcli-mcp, the Glama "Pixel Art MCP" (image backend), opusgamelabs game-creator's
+game-assets skill, SpriteCook's Claude Desktop plugin.

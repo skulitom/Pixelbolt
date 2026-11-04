@@ -1,0 +1,1 @@
+I need an idle animation for a green slime enemy in pixel art: 32x32 per frame, 8 frames, a gentle squash-and-stretch bounce that loops. Save it as a sprite sheet slime_sheet.png (256x32) and as a looping GIF slime.gif. Transparent background, at most 8 colours. Use the Pixelbolt MCP tools for this.

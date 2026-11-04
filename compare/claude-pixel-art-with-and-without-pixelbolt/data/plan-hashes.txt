@@ -1,0 +1,82 @@
+SHA-256 of the plan, tasks and scripts at each freeze, as recorded at the time (Windows local time = GMT).
+PLAN.md here is the published copy (square-bracket replacements, all amendments), so its hash won't match the
+recorded ones; tasks.json is published unchanged and matches. Script copies have local paths and names replaced.
+anim_bar_test.py, recorded under run 3, is published as run3/anim_bar_test.py; its copy has names replaced too.
+
+## run 1 (23 Oct)
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+96de5bf46bff776914941469cd445ead4fd23bd2dd8d90a6dc2e5ba7f98d8b9e *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+c4233e0050c5cd9b8081c94e6d696e333387f1aa6ac97527fda5ea1fcb1b636c *sheets.py
+ac30ed9acd5a52531352f6c0794c554537d80ba2be4f58e529a5e2ba9413daea *judge.py
+5116671862275b4c43a2c6ec22dcb9f57be3c71946d0608ce3ed0fa2765efa92 *PLAN.md
+
+## run 2 (26 Oct)
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+6407d60dc94fe26ddba5cf999b9a879a95159ee92397504d0f6689624248ca3f *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+fed8ed9283276fc205a0205a87824251435c9fcf962cf8d960bd04cb731082fa *sheets.py
+74b538efb75e55bdad552dae4d8841f834f4ba00e9cdce489d9d159f720da94d *judge.py
+b0217ccb39656c43ff8d49967bbf761a53b02db6a1dc47ced325cf5dbb3acb14 *PLAN.md
+
+## run 2's first repeat (26 Oct)
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+25164eef0553aeaedc9f7984ef612660c9f0fa69dfb3e488859432038c4b985b *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+fed8ed9283276fc205a0205a87824251435c9fcf962cf8d960bd04cb731082fa *sheets.py
+1f70460c1087cae1fae284383a1cc4e493428d69bbc212571115b7cb7d0d8c28 *judge.py
+9ffbc6b7fca9e31f951da158df1c5383dc594cc09afafaef975d1dce1619859e *PLAN.md
+
+## run 2's second repeat (27 Oct)
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+0afea78fde9e55b1d1bcb5d062e8a048926005ba4306ac6b670ec2c68ed05556 *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+fed8ed9283276fc205a0205a87824251435c9fcf962cf8d960bd04cb731082fa *sheets.py
+327eaf5e46212abfd6bbf71224ee80ccad47ddb5be01576766fc9105691adff8 *judge.py
+2f613615a1f322bbee0ee227dff280d767a63f6c2ebf029fa0de4ade45c62801 *stale3.py
+5f1fd83b3990a2d386b230714239f9b3a207794ffd0ad4540369429719640349 *prep_leftovers.py
+a857cc7d840b7ff9418b397e20b3b41f6daee7562681a31ed2ed9981dc6bfcf1 *PLAN.md
+# saved: PLAN.md 2026-10-27 15:03:30, hashed 2026-10-27 15:03:34 (Windows local = GMT)
+# addendum 5a, 2026-10-27 15:19:14
+a1e0bbc929f0ea9443cfd170815650670cfaf2b00c8ff4ee681664006bfd1a82 *stale3.py
+2f613615a1f322bbee0ee227dff280d767a63f6c2ebf029fa0de4ade45c62801 *stale3.pre-fix.py
+0afea78fde9e55b1d1bcb5d062e8a048926005ba4306ac6b670ec2c68ed05556 *run_bench.py
+8e867b022889b6ee2ddf5320c05b556451ce128b4c10851023db34fb6bccc4d3 *PLAN.md
+# addendum 5b, 2026-10-27 15:47:35
+b6b5a70c4d7e932fea6dd065c22fc6197678fa1585432a3c06b4dd39a7f27c1a *stale3.py
+a1e0bbc929f0ea9443cfd170815650670cfaf2b00c8ff4ee681664006bfd1a82 *stale3.pre-5b.py
+6884d749509c56bfdbd46656b0a5b7e68c6ef9e6fd8e1c76013996a2e5b0286c *PLAN.md
+
+## run 3 and its repeat (3 Nov)
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+f8ae3605edfece0253ddd743bf6f2e04764d172c2e0b1bdc1f538c3f41876929 *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+fed8ed9283276fc205a0205a87824251435c9fcf962cf8d960bd04cb731082fa *sheets.py
+4acaf2c90783dba782c8c9ae3b773dffdbeef5a9369eaf802756b07ae3d886d9 *judge.py
+0682ed7ebc1b2c12d75185be4098cec90625586c6fa6d5ceb0d11768d0f9d168 *stale3.py
+5f1fd83b3990a2d386b230714239f9b3a207794ffd0ad4540369429719640349 *prep_leftovers.py
+9fe408d51e73a7b3973a0a3486a49505a872fd04e8f41153cb3f2600eb3defab *summary.py
+87d1eee66a536594513d6b9a99527ebfe8b3efdaab4cb23515b05f77c3b27ad4 *PLAN.md
+3e093662b1dd513ab147bdcf94eac4490630cdab4e23e69fd8df956392a15b91 *pkg/pixelbolt-0.11.0.tgz
+3ab075f78998efef8b87f491c2e4a39c309dddf44e51d0103eba4f3713d2a0ae *cc-2.1.302/claude.exe
+# PLAN.md amendment 6 saved 2026-11-03 15:04:37, hashed 2026-11-03 15:04:38 (Windows local = GMT)
+4f52c8ab858e7ada1e7d14df50d35d4ef4a1cc225ec10befb4dde324669aece2 *anim_bar_test.py # written 2026-11-03 15:07:28, hashed 2026-11-03 15:07:31, before any run-3 result was read
+# addendum 6a, 2026-11-03 15:14:05
+dc1c74260fa284e3ca7396731c08f9936ed4892596c3c178e6b629c60c5f97f5 *stale3.py
+0682ed7ebc1b2c12d75185be4098cec90625586c6fa6d5ceb0d11768d0f9d168 *stale3.pre-6a.py
+ba5902d9734511855fd5075f724d708b2dda171392c914dbd4d1d376d8ef2ff6 *PLAN.md
+# addendum 6b, 2026-11-03 15:53:28, before the replicate's scoring and judging and before run 3's re-judging
+2b23001e2fd1453fa1e2ff47fb5f9b2af2b7b45dbb973cdf193a250d38da44df *PLAN.md
+4acaf2c90783dba782c8c9ae3b773dffdbeef5a9369eaf802756b07ae3d886d9 *judge.py
+65270543254e690462a4045fdec8eabeb74cea8dd004510b46b1d1041c3b0dba *../[another run's folder]/judge.py
+
+## the plan's hashes before run 2
+b0217ccb39656c43ff8d49967bbf761a53b02db6a1dc47ced325cf5dbb3acb14  PLAN.md first 11526 bytes: through amendment 2 (before run 2)
+9ffbc6b7fca9e31f951da158df1c5383dc594cc09afafaef975d1dce1619859e  PLAN.md first 12501 bytes: through amendment 3 (before the replicate)
+2f35f6ae52c0e9397ffb7c249b36e41fe115e5317f4eca093814b334deab9823  PLAN.md first 13244 bytes: through amendment 4 (before the cut cells)
+eb9e768e90987bf702c672f43b7ebb00739741270b4e417a72861b3a1d0357ba  PLAN.md first 14338 bytes: whole file with the erratum as first written (hashed 16:43:45, before its header time was corrected)
+5b783e5d037dec5d6a052fd0128b6291ca37949340932dd996002f76417de96c  PLAN.md first 14332 bytes: whole file with the erratum (its header time corrected after review 2)
+a857cc7d840b7ff9418b397e20b3b41f6daee7562681a31ed2ed9981dc6bfcf1  PLAN.md first 18054 bytes: through amendment 5 (before replicate 3)
+8e867b022889b6ee2ddf5320c05b556451ce128b4c10851023db34fb6bccc4d3  PLAN.md first 19245 bytes: through addendum 5a (before replicate 3's Opus jobs)
+6884d749509c56bfdbd46656b0a5b7e68c6ef9e6fd8e1c76013996a2e5b0286c  PLAN.md first 20130 bytes: through addendum 5b (before replicate 3 was scored)
+cda237cb1588d7dd40d81af3edb5f1a00a85efcd66a4a2377a7915f5047430d4  PLAN.md first 20762 bytes: whole file with the 10-27 erratum (after review 2)

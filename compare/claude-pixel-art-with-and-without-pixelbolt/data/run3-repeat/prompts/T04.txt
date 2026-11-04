@@ -1,0 +1,1 @@
+I want a 16x16 pixel-art sword icon for an inventory slot, pointing up and to the right, transparent background, at most 6 colours. Save it as sword.png in this folder.

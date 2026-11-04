@@ -1,0 +1,521 @@
+[
+ {
+  "model": "haiku",
+  "task": "T01",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "chest.png": "pixelbolt"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 1,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T02",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "potion.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 1,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T03",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "knight.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 1,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T04",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "sword.png": "pixelbolt"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 1,
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "haiku",
+  "task": "T05",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "tree.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T06",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "coin_sheet.png": "own code",
+   "coin.gif": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T07",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "slime_sheet.png": "pixelbolt",
+   "slime.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T08",
+  "arm": "with",
+  "valid": true,
+  "kind": "mixed",
+  "by_file": {
+   "walk_sheet.png": "own code",
+   "walk.gif": "pixelbolt"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 1,
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "haiku",
+  "task": "T09",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "grass.png": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "haiku",
+  "task": "T10",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "path_tiles.png": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 1
+ },
+ {
+  "model": "haiku",
+  "task": "T11",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "fire_sheet.png": "pixelbolt",
+   "fire.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "haiku",
+  "task": "T12",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "smoke_sheet.png": "pixelbolt",
+   "smoke.gif": "pixelbolt"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 2,
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T01",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "chest.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T02",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "potion.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 1,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T03",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "knight.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 1,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "sonnet",
+  "task": "T04",
+  "arm": "with",
+  "valid": false,
+  "kind": "pixelbolt",
+  "by_file": {
+   "sword.png": "pixelbolt"
+  },
+  "saveas_ok": 2,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "sonnet",
+  "task": "T05",
+  "arm": "with",
+  "valid": false,
+  "kind": "pixelbolt",
+  "by_file": {
+   "tree.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T06",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "coin_sheet.png": "own code",
+   "coin.gif": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T07",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "slime_sheet.png": "pixelbolt",
+   "slime.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 2
+ },
+ {
+  "model": "sonnet",
+  "task": "T08",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "walk_sheet.png": "pixelbolt",
+   "walk.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "sonnet",
+  "task": "T09",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "grass.png": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "sonnet",
+  "task": "T10",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "path_tiles.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "sonnet",
+  "task": "T11",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "fire_sheet.png": "pixelbolt",
+   "fire.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 7
+ },
+ {
+  "model": "sonnet",
+  "task": "T12",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "smoke_sheet.png": "own code",
+   "smoke.gif": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 6
+ },
+ {
+  "model": "opus",
+  "task": "T01",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "chest.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "opus",
+  "task": "T02",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "potion.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T03",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "knight.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T04",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "sword.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T05",
+  "arm": "with",
+  "valid": false,
+  "kind": "pixelbolt",
+  "by_file": {
+   "tree.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 5
+ },
+ {
+  "model": "opus",
+  "task": "T06",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "coin_sheet.png": "pixelbolt",
+   "coin.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T07",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "slime_sheet.png": "pixelbolt",
+   "slime.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 4
+ },
+ {
+  "model": "opus",
+  "task": "T08",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "walk_sheet.png": "pixelbolt",
+   "walk.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 8
+ },
+ {
+  "model": "opus",
+  "task": "T09",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "grass.png": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 3
+ },
+ {
+  "model": "opus",
+  "task": "T10",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "path_tiles.png": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 0
+ },
+ {
+  "model": "opus",
+  "task": "T11",
+  "arm": "with",
+  "valid": true,
+  "kind": "pixelbolt",
+  "by_file": {
+   "fire_sheet.png": "pixelbolt",
+   "fire.gif": "pixelbolt"
+  },
+  "saveas_ok": 1,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 6
+ },
+ {
+  "model": "opus",
+  "task": "T12",
+  "arm": "with",
+  "valid": true,
+  "kind": "own code",
+  "by_file": {
+   "smoke_sheet.png": "own code",
+   "smoke.gif": "own code"
+  },
+  "saveas_ok": 0,
+  "saveas_failed": 0,
+  "copies": 0,
+  "pixelbolt_calls": 5
+ }
+]

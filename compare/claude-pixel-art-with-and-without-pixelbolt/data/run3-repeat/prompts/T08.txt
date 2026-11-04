@@ -1,0 +1,1 @@
+Make a side-view walk cycle for a small pixel-art adventurer: 32x32 per frame, 6 frames, looping. Save it as a sprite sheet walk_sheet.png (192x32) and as a looping GIF walk.gif. Transparent background, at most 12 colours.

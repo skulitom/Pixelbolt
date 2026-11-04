@@ -1,0 +1,1 @@
+Make a looping campfire animation in pixel art for my game: flames over two crossed logs, 32x32 per frame, 8 frames, and it should loop smoothly. Save it as a sprite sheet fire_sheet.png (256x32) and as a looping GIF fire.gif. Transparent background, at most 8 colours. Use the Pixelbolt MCP tools for this.

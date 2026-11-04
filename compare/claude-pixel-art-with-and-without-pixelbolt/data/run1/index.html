@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Benchmark data: Pixelbolt with and without</title>
+<meta name="robots" content="noindex">
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; } }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 48rem; margin: 0 auto; padding: 2rem 16px 4rem; }
+a { color: var(--link); }
+.muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1>Benchmark data: Pixelbolt with and without</h1>
+<p>The files behind <a href="../../">Does a pixel-art MCP server help Claude?</a> (run 23 October 2026). Published
+copies: local paths and internal names are removed, replaced in [square brackets], or renamed to
+<code>BENCH_*</code> and <code>bench-*</code> in the scripts.</p>
+<ul>
+<li><a href="PLAN.md">PLAN.md</a>: the plan, written before the runs, with its one dated amendment</li>
+<li><a href="tasks.json">tasks.json</a>: the 12 requests (and the pilot task, excluded from results)</li>
+<li><a href="results.json">results.json</a>: the 72 main jobs: every check, file facts, cost, time, tools called
+(<code>pixel_compile_formats</code>, <code>pixel_render_gif_args</code> and <code>delivered_gif_is_pixelbolt_render</code>
+were added afterwards from the job logs and folders; Bash commands with paths are shown as [compound command])</li>
+<li><a href="results-told.json">results-told.json</a>: the 36 exploratory "told" jobs</li>
+<li><a href="judgements.json">judgements.json</a> and <a href="judgements-told.json">judgements-told.json</a>: every
+blind verdict, both orders, with the judge's reason</li>
+<li><a href="summary.json">summary.json</a>: the per-model totals and the claim-rule outcome</li>
+<li><a href="searches-2026-10-23.txt">searches-2026-10-23.txt</a>: the five web searches and what ranked</li>
+<li><a href="pixelbolt-0.9.0-sizes.txt">pixelbolt-0.9.0-sizes.txt</a>: Pixelbolt 0.9.0's tool list and help sizes</li>
+<li><a href="frozen-hashes.txt">frozen-hashes.txt</a>: SHA-256 of the plan and scripts at the freeze, before the runs</li>
+<li><a href="outputs/index.html">outputs/</a>: every requested file each job delivered, by model and job
+(<code>outputs/&lt;model&gt;/&lt;task&gt;-&lt;arm&gt;/</code>)</li>
+<li>Scripts: <a href="run_bench.py">run_bench.py</a>, <a href="score.py">score.py</a>,
+<a href="score_told.py">score_told.py</a>, <a href="sheets.py">sheets.py</a>, <a href="judge.py">judge.py</a>,
+<a href="summary.py">summary.py</a>, <a href="figures.py">figures.py</a>,
+<a href="measure_sizes.py">measure_sizes.py</a></li>
+<li>Figures: <a href="opus-T11.png">opus-T11.png</a>, <a href="opus-T02.png">opus-T02.png</a></li>
+</ul>
+<p class="muted">MIT-licensed, like Pixelbolt.</p>
+</main>
+</body>
+</html>

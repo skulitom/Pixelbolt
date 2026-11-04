@@ -1,0 +1,45 @@
+[this benchmark] run 2 searches, Mon 2026-10-26, about 15:05 to 15:07 London (GMT), the WebSearch tool in standard mode (US
+results). Run 1's five queries again. For each: the result URLs in order, and what the tool's summary said.
+Pixelbolt or skulitom appeared in none. (freema/pixelforge-mcp on Glama is another project, not Pixelbolt's old name.)
+
+1. "can Claude make pixel art sprites"
+   shyft.ai/skills/pixel-plugin; cdn.jsdelivr.net willibrandon/pixel-plugin README; claudemarketplaces.com
+   opusgamelabs/game-creator game-assets; spritecook.ai/blog/claude-desktop-spritecook-plugin (June 10, 2026);
+   sourcepulse.org pixel-plugin; reddit.sentinel-team.org snapshot; spritecook.ai/docs/guide-generate-sprites;
+   spritecook.ai/docs/ai-game-assets; claudepluginhub.com game-creator; claudemarketplaces.com/mcp/ai.spritecook/generate
+   Summary: "Claude doesn't appear to draw pixel art natively"; it works "through tools, plugins, or generators".
+   "I also found no independent quality comparisons." (Same ten URLs as 10-23, same order.)
+
+2. "Claude Code pixel art MCP server benchmark"
+   glama.ai/mcp/servers/mr9lhalsqc; glama.ai/mcp/servers/ly1xau145c; shyft.ai mcp-server-pixel-art; getdrio.com
+   pixel-squads; claudemarket.ai/mcp/aitor-alt/pixel; designrevision.com best-mcp-servers-for-claude-code; glama
+   steipete claude-code-mcp logo; getdrio.com mcp-server-pixel-art-kfischer-okarin; tomevault.io willibrandon/pixel-mcp;
+   workingnotworking.com
+   Summary: "I found no benchmark comparing pixel-art MCP servers for Claude Code." Named: the Glama "Pixel Art MCP"
+   (Pollinations backend), pixel-mcp (npx, TypeScript), willibrandon's Aseprite pixel-mcp. The designrevision ranking
+   is "opinionated ... not a lab benchmark" with no pixel-art metrics.
+
+3. "does an MCP tool help Claude make better pixel art sprite animation"
+   pkg.go.dev willibrandon/pixel-mcp; jsdelivr willibrandon/pixel-plugin README; glama.ai q5nfluslua, pkklvuhmfa;
+   jsdelivr diivi/aseprite-mcp README; images.glama.ai freema/pixelforge-mcp; glama.ai j3sif2kleb, mr9lhalsqc;
+   github.com/rkdfx/aseprite-mcp
+   Summary: "Probably yes for workflow, but the results don't show it makes Claude's pixel art measurably better."
+   "I found no independent benchmark comparing Claude with and without these tools on sprite animation quality."
+
+4. "Claude Haiku Sonnet Opus pixel art sprite generation comparison"
+   uxplanet.org (Haiku 5.5 vs Sonnet 5.5 vs Opus 5.5); docs.orq.ai changelog; morphllm.com; claw.aguidetocloud.com;
+   haimaker.ai (twice); context.ai; canaltech.com.br; igmguru.com
+   Summary: "No search result compares Claude Haiku, Sonnet, and Opus on pixel art or sprite generation." Its own
+   inference: sprites would come from Claude writing code, "so a real comparison would need to test that workflow".
+
+5. "AI agent pixel art sprite sheet GIF benchmark valid output palette"
+   github.com/crsolver/claude-pxl/wiki; jsdelivr ccc007ccc/agent-paint-pixel-skills README; hackmd.io; emergentmind.com
+   pixel-art-bench; shyft.ai pixel-plugin; wasmer mirror of willibrandon/pixel-mcp; pixie.haus (three pages);
+   sorceress.games
+   Summary: "No standardized benchmark for agent-made sprite sheets or GIFs with palette validity turned up." Closest:
+   "Pixel Art Bench" (models answer a hex palette plus a character grid as JSON). Changed since 10-23: llamagen.ai's
+   guide is gone; agent tools now rank (claude-pxl, agentpaint, Agent Sprite Forge for [another review tool]).
+
+New names for Pixelbolt's next refresh (not read yet): crsolver/claude-pxl (.px.js source to PNG, sheets, GIF; an
+agent skill), ccc007ccc/agent-paint-pixel-skills ("agentpaint", Rust CLI, APX/APXA formats, GIF export), Agent Sprite
+Forge ([another review tool] skill with Python post-processing), Pixel Art Bench (emergentmind; a model benchmark, not a tool test).

@@ -1,0 +1,61 @@
+{
+ "models": {
+  "haiku": {
+   "tasks": 12,
+   "valid_with": 7,
+   "valid_without": 9,
+   "pairs_with": 4,
+   "pairs_without": 8,
+   "ties": 0,
+   "by_default": 2,
+   "judged": 12,
+   "used": 5,
+   "cost_with": 0.1563,
+   "cost_without": 0.1037,
+   "median_s_with": 59.5,
+   "median_s_without": 55.0,
+   "helps": false
+  },
+  "sonnet": {
+   "tasks": 12,
+   "valid_with": 11,
+   "valid_without": 12,
+   "pairs_with": 2,
+   "pairs_without": 7,
+   "ties": 3,
+   "by_default": 0,
+   "judged": 12,
+   "used": 0,
+   "cost_with": 1.0621,
+   "cost_without": 0.8965,
+   "median_s_with": 31.5,
+   "median_s_without": 36.5,
+   "helps": false
+  },
+  "opus": {
+   "tasks": 12,
+   "valid_with": 10,
+   "valid_without": 11,
+   "pairs_with": 4,
+   "pairs_without": 5,
+   "ties": 3,
+   "by_default": 0,
+   "judged": 12,
+   "used": 8,
+   "cost_with": 5.7263,
+   "cost_without": 2.4975,
+   "median_s_with": 70.5,
+   "median_s_without": 70.0,
+   "helps": false
+  }
+ },
+ "total": {
+  "vw": 28,
+  "vo": 32,
+  "pw": 10,
+  "po": 20,
+  "pt": 6
+ },
+ "sign_p": 0.0987,
+ "overall_helps": false
+}
