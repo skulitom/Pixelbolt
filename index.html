@@ -6,6 +6,17 @@
 <title>Pixelbolt: pixel art and sprite animation for AI agents</title>
 <meta name="description" content="Pixelbolt is a free, MIT-licensed pixel art toolkit with a local MCP server and CLI: agents write JSON recipes and get sprite sheets, atlases, APNGs and GIFs, the same bytes every time.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/">
+<meta property="og:title" content="Pixelbolt: pixel art and sprite animation for AI agents">
+<meta property="og:description" content="A free, MIT-licensed pixel art toolkit with a local MCP server, a CLI and a browser studio: editable JSON recipes in, sprite sheets, atlases, APNGs and GIFs out, the same bytes every time.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/gallery/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Looping pixel art effects made with Pixelbolt">
+<meta property="og:site_name" content="Pixelbolt">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; }
 @media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; } }
@@ -16,6 +27,9 @@ h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 1rem; }
 h2 { font-size: 1.2rem; margin: 2rem 0 0.5rem; }
 .muted { color: var(--muted); font-size: 0.9rem; }
 footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+.strip { display: flex; flex-wrap: wrap; gap: 0.9rem 1.2rem; align-items: flex-end; margin: 0.6rem 0 1.2rem; }
+.strip a { display: flex; flex-direction: column; align-items: center; font-size: 0.9rem; text-decoration: none; }
+.strip img { max-width: 100%; height: auto; image-rendering: pixelated; }
 </style>
 </head>
 <body>
@@ -31,6 +45,14 @@ MIT-licensed, needs only Node.js 20 or newer, and uses no image model, API key o
 <p>Try Pixelbolt in your browser: <a href="playground/">the playground</a> renders, exports and shares recipes with nothing installed.</p>
 <p>Poke live pixel fluids: <a href="playground/fluids/">blow on a campfire, pour honey and slime</a>, then save a GIF or share a link that replays what you did.</p>
 <p><a href="guides/">Guides</a>: pixel art fire, explosion, smoke, water, slime and magic effects, each from a ready recipe you open in the playground.</p>
+<div class="strip">
+<a href="guides/pixel-art-fire-animation/"><picture><source srcset="guides/pixel-art-fire-animation/campfire-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-fire-animation/campfire.gif" width="64" height="96" alt="Pixel art campfire with rising embers and smoke"></picture><span>Fire</span></a>
+<a href="guides/pixel-art-explosion/"><picture><source srcset="guides/pixel-art-explosion/explosion-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-explosion/explosion.gif" width="128" height="128" alt="Pixel art explosion: fireball, smoke and sparks"></picture><span>Explosions</span></a>
+<a href="guides/pixel-art-smoke-and-steam/"><picture><source srcset="guides/pixel-art-smoke-and-steam/smoke-puff-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-smoke-and-steam/smoke-puff.gif" width="64" height="64" alt="Pixel art cartoon smoke puff"></picture><span>Smoke and steam</span></a>
+<a href="guides/pixel-art-water-animation/"><picture><source srcset="guides/pixel-art-water-animation/waterfall-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-water-animation/waterfall.gif" width="96" height="128" alt="Pixel art waterfall pouring into a stone basin"></picture><span>Water</span></a>
+<a href="guides/pixel-art-slime-and-honey/"><picture><source srcset="guides/pixel-art-slime-and-honey/slime-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-slime-and-honey/slime.gif" width="64" height="64" alt="Pixel art green slime squashing and wobbling"></picture><span>Slime and honey</span></a>
+<a href="guides/pixel-art-magic-effects/"><picture><source srcset="guides/pixel-art-magic-effects/magic-swirl-still.png" media="(prefers-reduced-motion: reduce)"><img src="guides/pixel-art-magic-effects/magic-swirl.gif" width="96" height="96" alt="Pixel art magic swirl in purple and cyan"></picture><span>Magic</span></a>
+</div>
 <p><a href="gallery/">Gallery</a>: every finished Pixelbolt example, with animated previews, recipes and export commands.</p>
 <p>Play <a href="https://skulitom.github.io/NeonRocketGame/">Neon Voyage</a>, a free browser game made with Pixelbolt: every sprite, effect and letter is a recipe, and the rocket's exhaust is a live fluid simulation that bends as you steer.</p>
 <p><a href="https://skulitom.gumroad.com/l/elemental-fx">Elemental FX</a>: 27 ready-made animated pixel-art effects made with Pixelbolt (sprite sheets, JSON atlases, Godot 4 files), $4.99 or more on Gumroad.</p>
