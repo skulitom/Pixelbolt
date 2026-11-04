@@ -1,0 +1,1 @@
+{"mcpServers": {"pixelbolt": {"command": "node", "args": ["[bench folder]/pkg/package/bin/pixelbolt.js", "mcp"]}}}

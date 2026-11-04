@@ -1,0 +1,1 @@
+Make me a 16x16 pixel-art mushroom icon for my game: a red cap with white spots on a pale stem, transparent background, at most 6 colours. Save it as mushroom.png in this folder.

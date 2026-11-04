@@ -1,0 +1,1 @@
+Make a 48x48 pixel-art oak tree for a top-down game map: a round leafy crown and a short trunk, transparent background, at most 10 colours. Save it as tree.png in this folder. Use the Pixelbolt MCP tools for this.

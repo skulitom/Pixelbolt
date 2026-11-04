@@ -399,8 +399,11 @@ change often.</li>
 
 <h2>Reproduce it</h2>
 <p>The plan, tasks, scripts, every job's result, every judge verdict, every requested file each job delivered and the
-searches we ran are in <a href="data/index.html">data/</a>, one folder per run. Each run has its own copy of the
-runner and judge (paths, job names and caps differ). The runner calls a small wrapper that runs each
+searches we ran are in <a href="data/index.html">data/</a>, one folder per run. Each run folder has its own copy of
+the runner and judge (paths, job names and caps differ), the <code>tasks.json</code> and prompts its scripts read, and
+the MCP config the Pixelbolt arm used: unpack the package where that config points (<code>pkg/package/</code> in the
+run folder) and set the path to yours. The scripts write each job's files to <code>runs/</code>; our jobs' delivered
+files are in each run's <code>outputs/</code>, requested files only. The runner calls a small wrapper that runs each
 <code>claude -p</code> job with an API key, prints its cost and the path of its stream log, and keeps a cost log;
 swap in your own. To pin Claude Code as we did, put that version's binary first on PATH for both the runner and the
 judge.</p>

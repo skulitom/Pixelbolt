@@ -1,0 +1,1 @@
+I need dirt-path tiles for a top-down game: a 3x3 set of 16x16 pixel-art tiles showing a dirt patch on grass (the four corners, the four edges and the centre), laid out in one 48x48 image, path_tiles.png. Fully opaque, at most 8 colours, and the pieces should join up seamlessly. Use the Pixelbolt MCP tools for this.

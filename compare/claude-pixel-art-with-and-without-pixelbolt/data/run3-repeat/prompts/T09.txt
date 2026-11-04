@@ -1,0 +1,1 @@
+Make a seamless 16x16 pixel-art grass ground tile for a top-down game. It has to tile without visible seams when repeated. Fully opaque, at most 5 colours. Save it as grass.png in this folder.

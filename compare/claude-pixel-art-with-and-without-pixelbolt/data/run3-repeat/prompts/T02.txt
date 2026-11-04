@@ -1,0 +1,1 @@
+Make me a 16x16 pixel-art health potion icon: a round glass bottle with red liquid and a cork, transparent background, no more than 6 colours. Save it as potion.png in this folder.
