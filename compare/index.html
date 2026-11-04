@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pixelbolt comparisons: pixel art MCP servers and pixel-art effect tools</title>
-<meta name="description" content="Pixelbolt&#x27;s comparison pages: pixel art and sprite MCP servers for AI agents, and alternatives to Pixel FX Designer for fire, smoke, explosion and water effects.">
+<meta name="description" content="Pixelbolt&#x27;s comparison pages: pixel art and sprite MCP servers for AI agents, alternatives to Pixel FX Designer for fire, smoke, explosion and water effects, and a benchmark of Claude&#x27;s pixel art with and without Pixelbolt.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/compare/">
 <style>
 :root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; }
@@ -23,10 +23,10 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "name": "Pixelbolt comparisons: pixel art MCP servers and pixel-art effect tools",
-  "description": "Pixelbolt's comparison pages: pixel art and sprite MCP servers for AI agents, and alternatives to Pixel FX Designer for fire, smoke, explosion and water effects.",
+  "description": "Pixelbolt's comparison pages: pixel art and sprite MCP servers for AI agents, alternatives to Pixel FX Designer for fire, smoke, explosion and water effects, and a benchmark of Claude's pixel art with and without Pixelbolt.",
   "url": "https://skulitom.github.io/Pixelbolt/compare/",
   "inLanguage": "en",
-  "dateModified": "2026-10-29",
+  "dateModified": "2026-11-04",
   "isPartOf": {
     "@type": "WebSite",
     "name": "Pixelbolt",
@@ -51,6 +51,12 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
         "position": 2,
         "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
         "name": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://skulitom.github.io/Pixelbolt/compare/claude-pixel-art-with-and-without-pixelbolt/",
+        "name": "Does a pixel-art MCP server help Claude? Pixelbolt tested with and without"
       }
     ]
   }
@@ -60,11 +66,13 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <body>
 <main>
 <h1>Pixelbolt comparisons</h1>
-<p>We make Pixelbolt, a free, MIT-licensed pixel art toolkit with a local MCP server, a command line and a browser studio. These pages compare it with pixel art and sprite MCP servers for AI agents, and with alternatives to Pixel FX Designer for pixel-art effects. Each says which numbers we measured and which we read from the other tools&#x27; docs, and when it was last checked.</p>
+<p>We make Pixelbolt, a free, MIT-licensed pixel art toolkit with a local MCP server, a command line and a browser studio. These pages compare it with pixel art and sprite MCP servers for AI agents, and with alternatives to Pixel FX Designer for pixel-art effects. Each says which numbers we measured and which we read from the other tools&#x27; docs, and when it was last checked. A third page is a benchmark of our own: the same pixel-art requests to Claude with Pixelbolt installed and with nothing installed.</p>
 <h2><a href="pixel-art-mcp-servers-for-ai-agents/">Pixel art and sprite MCP servers for AI agents: 7 compared</a></h2>
 <p>Checked 17 October 2026, refreshed 29 October. aseprite-mcp and pixel-mcp drive the paid Aseprite editor, SpriteCook and pixelforge-mcp generate images with hosted AI models, pixscii and pixelart-mcp draw on canvases on your machine, and Pixelbolt renders editable JSON recipes on your machine with no paid app, account, API key or image model. We read the other six from their code and docs without running them. We measured Pixelbolt 0.9.2, as installed from npm, on one Windows machine: all 19 of its plain example recipes rendered twice to byte-identical files, and a one-pixel fix over MCP changed exactly 1 pixel in 1 of 6 frames.</p>
 <h2><a href="pixel-fx-designer-alternatives/">Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared</a></h2>
 <p>Checked 19 October 2026; Pixel VFX Forge added 27 October. The eight are Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt. Of the seven alternatives to Pixel FX Designer, all but BlastFX and Pixel VFX Forge run a fluid or material simulation for smoke, fire or liquids, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as slashes, beams and shockwaves instead. Pixelbolt is the only one of the eight with an MCP server that makes the effects. Measured on one Windows PC, its 0.9.0 release compiled each of its 10 effect presets three times to byte-identical files. We read the other seven tools&#x27; pages and docs without running them, so the only measured numbers are Pixelbolt&#x27;s.</p>
+<h2><a href="claude-pixel-art-with-and-without-pixelbolt/">Does a pixel-art MCP server help Claude? Pixelbolt tested with and without</a></h2>
+<p>Run 23 October to 3 November 2026. A benchmark we planned in advance: 12 pixel-art requests on Claude Haiku, Sonnet and Opus 5.5 in Claude Code, with Pixelbolt connected as an MCP server and with nothing installed, scored by one script and a blind judge. On Pixelbolt 0.11.0, valid 32 vs 31 of 36 and pairs 18 to 13 (one by default; p = 0.47) at 1.47 times the cost, so no model and no total met our rule for saying Pixelbolt helps; animations and effects, which 0.11.0 was built for, went 9 of 15 (p = 0.61), exactly the 60% bar we set for that release, and a same-day repeat would have failed it. Earlier versions showed no measurable help. Every number is published, losses included.</p>
 <h2>Comparisons for our other tools</h2>
 <ul>
 <li><a href="https://skulitom.github.io/Anode/compare/windows-desktop-automation-for-ai-agents/">Windows desktop automation for AI agents</a> (Anode, checked 16 October 2026, refreshed 24 October)</li>

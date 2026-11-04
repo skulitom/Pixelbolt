@@ -1,0 +1,22 @@
+{
+ "moving_pairs": 15,
+ "decided": 11,
+ "won_with": 7,
+ "won_without": 4,
+ "ties": 3,
+ "by_default": {
+  "with": 0,
+  "without": 1
+ },
+ "neither_delivered": 0,
+ "share_with": 0.6364,
+ "valid_with": 30,
+ "valid_without": 32,
+ "cells": {
+  "with": 36,
+  "without": 36
+ },
+ "pass_pairs": true,
+ "pass_valid": false,
+ "passed": false
+}

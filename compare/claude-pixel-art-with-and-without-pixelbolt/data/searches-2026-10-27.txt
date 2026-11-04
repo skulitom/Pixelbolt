@@ -1,0 +1,40 @@
+[this benchmark] searches, Tue 2026-10-27, about 15:06 London (GMT), the WebSearch tool in standard mode (US results). Run 1's
+five queries again. For each: the result URLs in order, and what the tool's summary said. Pixelbolt or skulitom
+appeared in none.
+
+1. "can Claude make pixel art sprites"
+   jsdelivr willibrandon/pixel-plugin README; shyft.ai/skills/pixel-plugin; claudemarketplaces.com opusgamelabs/
+   game-creator game-assets; spritecook.ai/blog/claude-desktop-spritecook-plugin (June 10, 2026); gh.r-mj.com
+   pixel-plugin mirror; sourcepulse.org pixel-plugin; spritecook.ai/docs/guide-generate-sprites;
+   spritecook.ai/docs/ai-game-assets; claudepluginhub.com game-creator; skillselion.com pixel-plugin
+   Summary: the search "didn't directly answer whether Claude can draw pixel art unaided"; it named the Aseprite
+   plugin, a code-only skill and SpriteCook (40 free credits every 30 days). No comparison mentioned.
+
+2. "Claude Code pixel art MCP server benchmark"
+   glama.ai mr9lhalsqc; lobehub jerryscription-mcp-pixel-paint (zh-TW, zh, en, nl, it); shyft.ai mcp-server-pixel-art;
+   glama.ai ly1xau145c; mcpservers.org/fr pixellab-mcp
+   Summary: "No benchmark results came up for this query." Named: Pixel Art MCP (Pollinations), MCP Pixel Paint
+   (jerryscription, new since 10-26), pixel-mcp (npx), PixelLab MCP (hosted API, new in this query).
+
+3. "does an MCP tool help Claude make better pixel art sprite animation"
+   pkg.go.dev willibrandon/pixel-mcp; awesome.ecosyste.ms willibrandon/aseprite-mcp; jsdelivr diivi/aseprite-mcp
+   README; lobehub willibrandon-aseprite-mcp-go (pl), -mcp (zh, zh-TW); glama.ai q5nfluslua, pkklvuhmfa, j3sif2kleb
+   Summary: "Probably yes, but the evidence is project documentation and one self-reported demo. I found no
+   independent test comparing sprite quality with and without the tools."
+
+4. "Claude Haiku Sonnet Opus pixel art sprite generation comparison"
+   canaltech.com.br; haimaker.ai; igmguru.com; ai-solutions.daviesmeyer.com; clauderules.vercel.app; traeai.com;
+   dev.to/clawgenesis; codegpt.co; claudeimplementation.pages.dev
+   Summary: "No results addressed pixel art or sprite generation for any Claude tier"; "you'd need a direct test:
+   give the same sprite prompts to each tier ... I can't find published results for that in this search."
+
+5. "AI agent pixel art sprite sheet GIF benchmark valid output palette"
+   github.com/crsolver/claude-pxl/wiki; jsdelivr ccc007ccc/agent-paint-pixel-skills README; pkg.go.dev
+   willibrandon/pixel-mcp; emergentmind.com/pixel-art-bench; shyft.ai pixel-plugin; wasmer mirror of pixel-mcp;
+   agent-skills.md jamditis animated-sprite-gen (new); pixie.haus; sorceress.games
+   Summary: "I didn't find a standard benchmark that scores whether AI-generated sprite sheets or GIFs stay within a
+   fixed palette." Closest: Pixel Art Bench (models answer a palette and grid as JSON).
+
+Changed since 10-26: hackmd.io and two pixie.haus pages dropped out of query 5; LobeHub's jerryscription
+mcp-pixel-paint fills query 2; PixelLab MCP appears. Our measured with/without test is still the thing summaries 3
+and 4 say is missing.

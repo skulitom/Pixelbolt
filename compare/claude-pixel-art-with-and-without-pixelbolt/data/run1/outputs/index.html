@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Benchmark outputs: Pixelbolt with and without</title>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --link: #0b57d0; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --link: #8ab4f8; } }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 48rem; margin: 0 auto; padding: 2rem 16px 4rem; }
+a { color: var(--link); }
+</style>
+</head>
+<body>
+<main>
+<h1>Benchmark outputs</h1>
+<p>Every requested file each job delivered, as <code>&lt;model&gt;/&lt;task&gt;-&lt;arm&gt;/&lt;file&gt;</code>; arms are
+<code>with</code> (Pixelbolt available), <code>without</code> (nothing installed) and <code>told</code> (exploratory). A
+file under <code>output/</code> was left there instead of at the requested name. Back to <a href="../index.html">the
+data</a>.</p>
+<ul>
+<li><a href="haiku/T01-told/chest.png">haiku/T01-told/chest.png</a></li>
+<li><a href="haiku/T01-with/chest.png">haiku/T01-with/chest.png</a></li>
+<li><a href="haiku/T01-without/chest.png">haiku/T01-without/chest.png</a></li>
+<li><a href="haiku/T02-told/potion.png">haiku/T02-told/potion.png</a></li>
+<li><a href="haiku/T02-with/potion.png">haiku/T02-with/potion.png</a></li>
+<li><a href="haiku/T03-told/knight.png">haiku/T03-told/knight.png</a></li>
+<li><a href="haiku/T03-with/knight.png">haiku/T03-with/knight.png</a></li>
+<li><a href="haiku/T03-without/knight.png">haiku/T03-without/knight.png</a></li>
+<li><a href="haiku/T04-told/sword.png">haiku/T04-told/sword.png</a></li>
+<li><a href="haiku/T04-with/sword.png">haiku/T04-with/sword.png</a></li>
+<li><a href="haiku/T04-without/sword.png">haiku/T04-without/sword.png</a></li>
+<li><a href="haiku/T05-told/tree.png">haiku/T05-told/tree.png</a></li>
+<li><a href="haiku/T05-with/tree.png">haiku/T05-with/tree.png</a></li>
+<li><a href="haiku/T05-without/tree.png">haiku/T05-without/tree.png</a></li>
+<li><a href="haiku/T06-told/coin.gif">haiku/T06-told/coin.gif</a></li>
+<li><a href="haiku/T06-told/coin_sheet.png">haiku/T06-told/coin_sheet.png</a></li>
+<li><a href="haiku/T06-with/coin.gif">haiku/T06-with/coin.gif</a></li>
+<li><a href="haiku/T06-with/coin_sheet.png">haiku/T06-with/coin_sheet.png</a></li>
+<li><a href="haiku/T06-without/coin.gif">haiku/T06-without/coin.gif</a></li>
+<li><a href="haiku/T06-without/coin_sheet.png">haiku/T06-without/coin_sheet.png</a></li>
+<li><a href="haiku/T07-told/slime.gif">haiku/T07-told/slime.gif</a></li>
+<li><a href="haiku/T07-told/slime_sheet.png">haiku/T07-told/slime_sheet.png</a></li>
+<li><a href="haiku/T07-with/slime.gif">haiku/T07-with/slime.gif</a></li>
+<li><a href="haiku/T07-with/slime_sheet.png">haiku/T07-with/slime_sheet.png</a></li>
+<li><a href="haiku/T07-without/slime.gif">haiku/T07-without/slime.gif</a></li>
+<li><a href="haiku/T07-without/slime_sheet.png">haiku/T07-without/slime_sheet.png</a></li>
+<li><a href="haiku/T08-told/walk.gif">haiku/T08-told/walk.gif</a></li>
+<li><a href="haiku/T08-told/walk_sheet.png">haiku/T08-told/walk_sheet.png</a></li>
+<li><a href="haiku/T08-with/walk.gif">haiku/T08-with/walk.gif</a></li>
+<li><a href="haiku/T08-with/walk_sheet.png">haiku/T08-with/walk_sheet.png</a></li>
+<li><a href="haiku/T08-without/walk.gif">haiku/T08-without/walk.gif</a></li>
+<li><a href="haiku/T08-without/walk_sheet.png">haiku/T08-without/walk_sheet.png</a></li>
+<li><a href="haiku/T09-told/grass.png">haiku/T09-told/grass.png</a></li>
+<li><a href="haiku/T09-with/grass.png">haiku/T09-with/grass.png</a></li>
+<li><a href="haiku/T09-without/grass.png">haiku/T09-without/grass.png</a></li>
+<li><a href="haiku/T10-told/path_tiles.png">haiku/T10-told/path_tiles.png</a></li>
+<li><a href="haiku/T10-with/path_tiles.png">haiku/T10-with/path_tiles.png</a></li>
+<li><a href="haiku/T10-without/path_tiles.png">haiku/T10-without/path_tiles.png</a></li>
+<li><a href="haiku/T11-told/fire.gif">haiku/T11-told/fire.gif</a></li>
+<li><a href="haiku/T11-told/fire_sheet.png">haiku/T11-told/fire_sheet.png</a></li>
+<li><a href="haiku/T11-with/fire.gif">haiku/T11-with/fire.gif</a></li>
+<li><a href="haiku/T11-with/fire_sheet.png">haiku/T11-with/fire_sheet.png</a></li>
+<li><a href="haiku/T11-without/fire.gif">haiku/T11-without/fire.gif</a></li>
+<li><a href="haiku/T11-without/fire_sheet.png">haiku/T11-without/fire_sheet.png</a></li>
+<li><a href="haiku/T12-told/smoke.gif">haiku/T12-told/smoke.gif</a></li>
+<li><a href="haiku/T12-told/smoke_sheet.png">haiku/T12-told/smoke_sheet.png</a></li>
+<li><a href="haiku/T12-with/output/smoke.gif">haiku/T12-with/output/smoke.gif</a></li>
+<li><a href="haiku/T12-with/output/smoke_sheet.png">haiku/T12-with/output/smoke_sheet.png</a></li>
+<li><a href="haiku/T12-without/smoke.gif">haiku/T12-without/smoke.gif</a></li>
+<li><a href="haiku/T12-without/smoke_sheet.png">haiku/T12-without/smoke_sheet.png</a></li>
+<li><a href="opus/T01-told/chest.png">opus/T01-told/chest.png</a></li>
+<li><a href="opus/T01-with/chest.png">opus/T01-with/chest.png</a></li>
+<li><a href="opus/T01-without/chest.png">opus/T01-without/chest.png</a></li>
+<li><a href="opus/T02-told/potion.png">opus/T02-told/potion.png</a></li>
+<li><a href="opus/T02-with/potion.png">opus/T02-with/potion.png</a></li>
+<li><a href="opus/T02-without/potion.png">opus/T02-without/potion.png</a></li>
+<li><a href="opus/T03-told/knight.png">opus/T03-told/knight.png</a></li>
+<li><a href="opus/T03-with/knight.png">opus/T03-with/knight.png</a></li>
+<li><a href="opus/T03-without/knight.png">opus/T03-without/knight.png</a></li>
+<li><a href="opus/T04-told/sword.png">opus/T04-told/sword.png</a></li>
+<li><a href="opus/T04-with/sword.png">opus/T04-with/sword.png</a></li>
+<li><a href="opus/T04-without/sword.png">opus/T04-without/sword.png</a></li>
+<li><a href="opus/T05-told/tree.png">opus/T05-told/tree.png</a></li>
+<li><a href="opus/T05-with/tree.png">opus/T05-with/tree.png</a></li>
+<li><a href="opus/T05-without/tree.png">opus/T05-without/tree.png</a></li>
+<li><a href="opus/T06-told/coin.gif">opus/T06-told/coin.gif</a></li>
+<li><a href="opus/T06-told/coin_sheet.png">opus/T06-told/coin_sheet.png</a></li>
+<li><a href="opus/T06-with/coin.gif">opus/T06-with/coin.gif</a></li>
+<li><a href="opus/T06-with/coin_sheet.png">opus/T06-with/coin_sheet.png</a></li>
+<li><a href="opus/T06-without/coin.gif">opus/T06-without/coin.gif</a></li>
+<li><a href="opus/T06-without/coin_sheet.png">opus/T06-without/coin_sheet.png</a></li>
+<li><a href="opus/T07-told/slime.gif">opus/T07-told/slime.gif</a></li>
+<li><a href="opus/T07-told/slime_sheet.png">opus/T07-told/slime_sheet.png</a></li>
+<li><a href="opus/T07-with/slime.gif">opus/T07-with/slime.gif</a></li>
+<li><a href="opus/T07-with/slime_sheet.png">opus/T07-with/slime_sheet.png</a></li>
+<li><a href="opus/T07-without/slime.gif">opus/T07-without/slime.gif</a></li>
+<li><a href="opus/T07-without/slime_sheet.png">opus/T07-without/slime_sheet.png</a></li>
+<li><a href="opus/T08-told/walk.gif">opus/T08-told/walk.gif</a></li>
+<li><a href="opus/T08-told/walk_sheet.png">opus/T08-told/walk_sheet.png</a></li>
+<li><a href="opus/T08-with/walk.gif">opus/T08-with/walk.gif</a></li>
+<li><a href="opus/T08-with/walk_sheet.png">opus/T08-with/walk_sheet.png</a></li>
+<li><a href="opus/T08-without/walk.gif">opus/T08-without/walk.gif</a></li>
+<li><a href="opus/T08-without/walk_sheet.png">opus/T08-without/walk_sheet.png</a></li>
+<li><a href="opus/T09-told/grass.png">opus/T09-told/grass.png</a></li>
+<li><a href="opus/T09-with/grass.png">opus/T09-with/grass.png</a></li>
+<li><a href="opus/T09-without/grass.png">opus/T09-without/grass.png</a></li>
+<li><a href="opus/T10-told/path_tiles.png">opus/T10-told/path_tiles.png</a></li>
+<li><a href="opus/T10-with/path_tiles.png">opus/T10-with/path_tiles.png</a></li>
+<li><a href="opus/T10-without/path_tiles.png">opus/T10-without/path_tiles.png</a></li>
+<li><a href="opus/T11-told/fire.gif">opus/T11-told/fire.gif</a></li>
+<li><a href="opus/T11-told/fire_sheet.png">opus/T11-told/fire_sheet.png</a></li>
+<li><a href="opus/T11-with/fire.gif">opus/T11-with/fire.gif</a></li>
+<li><a href="opus/T11-with/fire_sheet.png">opus/T11-with/fire_sheet.png</a></li>
+<li><a href="opus/T11-without/fire.gif">opus/T11-without/fire.gif</a></li>
+<li><a href="opus/T11-without/fire_sheet.png">opus/T11-without/fire_sheet.png</a></li>
+<li><a href="opus/T12-told/smoke.gif">opus/T12-told/smoke.gif</a></li>
+<li><a href="opus/T12-told/smoke_sheet.png">opus/T12-told/smoke_sheet.png</a></li>
+<li><a href="opus/T12-with/smoke.gif">opus/T12-with/smoke.gif</a></li>
+<li><a href="opus/T12-with/smoke_sheet.png">opus/T12-with/smoke_sheet.png</a></li>
+<li><a href="opus/T12-without/smoke.gif">opus/T12-without/smoke.gif</a></li>
+<li><a href="opus/T12-without/smoke_sheet.png">opus/T12-without/smoke_sheet.png</a></li>
+<li><a href="sonnet/T01-told/chest.png">sonnet/T01-told/chest.png</a></li>
+<li><a href="sonnet/T01-with/chest.png">sonnet/T01-with/chest.png</a></li>
+<li><a href="sonnet/T01-without/chest.png">sonnet/T01-without/chest.png</a></li>
+<li><a href="sonnet/T02-told/potion.png">sonnet/T02-told/potion.png</a></li>
+<li><a href="sonnet/T02-with/potion.png">sonnet/T02-with/potion.png</a></li>
+<li><a href="sonnet/T02-without/potion.png">sonnet/T02-without/potion.png</a></li>
+<li><a href="sonnet/T03-told/knight.png">sonnet/T03-told/knight.png</a></li>
+<li><a href="sonnet/T03-with/knight.png">sonnet/T03-with/knight.png</a></li>
+<li><a href="sonnet/T03-without/knight.png">sonnet/T03-without/knight.png</a></li>
+<li><a href="sonnet/T04-told/sword.png">sonnet/T04-told/sword.png</a></li>
+<li><a href="sonnet/T04-with/sword.png">sonnet/T04-with/sword.png</a></li>
+<li><a href="sonnet/T04-without/sword.png">sonnet/T04-without/sword.png</a></li>
+<li><a href="sonnet/T05-told/tree.png">sonnet/T05-told/tree.png</a></li>
+<li><a href="sonnet/T05-with/tree.png">sonnet/T05-with/tree.png</a></li>
+<li><a href="sonnet/T05-without/tree.png">sonnet/T05-without/tree.png</a></li>
+<li><a href="sonnet/T06-told/coin.gif">sonnet/T06-told/coin.gif</a></li>
+<li><a href="sonnet/T06-told/coin_sheet.png">sonnet/T06-told/coin_sheet.png</a></li>
+<li><a href="sonnet/T06-with/coin.gif">sonnet/T06-with/coin.gif</a></li>
+<li><a href="sonnet/T06-with/coin_sheet.png">sonnet/T06-with/coin_sheet.png</a></li>
+<li><a href="sonnet/T06-without/coin.gif">sonnet/T06-without/coin.gif</a></li>
+<li><a href="sonnet/T06-without/coin_sheet.png">sonnet/T06-without/coin_sheet.png</a></li>
+<li><a href="sonnet/T07-told/slime.gif">sonnet/T07-told/slime.gif</a></li>
+<li><a href="sonnet/T07-told/slime_sheet.png">sonnet/T07-told/slime_sheet.png</a></li>
+<li><a href="sonnet/T07-with/slime.gif">sonnet/T07-with/slime.gif</a></li>
+<li><a href="sonnet/T07-with/slime_sheet.png">sonnet/T07-with/slime_sheet.png</a></li>
+<li><a href="sonnet/T07-without/slime.gif">sonnet/T07-without/slime.gif</a></li>
+<li><a href="sonnet/T07-without/slime_sheet.png">sonnet/T07-without/slime_sheet.png</a></li>
+<li><a href="sonnet/T08-told/walk.gif">sonnet/T08-told/walk.gif</a></li>
+<li><a href="sonnet/T08-told/walk_sheet.png">sonnet/T08-told/walk_sheet.png</a></li>
+<li><a href="sonnet/T08-with/walk.gif">sonnet/T08-with/walk.gif</a></li>
+<li><a href="sonnet/T08-with/walk_sheet.png">sonnet/T08-with/walk_sheet.png</a></li>
+<li><a href="sonnet/T08-without/walk.gif">sonnet/T08-without/walk.gif</a></li>
+<li><a href="sonnet/T08-without/walk_sheet.png">sonnet/T08-without/walk_sheet.png</a></li>
+<li><a href="sonnet/T09-told/grass.png">sonnet/T09-told/grass.png</a></li>
+<li><a href="sonnet/T09-with/grass.png">sonnet/T09-with/grass.png</a></li>
+<li><a href="sonnet/T09-without/grass.png">sonnet/T09-without/grass.png</a></li>
+<li><a href="sonnet/T10-told/path_tiles.png">sonnet/T10-told/path_tiles.png</a></li>
+<li><a href="sonnet/T10-with/path_tiles.png">sonnet/T10-with/path_tiles.png</a></li>
+<li><a href="sonnet/T10-without/path_tiles.png">sonnet/T10-without/path_tiles.png</a></li>
+<li><a href="sonnet/T11-told/fire.gif">sonnet/T11-told/fire.gif</a></li>
+<li><a href="sonnet/T11-told/fire_sheet.png">sonnet/T11-told/fire_sheet.png</a></li>
+<li><a href="sonnet/T11-with/fire.gif">sonnet/T11-with/fire.gif</a></li>
+<li><a href="sonnet/T11-with/fire_sheet.png">sonnet/T11-with/fire_sheet.png</a></li>
+<li><a href="sonnet/T11-without/fire.gif">sonnet/T11-without/fire.gif</a></li>
+<li><a href="sonnet/T11-without/fire_sheet.png">sonnet/T11-without/fire_sheet.png</a></li>
+<li><a href="sonnet/T12-told/smoke.gif">sonnet/T12-told/smoke.gif</a></li>
+<li><a href="sonnet/T12-told/smoke_sheet.png">sonnet/T12-told/smoke_sheet.png</a></li>
+<li><a href="sonnet/T12-with/smoke.gif">sonnet/T12-with/smoke.gif</a></li>
+<li><a href="sonnet/T12-with/smoke_sheet.png">sonnet/T12-with/smoke_sheet.png</a></li>
+<li><a href="sonnet/T12-without/smoke.gif">sonnet/T12-without/smoke.gif</a></li>
+<li><a href="sonnet/T12-without/smoke_sheet.png">sonnet/T12-without/smoke_sheet.png</a></li>
+</ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Pixelbolt main f964f40 (git archive of github.com/skulitom/Pixelbolt; the server reports 0.9.1), measured 2026-10-26, Node 24.19.0
+- tools/list reply: 22,353 bytes of JSON-RPC for 8 tools, one page (no nextCursor: True)
+- pixel_help with no arguments: 7,929 characters of text content
+How: run `node bin/pixelbolt.js mcp`, send initialize, notifications/initialized, tools/list, then
+tools/call pixel_help {}, and measure the two replies (measure_sizes.py).

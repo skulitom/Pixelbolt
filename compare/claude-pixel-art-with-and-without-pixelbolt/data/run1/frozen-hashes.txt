@@ -1,0 +1,11 @@
+SHA-256 of the plan and scripts as frozen at 15:04 London on 2026-10-23, before the main runs.
+tasks.json is published unchanged and matches. The other published copies won't match: PLAN.md has amendment 1
+and replacements in [square brackets]; the scripts have local paths and names replaced and are the final
+versions, which add the exploratory told arm (amendment 1) without changing the main arms.
+
+42d8a3a055cef9ff8e1125137a7dae0629d3c0c8ab1417c4b745d75eddce1d4a *tasks.json
+96de5bf46bff776914941469cd445ead4fd23bd2dd8d90a6dc2e5ba7f98d8b9e *run_bench.py
+5861fda732fed48f151e79b0acefff616b2738b8cf2de109950e50e91ac5e28d *score.py
+c4233e0050c5cd9b8081c94e6d696e333387f1aa6ac97527fda5ea1fcb1b636c *sheets.py
+ac30ed9acd5a52531352f6c0794c554537d80ba2be4f58e529a5e2ba9413daea *judge.py
+5116671862275b4c43a2c6ec22dcb9f57be3c71946d0608ce3ed0fa2765efa92 *PLAN.md

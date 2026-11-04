@@ -1,0 +1,31 @@
+[this benchmark] runs 1 to 3: the five searches the page answers, re-run Wed 2026-11-04 about 15:02 GMT by [the benchmark's runner]
+(Claude Code WebSearch, "standard" mode, US results). What ranked, and whether our pages appear. Summaries are the
+search tool's own words, condensed; nothing below was read or run by us beyond these result lists.
+
+1. "can Claude make pixel art sprites"
+   Ranked: github.com/m4bwav/pixelwright (wiki, two links); shyft.ai/skills/pixel-plugin; willibrandon/pixel-plugin
+   README (jsDelivr); claudemarketplaces.com opusgamelabs game-assets skill; spritecook.ai blog (Claude Desktop plugin)
+   and spritecook.ai docs. Summary: "Yes, but the results show Claude doing this through tools, plugins, or code
+   rather than drawing pixels directly in chat." Ours: none. Same list as 11-03.
+2. "Claude Code pixel art MCP server benchmark"
+   Ranked: lobehub.com jerryscription-mcp-pixel-paint (four languages); ljvmiranda921.github.io "draw me a swordsman"
+   (SwordsBench); shyft.ai mcp-server-pixel-art; glama.ai/mcp/servers/mr9lhalsqc. Summary: "No dedicated benchmark of
+   Claude Code pixel-art MCP servers came up in this search." Ours: none. Same list as 11-03.
+3. "does an MCP tool help Claude make better pixel art sprite animation"
+   Ranked: pkg.go.dev willibrandon/pixel-mcp; awesome.ecosyste.ms willibrandon/aseprite-mcp; lobehub willibrandon
+   aseprite-mcp (three); github.com/rkdfx/aseprite-mcp; a wasmer mirror of pixel-mcp. Summary: "None of the sources
+   test whether the resulting art or animation is better"; "I found no comparison of MCP-assisted versus unassisted
+   output." Ours: none. Same list as 11-03.
+4. "Claude Haiku Sonnet Opus pixel art sprite generation comparison"
+   Ranked: matthewdeaves.github.io/assetforge (Asset Forge); codegpt.co; morphllm.com; openrouter.ai; a reddit snapshot
+   mirror; canaltech.com.br; library.libecity.com. Summary: "No head-to-head test of Haiku, Sonnet, and Opus on pixel
+   art sprites turned up." Ours: none. Same list as 11-03.
+5. "AI agent pixel art sprite sheet GIF benchmark valid output palette"
+   Ranked: github.com/danfking/pixel-llm; glama.ai/mcp/servers/wh0z8tuwns (aseprite-mcp);
+   glama.ai/mcp/servers/skulitom/PixelForge/tree (Pixelbolt's Glama listing, under its old name); github.com/crsolver/
+   claude-pxl wiki; a wasmer mirror of pixel-mcp; agent-skills.md animated-sprite-gen; sorceress.games blog. Summary:
+   "I didn't find a standard benchmark that scores AI-agent pixel art, sprite sheets, or GIFs on palette validity."
+   It quotes Pixelbolt's listing: "validation checks the format; image inspection checks the art."
+   Ours: the Glama listing only (new since 11-03); Pixelbolt's site, repo and npm page absent.
+
+Our pages in any result: none. Our product appears once, through its Glama listing (search 5).

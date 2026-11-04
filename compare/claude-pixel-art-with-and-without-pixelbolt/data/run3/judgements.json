@@ -1,0 +1,988 @@
+[
+ {
+  "task": "T05",
+  "model": "haiku",
+  "pair": "by default",
+  "winner": "with"
+ },
+ {
+  "task": "T01",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T01",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left reads clearly as a closed wooden chest, with bold gold trim bands, a lock plate, plank detail and a clean outline, and it stays legible at 1x. Right is a flatter box with thin, faint gold trim and a tiny lock, so it reads less clearly as a treasure chest.",
+    "cost": 0.0192
+   },
+   {
+    "task": "T01",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right looks clearly like a wooden chest, with plank lines, bold gold bands and a lock that are easy to read at 1x. Left's gold trim is thin and faint, and its odd lid shape and stray corner pixels make it read less clearly as a chest.",
+    "cost": 0.019
+   }
+  ]
+ },
+ {
+  "task": "T02",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T02",
+    "model": "haiku",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right reads clearly as a round glass flask, with a well-defined neck, red liquid with a lighter surface line and a glass highlight. Left's body is squat and flat-bottomed, so it looks less like a round bottle, although its cork is outlined more neatly.",
+    "cost": 0.0211
+   },
+   {
+    "task": "T02",
+    "model": "haiku",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left reads more clearly as a round potion bottle, with a proper spherical body, a neck, a cork and a liquid surface highlight, and it stays readable at 1x. Right has neater cork outlining and side shading, but its squat, wide body looks more like a jar than a round bottle.",
+    "cost": 0.0238
+   }
+  ]
+ },
+ {
+  "task": "T03",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T03",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left is a fuller, easy-to-read knight with a shield, sword, clean outlines and consistent shading that uses the 32x32 canvas well. Right is clean but small and plain, with no weapon or shield, so it reads less clearly as a knight at 1x.",
+    "cost": 0.019
+   },
+   {
+    "task": "T03",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right is clearly a knight, with a shield, sword, and visored helmet, and it uses the 32x32 canvas well with clean outlines and shading. Left is a plain, blocky figure with no weapon or shield, so it reads more like a robot than a knight.",
+    "cost": 0.019
+   }
+  ]
+ },
+ {
+  "task": "T04",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T04",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right is a clean sword with a full dark outline, a clear crossguard and a pommel, so it reads well at 1x. Left has a thin blade with only a partial outline, a long hilt that looks more like a stick, and no clear outline around the guard, so it reads weaker at its real size.",
+    "cost": 0.0189
+   },
+   {
+    "task": "T04",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left is a clean, fully outlined diagonal sword with a shaded blade, a clear gold crossguard and a pommel, and it reads well at 1x. Right has no outline, a blade with one shaded side, an odd stray dark pixel at the handle end and a handle that's too long, so it looks thin and unfinished at small size.",
+    "cost": 0.0192
+   }
+  ]
+ },
+ {
+  "task": "T06",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T06",
+    "model": "haiku",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right shows a smooth spin that narrows step by step from full face to edge-on and back, with consistent diagonal shading. Left's frames jump from full face to thin and back to full face, so the spin looks choppy, and the shading flips between bright and dark in a way that doesn't hold together.",
+    "cost": 0.0265
+   },
+   {
+    "task": "T06",
+    "model": "haiku",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left shows a clear spin cycle (full face, narrowing, edge-on, then widening again on the darker back face) that loops smoothly and has consistent diagonal shading. Right jumps straight from a full face to a narrow ellipse with no edge-on frame, and its light and dark faces swap in an uneven order, so the spin looks jerky.",
+    "cost": 0.0287
+   }
+  ]
+ },
+ {
+  "task": "T07",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T07",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left's dome-shaped slime sits on a fixed ground line and squashes and stretches smoothly, with a clean dark outline and consistent rim highlights, so it reads clearly at 1x. Right's oval blob seems to float without a stable base, and its shading is a crude flat split across the body.",
+    "cost": 0.0319
+   },
+   {
+    "task": "T07",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right looks like a classic slime: a dome sitting on the ground that squashes and stretches from a fixed base, with a rim highlight, a specular glint and a loop that closes smoothly. Left also meets the spec, but it reads as a floating ellipse, with a hard flat line splitting the light and dark halves and a bob that never touches the ground.",
+    "cost": 0.0323
+   }
+  ]
+ },
+ {
+  "task": "T08",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T08",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right looks more like an adventurer: it has a clear dark outline, a cape, a belt and boots, and it holds together better at 1x. Left's stride is easier to read, but its figure is a plain blue blob with thin, unoutlined legs and no visible arms.",
+    "cost": 0.0295
+   },
+   {
+    "task": "T08",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left looks more like an adventurer, with a scarf, belt and boots, and it has bolder outlines and shading that read well at 1x, even though the legs get a little muddled in some frames. Right is clean but plain: thin unoutlined stick legs, tiny feet, no visible arms and little adventurer character.",
+    "cost": 0.0293
+   }
+  ]
+ },
+ {
+  "task": "T09",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "tie",
+  "orders": [
+   {
+    "task": "T09",
+    "model": "haiku",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both tiles repeat without visible seams, but Left's layered green tufts read clearly as grass at 1x. Right is clean but mostly flat green with sparse dots, so it looks barely textured and shows an obvious grid when tiled.",
+    "cost": 0.0236
+   },
+   {
+    "task": "T09",
+    "model": "haiku",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both tiles repeat without visible seams, but Left is clean, readable pixel art: a flat base green with a few deliberate blade accents. Right is a dense random scatter of greens that reads as noise, especially at 1x.",
+    "cost": 0.0216
+   }
+  ]
+ },
+ {
+  "task": "T10",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T10",
+    "model": "haiku",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Both put together one dirt patch from the 3x3 pieces, but Right is cleaner: it has a smooth, even dirt fill, a crisp outlined border and seams you can't see, so it reads clearly at 1x. Left's dirt has noisy, blotchy marks and an uneven edge that look messy at real size.",
+    "cost": 0.0238
+   },
+   {
+    "task": "T10",
+    "model": "haiku",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left gives a clean, rounded dirt patch with a tidy outlined border and even texture that reads clearly at 1x. Right's patch is smaller and blotchy, with noisy dirt shading and busy grass that make it harder to read.",
+    "cost": 0.0236
+   }
+  ]
+ },
+ {
+  "task": "T11",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T11",
+    "model": "haiku",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right clearly shows two crossed logs with a glowing core and coherent flame shading, and its frames loop smoothly. Left's logs look like a flat stacked pile instead of crossed logs, and its flames have noisier, more scattered pixels.",
+    "cost": 0.0294
+   },
+   {
+    "task": "T11",
+    "model": "haiku",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left clearly shows two crossed logs in an X with clean shading, and its flames flicker gently in a way that loops well. Right's flames are brighter, but they have speckled, noisy pixels and a detached blob in one frame, and its logs look more like flat stacked planks than crossed logs.",
+    "cost": 0.0331
+   }
+  ]
+ },
+ {
+  "task": "T12",
+  "model": "haiku",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T12",
+    "model": "haiku",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left is a clean, well-outlined cloud puff that grows, darkens, and breaks into small blobs as it fades, so it reads clearly as smoke. Right is an odd crown/claw shape with noisy, scattered pixels in its first and last frames and reads poorly as a smoke puff.",
+    "cost": 0.0296
+   },
+   {
+    "task": "T12",
+    "model": "haiku",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right reads clearly as a smoke puff: a small ball billows into a cloud with clean outlines and shading, then breaks into wisps that shrink away. Left's shape looks more like a crown or splat than smoke, and its scattered noisy first and last frames are hard to make out at real size.",
+    "cost": 0.0296
+   }
+  ]
+ },
+ {
+  "task": "T01",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T01",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both are clean 32x32 closed wooden chests with gold trim on a transparent background. Left looks a little more polished: its gold lock plate and lid seam read clearly at 1x, and its plank shading is consistent, while Right's dark lock blends in more and its lid has less shape.",
+    "cost": 0.0212
+   },
+   {
+    "task": "T01",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Both are clean closed wooden chests with gold trim on a transparent background. Right has a clearer lid-to-body split, a stronger gold lock plate and rim, and plank detail, so it reads more clearly as a treasure chest at 1x; Left's lid line and lock are less distinct.",
+    "cost": 0.0192
+   }
+  ]
+ },
+ {
+  "task": "T02",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "tie",
+  "orders": [
+   {
+    "task": "T02",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right shows a clear cork, a light-blue glass neck and a full round red body, so it reads clearly as a potion at 1x. In Left the upper part of the bottle is transparent, so the checkerboard shows through inside the outline and the glass looks hollow, and its cork is tiny and hard to read.",
+    "cost": 0.021
+   },
+   {
+    "task": "T02",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right has full outlines, including around the cork, a rounder bottle and more convincing shading on the liquid, with a highlight and a darker base. Left reads well, but its cork has no outline and its liquid shading is flat, which makes it look less polished.",
+    "cost": 0.024
+   }
+  ]
+ },
+ {
+  "task": "T03",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T03",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right looks clearly like a knight: it has a helmet with a plume, a sword and a shield, clean outlines and consistent shading, and it still reads well at 1x. Left is tidy but blocky, with a boxy body, almost no visible arms and no weapon, so it looks less like a knight.",
+    "cost": 0.0192
+   },
+   {
+    "task": "T03",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left is a clearly readable knight with helmet plume, shield and sword, clean outlines and consistent shading. Right is a blocky, squat figure with no weapon or shield and a less defined silhouette, so it reads less clearly as a knight.",
+    "cost": 0.0189
+   }
+  ]
+ },
+ {
+  "task": "T04",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T04",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both are 16x16 swords pointing up and to the right on a transparent background with a small palette. Left has a cleaner, clearly shaped crossguard, handle and pommel that read well at 1x, while Right's guard is a lumpy blob and its oversized handle is crammed into the corner.",
+    "cost": 0.0207
+   },
+   {
+    "task": "T04",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Both are clean 16x16 diagonal swords on a transparent background, but Right has a clear crossguard, grip and pommel that read well at 1x. Left's guard is a gold blob and its oversized brown handle muddles the shape.",
+    "cost": 0.0196
+   }
+  ]
+ },
+ {
+  "task": "T05",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T05",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right has a rounder, leafy crown with clustered leaf texture, a clear trunk and a soft ground shadow, so it reads well as an oak at 1x. Left's crown is boxy, with flat diagonal bands of shading that look less like foliage.",
+    "cost": 0.0204
+   },
+   {
+    "task": "T05",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left reads as a round, leafy oak crown with lumpy edges, dithered leaf texture, a visible trunk and a ground shadow, which suits a top-down map. Right's crown is a lopsided, angular blob with flat diagonal bands of shading and a barely visible trunk, so it looks less like an oak.",
+    "cost": 0.0195
+   }
+  ]
+ },
+ {
+  "task": "T06",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T06",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left has a complete dark outline, consistent top-left highlight shading and a clean narrowing sequence that loops smoothly. Right's coin face is missing its outline at the top and bottom, its edge-on frame fills the full 16px height, and its thin frames have busy, inconsistent detail.",
+    "cost": 0.0288
+   },
+   {
+    "task": "T06",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right's coin has a clear outline, a shaded rim, and a highlight that stays consistent from frame to frame, and its edge-on frame matches the coin's height, so the spin reads smoothly. Left's edge-on frame is a bar that runs the full height of the tile, taller than the coin itself, so that frame jumps during the loop, and its in-between frames look flatter.",
+    "cost": 0.0289
+   }
+  ]
+ },
+ {
+  "task": "T07",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T07",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right is a gentle, smooth squash-and-stretch that loops cleanly, with nicer slime shading (rim light, specular highlight) that reads well at 1x. Left's deformation is bolder but jumpy, its stretched frames have a stray nub pixel on top, and the flat two-tone band makes the shading look less polished.",
+    "cost": 0.0328
+   },
+   {
+    "task": "T07",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left has a gentle, smooth squash-and-stretch with clean outlines and consistent highlight and shadow shading, so it matches the brief well. Right's motion is clearer but more exaggerated than 'gentle', and it has a stray nub pixel on top in several frames plus flatter banded shading.",
+    "cost": 0.0325
+   }
+  ]
+ },
+ {
+  "task": "T08",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T08",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left is a clearly outlined, shaded adventurer with a backpack, and its arms and legs swing believably through all six frames. Right is flat and has no outlines, its head is far too big for the body, its arms barely show and its legs just shuffle, so it reads as a less polished and less convincing walk.",
+    "cost": 0.0287
+   },
+   {
+    "task": "T08",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right looks more like an adventurer: it has clear dark outlines, shading and a backpack, and it reads well at 1x, though the leg motion is a bit messy and the body changes between frames. Left loops cleanly but is crude, with no outlines, no arms and a stiff block of a body that barely moves.",
+    "cost": 0.0315
+   }
+  ]
+ },
+ {
+  "task": "T09",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T09",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Both tiles are opaque 16x16 grass that repeats without seams, but Right uses softer contrast and scattered tufts, so it looks calm and natural when tiled. Left's high-contrast specks look noisier, and the 3x3 grid shows an obvious repeating pattern.",
+    "cost": 0.0212
+   },
+   {
+    "task": "T09",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both tiles repeat without visible seams and stay within a small opaque green palette. Left's subtle, low-contrast speckle makes a calmer ground texture with less obvious repetition, while Right's high-contrast scattered pixels look noisier and make the 3x3 grid more noticeable.",
+    "cost": 0.0223
+   }
+  ]
+ },
+ {
+  "task": "T10",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "tie",
+  "orders": [
+   {
+    "task": "T10",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both meet the 48x48 3x3 dirt-on-grass spec, but Left looks more polished: it has rounded corners, a clear darker rim and textured, shaded dirt that reads well at 1x. Right's flat fill and ragged, noisy edges look rougher, though Left does show small bumps where the edge tiles meet.",
+    "cost": 0.0252
+   },
+   {
+    "task": "T10",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both make a valid 3x3 dirt patch on grass, but Left's edges join up smoothly. Right's border has visible notches where the tiles meet, so its seams show, though its outline reads a bit more boldly.",
+    "cost": 0.0245
+   }
+  ]
+ },
+ {
+  "task": "T11",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T11",
+    "model": "sonnet",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left's flames are clean and evenly banded over clearly crossed logs, and the flicker between frames is smooth and loops well. Right's flames are noisy, with transparent holes and gaps inside them, and they change shape sharply from frame to frame, so the motion looks jittery.",
+    "cost": 0.0296
+   },
+   {
+    "task": "T11",
+    "model": "sonnet",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right has clean, layered flame shading over clearly crossed logs, with small changes between frames and sparks that loop smoothly. Left's flames are noisy and stringy, with stray transparent and grey gaps inside them, and they change shape sharply from frame to frame.",
+    "cost": 0.0295
+   }
+  ]
+ },
+ {
+  "task": "T12",
+  "model": "sonnet",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T12",
+    "model": "sonnet",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left is clean, readable pixel art with crisp outlines and consistent shading, and the puff fades by breaking into smaller wisps, though the jump from frame 1 to frame 2 is abrupt. Right grows more smoothly, but its fade uses a heavy checkerboard dither that turns the puff into a noisy diamond-shaped grid and reads poorly at real size.",
+    "cost": 0.0326
+   },
+   {
+    "task": "T12",
+    "model": "sonnet",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right's puff has clean, consistent outlines and shading, and it billows out, then splits into smaller wisps and shrinks away, which reads clearly at 1x. Left grows nicely, but its fade relies on heavy checkerboard dithering that turns its last frames into noisy, diamond-shaped scatter.",
+    "cost": 0.0323
+   }
+  ]
+ },
+ {
+  "task": "T01",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T01",
+    "model": "opus",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both are closed wooden chests with gold trim on transparent backgrounds. Left has a domed lid with a clear outline and consistent shading that reads well at 1x, while Right's busy plank grain and scattered dark knot pixels look noisy and blur the shape at real size.",
+    "cost": 0.0206
+   },
+   {
+    "task": "T01",
+    "model": "opus",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Both meet the request, but Right reads more clearly as a chest: the rounded lid, gold corner bands and keyhole lock stand out, and its shading is clean and even. Left is solid too, but its oversized lock and scattered dark knot pixels make it look noisier at 1x.",
+    "cost": 0.0213
+   }
+  ]
+ },
+ {
+  "task": "T02",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "tie",
+  "orders": [
+   {
+    "task": "T02",
+    "model": "opus",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both meet the request, but Left reads more clearly as a round glass bottle: its light-blue neck and shoulder catch the light, and its outline and shading are clean and consistent. Right's white neck and lumpy shoulders make the glass less convincing at 1x.",
+    "cost": 0.0213
+   },
+   {
+    "task": "T02",
+    "model": "opus",
+    "order": 2,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left reads more clearly as a round flask, with a well-proportioned cork, clean outline and consistent shading. Right's bottle is squat and wide, and its added light-blue glass colour probably pushes it over the 6-colour limit.",
+    "cost": 0.0233
+   }
+  ]
+ },
+ {
+  "task": "T03",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T03",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left is a clean, well-outlined chibi knight. The visible face, red tabard, shield and sword all read clearly even at 1x, and the shading is consistent. Right is also solid, but its thin limbs and full helm make it harder to read at real size, and its proportions look stiffer.",
+    "cost": 0.0212
+   },
+   {
+    "task": "T03",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Both meet the request, but Right is easier to read at 1x: its chibi proportions, visible face, and clear sword and shield work well as a top-down RPG sprite. Left's sword is a plain dark bar and its silhouette is lankier and less clear.",
+    "cost": 0.0189
+   }
+  ]
+ },
+ {
+  "task": "T04",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "tie",
+  "orders": [
+   {
+    "task": "T04",
+    "model": "opus",
+    "order": 1,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Both are 16x16 swords pointing up-right on a transparent background, but Right's solid gold crossguard and pommel read clearly at 1x. Left's crossguard is a scattered pattern of separate pixels that looks noisy and broken up.",
+    "cost": 0.0214
+   },
+   {
+    "task": "T04",
+    "model": "opus",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Both meet the request and read as swords pointing up-right, but Right has a proper diagonal crossguard, grip and pommel with consistent blade shading. Left's gold guard is a blobby lump that reads less clearly as a hilt.",
+    "cost": 0.0207
+   }
+  ]
+ },
+ {
+  "task": "T05",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T05",
+    "model": "opus",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left has a round crown made of clear leaf clusters, a visible short trunk and a clean outline, so it reads well at 1x. Right's crown is noisier and blockier, and its trunk is barely visible.",
+    "cost": 0.0187
+   },
+   {
+    "task": "T05",
+    "model": "opus",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right has a clean dark outline, readable leaf clusters, and a clear shadow and trunk, so it reads well at 1x. Left's crown is noisy and dithered, and its trunk is barely visible.",
+    "cost": 0.0187
+   }
+  ]
+ },
+ {
+  "task": "T06",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T06",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Left's GIF has broken colours (purple and teal instead of gold), so one of the two required files fails the request. Right's sprite sheet and GIF match, both are clean gold, and the spin narrows smoothly to the edge and back with consistent shading.",
+    "cost": 0.0262
+   },
+   {
+    "task": "T06",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left's sprite sheet and GIF both show a clean gold coin turning smoothly. Right's GIF has broken colours (purple and teal instead of gold), and its sprite sheet has odd jagged bulges on the edge-on frames.",
+    "cost": 0.0262
+   }
+  ]
+ },
+ {
+  "task": "T07",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T07",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Both meet the request and loop cleanly. Left has the stronger squash-and-stretch, richer and consistent shading, and a clear face, so it reads better at real size. Its only flaw is a slightly odd dark shadow strip at the base. Right is clean but small and flat, and its motion is subtler and less expressive.",
+    "cost": 0.0331
+   },
+   {
+    "task": "T07",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right's slime is larger, has more personality, and shows a clearer squash-and-stretch cycle that loops smoothly, with good shading that reads well at 1x. The odd flat shadow bar that sticks out past the body is a small flaw. Left is clean but small and sits low in the frame, and its motion is much weaker.",
+    "cost": 0.0325
+   }
+  ]
+ },
+ {
+  "task": "T08",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T08",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left shows a clean, easy-to-read adventurer with a backpack, and a clear contact–passing–contact walk cycle that loops smoothly. Right's figure leans awkwardly, and its legs and arms are muddled and jittery, so the gait is harder to read.",
+    "cost": 0.0267
+   },
+   {
+    "task": "T08",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right shows a clear, consistent adventurer with a backpack, clean outlines and a readable leg cycle of contact, passing and contact that loops smoothly. Left's legs and arms are jumbled and change shape from frame to frame, and the body leans differently in each frame, so the walk doesn't read well.",
+    "cost": 0.0269
+   }
+  ]
+ },
+ {
+  "task": "T09",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T09",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Both tiles are seamless, opaque 16x16 grass. Right uses a calm base colour with sparse, readable tufts that repeat without an obvious grid, while Left is busy and noisy and shows a strong repeating pattern when tiled.",
+    "cost": 0.0203
+   },
+   {
+    "task": "T09",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both tiles repeat without visible seams, but Left is cleaner. Its flat base with sparse, evenly shaded tufts reads clearly at 1x. Right is busier and noisier, with streaky horizontal bands that look cluttered when tiled.",
+    "cost": 0.022
+   }
+  ]
+ },
+ {
+  "task": "T10",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T10",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Both make a correct 48x48 dirt patch on grass that joins up into one shape, but Right's dirt has cleaner shading and a darker rim that reads well at 1x. Left's dirt and grass are covered in noisy dithered speckle that looks muddy. Right may show faint lines where its tiles meet, which I couldn't confirm.",
+    "cost": 0.0244
+   },
+   {
+    "task": "T10",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Both make a single dirt patch on grass that works as a 3x3 set, but Left's dirt has a clean, shaded rim and calmer texture, so it reads better at 1x. Right's dirt and grass are noisy, speckled dithering with a ragged edge.",
+    "cost": 0.0228
+   }
+  ]
+ },
+ {
+  "task": "T11",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "without",
+  "orders": [
+   {
+    "task": "T11",
+    "model": "opus",
+    "order": 1,
+    "left": "without",
+    "choice": "Left",
+    "winner": "without",
+    "reason": "Left shows a solid, well-shaded flame over clearly crossed logs, with consistent motion from frame to frame and a loop that reads well at 1x. Right's flames are small, noisy and scattered with stray pixels, and their shape varies a lot between frames, so the fire reads poorly at real size.",
+    "cost": 0.0296
+   },
+   {
+    "task": "T11",
+    "model": "opus",
+    "order": 2,
+    "left": "with",
+    "choice": "Right",
+    "winner": "without",
+    "reason": "Right has a big, clearly shaped flame with tidy outlines and steady shading over crossed logs, it reads well at 1x, and the frames flow smoothly into a loop. Left's flame is small and noisy, with scattered stray pixels and blobs that change shape erratically from frame to frame, and the logs dominate the image.",
+    "cost": 0.0298
+   }
+  ]
+ },
+ {
+  "task": "T12",
+  "model": "opus",
+  "pair": "judged",
+  "winner": "with",
+  "orders": [
+   {
+    "task": "T12",
+    "model": "opus",
+    "order": 1,
+    "left": "with",
+    "choice": "Left",
+    "winner": "with",
+    "reason": "Left has clean, readable cloud shapes with solid outlines and consistent shading, and it fades out sensibly by breaking into smaller puffs. Right grows more smoothly, but its stripy, noisy texture and the sudden loss of outline that leaves scattered speckles make it much less clean as pixel art.",
+    "cost": 0.0313
+   },
+   {
+    "task": "T12",
+    "model": "opus",
+    "order": 2,
+    "left": "without",
+    "choice": "Right",
+    "winner": "with",
+    "reason": "Right has a clean, readable cloud-puff silhouette with clear outlines and consistent shading; it billows out, then breaks into smaller puffs and fades away. Left's later frames turn into noisy, dithered, scattered pixels, and its puff shape is a plain blob with streaky texture.",
+    "cost": 0.0296
+   }
+  ]
+ }
+]

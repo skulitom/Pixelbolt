@@ -1,0 +1,75 @@
+{
+ "checked": 72,
+ "flagged": {
+  "haiku/T01-without": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/chest_gen/make_chest.py",
+      "Exit code 1 colours used (excluding transparent): 7 ['G', 'd', 'g', 'h', 'l', 'o', 'w']\r wrote [bench folder]/runs"
+     ],
+     [
+      "C:/Users/[user]/appdata/local/temp/chest_gen/make_chest.py",
+      "colours used (excluding transparent): 7 ['G', 'd', 'g', 'h', 'l', 'o', 'w']\r wrote [bench folder]/runs/haiku/T01-w"
+     ]
+    ]
+   }
+  ],
+  "haiku/T09-with": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/grass_gen/gen.py",
+      "Exit code 1 Traceback (most recent call last):\r   File \"C:/Users/[user]\\AppData\\Local\\Temp\\grass_gen\\gen.py\", line 6, in <module>\r     OUT = sys.argv[1"
+     ]
+    ]
+   }
+  ],
+  "sonnet/T04-without": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/gen/s.py",
+      "..............o.\r .............olo\r ............olso\r ...........olso.\r ..........olso..\r .........olso...\r ........olso....\r ....oo.olso.....\r ...ogg"
+     ]
+    ]
+   }
+  ],
+  "sonnet/T05-without": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/gen/tree.py",
+      "(48, 48) 10"
+     ]
+    ]
+   }
+  ],
+  "opus/T01-without": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/chestgen/gen.py",
+      "8 colours incl. transparent"
+     ]
+    ]
+   }
+  ],
+  "opus/T09-without": [
+   {
+    "rule": "a",
+    "ran_not_written": [
+     [
+      "C:/Users/[user]/appdata/local/temp/grassgen/gen.py",
+      "colours used: 5"
+     ]
+    ]
+   }
+  ]
+ }
+}
