@@ -43,6 +43,7 @@ Agents made a chest, a potion, a knight, a torch, poison spells and a farm tiles
 ### Docs and skill text
 
 - The pixel art skill's paragraph for a copy of SKILL.md alone (as `npx skills add skulitom/Pixelbolt` installs it) runs only released code: when the CLI calls a command, option or field unknown, the skill says to check its spelling and where it goes (`npx -y pixelbolt@latest help` lists the commands and options, `schema` the recipe's fields) and to leave out one written where and as the skill or the GitHub docs give it, which is newer than the release, instead of running Pixelbolt from GitHub's main branch with `npx -y github:skulitom/Pixelbolt`. It also says to skip the paragraph where `bin/pixelbolt.js` is two directories above the skill (a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio), and says only that copy comes from main.
+- The desktop bundle's notes (docs/PUBLISHING.md) and the authoring guide say what `saveAs` with `overwrite` replaces for every file type it writes: a JSON file only if it is a recipe, atlas or sequence, a `.tres` only if it is the same kind of Godot resource (SpriteFrames or TileSet), and a `.tsx` only if it is a Tiled tileset. Before, they named only the JSON rule.
 
 ## 0.11.0 (2026-11-02)
 
