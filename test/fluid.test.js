@@ -46,7 +46,10 @@ const GOLDEN = {
   'boiling-pot': 'd9b96f8d738f9f4dcea1a7299d2eb070fa2ce49004977b392aea36da0caad2ae',
   'frost-window': 'fe9f08f38e6dda36e214fbd58d5d4bf01beb30bc83eb4c539b57eacbf7ebaed2',
   'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1',
-  'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263'
+  'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263',
+  hourglass: 'd9664a2973600387217e81bdfe73b8df130ebe20febde720fcc56543c4f16d06',
+  'sand-gate': 'b5ad55de68dee6c0ade0aa225ea8f094a2fe1bb421beac1adc023e043f92cf6d',
+  'sand-plough': 'd3854405dd7e42d64a3ca694e405acb6d57d23fefe6358dcddc820254ec64971'
 };
 const examples = new Map();
 const example = async name => {

@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Sand and other grains
+
+- A liquid's `granular` makes it sand, salt, sugar, gravel or dry snow: friction that grows with pressure in place of thickness and elasticity (Drucker–Prager after Zhu and Bridson, simplified; see the physics model, section 10a). A heap holds a slope up to its angle of repose at any height, where a yield stress holds one only up to a height: `repose` (degrees, 5–45, default 33) is that angle, and a settled bed whose gravity is tilted keeps it to within two degrees from 15 to 45. A face steeper than its repose avalanches down to it, a column slumps into a ramp at it, and a heap comes to a dead stop: grains that hold move as rigid pieces, at rest on what they press on, and a grain that barely moves on them sleeps.
+- Grains land dead: the fall the pressure solve stops costs the motion across gravity Coulomb friction, and whatever a landing adds beyond the grain's weight is lost, so a stream builds a heap under itself where water splashes out flat (under the same stream, sand stands 7 pixels high over 16 where water spreads 5 high over 33).
+- `cohesion` (0–8) makes grains damp: they hold as dry ones do that many pixels down, so damp sand stands steeper and keeps a sharper top. Grains take no `yield`, `heat` or `air` (each refused with the reason), and `tension` defaults to 0 for them. Every other liquid compiles exactly as before.
+- Three presets with GIFs: [hourglass](examples/hourglass.fluid.json) (sand drains through the neck, the top caving into a crater as a heap builds below), [sand gate](examples/sand-gate.fluid.json) (a board lifts and a bin of sand slumps into a ramp and stops) and [sand plough](examples/sand-plough.fluid.json) (a blade pushes a layer of sand into a heap that spills over it). The Fluid lab lists them, with Steepest slope (repose) and Damp (cohesion) sliders for grains in place of Thickness and Firmness.
+
 ### Smoother for agents: fixes from hands-on trials
 
 Agents made a chest, a potion, a knight, a torch, poison spells and a farm tileset with scenes from the docs alone, and logged where Pixelbolt slowed them down. These are the quick fixes.

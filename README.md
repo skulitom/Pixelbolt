@@ -32,7 +32,7 @@ English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README
 
 ![A campfire simulated by Pixelbolt's fluid compiler: flames lick up from the logs, embers drift up and smoke curls away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/explosion.gif)
 
-Fire, smoke, steam, explosions, magic, water, honey and slime come from a real fluid simulation that runs on your own CPU in well under a second and bakes every frame into palette pixels you can edit, with seamless loops ([fluid effects](#fluid-effects)).
+Fire, smoke, steam, explosions, magic, water, honey, slime and sand come from a real fluid simulation that runs on your own CPU in well under a second and bakes every frame into palette pixels you can edit, with seamless loops ([fluid effects](#fluid-effects)).
 
 - **Who it's for:** game developers, game-jam teams and web or video makers who want an agent such as Claude, Codex or Cursor to draw and revise their pixel art, and people building agents that need exact, repeatable images.
 - **Use it when** you want small 2D game assets that stay editable as text: the agent reads every pixel back, fixes one pixel or one frame without redrawing the rest, and the same recipe renders the same image every time.
@@ -136,7 +136,11 @@ node bin/pixelbolt.js compile examples/campfire.fluid.json --out output/campfire
 node bin/pixelbolt.js gif output/campfire.json --scale 4 --out output/campfire.gif
 ```
 
-The thirty presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. **Effects lab** (`/effects.html`) does the same for the `pixelforge-fx` spell and particle presets: pick one of a source's effects (turned copies included), change its strength, speed and seed, and download. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops, thick fluids (viscosity, yield stress, adhesion), sticky liquids that move with an obstacle and stretch into strings, and electricity. In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
+Liquids can be grains: sand holds its slope at any height, lands dead, avalanches down a face steeper than its repose and comes to rest:
+
+![An hourglass: sand drains through the neck, the top caving into a crater while a heap builds in the bottom bulb](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/hourglass.gif) ![A board lifts and a bin of sand slumps into a ramp and stops](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/sand-gate.gif) ![A blade pushes a layer of sand along the ground into a heap that spills over it](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/sand-plough.gif)
+
+The thirty-three presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. **Effects lab** (`/effects.html`) does the same for the `pixelforge-fx` spell and particle presets: pick one of a source's effects (turned copies included), change its strength, speed and seed, and download. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops, thick fluids (viscosity, yield stress, adhesion), sticky liquids that move with an obstacle and stretch into strings, and electricity. In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
 
 ## Start
 

@@ -1375,6 +1375,26 @@
             "additionalProperties": false,
             "description": "Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Bubbles gathering under a ceiling, two that touch with eight square pixels of air or more between them, become a pocket there, and a pocket that reaches open air vents. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank's air pushes on its water."
           },
+          "granular": {
+            "type": "object",
+            "properties": {
+              "repose": {
+                "type": "number",
+                "minimum": 5,
+                "maximum": 45,
+                "description": "The steepest slope, in degrees, the grains hold, at any height: a heap stands at it, a steeper face avalanches down to it. Dry sand 30-35, fine dust 20-25, gravel 40-45; default 33."
+              },
+              "cohesion": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 8,
+                "description": "Damp grains: they hold as dry ones do that many pixels down, so they stand steeper than their repose and keep small overhangs. Default 0 (dry)."
+              }
+            },
+            "required": [],
+            "additionalProperties": false,
+            "description": "Liquid: grains, such as sand, salt, sugar, gravel or dry snow, in place of a liquid. Friction that grows with pressure holds a slope up to repose at any height; grains land dead instead of splashing, slide down a steeper face as an avalanche and come to rest exactly. Not with yield, heat or air. Cohesion (tension) defaults to 0."
+          },
           "heat": {
             "type": "object",
             "properties": {

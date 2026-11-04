@@ -437,7 +437,7 @@ function readVapour(value, path, context) {
 
 function readEffect(effect, path, source) {
   const { width, height, palette, symbols } = source;
-  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'air', 'light', 'outline', 'cleanup', 'keys', 'electric', 'heat', 'vapour', 'ice'], path);
+  fields(effect, ['kind', 'frames', 'duration', 'loop', 'seed', 'warmup', 'blend', 'substeps', 'iterations', 'buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'drag', 'wind', 'advection', 'viscosity', 'yield', 'slip', 'gravity', 'flip', 'apic', 'tension', 'adhesion', 'fill', 'walls', 'obstacles', 'emitters', 'look', 'whitewater', 'air', 'light', 'outline', 'cleanup', 'keys', 'electric', 'heat', 'vapour', 'ice', 'granular'], path);
   const kind = effect.kind ?? 'gas';
   if (!FLUID_KINDS.includes(kind)) fail(`${path}.kind`, 'expected gas (smoke, fire, steam, magic) or liquid (water, potions)');
   const liquid = kind === 'liquid';
@@ -445,8 +445,13 @@ function readEffect(effect, path, source) {
   if ((effect.vapour !== undefined || effect.ice !== undefined) && effect.heat === undefined) fail(`${path}.heat`, 'vapour and ice come from phase changes; give the liquid heat');
   const heat = effect.heat === undefined ? null : readHeat(effect.heat, `${path}.heat`, effect.vapour !== undefined);
   if (liquid && effect.advection !== undefined) fail(`${path}.advection`, 'advection applies to gases; a liquid\'s particles carry it');
-  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill', 'keys', 'air']) {
+  for (const key of liquid ? ['buoyancy', 'weight', 'vorticity', 'dissipation', 'cooling', 'wind'] : ['gravity', 'flip', 'apic', 'tension', 'adhesion', 'yield', 'fill', 'keys', 'air', 'granular']) {
     if (effect[key] !== undefined) fail(`${path}.${key}`, liquid ? `${key} applies to gases; liquids fall by gravity and keep their volume` : `${key} applies to liquids; gases rise by buoyancy`);
+  }
+  // Grains (sand): friction in place of elasticity, with no heat or air of their own (docs/physics-model.md, 10a).
+  const granular = liquid && effect.granular !== undefined ? readGranular(effect.granular, `${path}.granular`) : null;
+  if (granular) for (const [key, why] of [['yield', 'grains hold their shape by friction (granular.repose, granular.cohesion), not by a yield stress, which would make them spring back like slime'], ['heat', 'grains neither freeze nor boil on the water scale; heat applies to a liquid that is not granular'], ['air', 'air passes through sand, so grains keep no air pockets']]) {
+    if (effect[key] !== undefined) fail(`${path}.${key}`, why);
   }
   const advection = effect.advection ?? 'smooth';
   if (!ADVECTION.includes(advection)) fail(`${path}.advection`, 'expected smooth (plain semi-Lagrangian, the default) or sharp (MacCormack with a limiter: crisper edges and swirls)');
@@ -536,6 +541,7 @@ function readEffect(effect, path, source) {
   const schedule = effect.keys === undefined ? null : readKeys(effect.keys, `${path}.keys`, frames, { yield: yieldStress, viscosity, adhesion, gravity, drag });
   const most = { yield: yieldStress, viscosity, adhesion };
   if (schedule) for (const now of schedule) for (const key of Object.keys(most)) if (now[key] > most[key]) most[key] = now[key];
+  if (granular && most.yield) fail(`${path}.keys`, 'grains hold their shape by friction, not by a yield stress; key no yield on a granular liquid');
   for (const o of obstacles) if (o.props.adhesion > most.adhesion) most.adhesion = o.props.adhesion;
   if (effect.slip !== undefined && !most.viscosity && !most.yield) fail(`${path}.slip`, `slip lets a thick fluid slide along walls and obstacles instead of being held by them; set viscosity${liquid ? ' or yield' : ''}`);
   const whitewater = listed(effect.whitewater, 'whitewater', LIMITS.whitewater).map((layer, i) => readWhitewater(layer, `${path}.whitewater[${i}]`, context, gravity));
@@ -571,11 +577,23 @@ function readEffect(effect, path, source) {
     wind: effect.wind === undefined ? [0, 0] : pair(effect.wind, `${path}.wind`, -2, 2), gravity, sharp: advection === 'sharp',
     viscosity, yield: yieldStress, slip: effect.slip === undefined ? false : boolean(effect.slip, `${path}.slip`),
     flip: number(effect.flip ?? 0.9, `${path}.flip`, 0, 1), apic: effect.apic === undefined ? false : boolean(effect.apic, `${path}.apic`),
-    tension: number(effect.tension ?? 0.5, `${path}.tension`, 0, 4), adhesion, schedule, most, electric,
+    tension: number(effect.tension ?? (granular ? 0 : 0.5), `${path}.tension`, 0, 4), adhesion, schedule, most, electric, granular,
     outline: effect.outline === undefined ? 0 : paletteKey(effect.outline, `${path}.outline`, palette).charCodeAt(0),
     air: liquid && effect.air !== undefined ? readAir(effect.air, `${path}.air`, context) : null,
     heat, vapour, iceLook, warm: !liquid && obstacles.some(o => o.props.temperature !== null)
   };
+}
+// Grains (see grainFriction): `repose` is the steepest slope, in degrees, a heap of them holds, at any height, and
+// `cohesion` makes them damp: they hold as dry grains do that many pixels down, so they stand steeper and keep small
+// overhangs. The solver's friction is tan(repose) ÷ GRAIN_FRICTION, so a slope stands at `repose` (measured by tilting a
+// settled bed's gravity: 15 to 45 degrees hold to within two). Past about 47 degrees it passes 1 and a dry column no
+// longer falls at all, so steeper sand is damp sand: `cohesion`.
+const GRAIN_FRICTION = 1.07;
+function readGranular(value, path) {
+  if (!isObject(value)) fail(path, 'expected { repose, cohesion }: grains such as sand, holding a slope of up to repose degrees');
+  fields(value, ['repose', 'cohesion'], path);
+  const repose = number(value.repose ?? 33, `${path}.repose`, 5, 45), cohesion = number(value.cohesion ?? 0, `${path}.cohesion`, 0, 8);
+  return { repose, cohesion, friction: sinDeg(repose) / (GRAIN_FRICTION * cosDeg(repose)) };
 }
 // Air pockets (see sealAir): `stiffness` is the head, in pixels of liquid, that squeezes a pocket to half its size, and
 // `bubbles` how the air of a pocket that shrinks too small to show is drawn as it escapes: bubbles, as a whitewater bubble
@@ -1448,6 +1466,149 @@ function strainRates(state, u, v) {
   }
 }
 
+// ---- Grains --------------------------------------------------------------------------------------------------------------
+// Sand, salt, gravel and dry snow (`granular`): friction that grows with pressure, after Zhu and Bridson, "Animating sand
+// as a fluid" (2005), simplified (docs/physics-model.md, section 10a). After the pressure solve, a wet cell whose rate of
+// shear this step is at most `friction` × its pressure (in the solver's units, plus the cohesion's share) holds: the
+// friction there can stop the deformation within the step. Elsewhere the grains slide under a friction stress of that
+// size, given to the viscosity solve as a viscosity of friction × pressure ÷ (2 × rate of shear × dt), capped at
+// GRAIN_THICK. Cells that hold are kept in `rigid` for grainPieces and the particles. Before that, landing: the motion
+// across gravity loses what Coulomb friction takes for the fall the pressure solve stopped, so grains land dead.
+const GRAIN_THICK = 16;
+// Below this speed (pixels per frame), a grain on grains that hold or on a solid sleeps (stepLiquid).
+const GRAIN_SLEEP = 0.1;
+// Whether the cell beyond `c` along gravity holds still: a solid or closed edge, or grains that hold.
+function grainRests(g, grains, c, [gx, gy]) {
+  const { W, H, solid, walls } = g, i = c % W, j = (c - i) / W;
+  const along = Math.abs(gy) >= Math.abs(gx), di = along ? 0 : gx > 0 ? 1 : -1, dj = along ? (gy > 0 ? 1 : gy < 0 ? -1 : 0) : 0;
+  if (!di && !dj) return false;
+  const ni = i + di, nj = j + dj;
+  if (ni < 0) return walls.left; if (ni >= W) return walls.right; if (nj < 0) return walls.top; if (nj >= H) return walls.bottom;
+  const d = nj * W + ni;
+  return !!solid[d] || !!grains.rigid[d];
+}
+function grainFriction(state, effect, dt) {
+  const { g, fluid, grains } = state, { W, H, N, u, v, p } = g, { flowU, flowV, ra, rb, eta, rigid, preU, preV, impact } = grains, X = W + 1;
+  const { cohesion, friction } = effect.granular, [gx, gy] = effect.gravity, pull = Math.sqrt(gx * gx + gy * gy);
+  // What a cell weighs in the solver's units: the pressure one cell of grains puts on the cell under it.
+  const weight = dt * pull;
+  // Landing: the pressure solve stopped each cell's fall by some amount this step (the impulse it took along gravity).
+  // Up to its weight, that is the support every resting grain gets, and friction takes friction × it off the motion
+  // across gravity (Coulomb), so a grain on a slope keeps sliding only on a slope steeper than its repose. What a landing
+  // adds on top of the weight is lost outright: grains, unlike drops, neither bounce nor splash, so a grain that lands
+  // hard stops where it lands instead of squirting out sideways as water does.
+  if (pull > 0) {
+    const nx = gx / pull, ny = gy / pull, across = Math.abs(ny) >= Math.abs(nx) ? 'u' : 'v';
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const c = j * W + i;
+      if (!fluid[c]) { impact[c] = 0; continue; }
+      const du = 0.5 * (preU[j * X + i] + preU[j * X + i + 1] - u[j * X + i] - u[j * X + i + 1]), dv = 0.5 * (preV[c] + preV[c + W] - v[c] - v[c + W]);
+      const stop = du * nx + dv * ny;
+      const steady = Math.min(stop, weight), hard = stop - steady;
+      impact[c] = stop > 0 ? friction * steady + hard : 0;
+    }
+    const ease = (value, take) => (value > take ? value - take : value < -take ? value + take : 0);
+    // The push across gravity the pressure solve gave each face is held to about the grains' weight a step: enough for any
+    // avalanche, but a stream landing on a heap no longer shoves its top aside into a crater. (Cheat: a liquid's impact
+    // pressure spreads it; grains take the blow by friction.)
+    const shove = weight, held = (now, before) => (now - before > shove ? before + shove : now - before < -shove ? before - shove : now);
+    if (across === 'u') {
+      for (let j = 0; j < H; j++) for (let i = 1; i < W; i++) {
+        const k = j * X + i;
+        if (!g.uFixed[k] && (fluid[j * W + i - 1] || fluid[j * W + i])) u[k] = ease(held(u[k], preU[k]), Math.max(impact[j * W + i - 1], impact[j * W + i]));
+      }
+    } else {
+      for (let j = 1; j < H; j++) for (let i = 0; i < W; i++) {
+        const k = j * W + i;
+        if (!g.vFixed[k] && (fluid[k - W] || fluid[k])) v[k] = ease(held(v[k], preV[k]), Math.max(impact[k - W], impact[k]));
+      }
+    }
+  }
+  // The flow's rates of strain, with the faces at the free surface reading the flow beside them, as the yield path does.
+  const uValid = new Uint8Array(u.length), vValid = new Uint8Array(v.length);
+  for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * X + i; uValid[k] = g.uFixed[k] || (i > 0 && fluid[j * W + i - 1]) || (i < W && fluid[j * W + i]) ? 1 : 0; }
+  for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vValid[k] = g.vFixed[k] || (j > 0 && fluid[k - W]) || (j < H && fluid[k]) ? 1 : 0; }
+  flowU.set(u); flowV.set(v);
+  extrapolate(flowU, uValid, W + 1, H, 2); extrapolate(flowV, vValid, W, H + 1, 2);
+  strainRates({ g, fluid, strain: grains }, flowU, flowV);
+  // Cohesion is pressure the grains have without being pressed: damp sand at the surface holds as dry sand does
+  // `cohesion` pixels down.
+  const bond = cohesion * weight;
+  // Only grains pressed together hold: a falling stream or clump, pressed by nothing, is no part of the heap it falls
+  // onto (holding, it joined the heap's piece and stood frozen in the air).
+  const pressed = 0.25 * weight;
+  for (let c = 0; c < N; c++) {
+    if (!fluid[c]) { eta[c] = 0; rigid[c] = 0; continue; }
+    const hold = friction * ((p[c] > 0 ? p[c] : 0) + bond), rate = 2 * Math.sqrt(ra[c] * ra[c] + rb[c] * rb[c]);
+    rigid[c] = p[c] > pressed && rate <= hold ? 1 : 0;
+    eta[c] = rate > 0 ? Math.min(GRAIN_THICK, hold / (rate * dt)) : GRAIN_THICK;
+  }
+  return eta;
+}
+// The cells that hold, joined side to side, are pieces that move as rigid bodies: each piece's velocity becomes its mean
+// motion and spin, so nothing inside it shears. A piece that presses on a solid (a solid beside it along gravity) moves
+// with that solid instead, as static friction holds it: a heap on the ground stops dead, and sand on a moving plate rides
+// with it.
+function grainPieces(state, effect) {
+  const { g, grains, solids } = state, { W, H, N, u, v, uFixed, vFixed, solid, walls } = g, { rigid, piece, stack } = grains, X = W + 1;
+  const [gx, gy] = effect.gravity;
+  piece.fill(-1);
+  const inside = (i, j) => i >= 0 && i < W && j >= 0 && j < H;
+  const closed = (i, j) => (i < 0 ? walls.left : i >= W ? walls.right : j < 0 ? walls.top : j >= H ? walls.bottom : solid[j * W + i]);
+  let pieces = 0;
+  for (let start = 0; start < N; start++) {
+    if (!rigid[start] || piece[start] >= 0) continue;
+    // The piece: a flood fill in a fixed order, so the same source gives the same pieces.
+    let top = 0, n = 0, sx = 0, sy = 0, su = 0, sv = 0, rests = 0, ru = 0, rv = 0;
+    stack[top++] = start; piece[start] = pieces;
+    const cells = [];
+    // Pressing on a solid: the cell beyond along gravity is shut. It moves as that solid does (a closed edge is still).
+    const press = (i, j) => {
+      if (!closed(i, j)) return;
+      rests++;
+      const w = inside(i, j) ? solids.velocity(j * W + i) : null;
+      if (w) { ru += w[0]; rv += w[1]; }
+    };
+    while (top) {
+      const c = stack[--top], i = c % W, j = (c - i) / W;
+      cells.push(c);
+      n++; sx += i + 0.5; sy += j + 0.5;
+      su += 0.5 * (u[j * X + i] + u[j * X + i + 1]); sv += 0.5 * (v[c] + v[c + W]);
+      if (gx > 0) press(i + 1, j); else if (gx < 0) press(i - 1, j);
+      if (gy > 0) press(i, j + 1); else if (gy < 0) press(i, j - 1);
+      for (const [d, ok] of [[c - 1, i > 0], [c + 1, i < W - 1], [c - W, j > 0], [c + W, j < H - 1]]) {
+        if (ok && rigid[d] && piece[d] < 0) { piece[d] = pieces; stack[top++] = d; }
+      }
+    }
+    const cx = sx / n, cy = sy / n;
+    let vx = su / n, vy = sv / n, spin = 0;
+    if (rests) {
+      // Held by what it presses on: it moves as that solid moves.
+      vx = ru / rests; vy = rv / rests;
+    } else {
+      let L = 0, I = 0;
+      for (const c of cells) {
+        const i = c % W, j = (c - i) / W, rx = i + 0.5 - cx, ry = j + 0.5 - cy;
+        const cu = 0.5 * (u[j * X + i] + u[j * X + i + 1]), cv = 0.5 * (v[c] + v[c + W]);
+        L += rx * (cv - vy) - ry * (cu - vx); I += rx * rx + ry * ry + 1 / 6;
+      }
+      spin = I > 0 ? L / I : 0;
+    }
+    // The faces inside the piece and those open to the air move with it; a solid fixes its own, and a face shared with
+    // grains that slide stays as solved, so they slide off the piece's edge (pinned there, a heap kept steep walls).
+    const own = (d, ok) => !ok || piece[d] === pieces || !state.fluid[d];
+    for (const c of cells) {
+      const i = c % W, j = (c - i) / W;
+      if (!uFixed[j * X + i] && own(c - 1, i > 0)) u[j * X + i] = vx - spin * (j + 0.5 - cy);
+      if (!uFixed[j * X + i + 1] && own(c + 1, i < W - 1)) u[j * X + i + 1] = vx - spin * (j + 0.5 - cy);
+      if (!vFixed[c] && own(c - W, j > 0)) v[c] = vy + spin * (i + 0.5 - cx);
+      if (!vFixed[c + W] && own(c + W, j < H - 1)) v[c + W] = vy + spin * (i + 0.5 - cx);
+    }
+    pieces++;
+  }
+  return pieces;
+}
+
 // Vorticity confinement: puts back the small swirls that advection smooths away, so smoke curls instead of blurring.
 function confine(g, strength, dt, curl, magnitude) {
   const { W, H, u, v, solid } = g;
@@ -1710,7 +1871,8 @@ function createLiquid(effect, width, height) {
     cux: new Float64Array(1024), cuy: new Float64Array(1024), cvx: new Float64Array(1024), cvy: new Float64Array(1024), ea: new Float64Array(1024), eb: new Float64Array(1024), apic: effect.apic,
     cling: effect.most.adhesion ? clingField(solids) : null, grip: effect.most.adhesion ? gripFields(solids, effect.obstacles) : null, carry: null,
     strands: effect.look.some(layer => layer.field === STRAND),
-    pressure: effect.most.viscosity || effect.most.yield ? new Float64Array(N) : null,
+    pressure: effect.most.viscosity || effect.most.yield || effect.granular ? new Float64Array(N) : null,
+    grains: effect.granular ? { flowU: new Float64Array(U), flowV: new Float64Array(V), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), eta: new Float64Array(N), rigid: new Uint8Array(N), piece: new Int32Array(N), stack: new Int32Array(N), preU: new Float64Array(U), preV: new Float64Array(V), impact: new Float64Array(N), inner: new Uint8Array(N), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null,
     air: effect.air ? { label: new Int32Array(N).fill(-1), before: new Int32Array(N).fill(-1), stack: new Int32Array(N), pressure: new Float64Array(N), regions: [], release: [], made: [] } : null,
     strain: effect.most.yield ? { a: new Float64Array(N), b: new Float64Array(N), count: new Float64Array(N), stiff: new Float64Array(N), shear: new Float64Array((width + 1) * (height + 1)), ra: new Float64Array(N), rb: new Float64Array(N), spin: new Float64Array(N), flowU: new Float64Array(U), flowV: new Float64Array(V), flowPressure: new Float64Array(N), spread: new Float64Array(N), none: new Float64Array(N) } : null
   };
@@ -2120,40 +2282,56 @@ function stepLiquid(state, effect, dt) {
     const error = room ? state.cells[c] / (PER_CELL * room[c]) - 1 : state.cells[c] / PER_CELL - 1;
     const interior = fluid[c] && (i > 0 ? wet(c - 1) : walls.left) && (i < W - 1 ? wet(c + 1) : walls.right) && (j > 0 ? wet(c - W) : walls.top) && (j < H - 1 ? wet(c + W) : walls.bottom);
     target[c] = error > 0 || interior ? 0.5 * error : 0;
+    if (state.grains) state.grains.inner[c] = interior ? 1 : 0;
   }
   // A yield-stress liquid is strained by its flow alone: the spreading has a solve of its own after the flow's, which
   // moves the particles without straining them. (Strained by it, the liquid stored springiness that only mended the
   // particles' spacing, and a resting slime rocked for ever.)
-  const split = effect.yield > 0, spreading = split ? state.strain.none : target;
+  // Grains are strained by their flow alone in the same way: friction that read the spacing's mending as shear never let
+  // a resting heap hold.
+  const grains = effect.granular ? state.grains : null, split = effect.yield > 0 || !!grains;
+  const spreading = split ? (grains ?? state.strain).none : target;
+  // Grains: the velocities before the pressure solve, to measure how hard it stopped them (grainFriction).
+  if (grains) { grains.preU.set(u); grains.preV.set(v); }
   g.airP = effect.air ? sealAir(state, effect, dt) : null;
   project(g, fluid, effect.iterations, spreading);
   g.pockets = null;
+  // Grains: friction from the pressure just solved, as a viscosity the thick solve below applies (grainFriction).
+  const friction = grains ? grainFriction(state, effect, dt) : null;
   // A thick liquid resists the flow the pressure solve has just made (a heap slumping under its own weight) before it
   // moves, then is made divergence-free again. That second solve starts from no pressure and leaves the first's in
   // place to start the next step from.
-  const thick = effect.viscosity || effect.yield;
+  const thick = effect.viscosity || effect.yield || grains;
   if (thick) {
-    viscous(g, fluid, effect, dt, effect.yield ? state.strain.stiff : null);
+    viscous(g, fluid, effect, dt, effect.yield ? state.strain.stiff : friction);
     state.pressure.set(g.p); g.p.fill(0);
     project(g, fluid, effect.iterations, spreading);
     g.p.set(state.pressure);
   }
+  // Grains that hold move as rigid pieces, at rest on what they press on.
+  if (grains) grainPieces(state, effect);
   const uValid = new Uint8Array(state.uValid.length), vValid = new Uint8Array(state.vValid.length);
   for (let j = 0; j < H; j++) for (let i = 0; i <= W; i++) { const k = j * (W + 1) + i; uValid[k] = g.uFixed[k] || (i > 0 && fluid[j * W + i - 1]) || (i < W && fluid[j * W + i]) ? 1 : 0; }
   for (let j = 0; j <= H; j++) for (let i = 0; i < W; i++) { const k = j * W + i; vValid[k] = g.vFixed[k] || (j > 0 && fluid[(j - 1) * W + i]) || (j < H && fluid[j * W + i]) ? 1 : 0; }
   if (split) {
-    const { flowU, flowV, flowPressure } = state.strain;
-    flowU.set(u); flowV.set(v);
-    extrapolate(flowU, Uint8Array.from(uValid), W + 1, H, 3); extrapolate(flowV, Uint8Array.from(vValid), W, H + 1, 3);
-    strainRates(state, flowU, flowV);
+    const held = grains ?? state.strain, { flowPressure } = held;
+    if (!grains) {
+      const { flowU, flowV } = state.strain;
+      flowU.set(u); flowV.set(v);
+      extrapolate(flowU, Uint8Array.from(uValid), W + 1, H, 3); extrapolate(flowV, Uint8Array.from(vValid), W, H + 1, 3);
+      strainRates(state, flowU, flowV);
+    }
     // The spreading's solve starts from the last step's, as the flow's starts from the last step's pressure.
-    flowPressure.set(g.p); g.p.set(state.strain.spread);
-    // The pockets pushed in the flow's solve; this one only mends the spacing.
+    flowPressure.set(g.p); g.p.set(held.spread);
+    // The pockets pushed in the flow's solve; this one only mends the spacing. Grains that hold mend it inside a heap only,
+    // where grains just trade places to fill its gaps: mended at the surface too, a heap's crowded grains spread over it and
+    // it crept flatter for ever, and never mended, its gaps stayed and showed as holes.
+    if (grains) for (let c = 0; c < g.N; c++) if (grains.rigid[c] && !grains.inner[c]) target[c] = 0;
     const airP = g.airP;
     g.airP = null;
     project(g, fluid, effect.iterations, target);
     g.airP = airP;
-    state.strain.spread.set(g.p); g.p.set(flowPressure);
+    held.spread.set(g.p); g.p.set(flowPressure);
   }
   extrapolate(u, uValid, W + 1, H, 3); extrapolate(v, vValid, W, H + 1, 3);
   // FLIP: particles keep their own velocity plus the grid's change, blended with the grid velocity (PIC) to calm noise.
@@ -2170,7 +2348,8 @@ function stepLiquid(state, effect, dt) {
   for (let k = state.n - 1; k >= 0; k--) {
     if (frozen && frozen[k]) { state.vx[k] = 0; state.vy[k] = 0; continue; }
     let x = state.x[k], y = state.y[k];
-    const pu = sampleU(g, u, x, y), pv = sampleV(g, v, x, y), share = mu ? flip / (1 + 8 * dt * mu[Math.floor(y) * W + Math.floor(x)]) : flip;
+    const cell = Math.floor(y) * W + Math.floor(x), pu = sampleU(g, u, x, y), pv = sampleV(g, v, x, y);
+    const share = grains && grains.rigid[cell] ? 0 : mu ? flip / (1 + 8 * dt * mu[cell]) : flip;
     state.vx[k] = share * (state.vx[k] + pu - sampleU(g, uOld, x, y)) + (1 - share) * pu;
     state.vy[k] = share * (state.vy[k] + pv - sampleV(g, vOld, x, y)) + (1 - share) * pv;
     if (slopes) {
@@ -2193,6 +2372,11 @@ function stepLiquid(state, effect, dt) {
     if (state.vy[k] > MAX_SPEED) state.vy[k] = MAX_SPEED; else if (state.vy[k] < -MAX_SPEED) state.vy[k] = -MAX_SPEED;
     const mx = x + 0.5 * dt * pu, my = y + 0.5 * dt * pv;
     let nx = x + dt * sampleU(g, u, mx, my), ny = y + dt * sampleV(g, v, mx, my);
+    // A grain that barely moves, lying on grains that hold or on a solid, sleeps where it is: on a resting heap the
+    // spacing's small mending kept a loose surface grain hopping across a cell edge for ever.
+    if (grains && !grains.rigid[cell] && pu * pu + pv * pv < GRAIN_SLEEP * GRAIN_SLEEP && grainRests(g, grains, cell, effect.gravity)) {
+      state.vx[k] = 0; state.vy[k] = 0; nx = x; ny = y;
+    }
     // Beside a moving obstacle: its velocity here (wx, wy), and how far its whole-pixel place is ahead of where it really
     // is at the end of this step (sx, sy), so the particle meets it where it really is.
     let wx = 0, wy = 0, sx = 0, sy = 0;
@@ -3471,7 +3655,7 @@ function renderFields(effect, base, width, height, drawn = null) {
 // Cell updates per cell per step, for the work budget: one per pressure sweep plus the transfers and advection. A thick
 // fluid's viscosity solve (and a liquid's second pressure solve) costs about two more per sweep, a yield-stress liquid's
 // spreading solve one more, sharp advection about thirty.
-const stepWork = effect => effect.iterations * (effect.most.yield ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0) + electricWork(effect) + (effect.vapour ? effect.vapour.iterations + 20 : effect.heat ? 4 : 0);
+const stepWork = effect => effect.iterations * (effect.most.yield || effect.granular ? 4 : effect.most.viscosity ? 3 : 1) + 10 + (effect.sharp ? 30 : 0) + electricWork(effect) + (effect.vapour ? effect.vapour.iterations + 20 : effect.heat ? 4 : 0);
 // A loop simulates its warm-up cycles, the recorded cycle, and as long again as its longest-lived spark (a liquid's
 // spray may fly on for its life again; a bubble never does), the bubbles of air pockets included.
 const sparkSpan = (s, liquid) => (liquid && !s.follow && s.rise === null ? 2 : 1) * s.life[1];
