@@ -321,9 +321,10 @@ function buildLayout(obstacles, width, height, places) {
 // ---- The solid layer -------------------------------------------------------------------------------------------------
 // What every fluid feature asks of the solids, answered in one place (docs/physics-model.md, section 6): which cells are
 // solid, who owns each one, how fast each solid cell moves, and what each solid does to the fluid touching it. An owner
-// is an obstacle's index, ICE (frozen liquid; reserved, nothing makes it yet) or, beyond the canvas, EDGE (a closed edge);
-// NONE is open. Features read solids through it, never through obstacles, so whatever they do at a solid they do at
-// every kind of solid: liquid clings to ice and closed edges with the effect's adhesion, and they stand still.
+// is an obstacle's index, ICE (frozen liquid: a cell holding ICE_CELL ice particles or more) or, beyond the canvas, EDGE
+// (a closed edge); NONE is open. Features read solids through it, never through obstacles, so whatever they do at a
+// solid they do at every kind of solid: liquid clings to ice and closed edges with the effect's adhesion; closed edges
+// stand still, and ice moves as it settles or floats.
 const NONE = -1, ICE = -2, EDGE = -3;
 // Surface properties: what a solid does to the fluid touching it, read for each obstacle here, into one object. One it
 // leaves unset is null and takes the effect's value, as ice and closed edges always do. A new property (a hot plate's
@@ -2734,8 +2735,8 @@ function heatStep(run, effect, dt, first) {
   flux.fill(0);
   for (let k = 0; k < state.n; k++) {
     const i = Math.floor(state.x[k]), j = Math.floor(state.y[k]), c = j * W + i, t = tempOf(h, energy[k], frozen[k]);
-    // `input` is heat another stage puts into the water and ice of a cell, per frame (zero until one does: Joule heat
-    // from an arc that reaches the water is the plan, physics-model.md section 10).
+    // `input` is heat another stage puts into the water and ice of a cell, per frame: the electric step's Joule heat
+    // from an arc that reaches the water (physics-model.md section 10), and zero without one.
     let gain = h.conduct * (Tc[c] - t) + P.input[c];
     // A particle in the open corner of a smooth obstacle's pixel touches that obstacle.
     if (base[c] && obstacleT[c] === obstacleT[c]) gain += h.contact * (obstacleT[c] - t);

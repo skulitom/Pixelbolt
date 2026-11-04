@@ -210,7 +210,7 @@ export function tiledMap(scene, draws, { tilesets }) {
   let objects = 0;
   layers.forEach((layer, k) => {
     if (layer.tiles !== undefined) {
-      const i = layer.tiles, instance = scene.instances[i], { at, offset } = placed.get(i), cells = Array.from({ length: size[1] }, () => Array(size[0]).fill(0));
+      const i = layer.tiles, { at, offset } = placed.get(i), cells = Array.from({ length: size[1] }, () => Array(size[0]).fill(0));
       for (const draw of layer.cells) { const [c, row] = at[draw.cell]; cells[row][c] = first[draw.asset] + draw.frame; }
       body.push(` <layer id="${k + 1}" name="${xml(label(i))}" width="${size[0]}" height="${size[1]}"${offset[0] || offset[1] ? ` offsetx="${offset[0]}" offsety="${offset[1]}"` : ''}>`,
         '  <data encoding="csv">', cells.map(row => row.join(',')).join(',\n'), '</data>', ' </layer>');

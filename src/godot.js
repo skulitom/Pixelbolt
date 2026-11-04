@@ -268,5 +268,5 @@ export function tileSets(sources) {
   lines.push(...ids.map((id, i) => `sources/${i} = SubResource("${id}")`), '');
   return { text: lines.join('\n'), warnings };
 }
-// One sheet's TileSet: tileSets([{ atlas, tiles, ...options }]); options.color is its terrain's editor colour.
-export const tileSet = (atlas, tiles, { color, ...options } = {}) => tileSets([{ atlas, tiles, plain: [], ...options, ...(color && { colors: { [options.terrain ?? options.name]: color } }) }]);
+// One sheet's TileSet: tileSets([{ atlas, tiles, ...options }]).
+export const tileSet = (atlas, tiles, options = {}) => tileSets([{ atlas, tiles, plain: [], ...options }]);

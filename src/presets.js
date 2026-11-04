@@ -116,7 +116,7 @@ const FACTS = ['for', 'size', 'frames', 'plays', 'colors', 'animations', 'moreAn
 const isFacts = value => value !== null && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every(key => FACTS.includes(key))
   && typeof value.for === 'string' && typeof value.size === 'string' && Number.isInteger(value.frames) && typeof value.plays === 'string'
   && Number.isInteger(value.colors) && value.animations !== null && typeof value.animations === 'object' && !Array.isArray(value.animations);
-async function summarize(entry, store, measuring = true) {
+async function summarize(entry, store, measuring) {
   const { source } = await loadPreset(entry), id = store?.key(entry, source), known = id === undefined ? undefined : store.cached[id], hit = isFacts(known);
   if (!hit && !measuring) return { summary: null };
   const facts = hit ? known : measure(entry, source);

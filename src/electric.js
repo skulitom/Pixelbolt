@@ -107,7 +107,7 @@ function schedule(value, path, frames) {
 }
 
 // Over a liquid (`liquid`), the water's conductivity makes the field slower to solve, so it takes more steps by default.
-export function readElectric(value, path, obstacles, liquid = false) {
+export function readElectric(value, path, obstacles, liquid) {
   if (obstacles.filter(o => o.electric && o.electric.voltage).length > LIMITS.electrodes) fail(path, `at most ${LIMITS.electrodes} obstacles may have a voltage`);
   fields(value, ['breakdown', 'focus', 'growth', 'recombine', 'sustain', 'memory', 'heating', 'ionize', 'ground', 'iterations'], path);
   const ground = value.ground ?? [];
@@ -338,7 +338,7 @@ function field(E, dt) {
   if (anyIdeal) solve(E, E.fixed, n => idealAt[n]); else E.fixed.fill(0);
   const phi = E.phi;
   phi.set(E.fixed);
-  if (!supplied.length) { electrodes.forEach((e, n) => { e.phi = idealAt[n]; }); return; }
+  if (!supplied.length) return;
   const I0 = anyIdeal ? electrodeCurrents(E, E.fixed) : new Float64Array(electrodes.length), G = [];
   for (const n of supplied) {
     if (!E.basis[n]) E.basis[n] = new Float64Array(N);
@@ -356,7 +356,6 @@ function field(E, dt) {
   electrodes.forEach((e, n) => { for (const v of e.resistance ? [e.voltage[cycle], ...(e.charge ? [e.phi] : [])] : [idealAt[n]]) { if (v < lo) lo = v; if (v > hi) hi = v; } });
   for (let a = 0; a < at.length; a++) at[a] = at[a] < lo ? lo : at[a] > hi ? hi : at[a];
   supplied.forEach((n, a) => { electrodes[n].phi = at[a]; const B = E.basis[n]; for (let c = 0; c < N; c++) phi[c] += at[a] * B[c]; });
-  electrodes.forEach((e, n) => { if (!e.resistance) e.phi = idealAt[n]; });
 }
 
 // Current through each cell: half the magnitude of everything crossing its links, so a channel's cells carry its current.

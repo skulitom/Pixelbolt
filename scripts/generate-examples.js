@@ -254,7 +254,7 @@ const litSpirit = { format: 'pixelforge-scene', version: 1, name: 'forest-spirit
 // Gases hold their sources with `rate` and colour density and temperature through ramps; liquids are FLIP water.
 const fluidSource = (name, width, height, palette, effect, symbols) => ({ format: 'pixelforge-fluid', version: 1, name, width, height, palette, ...(symbols && { symbols }), effects: { [name]: effect } });
 const shapeRows = (w, h, at) => Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => at(x, y) ?? '.').join(''));
-const fireRamp = (keys, thresholds, dither = 0.6) => ({ field: 'temperature', colors: keys, thresholds, dither });
+const fireRamp = (keys, thresholds, dither) => ({ field: 'temperature', colors: keys, thresholds, dither });
 // The source is a disc sunk into the logs, so the flame rises from a dome; quick cooling ends it in tongues.
 const campfire = fluidSource('campfire', 32, 48, { u: '#4d4558', S: '#6e6678', r: '#b8322f', o: '#f0772b', y: '#ffcc4d', W: '#fff6d1', b: '#5a3825', B: '#8a5a36', k: '#2a1c18' }, {
   frames: 24, duration: 70, loop: true, seed: 3, walls: ['bottom'], buoyancy: 0.45, vorticity: 0.45, dissipation: 0.065, cooling: 0.24,
@@ -346,7 +346,7 @@ const torch = fluidSource('torch', 16, 32, { r: '#c23b2e', o: '#f57f2a', y: '#ff
 const water = { B: '#1d3f7a', b: '#2f6fc0', c: '#5fb4e8', w: '#dff6ff' }, stone = { r: '#5b5568', R: '#433e50', k: '#2b2735' };
 const waterLook = (deep, band = 4) => [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['w', 'c', 'b', 'B'], thresholds: [1, 2, band, deep], dither: 0 }];
 // Spray thrown up where water lands; in a liquid it ends where it falls back into the water.
-const spray = (name, at, start, count, angle, extra = {}) => ({ name, at, area: [2, 1], burst: 1, start, density: 0, sparks: { count, life: [12, 20], colors: ['w', 'w', 'c'], angle, speed: [2.8, 4], gravity: [0, 0.55], drag: 0.02, follow: 0, ...extra } });
+const spray = (name, at, start, count, angle, extra) => ({ name, at, area: [2, 1], burst: 1, start, density: 0, sparks: { count, life: [12, 20], colors: ['w', 'w', 'c'], angle, speed: [2.8, 4], gravity: [0, 0.55], drag: 0.02, follow: 0, ...extra } });
 // A round drop falls and speeds up; where it lands, whitewater throws a crown of droplets off the crater's rims, which
 // arc up and fall back into the pool, and the crater springs back as a hump in the middle. A low flip share and drag calm the waves, and a slow drain
 // at the bottom takes back the drop's water, so the pool settles flat at its old level instead of a fraction of a pixel

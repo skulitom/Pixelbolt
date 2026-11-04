@@ -60,15 +60,15 @@ function squashOf(value, path) {
   if (!Array.isArray(value) || !Array.isArray(value[0])) return { squash: pair(value ?? [1, 1], path, 0.125, 8), squashKeys: null };
   if (value.length < 2 || value.length > 8) fail(path, 'expected [x, y], or 2–8 of them as keys spread over the layer\'s frames');
   const keys = value.map((key, i) => pair(key, `${path}[${i}]`, 0.125, 8));
-  return { squash: keys[0], squashKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
+  return { squashKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
 }
-// drift: [x, y] moved over the window, or 2–8 offsets (a path's 2–16) as keys spread over it, so a layer can travel a curve (an orb
+// drift: [x, y] moved over the window, or 2–8 offsets as keys spread over it, so a layer can travel a curve (an orb
 // that arcs, a flame that wanders) instead of a straight line.
 function driftOf(value, path, most = 8) {
   if (!Array.isArray(value) || !Array.isArray(value[0])) return { drift: pair(value ?? [0, 0], path, -4096, 4096), driftKeys: null };
   if (value.length < 2 || value.length > most) fail(path, `expected [x, y], or 2–${most} offsets [x, y] as keys spread over the layer's frames`);
   const keys = value.map((key, i) => pair(key, `${path}[${i}]`, -4096, 4096));
-  return { drift: keys.at(-1), driftKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
+  return { driftKeys: [keys.map(key => key[0]), keys.map(key => key[1])] };
 }
 // The frame of an animation (a list of frames) that effect frame t shows: frame for frame, holding the last after the
 // animation ends, or round again in a loop.
@@ -109,7 +109,7 @@ export function curveSample(keys, q) {
 // A point moving at a steady speed along a path of points, straight between them or through a smooth curve: `t` is the
 // share of the path's length travelled, so points far apart take longer to pass between than points close together.
 // A curve is measured along 16 straight pieces per span. Only + − × ÷ and sqrt, so every engine gives the same bits.
-export function pathWalker(points, curved = false) {
+export function pathWalker(points, curved) {
   const xs = points.map(p => p[0]), ys = points.map(p => p[1]), steps = (points.length - 1) * (curved ? 16 : 1);
   const marks = Array.from({ length: steps + 1 }, (_, k) => (curved ? [curveSample(xs, k / steps), curveSample(ys, k / steps)] : points[k]));
   const lengths = [0];
@@ -241,10 +241,11 @@ function readLayer(layer, path, context, index) {
     power: tween(layer.power ?? 1, `${path}.power`, 0, 8),
     flicker: number(layer.flicker ?? 0, `${path}.flicker`, 0, 1),
     tilt: number(layer.tilt ?? 0, `${path}.tilt`, -3600, 3600),
-    // A squash may be keyed, 2–8 [x, y] pairs over the window: `squash` is the first, `squashKeys` the x and y keys.
+    // A squash may be keyed, 2–8 [x, y] pairs over the window: `squashKeys` holds the x and y keys, and renderShapes
+    // gives each frame's painters the squash sampled from them.
     ...squashOf(layer.squash, `${path}.squash`),
     // A path moves the layer at a steady speed along its length (pathWalker), offsets from its first point.
-    ...(route ? { drift: [route.at(-1)[0] - route[0][0], route.at(-1)[1] - route[0][1]], driftKeys: null, walk: pathWalker(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), layer.curve === true) } : driftOf(layer.drift, `${path}.drift`)),
+    ...(route ? { walk: pathWalker(route.map(([x, y]) => [x - route[0][0], y - route[0][1]]), layer.curve === true) } : driftOf(layer.drift, `${path}.drift`)),
     // curve: true runs keyed drift through a smooth curve, so an arc has no corner at its middle key.
     curved: layer.curve === undefined ? false : (typeof layer.curve !== 'boolean' ? fail(`${path}.curve`, 'expected true or false') : layer.curve && (route ? route.length : Array.isArray(layer.drift?.[0]) ? layer.drift.length : 0) < 3 ? fail(`${path}.curve`, 'curve smooths a path or drift keys; give three or more points') : layer.curve),
     floor: layer.floor === undefined ? null : number(layer.floor, `${path}.floor`, -4096, 4096),
@@ -305,7 +306,7 @@ function readLayer(layer, path, context, index) {
     const width = t('width', 3, 0, 32), rise = number(layer.rise ?? 2, `${path}.rise`, 1, 4);
     const { noise, noiseKeys } = noisy(0.5);
     // Noise stretches the reach by up to half its share, so the field is measured that far out.
-    Object.assign(out, { symbol: name, width, rise, noise, noiseKeys, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
+    Object.assign(out, { width, rise, noise, noiseKeys, scale: integer(layer.scale ?? 3, `${path}.scale`, 1, 64), boil: number(layer.boil ?? 2 * maxKey(width) * rise, `${path}.boil`, -512, 512), loop,
       fields: (rings ?? (animated ? sequences[name] : [symbols[name]])).map(rows => auraField(rows, maxKey(width) * (1 + noise / 2), rise, path, animated, work)) });
     if (out.fields.every(field => !field)) fail(`${path}.symbol`, 'the symbol has no visible pixels for an aura to hug');
   }
@@ -362,7 +363,7 @@ function ellipseRows(rx, ry, disc) {
 // higher (flames above a head, a short glow below the feet). Further than the reach stays Infinity. The steps it takes
 // count against the compile's shared shape work (`work`), as painting does: an aura on each frame of a long animation,
 // or many auras, are refused instead of measuring for minutes.
-function auraField(rows, reach, rise, path, emptyOk = false, work = null) {
+function auraField(rows, reach, rise, path, emptyOk, work) {
   const w = rows[0].length, h = rows.length, side = Math.ceil(reach), up = Math.ceil(reach * rise), W = w + 2 * side, H = h + up + side;
   const solid = [];
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (rows[j][i] !== '.' && rows[j][i] !== ' ') solid.push([i, j]);

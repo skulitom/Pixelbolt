@@ -21,7 +21,6 @@ const turf = { seed: 3, fill: { color: 'g', speckle: [{ color: 'd', amount: 0.15
   edges: { all: { depth: 2, jitter: 1, bands: ['k'] }, n: { bands: ['k', 'L'], tufts: { colors: ['b', 'G'], amount: 0.5 } }, s: { depth: 3, bands: ['k', 'd'], outside: ['s'] } }, round: 2, inner: 1 };
 const small = { fill: 'g', edges: { all: { depth: 1, bands: ['k'] }, n: { tufts: { colors: ['b'] } }, s: { outside: ['s'] } }, round: 1, inner: 1 };
 const draw = (rows, ops = [{ op: 'stamp', symbol: 'r' }]) => renderProject({ version: 1, name: 'm', width: rows[0].length, height: rows.length, palette, symbols: { r: rows }, frames: [{ name: 'm', ops }] }).frames[0].data;
-const tiled = (template, map, tile, mode = 'blob') => draw(template, [{ op: 'tilemap', tile: [tile, tile], rows: map, legend: { '#': { template: 'r', autotile: mode } } }]).subarray(0);
 // Seeded maps of scattered terrain, so islands, lakes, strips and corner-only touches all turn up.
 function maps(count, size, seed) {
   let state = seed; const next = () => (state = (state * 1103515245 + 12345) % 2147483648) / 2147483648;
@@ -64,7 +63,7 @@ test('the example terrains compile without seam warnings to their reviewed pixel
 });
 
 test('the seam check names the pixels where hand-drawn template quarters do not meet', () => {
-  const rows = terrainTemplate(turf, { tile: 16, palette }), edit = (from, changes) => from.map((row, y) => [...row].map((char, x) => changes[`${x},${y}`] ?? char).join(''));
+  const rows = terrainTemplate(turf, { tile: 16, palette });
   // Drawn as rows, a repeating template passes.
   assert.equal(compileAutotile(source({ template: rows })).warnings, undefined);
   // A top edge that does not repeat: the island's right tile has its top strip a row lower than its left tile, so the
@@ -72,7 +71,6 @@ test('the seam check names the pixels where hand-drawn template quarters do not 
   const lowered = rows.map((row, y) => (y >= 16 && y < 24 ? row.slice(0, 16) + (y === 16 ? '.'.repeat(16) : rows[y - 1].slice(16)) : row));
   const top = compileAutotile(source({ template: lowered })).warnings.filter(text => text.startsWith('Seam in'));
   assert.ok(top.some(text => /the 8×8 quarter at \[8, 16\] is stitched right of the one at \[16, 16\]/.test(text) && /Make \[8, \d+\] match \[24, \d+\]/.test(text)), top.join('\n'));
-  assert.equal(edit(rows, {}).join(), rows.join());
   // An inner-corner tile without its notches.
   const filled = rows.map((row, y) => (y < 16 ? row.slice(0, 16) + 'g'.repeat(16) : row));
   const corner = compileAutotile(source({ template: filled })).warnings;

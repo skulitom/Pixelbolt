@@ -252,7 +252,7 @@ function judgeLoop(box, count, order) {
   // A pingpong's wrap plays its first step backwards (the turn), which the uneven note already weighs.
   const turn = wrap !== undefined && inner.some(item => item.sources === wrap.sources);
   const within = inner.length ? median(inner.map(item => item.step)) : 0, joins = solid && wrap !== undefined && !turn && inner.length > 0 && wrap.step >= 3 && wrap.step >= 2 * within;
-  return { lowest, steps, inner, wrap, most, rows, ground, standing, away, lifts, typical, uneven, within, joins };
+  return { steps, inner, wrap, most, rows, ground, standing, away, lifts, typical, uneven, within, joins };
 }
 
 // The pixels two frames differ in (fully transparent pixels are equal whatever their colour).
