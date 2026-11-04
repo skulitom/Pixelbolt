@@ -32,7 +32,7 @@ function session(options) {
   const request = (method, params) => new Promise(resolve => { waiting.set(++next, resolve); input.write(JSON.stringify({ jsonrpc: '2.0', id: next, method, params }) + '\n'); });
   const call = async (name, args) => (await request('tools/call', { name, arguments: args })).result;
   const close = async () => { input.end(); await running; };
-  return { call, close, init: () => request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } }) };
+  return { call, close, tools: async () => (await request('tools/list', {})).result.tools, init: () => request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'test', version: '1' } }) };
 }
 const reply = result => JSON.parse(result.content[0].text);
 const readExample = async file => JSON.parse((await readFile(path.join(examples, file), 'utf8')).replace(/^﻿/, ''));
@@ -68,9 +68,12 @@ test('the presets listing covers every source and looping recipe in examples/, m
   const directory = await temp(t, 'presets-list'), mcp = session({ directory, root: examples });
   await mcp.init();
   const { guide, presets } = reply(await mcp.call('pixel_help', { topic: 'presets' }));
+  const help = (await mcp.tools()).find(tool => tool.name === 'pixel_help');
   await mcp.close();
-  // The measurements are kept in the export directory for the next listing (presets-cache.test.js).
+  // The measurements are kept in the export directory for the next listing (presets-cache.test.js), so pixel_help
+  // writes files and must not tell clients it is read-only (P-074): some run read-only tools without asking.
   assert.equal((await readdir(path.join(directory, '.presets'))).filter(name => /^[0-9a-f]{64}\.json$/.test(name)).length, 1);
+  assert.deepEqual(help.annotations, { title: 'Pixelbolt guide and schema', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false });
   assert.match(guide, /pixel_compile \{"preset": "<name>"\}/);
   assert.deepEqual(presets.map(entry => entry.file.slice('examples/'.length)).sort(), [...sources, ...recipes].sort());
   assert.equal(new Set(presets.map(entry => entry.name.toLowerCase())).size, presets.length, 'names are unique');

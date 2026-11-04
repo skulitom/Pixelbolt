@@ -26,6 +26,7 @@ Agents made a chest, a potion, a knight, a torch, poison spells and a farm tiles
 ### Fixes
 
 - A recipe `tilemap` whose legend draws `symbol`s with `autotile: "corner"` is refused on an odd cell width or height and on an iso map, as corner templates and a scene's corner frames already were. With no error, an odd cell drew its tiles at half-pixel positions, and an iso map drew them on a grid corner tiles don't support. The agent guide says corner maps need an even, square cell.
+- MCP `pixel_help` is no longer annotated read-only (`readOnlyHint` is now false), because its `presets` topic keeps what it measured in the export directory's `.presets` folder once that folder exists. Clients that run read-only tools without asking now ask for it as they do for the other tools. It still never creates the export directory and changes nothing outside its own `.presets` cache (`destructiveHint` stays false).
 
 ### Particles that come to rest
 

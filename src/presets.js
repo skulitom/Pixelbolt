@@ -165,7 +165,8 @@ async function openCache(directory) {
   const key = (entry, source) => createHash('sha256').update(JSON.stringify([entry.kind, entry.base, source])).digest('hex');
   async function save(entries) {
     // Only inside a folder that already exists (the server's export directory), so a listing alone, which pixel_help
-    // gives as a read-only call, never creates the output folder in a user's project.
+    // gives, never creates the output folder in a user's project. It still writes there, so pixel_help isn't
+    // annotated read-only.
     await mkdir(directory).catch(error => { if (error.code !== 'EEXIST') throw error; });
     const temp = path.join(directory, `${randomUUID()}.tmp`);
     try { await writeFile(temp, JSON.stringify(entries)); await rename(temp, file); } finally { await rm(temp, { force: true }); }
