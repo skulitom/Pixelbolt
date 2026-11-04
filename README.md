@@ -2,6 +2,10 @@
 
 <img src="https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/gallery/library.gif" width="100%" alt="A library drawn with Pixelbolt: books circle the chandelier, a lectern book turns its page and a grey tabby sleeps on a shelf">
 
+[<img src="https://skulitom.github.io/Pixelbolt/gallery/montage.gif" alt="Eight looping effects made with Pixelbolt: a campfire, a torch, a steam vent, a bubbling potion, pouring honey, a drip, a plasma globe and a boiling pot">](https://skulitom.github.io/Pixelbolt/gallery/)
+
+**[The gallery](https://skulitom.github.io/Pixelbolt/gallery/): 66 pixel art effects, sprites and scenes from Pixelbolt 0.11.0, all playing, each one click from its recipe in the playground.**
+
 Give Claude Code the pixel art skill in one line (Node.js 20 or newer):
 
 ```sh
