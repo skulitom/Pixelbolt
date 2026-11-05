@@ -339,3 +339,10 @@ test('a review sheet a little wider than 4096 px (gutters) still decodes as a pr
   assert.equal(model.decodeResult(reply).preview.width, 4100);
   p.width = 16385; assert.equal(model.decodeResult(reply).preview, null);
 });
+
+test('an animation the frame cap cut off is reported, not replaced by another animation', () => {
+  const v = view({ reduced: false }); v.initialize();
+  v.send({ method: 'ui/notifications/tool-result', params: payload({ animation: 'gone' }) }); v.flush();
+  assert.match(v.elements.get('status').textContent, /"gone" animation uses frames past this preview/);
+  assert.equal(v.elements.get('player').hidden, true); assert.equal(v.rafs.size, 0);
+});

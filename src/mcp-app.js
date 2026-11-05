@@ -159,6 +159,11 @@ function mountViewer(model, version) {
     $('share').hidden = !preview.shareLink;
     $('share').disabled = !capabilities.openLinks;
     $('share').title = capabilities.openLinks ? '' : 'This host does not support opening links';
+    // An animation the preview's frame prefix cut off is named as such, never replaced by another one.
+    if (preview.animation !== undefined && !preview.animations.some(a => a.name === preview.animation)) {
+      message(`The "${preview.animation}" animation uses frames past this preview's first ${preview.frames.length}, so it can't be played here; the exported files are complete.`);
+      return;
+    }
     select(); resize();
   }
   function onMessage(event) {
