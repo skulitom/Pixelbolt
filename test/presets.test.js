@@ -77,9 +77,10 @@ test('the presets listing covers every source and looping recipe in examples/, m
   assert.match(guide, /pixel_compile \{"preset": "<name>"\}/);
   assert.deepEqual(presets.map(entry => entry.file.slice('examples/'.length)).sort(), [...sources, ...recipes].sort());
   assert.equal(new Set(presets.map(entry => entry.name.toLowerCase())).size, presets.length, 'names are unique');
-  // A busy machine may pass the listing's time budget: the presets after that are named, not measured (the command
-  // line, with no budget, measures all of them; see presets-cli.test.js).
-  const measured = presets.filter(entry => !entry.unmeasured), skipped = presets.slice(measured.length);
+  // A busy machine may pass the listing's time budget: presets not started by then are named, not measured (the
+  // command line, with no budget, measures all of them; see presets-cli.test.js). Measured in parallel, the skipped
+  // ones need not be the last ones, so they are picked by their flag.
+  const measured = presets.filter(entry => !entry.unmeasured), skipped = presets.filter(entry => entry.unmeasured);
   assert.ok(measured.length > 0 && skipped.every(entry => entry.unmeasured && Object.keys(entry).join() === 'name,kind,file,unmeasured'));
   if (skipped.length) t.diagnostic(`${skipped.length} presets listed past the time budget`);
   for (const entry of measured) {

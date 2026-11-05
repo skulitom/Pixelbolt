@@ -148,7 +148,8 @@ jobs:
   budgets:
     name: Speed budgets (advisory)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Every budgeted case at its budget, 3 warm-ups and 15 runs each, is about 11 minutes; an overrun must report.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
