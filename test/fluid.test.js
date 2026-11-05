@@ -49,7 +49,12 @@ const GOLDEN = {
   'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263',
   hourglass: 'd9664a2973600387217e81bdfe73b8df130ebe20febde720fcc56543c4f16d06',
   'sand-gate': 'b5ad55de68dee6c0ade0aa225ea8f094a2fe1bb421beac1adc023e043f92cf6d',
-  'sand-plough': 'd3854405dd7e42d64a3ca694e405acb6d57d23fefe6358dcddc820254ec64971'
+  'sand-plough': 'd3854405dd7e42d64a3ca694e405acb6d57d23fefe6358dcddc820254ec64971',
+  'crate-splash': 'cfa8380f28682964f084ae98d1a4dba3a6df09e39b877ca8c102c56dc082f8cd',
+  'sand-slide': '7767cf078e115f03790c438d32f604408acbbc0efe16ed947bc0a443b18685fb',
+  'water-wheel': '3efdeb0c6188725d2d5696a33a87824a6b0396f387e3efb43381fb16e876c96f',
+  'hot-stone': 'e6e864c866c6f708b4185cdb033c00c30e7f38a9b4f62324d499c9c76e81363f',
+  'plank-tip': '848231d1e726c985b1a59eefbde75881e813875b00a81eda6cdab07f9dc05937'
 };
 const examples = new Map();
 const example = async name => {
@@ -1573,7 +1578,10 @@ test('a live puff adds or takes away smoke and water, and a boost scales an emit
 
 test('live frames use only palette colours, and keys name each pixel\'s colour', async () => {
   for (const name of FLUID_SHOWCASE) {
-    const { source } = await example(name), live = createLiveFluid(source, { warmup: 6 }), { width, height } = live, colours = new Map();
+    const { source } = await example(name);
+    // The live runner doesn't step bodies yet, and refuses a liquid with them (test/fluid-bodies.test.js).
+    if (Object.values(source.effects).some(effect => effect.bodies)) continue;
+    const live = createLiveFluid(source, { warmup: 6 }), { width, height } = live, colours = new Map();
     for (const [key, value] of Object.entries(source.palette)) colours.set(key, parseColor(value).join());
     live.push({ x: width / 2, y: height / 2, vx: 1.5, vy: -1, radius: 6 }).step(2).puff({ x: width / 3, y: height / 3, radius: 3 }).step(3);
     const { rgba, keys } = live.render();

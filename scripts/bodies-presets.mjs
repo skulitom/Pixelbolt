@@ -40,7 +40,7 @@ const spinningHoop = bodiesSource('spinning-hoop', 72, 72,
     frames: 240, duration: 40, gravity: [0, 0.12], walls: ['left', 'right'],
     obstacles: [{ symbol: 'floor', x: 0, y: 69 }],
     bodies: [
-      { shape: 'hoop', fixed: true, radius: 24, gap: 44, sides: 40, at: [36, 30], angle: 300, spin: 1.6, fill: 'h', bounce: 0.9, friction: 0.2 },
+      { shape: 'hoop', fixed: true, radius: 24, gap: 44, sides: 40, at: [36.5, 30.5], angle: 300, spin: 1.6, fill: 'h', bounce: 0.9, friction: 0.2 },
       { name: 'red', shape: 'circle', radius: 2.5, at: [30, 26], velocity: [1.2, -0.4], bounce: 0.95, friction: 0.2, fill: 'r', outline: 'k' },
       { name: 'yellow', shape: 'circle', radius: 2.5, at: [38, 22], velocity: [-0.8, 0.6], bounce: 0.95, friction: 0.2, fill: 'y', outline: 'k' },
       { name: 'green', shape: 'circle', radius: 2.5, at: [42, 34], velocity: [0.6, 1.1], bounce: 0.95, friction: 0.2, fill: 'g', outline: 'k' }

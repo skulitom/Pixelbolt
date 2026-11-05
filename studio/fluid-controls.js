@@ -20,7 +20,10 @@ export const FLUID_PRESETS = [
   { file: 'dry-ice', title: 'Dry-ice fog', note: 'Sublimation · one-shot' },
   { file: 'lightning-pond', title: 'Lightning into a pond', note: 'Arcs into water · one-shot' },
   { file: 'hourglass', title: 'Hourglass', note: 'Sand · one-shot' }, { file: 'sand-gate', title: 'Sand gate', note: 'Sand, moving obstacle · one-shot' },
-  { file: 'sand-plough', title: 'Sand plough', note: 'Sand, moving obstacle · one-shot' }
+  { file: 'sand-plough', title: 'Sand plough', note: 'Sand, moving obstacle · one-shot' },
+  { file: 'crate-splash', title: 'Crate splash', note: 'Bodies in water · one-shot' }, { file: 'sand-slide', title: 'Sand slide', note: 'A body on sliding sand · one-shot' },
+  { file: 'water-wheel', title: 'Water wheel', note: 'A turning paddle stirs a pool · loop' }, { file: 'hot-stone', title: 'Hot stone', note: 'A hot body boils water · heat' },
+  { file: 'plank-tip', title: 'Plank tip', note: 'Sand weighs a plank down · one-shot' }
 ];
 // Each slider sets one setting of the preset's effect; Strength scales every emitter's rate or burst. A slider's range
 // and step must hold every preset's value exactly: a range input clamps to its range and snaps to its step.

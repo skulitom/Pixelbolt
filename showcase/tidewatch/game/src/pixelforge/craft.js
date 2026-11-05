@@ -258,6 +258,123 @@ export function rotateRows(rows, degrees, pivot = [0, 0], { cleanup = true } = {
   return { rows: rowsOf(trimmed, tw, th), pivot: [pivot[0] - originX, pivot[1] - originY], map };
 }
 
+// Turns a picture clockwise by `degrees` about its centre the way a pixel artist draws a turned sprite: its sides turned
+// and rounded to whole pixels, so its corners sit on pixel corners and its edges are straight, even pixel steps with
+// opposite sides alike, and every pixel copies one of the picture's from the same ring (its edge, the ring inside that,
+// or further in) nearest the spot under its centre. A box stays a crisp box at every angle and changes a step at a time
+// as it turns, and an outline or a frame round the picture stays one closed line. A corner that would end in a single
+// pixel (a nub) takes the pixel beside it that the turned box nearly covers. (Resampled exactly, a turned box grows a
+// nub at each corner and its sides step unevenly, so it looks bent; ranked by coverage it rounds into a blob; copied
+// pixel for pixel its outline breaks and doubles.) `rows` are equal-width strings, '.' or ' ' empty. Returns the turned
+// rows and `origin`, where their top-left lies relative to the picture's own top-left at angle 0 ([x, y], whole or half
+// pixels): place them at Math.round(left + x), Math.round(top + y) for a picture whose top-left at angle 0 is (left, top).
+export function turnRows(rows, degrees) {
+  const h = rows.length, w = rows[0].length;
+  const drawn = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x] !== '.' && rows[y][x] !== ' ';
+  const angle = ((degrees % 360) + 360) % 360;
+  if (angle === 0) return { rows: rows.slice(), origin: [0, 0] };
+  const cos = cosDeg(angle), sin = sinDeg(angle), whole = v => (v < 0 ? -Math.round(-v) : Math.round(v));
+  // The picture's top side turned, (ex, ey), and its left side, (fx, fy), each to whole pixels; rounded alike, a square's
+  // sides stay a square's.
+  const ex = whole(w * cos), ey = whole(w * sin), fx = -whole(h * sin), fy = whole(h * cos), D = 2 * (ex * fy - ey * fx);
+  const xs = [0, ex, fx, ex + fx], ys = [0, ey, fy, ey + fy];
+  const x0 = Math.min(...xs) - 1, y0 = Math.min(...ys) - 1, W = Math.max(...xs) - x0 + 1, H = Math.max(...ys) - y0 + 1;
+  // A pixel (x, y) of the turned box, its corner at the origin: its centre is a·e + b·f, the picture's point (a·w, b·h).
+  // Worked in twice the pixels, so the sums are whole and alike in every engine: A = a·D, B = b·D. A centre on a side
+  // counts as inside on every side alike, so the turned box is as even as the box.
+  const A = new Int32Array(W * H), B = new Int32Array(W * H), at = new Int32Array(W * H).fill(-1);
+  const source = (c, near) => {
+    // The picture's pixel under a centre, or with `near` the nearest drawn one within a pixel of it.
+    const u = A[c] * w / D, v = B[c] * h / D, sx = Math.min(w - 1, Math.max(0, Math.floor(u))), sy = Math.min(h - 1, Math.max(0, Math.floor(v)));
+    if (drawn(sx, sy) || !near) return drawn(sx, sy) ? sy * w + sx : -1;
+    let least = Infinity, pick = -1;
+    for (let y = sy - 1; y <= sy + 1; y++) for (let x = sx - 1; x <= sx + 1; x++) {
+      const d = (x + 0.5 - u) * (x + 0.5 - u) + (y + 0.5 - v) * (y + 0.5 - v);
+      if (drawn(x, y) && d < least) { least = d; pick = y * w + x; }
+    }
+    return pick;
+  };
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const c = j * W + i, px = 2 * (x0 + i) + 1, py = 2 * (y0 + j) + 1;
+    A[c] = px * fy - py * fx; B[c] = ex * py - ey * px;
+    if (A[c] >= 0 && A[c] <= D && B[c] >= 0 && B[c] <= D) at[c] = source(c, false);
+  }
+  const inside = (i, j) => i >= 0 && j >= 0 && i < W && j < H && at[j * W + i] >= 0;
+  const sides = (i, j) => inside(i - 1, j) + inside(i + 1, j) + inside(i, j - 1) + inside(i, j + 1);
+  // Nubs: a pixel held by one side or none takes the empty pixel beside it that the turned box comes nearest to covering
+  // (in the picture's pixels, how far its centre is from inside), if that is within half a pixel and touches another;
+  // else it goes. Only where the picture's own pixel there was held by two sides: a line the picture draws one pixel
+  // wide on the diagonal stays as drawn.
+  const reach = c => Math.min(A[c] * w, (D - A[c]) * w, B[c] * h, (D - B[c]) * h) / D;
+  const held = s => { const x = s % w, y = (s - x) / w; return drawn(x - 1, y) + drawn(x + 1, y) + drawn(x, y - 1) + drawn(x, y + 1) >= 2; };
+  for (let pass = 0; pass < W * H; pass++) {
+    let lone = -1;
+    for (let c = 0; c < W * H && lone < 0; c++) if (at[c] >= 0 && sides(c % W, (c - (c % W)) / W) <= 1 && held(at[c])) lone = c;
+    if (lone < 0) break;
+    const i = lone % W, j = (lone - i) / W;
+    let best = -1;
+    for (const [x, y] of [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]]) {
+      if (x < 0 || y < 0 || x >= W || y >= H || inside(x, y) || sides(x, y) < 2) continue;
+      const c = y * W + x;
+      if (reach(c) >= -0.5 && source(c, true) >= 0 && (best < 0 || reach(c) > reach(best))) best = c;
+    }
+    // And the same at the opposite corner, mirrored through the middle, so the turned box stays even.
+    const mirror = c => { const x = c % W, y = (c - x) / W; return (H - 1 - y) * W + (W - 1 - x); };
+    if (best >= 0) { at[best] = source(best, true); const m = mirror(best); if (at[m] < 0 && at[mirror(lone)] >= 0) at[m] = source(m, true); }
+    else { at[lone] = -1; at[mirror(lone)] = -1; }
+  }
+  // Rings: 0 for a pixel beside an empty one, 1 for one beside that, 2 for anything further in.
+  const rings = (width, height, filled) => {
+    const ring = new Uint8Array(width * height).fill(2);
+    const near = (i, j, k) => i < 0 || j < 0 || i >= width || j >= height || (k < 0 ? !filled(i, j) : ring[j * width + i] === k);
+    for (let k = 0; k < 2; k++) for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
+      if (!filled(i, j) || ring[j * width + i] < 2) continue;
+      if (near(i - 1, j, k - 1) || near(i + 1, j, k - 1) || near(i, j - 1, k - 1) || near(i, j + 1, k - 1)) ring[j * width + i] = k;
+    }
+    return ring;
+  };
+  const was = rings(w, h, drawn), turned = rings(W, H, inside);
+  // Inside, the colour comes from the picture enlarged 8× by Scale2x (as RotSprite does), so a thin line inside stays
+  // joined as it turns: a colour of the inside pixels round the one under it, never the edge's spread inward.
+  let big = codesOf(rows), bw = w, bh = h;
+  for (let k = 0; k < 3; k++) { big = scale2x(big, bw, bh); bw *= 2; bh *= 2; }
+  let left = W, top = H, right = -1, bottom = -1;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) if (at[j * W + i] >= 0) {
+    if (i < left) left = i; if (i > right) right = i; if (j < top) top = j; if (j > bottom) bottom = j;
+  }
+  if (right < 0) return { rows: [], origin: [0, 0] };
+  const out = [];
+  for (let j = top; j <= bottom; j++) {
+    let row = '';
+    for (let i = left; i <= right; i++) {
+      const c = j * W + i;
+      if (at[c] < 0) { row += '.'; continue; }
+      let sx = at[c] % w, sy = (at[c] - sx) / w;
+      const u = A[c] * w / D, v = B[c] * h / D;
+      if (turned[c] === 2 && was[at[c]] === 2) {
+        const code = big[Math.min(bh - 1, Math.floor(v * 8)) * bw + Math.min(bw - 1, Math.floor(u * 8))];
+        let near = false;
+        for (let y = sy - 1; y <= sy + 1 && !near; y++) for (let x = sx - 1; x <= sx + 1; x++) if (drawn(x, y) && was[y * w + x] === 2 && rows[y].charCodeAt(x) === code) { near = true; break; }
+        row += near ? String.fromCharCode(code) : rows[sy][sx];
+        continue;
+      }
+      if (was[at[c]] !== turned[c]) {
+        // The pixel under it is from another ring: the nearest of the picture's in this one, if one is near.
+        let least = Infinity;
+        for (let y = sy - 2; y <= sy + 2; y++) for (let x = sx - 2; x <= sx + 2; x++) {
+          if (!drawn(x, y) || was[y * w + x] !== turned[c]) continue;
+          const d = (x + 0.5 - u) * (x + 0.5 - u) + (y + 0.5 - v) * (y + 0.5 - v);
+          if (d < least) { least = d; sx = x; sy = y; }
+        }
+      }
+      row += rows[sy][sx];
+    }
+    out.push(row);
+  }
+  // The turned box's middle on the picture's: its corner at ((w − ex − fx) / 2, (h − ey − fy) / 2).
+  return { rows: out, origin: [(w - ex - fx) / 2 + x0 + left, (h - ey - fy) / 2 + y0 + top] };
+}
+
 // ---- Structural parts --------------------------------------------------------------------------------------------
 // A bone is drawn in its posed direction, never resampled from a drawing. The compiler validates inputs and supplies
 // a ramp of one-character palette keys. Returned coordinates are symbol-local; pivot is the start joint.
