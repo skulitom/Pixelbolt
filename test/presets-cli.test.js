@@ -27,6 +27,10 @@ async function smallPresets(entries) {
   return [...['fluid', 'wave', 'poses', 'recipe'].map(kind => pick(of(kind), kind)), pick(naming.length ? naming : of('fx'), 'fx')].filter(Boolean);
 }
 
+// More small presets for the listing, whose descriptions take its other branches: an Effects lab title on a mix of
+// loops and one-shots, a rig's motion templates, and more than 12 animations.
+const DESCRIBED = ['effects', 'slime-idle', 'holy-spells'];
+
 // A clock that reads an hour later at every reading, so a listing with any time budget stops measuring at once.
 const HOUR_PER_READING = `data:text/javascript,${encodeURIComponent('const now = Date.now; let readings = 0; Date.now = () => now() + 3600000 * readings++;')}`;
 
@@ -36,7 +40,7 @@ test('pixelbolt presets lists every preset and measures each however long that t
   const copy = await mkdtemp(path.join(path.resolve(os.tmpdir()), 'pixelbolt-presets-cli-'));
   t.after(() => rm(copy, { recursive: true, force: true }));
   await Promise.all(['bin', 'src', 'studio', 'package.json'].map(item => cp(path.join(root, item), path.join(copy, item), { recursive: true })));
-  const picked = await smallPresets(await presetEntries());
+  const entries = await presetEntries(), picked = [...await smallPresets(entries), ...entries.filter(entry => DESCRIBED.includes(entry.name))];
   assert.ok(picked.length > 0);
   for (const entry of picked) for (const file of [`examples/${entry.file}`, ...(await loadPreset(entry)).inlined]) {
     await mkdir(path.dirname(path.join(copy, file)), { recursive: true });
@@ -51,7 +55,7 @@ test('pixelbolt presets lists every preset and measures each however long that t
   assert.ok(presets.every(entry => entry.size && entry.frames && entry.plays && entry.colors && entry.for && !entry.error && !entry.unmeasured));
   // The listing says what a lab preset is for with its title and note in the lab's list, so every lab preset has both.
   for (const entry of [...FLUID_PRESETS, ...EFFECT_PRESETS]) assert.ok(typeof entry.title === 'string' && entry.title && typeof entry.note === 'string' && entry.note, entry.file);
-  const smoke = (await presetEntries()).find(entry => entry.file === 'smoke-puff.fluid.json');
+  const smoke = entries.find(entry => entry.file === 'smoke-puff.fluid.json');
   if (smoke) {
     const one = JSON.parse((await run('presets', smoke.name)).stdout);
     assert.deepEqual(one.source, JSON.parse(await readFile(path.join(examples, smoke.file), 'utf8')));
