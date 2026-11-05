@@ -6,9 +6,11 @@ import { cp, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { presetEntries, loadPreset } from '../src/presets.js';
+import { presetEntries, loadPreset, compilePreset } from '../src/presets.js';
+import { renderProject } from '../src/core.js';
 import { EFFECT_PRESETS } from '../studio/effects-controls.js';
 import { FLUID_PRESETS } from '../studio/fluid-controls.js';
+import { FLUID_SHOWCASE } from '../showcase/fluid/build.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), cli = path.join(root, 'bin', 'pixelbolt.js'), examples = path.join(root, 'examples');
 const runScript = (options, script, ...args) => promisify(execFile)(process.execPath, [...options, script, ...args], { maxBuffer: 16 * 1048576 });
@@ -29,8 +31,8 @@ async function smallPresets(entries) {
 const HOUR_PER_READING = `data:text/javascript,${encodeURIComponent('const now = Date.now; let readings = 0; Date.now = () => now() + 3600000 * readings++;')}`;
 
 test('pixelbolt presets lists every preset and measures each however long that takes, and prints one preset\'s source', async t => {
-  // The listing runs in a copy of the package that holds the small presets, on the clock above. presets.test.js checks
-  // every shipped preset's listed facts against its own file.
+  // The listing runs in a copy of the package that holds the small presets, on the clock above. presets.test.js compiles
+  // and renders every shipped preset, and checks the listed facts of each one its MCP listing measures within its budget.
   const copy = await mkdtemp(path.join(path.resolve(os.tmpdir()), 'pixelbolt-presets-cli-'));
   t.after(() => rm(copy, { recursive: true, force: true }));
   await Promise.all(['bin', 'src', 'studio', 'package.json'].map(item => cp(path.join(root, item), path.join(copy, item), { recursive: true })));
@@ -54,6 +56,16 @@ test('pixelbolt presets lists every preset and measures each however long that t
     const one = JSON.parse((await run('presets', smoke.name)).stdout);
     assert.deepEqual(one.source, JSON.parse(await readFile(path.join(examples, smoke.file), 'utf8')));
     assert.match(one.next, /pixelbolt compile --preset smoke-puff/);
+  }
+});
+
+// A listed preset has colours only if it draws something. The fluid presets' golden recipes in fluid.test.js pin every
+// byte they draw, so this renders the others.
+test('every shipped preset draws something', async () => {
+  const draws = project => project.frames.some(frame => { for (let i = 3; i < frame.data.length; i += 4) if (frame.data[i]) return true; return false; });
+  for (const entry of await presetEntries()) {
+    if (entry.kind === 'fluid' && FLUID_SHOWCASE.includes(entry.base)) continue;
+    assert.ok(draws(renderProject(compilePreset((await loadPreset(entry)).source).recipe)), `${entry.name} draws no pixel`);
   }
 });
 
