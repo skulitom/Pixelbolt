@@ -25,6 +25,8 @@ Use Pixelbolt when a user asks for pixel art, sprites, a sprite sheet, game asse
 
 ## Workflow
 
+Rigid bodies: [guide](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/docs/art-workflow.md#rigid-bodies), [bodies schema](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/bodies.schema.json). A pixelforge-bodies source simulates balls, boxes, polygons and spinning hoops with gravity, walls and pixel obstacles (bounce, friction, stacking, sleeping until hit, colour at each hit) and compiles to palette grids with pixel_compile; presets ring-escape, bouncing-pixel, spinning-hoop and crate-topple.
+
 Looping interference and portals: [wave controls and presets](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/docs/wave-effects.md), [wave schema](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/wave.schema.json). Compile a pixelforge-wave source with pixel_compile, or open it directly in the studio. Palette grids bake the motion; no runtime wave solver is needed.
 
 CLI: node bin/pixelbolt.js validate <recipe.json>, then node bin/pixelbolt.js inspect <recipe.json> --grid, then node bin/pixelbolt.js render <recipe.json> --out <fresh-directory>. Add --out <new-file.png> to inspect for a contact sheet image. For targeted edits, node bin/pixelbolt.js patch <recipe.json> --changes <changes.json> previews every changed pixel; add --out <new-recipe.json> to save. Read JSON from stdin by replacing a filename with -. Results are JSON; errors go to stderr with exit code 1. Inspect every frame visually before final export.

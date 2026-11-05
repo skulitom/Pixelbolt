@@ -142,6 +142,14 @@ Liquids can be grains: sand holds its slope at any height, lands dead, avalanche
 
 The thirty-three presets are in [examples/](examples/) (`*.fluid.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `fluid`. In the studio, **Fluid lab** (`/fluid.html`) runs the same compiler in your browser: pick a preset, move a few sliders and download the GIF, sprite sheet, recipe or edited source. **Effects lab** (`/effects.html`) does the same for the `pixelforge-fx` spell and particle presets: pick one of a source's effects (turned copies included), change its strength, speed and seed, and download. The [fluid effects guide](docs/art-workflow.md#fluid-effects) covers emitters, sparks, obstacles, looks, loops, thick fluids (viscosity, yield stress, adhesion), sticky liquids that move with an obstacle and stretch into strings, and electricity. In a web page, `createLiveFluid` runs the same simulation live, a frame at a time, and takes pushes, puffs and emitter boosts from the pointer ([live fluids](docs/art-workflow.md#live-fluids)).
 
+## Rigid bodies
+
+A `pixelforge-bodies` source drops balls, boxes, polygons and spinning hoops into a canvas with gravity, walls and drawn pixel obstacles: they bounce, slide, roll, stack, knock each other about and come to rest, baked into palette grids like every other compiler. A body can start asleep until it is hit, change colour at each hit, trail behind it or be drawn as a sprite. Shown at 4×.
+
+![A ball bounces inside a ring of blocks, changing colour at every hit and knocking blocks loose until it shoves a gap open and escapes](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/bodies/ring-escape.gif) ![One pixel thrown into a small room bounces off the walls, a ledge and a staircase and rolls to rest](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/bodies/bouncing-pixel.gif) ![Three balls in a spinning hoop with a gap find the gap one by one and fall onto the floor](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/bodies/spinning-hoop.gif) ![A heavy ball thrown into a pyramid of crates knocks it apart; the crates tumble and settle](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/bodies/crate-topple.gif)
+
+The four presets are in [examples/](examples/) (`*.bodies.json`); agents compile them with MCP `pixel_compile` and read the format with `pixel_help` topic `bodies`. The [rigid bodies guide](docs/art-workflow.md#rigid-bodies) covers shapes, materials, sleeping, obstacles, looks and the metadata.
+
 ## Start
 
 ```sh

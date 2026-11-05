@@ -13,13 +13,14 @@ import { compilePoses } from '../src/authoring.js';
 import { compileEffects } from '../src/fx.js';
 import { compileFluid } from '../src/fluid.js';
 import { compileWaves } from '../src/wave.js';
+import { compileBodies } from '../src/bodies.js';
 import { decodePNG } from '../src/import.js';
 import { skillFiles } from '../src/skill.js';
 import { presetEntries, listPresets } from '../src/presets.js';
 import { decodeGIF } from './fixtures/decode-gif.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url)), examples = path.join(root, 'examples');
-const COMPILE = { 'pixelforge-poses': compilePoses, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves };
+const COMPILE = { 'pixelforge-poses': compilePoses, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-bodies': compileBodies };
 const temp = async (t, label) => {
   const base = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(base, `pixelbolt-${label}-`));
   t.after(async () => { assert.ok(dir.startsWith(base + path.sep)); await rm(dir, { recursive: true, force: true }); });
@@ -44,8 +45,8 @@ const compiled = new Map();
 let files, sources, recipes;
 before(async () => {
   files = (await readdir(examples, { withFileTypes: true })).filter(entry => entry.isFile() && entry.name.endsWith('.json')).map(entry => entry.name);
-  sources = files.filter(file => /\.(fluid|fx|wave|poses)\.json$/.test(file));
-  const bases = new Set(sources.map(file => file.replace(/\.(fluid|fx|wave|poses)\.json$/, '')));
+  sources = files.filter(file => /\.(fluid|fx|wave|bodies|poses)\.json$/.test(file));
+  const bases = new Set(sources.map(file => file.replace(/\.(fluid|fx|wave|bodies|poses)\.json$/, '')));
   // A plain recipe is a preset when every animation loops and no source in the folder compiles to it. Anything else
   // in the folder (a shared palette, a scene, a normals source) is not one.
   recipes = [];
