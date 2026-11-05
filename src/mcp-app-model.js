@@ -8,7 +8,8 @@ export function createViewModel(key = PREVIEW_KEY, maxBytes = MAX_PREVIEW_BYTES,
   function decodeResult(result) {
     const text = (Array.isArray(result?.content) ? result.content : []).filter(c => c?.type === 'text' && typeof c.text === 'string').map(c => c.text).join('\n');
     const p = result?._meta?.[key]?.preview, fallback = { preview: null, text: text || 'No preview available.' };
-    if (result?.isError || !p || p.version !== 1 || !integer(p.width, 1, 4096) || !integer(p.height, 1, 4096) ||
+    // 16384 px a side: inspection sheets add gutters to a 4096 px frame, and browsers cap canvases near this size.
+    if (result?.isError || !p || p.version !== 1 || !integer(p.width, 1, 16384) || !integer(p.height, 1, 16384) ||
         !integer(p.scale, 1, 16) || !integer(p.truncated, 0, Number.MAX_SAFE_INTEGER) || !Array.isArray(p.frames) || p.frames.length > maxFrames || !Array.isArray(p.animations)) return fallback;
     let bytes = 0;
     for (const f of p.frames) {

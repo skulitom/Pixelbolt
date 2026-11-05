@@ -333,3 +333,9 @@ test('a preview truncated far past the frame cap still decodes its first frames'
   const reply = payload(); reply._meta[PREVIEW_KEY].preview.truncated = 65000;
   assert.equal(model.decodeResult(reply).preview.truncated, 65000);
 });
+
+test('a review sheet a little wider than 4096 px (gutters) still decodes as a preview', () => {
+  const reply = payload(); const p = reply._meta[PREVIEW_KEY].preview; p.width = 4100; p.height = 1030;
+  assert.equal(model.decodeResult(reply).preview.width, 4100);
+  p.width = 16385; assert.equal(model.decodeResult(reply).preview, null);
+});

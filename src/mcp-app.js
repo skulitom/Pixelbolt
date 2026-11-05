@@ -143,7 +143,7 @@ function mountViewer(model, version) {
     reset();
     const decoded = model.decodeResult(value); preview = decoded.preview;
     if (!preview) { message(decoded.text); return; }
-    message(preview.frames.length ? 'Loading frames' : `${preview.truncated} frames omitted from this preview (size limit).`);
+    message(preview.frames.length ? 'Loading frames' : `${preview.truncated} frame${preview.truncated === 1 ? '' : 's'} omitted from this preview (size limit).`);
     cacheLimit = Math.max(1, Math.floor(DECODED_BYTES / (preview.width * preview.height * 4)));
     canvas.width = preview.width; canvas.height = preview.height; context.imageSmoothingEnabled = false;
     picker.replaceChildren();
