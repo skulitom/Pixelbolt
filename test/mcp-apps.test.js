@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
 import { inflateSync } from 'node:zlib';
@@ -53,18 +52,26 @@ function readPNG(base64) {
   return { width, height, data };
 }
 
-test('without MCP Apps the protocol bytes equal the pre-change server, including a real preset', async t => {
-  // Captured before editing src/mcp.js at b458f86f05bd846f9fdc72bf6a51763e64fc35dc. Only package version is normalized.
-  const expected = ['153b7b632729f903bf417ad84177ed7ce51db84a92ede7bb61c09f5b58c582fa', '417770b0024a23e656d3d5b6342d8130f7cb170c2d4c0d8c8fbc3a20b5d295f3', 'e9cfb9e8dcc5656bc22a54fef9fdb5db0d75e3cc2524aa56a436a7460314af7f'];
+test('without MCP Apps every client gets the same plain bytes, with no UI resource, metadata or capability', async t => {
+  // No frozen hashes: tool descriptions change often, so each run compares the clients that don't negotiate MCP Apps
+  // with each other, and checks the plain reply carries nothing of the extension. (Review of C-126 compared these
+  // bytes with main's once, outside the suite.)
+  let reference;
   for (const caps of [undefined, {}, { extensions: {} }, { extensions: { 'io.modelcontextprotocol/ui': {} } },
     { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html'] } } }, { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: UI_MIME } } }]) {
     const mcp = await session(t, caps);
     await mcp.request('tools/list', {}); await mcp.call('pixel_compile', { preset: 'smoke-puff' });
-    const version = mcp.initialized.result.serverInfo.version;
-    assert.deepEqual(mcp.lines.map(line => createHash('sha256').update(line.replace(`"version":"${version}"`, '"version":"VERSION"')).digest('hex')), expected);
+    const lines = [...mcp.lines];
+    reference ??= lines;
+    assert.deepEqual(lines, reference, JSON.stringify(caps));
     for (const method of ['resources/list', 'resources/read', 'resources/templates/list']) assert.equal((await mcp.request(method, { uri: UI_URI })).error.code, -32601);
     await mcp.close();
   }
+  const [init, list, call] = reference.map(line => JSON.parse(line));
+  assert.deepEqual(init.result.capabilities, { tools: {} });
+  assert.ok(list.result.tools.every(tool => !('_meta' in tool)));
+  assert.equal(call.result._meta, undefined);
+  assert.ok(reference.every(line => !line.includes('ui://pixelbolt') && !line.includes(PREVIEW_KEY)));
 });
 
 test('MCP Apps negotiates resource discovery and metadata on exactly six tools', async t => {
