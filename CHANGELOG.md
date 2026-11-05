@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.11.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
+
+## 0.12.0 (2026-11-05)
+
 ### Steadier spells and waves
 
 - Shape looks hold their bands from frame to frame (`hold`, a share of the gap between thresholds, default 0.3). A pixel enters a new band as soon as the field crosses into it, but goes back to the band it just left only once the field has passed the threshold by that margin, so rippling beams, boiling bursts, noisy rings and lit rims no longer flip pixels back and forth every frame. A still field, and one that only rises or only falls, draws exactly as before; lit and shade bands hold too; and a loop's bands are settled round its seam, so every loop still closes exactly. Counting pixels drawn in the same colour a frame before and after but changed in between, the shipped effects flip over a third fewer: the fire projectile 7.8% of its pixels a frame to 2.7%, the fireball 7.2% to 3.0%, the lightning area 10.6% to 2.5%. `hold: 0` draws each frame on its own.
@@ -63,11 +70,6 @@ Agents made a chest, a potion, a knight, a torch, poison spells and a farm tiles
 ### Particles that come to rest
 
 - An effect emitter with a `floor` or `ground` takes `rest: true`: a particle that lands stays where it lands, lying on its floor with its slide, `sway`, `spin` and `play: "loop"` stopped, so snow, leaves, petals and coins settle instead of shimmering sideways on the floor. With `bounce`, a particle bounces until a rebound can't lift it (slower than its gravity or half a pixel a frame), then rests; children it lands with still inherit the landing's velocity, and children it trails spawn where it lies. Without `rest` every effect draws as before.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.11.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
 ### Faster start-up
 
