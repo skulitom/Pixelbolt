@@ -219,7 +219,7 @@
             },
             "maxItems": 2,
             "minItems": 2,
-            "description": "Liquid: acceleration [x, y]; default [0, 0.3]."
+            "description": "Liquid: acceleration [x, y]; default [0, 0.3]. Gas: only with bodies, the pull on them (the gas itself rises by buoyancy); default [0, 0.3]."
           },
           "flip": {
             "type": "number",
@@ -1374,6 +1374,297 @@
             "required": [],
             "additionalProperties": false,
             "description": "Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Bubbles gathering under a ceiling, two that touch with eight square pixels of air or more between them, become a pocket there, and a pocket that reaches open air vents. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank's air pushes on its water."
+          },
+          "bodies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+                  "description": "Names the body in the metadata (its path, frame by frame, and when it leaves the canvas). Copies are numbered name-0, name-1, …",
+                  "maxLength": 60
+                },
+                "shape": {
+                  "enum": [
+                    "circle",
+                    "box",
+                    "polygon",
+                    "hoop"
+                  ],
+                  "description": "circle (radius; 0.5 is one pixel), box (size), polygon (convex points) or hoop (a ring of thin walls with an optional gap, for a fixed container)."
+                },
+                "radius": {
+                  "type": "number",
+                  "minimum": 0.5,
+                  "maximum": 128,
+                  "description": "circle: 0.5–32 pixels, drawn as an ellipse of diameter round(2 × radius). hoop: 2–128."
+                },
+                "size": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 64
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "box: [width, height] in pixels."
+                },
+                "points": {
+                  "type": "array",
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -64,
+                      "maximum": 64
+                    },
+                    "maxItems": 2,
+                    "minItems": 2
+                  },
+                  "maxItems": 8,
+                  "minItems": 3,
+                  "description": "polygon: 3–8 convex points [x, y] around the body's centre, recentred on their centroid."
+                },
+                "sides": {
+                  "type": "integer",
+                  "minimum": 3,
+                  "maximum": 96,
+                  "description": "hoop: straight walls around it. Default: its radius, from 8 to 64."
+                },
+                "gap": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 330,
+                  "description": "hoop: degrees left open, centred on the hoop's angle (0 points right, 90 down). Default 0, closed."
+                },
+                "thickness": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 8,
+                  "description": "hoop: wall thickness in pixels. Default 1."
+                },
+                "at": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -4096,
+                    "maximum": 4096
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "Centre [x, y] in canvas pixels; [10.5, 10.5] is the middle of pixel (10, 10). The centre of a ring or the first copy of a grid."
+                },
+                "angle": {
+                  "type": "number",
+                  "minimum": -3600,
+                  "maximum": 3600,
+                  "description": "Degrees clockwise. Default 0. Drawn to the whole degree with straight, even sides (under 6 pixels across, always square); collisions use the exact angle."
+                },
+                "velocity": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -8,
+                    "maximum": 8
+                  },
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "description": "Starting velocity [x, y] in pixels a frame; for a fixed body, how it moves for ever. Speeds stop at 8."
+                },
+                "spin": {
+                  "type": "number",
+                  "minimum": -45,
+                  "maximum": 45,
+                  "description": "Starting spin in degrees a frame, clockwise; for a fixed body, how it turns for ever."
+                },
+                "fixed": {
+                  "type": "boolean",
+                  "description": "Never pushed: a wall, peg or container. With velocity or spin it moves exactly so, pushing what it meets."
+                },
+                "weightless": {
+                  "type": "boolean",
+                  "description": "Gravity doesn't pull it: it floats where it is put, drifting only when hit."
+                },
+                "asleep": {
+                  "type": "boolean",
+                  "description": "Starts asleep: holds exactly still, even in the air, until something moves into it."
+                },
+                "tireless": {
+                  "type": "boolean",
+                  "description": "Every hit gives back the energy (speed plus height against gravity) the hit cost, so a ball keeps bouncing at full height among loose blocks. An open cheat; off by default."
+                },
+                "density": {
+                  "type": "number",
+                  "minimum": 0.05,
+                  "maximum": 100,
+                  "description": "Mass per square pixel. Default 1. A heavier body pushes lighter ones about and keeps its own speed."
+                },
+                "bounce": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "How much of its approach speed a body keeps in a bounce: 0 lands dead, 1 bounces back as fast. A pair bounces with the larger. Default 0.3."
+                },
+                "friction": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 2,
+                  "description": "Sliding friction; a pair uses the square root of the product. Default 0.4."
+                },
+                "drag": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "About the share of its speed lost each frame. Default 0."
+                },
+                "spinDrag": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "About the share of its spin lost each frame. Default 0.02."
+                },
+                "fill": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1,
+                      "description": "A one-character palette key; dot and space are reserved."
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1,
+                        "description": "A one-character palette key; dot and space are reserved."
+                      },
+                      "maxItems": 16,
+                      "minItems": 1
+                    }
+                  ],
+                  "description": "Palette key, or a list the body steps through at each hit."
+                },
+                "outline": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1,
+                  "description": "Key for the pixels on the shape's edge."
+                },
+                "symbol": {
+                  "type": "string",
+                  "description": "Draw this symbol instead of fill and outline, centred on the body and turned with it to the whole degree, its outline kept a closed line (under 6 pixels across, in quarter turns)."
+                },
+                "trail": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1,
+                      "description": "A one-character palette key; dot and space are reserved."
+                    },
+                    "length": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 16,
+                      "description": "Frames of trail. Default 2."
+                    }
+                  },
+                  "required": [
+                    "color"
+                  ],
+                  "additionalProperties": false
+                },
+                "ring": {
+                  "type": "object",
+                  "properties": {
+                    "radius": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 256
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 256
+                    },
+                    "from": {
+                      "type": "number",
+                      "minimum": -3600,
+                      "maximum": 3600,
+                      "description": "Degrees of the first copy. Default 0."
+                    },
+                    "to": {
+                      "type": "number",
+                      "minimum": -3600,
+                      "maximum": 3600,
+                      "description": "Degrees of the last; default a full turn, spaced evenly."
+                    }
+                  },
+                  "required": [
+                    "radius",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "grid": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 256
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "description": "[columns, rows]."
+                    },
+                    "step": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": -256,
+                        "maximum": 256
+                      },
+                      "maxItems": 2,
+                      "minItems": 2,
+                      "description": "[x, y] between copies."
+                    },
+                    "stagger": {
+                      "type": "number",
+                      "minimum": -256,
+                      "maximum": 256,
+                      "description": "Shifts odd rows across. Default 0."
+                    }
+                  },
+                  "required": [
+                    "count",
+                    "step"
+                  ],
+                  "additionalProperties": false
+                },
+                "temperature": {
+                  "type": "number",
+                  "minimum": -16,
+                  "maximum": 16,
+                  "description": "With heat (a gas, or a liquid with heat): the temperature the body keeps, warming or chilling what it touches as a hot obstacle does, so a red-hot stone boils the water it lands in. Default none."
+                }
+              },
+              "required": [
+                "shape",
+                "at"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "description": "Rigid bodies in the fluid, the entries a pixelforge-bodies effect takes (pixel_help topic bodies), with the fluid's gravity, walls and obstacles. Each is a moving solid that shoves the fluid aside, a turning one stirring it; water floats it by its density (1 is water's: 0.5 floats half out) and drags it, what rests on it weighs on it, resting sand holds it up as ground, and a gas pushes and drags it. In a loop the closing frames bring them back to where the cycle starts; with heat a body keeps its temperature. They are drawn over the fluid, and the metadata gives their paths."
           },
           "granular": {
             "type": "object",

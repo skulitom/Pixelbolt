@@ -300,7 +300,7 @@
                   "type": "number",
                   "minimum": -3600,
                   "maximum": 3600,
-                  "description": "Degrees clockwise. Default 0. Drawn in steps the body's size can show (under 6 pixels across, always square); collisions use the exact angle."
+                  "description": "Degrees clockwise. Default 0. Drawn to the whole degree with straight, even sides (under 6 pixels across, always square); collisions use the exact angle."
                 },
                 "velocity": {
                   "type": "array",
@@ -395,7 +395,7 @@
                 },
                 "symbol": {
                   "type": "string",
-                  "description": "Draw this symbol instead of fill and outline, centred on the body and turned with it (in steps its size reads at: an 8-pixel sprite in quarter turns)."
+                  "description": "Draw this symbol instead of fill and outline, centred on the body and turned with it to the whole degree, its outline kept a closed line (under 6 pixels across, in quarter turns)."
                 },
                 "trail": {
                   "type": "object",

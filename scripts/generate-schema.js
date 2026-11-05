@@ -507,6 +507,41 @@ const fluidElectric = { ...object({
 const fluidShape = object({ x: int(0, 127), y: int(0, 127), w: int(1, 128), h: int(1, 128), at: vector(-256, 512), radius: { oneOf: [num(0.5, 128), pairOf(num(0.5, 128))], description: 'Pixels from at, or [x, y] for an ellipse.' }, velocity: vector(-16, 16, 'Starting velocity [x, y] in pixels per frame.'), burst: { ...object({ speed: { ...range(0, 16, 'Speed'), description: 'How fast each piece flies out from the middle of the fill, in pixels per frame; [min, max] picks per piece.' }, pieces: int(2, 64, 'How many pieces. Default 8.') }, ['speed']), description: 'Break the fill into seeded pieces with a one-pixel gap between them and rounded corners, each flying straight out at its own speed (plus velocity): a liquid burst in mid-air. Outward velocity on one connected blob is cancelled by the pressure solve; separate pieces keep it. The water of the gaps and corners goes to their pieces, so the volume is kept.' },
   temperature: num(-16, 16, 'With heat: the fill\'s temperature; default the air\'s (heat.ambient).'), frozen: { type: 'boolean', description: 'With heat: the fill starts as ice (an ice cube, a frozen pond); give it a temperature at or below heat.freeze.' },
   vapour: num(0.01, 4, 'With vapour: the fill holds still vapour of this density (1 a full cell of steam) instead of water: humid air for dew or frost.') });
+const bodyKey = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key; dot and space are reserved.' };
+const bodyMaterial = {
+  bounce: num(0, 1, 'How much of its approach speed a body keeps in a bounce: 0 lands dead, 1 bounces back as fast. A pair bounces with the larger. Default 0.3.'),
+  friction: num(0, 2, 'Sliding friction; a pair uses the square root of the product. Default 0.4.')
+};
+const body = object({
+  name: { ...id, maxLength: 60, description: 'Names the body in the metadata (its path, frame by frame, and when it leaves the canvas). Copies are numbered name-0, name-1, …' },
+  shape: { enum: ['circle', 'box', 'polygon', 'hoop'], description: 'circle (radius; 0.5 is one pixel), box (size), polygon (convex points) or hoop (a ring of thin walls with an optional gap, for a fixed container).' },
+  radius: num(0.5, 128, 'circle: 0.5–32 pixels, drawn as an ellipse of diameter round(2 × radius). hoop: 2–128.'),
+  size: { ...pairOf(num(1, 64)), description: 'box: [width, height] in pixels.' },
+  points: { ...array(pairOf(num(-64, 64)), 8), minItems: 3, description: 'polygon: 3–8 convex points [x, y] around the body\'s centre, recentred on their centroid.' },
+  sides: int(3, 96, 'hoop: straight walls around it. Default: its radius, from 8 to 64.'),
+  gap: num(0, 330, 'hoop: degrees left open, centred on the hoop\'s angle (0 points right, 90 down). Default 0, closed.'),
+  thickness: num(1, 8, 'hoop: wall thickness in pixels. Default 1.'),
+  at: { ...pairOf(num(-4096, 4096)), description: 'Centre [x, y] in canvas pixels; [10.5, 10.5] is the middle of pixel (10, 10). The centre of a ring or the first copy of a grid.' },
+  angle: num(-3600, 3600, 'Degrees clockwise. Default 0. Drawn to the whole degree with straight, even sides (under 6 pixels across, always square); collisions use the exact angle.'),
+  velocity: { ...pairOf(num(-8, 8)), description: 'Starting velocity [x, y] in pixels a frame; for a fixed body, how it moves for ever. Speeds stop at 8.' },
+  spin: num(-45, 45, 'Starting spin in degrees a frame, clockwise; for a fixed body, how it turns for ever.'),
+  fixed: { type: 'boolean', description: 'Never pushed: a wall, peg or container. With velocity or spin it moves exactly so, pushing what it meets.' },
+  weightless: { type: 'boolean', description: 'Gravity doesn\'t pull it: it floats where it is put, drifting only when hit.' },
+  asleep: { type: 'boolean', description: 'Starts asleep: holds exactly still, even in the air, until something moves into it.' },
+  tireless: { type: 'boolean', description: 'Every hit gives back the energy (speed plus height against gravity) the hit cost, so a ball keeps bouncing at full height among loose blocks. An open cheat; off by default.' },
+  density: num(0.05, 100, 'Mass per square pixel. Default 1. A heavier body pushes lighter ones about and keeps its own speed.'),
+  ...bodyMaterial,
+  drag: num(0, 1, 'About the share of its speed lost each frame. Default 0.'),
+  spinDrag: num(0, 1, 'About the share of its spin lost each frame. Default 0.02.'),
+  fill: { oneOf: [bodyKey, { ...array(bodyKey, 16), minItems: 1 }], description: 'Palette key, or a list the body steps through at each hit.' },
+  outline: { ...bodyKey, description: 'Key for the pixels on the shape\'s edge.' },
+  symbol: { type: 'string', description: 'Draw this symbol instead of fill and outline, centred on the body and turned with it to the whole degree, its outline kept a closed line (under 6 pixels across, in quarter turns).' },
+  trail: object({ color: bodyKey, length: int(1, 16, 'Frames of trail. Default 2.') }, ['color']),
+  ring: object({ radius: num(1, 256), count: int(2, 256), from: num(-3600, 3600, 'Degrees of the first copy. Default 0.'), to: num(-3600, 3600, 'Degrees of the last; default a full turn, spaced evenly.') }, ['radius', 'count']),
+  grid: object({ count: { ...pairOf(int(1, 256)), description: '[columns, rows].' }, step: { ...pairOf(num(-256, 256)), description: '[x, y] between copies.' }, stagger: num(-256, 256, 'Shifts odd rows across. Default 0.') }, ['count', 'step'])
+}, ['shape', 'at']);
+// In a fluid a body can also have a temperature, where the fluid has heat (a gas always does).
+const fluidBody = { ...body, properties: { ...body.properties, temperature: num(-16, 16, 'With heat (a gas, or a liquid with heat): the temperature the body keeps, warming or chilling what it touches as a hot obstacle does, so a red-hot stone boils the water it lands in. Default none.') } };
 const fluid = {
   $schema: schema.$schema, title: 'Pixelbolt fluid effects',
   description: 'Start fire, smoke, explosions and splashes from a preset (pixel_help topic presets, then pixel_compile with preset); for fewer frames keep N evenly spaced frames with one pixel_patch call (the quick start shows it), never by lowering frames in the source, which stops the simulation early. A deterministic fluid simulation compiled into an ordinary recipe: one frame sequence and animation per effect (frames <effect>-0, <effect>-1…), each frame a palette grid operation, with obstacles stamped from symbols. Gases (smoke, fire, steam, explosions, magic) run stable fluids with buoyancy, vorticity confinement, dissipation and cooling; liquids (splashes, waterfalls, drips, potions) run FLIP particles on the same grid. Either may be viscous (honey, syrup, tar), and a liquid may have a yield stress (mud, slime). Look layers map fields onto palette ramps through ordered dither, so no colour outside the palette can appear. Looping effects warm up for whole cycles and blend their closing frames toward the frames before frame 0, so the last frame flows into the first. The same source gives the same recipe on every machine.',
@@ -527,7 +562,7 @@ const fluid = {
       viscosity: num(0, 64, 'Thickness, in square pixels per frame: it slows shearing and stretching but not falling or turning as a whole, so a thick drop falls as fast as water but spreads slowly and a stream never breaks into drops. Liquids: about 0.5 oil, 2–4 syrup, 8–16 honey, 32–64 tar. Gases: 0.1–1 for slow, smooth flows (a swirl dies away within frames above 1). Walls and obstacles hold a viscous fluid unless slip is set. Default 0.'),
       yield: num(0, 16, 'Liquid: yield stress, for mud, slime, dough and toothpaste. Below it the liquid is elastic and keeps its shape, squashing and springing back; pushed past it, it flows. A heap h pixels high holds itself up when yield is more than about gravity × h / 2. Default 0.'),
       slip: { type: 'boolean', description: 'With viscosity or yield: the fluid slides along walls and obstacles instead of being held by them (a greased pan). Default false.' },
-      gravity: vector(-2, 2, 'Liquid: acceleration [x, y]; default [0, 0.3].'), flip: num(0, 1, 'Liquid: FLIP share of each particle\'s velocity (lively, noisier) against the grid\'s (calm); default 0.9. A viscous liquid lowers it where it is thick.'),
+      gravity: vector(-2, 2, 'Liquid: acceleration [x, y]; default [0, 0.3]. Gas: only with bodies, the pull on them (the gas itself rises by buoyancy); default [0, 0.3].'), flip: num(0, 1, 'Liquid: FLIP share of each particle\'s velocity (lively, noisier) against the grid\'s (calm); default 0.9. A viscous liquid lowers it where it is thick.'),
       apic: { type: 'boolean', description: 'Liquid: affine particle-in-cell. The calm (grid) share of each particle\'s velocity also carries the turning and shearing of the flow around it, so calm and thick liquids keep their swirls and folds instead of smearing them. Use it with a low flip. Default false.' },
       tension: num(0, 4, 'Liquid: cohesion that keeps drops and streams together; default 0.5.'),
       adhesion: num(0, 4, 'Liquid: how strongly it holds on to walls and obstacles. Liquid touching a solid stays on it unless pulled away faster than about adhesion ÷ 2 pixels per frame, so a film clings under a ledge, to a spoon or down a jar\'s side, and moves with an obstacle that moves. An obstacle\'s own adhesion replaces it there. Default 0.'),
@@ -548,6 +583,7 @@ const fluid = {
           lift: num(0, 1, 'Share of each one\'s buoyancy handed to the water; default 0.'), pop: { type: 'boolean', description: 'Burst where they reach the surface; default false.' }
         }, ['colors']), description: 'How the air of a pocket squeezed too small to show (under three cells) rises as bubbles, as large as the air it held, as sparks with rise do. Without it that air leaves unseen.' }
       }), description: 'Liquid: air pockets that keep their air. Off by default, so sealed air collapses as the liquid fills it. With air, a region of air sealed off from the open canvas edges keeps its amount of air and pushes back by the gas law, so an upturned cup keeps most of its air, air stays under a shelf, a sealed bottle glugs as it pours and a big bubble rises. Bubbles gathering under a ceiling, two that touch with eight square pixels of air or more between them, become a pocket there, and a pocket that reaches open air vents. Every sealed space counts: a mould filling from above traps air in its tips, and a closed tank\'s air pushes on its water.' },
+      bodies: { ...array(fluidBody, 64), minItems: 1, description: 'Rigid bodies in the fluid, the entries a pixelforge-bodies effect takes (pixel_help topic bodies), with the fluid\'s gravity, walls and obstacles. Each is a moving solid that shoves the fluid aside, a turning one stirring it; water floats it by its density (1 is water\'s: 0.5 floats half out) and drags it, what rests on it weighs on it, resting sand holds it up as ground, and a gas pushes and drags it. In a loop the closing frames bring them back to where the cycle starts; with heat a body keeps its temperature. They are drawn over the fluid, and the metadata gives their paths.' },
       granular: { ...object({
         repose: num(5, 45, 'The steepest slope, in degrees, the grains hold, at any height: a heap stands at it, a steeper face avalanches down to it. Dry sand 30-35, fine dust 20-25, gravel 40-45; default 33.'),
         cohesion: num(0, 8, 'Damp grains: they hold as dry ones do that many pixels down, so they stand steeper than their repose and keep small overhangs. Default 0 (dry).')
@@ -616,39 +652,6 @@ const wave = {
       }, ['frames', 'sources', 'look']) }
   }, ['format', 'version', 'name', 'width', 'height', 'palette', 'effects'])
 };
-const bodyKey = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key; dot and space are reserved.' };
-const bodyMaterial = {
-  bounce: num(0, 1, 'How much of its approach speed a body keeps in a bounce: 0 lands dead, 1 bounces back as fast. A pair bounces with the larger. Default 0.3.'),
-  friction: num(0, 2, 'Sliding friction; a pair uses the square root of the product. Default 0.4.')
-};
-const body = object({
-  name: { ...id, maxLength: 60, description: 'Names the body in the metadata (its path, frame by frame, and when it leaves the canvas). Copies are numbered name-0, name-1, …' },
-  shape: { enum: ['circle', 'box', 'polygon', 'hoop'], description: 'circle (radius; 0.5 is one pixel), box (size), polygon (convex points) or hoop (a ring of thin walls with an optional gap, for a fixed container).' },
-  radius: num(0.5, 128, 'circle: 0.5–32 pixels, drawn as an ellipse of diameter round(2 × radius). hoop: 2–128.'),
-  size: { ...pairOf(num(1, 64)), description: 'box: [width, height] in pixels.' },
-  points: { ...array(pairOf(num(-64, 64)), 8), minItems: 3, description: 'polygon: 3–8 convex points [x, y] around the body\'s centre, recentred on their centroid.' },
-  sides: int(3, 96, 'hoop: straight walls around it. Default: its radius, from 8 to 64.'),
-  gap: num(0, 330, 'hoop: degrees left open, centred on the hoop\'s angle (0 points right, 90 down). Default 0, closed.'),
-  thickness: num(1, 8, 'hoop: wall thickness in pixels. Default 1.'),
-  at: { ...pairOf(num(-4096, 4096)), description: 'Centre [x, y] in canvas pixels; [10.5, 10.5] is the middle of pixel (10, 10). The centre of a ring or the first copy of a grid.' },
-  angle: num(-3600, 3600, 'Degrees clockwise. Default 0. Drawn in steps the body\'s size can show (under 6 pixels across, always square); collisions use the exact angle.'),
-  velocity: { ...pairOf(num(-8, 8)), description: 'Starting velocity [x, y] in pixels a frame; for a fixed body, how it moves for ever. Speeds stop at 8.' },
-  spin: num(-45, 45, 'Starting spin in degrees a frame, clockwise; for a fixed body, how it turns for ever.'),
-  fixed: { type: 'boolean', description: 'Never pushed: a wall, peg or container. With velocity or spin it moves exactly so, pushing what it meets.' },
-  weightless: { type: 'boolean', description: 'Gravity doesn\'t pull it: it floats where it is put, drifting only when hit.' },
-  asleep: { type: 'boolean', description: 'Starts asleep: holds exactly still, even in the air, until something moves into it.' },
-  tireless: { type: 'boolean', description: 'Every hit gives back the energy (speed plus height against gravity) the hit cost, so a ball keeps bouncing at full height among loose blocks. An open cheat; off by default.' },
-  density: num(0.05, 100, 'Mass per square pixel. Default 1. A heavier body pushes lighter ones about and keeps its own speed.'),
-  ...bodyMaterial,
-  drag: num(0, 1, 'About the share of its speed lost each frame. Default 0.'),
-  spinDrag: num(0, 1, 'About the share of its spin lost each frame. Default 0.02.'),
-  fill: { oneOf: [bodyKey, { ...array(bodyKey, 16), minItems: 1 }], description: 'Palette key, or a list the body steps through at each hit.' },
-  outline: { ...bodyKey, description: 'Key for the pixels on the shape\'s edge.' },
-  symbol: { type: 'string', description: 'Draw this symbol instead of fill and outline, centred on the body and turned with it (in steps its size reads at: an 8-pixel sprite in quarter turns).' },
-  trail: object({ color: bodyKey, length: int(1, 16, 'Frames of trail. Default 2.') }, ['color']),
-  ring: object({ radius: num(1, 256), count: int(2, 256), from: num(-3600, 3600, 'Degrees of the first copy. Default 0.'), to: num(-3600, 3600, 'Degrees of the last; default a full turn, spaced evenly.') }, ['radius', 'count']),
-  grid: object({ count: { ...pairOf(int(1, 256)), description: '[columns, rows].' }, step: { ...pairOf(num(-256, 256)), description: '[x, y] between copies.' }, stagger: num(-256, 256, 'Shifts odd rows across. Default 0.') }, ['count', 'step'])
-}, ['shape', 'at']);
 const bodies = {
   $schema: schema.$schema, title: 'Pixelbolt rigid bodies',
   description: 'Rigid bodies (balls, boxes, convex polygons, fixed or spinning hoops) with gravity, walls and pixel obstacles, simulated and baked into editable palette grids: they bounce, slide, roll, stack, knock each other about and come to rest. Units: pixels and frames. One-shot; deterministic.',

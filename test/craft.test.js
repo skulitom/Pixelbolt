@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { renderProject, analyzeProject } from '../src/core.js';
 import { patchRecipe } from '../src/patch.js';
 import { createOverlay, applyOverlay } from '../src/overlays.js';
-import { cleanupIds, rotateRows, ease, EASINGS, sinDeg, cosDeg, ditherThreshold } from '../src/craft.js';
+import { cleanupIds, rotateRows, turnRows, ease, EASINGS, sinDeg, cosDeg, ditherThreshold } from '../src/craft.js';
 
 const palette = { r: '#f00', b: '#00f', g: '#0f0', k: '#000', s: '#888', m: '#0a0' };
 const names = new Map(Object.entries(palette).map(([key, hex]) => [renderProject({ version: 1, name: 'p', width: 1, height: 1, palette, frames: [{ name: 'a', ops: [{ op: 'pixel', color: hex }] }] }).frames[0].data.join(), key]));
@@ -176,6 +176,61 @@ test('rotation keeps colours, turns around the pivot pixel and is exact at right
     assert.ok(Math.abs(sinDeg(degrees) - Math.sin(radians)) < 1e-15 && Math.abs(cosDeg(degrees) - Math.cos(radians)) < 1e-15, `${degrees}°`);
   }
   assert.ok(sinDeg(90) === 1 && cosDeg(0) === 1 && sinDeg(180) === 0);
+});
+
+// What a turned picture must keep at every angle (src/bodies.js draws turning boxes, polygons and pictures this way):
+// one piece, no pixel hanging by one side (a nub or spike), each row and column one run (no notches), opposite sides
+// alike (point symmetry), about its own size, centred where it was, its outline and frame closed lines, and a degree's
+// turn changing only about one ring of pixels.
+test('a turned picture stays the same crisp shape at every whole degree', () => {
+  assert.deepEqual(turnRows(['ab', 'cd', 'ef'], 90).rows, ['eca', 'fdb']);
+  assert.deepEqual(turnRows(['ab', 'cd', 'ef'], 180).rows, ['fe', 'dc', 'ba']);
+  assert.deepEqual(turnRows(['ab', 'cd', 'ef'], -90), turnRows(['ab', 'cd', 'ef'], 270));
+  assert.deepEqual(turnRows(['ab', 'cd'], 360), { rows: ['ab', 'cd'], origin: [0, 0] });
+  const box = (w, h) => Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => (x === 0 || y === 0 || x === w - 1 || y === h - 1 ? 'o' : 'h')).join(''));
+  const crate = ['oooooooo', 'ohhhhhho', 'ohcccdho', 'ohccdcho', 'ohcdccho', 'ohdcccho', 'ohhhhhho', 'oooooooo'];
+  const pictures = { box6: box(6, 6), box8: box(8, 8), box12: box(12, 12), box24: box(24, 24), stone: box(8, 7), panel: box(16, 6), plank: box(34, 2), arm: box(2, 20), crate };
+  for (const [name, picture] of Object.entries(pictures)) {
+    const w = picture[0].length, h = picture.length, area = w * h;
+    let before = null;
+    for (let degrees = 0; degrees < 360; degrees++) {
+      const { rows, origin } = turnRows(picture, degrees), at = `${name} at ${degrees}°`, H = rows.length, W = rows[0].length;
+      const on = (x, y) => x >= 0 && y >= 0 && x < W && y < H && rows[y][x] !== '.';
+      const sides = (x, y) => on(x - 1, y) + on(x + 1, y) + on(x, y - 1) + on(x, y + 1);
+      const cells = [];
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (on(x, y)) cells.push([x, y]);
+      assert.ok(cells.every(([x, y]) => sides(x, y) >= 2), `${at}: no pixel hangs by one side`);
+      const seen = new Set([cells[0].join()]), stack = [cells[0]];
+      while (stack.length) { const [x, y] = stack.pop(); for (const [i, j] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) if (on(i, j) && !seen.has(`${i},${j}`)) { seen.add(`${i},${j}`); stack.push([i, j]); } }
+      assert.equal(seen.size, cells.length, `${at}: one piece`);
+      assert.ok(rows.every(row => !/[^.]\.+[^.]/.test(row)), `${at}: each row one run`);
+      assert.ok(Array.from({ length: W }, (_, x) => rows.map(row => row[x]).join('')).every(column => !/[^.]\.+[^.]/.test(column)), `${at}: each column one run`);
+      assert.ok(cells.every(([x, y]) => on(W - 1 - x, H - 1 - y)), `${at}: opposite sides alike`);
+      assert.ok(cells.length >= 0.75 * area && cells.length <= 1.35 * area, `${at}: ${cells.length} pixels for ${area}`);
+      assert.ok(Math.abs(origin[0] + W / 2 - w / 2) <= 1 && Math.abs(origin[1] + H / 2 - h / 2) <= 1, `${at}: centred where it was`);
+      // The outline (and the crate's frame inside it) stays a closed line: every edge pixel the outline's colour and only
+      // those, the frame the ring inside.
+      const edge = (x, y) => sides(x, y) < 4;
+      // (A plank two pixels thick is all outline, so its turn may show some inside it.)
+      if (name !== 'crate' && Math.min(w, h) > 2) assert.ok(cells.every(([x, y]) => (rows[y][x] === 'o') === edge(x, y)), `${at}: the outline is the edge`);
+      if (name === 'crate') assert.ok(cells.every(([x, y]) => (rows[y][x] === 'o') === edge(x, y) && (!edge(x, y) && [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].some(([i, j]) => edge(i, j)) ? rows[y][x] === 'h' : true)), `${at}: the crate's outline and frame stay closed`);
+      // A degree's turn moves at most about the shape's rim: the pixels that change, placed as bodies.js places them.
+      const placed = new Set(cells.map(([x, y]) => `${Math.round(x + origin[0])},${Math.round(y + origin[1])}`));
+      if (before) {
+        let changed = 0;
+        for (const key of placed) if (!before.has(key)) changed++;
+        for (const key of before) if (!placed.has(key)) changed++;
+        assert.ok(changed <= 2 * (w + h) + 4, `${at}: ${changed} pixels changed in a degree`);
+      }
+      before = placed;
+    }
+  }
+  // A line the picture draws one pixel wide on the diagonal stays a thin line: the corner fix neither thickens nor drops it.
+  const line = ['k.....', '.k....', '..k...', '...k..', '....k.', '.....k'];
+  for (let degrees = 0; degrees < 360; degrees += 3) {
+    const { rows } = turnRows(line, degrees), n = rows.join('').replace(/\./g, '').length;
+    assert.ok(n >= 4 && n <= 9 && !rows.some((row, y) => y && [...row].some((c, x) => c !== '.' && row[x + 1] === 'k' && rows[y - 1][x] === 'k' && rows[y - 1][x + 1] === 'k')), `the line at ${degrees}°: ${rows.join(' / ')}`);
+  }
 });
 
 test('easing presets start at 0, end at 1 and keep their character', () => {

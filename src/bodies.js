@@ -15,7 +15,7 @@
 // and iteration counts, and bodies, contacts and pixels visited in a fixed order.
 import { PixelError, renderProject } from './core.js';
 import { fields } from './authoring.js';
-import { sinDeg, cosDeg, traceLine, rotateRows } from './craft.js';
+import { sinDeg, cosDeg, traceLine, turnRows } from './craft.js';
 import { atan2Deg } from './shapes.js';
 
 export const BODY_SHAPES = ['circle', 'box', 'polygon', 'hoop'];
@@ -108,7 +108,7 @@ function readMaterial(value, path, fixed) {
   };
 }
 
-const BODY_FIELDS = ['name', 'shape', 'radius', 'size', 'points', 'sides', 'gap', 'thickness', 'at', 'angle', 'velocity', 'spin', 'fixed', 'weightless', 'asleep', 'tireless', 'density', 'bounce', 'friction', 'drag', 'spinDrag', 'fill', 'outline', 'symbol', 'trail', 'ring', 'grid'];
+const BODY_FIELDS = ['temperature', 'name', 'shape', 'radius', 'size', 'points', 'sides', 'gap', 'thickness', 'at', 'angle', 'velocity', 'spin', 'fixed', 'weightless', 'asleep', 'tireless', 'density', 'bounce', 'friction', 'drag', 'spinDrag', 'fill', 'outline', 'symbol', 'trail', 'ring', 'grid'];
 
 // One entry of `bodies`: a body, or copies of it laid out on a ring or a grid. Returns the bodies it makes.
 function readBody(entry, path, context) {
@@ -125,6 +125,9 @@ function readBody(entry, path, context) {
   const velocity = entry.velocity === undefined ? [0, 0] : pair(entry.velocity, `${path}.velocity`, -MAX_SPEED, MAX_SPEED);
   const spin = number(entry.spin ?? 0, `${path}.spin`, -MAX_SPIN, MAX_SPIN);
   const material = readMaterial(entry, path, fixed);
+  // A body keeps its temperature in a fluid with heat, as an obstacle does: a red-hot stone boils the water it lands in.
+  if (entry.temperature !== undefined && !context.heat) fail(`${path}.temperature`, 'a body has a temperature in a pixelforge-fluid effect with heat, where it warms or chills what it touches');
+  const temperature = entry.temperature === undefined ? null : number(entry.temperature, `${path}.temperature`, -16, 16);
   // Geometry in the body's own frame, centred on its centre of mass.
   let parts, area, inertia, size;
   if (shape === 'circle') {
@@ -161,7 +164,7 @@ function readBody(entry, path, context) {
       parts.push(polygonPart([[ax, ay], [bx, by]], thickness / 2));
     }
     area = 0; inertia = 0; size = [Math.round(2 * r + thickness), Math.round(2 * r + thickness)];
-    parts.hoop = { r, points, thickness };
+    parts.hoop = { r, points, thickness, gap, sides };
   }
   // Looks: a fill (a list changes colour at each hit), an outline, or a symbol drawn turned with the body.
   if (entry.symbol !== undefined && (entry.fill !== undefined || entry.outline !== undefined)) fail(`${path}.symbol`, 'a body is drawn with a symbol or with fill and outline, not both');
@@ -216,8 +219,19 @@ function readBody(entry, path, context) {
     shape, parts, size, fixed, x, y, angle: a, vx: velocity[0], vy: velocity[1], spin,
     invMass: fixed ? 0 : 1 / mass, invInertia: fixed || shape === 'hoop' ? 0 : 1 / (mass * inertia),
     bounce: material.bounce, friction: material.friction, drag: material.drag, spinDrag: material.spinDrag,
-    weightless: material.weightless, asleep: material.asleep, tireless: material.tireless, fills, outline, symbol, trail
+    weightless: material.weightless, asleep: material.asleep, tireless: material.tireless, temperature, fills, outline, symbol, trail
   }));
+}
+
+/** A list of body entries (as a bodies source's or a fluid effect's `bodies`) → the bodies they make, copies included. */
+export function readBodies(list, path, context) {
+  if (!Array.isArray(list) || list.length > LIMITS.entries) fail(path, `expected a list of at most ${LIMITS.entries} entries`);
+  if (!list.length) fail(path, 'expected at least one body');
+  const bodies = list.flatMap((entry, i) => readBody(entry, `${path}[${i}]`, context));
+  if (bodies.length > LIMITS.bodies) fail(path, `the bodies and their copies make ${bodies.length} bodies, more than ${LIMITS.bodies}`);
+  const names = new Set();
+  bodies.forEach(b => { if (b.name !== null) { if (names.has(b.name.toLowerCase())) fail(`${b.path}.name`, `two bodies are named ${b.name}`); names.add(b.name.toLowerCase()); } });
+  return bodies;
 }
 
 function readEffect(effect, path, context) {
@@ -250,12 +264,7 @@ function readEffect(effect, path, context) {
     if (!solid && (obstacle.bounce !== undefined || obstacle.friction !== undefined)) fail(`${op}.${obstacle.bounce !== undefined ? 'bounce' : 'friction'}`, 'a decoration (solid: false) never meets a body');
     return { symbol: obstacle.symbol, x, y, rows, draw, solid, bounce: number(obstacle.bounce ?? SURFACE.bounce, `${op}.bounce`, 0, 1), friction: number(obstacle.friction ?? SURFACE.friction, `${op}.friction`, 0, 2) };
   });
-  const entries = listed(effect.bodies, 'bodies', LIMITS.entries);
-  if (!entries.length) fail(`${path}.bodies`, 'expected at least one body');
-  const bodies = entries.flatMap((entry, i) => readBody(entry, `${path}.bodies[${i}]`, context));
-  if (bodies.length > LIMITS.bodies) fail(`${path}.bodies`, `the bodies and their copies make ${bodies.length} bodies, more than ${LIMITS.bodies}`);
-  const names = new Set();
-  bodies.forEach(b => { if (b.name !== null) { if (names.has(b.name.toLowerCase())) fail(`${b.path}.name`, `two bodies are named ${b.name}`); names.add(b.name.toLowerCase()); } });
+  const bodies = readBodies(effect.bodies, `${path}.bodies`, context);
   return { frames, duration, substeps, iterations, gravity, background, walls: Object.fromEntries(BODY_WALLS.map(edge => [edge, walls.includes(edge)])), obstacles, bodies };
 }
 
@@ -294,7 +303,7 @@ function traceObstacles(effect, width, height) {
     const convexA = !at(Math.floor(ax - dx * 0.5 - nx * 0.5), Math.floor(ay - dy * 0.5 - ny * 0.5));
     const convexB = !at(Math.floor(bx + dx * 0.5 - nx * 0.5), Math.floor(by + dy * 0.5 - ny * 0.5));
     const m = material(cell[0], cell[1]);
-    segments.push({ ax, ay, bx, by, nx, ny, convexA, convexB, bounce: m.bounce, friction: m.friction,
+    segments.push({ ax, ay, bx, by, nx, ny, convexA, convexB, bounce: m.bounce, friction: m.friction, soft: !!m.soft,
       part: polygonPart([[ax, ay], [bx, by]]) });
   };
   // Horizontal faces at y = j, between cell (i, j − 1) above and (i, j) below.
@@ -487,9 +496,13 @@ function partSegment(part, s, margin) {
 }
 
 // ---- Simulating -------------------------------------------------------------------------------------------------------
-function simulate(effect, context) {
-  const { width, height } = context, { substeps, iterations, gravity, frames } = effect, dt = 1 / substeps, invDt = substeps;
-  const world = traceObstacles(effect, width, height);
+// A world of bodies, stepped a frame at a time: `advance(f)` runs frame f's substeps (none on frame 0) and its
+// bookkeeping (hits, sleep, bodies that left, paths). `retrace(obstacles)` replaces the pixel obstacles, for a fluid
+// whose obstacles move. `effect` holds { substeps, iterations, gravity, walls, obstacles, bodies } as readEffect reads
+// them; a fluid changes a body's velocity between frames and wakes it (asleep = false, sleepy = 0).
+export function createBodyWorld(effect, context) {
+  const { width, height } = context, { substeps, iterations, gravity } = effect, dt = 1 / substeps, invDt = substeps;
+  let world = traceObstacles(effect, width, height);
   const bodies = effect.bodies.map((b, index) => ({
     ...b, index, c: cosDeg(b.angle), s: sinDeg(b.angle), w: b.spin * RADIANS, x0: b.x, y0: b.y, angle0: b.angle,
     gone: false, sleepy: 0, hit: false, struck: false, colour: 0, hits: 0, history: [], extent: Math.max(b.size[0], b.size[1]) / 2
@@ -507,7 +520,6 @@ function simulate(effect, context) {
   const stats = { hits: 0, escaped: [], rest: null, overlaps: [], paths: {} };
   const round = v => Math.round(v * 100) / 100;
   for (const b of bodies) if (b.name !== null && !b.fixed) stats.paths[b.name] = [];
-  const drawn = [];
   let time = 0;
 
   // Contacts between bodies (pairs in index order) and between each awake body and the segments near it.
@@ -548,7 +560,7 @@ function simulate(effect, context) {
         const s = world.segments[index];
         a.world.forEach((pa, ia) => {
           const m = partSegment(pa, s, margin);
-          if (m) contacts.push({ a, b: null, key: `${a.index}:s${index}:${ia}`, ...m, bounce: Math.max(a.bounce, s.bounce), friction: Math.sqrt(a.friction * s.friction) });
+          if (m) contacts.push({ a, b: null, key: `${a.index}:s${index}:${ia}`, ...m, bounce: Math.max(a.bounce, s.bounce), friction: Math.sqrt(a.friction * s.friction), soft: s.soft });
         });
       }
     }
@@ -573,7 +585,9 @@ function simulate(effect, context) {
         const [dvx, dvy] = relative(contact, point), vn = dvx * nx + dvy * ny;
         let target;
         if (point.sep > 0) target = point.sep * invDt;
-        else if (bias) target = Math.max(BIAS * Math.min(0, point.sep + SLOP) * invDt, -MAX_PUSH);
+        // Soft ground (a fluid's resting sand) stops a body sinking into it but never shoves one out of it, so sand that runs
+        // in under a plank doesn't jack it up.
+        else if (bias && !contact.soft) target = Math.max(BIAS * Math.min(0, point.sep + SLOP) * invDt, -MAX_PUSH);
         else target = 0;
         const old = point.normal, next = Math.max(old - point.normalMass * (vn + target), 0), impulse = next - old;
         point.normal = next; point.most = Math.max(point.most, next);
@@ -619,6 +633,8 @@ function simulate(effect, context) {
     for (const b of bodies) {
       if (!dynamic(b) || b.asleep) continue;
       if (!b.weightless) { b.vx += gravity[0] * dt; b.vy += gravity[1] * dt; }
+      // A force from outside the solver (a fluid's buoyancy), steady through the frame as gravity is.
+      if (b.push) { b.vx += b.push[0] * dt; b.vy += b.push[1] * dt; b.w += b.push[2] * dt; }
       if (b.drag) { const k = 1 / (1 + b.drag * dt); b.vx *= k; b.vy *= k; }
       if (b.spinDrag) b.w *= 1 / (1 + b.spinDrag * dt);
       const v2 = b.vx * b.vx + b.vy * b.vy;
@@ -691,7 +707,7 @@ function simulate(effect, context) {
     const pair = contact.b ? `${contact.a.path} starts inside ${contact.b.path}` : `${contact.a.path} starts inside an obstacle or wall`;
     if (contact.points.some(p => p.sep < -0.5) && !stats.overlaps.includes(pair)) stats.overlaps.push(pair);
   }
-  for (let f = 0; f < frames; f++) {
+  const advance = f => {
     if (f > 0) for (let k = 0; k < substeps; k++) substep();
     // Hits change colour once a frame; slow bodies fall asleep; bodies far outside the canvas are gone.
     for (const b of bodies) {
@@ -705,19 +721,33 @@ function simulate(effect, context) {
       const [x0, y0, x1, y1] = b.box;
       if (!b.fixed && (x1 < -GONE || y1 < -GONE || x0 > width + GONE || y0 > height + GONE)) { b.gone = true; stats.escaped.push({ body: b.name ?? b.path, frame: f }); }
       b.history.push([b.x, b.y]);
-      if (b.name !== null && !b.fixed) stats.paths[b.name].push(b.gone ? null : [round(b.x), round(b.y)]);
+      if (b.name !== null && !b.fixed) stats.paths[b.name].push(b.gone ? null : [round(b.x), round(b.y), round(atan2Deg(b.s, b.c))]);
       if (b.history.length > 18) b.history.shift();
     }
     if (stats.rest === null && f > 0 && bodies.every(b => b.gone || b.fixed && !moving(b) || b.asleep)) stats.rest = f;
-    drawn.push(draw(bodies, width, height, context));
-  }
-  return { drawn, stats, steps: (frames - 1) * substeps };
+  };
+  return { bodies, stats, gravity, advance, retrace: obstacles => { world = traceObstacles({ obstacles, walls: effect.walls }, width, height); } };
+}
+
+function simulate(effect, context) {
+  const world = createBodyWorld(effect, context), drawn = [];
+  for (let f = 0; f < effect.frames; f++) { world.advance(f); drawn.push(draw(world.bodies, context.width, context.height, context)); }
+  return { drawn, stats: world.stats, steps: (effect.frames - 1) * effect.substeps };
 }
 
 // ---- Drawing ----------------------------------------------------------------------------------------------------------
 // A shape whose size is odd centres on a pixel's middle and an even one on a pixel corner, so a body at rest draws the
 // same pixels as its sprite at angle 0 and moves in whole pixels.
 const snap = (value, size) => (size % 2 ? Math.floor(value) + 0.5 : Math.round(value));
+// A body keeps the pixel it is drawn at until it has moved HOLD past the halfway mark to the next, and its drawn angle
+// until it has turned TURN_HOLD of a step past halfway, so a body rocking about a boundary (a crate bobbing on water, a
+// box settling) holds still instead of flickering between two pixels. The fluid's solid cells follow the drawing.
+const HOLD = 0.3, TURN_HOLD = 0.2;
+function held(b, axis, size) {
+  const value = axis ? b.y : b.x, next = snap(value, size), memory = b.held ??= {}, key = `${axis}:${size}`, was = memory[key];
+  if (was === undefined || (next !== was && Math.abs(value - was) >= 0.5 + HOLD)) memory[key] = next;
+  return memory[key];
+}
 const discs = new Map();
 function disc(d) {
   if (!discs.has(d)) {
@@ -728,17 +758,65 @@ function disc(d) {
   return discs.get(d);
 }
 
+// A circle of pixels around a centre: one pixel thick, each column's top and bottom pixel on the top and bottom arcs
+// and each row's outer pixels on the side arcs, so it is 8-connected with no doubled steps; thicker, every pixel whose
+// centre lies within half the thickness of the circle.
+const rings = new Map();
+function ring(cx, cy, r, thickness) {
+  const key = `${cx},${cy},${r},${thickness}`;
+  if (rings.has(key)) return rings.get(key);
+  const seen = new Set(), cells = [], add = (px, py) => { if (!seen.has(py * 65536 + px)) { seen.add(py * 65536 + px); cells.push([px, py]); } };
+  if (thickness <= 1) {
+    const reach = r / Math.sqrt(2);
+    for (let px = Math.floor(cx - reach); px <= Math.ceil(cx + reach); px++) {
+      const dx = px + 0.5 - cx;
+      if (Math.abs(dx) > reach) continue;
+      const dy = Math.sqrt(r * r - dx * dx);
+      add(px, Math.floor(cy - dy)); add(px, Math.floor(cy + dy));
+    }
+    for (let py = Math.floor(cy - reach); py <= Math.ceil(cy + reach); py++) {
+      const dy = py + 0.5 - cy;
+      if (Math.abs(dy) > reach) continue;
+      const dx = Math.sqrt(r * r - dy * dy);
+      add(Math.floor(cx - dx), py); add(Math.floor(cx + dx), py);
+    }
+  } else {
+    const half = thickness / 2;
+    for (let py = Math.floor(cy - r - half); py <= Math.ceil(cy + r + half); py++) for (let px = Math.floor(cx - r - half); px <= Math.ceil(cx + r + half); px++) {
+      const dx = px + 0.5 - cx, dy = py + 0.5 - cy, d = Math.sqrt(dx * dx + dy * dy);
+      if (d >= r - half && d <= r + half) add(px, py);
+    }
+  }
+  rings.set(key, cells);
+  return cells;
+}
+
 // The pixels a body covers at its position: [x, y] pairs in canvas pixels.
 function cover(b, x, y) {
   const out = [];
   const part = b.parts[0];
   if (b.shape === 'circle') {
-    const d = b.size[0], left = snap(x, d) - d / 2, top = snap(y, d) - d / 2;
+    const d = b.size[0], left = (x === b.x ? held(b, 0, d) : snap(x, d)) - d / 2, top = (y === b.y ? held(b, 1, d) : snap(y, d)) - d / 2;
     for (const [i, j] of disc(d)) out.push([left + i, top + j]);
     return out;
   }
   if (b.shape === 'hoop') {
-    const { points, thickness } = b.parts.hoop, world = points.map(([px, py]) => [x + b.c * px - b.s * py, y + b.s * px + b.c * py]);
+    const { r, points, thickness, gap, sides } = b.parts.hoop;
+    // A round hoop looks the same at every angle, so it is drawn as one fixed ring of pixels and only its gap turns;
+    // redrawn from its turning walls, half its pixels would change every frame and the ring would tremble. A hoop
+    // with few sides (a hexagon) really changes shape as it turns, so it is drawn from its walls.
+    if (r * (1 - cosDeg(180 / sides)) < 0.35) {
+      const cx = held(b, 0, b.size[0]), cy = held(b, 1, b.size[1]), facing = atan2Deg(b.s, b.c);
+      for (const [px, py] of ring(cx, cy, r, thickness)) {
+        if (gap > 0) {
+          const turn = ((atan2Deg(py + 0.5 - cy, px + 0.5 - cx) - facing) % 360 + 540) % 360 - 180;
+          if (turn > -gap / 2 && turn < gap / 2) continue;
+        }
+        out.push([px, py]);
+      }
+      return out;
+    }
+    const world = points.map(([px, py]) => [x + b.c * px - b.s * py, y + b.s * px + b.c * py]);
     if (thickness <= 1) {
       for (let k = 0; k + 1 < world.length; k++) traceLine(Math.floor(world[k][0]), Math.floor(world[k][1]), Math.floor(world[k + 1][0]), Math.floor(world[k + 1][1]), (px, py) => out.push([px, py]));
       return out;
@@ -753,7 +831,7 @@ function cover(b, x, y) {
     }
     return out;
   }
-  const cx = snap(x, b.size[0]), cy = snap(y, b.size[1]), n = part.n, vx = [], vy = [], nx = [], ny = [], [c, s] = drawnTurn(b);
+  const cx = x === b.x ? held(b, 0, b.size[0]) : snap(x, b.size[0]), cy = y === b.y ? held(b, 1, b.size[1]) : snap(y, b.size[1]), n = part.n, vx = [], vy = [], nx = [], ny = [], [c, s] = drawnTurn(b);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < n; i++) {
     vx.push(cx + c * part.vx[i] - s * part.vy[i]); vy.push(cy + s * part.vx[i] + c * part.vy[i]);
@@ -772,33 +850,63 @@ function cover(b, x, y) {
     }
     if (covered >= 8) out.push([px, py]);
   }
-  // A turned shape's corners can leave a lone pixel hanging on by one side; trim those nubs.
-  if (Math.min(b.size[0], b.size[1]) < 3 || drawnDegrees(b) % 90 === 0) return out;
-  const inside = new Set(out.map(([px, py]) => py * 65536 + px));
-  return out.filter(([px, py]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => inside.has((py + dy) * 65536 + px + dx)).length > 1);
+  return out;
 }
 
-// The angle a body is drawn at: its own, in steps its size can show. A 4-pixel box turned 30 degrees is a pinwheel in
-// pixels and at 45 a plus sign, so a body under 6 pixels across is always drawn square; from 6 it turns in 45-degree
-// steps, from 8 in 30, from 10 in 22.5 and finer as it grows. The physics keeps the exact angle.
-// A symbol has detail that turning smears, so it turns in steps twice as coarse: an 8-pixel crate tumbles in quarter
-// turns, a 12-pixel one in eighths.
-const turnStep = (size, detailed) => 90 / Math.max(1, Math.floor((Math.min(size[0], size[1]) - 2) / (detailed ? 4 : 2)));
-function drawnDegrees(b, size = b.size, detailed = false) {
-  const step = turnStep(size, detailed), degrees = Math.round(atan2Deg(b.s, b.c) / step) * step;
-  return degrees >= 360 ? degrees - 360 : degrees;
+// The angle a body is drawn at: its own, to the whole degree, so a turning box turns smoothly (its picture turned, see
+// paintBodies). A body under 6 pixels every way is always drawn square: a 4-pixel box turned 30 degrees is a pinwheel in
+// pixels and at 45 a plus sign. The physics keeps the exact angle.
+const turnStep = size => (Math.max(size[0], size[1]) < 6 ? 90 : 1);
+function drawnDegrees(b, size = b.size) {
+  const step = turnStep(size), exact = atan2Deg(b.s, b.c);
+  let degrees = Math.round(exact / step) * step;
+  if (degrees >= 360) degrees -= 360;
+  const memory = b.held ??= {}, key = `turn:${step}`, was = memory[key];
+  if (was !== undefined && degrees !== was) {
+    const apart = Math.abs(((exact - was) % 360 + 540) % 360 - 180);
+    if (apart < step / 2 + step * TURN_HOLD) degrees = was;
+  }
+  memory[key] = degrees;
+  return degrees;
 }
 function drawnTurn(b) { const degrees = drawnDegrees(b); return [cosDeg(degrees), sinDeg(degrees)]; }
 
+// A box or polygon upright: its cells at angle 0 around its middle, the edge in its outline's key and the rest in its
+// fill (the fill it has now, for a body that changes colour at each hit).
+const uprights = new Map();
+function uprightRows(b) {
+  const [w, h] = b.size, fill = b.fills[b.colour], key = `${b.shape}:${b.size}:${b.parts[0].vx.join()}:${b.parts[0].vy.join()}:${fill}:${b.outline ?? ''}`;
+  if (uprights.has(key)) return uprights.get(key);
+  const flat = { ...b, c: 1, s: 0, held: undefined, x: w / 2, y: h / 2 }, cells = cover(flat, flat.x, flat.y), inside = new Set(cells.map(([x, y]) => y * 65536 + x));
+  const rows = Array.from({ length: h }, () => Array(w).fill('.'));
+  for (const [x, y] of cells) {
+    if (x < 0 || y < 0 || x >= w || y >= h) continue;
+    const edge = !inside.has(y * 65536 + x - 1) || !inside.has(y * 65536 + x + 1) || !inside.has((y - 1) * 65536 + x) || !inside.has((y + 1) * 65536 + x);
+    rows[y][x] = b.outline && edge ? b.outline : fill;
+  }
+  const out = rows.map(row => row.join(''));
+  uprights.set(key, out);
+  return out;
+}
+
+// A picture turned (craft.js turnRows: its sides turned to whole pixel steps, so it stays crisp and keeps its shape, and
+// its outline and frame stay closed lines), cached by picture and angle.
 const sprites = new Map();
 function sprite(rows, degrees) {
   const key = `${rows.join('/')}@${degrees}`;
-  if (!sprites.has(key)) sprites.set(key, degrees === 0 ? { rows, pivot: [Math.floor(rows[0].length / 2), Math.floor(rows.length / 2)] } : rotateRows(rows, degrees, [Math.floor(rows[0].length / 2), Math.floor(rows.length / 2)]));
+  if (!sprites.has(key)) sprites.set(key, turnRows(rows, degrees));
   return sprites.get(key);
 }
 
 function draw(bodies, width, height, context) {
   const grid = new Uint16Array(width * height);
+  paintBodies(bodies, grid, width, height, context.symbols);
+  return crop(grid, width, height);
+}
+
+/** Draws the bodies into `grid` (character codes, width × height): trails first, then each body in order. */
+export function paintBodies(bodies, grid, width, height, symbols) {
+  const context = { symbols };
   const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height) grid[y * width + x] = code; };
   // Trails first, under every body: the body's own shape shrunk by a pixel, along where it was in recent frames.
   for (const b of bodies) {
@@ -814,12 +922,19 @@ function draw(bodies, width, height, context) {
   }
   for (const b of bodies) {
     if (b.gone) continue;
-    if (b.symbol) {
-      const rows = context.symbols[b.symbol], degrees = b.shape === 'circle' ? 0 : Math.round(drawnDegrees(b, [rows[0].length, rows.length], true)) % 360;
-      const { rows: turned, pivot } = sprite(rows, b.shape === 'circle' ? 0 : degrees);
-      const w = rows[0].length, h = rows.length, cx = snap(b.x, w), cy = snap(b.y, h);
-      // The pivot pixel lands where the sprite's own middle pixel sits at angle 0.
-      const left = Math.floor(cx - w / 2 + 1e-9) + Math.floor(w / 2) - pivot[0], top = Math.floor(cy - h / 2 + 1e-9) + Math.floor(h / 2) - pivot[1];
+    // A box or polygon is drawn as its upright picture, fill and outline, turned by turnRows (as a symbol is): its sides
+    // turned to whole pixel steps, straight and even, and its outline kept a closed line, so it stays the same crisp shape
+    // as it turns. (Drawn afresh from the pixels it covered it swelled into a blob; resampled as RotSprite does it rounded
+    // off and grew spikes; resampled exactly it grew a nub at each corner.) Under 6 pixels across it is drawn square: no
+    // picture that small shows a turn without a pinwheel.
+    const upright = !b.symbol && (b.shape === 'box' || b.shape === 'polygon') && Math.max(b.size[0], b.size[1]) >= 6 ? uprightRows(b) : null;
+    if (b.symbol || upright) {
+      const rows = upright ?? context.symbols[b.symbol], degrees = b.shape === 'circle' ? 0 : Math.round(drawnDegrees(b, [rows[0].length, rows.length])) % 360;
+      const { rows: turned, origin } = sprite(rows, b.shape === 'circle' ? 0 : degrees);
+      // Turned about its centre, which sits on the body's drawn centre (the picture's top-left at angle 0 a whole pixel);
+      // the turned picture lies there to the nearest pixel.
+      const w = rows[0].length, h = rows.length, cx = held(b, 0, w), cy = held(b, 1, h);
+      const left = Math.round(cx - w / 2 + origin[0]), top = Math.round(cy - h / 2 + origin[1]);
       turned.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] !== '.' && row[i] !== ' ') put(left + i, top + j, row.charCodeAt(i)); });
       continue;
     }
@@ -831,6 +946,9 @@ function draw(bodies, width, height, context) {
       put(x, y, edge ? line : fill);
     }
   }
+}
+
+function crop(grid, width, height) {
   let x0 = width, y0 = height, x1 = -1, y1 = -1, pixels = 0;
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (grid[y * width + x]) { pixels++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
   if (x1 < 0) return { op: null, pixels: 0 };
@@ -845,6 +963,77 @@ const work = effect => {
   const n = effect.bodies.length;
   return effect.frames * effect.substeps * (n * n / 2 + n * (effect.iterations + 2) * 16 + n * 32);
 };
+
+// The pixels whose centres a body's exact shape covers, where it really is: a fluid's solid cells for it. Drawn at a
+// held pixel, a body may sit most of a pixel from them; were its solid cells drawn ones, each step of its drawing down
+// would cover a row of the sand it stands on, and it would sink for ever.
+function exactCells(b) {
+  const out = [];
+  for (const part of b.world) {
+    if (part.kind === 'circle') {
+      for (let py = Math.floor(part.y - part.r); py <= Math.ceil(part.y + part.r); py++) for (let px = Math.floor(part.x - part.r); px <= Math.ceil(part.x + part.r); px++) {
+        const dx = px + 0.5 - part.x, dy = py + 0.5 - part.y;
+        if (dx * dx + dy * dy <= part.r * part.r) out.push([px, py]);
+      }
+      // A body smaller than a pixel still fills the one its centre is in.
+      if (!out.length) out.push([Math.floor(part.x), Math.floor(part.y)]);
+      continue;
+    }
+    const [x0, y0, x1, y1] = part.box;
+    for (let py = Math.floor(y0); py <= Math.ceil(y1); py++) for (let px = Math.floor(x0); px <= Math.ceil(x1); px++) {
+      let inside = true;
+      for (let i = 0; i < part.n && inside; i++) {
+        const d = part.nx[i] * (px + 0.5 - part.vx[i]) + part.ny[i] * (py + 0.5 - part.vy[i]);
+        if (part.n === 2 ? false : d > 0) inside = false;
+      }
+      if (part.n === 2) {
+        const ex = part.vx[1] - part.vx[0], ey = part.vy[1] - part.vy[0], t = Math.max(0, Math.min(1, ((px + 0.5 - part.vx[0]) * ex + (py + 0.5 - part.vy[0]) * ey) / (ex * ex + ey * ey)));
+        const dx = px + 0.5 - part.vx[0] - t * ex, dy = py + 0.5 - part.vy[0] - t * ey;
+        inside = dx * dx + dy * dy <= Math.max(0.5, part.r) * Math.max(0.5, part.r);
+      }
+      if (inside) out.push([px, py]);
+    }
+  }
+  const seen = new Set();
+  return out.filter(([x, y]) => { const key = y * 65536 + x; if (seen.has(key)) return false; seen.add(key); return true; });
+}
+/** The area of a body's exact shape past `level` along an axis (0: x, 1: y) in the direction `sign`, and its centre:
+ * [area, x, y]. A fluid's buoyancy reads it, so the lift changes smoothly as a body sinks or rises past a pixel. */
+export function areaBeyond(b, axis, level, sign) {
+  let area = 0, sx = 0, sy = 0;
+  const past = v => sign * (v - level);
+  for (const part of b.world) {
+    if (part.kind === 'circle') {
+      // Thin slices across the axis, each as wide as the circle there.
+      const centre = axis ? part.y : part.x, across = axis ? part.x : part.y, SLICES = 24, h = 2 * part.r / SLICES;
+      for (let k = 0; k < SLICES; k++) {
+        const along = centre - part.r + (k + 0.5) * h;
+        if (past(along) < 0) continue;
+        const t = along - centre, width = 2 * Math.sqrt(Math.max(0, part.r * part.r - t * t)), a = width * h;
+        area += a; sx += a * (axis ? across : along); sy += a * (axis ? along : across);
+      }
+      continue;
+    }
+    if (part.n < 3) continue;
+    // The polygon clipped to the side past the level, then its area and centroid.
+    const kept = [];
+    for (let i = 0; i < part.n; i++) {
+      const j = (i + 1) % part.n, p = [part.vx[i], part.vy[i]], q = [part.vx[j], part.vy[j]], dp = past(p[axis]), dq = past(q[axis]);
+      if (dp >= 0) kept.push(p);
+      if (dp * dq < 0) { const t = dp / (dp - dq); kept.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]); }
+    }
+    for (let i = 0; i + 2 < kept.length + 1 && kept.length >= 3; i++) {
+      if (i + 2 >= kept.length) break;
+      const [ax, ay] = kept[0], [bx, by] = kept[i + 1], [cx, cy] = kept[i + 2], a = ((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) / 2;
+      area += a; sx += a * (ax + bx + cx) / 3; sy += a * (ay + by + cy) / 3;
+    }
+  }
+  return area > 1e-9 ? [area, sx / area, sy / area] : [0, b.x, b.y];
+}
+/** The cells a body fills now, where it really is: the fluid's solid cells for it. */
+export const bodyCells = b => (b.gone ? [] : exactCells(b));
+/** The cells a body as read (before any step) fills. */
+export const startCells = b => { const placed = { ...b, c: cosDeg(b.angle), s: sinDeg(b.angle) }; place(placed); return exactCells(placed); };
 
 /** A version-1 pixelforge-bodies source → { recipe, metadata, warnings? }. One-shot: bodies don't loop. */
 export function compileBodies(source) {
