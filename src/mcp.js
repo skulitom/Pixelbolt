@@ -28,6 +28,8 @@ import { listPresets, findPreset, loadPreset, compilePreset, presetNext } from '
 import { TOPICS, SECTIONED, helpText, jsonTopic } from './help.js';
 
 const versions = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
+const UI_URI = 'ui://pixelbolt/viewer', UI_MIME = 'text/html;profile=mcp-app';
+const pictureTools = new Set(['pixel_inspect', 'pixel_patch', 'pixel_compile', 'pixel_render', 'pixel_scene', 'pixel_import']);
 const textContent = value => ({ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) });
 const imageContent = ({ data, width, height }) => ({ type: 'image', mimeType: 'image/png', data: encodePNG(data, width, height).toString('base64') });
 function viewSummary({ sheet: { data, ...sheet }, nativeSheet, grids, legend, ...view }) {
@@ -334,8 +336,10 @@ export function createToolRunner({ directory, root, version }) {
       await Promise.all([...staged, ...[...backups].filter(file => !keep.has(file))].map(file => rm(file, { force: true })));
     }
   };
-  return async function runTool(name, args) {
+  return async function runTool(name, args, ui = false) {
     try {
+      // Keep PNG encoding and the viewer modules out of ordinary calls, including clients without MCP Apps.
+      const preview = ui && pictureTools.has(name) ? (await import('./mcp-preview.js')).previewMeta : null;
       const { project: spec, revision, changes, ...options } = args;
       if (name === 'pixel_help') {
         // Markdown topics come back as written (the guide and workflow with their sections listed first); JSON ones without the files' indentation.
@@ -378,7 +382,7 @@ export function createToolRunner({ directory, root, version }) {
           content.push(textContent({ reference, comparison: report, ...(image && { comparisonImage: { region: image.region, frames: image.frames, omitted: image.omitted ?? 0 } }) }));
           if (image) content.push(imageContent(image.sheet));
         }
-        return { content };
+        return { content, ...(preview && preview(project, { animation: inspection.animation })) };
       } else if (name === 'pixel_patch') {
         if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
         const { recipe: base, resolved, sources } = await recipeFrom(spec, revision), before = renderProject(base);
@@ -386,7 +390,7 @@ export function createToolRunner({ directory, root, version }) {
         const { recipe, edits } = applied, after = renderProject(recipe);
         const { image, ...report } = compareProjects(before, after), baseId = await keep(base, sources);
         const summary = { ok: true, revision: await keep(recipe, sources), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...report, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
-        return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])] };
+        return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])], ...(preview && preview(after)) };
       } else if (name === 'pixel_render') {
         const { animation, listFiles, sequence, share, embedRecipe, saveAs, overwrite } = options, expect = readExpect(options.expect);
         for (const key of ['share', 'embedRecipe']) if (options[key] !== undefined && typeof options[key] !== 'boolean') throw new PixelError(key, 'expected a boolean');
@@ -418,7 +422,11 @@ export function createToolRunner({ directory, root, version }) {
           if (item.file.endsWith('.tsx')) return rebasedTiled(item.bytes, item.destination, sheet);
           return item.file.endsWith('.tres') ? rebasedSpriteFrames(bundle.atlas, item.destination, sheet) : rebasedAtlas(item.bytes, item.destination, sheet);
         });
-        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), ...withRates(bundle.project, recipe), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }) })) }), check: checkDelivery(bundle.project, { recipe, gifs, expect, animation }), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)] };
+        const check = checkDelivery(bundle.project, { recipe, gifs, expect, animation });
+        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), ...withRates(bundle.project, recipe), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }) })) }), check, preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)], ...(preview && preview(bundle.project, {
+          animation, files: [...files, ...(frames ? [...frames.files.keys()].map(file => path.join(out, 'sequence', file)) : []), ...gifs.map(item => path.join(out, 'gifs', item.animation + '.gif')), ...saves.map(item => item.destination)],
+          verdict: check.ok === true ? 'passed' : check.ok === false ? 'failed' : 'not-checked', ...(shared?.link && { shareLink: shared.link })
+        })) };
       } else if (name === 'pixel_compile') {
         if ((args.source === undefined) === (args.preset === undefined)) throw new PixelError('arguments', 'send either source or preset');
         // A preset compiles exactly as its file does; its files are the package's, so none is recorded as a source.
@@ -430,7 +438,7 @@ export function createToolRunner({ directory, root, version }) {
         const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
         // An autotile set also shows every tile over a test map, where seams and repetition show.
         const map = testMap ? inspectProject(renderProject(testMap), { scale: testMapScale(testMap) }) : null;
-        return { content: [textContent({ ok: true, revision: await keep(recipe, [...relativeToRoot(sourceFiles), ...(await Promise.all(referenced.map(sourcesOf))).flat()]), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project, recipe), preview: viewSummary(view), ...(map && { testMap: 'the second image: every tile of the set over a test map' }), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet), ...(map ? [imageContent(map.sheet)] : [])] };
+        return { content: [textContent({ ok: true, revision: await keep(recipe, [...relativeToRoot(sourceFiles), ...(await Promise.all(referenced.map(sourcesOf))).flat()]), name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project, recipe), preview: viewSummary(view), ...(map && { testMap: 'the second image: every tile of the set over a test map' }), warnings: [...compiled, ...project.warnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet), ...(map ? [imageContent(map.sheet)] : [])], ...(preview && preview(project)) };
       } else if (name === 'pixel_scene') {
         const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read });
         const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false, depth: args.view === 'depth' });
@@ -445,7 +453,7 @@ export function createToolRunner({ directory, root, version }) {
           if (frames) { await writeBundle(frames, path.join(out, 'sequence')); summary.sequence = sequenceSummary(frames.info); }
           Object.assign(summary, { directory: out, ...outputSummary(out, await writeBundle(bundle, out), false), playback: path.join(out, 'preview.html') });
         }
-        return { content: [textContent(summary), imageContent(image)] };
+        return { content: [textContent(summary), imageContent(image)], ...(preview && preview({ width: frame.width, height: frame.height, frames: [{ name: document.name, duration: 100, data: sceneImage(frame, { mode: args.view ?? 'color', guides: args.guides }).data }], animations: {} })) };
       } else if (name === 'pixel_import') {
         if ((args.data === undefined) === (args.path === undefined)) throw new PixelError('arguments', 'send either data (base64 PNG) or path');
         let bytes;
@@ -457,7 +465,7 @@ export function createToolRunner({ directory, root, version }) {
         }
         const imported = importPNG(bytes, { ...(args.name !== undefined && { name: args.name }), ...(args.atlas !== undefined && { atlas: args.atlas }) });
         const project = renderProject(imported.recipe), view = inspectProject(project, { maxCells: 256 });
-        return { content: [textContent({ ok: true, revision: await remember(imported.recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, provenance: imported.provenance, preview: viewSummary(view) }), imageContent(view.sheet)] };
+        return { content: [textContent({ ok: true, revision: await remember(imported.recipe), name: project.name, width: project.width, height: project.height, frames: project.frames.length, provenance: imported.provenance, preview: viewSummary(view) }), imageContent(view.sheet)], ...(preview && preview(project)) };
       }
     } catch (cause) { return { isError: true, content: [textContent({ error: cause.message, ...(cause.path ? { path: cause.path } : {}), ...(cause.errors && { errors: cause.errors }) })] }; }
   };
@@ -489,7 +497,7 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
     });
     return { thread, ready };
   };
-  async function run(name, args, signal) {
+  async function run(name, args, signal, ui = false) {
     const current = worker ??= spawn(), { thread } = current, failure = await current.ready;
     if (failure) { if (worker === current) worker = null; return { isError: true, content: [textContent({ error: failure.message })] }; }
     const cancelled = { isError: true, content: [textContent({ error: `${name} was cancelled` })] };
@@ -506,7 +514,7 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
       thread.on('message', finish).on('error', failed).on('exit', ended);
       signal?.addEventListener('abort', cancel, { once: true });
       // A value the worker can't be sent is this call's error; the worker never saw it and keeps serving.
-      try { thread.postMessage({ name, args }); } catch (cause) { finish({ isError: true, content: [textContent({ error: `${name} could not be started: ${cause.message}` })] }); }
+      try { thread.postMessage({ name, args, ...(ui && { ui }) }); } catch (cause) { finish({ isError: true, content: [textContent({ error: `${name} could not be started: ${cause.message}` })] }); }
     });
   }
   return { run, close: async () => { await worker?.thread.terminate(); } };
@@ -586,7 +594,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   ];
   const host = createToolHost({ directory: path.resolve(directory), root: path.resolve(root), version, timeLimit, memoryLimit });
   const send = value => output.write(JSON.stringify(value) + '\n');
-  let initialized = false;
+  let initialized = false, ui = false;
   // One request, already parsed and checked by receive(), answered in arrival order.
   async function handle(request, signal) {
     const { id, method, params } = request;
@@ -595,10 +603,20 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     if (method === 'initialize') {
       if (!params || typeof params.protocolVersion !== 'string') { error(-32602, 'protocolVersion is required'); return; }
       initialized = true;
-      result({ protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {} }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset), and for fewer frames keep N evenly spaced frames with one pixel_patch call, never by lowering frames in the source. pixel_scene reviews assets together.' }); return;
+      const mimeTypes = params.capabilities?.extensions?.['io.modelcontextprotocol/ui']?.mimeTypes;
+      ui = Array.isArray(mimeTypes) && mimeTypes.includes(UI_MIME);
+      result({ protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {}, ...(ui && { resources: {} }) }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset), and for fewer frames keep N evenly spaced frames with one pixel_patch call, never by lowering frames in the source. pixel_scene reviews assets together.' }); return;
     }
     if (!initialized) { error(-32000, 'Initialize the server first'); return; }
-    if (method === 'tools/list') { result({ tools }); return; }
+    if (method === 'tools/list') { result({ tools: ui ? tools.map(tool => pictureTools.has(tool.name) ? { ...tool, _meta: { ui: { resourceUri: UI_URI } } } : tool) : tools }); return; }
+    if (ui && method === 'resources/list') { result({ resources: [{ uri: UI_URI, name: 'Pixelbolt viewer', description: 'Play and inspect pixel art frames and animations.', mimeType: UI_MIME }] }); return; }
+    if (ui && method === 'resources/templates/list') { result({ resourceTemplates: [] }); return; }
+    if (ui && method === 'resources/read') {
+      if (params?.uri !== UI_URI) { error(-32002, 'Resource not found'); return; }
+      const { viewerHTML } = await import('./mcp-app.js');
+      // A host border separates the player controls from chat; omitted CSP means no network access is needed.
+      result({ contents: [{ uri: UI_URI, mimeType: UI_MIME, text: viewerHTML(version), _meta: { ui: { prefersBorder: true } } }] }); return;
+    }
     if (method !== 'tools/call') { error(-32601, `Unknown method: ${method}`); return; }
     const tool = tools.find(t => t.name === params?.name);
     if (!tool) { error(-32602, 'Unknown tool'); return; }
@@ -607,7 +625,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     try { ({ args, parsed } = parseTextArguments(args, tool.inputSchema.properties)); } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, path: cause.path })] }); return; }
     if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
     let reply;
-    try { reply = await host.run(params.name, args, signal); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    try { reply = await host.run(params.name, args, signal, ui); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
     // A cancelled call gets no response: the client has stopped waiting for it (MCP cancellation).
     if (signal.aborted) return;
     result(parsed.length ? { ...reply, content: [...reply.content, textContent({ note: `${parsed.join('; ')}. Send JSON values as they are, not inside strings.` })] } : reply);

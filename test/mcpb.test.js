@@ -115,7 +115,17 @@ test('MCPB builds are byte-identical, including across CRLF and LF checkouts', a
   assert.ok(files.has('bin/pixelbolt.js'));
   assert.ok(files.has('bin/pixelforge.js'));
   assert.ok(files.has('studio/scene-player.js'));
+  for (const file of ['src/mcp-app.js', 'src/mcp-app-model.js', 'src/mcp-preview.js']) assert.ok(files.has(file), file);
   for (const excluded of ['src/server.js', 'studio/index.html', 'server.json', 'scripts/build-mcpb.mjs', 'docs/PUBLISHING.md']) assert.equal(files.has(excluded), false, excluded);
+});
+
+test('the bundle serves the self-contained MCP Apps resource and builds preview metadata without an SDK', async () => {
+  const { viewerHTML } = await import(pathToFileURL(path.join(base, 'src/mcp-app.js')).href);
+  const { previewMeta } = await import(pathToFileURL(path.join(base, 'src/mcp-preview.js')).href);
+  assert.match(viewerHTML(pkg.version), /^<!DOCTYPE html>/);
+  assert.match(viewerHTML(pkg.version), /ui\/initialize/);
+  const project = { width: 1, height: 1, frames: [{ name: 'dot', duration: 100, data: Uint8Array.of(255, 0, 0, 255) }], animations: {} };
+  assert.equal(previewMeta(project)._meta['io.github.skulitom/pixelbolt'].preview.frames.length, 1);
 });
 
 test('the bundle carries every preset, so its presets topics and pixel_compile preset work as installed', async () => {

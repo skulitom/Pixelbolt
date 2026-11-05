@@ -398,6 +398,10 @@ The server implements newline-delimited stdio MCP with initialization, version n
 
 An agent can also use the CLI directly. The reusable [agent skill](skills/pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md) explain the complete format; `npx -y pixelbolt@latest skill install` gives Claude Code the skill with its guides, schemas and examples and no server. [schema.json](schema.json) supports editor completion and structural validation; the rasterizer additionally validates references, matching row widths and resource limits.
 
+## Inline previews (MCP Apps)
+
+Hosts that support MCP Apps (the `io.modelcontextprotocol/ui` extension) show an inline pixel art player for inspect, patch, compile, render, scene and import results. It has crisp integer zoom, playback, frame stepping, speed, animation and background controls; render results also show written paths, the delivery check and an optional playground button. The viewer needs no network. Clients without MCP Apps receive exactly the same tool listings and results as before.
+
 ## Use in a web app
 
 Serve the exported folder with your application:

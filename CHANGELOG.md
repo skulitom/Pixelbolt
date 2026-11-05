@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Added
+
+- MCP Apps previews: a self-contained inline pixel art player for compatible hosts, with frame stepping, speed, animation and background controls, render delivery details and optional playground links. Preview data stays in result metadata; clients without the negotiated extension are unchanged.
+
 ### Sand and other grains
 
 - A liquid's `granular` makes it sand, salt, sugar, gravel or dry snow: friction that grows with pressure in place of thickness and elasticity (Drucker–Prager after Zhu and Bridson, simplified; see the physics model, section 10a). A heap holds a slope up to its angle of repose at any height, where a yield stress holds one only up to a height: `repose` (degrees, 5–45, default 33) is that angle, and a settled bed whose gravity is tilted keeps it to within two degrees from 15 to 45. A face steeper than its repose avalanches down to it, a column slumps into a ramp at it, and a heap comes to a dead stop: grains that hold move as rigid pieces, at rest on what they press on, and a grain that barely moves on them sleeps.
