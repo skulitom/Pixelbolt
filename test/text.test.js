@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, PixelError } from '../src/core.js';
@@ -115,9 +116,16 @@ test('every module the browser imports is served by the studio and packed with s
   served['/motion.js'] = 'src/motion.js';
   served['/fluid-controls.js'] = 'studio/fluid-controls.js';
   Object.assign(served, { '/fx.js': 'src/fx.js', '/shapes.js': 'src/shapes.js', '/wave.js': 'src/wave.js', '/effects-lab.js': 'studio/effects-lab.js', '/effects-controls.js': 'studio/effects-controls.js' });
-  for (const [route, file] of Object.entries(served)) {
-    assert.ok(STUDIO_PATHS.includes(route), `${route} is not served`);
-    for (const specifier of await imports(file)) assert.ok(STUDIO_PATHS.includes(`/${specifier.replace(/^\.?\//, '')}`), `${file} imports ${specifier}, which the studio does not serve`);
+  for (const route of Object.keys(served)) assert.ok(STUDIO_PATHS.includes(route), `${route} is not served`);
+  // Follow imports all the way down: the studio serves src/ and studio/ modules side by side at its root, so a module
+  // that a served module's imports bring in (src/territory.js, which bodies.js imports for the fluid and effects
+  // labs) must be served too.
+  const queue = Object.values(served), seen = new Set(queue);
+  for (const file of queue) for (const specifier of await imports(file)) {
+    const name = specifier.replace(/^\.?\//, '');
+    assert.ok(STUDIO_PATHS.includes(`/${name}`), `${file} imports ${specifier}, which the studio does not serve`);
+    const next = existsSync(path.join(root, 'src', name)) ? `src/${name}` : `studio/${name}`;
+    if (!seen.has(next)) { seen.add(next); queue.push(next); }
   }
   const scene = JSON.parse(await readFile(path.join(root, 'examples', 'quality', 'stride.scene.json'), 'utf8')), { files } = await createSceneBundle(scene);
   for (const file of [...files.keys()].filter(name => name.endsWith('.js'))) for (const [, specifier] of files.get(file).toString().matchAll(/^import [^;]*? from '([^']+)';/gm)) assert.ok(files.has(specifier.replace(/^\.\//, '')), `the scene bundle's ${file} imports ${specifier}, which is not in the bundle`);
