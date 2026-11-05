@@ -182,7 +182,11 @@ async function child(id, root, runs, warmup) {
 const median = list => { const sorted = [...list].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
 const round = (n, places) => Math.round(n * 10 ** places) / 10 ** places;
 function spawnCase(id, root, runs, warmup) {
-  const done = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--child', id, '--root', root, '--runs', String(runs), '--warmup', String(warmup), ...(inputs ? ['--inputs', inputs] : [])], { encoding: 'utf8', timeout: 300_000, maxBuffer: 1 << 24 });
+  // A case at its advisory budget must finish every repetition, including warm-ups. Leave room to report slower
+  // runs too; the timeout is a hang guard, not an enforcement of the speed budget.
+  const budget = CASES.find(item => item.id === id)?.budget ?? 0;
+  const timeout = Math.max(300_000, 30_000 + 2 * budget * (runs + warmup));
+  const done = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--child', id, '--root', root, '--runs', String(runs), '--warmup', String(warmup), ...(inputs ? ['--inputs', inputs] : [])], { encoding: 'utf8', timeout, maxBuffer: 1 << 24 });
   const line = done.stdout?.trim().split('\n').at(-1);
   try { return JSON.parse(line); } catch { return { id, root, error: (done.stderr || done.error?.message || `exit ${done.status}`).trim().split('\n').slice(0, 3).join(' ') }; }
 }

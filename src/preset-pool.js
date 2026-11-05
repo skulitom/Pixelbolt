@@ -1,5 +1,5 @@
 // Node-side, one listing's bounded pool. Each lane has at most one job in flight; no worker-side queue can start
-// work after the budget. A failed thread costs only its assigned preset, and is replaced for subsequent work.
+// work after the budget. A failure after ready costs only its assigned preset; failure to start retires the pool.
 import { Worker, resourceLimits } from 'node:worker_threads';
 
 function spawn() {
@@ -9,16 +9,20 @@ function spawn() {
   const hasInputType = process.execArgv.some(arg => arg === '--input-type' || arg.startsWith('--input-type='));
   const execArgv = hasInputType ? process.execArgv.filter((arg, index, args) => arg !== '--input-type' && !arg.startsWith('--input-type=') && args[index - 1] !== '--input-type') : undefined;
   const thread = new Worker(new URL('./presets-worker.js', import.meta.url), { resourceLimits, execArgv });
-  let pending, failure, resolveReady;
+  let pending, failure, resolveReady, started = false, closing;
   const ready = new Promise(resolve => { resolveReady = resolve; });
   const fail = error => { failure = error; resolveReady(); pending?.reject(error); pending = undefined; };
   thread.on('error', fail).on('exit', code => fail(failure ?? new Error(`the preset worker exited with code ${code}`)));
   thread.on('message', message => {
-    if (message === 'ready') { resolveReady(); return; }
+    if (message === 'ready') { started = true; resolveReady(); return; }
     pending?.resolve(message); pending = undefined;
   });
   return {
-    close: () => thread.terminate(),
+    close: () => closing ??= thread.terminate(),
+    async ready() {
+      await ready;
+      if (!started) throw failure;
+    },
     async measure(entry, source, deadline) {
       await ready;
       if (failure) throw failure;
@@ -39,19 +43,20 @@ export async function measurePresets(jobs, { concurrency, deadline }, measure) {
   const retire = async worker => { await worker.close(); workers.delete(worker); };
   const close = () => Promise.all([...workers].map(retire));
   async function lane(worker) {
-    while (next < jobs.length && Date.now() <= deadline) {
+    while (!serial && next < jobs.length && Date.now() <= deadline) {
       const index = next++, { entry, source, error } = jobs[index];
       if (error !== undefined) { results[index] = { error }; continue; }
+      if (!worker) {
+        try { worker = create(); await worker.ready(); }
+        catch { serial = true; await close(); return; }
+      }
+      if (serial) return;
       try {
-        if (!serial && !worker) {
-          try { worker = create(); } catch { serial = true; }
-        }
-        results[index] = serial
-          ? (Date.now() <= deadline ? { facts: measure(entry, source) } : null)
-          : await worker.measure(entry, source, deadline);
+        results[index] = await worker.measure(entry, source, deadline);
       } catch (error) {
-        results[index] = { error: error.message };
-        if (worker) { await retire(worker); worker = null; }
+        // Pool retirement can interrupt other lanes. Leave those jobs for the in-thread retry.
+        if (!serial) results[index] = { error: error.message };
+        await retire(worker); worker = null;
       }
     }
   }
@@ -59,11 +64,18 @@ export async function measurePresets(jobs, { concurrency, deadline }, measure) {
     if (!jobs.length || Date.now() > deadline) return results;
     const lanes = [];
     if (!serial) {
-      try { for (let i = 0; i < Math.min(concurrency, measurable); i++) lanes.push(create()); }
-      catch { await close(); serial = true; } // Restricted runtimes still get the ordinary in-thread measurements.
+      try {
+        for (let i = 0; i < Math.min(concurrency, measurable); i++) lanes.push(create());
+        await Promise.all(lanes.map(worker => worker.ready()));
+      } catch { serial = true; await close(); } // Missing modules and restricted runtimes both fall back.
     }
-    if (serial) await lane();
-    else await Promise.all(lanes.map(lane));
+    if (!serial) await Promise.all(lanes.map(lane));
+    if (serial) for (let index = 0; index < jobs.length && Date.now() <= deadline; index++) {
+      if (results[index] !== null) continue;
+      const { entry, source, error } = jobs[index];
+      try { results[index] = error === undefined ? { facts: measure(entry, source) } : { error }; }
+      catch (error) { results[index] = { error: error.message }; }
+    }
     return results;
   } finally { await close(); }
 }

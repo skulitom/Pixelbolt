@@ -204,8 +204,10 @@ export async function listPresets({ budget = 20000, cache, concurrency = Math.ma
   // count toward it, and only work already in flight can finish past it.
   const entries = await presetEntries(), start = Date.now();
   // Resolve and check the cache before making a pool: a warm listing, or a single miss, needs no workers. The
-  // explicit serial path keeps its original load/measure order. Both paths gather facts and save in preset order.
-  const parallel = concurrency > 1 ? await parallelSummaries(entries, store, start + budget, concurrency) : null;
+  // explicit serial path keeps its original load/measure order. A non-positive budget uses that path too: at zero,
+  // its inclusive clock check can admit the first preset before loading it. Pool preparation would lose that turn.
+  // Both paths gather facts and save in preset order.
+  const parallel = concurrency > 1 && budget > 0 ? await parallelSummaries(entries, store, start + budget, concurrency) : null;
   let unmeasured = 0, added = 0;
   for (const [index, entry] of entries.entries()) {
     const measuring = Date.now() - start <= budget;
