@@ -151,3 +151,17 @@ test('preview caps keep a frame prefix, report omitted frames, and remove unavai
   assert.ok(total <= MAX_PREVIEW_BYTES); assert.ok(total + limited.frames[0].png.length > MAX_PREVIEW_BYTES);
   assert.equal(limited.truncated, 250 - limited.frames.length); assert.ok(limited.frames.length < MAX_PREVIEW_FRAMES);
 });
+
+test('an inspection that selects frames, a region or a review mode previews the inspection image, not the whole project', async t => {
+  const app = await session(t, capabilities);
+  for (const args of [{ project: strip, frames: ['c'] }, { project: strip, view: 'silhouette' }, { project: strip, region: { x: 0, y: 0, w: 2, h: 2 } }, { project: strip, grid: true }]) {
+    const reply = await app.call('pixel_inspect', args); assert.equal(reply.isError, undefined, JSON.stringify(reply));
+    const p = previewOf(reply), sheet = reply.content.find(c => c.type === 'image');
+    assert.equal(p.frames.length, 1, JSON.stringify(args)); assert.deepEqual(p.animations, []);
+    // The player's one frame is exactly the contact sheet the model received.
+    assert.deepEqual(readPNG(p.frames[0].png), readPNG(sheet.data), JSON.stringify(args));
+  }
+  // A plain look at one animation still plays it.
+  const plain = previewOf(await app.call('pixel_inspect', { project: strip, animation: 'bounce', scale: 4 }));
+  assert.equal(plain.animation, 'bounce'); assert.equal(plain.frames.length, 3);
+});

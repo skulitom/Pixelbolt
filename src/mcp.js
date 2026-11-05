@@ -382,7 +382,11 @@ export function createToolRunner({ directory, root, version }) {
           content.push(textContent({ reference, comparison: report, ...(image && { comparisonImage: { region: image.region, frames: image.frames, omitted: image.omitted ?? 0 } }) }));
           if (image) content.push(imageContent(image.sheet));
         }
-        return { content, ...(preview && preview(project, { animation: inspection.animation })) };
+        // The player plays the project only when the inspection shows it as it plays (all frames or one animation, any
+        // zoom or backdrop); a selection, region, review mode, grid, guide or comparison shows the inspection's own image.
+        const playable = reference === undefined && Object.entries(inspection).every(([key, value]) => ['animation', 'scale', 'background', 'maxCells', 'native'].includes(key) || (key === 'view' && value === 'color'));
+        return { content, ...(preview && (playable ? preview(project, { animation: inspection.animation })
+          : preview({ width: view.sheet.width, height: view.sheet.height, frames: [{ name: 'inspection', duration: 100, data: view.sheet.data }], animations: {} }))) };
       } else if (name === 'pixel_patch') {
         if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
         const { recipe: base, resolved, sources } = await recipeFrom(spec, revision), before = renderProject(base);
