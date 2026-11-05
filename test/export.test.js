@@ -268,6 +268,23 @@ test('CLI commands that write one file never write over a file they read, even w
   assert.equal(rendered.status, 1); assert.match(JSON.parse(rendered.stderr).error, /would replace its own input .*sample\.atlas\.json/);
   assert.equal(await readFile(path.join(dir, 'out', 'sample.atlas.json'), 'utf8'), '{"width": 2}');
 });
+test('CLI outputs that are one file under two names are refused, even with force, and nothing is written', async t => {
+  const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
+  t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
+  const cli = (...args) => spawnSync(process.execPath, [fileURLToPath(new URL('../bin/pixelbolt.js', import.meta.url)), ...args], { cwd: dir, encoding: 'utf8' });
+  await writeFile(path.join(dir, 'swing.poses.json'), await readFile(new URL('../examples/swing.poses.json', import.meta.url)));
+  // The paths were compared as written, so a hard link let compile write the recipe and then the metadata into one
+  // file, and the reply said ok.
+  await writeFile(path.join(dir, 'recipe.json'), '{}'); await link(path.join(dir, 'recipe.json'), path.join(dir, 'meta.json'));
+  const run = cli('compile', 'swing.poses.json', '--out', 'recipe.json', '--metadata', 'meta.json', '--force');
+  assert.equal(run.status, 1, run.stdout);
+  assert.match(JSON.parse(run.stderr).error, /meta\.json is the same file on disk as another output; output paths must be distinct/);
+  assert.equal(await readFile(path.join(dir, 'recipe.json'), 'utf8'), '{}');
+  // Two new files are two files.
+  const fresh = cli('compile', 'swing.poses.json', '--out', 'a.json', '--metadata', 'b.json');
+  assert.equal(fresh.status, 0, fresh.stderr);
+  assert.notDeepEqual(JSON.parse(await readFile(path.join(dir, 'a.json'), 'utf8')), JSON.parse(await readFile(path.join(dir, 'b.json'), 'utf8')));
+});
 test('all bundled examples validate and produce complete exports', async () => {
   for (const name of ['forest-spirit','ember','coin']) {
     const project = JSON.parse(await readFile(new URL(`../examples/${name}.json`, import.meta.url), 'utf8'));

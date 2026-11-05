@@ -174,6 +174,12 @@ async function writeOutputs(targets, force, inputs = []) {
   // Windows and macOS file systems ignore case by default, so Hero.json and hero.json are one file there.
   const unique = new Set(entries.map(([, target]) => process.platform === 'win32' || process.platform === 'darwin' ? target.toLowerCase() : target));
   if (unique.size !== entries.length) throw new Error('Output paths must be distinct; no files were written.');
+  // Two existing outputs can be one file under other names (a hard link, a symbolic link, a short 8.3 name): the
+  // second write would replace the first.
+  for (let i = 1; i < entries.length; i++) {
+    const [twin] = await sameFiles([entries[i][1]], entries.slice(0, i).map(([, target]) => target));
+    if (twin) throw new Error(`${twin} is the same file on disk as another output; output paths must be distinct. No files were written.`);
+  }
   const [read] = await sameFiles(entries.map(([, target]) => target), inputs);
   if (read) throw new Error(`${read} is a file this command reads; even --force never writes over it. Choose another file; no files were written.`);
   if (!force) for (const [, target] of entries) {
