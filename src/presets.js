@@ -7,6 +7,8 @@ import { readdir, readFile, writeFile, mkdir, rename, rm, stat } from 'node:fs/p
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { availableParallelism } from 'node:os';
+import { measurePresets } from './preset-pool.js';
 import { PixelError, renderProject } from './core.js';
 import { resolveReferences } from './resolve.js';
 import { compilePoses } from './authoring.js';
@@ -117,12 +119,17 @@ const isFacts = value => value !== null && typeof value === 'object' && !Array.i
   && typeof value.for === 'string' && typeof value.size === 'string' && Number.isInteger(value.frames) && typeof value.plays === 'string'
   && Number.isInteger(value.colors) && value.animations !== null && typeof value.animations === 'object' && !Array.isArray(value.animations);
 async function summarize(entry, store, measuring) {
-  const { source } = await loadPreset(entry), id = store?.key(entry, source), known = id === undefined ? undefined : store.cached[id], hit = isFacts(known);
+  const { source, id, known } = await prepare(entry, store), hit = known !== undefined;
   if (!hit && !measuring) return { summary: null };
-  const facts = hit ? known : measure(entry, source);
+  const facts = hit ? known : measurePreset(entry, source);
   return { summary: { name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, ...facts }, id, facts, fresh: !hit };
 }
-function measure(entry, source) {
+async function prepare(entry, store) {
+  const { source } = await loadPreset(entry), id = store?.key(entry, source), known = id === undefined ? undefined : store.cached[id];
+  return { source, id, known: isFacts(known) ? known : undefined };
+}
+// Shared with the pool's worker entry point; it returns facts only, never rendered frames.
+export function measurePreset(entry, source) {
   const recipe = compilePreset(source).recipe, project = renderProject(recipe), colors = new Set();
   for (const frame of project.frames) for (let i = 0; i < frame.data.length; i += 4) if (frame.data[i + 3]) colors.add(((frame.data[i] << 24) | (frame.data[i + 1] << 16) | (frame.data[i + 2] << 8) | frame.data[i + 3]) >>> 0);
   const animations = Object.entries(project.animations), shown = animations.slice(0, 12);
@@ -187,16 +194,25 @@ async function openCache(directory) {
 // name, kind and file only, so the call stays well inside the MCP server's time limit. With `cache`, a folder, each
 // preset is measured once per engine and source, and later listings read its facts from there, past the budget too.
 // The cache only ever saves time: when it can't be read or written, the listing measures as it would without it.
-export async function listPresets({ budget = 20000, cache } = {}) {
+// `concurrency: 1` uses the original in-thread path. Larger values are capped at eight and leave one available core
+// free (at least one); cached facts and a lone miss never need a pool.
+export async function listPresets({ budget = 20000, cache, concurrency = Math.max(1, Math.min(8, availableParallelism() - 1)) } = {}) {
+  if (!Number.isInteger(concurrency) || concurrency < 1) throw new RangeError('concurrency must be a positive integer');
+  concurrency = Math.min(concurrency, Math.max(1, Math.min(8, availableParallelism() - 1)));
   const presets = [], store = cache === undefined ? undefined : await openCache(cache).catch(() => undefined), kept = {};
-  // The budget times the measuring, not the setup (hashing the engine, reading the folder), so a listing on a busy
-  // machine still measures its first preset.
+  // Start the budget after setup (hashing the engine, reading the folder); source resolution and worker startup
+  // count toward it, and only work already in flight can finish past it.
   const entries = await presetEntries(), start = Date.now();
+  // Resolve and check the cache before making a pool: a warm listing, or a single miss, needs no workers. The
+  // explicit serial path keeps its original load/measure order. Both paths gather facts and save in preset order.
+  const parallel = concurrency > 1 ? await parallelSummaries(entries, store, start + budget, concurrency) : null;
   let unmeasured = 0, added = 0;
-  for (const entry of entries) {
+  for (const [index, entry] of entries.entries()) {
     const measuring = Date.now() - start <= budget;
     try {
-      const { summary, id, facts, fresh } = await summarize(entry, store, measuring);
+      const result = parallel ? parallel[index] : await summarize(entry, store, measuring);
+      if (result.error !== undefined) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, error: result.error }); continue; }
+      const { summary, id, facts, fresh } = result;
       if (!summary) { presets.push({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, unmeasured: true }); unmeasured++; continue; }
       presets.push(summary);
       if (store) { kept[id] = facts; if (fresh) added++; }
@@ -208,4 +224,27 @@ export async function listPresets({ budget = 20000, cache } = {}) {
   // Only presets in this listing are kept, so the file never grows past the folder.
   if (store && (added || Object.keys(kept).length !== Object.keys(store.cached).length)) await store.save(kept).catch(() => {});
   return { guide: PRESET_GUIDE, presets, ...(unmeasured && { note: `${unmeasured} presets were listed without measuring them, to keep this call short; pixel_compile one by name to see it.` }) };
+}
+
+async function parallelSummaries(entries, store, deadline, concurrency) {
+  const results = new Array(entries.length), jobs = [];
+  const summary = (entry, facts) => ({ name: entry.name, kind: entry.kind, file: `examples/${entry.file}`, ...facts });
+  for (const [index, entry] of entries.entries()) {
+    results[index] = { summary: null };
+    try {
+      const { source, id, known } = await prepare(entry, store);
+      if (known !== undefined) results[index] = { summary: summary(entry, known), id, facts: known, fresh: false };
+      else jobs.push({ index, entry, source, id });
+    } catch (error) {
+      // Defer read/resolve errors to their turn too: past the budget they are unmeasured, as in the serial path.
+      jobs.push({ index, entry, error: error.message });
+    }
+  }
+  const measured = await measurePresets(jobs, { concurrency, deadline }, measurePreset);
+  for (const [at, result] of measured.entries()) {
+    const { index, entry, id } = jobs[at];
+    if (result?.facts) results[index] = { summary: summary(entry, result.facts), id, facts: result.facts, fresh: true };
+    else if (result?.error !== undefined) results[index] = result;
+  }
+  return results;
 }

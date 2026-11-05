@@ -81,6 +81,13 @@ const STEAM = { format: 'pixelforge-fluid', version: 1, name: 'fluid', width: 12
 // in milliseconds a run.
 const shipped = suffix => readdirSync(path.join(here, 'examples')).filter(name => name.endsWith(suffix)).sort();
 const CASES = [
+  { id: 'presets/cold', what: 'listPresets without a cache', budget: 20000,
+    setup: async load => ({ listPresets: (await load('src/presets.js')).listPresets }),
+    run: async ({ listPresets }) => {
+      const listing = await listPresets({ budget: Infinity }), failed = listing.presets.filter(entry => entry.error || entry.unmeasured);
+      if (failed.length) throw new Error(`presets not measured: ${failed.map(entry => entry.name).join(', ')}`);
+      return { frames: listing.presets.length, hash: hash(JSON.stringify(listing)) };
+    } },
   ...shipped('.fluid.json').map(name => compiledCase(`fluid/${name.replace('.fluid.json', '')}`, 'compileFluid', 'src/fluid.js', 'compileFluid', () => example(name))),
   ...shipped('.wave.json').map(name => compiledCase(`wave/${name.replace('.wave.json', '')}`, 'compileWaves', 'src/wave.js', 'compileWaves', () => example(name))),
   compiledCase('fx/effects', 'compileEffects', 'src/fx.js', 'compileEffects', () => example('effects.fx.json')),
