@@ -562,6 +562,34 @@ const { box, middle, amount, pieces } = live.measure();                // this f
 
 One step costs about what one compiled frame does. On a desktop CPU, the portfolio hero's 128 × 60 steam (30 pressure sweeps, 2 substeps) steps in about 7–9 ms in Node, Chromium, Firefox and WebKit, and renders in about 1 ms; its 44 × 50 liquid flask steps in about 2 ms. A step's time grows with `substeps` (up to 16): the 48 × 64 waterfall steps in about 2 ms at 2, 7 ms at 8 and 17 ms at 16. Creating a runner simulates its warm-up, about 0.7 s for that steam's 96 frames. So create runners after the first paint, or in a Web Worker that sends `rgba` to the page (transfer its buffer). Stepping at the effect's own frame duration (70 ms is typical) keeps the look of the compiled loop.
 
+## Rigid bodies
+
+A `pixelforge-bodies` source drops balls, boxes and convex polygons into a canvas with gravity, walls, pixel obstacles and fixed containers, simulates them and compiles every frame into an ordinary recipe of palette grids. Bodies bounce, slide, roll, stack, knock each other about and come to rest. Units are the fluid's: pixels, frames, pixels a frame. `pixel_compile` (or `pixelbolt compile`) builds it; `pixel_help` topic `bodies` returns the schema. Every effect is one-shot.
+
+```json
+{ "format": "pixelforge-bodies", "version": 1, "name": "drop", "width": 48, "height": 32,
+  "palette": { "k": "#14141c", "r": "#ff5a5f", "s": "#4a5068" },
+  "symbols": { "floor": ["ssssssssssssssssssssssssssssssssssssssssssssssss"] },
+  "effects": { "drop": { "frames": 120, "walls": ["left", "right"], "obstacles": [{ "symbol": "floor", "x": 0, "y": 31 }],
+    "bodies": [{ "name": "ball", "shape": "circle", "radius": 2.5, "at": [8, 6], "velocity": [1, 0], "bounce": 0.7, "fill": "r", "outline": "k" }] } } }
+```
+
+**Shapes.** `circle` (`radius`; 0.5 is one pixel, and its drawn diameter is round(2 × radius)), `box` (`size` [w, h]), `polygon` (3–8 convex `points` around the body's centre) and `hoop` (a ring of thin walls, `radius`, `sides`, `thickness` and a `gap` in degrees centred on its `angle`; hoops are fixed). `at` is the centre in canvas pixels, so [10.5, 10.5] is the middle of pixel (10, 10); `angle` and `spin` are degrees and degrees a frame, clockwise. `velocity` is pixels a frame; speeds stop at 8.
+
+**Material.** `bounce` (0 lands dead, 1 bounces back as fast; a pair uses the larger), `friction` (a pair uses the square root of the product), `density` (a heavier body shoves lighter ones and keeps its own speed), `drag` and `spinDrag` (about the share of speed and spin lost a frame). An impact slower than 0.3 pixels a frame doesn't bounce, so a dropped ball settles.
+
+**Fixed, floating and asleep.** `fixed: true` is a wall, peg or container that is never pushed; with `velocity` or `spin` it moves exactly so for ever and pushes what it meets (a spinning hoop, a sliding paddle). `weightless: true` ignores gravity: it floats where it is put and drifts only when hit. `asleep: true` holds a body exactly still, even in the air, until something moves into it. A body that stays slower than 0.03 pixels a frame for 12 frames falls asleep by itself, so a finished scene stands exactly still, and a knock wakes it and every sleeping body resting against it, so a hit pyramid falls apart instead of standing as a wall. `tireless: true` is an open cheat for toy scenes: every hit gives back the energy (speed plus height) it cost, so a ball keeps bouncing at full height among loose blocks.
+
+**Obstacles and walls.** `walls` lists the canvas edges that hold bodies in; a body far past an open edge has left (the metadata says when). `obstacles` stamp symbols whose pixels are solid, drawn over or under the bodies (or not at all), each with its own `bounce` and `friction`. Their outlines are traced into straight runs of pixel edges, so a body slides along a floor made of several symbols without catching on the seams, rests flat on a ledge and rolls off its corner. `solid: false` makes a decoration the bodies pass. `background` fills the canvas with a palette key under everything.
+
+**Looks.** `fill` is a palette key, or a list the body steps through at each hit (the ring escape's ball changes colour at every knock); `outline` colours the pixels on its edge; `symbol` draws a sprite instead, centred on the body and turned with it; `trail` ({ color, length }) draws where it was over its last frames. A body is drawn at its angle in steps its size can show: under 6 pixels across it is always drawn square (a 4-pixel block turned 30 degrees is a pinwheel in pixels), a 6-pixel one turns in 45-degree steps, an 8-pixel one in 30 and finer as it grows; a symbol, whose detail turning smears, in steps twice as coarse (an 8-pixel crate tumbles in quarter turns). Collisions always use the exact angle.
+
+**Copies.** `ring` ({ radius, count, from, to }) lays copies around `at`, each turned to face out; `grid` ({ count: [columns, rows], step, stagger }) lays them in rows from `at`. Copies of a named body are numbered (`block-0`, `block-1`, …). An effect holds up to 256 bodies.
+
+**Metadata.** Each effect reports its `hits`, the bodies that `escaped` and the frame they left, the frame from which everything is at `rest` (or null), the drawn pixels per frame, and the `paths` of named bodies (their centres frame by frame), so an agent can check a bounce height, an escape or a landing without looking.
+
+**Presets.** [ring escape](../examples/ring-escape.bodies.json) (a ball knocks a ring of sleeping blocks loose until it escapes), [bouncing pixel](../examples/bouncing-pixel.bodies.json) (one pixel thrown into a room with a ledge and stairs, coming to rest), [spinning hoop](../examples/spinning-hoop.bodies.json) (three balls in a turning hoop with a gap) and [crate topple](../examples/crate-topple.bodies.json) (a heavy ball thrown into a pyramid of crates).
+
 ## Lossless raster return path
 
 ```sh

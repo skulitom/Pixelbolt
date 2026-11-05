@@ -616,6 +616,60 @@ const wave = {
       }, ['frames', 'sources', 'look']) }
   }, ['format', 'version', 'name', 'width', 'height', 'palette', 'effects'])
 };
+const bodyKey = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key; dot and space are reserved.' };
+const bodyMaterial = {
+  bounce: num(0, 1, 'How much of its approach speed a body keeps in a bounce: 0 lands dead, 1 bounces back as fast. A pair bounces with the larger. Default 0.3.'),
+  friction: num(0, 2, 'Sliding friction; a pair uses the square root of the product. Default 0.4.')
+};
+const body = object({
+  name: { ...id, maxLength: 60, description: 'Names the body in the metadata (its path, frame by frame, and when it leaves the canvas). Copies are numbered name-0, name-1, …' },
+  shape: { enum: ['circle', 'box', 'polygon', 'hoop'], description: 'circle (radius; 0.5 is one pixel), box (size), polygon (convex points) or hoop (a ring of thin walls with an optional gap, for a fixed container).' },
+  radius: num(0.5, 128, 'circle: 0.5–32 pixels, drawn as an ellipse of diameter round(2 × radius). hoop: 2–128.'),
+  size: { ...pairOf(num(1, 64)), description: 'box: [width, height] in pixels.' },
+  points: { ...array(pairOf(num(-64, 64)), 8), minItems: 3, description: 'polygon: 3–8 convex points [x, y] around the body\'s centre, recentred on their centroid.' },
+  sides: int(3, 96, 'hoop: straight walls around it. Default: its radius, from 8 to 64.'),
+  gap: num(0, 330, 'hoop: degrees left open, centred on the hoop\'s angle (0 points right, 90 down). Default 0, closed.'),
+  thickness: num(1, 8, 'hoop: wall thickness in pixels. Default 1.'),
+  at: { ...pairOf(num(-4096, 4096)), description: 'Centre [x, y] in canvas pixels; [10.5, 10.5] is the middle of pixel (10, 10). The centre of a ring or the first copy of a grid.' },
+  angle: num(-3600, 3600, 'Degrees clockwise. Default 0. Drawn in steps the body\'s size can show (under 6 pixels across, always square); collisions use the exact angle.'),
+  velocity: { ...pairOf(num(-8, 8)), description: 'Starting velocity [x, y] in pixels a frame; for a fixed body, how it moves for ever. Speeds stop at 8.' },
+  spin: num(-45, 45, 'Starting spin in degrees a frame, clockwise; for a fixed body, how it turns for ever.'),
+  fixed: { type: 'boolean', description: 'Never pushed: a wall, peg or container. With velocity or spin it moves exactly so, pushing what it meets.' },
+  weightless: { type: 'boolean', description: 'Gravity doesn\'t pull it: it floats where it is put, drifting only when hit.' },
+  asleep: { type: 'boolean', description: 'Starts asleep: holds exactly still, even in the air, until something moves into it.' },
+  tireless: { type: 'boolean', description: 'Every hit gives back the energy (speed plus height against gravity) the hit cost, so a ball keeps bouncing at full height among loose blocks. An open cheat; off by default.' },
+  density: num(0.05, 100, 'Mass per square pixel. Default 1. A heavier body pushes lighter ones about and keeps its own speed.'),
+  ...bodyMaterial,
+  drag: num(0, 1, 'About the share of its speed lost each frame. Default 0.'),
+  spinDrag: num(0, 1, 'About the share of its spin lost each frame. Default 0.02.'),
+  fill: { oneOf: [bodyKey, { ...array(bodyKey, 16), minItems: 1 }], description: 'Palette key, or a list the body steps through at each hit.' },
+  outline: { ...bodyKey, description: 'Key for the pixels on the shape\'s edge.' },
+  symbol: { type: 'string', description: 'Draw this symbol instead of fill and outline, centred on the body and turned with it (in steps its size reads at: an 8-pixel sprite in quarter turns).' },
+  trail: object({ color: bodyKey, length: int(1, 16, 'Frames of trail. Default 2.') }, ['color']),
+  ring: object({ radius: num(1, 256), count: int(2, 256), from: num(-3600, 3600, 'Degrees of the first copy. Default 0.'), to: num(-3600, 3600, 'Degrees of the last; default a full turn, spaced evenly.') }, ['radius', 'count']),
+  grid: object({ count: { ...pairOf(int(1, 256)), description: '[columns, rows].' }, step: { ...pairOf(num(-256, 256)), description: '[x, y] between copies.' }, stagger: num(-256, 256, 'Shifts odd rows across. Default 0.') }, ['count', 'step'])
+}, ['shape', 'at']);
+const bodies = {
+  $schema: schema.$schema, title: 'Pixelbolt rigid bodies',
+  description: 'Rigid bodies (balls, boxes, convex polygons, fixed or spinning hoops) with gravity, walls and pixel obstacles, simulated and baked into editable palette grids: they bounce, slide, roll, stack, knock each other about and come to rest. Units: pixels and frames. One-shot; deterministic.',
+  ...object({ format: { const: 'pixelforge-bodies' }, version: { const: 1 }, name: id,
+    width: int(4, 256), height: int(4, 256), palette: schema.properties.palette, anchor: point, sheet: schema.properties.sheet,
+    symbols: { type: 'object', propertyNames: { ...id, maxLength: 60 }, additionalProperties: { ...array({ type: 'string', minLength: 1, maxLength: 256 }, 256), minItems: 1 }, description: 'Named rows of palette keys for obstacles and body sprites; dot or space is empty.' },
+    effects: { type: 'object', minProperties: 1, maxProperties: 16,
+      propertyNames: { ...id, maxLength: 60 }, description: 'Names become animations and frame names; unique ignoring case. At most 256 frames in all.',
+      additionalProperties: object({
+        frames: int(1, 256), duration: int(10, 1000, 'Milliseconds per frame. Default 40.'),
+        substeps: int(1, 16, 'Solver steps a frame. Default 8.'), iterations: int(1, 16, 'Contact passes a step. Default 6.'),
+        gravity: { ...pairOf(num(-2, 2)), description: 'Pixels a frame² [x, y]. Default [0, 0.15].' },
+        background: { ...bodyKey, description: 'Fills the canvas under everything.' },
+        walls: { ...array({ enum: ['left', 'right', 'top', 'bottom'] }, 4), description: 'Canvas edges that hold bodies in; a body far past an open edge leaves for good.' },
+        obstacles: { ...array(object({ symbol: { type: 'string' }, x: int(-4096, 4096), y: int(-4096, 4096),
+          draw: { enum: ['over', 'under', 'none'], description: 'over (default), under the bodies, or none (an invisible wall).' },
+          solid: { type: 'boolean', description: 'false: a decoration the bodies pass.' }, ...bodyMaterial }, ['symbol']), 32), description: 'Symbols stamped on the canvas whose pixels are solid. Bodies slide along their edges without catching on the seams between pixels.' },
+        bodies: { ...array(body, 64), minItems: 1, description: 'At most 256 bodies with their copies.' }
+      }, ['frames', 'bodies']) }
+  }, ['format', 'version', 'name', 'width', 'height', 'palette', 'effects'])
+};
 const normals = {
   $schema: schema.$schema, title: 'Pixelbolt normal pass',
   description: 'Derives a lighting normal pass from a colour recipe and compiles it to an ordinary recipe aligned with it (same size, frame names and durations, animations and atlas layout), ready for a scene asset\'s normal and editable like any recipe. Each separate shape is rounded from its silhouette, lighter colours can be raised by detail, and every pixel takes the nearest of 17 directions: palette key 5 faces the viewer, the keypad digits 1–4 and 6–9 lean 30° the way they sit around 5, and q w e a d z x c lean 60° the same way.',
@@ -626,4 +680,4 @@ const normals = {
     faces: { type: 'object', minProperties: 1, additionalProperties: { enum: NORMAL_KEYS }, description: 'Flat faces by colour: maps the colour recipe\'s palette keys to one direction each, so a box, wall or building gets flat planes instead of a cushion. Pixels drawn in that key\'s colour take the direction; all others are rounded as usual. Side view: tops w, fronts 5. 3/4 top-down: tops w or 8, south faces 2 or 5. Isometric 2:1: tops w, left faces z, right faces c.' }
   }, ['format', 'version', 'recipe']), $defs: { ...schema.$defs, recipe: recipeSchema }
 };
-for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');
+for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['bodies.schema.json', bodies], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');

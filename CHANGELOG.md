@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Rigid bodies
+
+- A new source format, `pixelforge-bodies` (`src/bodies.js`, `bodies.schema.json`, `pixel_help` topic `bodies`), simulates rigid bodies and bakes them into palette grids: circles (radius 0.5 is one pixel), boxes, convex polygons and fixed hoops with a gap, with gravity, walls and pixel obstacles. Bodies bounce (`bounce`), slide (`friction`), roll, stack, shove each other by `density`, and come to rest: a slow body falls asleep and holds exactly still, and a knock wakes it and every sleeping body resting against it. Sequential impulses in substeps with speculative contacts, so a pixel thrown at the speed limit never passes a one-pixel wall; pixel obstacles are traced into straight runs of edges, so a box slides along a floor of several symbols without catching on the seams.
+- `fixed` bodies with `velocity` or `spin` move exactly so and push what they meet; `weightless` bodies float; `asleep` bodies hold still, even in the air, until hit; `tireless` is an open cheat that gives a ball back the energy each hit cost. A `fill` list changes colour at each hit, `trail` draws where a body was, `symbol` draws a sprite turned with it, and `ring` and `grid` lay out copies. A body is drawn at its angle in steps its size can show, so blocks under 6 pixels stay square and an 8-pixel crate tumbles in quarter turns.
+- The metadata reports hits, the bodies that left the canvas and when, the frame from which everything rests, and the paths of named bodies.
+- Four presets with GIFs (`showcase/bodies/build.mjs`): ring escape (a ball knocks a ring of blocks loose until it escapes), bouncing pixel, spinning hoop and crate topple.
+
 ### Added
 
 - MCP Apps previews: a self-contained inline pixel art player for compatible hosts, with frame stepping, speed, animation and background controls, render delivery details and optional playground links. Preview data stays in result metadata; clients without the negotiated extension are unchanged.

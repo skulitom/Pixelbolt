@@ -6,6 +6,7 @@ import { spellLibrary } from './spell-library.mjs';
 import { terrainPresets } from './terrain-presets.mjs';
 import { plasmaPresets } from './plasma-presets.mjs';
 import { sandPresets } from './sand-presets.mjs';
+import { bodiesPresets } from './bodies-presets.mjs';
 const rows = source => source.map(row => row.padEnd(16, '.'));
 const spirit = rows([
   '........dd',
@@ -682,6 +683,8 @@ Object.assign(authored, terrainPresets);
 for (const [name, source] of Object.entries(plasmaPresets)) authored[`${name}.fluid`] = source;
 // Grains: sand that holds its repose, lands dead and comes to rest (scripts/sand-presets.mjs).
 for (const [name, source] of Object.entries(sandPresets)) authored[`${name}.fluid`] = source;
+// Rigid bodies: balls and blocks that bounce, topple and rest (scripts/bodies-presets.mjs).
+for (const [name, source] of Object.entries(bodiesPresets)) authored[`${name}.bodies`] = source;
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.

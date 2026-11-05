@@ -148,6 +148,13 @@ Each shared piece has one session that builds it; the others use it rather than 
 | Heat field and scale, ice in the solid layer, gas over air cells in a liquid effect, matter ledger | phase changes |
 | Electric layer, ionization; uses the heat scale and solid properties | plasma |
 | Grains: friction from pressure, rigid pieces (section 10a) | grains (2026-11-04) |
+| Rigid bodies: a separate compiler (section 13) | rigid bodies (2026-11-05) |
 | Rest and cleanliness (sections 0 and 1) | everyone; the cohesion work set the bar |
 
 Landing order: sticky liquids and bubbles land first, in whichever order they are ready. Phase changes builds on both. Plasma's gas-only part can land any time, as long as it uses this heat scale and the solid layer's surface properties. Plasma meeting liquids comes after phase changes. Then the features meet (2026-11-01): arcs into water, heat through keyed and smooth solids, bubbles gathering into pockets and sealed bodies of liquid, each built on the pieces above rather than beside them.
+
+## 13. Rigid bodies
+
+`pixelforge-bodies` (`src/bodies.js`) is a separate compiler for balls, boxes, polygons and hoops, not a fluid stage: it keeps none of the fluid's state and the fluid keeps none of its. It follows section 0 (things come to rest: slow bodies sleep and hold exactly still; cheats such as `tireless` are named art controls) and section 1's determinism, and uses section 2's units: pixels, frames, pixels a frame and a frame², with gravity as one vector per effect. Pixel obstacles there are the same symbols, solid wherever a character is not a dot or space.
+
+When bodies and fluids meet (a ball dropped into a pool, a crate that floats), a body enters the fluid as a moving solid in the solid layer (section 6), drawn from its shape with its velocity at each cell, exactly as a keyed obstacle; the fluid hands back, per body, the pressure and drag it felt over that body's cells as a force and torque for the body's next step. One step order then holds both: solids first (section 11, stage 1) with bodies placed from their last step, the fluid, then the bodies with the fluid's forces. Not built yet.

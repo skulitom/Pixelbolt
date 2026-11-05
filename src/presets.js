@@ -1,6 +1,6 @@
 // Node-side: the shipped examples an agent can start from instead of drawing an effect or a character from scratch.
 // They are read from examples/ whenever they are asked for, so the listing always matches the folder. A preset is a
-// top-level examples/*.fluid.json, *.fx.json, *.wave.json or *.poses.json source, or a plain recipe whose animations
+// top-level examples/*.fluid.json, *.fx.json, *.wave.json, *.bodies.json or *.poses.json source, or a plain recipe whose animations
 // all loop (a coin spin, a flickering ember) and that no source there compiles to. Titles and notes come from the
 // Fluid and Effects labs' lists where those have one; anything else is described from its own name and animations.
 import { readdir, readFile, writeFile, mkdir, rename, rm, stat } from 'node:fs/promises';
@@ -13,12 +13,13 @@ import { compilePoses } from './authoring.js';
 import { compileEffects } from './fx.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
+import { compileBodies } from './bodies.js';
 import { EFFECT_PRESETS } from '../studio/effects-controls.js';
 import { FLUID_PRESETS } from '../studio/fluid-controls.js';
 
 export const PRESET_FOLDER = fileURLToPath(new URL('../examples/', import.meta.url));
-const SOURCE = /^(.+)\.(fluid|fx|wave|poses)\.json$/;
-const COMPILERS = { 'pixelforge-fluid': compileFluid, 'pixelforge-fx': compileEffects, 'pixelforge-wave': compileWaves, 'pixelforge-poses': compilePoses };
+const SOURCE = /^(.+)\.(fluid|fx|wave|bodies|poses)\.json$/;
+const COMPILERS = { 'pixelforge-fluid': compileFluid, 'pixelforge-fx': compileEffects, 'pixelforge-wave': compileWaves, 'pixelforge-bodies': compileBodies, 'pixelforge-poses': compilePoses };
 const TITLES = new Map([...FLUID_PRESETS.map(entry => [`fluid:${entry.file}`, entry]), ...EFFECT_PRESETS.map(entry => [`fx:${entry.file}`, entry])]);
 
 // How to use the listing, and the one way to get fewer frames: a source's own `frames` is its simulation or timeline
@@ -105,6 +106,16 @@ function about(entry, source, animations) {
   }
   if (entry.kind === 'fx') return `Particles and effect shapes: ${listNames(names)}.`;
   if (entry.kind === 'wave') return `A looping wave pattern: ${listNames(names)}.`;
+  if (entry.kind === 'bodies') {
+    // What falls, bounces and topples: each shape counted with its copies on a ring or a grid.
+    const counts = new Map();
+    for (const effect of Object.values(source.effects ?? {})) for (const body of effect?.bodies ?? []) {
+      const copies = body?.ring?.count ?? (Array.isArray(body?.grid?.count) ? body.grid.count[0] * body.grid.count[1] : 1);
+      counts.set(body?.shape, (counts.get(body?.shape) ?? 0) + copies);
+    }
+    const parts = [...counts].filter(([shape]) => typeof shape === 'string').map(([shape, n]) => `${n} ${shape}${n === 1 ? '' : shape === 'box' ? 'es' : 's'}`);
+    return `Simulated rigid bodies: ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0] ?? 'none'}.`;
+  }
   return `A hand-drawn recipe: ${listNames(names)}.`;
 }
 
