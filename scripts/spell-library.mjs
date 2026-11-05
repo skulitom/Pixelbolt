@@ -2152,24 +2152,10 @@ export const spellLibrary = {
             "radius": 12,
             "width": 5,
             "squash": [1, 0.35],
-            "noise": 0.95,
+            "noise": 0.9,
             "scale": 3,
-            "flicker": 1,
+            "boil": 24,
             "power": 1.3
-          },
-          {
-            "kind": "ring",
-            "look": "ground",
-            "at": [32, 40],
-            "frames": [1, 12],
-            "radius": 12,
-            "width": 5,
-            "squash": [1, 0.35],
-            "noise": 0.95,
-            "scale": 3,
-            "flicker": 1,
-            "power": 1.3,
-            "seed": 7
           },
           {
             "kind": "bolt",
@@ -2843,11 +2829,11 @@ export const spellLibrary = {
           {
             "name": "swirl",
             "at": [32, 40],
-            "rate": 1.2,
+            "rate": 1,
             "speed": 0,
-            "life": [7, 9],
-            "sway": { "amplitude": [14, 4.5], "period": 10 },
-            "blob": { "look": "water", "radius": [1.8, 3.2, 3.2, 1.8] }
+            "life": [10, 14],
+            "sway": { "amplitude": [14, 4.5], "period": 40 },
+            "blob": { "look": "water", "radius": [1, 3, 3, 1] }
           },
           {
             "name": "bubbles",

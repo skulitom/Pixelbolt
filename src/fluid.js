@@ -21,7 +21,7 @@ import { readBodies, createBodyWorld, bodyCells, startCells, paintBodies, drawBo
 
 export const FLUID_KINDS = ['gas', 'liquid'];
 export const FLUID_FIELDS = ['density', 'temperature', 'speed', 'depth', 'light', 'shadow', 'strand', 'ionization', 'current'];
-const LIGHT = 4, SHADOW = 5, STRAND = 6;
+const DEPTH = 3, LIGHT = 4, SHADOW = 5, STRAND = 6;
 export const FLUID_WALLS = ['left', 'right', 'top', 'bottom'];
 export const OBSTACLE_SURFACES = ['pixels', 'smooth'];
 const LIMITS = { effects: 16, emitters: 16, obstacles: 32, fills: 64, looks: 8, whitewater: 4, colors: 16, particles: 32768, sparks: 4096, carriers: 8192, work: 400000000 };
@@ -31,6 +31,11 @@ const MAX_SPEED = 32;
 const PER_CELL = 4, LEVEL = 0.5;
 // How far along a row the depth bands look for a shallower surface (see renderFields).
 const DEPTH_REACH = 3;
+// How far past a threshold a field is clearly past it, as a share of the band's width (for a liquid's edge, of LEVEL):
+// the drawing holds each pixel's band until its field has clearly left it (see renderFields). A pixel's memory is a
+// byte: its band (HELD bits), WAITING while its field has crossed a threshold for one frame, SETTLED once the field has
+// been clearly inside the band. SEAM keys the draws that hand a loop's memory back to the warm-up's (see handBack).
+const HOLD = 0.25, HELD = 63, WAITING = 64, SETTLED = 128, SEAM = 5000;
 // Salts keep each random draw independent, so changing one setting does not reshuffle the others.
 const SALT = { flicker: 1, noiseX: 2, noiseY: 3, spawn: 4, jitterX: 5, jitterY: 6, drain: 7, sparks: 8, sparkX: 9, sparkY: 10, angle: 11, speed: 12, life: 13, wobble: 14 };
 // Whitewater layers draw from their own streams, keyed apart from the emitters (which are numbered from 0).
@@ -3254,16 +3259,16 @@ function heatFields(run) {
 }
 // A frame of a liquid with heat: vapour first, the water over it, then the ice, each through its own look, and the
 // outline round the water and ice.
-function renderHeat(run, width, height, drawn = null) {
+function renderHeat(run, width, height, drawn = null, hold = null) {
   const { view, state } = run, P = state.heat, N = width * height, V = P.vapour, plain = { strays: false, corners: false };
   const iced = new Uint8Array(N);
   for (let c = 0; c < N; c++) iced[c] = view.solid[c] || P.ice[c] >= ICE_CELL ? 1 : 0;
-  const chars = renderFields({ ...view, solid: iced, outline: 0 }, run.base, width, height);
-  const frost = renderFields({ ...view, liquid: false, look: view.iceLook ?? view.look, outline: 0, cleanup: plain }, run.iceBase, width, height);
+  const chars = renderFields({ ...view, solid: iced, outline: 0 }, run.base, width, height, null, hold, 'water');
+  const frost = renderFields({ ...view, liquid: false, look: view.iceLook ?? view.look, outline: 0, cleanup: plain }, run.iceBase, width, height, null, hold, 'ice');
   for (let c = 0; c < N; c++) if (frost[c]) chars[c] = frost[c];
   const body = Uint16Array.from(chars);
   if (V && view.vapour.look.length) {
-    const steam = renderFields({ ...view, liquid: false, look: view.vapour.look, solid: V.g.solid, outline: 0, cleanup: plain }, run.vapourBase, width, height);
+    const steam = renderFields({ ...view, liquid: false, look: view.vapour.look, solid: V.g.solid, outline: 0, cleanup: plain }, run.vapourBase, width, height, null, hold, 'vapour');
     for (let c = 0; c < N; c++) if (!chars[c] && steam[c]) chars[c] = steam[c];
   }
   if (drawn) for (let c = 0; c < N; c++) drawn[c] = chars[c] ? 1 : 0;
@@ -3570,24 +3575,64 @@ function openSample(a, solid, nx, ny, fx, fy, fallback) {
   return weight > 1e-9 ? sum / weight : fallback;
 }
 
+// How far each pixel's thresholds sit below a layer's on this canvas, as a share of the band's gap: (1 - pattern) ×
+// dither, worked out once per layer and canvas, since the pattern never moves.
+const FEATHERS = new WeakMap();
+function feathersOf(layer, width, height) {
+  let known = FEATHERS.get(layer);
+  if (!known || known.width !== width || known.height !== height) {
+    const values = new Float64Array(width * height);
+    for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) values[j * width + i] = (1 - layer.threshold(i, j)) * layer.dither;
+    known = { width, height, values };
+    FEATHERS.set(layer, known);
+  }
+  return known.values;
+}
 // Each look layer maps one field to palette colours: a colour is fully on from its threshold up, and `dither` feathers
 // it in below, through the pattern, over that share of the gap to the previous threshold. Later layers draw over
 // earlier ones; obstacles never hold fluid. Then optional cleanup and a one-pixel outline.
-function renderFields(effect, base, width, height, drawn = null) {
+// With `hold`, the drawing remembers the band it drew each pixel in last frame (`hold.prev[role]`, null on the first
+// frame) and notes this frame's in `hold.now[role]`, SETTLED once the field has been clearly inside the band (HOLD of
+// its width from the thresholds; for a liquid's edge, HOLD of LEVEL) since the pixel last changed. A settled pixel
+// changes band once its field has stayed across a threshold for a second frame (WAITING), or at once if it is clearly
+// past, so a steady rise or fade is drawn at most a frame late and a one-frame dip or flare is not drawn; one that has
+// just changed goes back only once its field is clearly past the threshold, so a field hovering there no longer flips
+// it every frame, as a body holds its drawn place. A settled gas pixel whose field falls below the lowest threshold
+// goes at once, so smoke thins away on time and a one-shot ends empty. Depth and strands are whole numbers and never
+// hover, so their bands follow the liquid's held edge.
+function renderFields(effect, base, width, height, drawn = null, hold = null, role = 'fluid') {
   // Colour codes are 16-bit: a palette key may be any single character, such as an accented letter.
   const N = width * height, { solid, front, liquid, see } = effect, runs = new Float64Array(N), depth = new Float64Array(N), chars = new Uint16Array(N);
+  const before = hold && hold.prev ? hold.prev[role] ?? null : null, after = hold ? { wet: new Uint8Array(N), levels: effect.look.map(() => new Uint8Array(N)) } : null;
+  if (after) hold.now[role] = after;
   let [density] = base, wet = new Uint8Array(N), filled = null;
-  for (let c = 0; c < N; c++) wet[c] = !solid[c] && density[c] >= LEVEL ? 1 : 0;
-  if (liquid) {
-    // A liquid covers every cell a layer of its own draws (density, temperature or speed: a thin, fast stream is drawn
-    // by its speed), so a stream's depth runs on through it instead of starting a new surface under each thin pixel.
+  if (!liquid) for (let c = 0; c < N; c++) wet[c] = !solid[c] && density[c] >= LEVEL ? 1 : 0;
+  else {
+    // A liquid covers every cell its density reaches LEVEL in, and every cell a layer of its own draws (density,
+    // temperature or speed: a thin, fast stream is drawn by its speed), so a stream's depth runs on through it instead of
+    // starting a new surface under each thin pixel. Each cell notes whether it is wet as drawn (1), clearly wet, HOLD past
+    // a threshold (2), and possibly wet, within HOLD of one (4).
+    const [high, low] = [LEVEL * (1 + HOLD), LEVEL * (1 - HOLD)];
+    for (let c = 0; c < N; c++) if (!solid[c]) { const d = density[c]; wet[c] = (d >= LEVEL ? 1 : 0) | (d >= high ? 2 : 0) | (d >= low ? 4 : 0); }
     for (const layer of effect.look) {
       if (layer.field > 2) continue;
-      const field = base[layer.field], { thresholds, gaps, dither, threshold } = layer;
-      for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
-        const c = j * width + i;
-        if (!wet[c] && !solid[c] && field[c] >= thresholds[0] - (1 - threshold(i, j)) * dither * gaps[0]) wet[c] = 1;
+      const field = base[layer.field], { thresholds, gaps } = layer, feathers = feathersOf(layer, width, height);
+      for (let c = 0; c < N; c++) {
+        if (solid[c] || wet[c] === 7) continue;
+        const value = field[c], cut = thresholds[0] - feathers[c] * gaps[0], margin = HOLD * (1 - feathers[c]) * gaps[0];
+        wet[c] |= (value >= cut ? 1 : 0) | (value >= cut + margin ? 2 : 0) | (value >= cut - margin ? 4 : 0);
       }
+    }
+    for (let c = 0; c < N; c++) {
+      const flags = wet[c], plain = flags & 1;
+      let now = plain;
+      if (before) {
+        const was = before.wet[c] & 1, settled = before.wet[c] & SETTLED, clear = was ? (flags & 4 ? 1 : 0) : (flags & 2 ? 1 : 0);
+        let waiting = 0;
+        if (now !== was) { if (clear !== was) { if (!settled) now = clear; } else if (!settled || !(before.wet[c] & WAITING)) { now = was; waiting = settled ? WAITING : 0; } }
+        if (after) after.wet[c] = now | waiting | ((now === was && settled) || (now ? flags & 2 : !(flags & 4)) ? SETTLED : 0);
+      } else if (after) after.wet[c] = now | ((now ? flags & 2 : !(flags & 4)) ? SETTLED : 0);
+      wet[c] = now;
     }
     // The wake a body leaves, while the liquid still closes it in, is drawn as liquid: the solve already counts it so, and
     // drawn empty it showed a fresh surface in the deep behind each arm of a turning paddle until the water drifted in.
@@ -3716,15 +3761,40 @@ function renderFields(effect, base, width, height, drawn = null) {
   // strands, which are thinner than any outline. `by` notes which layer drew each pixel last, for halos.
   const by = effect.look.some(layer => layer.halo) ? new Uint8Array(N) : null;
   for (const [index, layer] of effect.look.entries()) {
-    const field = sources[layer.field], { thresholds, gaps, colors, dither, threshold } = layer, shading = layer.field === LIGHT || layer.field === SHADOW, strands = layer.field === STRAND;
+    const field = sources[layer.field], { thresholds, gaps, colors, dither } = layer, shading = layer.field === LIGHT || layer.field === SHADOW, strands = layer.field === STRAND;
+    const n = thresholds.length, held = before && layer.field !== DEPTH && !strands ? before.levels[index] : null, keep = after ? after.levels[index] : null;
+    // Where a pixel's threshold k sits (its feather f below the layer's), and how far past it a field must go to be clear
+    // of it: HOLD of the band below it, as wide as it is at this pixel (so a low, dithered threshold is held by as little).
+    const cut = (k, f) => thresholds[k] - f * gaps[k], margin = (k, f) => HOLD * ((1 - f) * gaps[k] + (k ? f * gaps[k - 1] : 0));
+    // Below this a pixel is in no band however it is held, and settled there.
+    const none = keep ? cut(0, dither) - margin(0, dither) : cut(0, dither), feathers = feathersOf(layer, width, height);
     if (shading) patch();
-    for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
-      const c = j * width + i, value = field[c];
-      if (solid[c] || (liquid && !wet[c] && !strands) || (shading && !chars[c]) || value < thresholds[0] - dither * gaps[0]) continue;
-      const feather = (1 - threshold(i, j)) * dither;
+    for (let c = 0; c < N; c++) {
+      const value = field[c];
+      if (value < none) { if (keep) keep[c] = SETTLED; continue; }
+      const hidden = solid[c] || (liquid && !wet[c] && !strands) || (shading && !chars[c]);
+      // The bands are noted under hidden pixels too: what the field did there decides how a pixel shown later is held.
+      if (!keep && hidden) continue;
+      const feather = feathers[c];
       let level = 0;
-      while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
-      if (level) { chars[c] = colors[level - 1]; if (by) by[c] = index + 1; }
+      while (level < n && value >= thresholds[level] - feather * gaps[level]) level++;
+      if (keep) {
+        const was = held ? held[c] & HELD : level, settled = held ? held[c] & SETTLED : 0;
+        let waiting = 0;
+        // A gas that was settled in its band fades out as soon as its field falls below the lowest threshold, so smoke
+        // thins away on time and a one-shot ends empty; anything else changes band as held.
+        if (level !== was && (liquid || level || !settled)) {
+          // The band the field has gone HOLD past the thresholds toward, from last frame's.
+          let up = 0, down = 0;
+          while (up < n && value >= cut(up, feather) + margin(up, feather)) up++;
+          while (down < n && value >= cut(down, feather) - margin(down, feather)) down++;
+          const clear = was < up ? up : was > down ? down : was;
+          if (clear !== was) { if (!settled) level = clear; } else if (!settled || !(held[c] & WAITING)) { level = was; waiting = settled ? WAITING : 0; }
+        }
+        const inside = (!level || value >= cut(level - 1, feather) + margin(level - 1, feather)) && (level === n || value < cut(level, feather) - margin(level, feather));
+        keep[c] = level | waiting | ((level === was && settled) || inside ? SETTLED : 0);
+      }
+      if (!hidden && level) { chars[c] = colors[level - 1]; if (by) by[c] = index + 1; }
     }
   }
   patch();
@@ -3804,7 +3874,7 @@ function createRun(effect, width, height, path) {
   if (effect.liquid) { fillLiquid(state, effect); if (state.full) crowded(path); }
   // A gas's plasma has two fields more (ionization and current, after the strand's place); over a liquid the vapour's.
   const fieldSet = (electric = false) => Array.from({ length: electric ? 6 : 3 }, () => new Float64Array(N)), base = [...fieldSet(), ...Array.from({ length: effect.electric && !effect.liquid ? 3 : 1 }, () => new Float64Array(N))];
-  const run = { effect, view: effect, layout: effect.layout, state, base, sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0, fields: base };
+  const run = { effect, view: effect, layout: effect.layout, state, base, sparks: [], pops: [], totals: { alive: 0, spawned: 0, maxAlive: 0 }, maxParticles: effect.liquid ? state.n : 0, fields: base, hold: { prev: null, now: null } };
   // A liquid with heat also has the ice's fields and the vapour's, which a loop's seam blends with the rest. What the
   // fills made is where the ledger starts (it counts what emitters add from here on), and a frozen fill is solid at once.
   if (state.heat) {
@@ -4056,8 +4126,30 @@ const fieldsOf = run => {
   liquidFields(run.state, run.base);
   if (run.state.heat) heatFields(run);
 };
-// A frame's pixels from the fields.
-const drawFrame = (run, width, height, drawn = null) => (run.state.heat ? renderHeat(run, width, height, drawn) : renderFields(run.view, run.base, width, height, drawn));
+// A frame's pixels from the fields. The drawing holds each pixel's bands from the frame drawn before it (run.hold, see
+// renderFields), so every simulated frame is drawn once, in order, warm-up included.
+const drawFrame = (run, width, height, drawn = null) => {
+  const { hold } = run;
+  hold.now = {};
+  const chars = run.state.heat ? renderHeat(run, width, height, drawn, hold) : renderFields(run.view, run.base, width, height, drawn, hold);
+  hold.prev = hold.now;
+  return chars;
+};
+// A loop's closing frames hand the drawing's memory back to the warm-up's (`to`, the bands drawn in the frame before the
+// one these fields blend toward): each pixel, by its own seeded draw, takes the warm-up's bands once the blend weight `w`
+// passes its draw, and keeps them on. At the last frame every pixel has, so it is drawn as the warm-up's last frame was,
+// and frame 0 follows it as it followed that frame (see simulate).
+function handBack(hold, to, w, seed) {
+  for (const [role, own] of Object.entries(hold.prev)) {
+    const theirs = to[role], wet = Uint8Array.from(own.wet), levels = own.levels.map(level => Uint8Array.from(level));
+    for (let c = 0; c < wet.length; c++) {
+      if (random(seed, SEAM, c) >= w) continue;
+      wet[c] = theirs.wet[c];
+      for (let k = 0; k < levels.length; k++) levels[k][c] = theirs.levels[k][c];
+    }
+    hold.prev[role] = { wet, levels };
+  }
+}
 // Sparks move with this frame's flow; then, while `spawning`, new ones join where their emitters were (`here`) and
 // whitewater where the water throws it, and while `bubbling` the bubbles that push the water do (see pushesWater; a
 // loop makes those from its warm-up on, tagged with the frame they are born on). Returns the message for the spark
@@ -4163,15 +4255,35 @@ function releaseAir(air, effect, list, cycle, total, born = undefined) {
 }
 // Draws the sparks through `put(x, y, code)`: a spark is a size × size block in the colour for its age, and a trail
 // streaks back to where it was a frame ago in the next colour of its list. Popped bubbles follow and age a frame.
+// A spark is held to its drawn pixel along each axis as the fluid's bands are (see renderFields): `drawn` is where it was
+// drawn last frame and `settled` whether it has since been HOLD of a pixel inside that pixel. A settled spark steps on as
+// soon as it crosses into the next pixel; one that has just stepped steps back only once it is HOLD past the edge, so a
+// bubble swaying under a ledge or foam riding a ripple at a pixel's edge no longer steps back and forth every frame.
+// Returns the pixel and whether it is settled there.
+function heldPixel(drawn, settled, at) {
+  let pixel = Math.floor(at);
+  if (drawn !== undefined && pixel !== drawn && !settled && at >= drawn - HOLD && at < drawn + 1 + HOLD) pixel = drawn;
+  return [pixel, (pixel === drawn && settled) || (at >= pixel + HOLD && at < pixel + 1 - HOLD)];
+}
 function drawSparks(run, put, shown = null) {
+  const { W, H, pixels: solid } = run.state.g;
+  // Whether a size × size block at (x0, y0) would cover an obstacle (or ice) pixel.
+  const blocked = (x0, y0, size) => { for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) { const x = x0 + i, y = y0 + j; if (x >= 0 && y >= 0 && x < W && y < H && solid[y * W + x]) return true; } return false; };
   for (const p of run.sparks) {
     // Spray is drawn once it has left the water, and streaks back only from where it was already drawn.
     if ((p.hide && !p.out) || (shown && !shown(p))) continue;
     const s = p.s, step = Math.min(s.colors.length - 1, Math.floor(p.age * s.colors.length / p.life)), seen = !p.hide || p.seen;
     p.seen = true;
-    if (s.trail && p.px !== undefined && seen) { const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0); traceLine(Math.floor(p.px), Math.floor(p.py), Math.floor(p.x), Math.floor(p.y), (x, y) => put(x, y, tail)); }
-    // A bubble is as large as the air it holds.
-    const size = p.size ?? s.size, head = s.colors[step].charCodeAt(0), x0 = Math.floor(p.x - (size - 1) / 2), y0 = Math.floor(p.y - (size - 1) / 2);
+    // A bubble is as large as the air it holds. Held over an obstacle it has slid past, it is drawn where it is.
+    const size = p.size ?? s.size, head = s.colors[step].charCodeAt(0), cx = p.x - (size - 1) / 2, cy = p.y - (size - 1) / 2;
+    let [x0, sx] = heldPixel(p.hx, p.sx, cx), [y0, sy] = heldPixel(p.hy, p.sy, cy);
+    if ((x0 !== Math.floor(cx) || y0 !== Math.floor(cy)) && blocked(x0, y0, size)) { [x0, sx] = heldPixel(undefined, false, cx); [y0, sy] = heldPixel(undefined, false, cy); }
+    // The streak runs from where the head was drawn last frame (or, on its first, from where it was) to where it is now.
+    if (s.trail && p.px !== undefined && seen) {
+      const tail = s.colors[Math.min(s.colors.length - 1, step + 1)].charCodeAt(0);
+      traceLine(p.hx ?? Math.floor(p.px), p.hy ?? Math.floor(p.py), x0, y0, (x, y) => put(x, y, tail));
+    }
+    p.hx = x0; p.hy = y0; p.sx = sx; p.sy = sy;
     for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) put(x0 + i, y0 + j, head);
   }
   // A popped bubble: the ring around its block, then a droplet off each upper corner.
@@ -4405,7 +4517,7 @@ function simulate(effect, context) {
   // should have been, and bubbles popped in and out where the loop repeats.)
   const bubbling = loop && makesBubbles(effect);
   const shown = loop && (boilTail(effect) || bubbling) ? p => p.born === undefined || (p.born >= begin && p.born < begin + frames) : null, done = (effect.warmup + 1) * frames + sparkTail(effect);
-  const tail = loop ? Array.from({ length: blend }, () => all.map(() => new Float64Array(N))) : [];
+  const tail = loop ? Array.from({ length: blend }, () => all.map(() => new Float64Array(N))) : [], seam = loop ? Array.from({ length: blend + 1 }, () => null) : null;
   const chars = Array.from({ length: frames }, () => null), drawn = Array.from({ length: frames }, () => []), n = context.subpixels ?? 1, fine = [];
   const peak = { density: 0, temperature: 0, speed: 0, ...(effect.electric && { ionization: 0, current: 0 }) }, figures = Array.from({ length: frames }, () => null), layouts = Array.from({ length: frames }, () => effect.layout);
   // A loop's bodies, where they were in the warm-up's closing frames, which its own closing frames are drawn blended toward.
@@ -4422,14 +4534,20 @@ function simulate(effect, context) {
     if (state.overflow) fail(path, `more than ${LIMITS.carriers} carriers are in the air at once; lower the carrying emitters' size or rate, or raise their release`);
     // Bodies step on every simulated frame, warm-up included; what reads the fields reads this frame's.
     const onward = () => { if (crowd && t + 1 < total) stepBodies(run, crowd, cycle, t + 1); };
-    if (loop && out < -blend && !run.sparks.length && !bubbling) { if (crowd) { fieldsOf(run); onward(); } continue; }
     fieldsOf(run);
-    // The warm-up's closing frames keep their fields for the seam; its bubbles move on through them (held still there,
-    // they waited `blend` frames under the water while it flowed on).
-    if (loop && out >= -blend && out < 0) {
-      tail[out + blend].forEach((field, f) => field.set(all[f]));
-      if (poses) poses[out + blend] = posesOf(crowd);
+    if (loop && out < 0) {
+      // The warm-up's closing frames keep their fields for the seam; its sparks and bubbles move on through it (held still
+      // there, bubbles waited `blend` frames under the water while it flowed on).
+      if (out >= -blend) {
+        tail[out + blend].forEach((field, f) => field.set(all[f]));
+        if (poses) poses[out + blend] = posesOf(crowd);
+      }
       if (run.sparks.length || bubbling) { const full = sparkFrame(run, here, cycle, false, bubbling); if (full) fail(path, full); }
+      // The warm-up is drawn too, unseen, so the drawing's memory of each pixel's bands (see renderFields) runs on into
+      // frame 0 as it runs through the cycle; the memories of its last blend + 1 frames are kept for the seam (handBack).
+      if (crowd && state.wake) run.view.wakes = { fluid: state.fluid, left: state.wake.left };
+      drawFrame(run, width, height);
+      if (out >= -blend - 1) seam[out + blend + 1] = run.hold.prev;
       onward();
       continue;
     }
@@ -4445,6 +4563,7 @@ function simulate(effect, context) {
     if (loop && frame >= frames - blend) {
       const k = frame - (frames - blend), w = smooth((k + 1) / blend);
       for (let f = 0; f < all.length; f++) { const a = all[f], b = tail[k][f]; for (let c = 0; c < N; c++) a[c] = a[c] * (1 - w) + b[c] * w; }
+      handBack(run.hold, seam[k], w, effect.seed);
     }
     for (let c = 0; c < N; c++) {
       if (base[0][c] > peak.density) peak.density = base[0][c];
@@ -4629,7 +4748,7 @@ export function createLiveFluid(source, options = {}) {
   const run = createRun(own, width, height, path), { state } = run, boosts = emitters.map(() => ({ factor: 1, frames: 0 }));
   const crowd = own.bodies ? createBodyWorld({ substeps: 8, iterations: 6, gravity: own.gravity, walls: own.walls, obstacles: own.bodies.statics, bodies: own.bodies.list }, { width, height }) : null;
   if (crowd) crowd.advance(0);
-  let t = 0, queue = [], overlay = [];
+  let t = 0, queue = [], overlay = [], frame = null;
   const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < width && y < height && !run.view.front[y * width + x]) overlay.push(y * width + x, code); };
   // One frame: the emitters (boosted), then the queued pushes and puffs in the order they were made, the solver, the
   // fields and the sparks. Live runs never stop at a limit: particles, sparks and droplets beyond it are not added, and
@@ -4645,6 +4764,11 @@ export function createLiveFluid(source, options = {}) {
     solveFrame(run, cycle);
     fieldsOf(run);
     sparkFrame(run, here, cycle, true);
+    // Every step is drawn, as compileFluid draws every frame it simulates, so the drawing's memory of each pixel's bands
+    // (see renderFields) runs on alike however the steps are batched; render and measure read this frame's drawing.
+    if (crowd && state.wake) run.view.wakes = { fluid: state.fluid, left: state.wake.left };
+    const drawn = new Uint8Array(N);
+    frame = { chars: drawFrame(run, width, height, drawn), drawn };
     overlay = [];
     drawSparks(run, put);
     for (const b of boosts) if (b.frames) b.frames--;
@@ -4742,7 +4866,7 @@ export function createLiveFluid(source, options = {}) {
     },
     // Figures for the current frame, as the metadata's per-frame figures give them for a compiled effect.
     measure() {
-      return measureFrame(drawFrame(run, width, height), run.base, run.view.solid, width, height, liquid ? state.n : null);
+      return measureFrame(frame.chars, run.base, run.view.solid, width, height, liquid ? state.n : null);
     },
     // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
     // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
@@ -4751,8 +4875,7 @@ export function createLiveFluid(source, options = {}) {
     // over it), so a page can tell the fluid from an outline, a spark or an obstacle drawn with the same palette key.
     render() {
       if (stamped !== run.layout.key) stampLayers(run.layout);
-      if (crowd && state.wake) run.view.wakes = { fluid: state.fluid, left: state.wake.left };
-      const drawn = new Uint8Array(N), chars = drawFrame(run, width, height, drawn);
+      const { drawn } = frame, chars = Uint16Array.from(frame.chars);
       if (crowd) paintBodies(crowd.bodies, chars, width, height, own.bodies.symbols);
       for (let k = 0; k < overlay.length; k += 2) chars[overlay[k]] = overlay[k + 1];
       const rgba = under.slice(), codes = underKeys.slice();
@@ -4764,6 +4887,8 @@ export function createLiveFluid(source, options = {}) {
       return { rgba, keys, fluid };
     }
   };
-  if (warmup) live.step(warmup); else fieldsOf(run);
+  // Unstepped, the runner shows the fields as the fills left them, drawn without memory (the first step draws afresh).
+  if (warmup) live.step(warmup);
+  else { fieldsOf(run); const drawn = new Uint8Array(N); frame = { chars: drawFrame(run, width, height, drawn), drawn }; run.hold.prev = null; }
   return live;
 }

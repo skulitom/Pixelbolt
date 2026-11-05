@@ -37,7 +37,8 @@ test('coherent sources reinforce and cancel before colour mapping, including tro
 });
 
 test('loop phase is independent of output duration and frame subdivision; reversal is symmetric', () => {
-  const source = tiny(); source.effects.loop.look.thresholds = [0.04];
+  // Without a hold, a frame is a function of its time alone; a hold also looks at the frames before it.
+  const source = tiny(); source.effects.loop.look.thresholds = [0.04]; source.effects.loop.look.hold = 0;
   const original = pixels(source);
   const slower = structuredClone(source); slower.effects.loop.duration = 120;
   assert.deepEqual(pixels(slower), original);

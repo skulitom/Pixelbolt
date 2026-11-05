@@ -74,12 +74,12 @@ test('shape layers compile to golden recipes, the same every time', () => {
   for (const [kind, layer] of Object.entries(LAYERS)) golden[kind] = sha(compileEffects(source({ layers: [layer] }, kind === 'aura' ? { symbols: MAN } : {})).recipe);
   golden.all = sha(first.recipe);
   assert.deepEqual(golden, {
-    ring: '61b165d169c36d373c64f88e298539c008ece0b0c635b570d91e3d270037bb26', slash: 'd492d264e470aebe75138384c462467d31f879264e81c1074587e715d31a0ec6',
-    beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'd54bdf63f41345c64b9ab402feb72ebdf809f1fbde4a71a8e63a6b06f9a3acee',
-    glyph: '69221282a0198e368d410b9398d735b0e7f1e5959bd21933693472c65b92c802', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
-    burst: '4151bac6ad5f35c106bdfde17ea8ae0249eaaa4bdbd1599d57a93f414378ae2c', stream: '0ce67436fbd732efd96876017738fed1cae5a3c4bcd18cf843d8d7fab8b15e09',
-    aura: '45380c9b86ee656f4ed73b15478de8a64f7e8ebb35e32aa343bbf66a3b5aa9c8', trail: 'a0c40eb6ff1f127b5562fd1c87fc52bf2fb375a8ca5c8f7ccd72eb03a171b96e',
-    all:'d515b0d1c38a42b23eef630e048ee6dd9aeee9f6a16f8d06740b3ef82af15a8d'
+    ring: '191f11c86cd6efb5bcb6a20045a32ca431cfc314444542e802dfa61eee6ff5f9', slash: 'd492d264e470aebe75138384c462467d31f879264e81c1074587e715d31a0ec6',
+    beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'ecffa8e9ea6bd91b2a81ef7407a23b3e6424775684c9e0f9490b4740fc68b813',
+    glyph: '42d4b90ce7381601ac01c477b8f93097db7f2967d09c0a72cec8e9172d1be94b', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
+    burst: 'bc1ae713fe6d5dcde3c3a44bee3c5d0af169240940057bbd196ab84a4d9aa085', stream: '4aca6f0e95271ef8b40e228c410cfd3d7f1ba3e70c6ceb38841d090ae7f037d5',
+    aura: '0dcba5a600431f1b6282304fae076bb9959c327adbae1cc740aab43fb5fd504e', trail: '35bdb6b3367eec0407aeccad0d82dce96edd7d5613a618ca30c9ee88f32d09bd',
+    all:'2bd2c2ec91632cd65d4cc9dba333b706e35c4908bfadd1af1417d4809399ff29'
   });
 });
 
@@ -199,11 +199,11 @@ test('effects without shape layers keep their exact output', async () => {
 test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
   // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
   const golden = {
-    'slash-hit': '0bb14ca1bc04f623b94d262c8d06d0b93dba92fd034af0a461471e0d9cc3461f', 'fire-explosion': '6a98f8e6e928da3247bb01795e45a714ad3f10bd6b09f2f4b2045ef25fe95171',
-    fireball: '2f64b93aa9c45d2f8c5a23c7318cf89d1fc022b21b76d3d0ba17856e613c2e81',
-    'lightning-strike': 'ab6ae2bdb6a78fc93ee43d9b3e249d5370ade084af293902370f6ecb581b4527', 'healing-circle': '2ea35d57cc912f2f184344a939446917979725e7782e1577d27e0d4c1745a7ff',
-    water: 'fa592cca7def467c308bcdfeff3a3f815abb451f17467f37078a419689913483', vortex: '46c89f944b2a055fae1777b0fba442c59fa6a1ac05ac50c77ca1ba0aa48ffabe',
-    meteor: 'd22fbfa456bcc5c16f19aca2f4f0a0bab06a1eff372a5d613216678db930058f', shield: 'ddf64b4a1b12c4c1f58535413b1e5ded024c86dd447f3dd7936e272b3f230b81'
+    'slash-hit': '82c0d47e7f98278a1df4110d997d470cdb2e14427c51b51b2529e032bfb98b89', 'fire-explosion': '90534164857180202e5fe97ccd729db9b92fe60fc6709a822ae3da13ec0de393',
+    fireball: '86dd24eae581bd4deadbb7039280c5585ec29f9072af52dcc57227e91a1cdc1a',
+    'lightning-strike': '972a299804a6ae4cd8f5507082e65132f5a8d16e66d622cf1fb2e2679278634a', 'healing-circle': '74e710d673512e6456cd0405902c4ecc66d9f20e5552a88ff53649210c541ea8',
+    water: 'd77be4017cfbcb94231fd385fa481d142424bba794d9bca7fd45c027370f7c20', vortex: 'a7f31e33266afa2f898a898d6409496b90e31423931f908c63af55b03b290a7f',
+    meteor: '02c7900fc4419aa4268e51704fe63af833e4357c60d484de1348919f0f461f10', shield: 'a896712ce2cc23a1c1b08aca9371b1895c1a8db1f1829eae57892c9f4b10511e'
   };
   assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
   for (const [name, preset] of Object.entries(spellPresets)) {
@@ -266,8 +266,9 @@ test('a floor cuts any layer off below its row: a disc becomes a dome, a ring an
 
 test('noise on any kind breaks it into pieces as power falls, and changes nothing at 0', () => {
   for (const kind of ['slash', 'beam', 'star', 'stream']) {
-    // At a low steady power only the brightest parts reach the first threshold; noise then decides which survive.
-    const { noise, ...plain } = LAYERS[kind], base = { ...plain, power: 0.5, frames: [0, 8] }, drawn = layer => gridOf(compileEffects(source({ looks: { cool: water, warm: water }, layers: [layer] })).recipe.frames[4]);
+    // At a low steady power only the brightest parts reach the first threshold; noise then decides which survive. The
+    // looks don't hold their bands, so frame 4 shows this frame's noise alone (fx-steady.test.js covers noise with a hold).
+    const { noise, ...plain } = LAYERS[kind], base = { ...plain, power: 0.5, frames: [0, 8] }, drawn = layer => gridOf(compileEffects(source({ looks: { cool: { ...water, hold: 0 }, warm: { ...water, hold: 0 } }, layers: [layer] })).recipe.frames[4]);
     assert.deepEqual(drawn({ ...base, noise: 0 }), drawn(base), `${kind} noise 0`);
     const whole = drawn(base), broken = drawn({ ...base, noise: 0.6, scale: 3 });
     assert.ok(cells(broken).length < cells(whole).length, `${kind} erodes: ${cells(whole).length} → ${cells(broken).length} pixels`);
@@ -318,7 +319,7 @@ test('liquid shapes compile to golden recipes, the same every time', () => {
       { ...LAYERS.slash, noise: 0.8, power: [1.4, 0.3] }],
     emitters: [{ at: [40, 10], area: [6, 3], burst: 6, start: 3, angle: [200, 340], speed: [0.6, 1.4], gravity: [0, 0.25], floor: 38, life: [4, 6], blob: { radius: [2.5, 1.2] } }] });
   assert.deepEqual(compileEffects(liquid), compileEffects(structuredClone(liquid)));
-  assert.equal(sha(compileEffects(liquid).recipe), '54ea5eeff8395e62eaa33007d77b370e9106c8527b146d51b7eddf551d41bb0b');
+  assert.equal(sha(compileEffects(liquid).recipe), '3197837952363f60d753d5b12676584092427bad197704153c6455c3e1dc51d3');
 });
 
 // ---- Looping shapes: a layer that spans a looping effect is a cycle ------------------------------------------------------

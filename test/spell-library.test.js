@@ -36,6 +36,9 @@ test('every library effect loops seamlessly or ends empty, and has a hit cue whe
     for (const [name, animation] of Object.entries(recipe.animations)) {
       const frames = animation.frames.map(frame => byName.get(frame));
       if (animation.loop === false) assert.ok(drawn(frames[frames.length - 1]) <= 8, `${element} ${name} ends with ${drawn(frames[frames.length - 1])} pixels`);
+      // A whole effect's frame 0 is exactly the frame that follows its last (its parts are reviewed with it), so its seam
+      // is an ordinary step, which can be its largest by chance.
+      else if (metadata.effects[name].seam.jump !== undefined) assert.equal(metadata.effects[name].seam.jump, 0, `${element} ${name} jumps at its loop point`);
       else {
         const inside = frames.slice(1).map((frame, k) => differ(frames[k], frame)), seam = differ(frames[frames.length - 1], frames[0]);
         assert.ok(seam <= Math.max(...inside), `${element} ${name}: seam ${seam}, inside ${inside}`);
@@ -52,8 +55,8 @@ test('the spell library compiles to the pixels that were approved', () => {
   assert.deepEqual(golden, GOLDEN);
 });
 const GOLDEN = {
-  fire: '2f2401c06e516e6f38428e3313828a958f73abbf6852b70e0e7a34a0015532e9', ice: '486851832f0b2f6ca2df9e05ff3ed0f254834fbe28dd9d6de76d21be66fee432',
-  lightning: 'a0db113da3483bcafdf4e21ccdc2e0e9539137452cc8f6207542354fd1627a28', water: 'e9be238e0e57be6a18bb3732a95e7421209864e04db9acbc385e2d046352f73e',
-  poison: '86274e2560033e70b052edfa5ae38b74b0182e9e6fa896bf1fc016cce97b30b4', holy: '48f280a19abe8ba9de1b3bba0aadd601039eabbabd7b746173a3c7a82fe058a2',
-  shadow: 'd1e4995d2b33366759b0b8aa8babac2dd45af19ffd03caab576113b4fff65ead'
+  fire: 'cf66ba352843a14d36b517668187b4e5300cd443d76034b6bc5451bb0546372e', ice: 'e2df8764564bc852c9bff988a1870a4df7bee626f82e29fb25f0390caabebe7e',
+  lightning: '95e96628ed94b52d6d3f24bbd761af0c4d394e61c567f4f9659a931b8c4caeb3', water: '9e12c9680d3712350c13c1eb20bf253860b8fba8b3bc8b9acf80502534fa0a95',
+  poison: '150574181245a4be62d9829745814a00e7870364ba4144dff4c1aca032bdd49a', holy: '7951c63eab23ddb96efda927d0892629f6cef258eecf12640cb3ae4b36aa6dd2',
+  shadow: '9086ad650ce7301026e895e757f6fd4672cdd3caf414a6425f38882d5a119872'
 };

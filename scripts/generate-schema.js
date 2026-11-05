@@ -322,7 +322,7 @@ const emitter = { ...object({
   remaps: { ...array(remap, 64), description: 'Colour variants; each particle picks one.' },
   tint: { ...array({ oneOf: [remap, color] }, 64), minItems: 1, description: 'Colour stages over each life, the first at birth, spread like play: life. A remap overrides the particle\'s remap for the characters it names, so a spark cools from white to red without a symbol per colour; one colour turns the whole particle that colour (a sprite\'s pixels flying off as light).' },
   trail: { ...object({ color, length: int(1, 16, 'Frames back the streak reaches; default 2.') }, ['color']), description: 'A one-pixel streak from an earlier position, drawn under the particle.' },
-  dissolve: num(0, 1, 'Share of the life, at its end, during which the particle thins out through an ordered-dither pattern.'),
+  dissolve: num(0, 1, 'Share of the life, at its end, during which the particle thins out through an ordered-dither pattern laid where it stands as it starts to dissolve and moving with it, so still particles thin out in step and a moving one loses its pixels in one fixed order instead of blinking.'),
   pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dissolve pattern, as for the dither operation: bayer2, bayer4 (default), bayer8, noise (ordered by the effect\'s seed) or a matrix of ranks, e.g. [[0, 1, 2], [1, 2, 0], [2, 0, 1]] for diagonal stripes.' },
   from: { ...id, description: 'Make this a child of the earlier emitter with this (unique) name: it spawns from that emitter\'s particles at when, instead of on a schedule of its own (no start or end).' },
   when: { enum: FX_EVENTS, description: 'For a child: death (default; burst particles where a parent particle ends), floor (burst where it first lands on its floor) or life (rate particles per frame from each parent while it lives: trails).' },
@@ -356,7 +356,8 @@ const shapeLook = object({
   light: vector(-1, 1, 'Direction toward the light for lit and shade, such as [-1, -1] (the default) for the upper left.'),
   lit: { ...shading, description: 'Highlight bands: recolour this look\'s pixels by the share (0–1) by which its field falls two pixels toward the light, 1 on a rim that faces it and 0 inside. Cel water, ice, slime.' },
   shade: { ...shading, description: 'Shadow bands, as lit but measured away from the light; lit wins where both apply.' },
-  front: { type: 'boolean', description: 'Draw this look over the symbol particles instead of under them (smoke over sparks). Cleanup and outlines work within each of the two passes.' }
+  front: { type: 'boolean', description: 'Draw this look over the symbol particles instead of under them (smoke over sparks). Cleanup and outlines work within each of the two passes.' },
+  hold: num(0, 0.45, 'Keeps bands from flickering: a pixel enters a new band as soon as the field crosses into it, but goes back to the band it just left only once the field has passed the threshold between them by this share of the gap between thresholds. Lit and shade bands hold too. A still field draws as without it, and loops still close exactly. Default 0.3; 0 draws each frame on its own.')
 }, ['colors', 'thresholds']);
 const layerCommon = {
   look: { ...id, description: 'The look that colours this layer; may be left out when the effect has one look.' },
@@ -364,7 +365,7 @@ const layerCommon = {
   frames: { ...pairOf(int(0, 256)), description: '[first, end]: the first frame drawn and the frame after the last; default the whole effect. Progress runs from 0 at first toward 1.' },
   ease: { ...ease, description: 'How tweened values move across the window: out (default; linear for a layer spanning a looping effect), linear, in, inOut, hold, overshoot or bounce.' },
   power: tween(0, 8, 'Multiplies the field: bright bands shrink as it falls, so the shape erodes instead of fading; default 1.'),
-  flicker: num(0, 1, 'Every other frame of the window, power drops by this share.'),
+  flicker: num(0, 1, 'Every other frame of the window, power drops by this share. A drop smaller than the look\'s hold margin is held away; for crackle rather than a strobe, prefer noise with boil or flow.'),
   blend: { enum: ['max', 'add'], description: 'max (default): the brighter layer of a look wins; add: layers sum.' },
   curve: { type: 'boolean', description: 'Run three or more path points or drift keys through a smooth curve, so an arc has no corner at its middle.' },
   path: { ...array(vector(-4096, 4096), 16), minItems: 2, description: 'Absolute points [x, y] the layer moves through over its window, instead of at and drift: give a projectile\'s head the same path as the emitters trailing it.' },
@@ -658,7 +659,8 @@ const wave = {
         mask: object({ at: vector(-4096, 4096), radius: vector(0.5, 256, 'Ellipse radii [x, y]. Clipping only, never a reflecting obstacle.'), feather: num(0, 1, 'Fraction of the ellipse radius faded inward; 0 is a hard edge. Default 0.2.') }, ['at', 'radius']),
         look: object({ colors: waveColors,
           thresholds: { ...array(num(0.000001, 16), 8), minItems: 1, description: 'Strictly increasing positive values, one per colour. Values below the first remain transparent.' },
-          negative: { ...waveColors, description: 'Optional colours for negative amplitudes at the same absolute thresholds; otherwise negative amplitudes are transparent.' }
+          negative: { ...waveColors, description: 'Optional colours for negative amplitudes at the same absolute thresholds; otherwise negative amplitudes are transparent.' },
+          hold: num(0, 0.45, 'Keeps bands from flickering where the wave wavers at a threshold: a pixel enters a new band at once, but goes back to the band it just left only once the value has passed the threshold by this share of the gap between thresholds. The loop still closes exactly. Default 0.3; 0 colours each frame from its own values alone.')
         }, ['colors', 'thresholds']),
         underlay: waveRows, overlay: waveRows
       }, ['frames', 'sources', 'look']) }

@@ -113,15 +113,15 @@
         },
         {
           "name": "embers-0",
-          "rgba": "8e67b79260b8db20eb72f010104d028f7497aa148f9921948d39a48871c2f563"
+          "rgba": "3d8caa84ff94648929015fe56d17249cc2d552e549a2485bb6694e4c47aeecd0"
         },
         {
           "name": "embers-1",
-          "rgba": "948a09157f85f2938f1fa701117e0c76c99ae54536315daf092623b18ab67968"
+          "rgba": "31df0746fb94c80507f88a9f731ec7a1450515c6a1ada05e4f4d7bdf014e05ca"
         },
         {
           "name": "embers-2",
-          "rgba": "4a0f51c6e33b9c48834d2b781e08b9f078ad76923ef783687bb13a15effd5d4f"
+          "rgba": "175c17fa7b43fd838060b7d2f1c32aadcc3d199fbb53c5e9e825951368f17040"
         },
         {
           "name": "embers-3",
@@ -141,35 +141,35 @@
         },
         {
           "name": "embers-7",
-          "rgba": "5d92016efe9e2137b382994744bac9c255b0324e21643d919c12bed06023b161"
+          "rgba": "73164ac66f3d31574855b9b6c0cf32d4875cc3627dcbb9d82b4f3ce05f623300"
         },
         {
           "name": "embers-8",
-          "rgba": "3f6e130f8c3cc2e9d7bc485df9507c37fa7cf4559e845b24cd6b747050768744"
+          "rgba": "8740bdb87beee79ebfa4671d9df0072ec3fead85f4ece2ab568f59289d07d627"
         },
         {
           "name": "embers-9",
-          "rgba": "f2c8c4f5988fe94ab61f1769e0199ffd4c32fa3c983ef9961f19105ca0392f34"
+          "rgba": "8aaad5fa5cb9425f5f515362eb92c84cafa0638097dbf48192acaeda536964a9"
         },
         {
           "name": "embers-10",
-          "rgba": "b91ba6942bae752c48ad1e69dc3ac8f3215b8034702af01ca707fd2884c8a077"
+          "rgba": "1d3af4502532ed254eada08464c0b3afa8838e443ee8c2dd0e0b4d6d876a59e4"
         },
         {
           "name": "embers-11",
-          "rgba": "affa7b466951967569f37ed3af89863bc8bad8f078720f8c947351deac573eb9"
+          "rgba": "82b40aec6a33ffb8e781a79f819bb1503e50b29f5a0b9a6e424bbf11043fac7a"
         },
         {
           "name": "embers-12",
-          "rgba": "52c6cedeb4523d34caa6ad1cb17c9cd7c60a8859becedd082c222e4ee41078b9"
+          "rgba": "4e533996ff7a8391e06b1c32823eae01be2970ebf6fbdb210587f0a52ee36eaf"
         },
         {
           "name": "embers-13",
-          "rgba": "e85be6d2f8cf09a6348d6678ffa92257f260de5340a743f10b90f95b90a203f6"
+          "rgba": "853343812c0b388543aaf93ebb680aa742735ec4feb4a18920abf572cf733169"
         },
         {
           "name": "embers-14",
-          "rgba": "53b2f505272718969ff67986e0e60dc79fe5975ee65631cc1be694b76dc420be"
+          "rgba": "2649c45d7aae076875fad67975a54fcd868030e524207eb48b70cce207f56f9f"
         },
         {
           "name": "embers-15",
@@ -253,19 +253,19 @@
         },
         {
           "name": "leaves-8",
-          "rgba": "6572954489107a6f6dd28ba2ad00eb1ebf9924e12dbfbc209f2d3b69ea8e0295"
+          "rgba": "0fc9b83b92a7a1cbd0967461507c3fc794159bb3340d0fc766d6dbfc78945a72"
         },
         {
           "name": "leaves-9",
-          "rgba": "7c84c93b9fbc89e6f5fb67f35eb3984440b0e380a65d62e818bc1de364f5db81"
+          "rgba": "7c8a4909bd0c008ee7faa25efc3c047479e73186e9c117a6697ed7b84a566224"
         },
         {
           "name": "leaves-10",
-          "rgba": "3a575373e9cb8999f55bc09d6e8299c1fee295e580a374fe646f87bbacf9d386"
+          "rgba": "2c0f88728db948d0e3d29ba80625fa70bd6b2e708d9dc53cb63b53c6d9c983fe"
         },
         {
           "name": "leaves-11",
-          "rgba": "fda6013bbc96a3270e0247661663348fed03bd3c24d9186f062a5997c72c7cab"
+          "rgba": "aa0a6b2179fdfa5f5f9dd99dbfd3288f36f7c6a938d884ae399b82601d8effa3"
         },
         {
           "name": "shatter-0",
@@ -2365,7 +2365,7 @@
         },
         {
           "name": "poof-5",
-          "rgba": "28df8744de45ace3b3c69f8b4d827dd1e078516e30069ef430e8c98c0c6baf8e"
+          "rgba": "2e30b51180917aa99cd1e2c6555939cb94f347112a02008c13f921460d598e82"
         },
         {
           "name": "hit-0",

@@ -742,24 +742,10 @@
           "radius": 12,
           "width": 5,
           "squash": [1, 0.35],
-          "noise": 0.95,
+          "noise": 0.9,
           "scale": 3,
-          "flicker": 1,
+          "boil": 24,
           "power": 1.3
-        },
-        {
-          "kind": "ring",
-          "look": "ground",
-          "at": [32, 40],
-          "frames": [1, 12],
-          "radius": 12,
-          "width": 5,
-          "squash": [1, 0.35],
-          "noise": 0.95,
-          "scale": 3,
-          "flicker": 1,
-          "power": 1.3,
-          "seed": 7
         },
         {
           "kind": "bolt",

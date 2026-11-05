@@ -742,7 +742,7 @@
                   "type": "number",
                   "minimum": 0,
                   "maximum": 1,
-                  "description": "Share of the life, at its end, during which the particle thins out through an ordered-dither pattern."
+                  "description": "Share of the life, at its end, during which the particle thins out through an ordered-dither pattern laid where it stands as it starts to dissolve and moving with it, so still particles thin out in step and a moving one loses its pixels in one fixed order instead of blinking."
                 },
                 "pattern": {
                   "oneOf": [
@@ -3291,6 +3291,12 @@
         "front": {
           "type": "boolean",
           "description": "Draw this look over the symbol particles instead of under them (smoke over sparks). Cleanup and outlines work within each of the two passes."
+        },
+        "hold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.45,
+          "description": "Keeps bands from flickering: a pixel enters a new band as soon as the field crosses into it, but goes back to the band it just left only once the field has passed the threshold between them by this share of the gap between thresholds. Lit and shade bands hold too. A still field draws as without it, and loops still close exactly. Default 0.3; 0 draws each frame on its own."
         }
       },
       "required": [
@@ -3362,7 +3368,7 @@
       "type": "number",
       "minimum": 0,
       "maximum": 1,
-      "description": "Every other frame of the window, power drops by this share."
+      "description": "Every other frame of the window, power drops by this share. A drop smaller than the look's hold margin is held away; for crackle rather than a strobe, prefer noise with boil or flow."
     },
     "layer-blend": {
       "enum": [

@@ -11,6 +11,10 @@ import { patternProblem, ditherThreshold, cleanupIds, traceLine, hash, random, s
 
 export const SHAPE_KINDS = ['ring', 'slash', 'beam', 'bolt', 'glyph', 'star', 'burst', 'stream', 'aura', 'trail'];
 const LIMITS = { layers: 16, looks: 8, colors: 8 };
+// A look's default hold (a share of the gap between thresholds; see readLook), and the band a pixel holds where the
+// look's field didn't reach it the frame before, so it has nothing to hold.
+export const HOLD = 0.3;
+const UNSEEN = 255;
 const PI = 3.141592653589793;
 // Tilt and squash belong to the kinds drawn around a centre; bolts, streams and trails run between points and auras hug
 // a sprite, so they take neither.
@@ -145,7 +149,7 @@ function paletteKey(key, path, palette) {
 
 // Lit and shade bands: palette keys cut from the share by which the look's field falls two pixels toward the light
 // (or away from it): 1 on a rim that faces that way, 0 inside.
-function readShading(value, path, palette) {
+function readShading(value, path, palette, hold) {
   if (!isObject(value)) fail(path, 'expected { colors, thresholds }: palette keys and the rising shares (0–1) where each begins');
   fields(value, ['colors', 'thresholds'], path);
   if (!Array.isArray(value.colors) || !value.colors.length || value.colors.length > LIMITS.colors) fail(`${path}.colors`, `expected 1–${LIMITS.colors} palette keys`);
@@ -156,11 +160,18 @@ function readShading(value, path, palette) {
     if (i && t <= value.thresholds[i - 1]) fail(`${path}.thresholds[${i}]`, 'thresholds must rise from one colour to the next');
     return t;
   });
-  return { codes, thresholds };
+  return { codes, thresholds, margins: margins(thresholds, hold) };
+}
+// Each threshold's hold margin: `hold` times the smaller of the gaps on either side of it (the first from 0, the last
+// taking its own twice), so neighbouring margins never overlap. Null without a hold.
+function margins(thresholds, hold) {
+  if (!hold) return null;
+  const gaps = thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0));
+  return gaps.map((gap, i) => hold * Math.min(gap, i + 1 < gaps.length ? gaps[i + 1] : gap));
 }
 
 function readLook(look, path, palette, seed) {
-  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'halo', 'light', 'reach', 'lit', 'shade', 'front'], path);
+  fields(look, ['colors', 'thresholds', 'dither', 'pattern', 'outline', 'halo', 'light', 'reach', 'lit', 'shade', 'front', 'hold'], path);
   // halo: a glow of one colour on the empty pixels within `width` steps of the look (beyond its outline), on every
   // other pixel when dithered (the default from width 2: a checkerboard on a one-pixel ring would leave whole diagonal
   // sides solid or empty), so a bright shape glows without a hard ring.
@@ -172,7 +183,11 @@ function readLook(look, path, palette, seed) {
     halo = { color: paletteKey(look.halo.color, `${path}.halo.color`, palette).charCodeAt(0), width: integer(look.halo.width ?? 1, `${path}.halo.width`, 1, 4),
       dither: look.halo.dither === undefined ? (look.halo.width ?? 1) > 1 : (typeof look.halo.dither === 'boolean' ? look.halo.dither : fail(`${path}.halo.dither`, 'expected true or false')) };
   }
-  const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette);
+  // hold: a share of the gap between thresholds. A pixel goes back to the band it just left only once the field has
+  // passed the threshold between them by that share, so a field wavering at a threshold doesn't flip its pixels back
+  // and forth every frame (lit and shade bands hold the same way; see holdBand).
+  const hold = number(look.hold ?? HOLD, `${path}.hold`, 0, 0.45);
+  const lit = look.lit === undefined ? null : readShading(look.lit, `${path}.lit`, palette, hold), shade = look.shade === undefined ? null : readShading(look.shade, `${path}.shade`, palette, hold);
   if (look.light !== undefined && !lit && !shade) fail(`${path}.light`, 'light points the lit and shade bands; add lit or shade too');
   const toward = look.light === undefined ? [-1, -1] : pair(look.light, `${path}.light`, -1, 1), reach = Math.sqrt(toward[0] * toward[0] + toward[1] * toward[1]);
   if (!reach) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
@@ -188,7 +203,7 @@ function readLook(look, path, palette, seed) {
   if (problem) fail(`${path}.pattern${problem[0]}`, problem[1]);
   if (look.pattern !== undefined && look.dither === undefined) fail(`${path}.pattern`, 'pattern shapes the dither; set dither too');
   return {
-    codes: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)),
+    codes: colors.map(key => key.charCodeAt(0)), thresholds, gaps: thresholds.map((t, i) => t - (i ? thresholds[i - 1] : 0)), margins: margins(thresholds, hold),
     dither: number(look.dither ?? 0, `${path}.dither`, 0, 1), threshold: ditherThreshold(pattern, [0, 0], seed),
     outline: look.outline === undefined ? 0 : paletteKey(look.outline, `${path}.outline`, palette).charCodeAt(0), halo,
     lit, shade, light: [toward[0] / reach, toward[1] / reach],
@@ -778,6 +793,62 @@ function cone(put, x, y, hw, scale) {
   }
 }
 
+// ---- Held bands ----------------------------------------------------------------------------------------------------
+// A field that wavers across a threshold would flip its pixels between two bands every frame. A pixel instead moves to a
+// new band as soon as the field crosses into it, but doesn't go back to the band it just left while the field stays
+// within the margin of the threshold between them (`zone`, the threshold's index, or −1 outside every margin): it
+// returns only once the field has passed that threshold clearly. So a still field draws exactly as without a hold, a
+// field that keeps rising or falling moves its bands at once, and one that wavers settles on one side. A pixel's state
+// is its band and the way it last changed (UP or DOWN, or neither); UNSEEN where the look's field didn't reach it, so it
+// has nothing to hold. `loose` draws the plain band.
+const UP = 16, DOWN = 32;
+function holdBand(before, level, zone, loose) {
+  if (before === UNSEEN || loose) return level;
+  const shown = before & 15, way = before & 48;
+  if (level === shown) return before;
+  if ((way === DOWN && level === shown + 1 && zone === shown) || (way === UP && level === shown - 1 && zone === level)) return before;
+  return level | (level > shown ? UP : DOWN);
+}
+// The threshold of a lit or shade band whose margin `share` is within, or −1; `level` is its band without a hold.
+function shadingZone(share, level, { thresholds, margins }) {
+  return level && share - thresholds[level - 1] < margins[level - 1] ? level - 1 : level < thresholds.length && thresholds[level] - share <= margins[level] ? level : -1;
+}
+/** Memory for renderShapes: what each look's pixels held the frame before. Start one per animation. */
+export function holdBands() { return { held: [], loose: [], trace: null }; }
+/**
+ * A loop's held bands. Each look's pixels go into the first frame holding the band the last frame leaves them, so the
+ * loop runs on through its seam. `reads` holds, for each look, every frame's reading in order (recorded by renderShapes
+ * while memory.trace is set): level | (zone + 1) << 4 for each pixel, or UNSEEN. A pixel's holding over a cycle depends
+ * only on its own readings, so going round the cycle from what it ends on settles within a few turns; a pixel that
+ * doesn't settle is drawn loose, without a hold, and then loops by itself. Sets memory.held and memory.loose.
+ */
+export function settleHolds(memory, reads, size) {
+  const step = (before, code) => (code === UNSEEN ? UNSEEN : holdBand(before, code & 15, (code >> 4) - 1, false));
+  reads.forEach((frames, look) => {
+    if (!frames.length) return;
+    // A pixel's shade and lit bands hold only while it is drawn, so the three channels go round the cycle together.
+    const names = Object.keys(frames[0]), held = Object.fromEntries(names.map(name => [name, new Uint8Array(size).fill(UNSEEN)])), loose = new Uint8Array(size);
+    const turn = (state, c) => {
+      const next = state.slice();
+      for (const frame of frames) {
+        next[0] = step(next[0], frame.band[c]);
+        for (let k = 1; k < names.length; k++) next[k] = next[0] === UNSEEN || !(next[0] & 15) ? UNSEEN : step(next[k], frame[names[k]][c]);
+      }
+      return next;
+    };
+    for (let c = 0; c < size; c++) {
+      let start = names.map(() => UNSEEN), settled = false;
+      for (let round = 0; round < 12 && !settled; round++) {
+        const end = turn(start, c);
+        if (end.every((v, k) => v === start[k])) settled = true; else start = end;
+      }
+      if (settled) names.forEach((name, k) => { held[name][c] = start[k]; }); else loose[c] = 1;
+    }
+    memory.held[look] = held; memory.loose[look] = loose;
+  });
+  memory.trace = null;
+}
+
 // The look's field at (x, y), between pixels, zero off the canvas.
 function between(field, width, height, x, y) {
   const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
@@ -803,7 +874,9 @@ function band(value, thresholds) {
 // own, which together are exactly the whole.
 // With `wrap`, a loop's frame count, frame `wrap` is the one after the loop's last, for reviewing its seam: a layer
 // spanning the loop goes on to the end of its cycle (progress 1), and any other draws as it does in frame 0.
-export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false, split = false, wrap = 0) {
+// With `memory` (holdBands()), frames drawn one after another in order hold their bands: in a look with a hold, a pixel
+// goes back to the band it just left only once the field has passed the threshold between them by the look's margin.
+export function renderShapes(shapes, f, width, height, blobs = [], work = { spent: 0 }, front = false, split = false, wrap = 0, memory = null) {
   const N = width * height, chars = new Uint16Array(N), owner = new Uint8Array(N), side = split ? new Uint8Array(N) : null;
   let drawn = false;
   shapes.looks.forEach((look, lookIndex) => {
@@ -859,23 +932,59 @@ export function renderShapes(shapes, f, width, height, blobs = [], work = { spen
         any = true;
       }
     }
-    if (!any) return;
-    const { thresholds, gaps, codes, dither, threshold, lit, shade, light: [lx, ly], reach } = look;
+    // Held bands (see holdBands): what each pixel showed the frame before in each channel (its band, and its shade and lit
+    // bands), what this frame reads while a loop is being settled, and the pixels a loop draws without holding.
+    const { thresholds, gaps, margins, codes, dither, threshold, lit, shade, light: [lx, ly], reach } = look;
+    const channels = [['band'], ...(shade ? [['shade', shade, -1]] : []), ...(lit ? [['lit', lit, 1]] : [])];
+    const held = memory && margins ? (memory.held[lookIndex] ??= Object.fromEntries(channels.map(([name]) => [name, new Uint8Array(N).fill(UNSEEN)]))) : null;
+    const reads = held && memory.trace ? Object.fromEntries(channels.map(([name]) => [name, new Uint8Array(N).fill(UNSEEN)])) : null, loose = held ? memory.loose[lookIndex] : null;
+    if (!any) {
+      if (held) for (const [name] of channels) held[name].fill(UNSEEN);
+      if (reads) memory.trace(lookIndex, reads);
+      return;
+    }
+    const lowest = thresholds[0] - dither * gaps[0] - (held ? margins[0] : 0);
     for (let j = 0; j < height; j++) for (let i = 0; i < width; i++) {
       const c = j * width + i, value = field[c];
-      if (value < thresholds[0] - dither * gaps[0]) continue;
-      const feather = (1 - threshold(i, j)) * dither;
+      if (value <= 0 || value < lowest) {
+        // Below every band: nothing to show, but a pixel the field reached is known to be empty.
+        if (held) { held.band[c] = value > 0 ? holdBand(held.band[c], 0, -1, false) : UNSEEN; if (shade) held.shade[c] = UNSEEN; if (lit) held.lit[c] = UNSEEN; }
+        if (reads && value > 0) reads.band[c] = 0;
+        continue;
+      }
+      const feather = (1 - threshold(i, j)) * dither, free = !held || (loose !== undefined && loose[c] === 1);
       let level = 0;
       while (level < thresholds.length && value >= thresholds[level] - feather * gaps[level]) level++;
-      if (!level) continue;
-      let code = codes[level - 1];
+      if (held) {
+        // The threshold the field is within the margin of, if any: the last one it passed, or the first it missed.
+        const zone = level && value - (thresholds[level - 1] - feather * gaps[level - 1]) < margins[level - 1] ? level - 1
+          : level < thresholds.length && thresholds[level] - feather * gaps[level] - value <= margins[level] ? level : -1;
+        if (reads) reads.band[c] = level | ((zone + 1) << 4);
+        held.band[c] = holdBand(held.band[c], level, zone, free);
+        level = held.band[c] & 15;
+      }
       // Lit and shade bands recolour the look's own pixels by how far its field falls two pixels toward the light
-      // (and away from it): a highlight on the rim that faces the light, a shadow side opposite.
-      if (shade) { const s = band(1 - between(field, width, height, i - reach * lx, j - reach * ly) / value, shade.thresholds); if (s) code = shade.codes[s - 1]; }
-      if (lit) { const s = band(1 - between(field, width, height, i + reach * lx, j + reach * ly) / value, lit.thresholds); if (s) code = lit.codes[s - 1]; }
+      // (and away from it): a highlight on the rim that faces the light, a shadow side opposite. They hold as the bands
+      // do, and while a loop is being settled they are read under every pixel the look might draw.
+      let code = level ? codes[level - 1] : 0;
+      for (let k = 1; k < channels.length; k++) {
+        const [name, ring, toward] = channels[k];
+        if (!level && !reads) { if (held) held[name][c] = UNSEEN; continue; }
+        const share = 1 - between(field, width, height, i + toward * reach * lx, j + toward * reach * ly) / value;
+        let s = band(share, ring.thresholds);
+        if (held) {
+          const zone = shadingZone(share, s, ring);
+          if (reads) reads[name][c] = s | ((zone + 1) << 4);
+          held[name][c] = level ? holdBand(held[name][c], s, zone, free) : UNSEEN;
+          s = level ? held[name][c] & 15 : 0;
+        }
+        if (level && s) code = ring.codes[s - 1];
+      }
+      if (!level) continue;
       chars[c] = code; owner[c] = lookIndex + 1; drawn = true;
       if (split) side[c] = from[c] || 2;
     }
+    if (reads) memory.trace(lookIndex, reads);
   });
   if (!drawn) return null;
   if (shapes.cleanup.strays || shapes.cleanup.corners) for (const change of cleanupIds(chars, width, height, shapes.cleanup)) chars[change.index] = change.id;

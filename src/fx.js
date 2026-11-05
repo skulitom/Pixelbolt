@@ -10,7 +10,7 @@
 import { PixelError, parseColor, renderProject, FRAME_AREA, joinErrors } from './core.js';
 import { fields, point, compilePoses } from './authoring.js';
 import { patternProblem, ditherThreshold, traceLine, random, hash, sinDeg, cosDeg, ease, EASINGS, rotateRows } from './craft.js';
-import { readShapes, renderShapes, tween, sample, sequenceFrame, atan2Deg, pathWalker } from './shapes.js';
+import { readShapes, renderShapes, holdBands, settleHolds, tween, sample, sequenceFrame, atan2Deg, pathWalker } from './shapes.js';
 import { compileFluid } from './fluid.js';
 import { compileWaves } from './wave.js';
 
@@ -588,6 +588,8 @@ function simulate(effect, context) {
       const age = p.still ?? p.age, sx = sway ? sway.amplitude[0] * sinDeg(360 * age / sway.period + p.phase) : 0, sy = sway && p.still === undefined ? sway.amplitude[1] * cosDeg(360 * age / sway.period + p.phase) : 0;
       const x = p.x + sx, y = p.floor !== null && p.y + sy > p.floor ? p.floor : p.y + sy, X = Math.floor(x + 0.5), Y = Math.floor(y + 0.5);
       p.trail.push([X, Y]);
+      // Where it stands as its dissolve begins: the pattern it thins through is anchored there and moves with it.
+      if (e.dissolve && p.faded === undefined && p.age >= p.life - Math.ceil(e.dissolve * p.life)) p.faded = [X, Y];
       if (p.trail.length > 17) p.trail.shift();
       if (e.face) p.facing = facing(e, p.vx, p.vy, p.facing);
       return [X, Y, x, y];
@@ -607,9 +609,12 @@ function simulate(effect, context) {
         return;
       }
       const share = stages => Math.min(stages - 1, Math.floor(p.age / span * stages));
-      // The last `dissolve` share of a life thins out through an ordered-dither pattern anchored to the canvas.
+      // The last `dissolve` share of a life thins out through an ordered-dither pattern, laid on the canvas where the
+      // particle stood as it began to dissolve and moving with it from there: particles that stay put thin out in step
+      // with each other, and one that travels loses its pixels in one fixed order instead of blinking as it crosses the
+      // pattern. (x, y) is a pixel on the canvas.
       const fading = e.dissolve ? Math.ceil(e.dissolve * p.life) : 0, into = p.age - (p.life - fading);
-      const progress = fading && into >= 0 ? (into + 1) / (fading + 1) : 0;
+      const progress = fading && into >= 0 ? (into + 1) / (fading + 1) : 0, gone = (x, y) => progress > 0 && e.threshold(x - X + p.faded[0], y - Y + p.faded[1]) < progress;
       if (e.trail) {
         const [fromX, fromY] = p.trail[Math.max(0, p.trail.length - 1 - e.trail.length)];
         const pixels = [];
@@ -626,7 +631,7 @@ function simulate(effect, context) {
       // A sprite's own pixel, in its colour (or the one its tint or remap turns it to), goes into the emitter's grid.
       if (e.pixel) {
         if (!inside(X, Y)) { culled++; return; }
-        if (progress && e.threshold(X, Y) < progress) return;
+        if (progress && gone(X, Y)) return;
         const s = sheets[p.index];
         s.chars[Y * width + X] = (whole ? stage : colours?.[p.key] ?? p.key).charCodeAt(0); s.any = true;
         return;
@@ -643,7 +648,7 @@ function simulate(effect, context) {
       const remap = recolour && Object.keys(recolour).length ? { remap: recolour } : {};
       const x0 = Math.max(0, -left), y0 = Math.max(0, -top), x1 = Math.min(w, width - left), y1 = Math.min(h, height - top);
       if (!progress && x0 === 0 && y0 === 0 && x1 === w && y1 === h) { ops.push({ op: 'stamp', symbol, x: left, y: top, ...remap }); operations++; return; }
-      const kept = rows.slice(y0, y1).map((row, j) => [...row.slice(x0, x1)].map((char, i) => (char === ' ' || e.threshold(left + x0 + i, top + y0 + j) < progress ? '.' : char)).join(''));
+      const kept = rows.slice(y0, y1).map((row, j) => [...row.slice(x0, x1)].map((char, i) => (char === ' ' || gone(left + x0 + i, top + y0 + j) ? '.' : char)).join(''));
       if (kept.some(row => /[^.]/.test(row))) { ops.push({ op: 'grid', x: left + x0, y: top + y0, rows: kept, ...remap }); operations++; }
     });
     // Each sprite emitter's grid (what is left of its sprite, under its pixel particles, oldest first) is cropped to its
@@ -1021,21 +1026,32 @@ export function compileEffects(source) {
       // Frame i's operations from what the particles drew in it (drawn: output, behind, back, between, blobs), split into
       // the sides behind and in front of a character when the effect has parts. Frame `count` of a loop is the one after
       // its last, which shapes draw through `wrap`.
+      // Frames are drawn in order with one memory, so the looks' bands hold from frame to frame (shapes.js holdBands).
+      const memory = shapes?.looks.some(look => look.margins) ? holdBands() : null;
       const opsAt = (i, drawn, work) => {
         const wrap = i === count ? count : 0;
-        const grid = shapes && renderShapes(shapes, i, width, height, drawn.blobs, work, false, split, wrap);
+        const grid = shapes && renderShapes(shapes, i, width, height, drawn.blobs, work, false, split, wrap, memory);
         // Looks with front: true draw a second grid over the particles.
-        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, drawn.blobs, work, true, split, wrap) : null;
+        const over = shapes?.looks.some(look => look.front) ? renderShapes(shapes, i, width, height, drawn.blobs, work, true, split, wrap, memory) : null;
         if (!parts) return { ops: [...drawn.behind, ...gridOp(grid), ...drawn.output, ...gridOp(over)] };
         // Each side keeps the usual order (behind particles, shapes, particles, front looks), and the back side goes first.
         const back = [...drawn.back.behind, ...gridOp(grid?.parts.back), ...drawn.back.output, ...gridOp(over?.parts.back)];
         const front = [...drawn.behind, ...gridOp(grid?.parts.front), ...drawn.output, ...gridOp(over?.parts.front)];
         return { ops: [...back, ...drawn.between, ...front], back, front };
       };
+      const drawnAt = i => ({ output: run.output[i], behind: run.behind[i], back: { output: run.back.output[i], behind: run.back.behind[i] }, between: run.between[i], blobs: run.blobs[i] });
+      // A loop's bands go into its first frame holding what its last frame leaves them: the cycle is read once to settle
+      // that (its painting counts like any other), then drawn.
+      if (memory && loop) {
+        const reads = shapes.looks.map(() => []);
+        memory.trace = (look, codes) => reads[look].push(codes);
+        for (let i = 0; i < count; i++) opsAt(i, drawnAt(i), shapeWork);
+        settleHolds(memory, reads, width * height);
+      }
       const names = run.output.map((output, i) => {
         const points = Object.keys(run.cues[i]).length ? run.cues[i] : null;
         if (points) for (const [cue, at] of Object.entries(points)) cues.push({ name: cue, frame: i, at });
-        const { ops, back, front } = opsAt(i, { output, behind: run.behind[i], back: { output: run.back.output[i], behind: run.back.behind[i] }, between: run.between[i], blobs: run.blobs[i] }, shapeWork);
+        const { ops, back, front } = opsAt(i, drawnAt(i), shapeWork);
         if (parts) for (const [side, sideOps] of [['back', back], ['front', front]]) partFrames[side].push({ name: `${parts[side]}-${i}`, duration: durations[i], ...(points && { points }), ...(sideOps.length && { ops: sideOps }) });
         frames.push({ name: `${name}-${i}`, duration: durations[i], ...(points && { points }), ...(ops.length && { ops }) });
         return `${name}-${i}`;

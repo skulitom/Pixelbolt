@@ -397,7 +397,7 @@ test('the hero magic example compiles from the hero\'s pose source to the pixels
   const project = renderProject(recipe);
   assert.deepEqual(project.warnings, []);
   // This changes with any change to the sprite, aura or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '20b2a333f54dfca726644909242d7060552fc2b0c870769468b86c9e18181e1f');
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '7d66b9f2affa3d2bed9f8cff36988a886d1dfbb6fc4a53b483d150144e9789f6');
   // The aura's last frame runs into its first no more than any two neighbouring frames differ.
   const aura = project.frames.filter(frame => frame.name.startsWith('aura-')).map(frame => frame.data);
   const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 3] !== b[i + 3] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) n++; return n; };
@@ -494,7 +494,7 @@ test('the swing trail example compiles from the swing\'s pose source to the pixe
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.swing.cues, [{ name: 'hit', frame: 3, at: [32, 31] }]);
   // This changes with any change to the trail, sprite or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '8c7d31745a8dd336193ce1f60829e4ce384bf87b475764ce5ee43079c5f802ce');
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '702927931844707eaee181230fc1101add99debbfafa5937db67330720d226ee');
 });
 
 test('a fluid or a wave can play inside an effect as a sprite, drawing exactly the pixels it draws on its own', async () => {
@@ -521,7 +521,7 @@ test('the fluid blast example compiles from the explosion fluid source to the pi
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.blast.cues.map(cue => cue.name), ['boom']);
   // This changes with any change to the fluid, shape or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '57828df3f2378497fd07e365e26384cfdde62ea7fd42fd430afec9105f748fe9');
+  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '102297faa77226f0bea87b115ed9838237803ae6c44f3fef129364e7bc91b524');
 });
 
 // ---- Turned copies: one effect drawn in several directions ---------------------------------------------------------------

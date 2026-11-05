@@ -17,44 +17,44 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const read = async file => JSON.parse(await readFile(path.join(root, file), 'utf8'));
 // The same source must give the same recipe on every machine and engine: these hashes are checked on every CI system.
 const GOLDEN = {
-  campfire: '1a789c44e352be9623801b345b444127ef948fccdefd8dd480aea752ff64d4c4',
-  explosion: 'cc5409a9598f810114ba3f51618802e08c280e46f9a0dd0758e331e74c7b941f',
-  'smoke-puff': '4cec863e280296a4ab98ba271c60bb94c8b084049d780e8806d65eaf257013c7',
-  'steam-vent': '00ff7b5fc9cb9a5afa1ec354d4da1d6995d57ca4bdf262503f397a0ade9c3757',
-  'magic-swirl': '24cc577124e229aabecc9596a7e7de7b98011c9482a4d940e8cf4129b1f09221',
-  torch: '39b5c8eac8d8d71228eef4732c4dcdc4def2e829c0210f827619b38c0b06858d',
-  splash: 'f362e686056ea3721f0f1f4174bf73876605ec918f7282c284fa406b3c72ac19',
-  waterfall: '42054eac098009b35d5c361b5e48f3e67edddeddb024c1d26f0907fdfcd4bf3e',
-  drip: 'b99226dae273742dc7bfe66a3ea90857fe43666988ee4a51710856aa0dd1ae23',
-  potion: 'f3fd74ffac7e811f40d72a9911ef227c37fb23e8fcb66fff035343a6cd094e13',
-  honey: 'da303b6a9dff25af000c7f1e78560c244141d378a849b62ca7dda584d8565f19',
-  slime: '2918ba24014dc39991528890620881a36ff71da3eb76e86307ea1856c39d1def',
-  'roof-snow': 'f442fad799fb4a51fcb8264cf476e2636c2cd41df1ac740706eece861abf3903',
-  'dam-break': 'f1652ff5e69451024d7a94cd3f95fef93e817995d6c7269f29fb781a02359eb2',
-  'dust-wave': '1a6e9e17ec57636418a4cf57720fafe91ccf511a1ea119cb28d7352d1b699677',
-  'slime-burst': 'fb30f6c339a62342f57d72af1ba2c9379aa22658d8b656a7a9d7204d17c36beb',
-  'honey-drop': '1b715d262deeceba1949c6ec2eca9d106c742772f04f39573d83ed9f7a973b63',
-  aquarium: 'be360781c73342bba3e8b5df0b1f2b78439d5489f42a96f1f61bd4805e852116',
-  'honey-dipper': '474e5a74a7a78b72d83d9adc50e363f670c5039f0e2a7c14d0aa22001610aa9e',
-  glug: '9bab4a31432d8d75c8b70aedaa46cc3f0a20b291dccce6349b7c7a2b90ac7e48',
-  'jacobs-ladder': 'bbfed6cfff448a421c65fbf48ec2663cf4a67cbe80b63719df8f4fc5a24785e9',
-  lightning: '250b1b7a0304836ee52fe095c176545bb17f6ee84607e5de23ef9b9b9e19622f',
-  'tesla-coil': '6b81e18ffef9e1d745322812f74717a4ef68706ff01833331f52f5c99b6dd21c',
-  'plasma-globe': '1174d7927c466c40c968c1c9678022f7e040c1839f76250f9364559d8a83fd58',
-  'ice-melt': 'b6aef461b8c1aeb5228570abe8d1e00f6dcaaa881bbc5f330130b02a0446ade1',
-  'pond-freeze': '6676dd153bd17314fc0c1209608137b4ea7fa54296112ab9bb34f1288b94309c',
-  'boiling-pot': 'd9b96f8d738f9f4dcea1a7299d2eb070fa2ce49004977b392aea36da0caad2ae',
-  'frost-window': 'fe9f08f38e6dda36e214fbd58d5d4bf01beb30bc83eb4c539b57eacbf7ebaed2',
-  'dry-ice': '789217a9dc0b45eb1b54b3fad15cfefbc37a50625664327faeed2047c502f6c1',
-  'lightning-pond': 'dee0e23425128864e02a5f14135db3f9c7f2f86cd082e4bed3518abd985e6263',
-  hourglass: 'd9664a2973600387217e81bdfe73b8df130ebe20febde720fcc56543c4f16d06',
-  'sand-gate': 'b5ad55de68dee6c0ade0aa225ea8f094a2fe1bb421beac1adc023e043f92cf6d',
-  'sand-plough': 'd3854405dd7e42d64a3ca694e405acb6d57d23fefe6358dcddc820254ec64971',
-  'crate-splash': 'bc7c624189a6d071c3d79c86a84af268ee74c1f86deafc6cd58e30e6ee0527c6',
-  'sand-slide': '8396c39fb3e74a8ff1cbf4e49d960c836da117c2eb745ba2dc7e1cfd2e3eba55',
-  'water-wheel': '47abf2725c8f300975483b42f1d302e02b0315be0038f0f7b7670c36818a41dd',
-  'hot-stone': '8018ea9fb6e66d615a201f209c1dbf81ae99133442d47ddac3054e7ffceddcfc',
-  'plank-tip': '84e4e72aec704d05c2bdd94559fd9689be0d1066fbdb860bd56003a6a4135ca8'
+  campfire: '06161942eb47f5904af61dbbc192055a041aa2dc101508f8f7858ff3867aa5dc',
+  explosion: '0e659c9afeee3cb4f0c125e47f13da99bea4f0336f698423f0339405759fd3db',
+  'smoke-puff': '31e2de6a2f4be0d836d68a4f14df2223a4f637f440de26055345deec27609d78',
+  'steam-vent': '64ebb392fa9d3fc41668f4597b9d6bf5bc77e08b203496f7ba976ba3f0d8e9a3',
+  'magic-swirl': 'f2711b5c9daf146cc2220ad6e03bac50c85cbcd30add3632a4a17327acdc618e',
+  torch: 'a8a63120d24a8a512a78f99cbb7a56485c2d3627a629a15b31dc01fa9c03b382',
+  splash: 'c69bbbcb210dfaa4cd6bc4f2a5693abe42290ecde577b3f910e00332607fb531',
+  waterfall: 'c0632cf3e5844eed17d4ea949d36065bf49389a2ec39357218d9b86ca1b9c289',
+  drip: '59489d63411f7fbe56166526f14c2f0fccaf45e1001ebe1a22a945046f14fc2a',
+  potion: 'a0b618a951230102fcf22603f3782508e2556fe9a891d5d77d25dd289b299aa4',
+  honey: '9e8d730439802fd9d0c7bf7d8ae97a97a3b3fe0f7da2483968cd47c7ac1c19cc',
+  slime: 'd5b27535f71d925b683b585e868ee613fdfb9c760009cd36d028ab371208b0ae',
+  'roof-snow': '7fd462ec52cf62e104e69b68eb934d30b501a4b3c393b12a43c1f2659058b423',
+  'dam-break': '11e7cde7e7585f198d94c4a612387a41449bc81f2a203c66d1d8db433bc875b1',
+  'dust-wave': 'a03847a28a4ab4c6193b32dc036de84c3420164d447485e8e48cd3ab6beb7c19',
+  'slime-burst': '103248f75de837958789aa2b491d928790b28dc0e858d2e366da2601c5f047e8',
+  'honey-drop': '4d8be19dc1db0c1a460a82c5e19eaca9e786ae90d49ad08e10372be2d021d41c',
+  aquarium: '8b366d7e7960e2752cc21ccda50e91fd82f2b7de160c8c52d98cf9700d834280',
+  'honey-dipper': 'dbc42baa392e2f6739c825dbba3ca7cd262dad4419dde6929ab668bf7e974f1a',
+  glug: '4ef80578fe9111fbde86d4ede57ce426f783d715246e33c6ecceb911a226d11f',
+  'jacobs-ladder': 'f66ca057b510de6440e487391e160dc5246be9e54dbafdb72a8d9f7182dc70e1',
+  lightning: '9aa1a32d513541871ca6c8bfe2c33dbd69a43a12877a038461eda63f4ab0be6d',
+  'tesla-coil': 'b9832416993612805a68b12be2ad98accf2d81ca67cfa7fcdb104cfe5fda440b',
+  'plasma-globe': 'c14fc65bc35a3f5a6e9f8b71592c2a57e77c1506926d0250385e878a543949d3',
+  'ice-melt': 'eb00732359a895af9f03426aab1bd548eda10faca1171f6386628f18f486776e',
+  'pond-freeze': '8f25ab3ef9f6ca18b735b49c25360e7e03d6c707208d8da60443e90c416edc96',
+  'boiling-pot': 'd177c41653eeb08191bc9bec00c0b3e541515d13980ba0a47dd57be66e6c422f',
+  'frost-window': 'faefe045c031a5f64f65cb916e5388a88b35dbcb021b1c53efed84b7d0820e5e',
+  'dry-ice': '99a681bc233f7f990c5bdd41e40a15c20e5acc5624d2a96c5211e526b2758fb1',
+  'lightning-pond': 'cc71b4f3e790f720f0b629c3e7afb75335ad6f6757941e2f9f757fb3eb2a222f',
+  hourglass: 'f9914adc72c61d7e550a907ffb8c1c138338763e6543c31f7999c4f756511a60',
+  'sand-gate': '0dd4c370d4e56407236d6b2efdf66f8851a699ca9963fde3ad839665fe9941b5',
+  'sand-plough': '7692a19c243e76e863a5b8bc516820989fabe6a16ab1b11a96b5906ef45784e0',
+  'crate-splash': '89e2c0ffd809d20c2c2ba804061b9ea2b72829c73017615cefd35aec3763b38b',
+  'sand-slide': '0e313604a715c5488f378655ca45e2c758d54a88626447c0c3ee7cd07dfb05e7',
+  'water-wheel': 'cf4bc58a709178d8bfcb2d4b924f9a1e2d10fa0e03657daeec032ecb4a9056d4',
+  'hot-stone': 'e927f4ae60bd6951c3b599f6fd84dfc81163de0f71b3cd1063c489021b88c04a',
+  'plank-tip': 'd03a99c7039548006942f70045ccbe55ca5097f76954a13aae0616a8296acb12'
 };
 const examples = new Map();
 const example = async name => {
@@ -115,6 +115,27 @@ test('looping examples close their loop and one-shot examples end empty or at re
       const fine = source.subpixels ?? 1, last = animation.frames.slice(-5).map(index => clear(project.frames[index])), moves = last.slice(1).map((frame, k) => Math.round(changed(last[k], frame) / (fine * fine)));
       assert.ok(moves.reduce((a, b) => a + b, 0) / moves.length <= 16, `${name} still moves ${moves.join(', ')} pixels a frame at the end`);
     }
+  }
+});
+
+test('the drawing holds each pixel\'s band, so fields at a threshold no longer flicker', async () => {
+  // Flicker: pixels that change and change straight back on the next frame, per frame, round the loop. Drawn without
+  // memory these flickered about 21, 9 and 7 pixels a frame (a fire's core and fringe, a torch's white tip, light and
+  // shade along a honey rope); held (see HOLD in src/fluid.js) about 11, 3 and 3, with as much motion as before.
+  const flicker = project => {
+    const [animation] = Object.values(project.animations), frames = animation.frames.map(index => new Uint32Array(project.frames[index].data.buffer)), count = frames.length;
+    let flips = 0, moves = 0;
+    frames.forEach((now, t) => {
+      const before = frames[(t + count - 1) % count], after = frames[(t + 1) % count];
+      for (let p = 0; p < now.length; p++) if (now[p] !== before[p]) { moves++; if (after[p] === before[p]) flips++; }
+    });
+    return { flips: flips / count, moves: moves / count };
+  };
+  for (const [name, most, least] of [['campfire', 15, 40], ['torch', 5, 6], ['honey', 4.5, 12]]) {
+    const { flips, moves } = flicker((await example(name)).project);
+    assert.ok(flips <= most, `${name} flickers ${flips.toFixed(1)} pixels a frame`);
+    // Not held still: what changes for longer than a frame still changes (the moves less twice the flicker).
+    assert.ok(moves - 2 * flips >= least, `${name} moves only ${(moves - 2 * flips).toFixed(1)} pixels a frame`);
   }
 });
 
@@ -1479,7 +1500,7 @@ const session = (source, script) => {
 };
 // The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
 // Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '315dd7110cc85103c684d52ff485cf3258a4bbe5f93163ac40ece0eefc5a478b', potion: 'bf3294d461cc55da5a41445ea95fb71b3fa77d25f1670fed2efdffaa0fdba9b9' };
+const LIVE_GOLDEN = { torch: '3993461d4ad317ebb8efec97dace7973eca4543b6ca850ef53422f29fab50915', potion: '354b0862b2b178def9bced44a10b87dbfa76e0bc0908bc1df197610b83dfea24' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
@@ -1493,7 +1514,8 @@ test('a live runner steps the simulation compileFluid bakes, frame for frame', a
     project.frames.forEach((frame, f) => assert.ok(sameData(live.step().render().rgba, frame.data), `${name} frame ${f}`));
   }
   // A loop without sparks matches once it has warmed up for the compiler's cycles, until the compiler blends its seam
-  // (the compiler adds sparks during the recorded cycle only; a live run adds them on every frame).
+  // (the compiler adds sparks during the recorded cycle only; a live run adds them on every frame). Both draw every
+  // warm-up frame, so the drawing's memory of each pixel's band runs into the cycle alike.
   const potion = structuredClone((await example('potion')).source);
   for (const emitter of potion.effects.potion.emitters) delete emitter.sparks;
   for (const [name, source] of [['steam-vent', (await example('steam-vent')).source], ['potion', potion]]) {
@@ -1570,8 +1592,11 @@ test('a live puff adds or takes away smoke and water, and a boost scales an emit
   const pool = { ...gas(null), width: 24, height: 24, effects: { pool: { kind: 'liquid', frames: 64, walls: ['left', 'right', 'bottom'], fill: [{ x: 0, y: 18, w: 24, h: 6 }], emitters: [], look: [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }] } } };
   const water = createLiveFluid(pool, { warmup: 2 }), before = water.particles;
   water.puff({ x: 12, y: 6, radius: 3 }).step();
-  // A radius-3 puff fills a disc of about 30 cells, four particles each, as a liquid emitter's disc does.
+  // A radius-3 puff fills a disc of about 30 cells, four particles each, as a liquid emitter's disc does. Its soft rim,
+  // only just past the drawing's threshold, is drawn from the next step on, once it has stayed there (see HOLD).
   assert.ok(water.particles >= before + 100, `${water.particles} after ${before}`);
+  assert.ok(keysCount(water.render().keys.slice(2, 11), char => char === 's') >= 12, water.render().keys.join('\n'));
+  water.step();
   assert.ok(keysCount(water.render().keys.slice(2, 11), char => char === 's') >= 20, water.render().keys.join('\n'));
   water.puff({ x: 12, y: 21, radius: 4, density: -1 }).step();
   assert.ok(water.particles < before, `${water.particles} after ${before}`);

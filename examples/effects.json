@@ -307,7 +307,7 @@
       "name": "embers-0",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 22, "y": 27, "rows": ["r"] },
+        { "op": "grid", "x": 27, "y": 23, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 23, "y": 27 },
         { "op": "grid", "x": 22, "y": 29, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember", "x": 23, "y": 30 },
@@ -320,6 +320,8 @@
       "name": "embers-1",
       "duration": 70,
       "ops": [
+        { "op": "grid", "x": 26, "y": 22, "rows": ["r"] },
+        { "op": "grid", "x": 22, "y": 28, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember", "x": 24, "y": 29 },
         { "op": "stamp", "symbol": "ember", "x": 29, "y": 30 },
         { "op": "stamp", "symbol": "ember-big", "x": 24, "y": 31 },
@@ -331,7 +333,6 @@
       "name": "embers-2",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 22, "y": 25, "rows": ["r"] },
         { "op": "grid", "x": 22, "y": 27, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 24, "y": 29 },
         { "op": "stamp", "symbol": "ember", "x": 28, "y": 29 },
@@ -394,7 +395,7 @@
       "name": "embers-7",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 24, "y": 25, "rows": ["r"] },
+        { "op": "grid", "x": 29, "y": 25, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 26, "y": 27 },
         { "op": "stamp", "symbol": "ember-dim", "x": 22, "y": 27 },
         { "op": "stamp", "symbol": "ember", "x": 27, "y": 30 },
@@ -407,6 +408,7 @@
       "name": "embers-8",
       "duration": 70,
       "ops": [
+        { "op": "grid", "x": 30, "y": 24, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 26, "y": 26 },
         { "op": "stamp", "symbol": "ember", "x": 27, "y": 30 },
         { "op": "stamp", "symbol": "ember", "x": 23, "y": 32 },
@@ -419,7 +421,6 @@
       "duration": 70,
       "ops": [
         { "op": "stamp", "symbol": "ember-dim", "x": 26, "y": 26 },
-        { "op": "grid", "x": 22, "y": 25, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember", "x": 27, "y": 29 },
         { "op": "stamp", "symbol": "ember", "x": 22, "y": 31 },
         { "op": "stamp", "symbol": "ember-big", "x": 22, "y": 31 },
@@ -431,7 +432,6 @@
       "name": "embers-10",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 26, "y": 23, "rows": ["r"] },
         { "op": "grid", "x": 27, "y": 25, "rows": ["o"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 26, "y": 28 },
         { "op": "stamp", "symbol": "ember", "x": 22, "y": 31 },
@@ -444,6 +444,7 @@
       "name": "embers-11",
       "duration": 70,
       "ops": [
+        { "op": "grid", "x": 28, "y": 24, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 25, "y": 27 },
         { "op": "stamp", "symbol": "ember-dim", "x": 22, "y": 30 },
         { "op": "stamp", "symbol": "ember", "x": 22, "y": 30 },
@@ -456,7 +457,6 @@
       "name": "embers-12",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 28, "y": 23, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 25, "y": 26 },
         { "op": "stamp", "symbol": "ember-dim", "x": 23, "y": 29 },
         { "op": "stamp", "symbol": "ember", "x": 22, "y": 30 },
@@ -469,7 +469,6 @@
       "name": "embers-13",
       "duration": 70,
       "ops": [
-        { "op": "grid", "x": 28, "y": 23, "rows": ["r"] },
         { "op": "grid", "x": 26, "y": 25, "rows": ["o"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 23, "y": 29 },
         { "op": "stamp", "symbol": "ember", "x": 22, "y": 29 },
@@ -483,6 +482,7 @@
       "name": "embers-14",
       "duration": 70,
       "ops": [
+        { "op": "grid", "x": 26, "y": 24, "rows": ["r"] },
         { "op": "stamp", "symbol": "ember-dim", "x": 23, "y": 28 },
         { "op": "stamp", "symbol": "ember-dim", "x": 20, "y": 30 },
         { "op": "stamp", "symbol": "ember", "x": 24, "y": 31 },
@@ -844,8 +844,8 @@
           "x": 15,
           "y": 16,
           "rows": [
-            "..",
-            ".G"
+            ".l",
+            "g."
           ],
           "remap": { "G": "g", "g": "l" }
         },
@@ -854,8 +854,8 @@
           "x": 21,
           "y": 12,
           "rows": [
-            "l..",
-            ".g."
+            ".g.",
+            "..G"
           ],
           "remap": { "G": "g", "g": "l" }
         },
@@ -864,8 +864,8 @@
           "x": 34,
           "y": 18,
           "rows": [
-            ".g.",
-            "..G"
+            "l..",
+            ".g."
           ],
           "remap": { "G": "g", "g": "l" }
         },
@@ -910,8 +910,8 @@
           "x": 16,
           "y": 17,
           "rows": [
-            "g.",
-            ".."
+            "..",
+            "G."
           ],
           "remap": { "G": "g", "g": "l" }
         },
@@ -922,16 +922,6 @@
           "rows": [
             "..",
             "g."
-          ],
-          "remap": { "G": "g", "g": "l" }
-        },
-        {
-          "op": "grid",
-          "x": 35,
-          "y": 19,
-          "rows": [
-            ".l",
-            ".."
           ],
           "remap": { "G": "g", "g": "l" }
         },
@@ -955,6 +945,15 @@
         },
         {
           "op": "grid",
+          "x": 22,
+          "y": 15,
+          "rows": [
+            "..",
+            "g."
+          ]
+        },
+        {
+          "op": "grid",
           "x": 15,
           "y": 21,
           "rows": [
@@ -973,8 +972,8 @@
           "x": 18,
           "y": 17,
           "rows": [
-            "l..",
-            ".g."
+            ".g.",
+            "..G"
           ],
           "remap": { "g": "l" }
         },
@@ -989,20 +988,11 @@
         },
         {
           "op": "grid",
-          "x": 14,
-          "y": 14,
-          "rows": [
-            "..",
-            "g."
-          ]
-        },
-        {
-          "op": "grid",
           "x": 15,
           "y": 22,
           "rows": [
-            "l..",
-            ".g."
+            ".g.",
+            "..G"
           ]
         }
       ]
@@ -1016,8 +1006,8 @@
           "x": 17,
           "y": 17,
           "rows": [
-            ".l",
-            ".."
+            "..",
+            "g."
           ],
           "remap": { "g": "l" }
         },
@@ -1035,7 +1025,7 @@
           "x": 16,
           "y": 23,
           "rows": [
-            "g.",
+            ".l",
             ".."
           ]
         }
