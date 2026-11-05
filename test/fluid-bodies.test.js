@@ -176,3 +176,16 @@ test('a body in the water leaves no hole in it: its cells under the surface are 
     }
   }
 });
+
+test('the water a turning paddle stirs keeps a smooth surface: no notch opens over it', () => {
+  // The surface over the water wheel's paddle (the first pixel from the top in each column, a body counting as the
+  // surface) never dips below both columns two to each side of it. The paddle stirs ripples a pixel deep and a few across,
+  // drawn as notches that opened and closed over it as it turned; drawn without those dents, the surface rolls in waves.
+  const source = fluidBodyPresets['water-wheel'], n = source.subpixels, project = renderProject(compileFluid(source).recipe), [animation] = Object.values(project.animations);
+  const columns = project.width / n, rows = project.height / n;
+  for (const [f, index] of animation.frames.entries()) {
+    const d = project.frames[index].data, drawn = (x, y) => d[((y * n + n / 2) * project.width + x * n + n / 2) * 4 + 3] > 0;
+    const top = Array.from({ length: columns }, (_, x) => { let y = 0; while (y < rows && !drawn(x, y)) y++; return y; });
+    for (let x = 14; x <= 42; x++) assert.ok(top[x] <= Math.max(top[x - 2], top[x + 2]), `frame ${f}: a notch at column ${x} (${top.slice(x - 2, x + 3).join(' ')})`);
+  }
+});

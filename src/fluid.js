@@ -3561,6 +3561,34 @@ function underBodies(chars, solid, see, walls, width, height) {
   }
 }
 
+// The dents in a liquid's surface that bodies stir, filled in `wet` (which cells it fills is returned): a run of up to
+// DENTS empty cells along a row (across gravity), with liquid at both ends and liquid or a solid under every cell of it.
+// Rows are taken from the bottom up, so a V-shaped notch fills from its tip and flattens into the shallow trough around it,
+// while a wider trough, a crater or a gap beside a body stays. A paddle turning under the surface stirs ripples a pixel
+// deep and a few across, which the grid cut into notches opening and closing above it; the depth bands follow the surface
+// as drawn, so they stay level under a filled dent.
+const DENTS = 3;
+function smoothDents(wet, solid, gravity, width, height) {
+  const across = Math.abs(gravity[1]) >= Math.abs(gravity[0]), sign = (across ? gravity[1] : gravity[0]) >= 0 ? 1 : -1;
+  const lines = across ? height : width, length = across ? width : height, cell = (a, b) => (across ? a * width + b : b * width + a), out = [];
+  for (let k = 0; k < lines; k++) {
+    const a = sign > 0 ? lines - 1 - k : k, under = a + sign;
+    if (under < 0 || under >= lines) continue;
+    for (let b = 0; b < length;) {
+      if (wet[cell(a, b)] || solid[cell(a, b)]) { b++; continue; }
+      let e = b;
+      while (e < length && !wet[cell(a, e)] && !solid[cell(a, e)]) e++;
+      if (e - b <= DENTS && b > 0 && e < length && wet[cell(a, b - 1)] && wet[cell(a, e)]) {
+        let floor = true;
+        for (let x = b; x < e && floor; x++) { const u = cell(under, x); if (!wet[u] && !solid[u]) floor = false; }
+        if (floor) for (let x = b; x < e; x++) { wet[cell(a, x)] = 1; out.push(cell(a, x)); }
+      }
+      b = e;
+    }
+  }
+  return out;
+}
+
 // A bilinear sample over the open cells only: obstacle cells drop out and the rest are weighted up to make up for them
 // (off the canvas counts as empty). With no open cell in reach it returns `fallback`.
 function openSample(a, solid, nx, ny, fx, fy, fallback) {
@@ -3653,6 +3681,13 @@ function renderFields(effect, base, width, height, drawn = null, hold = null, ro
       if (density[c] < LEVEL) density[c] = LEVEL;
     }
     wet = outline;
+    // A surface that bodies stir is drawn without its narrow dents (see smoothDents); sand keeps its grain and a boil its
+    // rough surface.
+    if (see && !effect.granular && !effect.heat) for (const c of smoothDents(wet, solid, effect.gravity, width, height)) {
+      if (!filled) { filled = []; density = Float64Array.from(density); }
+      filled.push(c);
+      if (density[c] < LEVEL) density[c] = LEVEL;
+    }
     // A little pocket a body leaves in the deep, sealed off by the liquid and the bodies (no way to the open air), is drawn
     // as liquid too: the liquid closes it within a frame or two, and drawn empty it started a fresh surface, a pale block
     // in the deep, under a turning paddle. Only pockets that touch a body: sealed air of its own (a bottle glugging) shows.
