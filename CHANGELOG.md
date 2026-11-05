@@ -46,6 +46,7 @@ Agents made a chest, a potion, a knight, a torch, poison spells and a farm tiles
 
 ### Faster start-up
 
+- The presets listing (`pixel_help` topic `presets`, `pixelbolt presets`) measures presets in parallel worker threads, up to eight, so a cold listing of the 65 shipped presets takes about 4.5 s instead of about 20 s on a many-core machine (CI's 4-core runners use three). The listing is byte-identical, each worker keeps the MCP tool worker's memory limit, and a runtime that can't start workers measures them one by one as before.
 - Every CLI command, MCP tool worker and page that loads the engine starts about 100 ms sooner: the seam check's tables of tile joins are built the first time a seam check runs, not whenever the engine loads (`pixelbolt help` 229 ms to 127 ms on the PC that measured it). Seam checks report exactly as before.
 
 ### Docs and skill text
