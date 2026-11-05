@@ -1,17 +1,19 @@
-import { createViewModel, PREVIEW_KEY, MAX_PREVIEW_BYTES, MAX_PREVIEW_FRAMES } from './mcp-app-model.js';
+import { createViewModel, PREVIEW_KEY, MAX_PREVIEW_BYTES, MAX_PREVIEW_FRAMES, MAX_PREVIEW_FILES, MAX_PREVIEW_PATH_LENGTH } from './mcp-app-model.js';
 
 // This function has no module dependencies: the same code is served inline under the host's no-network CSP.
 function mountViewer(model, version) {
   const $ = id => document.getElementById(id), main = $('main'), status = $('status'), player = $('player');
   const canvas = $('canvas'), context = canvas.getContext('2d'), stage = $('stage'), play = $('play'), picker = $('animation');
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'), HOLD = 600;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)'), HOLD = 600, DECODED_BYTES = 64 * 1024 * 1024;
   let ready = false, disposed = false, nextId = 2, host = {}, capabilities = {}, preview = null, track = null;
   let elapsed = 0, last = 0, playing = false, raf = 0, resizeTimer = 0, lastSize = '', generation = 0, drawn = -1;
+  let cacheLimit = 0, inView = true, frameLabel = '', prefetched = '';
   const images = new Map(), pending = new Map();
   const releaseImage = image => { image.onload = image.onerror = null; image.removeAttribute('src'); };
-  const clearImages = () => { for (const image of images.values()) releaseImage(image); images.clear(); };
+  const clearImages = () => { for (const entry of images.values()) releaseImage(entry.image); images.clear(); };
   const post = message => window.parent.postMessage(message, '*');
-  const pause = () => { playing = false; cancelAnimationFrame(raf); play.textContent = 'Play'; play.setAttribute('aria-label', 'Play animation'); };
+  const stopRAF = () => { cancelAnimationFrame(raf); raf = 0; };
+  const pause = () => { playing = false; stopRAF(); play.textContent = 'Play'; play.setAttribute('aria-label', 'Play animation'); };
   const message = text => { status.textContent = text; status.hidden = !text; resize(); };
   function resize() {
     clearTimeout(resizeTimer);
@@ -26,6 +28,17 @@ function mountViewer(model, version) {
     }, 40);
   }
   const observer = new ResizeObserver(resize); observer.observe(main); observer.observe(stage);
+  const visible = () => inView && !document.hidden && !player.hidden;
+  function resumeRAF() {
+    if (playing && !disposed && visible() && !raf) { last = performance.now(); raf = requestAnimationFrame(tick); }
+  }
+  function visibilityChanged() { if (visible()) resumeRAF(); else stopRAF(); }
+  const visibilityObserver = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+    for (const entry of entries) if (entry.target === stage) inView = entry.isIntersecting;
+    visibilityChanged();
+  }) : null;
+  visibilityObserver?.observe(stage);
+  document.addEventListener('visibilitychange', visibilityChanged);
   function hostContext(update = {}) {
     if (!update || typeof update !== 'object') return;
     host = { ...host, ...update, styles: { ...host.styles, ...update.styles, variables: { ...host.styles?.variables, ...update.styles?.variables } } };
@@ -45,45 +58,73 @@ function mountViewer(model, version) {
     main.style.maxHeight = Number.isFinite(dims.maxHeight) ? `${dims.maxHeight}px` : '';
     resize();
   }
+  function prefetch(state) {
+    const key = `${state.position}:${drawn === state.frame}`;
+    if (prefetched === key) return;
+    prefetched = key;
+    // Decode the entire preview when it fits; otherwise keep the wanted frame and the next distinct frames.
+    // With room for only one image, the canvas itself holds the current pixels while the next image loads.
+    const keep = new Set(cacheLimit === 1 && drawn === state.frame ? [] : [state.frame]);
+    if (preview.frames.length <= cacheLimit) preview.frames.forEach((_, i) => keep.add(i));
+    else for (let offset = 1; offset <= track.entries.length && keep.size < cacheLimit; offset++) keep.add(track.entries[(state.position + offset) % track.entries.length].frame);
+    for (const [index, entry] of images) if (!keep.has(index)) { releaseImage(entry.image); images.delete(index); }
+    for (const index of keep) {
+      if (images.has(index)) continue;
+      const image = new Image(), entry = { image, ready: false };
+      images.set(index, entry);
+      const ownGeneration = generation;
+      const current = () => !disposed && ownGeneration === generation && images.get(index) === entry;
+      const failed = () => { if (current()) { pause(); message('This preview frame could not be decoded.'); } };
+      const loaded = () => {
+        if (!current()) return;
+        entry.ready = true;
+        // Read the current playhead, never the one that originally requested this image.
+        if (model.frameAt(track, elapsed).frame === index) draw();
+      };
+      image.onload = () => {
+        if (!current()) return;
+        if (image.naturalWidth !== preview.width || image.naturalHeight !== preview.height) { pause(); message('This preview frame has an unexpected size.'); return; }
+        if (typeof image.decode === 'function') image.decode().then(loaded, failed);
+        else loaded();
+      };
+      image.onerror = failed;
+      image.src = `data:image/png;base64,${preview.frames[index].png}`;
+    }
+  }
   function draw() {
     if (!track?.entries.length) return;
-    const state = model.frameAt(track, elapsed), frame = preview.frames[state.frame];
-    $('frame').textContent = `${frame.name} · ${frame.duration} ms · ${state.position + 1}/${track.entries.length}`;
-    if (drawn === state.frame) return;
-    drawn = state.frame;
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    let image = images.get(state.frame);
-    if (!image) {
-      image = new Image(); images.set(state.frame, image);
-      const ownGeneration = generation;
-      image.onload = () => {
-        if (disposed || ownGeneration !== generation) return;
-        if (image.naturalWidth !== preview.width || image.naturalHeight !== preview.height) { pause(); message('This preview frame has an unexpected size.'); return; }
-        if (!disposed && ownGeneration === generation && drawn === state.frame) {
-          context.clearRect(0, 0, canvas.width, canvas.height); context.drawImage(image, 0, 0);
-        }
-      };
-      image.onerror = () => { if (!disposed && ownGeneration === generation) { pause(); message('This preview frame could not be decoded.'); } };
-      image.src = `data:image/png;base64,${frame.png}`;
-      // Bound decoded-image memory too: the payload's byte cap alone does not bound highly compressed PNGs.
-      if (images.size > 3) { const first = images.keys().next().value; releaseImage(images.get(first)); images.delete(first); }
-    } else if (image.complete && image.naturalWidth) context.drawImage(image, 0, 0);
+    const state = model.frameAt(track, elapsed), frame = preview.frames[state.frame], entry = images.get(state.frame);
+    if (drawn !== state.frame) {
+      if (!entry?.ready) { prefetch(state); return; }
+      // Clearing and replacing are one synchronous step; a pending decode leaves the last frame untouched.
+      context.clearRect(0, 0, canvas.width, canvas.height); context.drawImage(entry.image, 0, 0);
+      drawn = state.frame;
+    }
+    const label = `${frame.name} · ${frame.duration} ms · ${state.position + 1}/${track.entries.length}`;
+    if (label !== frameLabel) { $('frame').textContent = label; frameLabel = label; }
+    if (player.hidden) {
+      player.hidden = false;
+      message(preview.truncated ? `${preview.truncated} frame${preview.truncated === 1 ? '' : 's'} omitted from this preview (size limit).` : '');
+      resumeRAF();
+    }
+    prefetch(state);
   }
   function tick(now) {
-    if (!playing || disposed) return;
+    raf = 0;
+    if (!playing || disposed || !visible()) return;
     elapsed = model.advance(elapsed, now - last, $('speed').value); last = now;
     // A one-shot holds its last frame, then plays again, as Pixelbolt Studio's effects lab does.
-    if (!track.loop && elapsed >= track.duration + HOLD) elapsed = 0;
+    if (!track.loop) elapsed %= track.duration + HOLD;
     draw(); raf = requestAnimationFrame(tick);
   }
   function start() {
     if (!track?.entries.length || track.entries.length < 2) return;
     if (model.frameAt(track, elapsed).ended) elapsed = 0;
     playing = true; last = performance.now(); play.textContent = 'Pause'; play.setAttribute('aria-label', 'Pause animation');
-    raf = requestAnimationFrame(tick);
+    resumeRAF();
   }
   function select() {
-    pause(); elapsed = 0; drawn = -1; track = model.timeline(preview, picker.value);
+    pause(); elapsed = 0; prefetched = ''; track = model.timeline(preview, picker.value);
     play.disabled = $('previous').disabled = $('next').disabled = track.entries.length < 2;
     draw(); if (!reduced.matches) start();
   }
@@ -94,7 +135,7 @@ function mountViewer(model, version) {
     elapsed = track.entries[track.loop ? (position + length) % length : Math.max(0, Math.min(length - 1, position))].start; draw();
   }
   function reset() {
-    pause(); generation++; clearImages(); preview = track = null; drawn = -1;
+    pause(); generation++; clearImages(); preview = track = null; drawn = -1; frameLabel = prefetched = '';
     player.hidden = true; $('delivery').hidden = true; $('share').hidden = true;
     $('files').replaceChildren(); $('verdict').textContent = '';
   }
@@ -102,8 +143,8 @@ function mountViewer(model, version) {
     reset();
     const decoded = model.decodeResult(value); preview = decoded.preview;
     if (!preview) { message(decoded.text); return; }
-    message(preview.truncated ? `${preview.truncated} frame${preview.truncated === 1 ? '' : 's'} omitted from this preview (size limit).` : '');
-    player.hidden = !preview.frames.length;
+    message(preview.frames.length ? 'Loading frames' : `${preview.truncated} frames omitted from this preview (size limit).`);
+    cacheLimit = Math.max(1, Math.floor(DECODED_BYTES / (preview.width * preview.height * 4)));
     canvas.width = preview.width; canvas.height = preview.height; context.imageSmoothingEnabled = false;
     picker.replaceChildren();
     for (const animation of preview.animations) { const option = document.createElement('option'); option.value = animation.name; option.textContent = animation.name; picker.append(option); }
@@ -111,9 +152,10 @@ function mountViewer(model, version) {
     $('animation-label').hidden = preview.animations.length <= 1;
     if (preview.verdict) $('verdict').textContent = `Delivery check: ${{ passed: 'passed', failed: 'failed', 'not-checked': 'no expectations supplied' }[preview.verdict]}.`;
     for (const file of preview.files) { const li = document.createElement('li'); li.textContent = file; $('files').append(li); }
-    $('delivery').hidden = !preview.verdict && !preview.files.length;
-    $('file-details').hidden = !preview.files.length;
-    $('file-count').textContent = `Written files (${preview.files.length})`;
+    if (preview.filesOmitted) { const li = document.createElement('li'); li.textContent = `and ${preview.filesOmitted} more files`; $('files').append(li); }
+    $('delivery').hidden = !preview.verdict && !preview.files.length && !preview.filesOmitted;
+    $('file-details').hidden = !preview.files.length && !preview.filesOmitted;
+    $('file-count').textContent = `Written files (${preview.files.length + preview.filesOmitted})`;
     $('share').hidden = !preview.shareLink;
     $('share').disabled = !capabilities.openLinks;
     $('share').title = capabilities.openLinks ? '' : 'This host does not support opening links';
@@ -131,9 +173,10 @@ function mountViewer(model, version) {
       ready = true; post(model.initialized()); resize(); return;
     }
     if (data.method === 'ui/resource-teardown' && Object.hasOwn(data, 'id')) {
-      pause(); disposed = true; generation++; clearImages(); observer.disconnect(); clearTimeout(resizeTimer);
+      pause(); disposed = true; generation++; clearImages(); observer.disconnect(); visibilityObserver?.disconnect(); clearTimeout(resizeTimer);
       for (const timer of pending.values()) clearTimeout(timer); pending.clear();
       reduced.removeEventListener('change', onMotion); window.removeEventListener('message', onMessage);
+      document.removeEventListener('visibilitychange', visibilityChanged);
       post({ jsonrpc: '2.0', id: data.id, result: {} }); return;
     }
     if (!ready) return;
@@ -166,7 +209,7 @@ function mountViewer(model, version) {
 }
 
 export function viewerHTML(version) {
-  const script = `const model = (${createViewModel.toString()})(${JSON.stringify(PREVIEW_KEY)}, ${MAX_PREVIEW_BYTES}, ${MAX_PREVIEW_FRAMES});\n(${mountViewer.toString()})(model, ${JSON.stringify(version)});`;
+  const script = `const model = (${createViewModel.toString()})(${JSON.stringify(PREVIEW_KEY)}, ${MAX_PREVIEW_BYTES}, ${MAX_PREVIEW_FRAMES}, ${MAX_PREVIEW_FILES}, ${MAX_PREVIEW_PATH_LENGTH});\n(${mountViewer.toString()})(model, ${JSON.stringify(version)});`;
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Pixelbolt preview</title>
 <style>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
 import { inflateSync } from 'node:zlib';
 import os from 'node:os';
@@ -11,7 +11,7 @@ import { renderProject } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { findPreset, loadPreset, compilePreset } from '../src/presets.js';
 import { previewMeta } from '../src/mcp-preview.js';
-import { PREVIEW_KEY, MAX_PREVIEW_BYTES, MAX_PREVIEW_FRAMES, createViewModel } from '../src/mcp-app-model.js';
+import { PREVIEW_KEY, MAX_PREVIEW_BYTES, MAX_PREVIEW_FRAMES, MAX_PREVIEW_FILES, MAX_PREVIEW_PATH_LENGTH, createViewModel } from '../src/mcp-app-model.js';
 
 const UI_URI = 'ui://pixelbolt/viewer', UI_MIME = 'text/html;profile=mcp-app';
 const capabilities = { extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: [UI_MIME] } } };
@@ -72,7 +72,7 @@ test('MCP Apps negotiates resource discovery and metadata on exactly six tools',
   assert.deepEqual(mcp.initialized.result.capabilities, { tools: {}, resources: {} });
   const tools = (await mcp.request('tools/list')).result.tools;
   assert.deepEqual(tools.filter(t => t._meta).map(t => t.name).sort(), ['pixel_compile', 'pixel_import', 'pixel_inspect', 'pixel_patch', 'pixel_render', 'pixel_scene']);
-  for (const tool of tools.filter(t => t._meta)) assert.deepEqual(tool._meta, { ui: { resourceUri: UI_URI } });
+  for (const tool of tools.filter(t => t._meta)) assert.deepEqual(tool._meta, { ui: { resourceUri: UI_URI }, 'ui/resourceUri': UI_URI });
   const resources = (await mcp.request('resources/list')).result.resources;
   assert.equal(resources.length, 1); assert.equal(resources[0].uri, UI_URI); assert.equal(resources[0].mimeType, UI_MIME);
   assert.ok(resources[0].name && resources[0].description);
@@ -150,6 +150,44 @@ test('preview caps keep a frame prefix, report omitted frames, and remove unavai
   const limited = previewOf(previewMeta(large)), total = limited.frames.reduce((sum, f) => sum + f.png.length, 0);
   assert.ok(total <= MAX_PREVIEW_BYTES); assert.ok(total + limited.frames[0].png.length > MAX_PREVIEW_BYTES);
   assert.equal(limited.truncated, 250 - limited.frames.length); assert.ok(limited.frames.length < MAX_PREVIEW_FRAMES);
+});
+
+test('full render content is identical across clients and preview files prioritize key exports within a fixed cap', async t => {
+  const app = await session(t, capabilities), plain = await session(t, {});
+  const project = { ...strip, frames: strip.frames.map((frame, i) => i ? frame : { ...frame, tile: { weight: 1 } }) };
+  const args = { project, animation: 'once', gif: {}, sequence: { fps: 10, seconds: 8 }, share: true, expect: { width: 4 }, saveAs: { sheet: 'saved.png' } };
+  const reply = await app.call('pixel_render', args), original = await plain.call('pixel_render', args);
+  assert.equal(reply.isError, undefined, JSON.stringify(reply)); assert.equal(original.isError, undefined, JSON.stringify(original));
+  assert.equal(Object.hasOwn(original, '_meta'), false); assert.equal(reply.structuredContent, undefined);
+  assert.notEqual(info(reply).directory, info(original).directory, 'each render has its own directory');
+  // Compare the exact content bytes, normalizing only each render directory and its session root (saveAs destination).
+  const normalized = (value, session) => JSON.stringify(value.content.map(item => item.type === 'text' ? { ...item, text: item.text
+    .split(JSON.stringify(info(value).directory).slice(1, -1)).join('<OUTPUT>')
+    .split(JSON.stringify(session.directory).slice(1, -1)).join('<ROOT>') } : item));
+  assert.equal(normalized(reply, app), normalized(original, plain));
+  const p = previewOf(reply), out = info(reply).directory;
+  assert.equal(p.files.length, MAX_PREVIEW_FILES); assert.ok(p.filesOmitted > 0); assert.ok(createViewModel().decodeResult(reply).preview);
+  const firstFrame = p.files.findIndex(file => file.includes(`${path.sep}frames${path.sep}`)); assert.ok(firstFrame > 0);
+  const priority = ['strip.png', 'strip.atlas.json', 'strip.pixel.json', 'strip.tres', 'strip.tileset.tres', 'strip.tsx', 'gifs/once.gif', 'gifs/bounce.gif'].map(file => path.join(out, file));
+  priority.push(path.join(app.directory, 'saved.png'));
+  for (const file of priority) assert.ok(p.files.indexOf(file) >= 0 && p.files.indexOf(file) < firstFrame, file);
+  for (const file of p.files) { assert.ok(path.isAbsolute(file)); assert.ok(file.length <= MAX_PREVIEW_PATH_LENGTH); assert.ok((await stat(file)).isFile()); }
+  async function countFiles(directory) {
+    let count = 0;
+    for (const entry of await readdir(directory, { withFileTypes: true })) count += entry.isDirectory() ? await countFiles(path.join(directory, entry.name)) : 1;
+    return count;
+  }
+  assert.equal(p.files.length + p.filesOmitted, await countFiles(out) + 1, 'omissions count every written file, including saveAs');
+});
+
+test('preview paths have independent count and length bounds and omitted paths are counted exactly', () => {
+  const project = renderProject(strip), long = 'a'.repeat(MAX_PREVIEW_PATH_LENGTH + 1), boundary = 'b'.repeat(MAX_PREVIEW_PATH_LENGTH);
+  const short = previewOf(previewMeta(project, { files: [long, boundary, 'c.png'] }));
+  assert.deepEqual(short.files, [boundary, 'c.png']); assert.equal(short.filesOmitted, 1);
+  const many = previewOf(previewMeta(project, { files: [long, ...Array.from({ length: 18013 }, (_, i) => `${i}.png`)] }));
+  assert.equal(many.files.length, MAX_PREVIEW_FILES); assert.equal(many.filesOmitted, 18014 - MAX_PREVIEW_FILES);
+  const small = previewOf(previewMeta(project, { files: ['a.png'] })); assert.equal(Object.hasOwn(small, 'filesOmitted'), false);
+  assert.ok(createViewModel().decodeResult(previewMeta(project, { files: [boundary] })).preview);
 });
 
 test('an inspection that selects frames, a region or a review mode previews the inspection image, not the whole project', async t => {

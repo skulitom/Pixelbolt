@@ -1,8 +1,9 @@
 // Browser-independent viewer logic. Inlined verbatim (via function.toString) into the UI resource, without a build.
 export const PREVIEW_KEY = 'io.github.skulitom/pixelbolt';
 export const MAX_PREVIEW_BYTES = 4 * 1024 * 1024, MAX_PREVIEW_FRAMES = 240;
+export const MAX_PREVIEW_FILES = 64, MAX_PREVIEW_PATH_LENGTH = 1024;
 
-export function createViewModel(key = PREVIEW_KEY, maxBytes = MAX_PREVIEW_BYTES, maxFrames = MAX_PREVIEW_FRAMES) {
+export function createViewModel(key = PREVIEW_KEY, maxBytes = MAX_PREVIEW_BYTES, maxFrames = MAX_PREVIEW_FRAMES, maxFiles = MAX_PREVIEW_FILES, maxPathLength = MAX_PREVIEW_PATH_LENGTH) {
   const integer = (n, min, max) => Number.isInteger(n) && n >= min && n <= max;
   function decodeResult(result) {
     const text = (Array.isArray(result?.content) ? result.content : []).filter(c => c?.type === 'text' && typeof c.text === 'string').map(c => c.text).join('\n');
@@ -17,11 +18,14 @@ export function createViewModel(key = PREVIEW_KEY, maxBytes = MAX_PREVIEW_BYTES,
     }
     if (p.animations.some(a => !a || typeof a.name !== 'string' || typeof a.loop !== 'boolean' || !Array.isArray(a.frames) ||
       !a.frames.length || a.frames.some(i => !integer(i, 0, p.frames.length - 1)))) return fallback;
+    if (p.files !== undefined && (!Array.isArray(p.files) || p.files.length > maxFiles ||
+      p.files.some(f => typeof f !== 'string' || f.length > maxPathLength))) return fallback;
+    if (p.filesOmitted !== undefined && !integer(p.filesOmitted, 0, Number.MAX_SAFE_INTEGER)) return fallback;
     // Only known fields reach the DOM; paths are text and links go through the host, never the iframe's navigation.
     const shareLink = typeof p.shareLink === 'string' && /^https:\/\/skulitom\.github\.io\/Pixelbolt\//.test(p.shareLink) ? p.shareLink : undefined;
     return { text, preview: { version: 1, width: p.width, height: p.height, scale: p.scale, frames: p.frames,
       animations: p.animations, animation: typeof p.animation === 'string' ? p.animation : undefined,
-      truncated: p.truncated, files: Array.isArray(p.files) ? p.files.filter(f => typeof f === 'string') : [],
+      truncated: p.truncated, files: p.files ?? [], filesOmitted: p.filesOmitted ?? 0,
       verdict: ['passed', 'failed', 'not-checked'].includes(p.verdict) ? p.verdict : undefined, shareLink } };
   }
   function timeline(preview, name) {
