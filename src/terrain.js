@@ -155,7 +155,7 @@ export function drawTerrain(spec, map, mode = 'blob') {
     const cx = Math.floor(x / tile), cy = Math.floor(y / tile), lx = x - cx * tile, ly = y - cy * tile, west = lx < q, north = ly < q;
     const across = west ? 'w' : 'e', upDown = north ? 'n' : 's', hx = cx + (west ? -1 : 1), vy = cy + (north ? -1 : 1);
     const openH = !filled(hx, cy), openV = !filled(cx, vy), corner = mode === 'blob' && !openH && !openV && !filled(hx, vy);
-    return { cx, cy, lx, ly, across, upDown, ax: west ? lx : tile - 1 - lx, ay: north ? ly : tile - 1 - ly, openH, openV, corner, dH: sides[across].profile[ly], dV: sides[upDown].profile[lx] };
+    return { across, upDown, ax: west ? lx : tile - 1 - lx, ay: north ? ly : tile - 1 - ly, openH, openV, corner, dH: sides[across].profile[ly], dV: sides[upDown].profile[lx] };
   };
   const member = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {

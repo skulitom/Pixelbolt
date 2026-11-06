@@ -477,7 +477,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   };
   // Shadows (below): per light, the rank of the last-drawn caster shadowing each pixel, or nothing when none does.
   let shadowMasks = [];
-  const drawFrame = (id, index, left, top, s, label, shade = null, unlit = false, entry = -1, fade = 0, rank = -1) => {
+  const drawFrame = (id, index, left, top, s, label, shade = null, unlit, entry, fade = 0, rank) => {
     const asset = assets[id], shift = shifts[id], project = asset.recipe, frame = project.frames[index];
     const normal = asset.normal?.frames[index].data, emission = asset.emissive?.frames[index].data;
     const light = !shade && !unlit && lit && lighting && (normal || emission || lighting.scope === 'all') && (lighting.mode === 'multiply' || shift);
@@ -775,9 +775,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     // Who covers whom, largest first. Placements that lie straight on the background (a floor, a backdrop, a tilemap
     // under everything) are the ground and are left out as the one behind; sorted placements always count.
     // A name several placements share gets #index, its position in `instances`, as unnamed placements do.
-    const counts = new Map();
-    for (const instance of scene.instances) if (instance.name !== undefined) counts.set(instance.name, (counts.get(instance.name) ?? 0) + 1);
-    for (const e of entries) if (counts.get(e.label) > 1) e.label = `${e.label}#${e.instance}`;
+    for (const e of entries) if (shared.get(e.label) > 1) e.label = `${e.label}#${e.instance}`;
     const labels = new Map(entries.map(e => [e.instance, e.label])), sorted = entries.filter(e => e.sorted);
     const overlaps = [...pairs].map(([key, pixels]) => { const [front, behind] = key.split(' ').map(Number); return { front: labels.get(front), behind: labels.get(behind), pixels }; }).sort((a, b) => b.pixels - a.pixels);
     const omitted = { ...(sorted.length > 64 && { sorted: sorted.length - 64 }), ...(overlaps.length > 32 && { overlaps: overlaps.length - 32 }) };

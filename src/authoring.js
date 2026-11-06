@@ -149,7 +149,7 @@ export function compilePoses(source, mode) {
   let rasterWork = 0;
   // The drawn shape of a part instance. Flips alone stay a stamp flag; a rotation (after any flip) is baked into a new
   // editable symbol named <part>-r<degrees> (-fr when flipped, -raw without cleanup) around the part's anchor pixel.
-  const shapeOf = (name, flipX, rotate, cleanup, where, squash = 1) => {
+  const shapeOf = (name, flipX, rotate, cleanup, where, squash) => {
     const definition = source.parts[name];
     const angle = ((rotate % 360) + 360) % 360;
     if (definition.bone || definition.mass) {
@@ -563,8 +563,10 @@ function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rows
 // nothing, once: Godot's painter puts it on a painted cell with no terrain point, which would otherwise lose its
 // terrain).
 // The template is given as rows, or drawn from a `terrain` description (src/terrain.js), with optional `ops` drawn over
-// it. Every output frame is one `autotile` operation naming its neighbour mask, so editing the template updates the
-// set. The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
+// it. A tile's frame is one `autotile` operation naming its neighbour mask (in a layered set, one for each terrain at
+// its corners), so editing a template updates the set; a slope's frame stamps a symbol cut from the template when the
+// set compiles.
+// The result also carries a seam report (as warnings and in the metadata) and `preview`, a one-frame recipe that
 // draws the set over a test map holding every tile.
 export function compileAutotile(source) {
   fields(source, ['format', 'version', 'name', 'tile', 'mode', 'palette', 'ramps', 'symbols', 'template', 'terrain', 'ops', 'collision', 'frame', 'variants', 'animation', 'slopes', 'layers', 'preview', 'sheet'], 'autotile');
@@ -654,8 +656,8 @@ export function compileAutotile(source) {
   renderProject(recipe);
   const report = templateSeams(templates, tile, mode, drawn), warnings = seamWarnings(report, tile);
   const count = kind => report.seams.reduce((sum, seam) => sum + seam.pixels.filter(p => (kind === 'corner' ? seam.corner : !seam.corner && (kind === 'shape') === p.shape)).length, 0);
-  // At 84 pixels a tile the test map is 1680 × 1176, inside the size of a still. It mixes the templates the frames draw,
-  // each as often as the variants that draw it.
+  // At 84 pixels a tile the test map is 1680 × 1176 (2016 × 1596 with slopes), inside the size of a still. It mixes
+  // the templates the frames draw, each as often as the variants that draw it.
   const share = new Map();
   for (const variant of variants) share.set(symbolOf(variant), (share.get(symbolOf(variant)) ?? 0) + (variant.weight ?? 1));
   const most = Math.max(...share.values()), weighted = variants.some(variant => (variant.weight ?? 1) !== 1);
