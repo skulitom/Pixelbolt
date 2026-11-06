@@ -207,8 +207,9 @@ try {
     await click('#timeline .frame:nth-child(1)');
     const plain = await canvas(); await click('#contacts'); assert.notEqual((await canvas()).hash, plain.hash); await click('#contacts');
     await click('#motion-view');
-    // No check fails, and each is named with its measure. A run never has both feet down, so the two walk-only gait
-    // checks have nothing to measure in it.
+    // No check fails, and each is named with its measure. This rig's two knee checks have nothing to measure in its run:
+    // knee lift is read only in a gait with both feet down at some point, and knees at contact only on two-bone legs
+    // (this rig's are three-bone).
     const summary = await text('motion-summary');
     assert.match(summary, /pass/); assert.doesNotMatch(summary, /: check|undefined/);
     assert.deepEqual(summary.split(' · ').filter(part => part.endsWith(': unavailable')), ['Knees at contact: unavailable', 'Knee lift: unavailable'], summary);
@@ -224,7 +225,8 @@ try {
     assert.match(path.basename(saved), /\.poses\.json$/); assert.equal(path.basename(saved), await text('source-filename'));
     // The Frames dialog's command reads the file Save JSON gave.
     await click('#frames'); await until(`document.getElementById('frames-dialog').open`, 'the frames dialog');
-    assert.ok((await text('frames-call')).startsWith(`pixelbolt sequence ${path.basename(saved)} `), await text('frames-call')); await click('#frames-close');
+    const call = await text('frames-call'); await click('#frames-close');
+    assert.ok(call.startsWith(`pixelbolt sequence ${path.basename(saved)} `), call);
     const { root: { nodeId } } = await studio.page('DOM.getDocument'), input = await studio.page('DOM.querySelector', { nodeId, selector: '#file' });
     await studio.page('DOM.setFileInputFiles', { files: [saved], nodeId: input.nodeId });
     await until(`document.getElementById('toast').textContent.startsWith('Opened ')`, 'saved poses to reopen');

@@ -357,7 +357,7 @@ $('new').addEventListener('click', () => {
 // its format word, as the name above the editor, the CLI and examples/ give it.
 function savedName() {
   let format;
-  try { format = JSON.parse(source.value)?.format; } catch { /* Broken drafts can still be saved. */ }
+  try { format = JSON.parse(source.value.replace(/^﻿/, ''))?.format; } catch { /* Broken drafts can still be saved. */ }
   return `${project?.name ?? 'sprite'}.${format === 'pixelforge-poses' ? 'poses' : format === 'pixelforge-wave' ? 'wave' : 'pixel'}.json`;
 }
 // The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
