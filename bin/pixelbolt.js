@@ -4,6 +4,7 @@ import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { compileWaves } from '../src/wave.js';
+import { compileCrystals } from '../src/crystal.js';
 import { compileBodies } from '../src/bodies.js';
 import { readExpect, checkDelivery } from '../src/check.js';
 import { embedBundleRecipe, sameFiles, outputSummary, withRates } from '../src/export.js';
@@ -16,8 +17,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt init [file.json]               Create an editable example
   pixelbolt help [topic] [section]         One reference, as MCP pixel_help gives it: quickstart, guide, workflow,
                                            schema, example, presets, preset <name>, poses, scenes, autotile, fx,
-                                           fluid, wave, bodies or normals. guide and workflow list their sections first; name
-                                           one to print only it: help workflow "Particle effects"
+                                           fluid, wave, crystal, bodies or normals. guide and workflow list their
+                                           sections first; name one to print only it: help workflow "Particle effects"
   pixelbolt validate <file.json|-> [--fps 30]
                                            Validate and describe a project; --fps lists durations off that video frame grid
   pixelbolt inspect <file.json|-> [--out sheet.png] [--grid]
@@ -39,7 +40,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt compile <source.json> --out recipe.json [--metadata meta.json]
                                            Build a recipe from authored poses, an autotile template, particle effects,
                                            a wave source (looping interference and portals), a fluid source (smoke, fire,
-                                           explosions, magic and water) or a
+                                           explosions, magic and water), a crystal source (crystals, geodes and
+                                           snowflakes that grow and rest) or a
                                            normals source (a lighting normal pass derived from a colour recipe)
   pixelbolt compile <source.json> --expand [--out expanded.poses.json]
                                            Print editable poses with motion templates expanded
@@ -147,7 +149,7 @@ const removedBy = files => (files.removed ? { removed: files.removed } : {});
 const bundleFiles = (directory, files, options) => { const { files: listed, removed } = outputSummary(directory, files, options['list-files'] === true); return { directory, files: listed, ...(removed && { removed }) }; };
 // The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
 // and a scene's assets do not).
-const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'wave', 'project'];
+const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'wave', 'crystal', 'project'];
 // Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
 function linkPalette(recipe, input, outFile) {
   const link = input.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where));
@@ -193,7 +195,7 @@ async function writeOutputs(targets, force, inputs = []) {
   return Object.fromEntries(entries.map(([label, target]) => [label, target]));
 }
 // Sidecar sources compile by their format; `autotile` remains a dedicated command for templates.
-const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-bodies': compileBodies, 'pixelforge-normals': compileNormals };
+const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-bodies': compileBodies, 'pixelforge-normals': compileNormals };
 const summary = (project, recipe) => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project, recipe), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(project.clippingOmitted && { clippingOmitted: project.clippingOmitted }) });
 const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files } : {};
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;

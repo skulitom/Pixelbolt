@@ -4,6 +4,14 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Crystal growth
+
+- A new source format, `pixelforge-crystal` (`src/crystal.js`, `crystal.schema.json`, `pixel_help` topic `crystal`), compiled by `pixel_compile` and `pixelbolt compile` into ordinary palette grids. Crystal growth used to be only the fluid's frost fingers; now crystals grow from seeds into clusters and come to rest.
+- Faceted habits: `prism` (a six-sided prism with a pointed, flat or doubly terminated end: quartz, amethyst, ice spikes), `cube` (drawn by default as a clean 2:1 isometric cube) and `octahedron`. Each is a small solid turned by `angle` (snapped to clean pixel slopes), `tilt` and `turn`, and each face it shows takes one band of its look by how squarely it faces the effect's `light`, with an outline round each crystal. `count` grows a seeded cluster along a line of points (a ledge, the inside of a geode), with ranges drawn per crystal, `toward` a point and `spread`.
+- Snowflakes: six arms from a hexagonal seed, side branches sprouting behind each tip and growing toward the next arm, each kept to its arm's wedge and stopping a pixel short of anything else, with `twigs` and a ribbed `plate`; mirrored across both axes, so the arms match.
+- One-shot with clear beats: a crystal starts as one bright seed pixel, grows over `grow` frames on an easing, glints up its lit edge once grown, and holds still; a compile warns while anything still grows on the last frame. The metadata gives the frame each effect settles.
+- Presets `geode`, `quartz-cluster`, `pyrite` and `snowflakes` (`scripts/crystal-presets.mjs`, `examples/*.crystal.json`) with their GIFs in `showcase/crystals/` (`node showcase/crystals/build.mjs --check`).
+
 ### Breaking bodies
 
 - A free body with `breaks: { at, pieces, speed }` breaks when it is knocked hard enough: when something meets it at `at` pixels a frame or more, shared with what hits it by how easily each side gives there, so a box landing on a corner breaks as one landing flat does and a pebble barely knocks a heavy vase. It breaks into up to `pieces` convex pieces cut through its shape about where it was hit (a Voronoi fracture, smaller pieces near the hit), each a body of its own with the body's material, moving as its part moved and flung apart at `speed`. Each piece carries its part of the body's picture, so a crate breaks into pieces of crate and between them they hold every pixel of it; slivers too small to read are merged into their neighbours, and pieces never break again.

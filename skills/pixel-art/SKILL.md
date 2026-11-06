@@ -19,6 +19,8 @@ In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixel
 
 For looping interference or portal interiors, start from `examples/interference.wave.json` or `examples/portal.wave.json` and compile it ([controls](../../docs/wave-effects.md)). Keep rims in an overlay and avoid narrow crawling bands; use particle rings for one-shot impacts.
 
+For crystals that grow from seeds (a quartz cluster, an amethyst geode, pyrite cubes, snowflakes), start from `examples/quartz-cluster.crystal.json`, `examples/geode.crystal.json`, `examples/pyrite.crystal.json` or `examples/snowflakes.crystal.json` and compile it ([crystal growth](../../docs/art-workflow.md#crystal-growth)). Draw the rock they grow from as the source's underlay, and its front lip as the overlay so their feet grow out of it.
+
 ## Art direction
 
 For finished artwork, also read the sections of `docs/art-workflow.md` that fit the task, starting with "Write a brief outside the recipe" and "Quality checkpoints". Establish a small art brief outside the recipe: native/display size, three silhouette landmarks, palette roles, light direction, projection (side, 3/4 top-down, isometric 2:1 or top-down, one for the whole set) and depth planes, material rules, outline treatment, action intent, contact/origin and scene role. Record the actual strengths and failures of each review. A rendered file, frame count or passing test is not evidence of artistic quality. These checkpoints do not require user permission.

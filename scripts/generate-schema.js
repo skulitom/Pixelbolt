@@ -705,6 +705,53 @@ const bodies = {
       }, ['frames', 'bodies']) }
   }, ['format', 'version', 'name', 'width', 'height', 'palette', 'effects'])
 };
+const crystalKey = { type: 'string', minLength: 1, maxLength: 1, description: 'A one-character palette key.' };
+const spanOf = (minimum, maximum, description, whole = false) => ({ oneOf: [whole ? int(minimum, maximum) : num(minimum, maximum), pairOf(whole ? int(minimum, maximum) : num(minimum, maximum))], description: `${description} A number, or [low, high] drawn per crystal from the seed.` });
+const crystalPoint = pairOf(num(-1024, 1024));
+const crystalRows = { ...array({ type: 'string', minLength: 1, maxLength: 256 }, 256), minItems: 1, description: 'A full-canvas palette grid drawn under (underlay) or over (overlay) the crystals, such as the rock they grow from. Dot or space leaves the pixel transparent.' };
+const crystalCommon = {
+  look: { type: 'string', description: 'Which of the source\'s looks colours it; default the only one.' },
+  at: { oneOf: [crystalPoint, { ...array(crystalPoint, 16), minItems: 2 }], description: 'The seed [x, y] in pixels (a whole number is a pixel\'s centre), or a line through 2–16 points [[x, y], …] along which a cluster\'s seeds spread evenly by length.' },
+  count: int(1, 64, 'Crystals in this entry: a cluster whose seeds spread along at, each drawing its own size, angle and timing from the ranges. Default 1. A cluster is drawn longest first, so short crystals stand in front.'),
+  start: spanOf(0, 255, 'Frame the crystal starts growing, as one bright seed pixel. Default 0.', true),
+  grow: spanOf(1, 256, 'Frames from seed to full size. Default 60% of the effect\'s frames.', true),
+  ease: { enum: EASINGS.filter(name => name !== 'hold'), description: 'How growth runs over grow: default inOut for faceted crystals (a slow start, then a slowing finish) and out for snowflakes.' }
+};
+const crystalTurn = {
+  angle: spanOf(-360, 360, 'Degrees clockwise from right the crystal grows toward: -90 (default) is straight up. Snapped to the nearest clean pixel slope (level, 3:1, 2:1, 1:1, and steeper), so long edges run as even stairs. With count, a range fans the cluster from the first end of at to the last.'),
+  toward: { ...crystalPoint, description: 'Instead of angle: each crystal points at this [x, y], such as a geode\'s centre.' },
+  spread: num(0, 90, 'Degrees of seeded wobble around angle or toward. Default 0.'),
+  tilt: spanOf(-80, 80, 'Degrees the growth axis leans toward the viewer, showing its end. Default 0 (cube 30).'),
+  turn: spanOf(-360, 360, 'Degrees the crystal spins about its own axis: a prism shows a face (0, default) or an edge (30) to the viewer. Default 0 (cube and octahedron 45).')
+};
+const crystal = {
+  $schema: schema.$schema, title: 'Pixelbolt crystal growth',
+  description: 'Crystals that grow from seeds and come to rest, compiled to editable palette grids: faceted prisms (quartz, amethyst, ice spikes; pointed, flat or doubly terminated), cubes (pyrite, salt) and octahedra drawn as small solids lit by one light, each face one band of its look, alone or in seeded clusters along a line or round a geode; and six-armed snowflakes grown as dendrites, with side branches and twigs that stop a pixel short of each other and mirror symmetry. One-shot: each crystal starts as a bright seed pixel, grows, glints along its lit edge once grown, and the picture holds still. Deterministic.',
+  ...object({ format: { const: 'pixelforge-crystal' }, version: { const: 1 }, name: id,
+    width: int(1, 256), height: int(1, 256), palette: schema.properties.palette, anchor: point, sheet: schema.properties.sheet,
+    looks: { type: 'object', minProperties: 1, maxProperties: 8, propertyNames: { ...id, maxLength: 60 },
+      additionalProperties: object({ colors: { ...array(crystalKey, 6), minItems: 2, description: 'Palette keys from the darkest face to the brightest: a face takes the band of how squarely it faces the light. A snowflake draws its arms in the last, its branches in the one before and its plate in the one before that.' },
+        outline: { ...crystalKey, description: 'Drawn round each crystal, over whatever it stands in front of.' },
+        glint: { ...crystalKey, description: 'The seed pixel, the spark that runs up a grown crystal\'s lit edge and twinkles at its end, and a snowflake\'s newest pixels.' } }, ['colors']),
+      description: 'Named colour ramps for the crystals.' },
+    effects: { type: 'object', minProperties: 1, maxProperties: 16,
+      propertyNames: { ...id, maxLength: 60 }, description: 'Names become one-shot animations; unique ignoring case. At most 256 frames and 4,194,304 pixels in total.',
+      additionalProperties: object({ frames: int(2, 256), duration: int(20, 1000, 'Milliseconds per frame. Default 80.'),
+        seed: int(0, 2147483647, 'Seeds the clusters\' draws and the snowflakes\' branch spacing. Default 0.'),
+        light: { ...pairOf(num(-1, 1)), description: 'Direction [x, y] toward the light in the picture; it also comes from in front. Default [-1, -1], the upper left.' },
+        crystals: { ...array({ oneOf: [
+          object({ habit: { const: 'prism' }, ...crystalCommon, ...crystalTurn, length: spanOf(1, 256, 'Pixels from seed to tip.'), width: spanOf(1, 64, 'Pixels across.'),
+            tip: spanOf(0, 3, 'Length of the pointed end as a share of the width: 0 is flat, default 1.'), double: { type: 'boolean', description: 'Pointed at both ends (a floating crystal); at is then one end.' } }, ['habit', 'at', 'length', 'width']),
+          object({ habit: { enum: ['cube', 'octahedron'] }, ...crystalCommon, ...crystalTurn, size: spanOf(1, 128, 'Pixels along each edge (a cube) or from point to point (an octahedron).') }, ['habit', 'at', 'size']),
+          object({ habit: { const: 'snowflake' }, ...crystalCommon, radius: int(2, 64, 'Pixels from the centre to an arm tip.'),
+            spacing: num(2, 16, 'Pixels between side branches along an arm. Default 4.'), branches: num(0, 1, 'How long side branches grow: at 1 their tips reach the hexagon through the arm tips; 0 leaves bare arms. Default 0.7.'),
+            twigs: num(0, 1, 'The same for twigs off the side branches. Default 0.'), plate: num(0, 32, 'Radius of a hexagonal plate at the centre, ribbed by the arms. Default 0.'),
+            arms: { enum: ['vertical', 'horizontal'], description: 'Two arms point up and down (default), or left and right.' } }, ['habit', 'at', 'radius'])
+        ] }, 32), minItems: 1, description: 'Drawn in order, later ones in front; at most 256 with the counts.' },
+        underlay: crystalRows, overlay: crystalRows
+      }, ['frames', 'crystals']) }
+  }, ['format', 'version', 'name', 'width', 'height', 'palette', 'looks', 'effects'])
+};
 const normals = {
   $schema: schema.$schema, title: 'Pixelbolt normal pass',
   description: 'Derives a lighting normal pass from a colour recipe and compiles it to an ordinary recipe aligned with it (same size, frame names and durations, animations and atlas layout), ready for a scene asset\'s normal and editable like any recipe. Each separate shape is rounded from its silhouette, lighter colours can be raised by detail, and every pixel takes the nearest of 17 directions: palette key 5 faces the viewer, the keypad digits 1–4 and 6–9 lean 30° the way they sit around 5, and q w e a d z x c lean 60° the same way.',
@@ -715,4 +762,4 @@ const normals = {
     faces: { type: 'object', minProperties: 1, additionalProperties: { enum: NORMAL_KEYS }, description: 'Flat faces by colour: maps the colour recipe\'s palette keys to one direction each, so a box, wall or building gets flat planes instead of a cushion. Pixels drawn in that key\'s colour take the direction; all others are rounded as usual. Side view: tops w, fronts 5. 3/4 top-down: tops w or 8, south faces 2 or 5. Isometric 2:1: tops w, left faces z, right faces c.' }
   }, ['format', 'version', 'recipe']), $defs: { ...schema.$defs, recipe: recipeSchema }
 };
-for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['bodies.schema.json', bodies], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');
+for (const [file, value] of [['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['crystal.schema.json', crystal], ['bodies.schema.json', bodies], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');

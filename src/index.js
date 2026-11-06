@@ -11,6 +11,7 @@ export { compilePoses, expandPoses, compileAutotile, compileNormals, NORMAL_DIRE
 export { inspectMotion } from './motion.js';
 export { compileEffects } from './fx.js';
 export { compileWaves, WAVE_KINDS } from './wave.js';
+export { compileCrystals, CRYSTAL_HABITS } from './crystal.js';
 export { compileFluid, createLiveFluid, FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from './fluid.js';
 export { compileBodies, bodiesFrames, MATCH_FRAMES, BODY_SHAPES, BODY_WALLS } from './bodies.js';
 export { DITHER_PATTERNS, EASINGS, ease, ditherThreshold, cleanupIds, rotateRows, ruleVariants, rewriteIds } from './craft.js';

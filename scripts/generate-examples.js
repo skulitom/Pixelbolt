@@ -8,6 +8,7 @@ import { plasmaPresets } from './plasma-presets.mjs';
 import { sandPresets } from './sand-presets.mjs';
 import { bodiesPresets } from './bodies-presets.mjs';
 import { fluidBodyPresets } from './fluid-body-presets.mjs';
+import { crystalPresets } from './crystal-presets.mjs';
 const rows = source => source.map(row => row.padEnd(16, '.'));
 const spirit = rows([
   '........dd',
@@ -717,6 +718,8 @@ for (const [name, source] of Object.entries(bodiesPresets)) authored[`${name}.bo
 // Bodies in a fluid: crates that splash and float, a crate that rides sand down, a paddle wheel that stirs a pool, a hot
 // stone that boils one and a plank that sand tips (scripts/fluid-body-presets.mjs).
 for (const [name, source] of Object.entries(fluidBodyPresets)) authored[`${name}.fluid`] = source;
+// Crystal growth: a geode, a quartz cluster, pyrite cubes and snowflakes (scripts/crystal-presets.mjs).
+for (const [name, source] of Object.entries(crystalPresets)) authored[`${name}.crystal`] = source;
 const compiled = { effects: compileEffects(effects).recipe, swing: compilePoses(swing).recipe, 'forest-spirit-normal': compileNormals({ ...spiritNormals, recipe: forest }).recipe };
 // Compact, as compiled files are: whatever fits in 120 columns stays on one line and grids keep one row per line, so
 // an agent reading an example pays for its content rather than its indentation.
