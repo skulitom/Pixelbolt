@@ -4,7 +4,7 @@ export { encodePNG, encodeAPNG } from './png.js';
 export { measureText, layoutText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';
 export { encodeGIF, animationGIF, framesGIF } from './gif.js';
 export { numberedFrames, folderGIF } from './frame-folder.js';
-export { createSequence, createSceneSequence, createBodiesSequence, planSequence, placeSprite, parseFrameRate, frameGrid, VIDEO_SIZES } from './sequence.js';
+export { createSequence, createSceneSequence, createBodiesSequence, figuresSummary, planSequence, placeSprite, parseFrameRate, frameGrid, VIDEO_SIZES } from './sequence.js';
 export { createBundle, writeBundle, createZip, generateCSS, formatJSON } from './export.js';
 export { spriteFrames, godotTiming, GODOT_MAX_FPS } from './godot.js';
 export { compilePoses, expandPoses, compileAutotile, compileNormals, NORMAL_DIRECTIONS } from './authoring.js';

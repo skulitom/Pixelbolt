@@ -140,3 +140,20 @@ test('drawn finer (subpixels), the cells, pickups and score are drawn in blocks 
     assert.deepEqual([...fine.data.subarray(b, b + 4)], [...whole.data.subarray(a, a + 4)], `pixel ${x},${y}`);
   }
 });
+
+test('what the renderer or a sequence would refuse is refused before simulating, and a tall board warps into its lower half', () => {
+  // A warp or magnet target: x within the width, y within the height.
+  const tall = { ...match({ territory: board, bodies: [ball('b', [8, 16], [1, 0], { team: 'tide' })], events: [{ frame: 5, body: 'b', power: 'warp', to: [16, 80] }] }), height: 96 };
+  assert.equal(figures(tall).frames, 60);
+  refused({ ...tall, effects: { m: { ...tall.effects.m, events: [{ frame: 5, body: 'b', power: 'warp', to: [16, 200] }] } } }, 'bodies.effects.m.events[0].to[1]', /from -96 to 192/);
+  // The heads-up display fits the renderer drawn finer: its scale times subpixels at most 16, its bar at most 512 wide.
+  const hud = (entry, subpixels) => match({ territory: board, bodies: [ball('b', [8, 16], [1, 0], { team: 'tide' })], hud: [entry] }, { subpixels });
+  refused(hud({ text: '{tide}', at: [1, 1], color: 'w', scale: 3 }, 8), 'bodies.effects.m.hud[0].scale', /from 1 to 2/);
+  refused(hud({ bar: { at: [0, 0], size: [100, 2] } }, 8), 'bodies.effects.m.hud[0].bar.size[0]', /from 1 to 64/);
+  assert.equal(figures(hud({ text: '{tide}', at: [1, 1], color: 'w', scale: 2 }, 8)).frames, 60);
+  // Too many frames' pixels for a recipe, at whole pixels too.
+  refused({ ...match({ bodies: [ball('b', [8, 16], [1, 0])] }), width: 256, height: 256, effects: { m: { frames: 65, gravity: [0, 0], bodies: [ball('b', [8, 16], [1, 0])] } } }, 'bodies.effects', /4,194,304.*fewer frames or a smaller canvas/);
+  // A match longer than a sequence holds at its size is refused before it is simulated.
+  const long = match({ frames: 2200, duration: 34, territory: board, bodies: [ball('b', [8, 16], [1, 0], { team: 'tide' })] });
+  assert.throws(() => createBodiesSequence(long, { fps: 30, size: 'vertical' }), error => error instanceof PixelError && /holds at most 2071 at that size/.test(error.message));
+});

@@ -55,7 +55,7 @@
   "effects": {
     "territory": {
       "frames": 256,
-      "duration": 33,
+      "duration": 34,
       "gravity": [0, 0],
       "background": "k",
       "walls": ["left", "right", "top"],

@@ -1041,11 +1041,12 @@ export function compileEffects(source) {
       };
       const drawnAt = i => ({ output: run.output[i], behind: run.behind[i], back: { output: run.back.output[i], behind: run.back.behind[i] }, between: run.between[i], blobs: run.blobs[i] });
       // A loop's bands go into its first frame holding what its last frame leaves them: the cycle is read once to settle
-      // that (its painting counts like any other), then drawn.
+      // that, then drawn. The reading has a budget of its own as large, so a loop that draws within the budget compiles
+      // whether or not its looks hold (charged to the drawing's, a held loop had half the room).
       if (memory && loop) {
-        const reads = shapes.looks.map(() => []);
+        const reads = shapes.looks.map(() => []), traced = { spent: 0 };
         memory.trace = (look, codes) => reads[look].push(codes);
-        for (let i = 0; i < count; i++) opsAt(i, drawnAt(i), shapeWork);
+        for (let i = 0; i < count; i++) opsAt(i, drawnAt(i), traced);
         settleHolds(memory, reads, width * height);
       }
       const names = run.output.map((output, i) => {

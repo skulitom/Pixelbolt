@@ -1213,7 +1213,9 @@ function projectLiquid(g, active, iterations, target) {
       let sq = 0;
       for (let c = 0; c < N; c++) sq += s[c] * q[c];
       for (let n = 0; n < m; n++) sq += ns[n] * nq[n];
-      if (!(sq > 0)) break;
+      // A direction the system hardly bends (liquid sealed into one-cell pockets by a crowd of bodies) would take a
+      // step tens of orders too long and blow the pressure up to NaN: stop there, as at convergence.
+      if (!(sq > 1e-10 * rz)) break;
       const alpha = rz / sq;
       for (let c = 0; c < N; c++) if (solve[c]) { p[c] += alpha * s[c]; r[c] -= alpha * q[c]; }
       for (let n = 0; n < m; n++) { np[n] += alpha * ns[n]; nr[n] -= alpha * nq[n]; }
@@ -4460,6 +4462,8 @@ function fluidForces(run, crowd) {
       b.asleep = false; b.sleepy = 0;
     }
     b.restSub = undefined; b.restLoad = undefined;
+    // Never hand the bodies a number that isn't one: a body keeps its own motion rather than vanish.
+    if (![vx, vy, w, ...push].every(Number.isFinite)) { b.push = null; return; }
     b.vx = vx; b.vy = vy; b.w = w; b.push = push;
   });
 }
@@ -4659,7 +4663,7 @@ function buildRecipe(source, each) {
   const palette = source.palette ?? {};
   if (!isObject(palette)) fail('fluid.palette', 'expected a palette object');
   const width = integer(source.width, 'fluid.width', 4, 128), height = integer(source.height, 'fluid.height', 4, 128);
-  const subpixels = readSubpixels(source.subpixels, 'fluid', width, height);
+  const subpixels = readSubpixels(source.subpixels, 'fluid', width, height, source.effects);
   const symbols = source.symbols ?? {};
   if (!isObject(symbols)) fail('fluid.symbols', 'expected named symbols for obstacles');
   for (const [name, rows] of Object.entries(symbols)) {
@@ -4802,8 +4806,13 @@ export function createLiveFluid(source, options = {}) {
     // Every step is drawn, as compileFluid draws every frame it simulates, so the drawing's memory of each pixel's bands
     // (see renderFields) runs on alike however the steps are batched; render and measure read this frame's drawing.
     if (crowd && state.wake) run.view.wakes = { fluid: state.fluid, left: state.wake.left };
-    const drawn = new Uint8Array(N);
-    frame = { chars: drawFrame(run, width, height, drawn), drawn };
+    const drawn = new Uint8Array(N), chars = drawFrame(run, width, height, drawn);
+    // The bodies are drawn with every step too: their drawn places hold from step to step (see paintBodies), so drawn
+    // only when rendered they came out differently with how often a page renders.
+    // Measured without them, as a compiled frame's figures are.
+    const fluidOnly = crowd ? Uint16Array.from(chars) : chars;
+    if (crowd) paintBodies(crowd.bodies, chars, width, height, own.bodies.symbols);
+    frame = { chars, drawn, fluidOnly };
     overlay = [];
     drawSparks(run, put);
     for (const b of boosts) if (b.frames) b.frames--;
@@ -4901,7 +4910,7 @@ export function createLiveFluid(source, options = {}) {
     },
     // Figures for the current frame, as the metadata's per-frame figures give them for a compiled effect.
     measure() {
-      return measureFrame(frame.chars, run.base, run.view.solid, width, height, liquid ? state.n : null);
+      return measureFrame(frame.fluidOnly, run.base, run.view.solid, width, height, liquid ? state.n : null);
     },
     // The current frame: the look layers, cleanup and outline over the fields, sparks and whitewater over them, and the
     // obstacles stamped under or over, as a compiled frame draws them. `keys` names the topmost palette key drawn at each
@@ -4911,7 +4920,6 @@ export function createLiveFluid(source, options = {}) {
     render() {
       if (stamped !== run.layout.key) stampLayers(run.layout);
       const { drawn } = frame, chars = Uint16Array.from(frame.chars);
-      if (crowd) paintBodies(crowd.bodies, chars, width, height, own.bodies.symbols);
       for (let k = 0; k < overlay.length; k += 2) chars[overlay[k]] = overlay[k + 1];
       const rgba = under.slice(), codes = underKeys.slice();
       for (let c = 0; c < N; c++) if (chars[c]) { composite(rgba, c * 4, colours.get(chars[c])); codes[c] = chars[c]; }
@@ -4924,6 +4932,12 @@ export function createLiveFluid(source, options = {}) {
   };
   // Unstepped, the runner shows the fields as the fills left them, drawn without memory (the first step draws afresh).
   if (warmup) live.step(warmup);
-  else { fieldsOf(run); const drawn = new Uint8Array(N); frame = { chars: drawFrame(run, width, height, drawn), drawn }; run.hold.prev = null; }
+  else {
+    fieldsOf(run);
+    const drawn = new Uint8Array(N), chars = drawFrame(run, width, height, drawn), fluidOnly = crowd ? Uint16Array.from(chars) : chars;
+    if (crowd) paintBodies(crowd.bodies, chars, width, height, own.bodies.symbols);
+    frame = { chars, drawn, fluidOnly };
+    run.hold.prev = null;
+  }
   return live;
 }

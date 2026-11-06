@@ -810,12 +810,16 @@ function held(b, axis, size) {
   if (was === undefined || (next !== was && Math.abs(value - was) >= 0.5 + HOLD)) memory[key] = next;
   return memory[key];
 }
+// The drawing caches below live as long as the module (an MCP worker's whole life), so each is bounded: past CACHED
+// entries it starts again. A moving hoop alone made a new ring for every pixel it moved, until memory ran out.
+const CACHED = 512;
+const bounded = map => { if (map.size >= CACHED) map.clear(); return map; };
 const discs = new Map();
 function disc(d) {
   if (!discs.has(d)) {
     const cells = [];
     for (let j = 0; j < d; j++) for (let i = 0; i < d; i++) { const u = (i + 0.5 - d / 2) / (d / 2), v = (j + 0.5 - d / 2) / (d / 2); if (u * u + v * v <= 1) cells.push([i, j]); }
-    discs.set(d, cells);
+    bounded(discs).set(d, cells);
   }
   return discs.get(d);
 }
@@ -824,9 +828,12 @@ function disc(d) {
 // and each row's outer pixels on the side arcs, so it is 8-connected with no doubled steps; thicker, every pixel whose
 // centre lies within half the thickness of the circle.
 const rings = new Map();
-function ring(cx, cy, r, thickness) {
-  const key = `${cx},${cy},${r},${thickness}`;
-  if (rings.has(key)) return rings.get(key);
+// Cached about the centre's place within its pixel (a whole or half pixel) and moved to the centre, so a hoop that moves
+// reuses one ring instead of making one for every pixel it passes.
+function ring(x, y, r, thickness) {
+  const ix = Math.floor(x), iy = Math.floor(y), at = cells => cells.map(([px, py]) => [px + ix, py + iy]);
+  const cx = x - ix, cy = y - iy, key = `${cx},${cy},${r},${thickness}`;
+  if (rings.has(key)) return at(rings.get(key));
   const seen = new Set(), cells = [], add = (px, py) => { if (!seen.has(py * 65536 + px)) { seen.add(py * 65536 + px); cells.push([px, py]); } };
   if (thickness <= 1) {
     const reach = r / Math.sqrt(2);
@@ -849,8 +856,8 @@ function ring(cx, cy, r, thickness) {
       if (d >= r - half && d <= r + half) add(px, py);
     }
   }
-  rings.set(key, cells);
-  return cells;
+  bounded(rings).set(key, cells);
+  return at(cells);
 }
 
 // The pixels a body covers at its position: [x, y] pairs in canvas pixels.
@@ -947,7 +954,7 @@ function uprightRows(b) {
     rows[y][x] = b.outline && edge ? b.outline : fill;
   }
   const out = rows.map(row => row.join(''));
-  uprights.set(key, out);
+  bounded(uprights).set(key, out);
   return out;
 }
 
@@ -956,7 +963,7 @@ function uprightRows(b) {
 const sprites = new Map();
 function sprite(rows, degrees) {
   const key = `${rows.join('/')}@${degrees}`;
-  if (!sprites.has(key)) sprites.set(key, turnRows(rows, degrees));
+  if (!sprites.has(key)) bounded(sprites).set(key, turnRows(rows, degrees));
   return sprites.get(key);
 }
 
@@ -989,7 +996,7 @@ function pictureOf(b, symbols) {
     rows[y - y0][x - x0] = b.outline && edge ? b.outline : fill;
   }
   const picture = { rows: rows.map(row => row.join('')), cx: snap(R, b.size[0]) - x0, cy: snap(R, b.size[1]) - y0 };
-  pictures.set(key, picture);
+  bounded(pictures).set(key, picture);
   return picture;
 }
 
@@ -1126,16 +1133,21 @@ function crop(grid, width, height) {
 // ---- Compiling --------------------------------------------------------------------------------------------------------
 // A source's `subpixels`: how many times finer than the world's pixels its bodies are drawn (1, the default, draws them
 // at whole pixels). The recipe's canvas is that many times larger, at most 256 a side for an animation.
-export function readSubpixels(value, path, width, height) {
+// `effects`, the source's effects as written, only make the hint name a value the frames' pixels allow too.
+export function readSubpixels(value, path, width, height, effects) {
   if (value === undefined) return 1;
   const n = integer(value, `${path}.subpixels`, 1, 8);
-  if (Math.max(width, height) * n > 256) fail(`${path}.subpixels`, `a ${width}×${height} canvas drawn ${n} times finer is ${width * n}×${height * n}; an animation is at most 256 a side, so use subpixels of at most ${Math.floor(256 / Math.max(width, height))}`);
+  const frames = Object.values(isObject(effects) ? effects : {}).reduce((sum, effect) => sum + (Number.isInteger(effect?.frames) && effect.frames > 0 ? effect.frames : 0), 0);
+  if (Math.max(width, height) * n > 256) fail(`${path}.subpixels`, `a ${width}×${height} canvas drawn ${n} times finer is ${width * n}×${height * n}; an animation is at most 256 a side, so use subpixels of at most ${finest(width, height, frames)}`);
   return n;
 }
+// The finest a canvas may be drawn: at most 256 a side and, with `frames`, 4,194,304 pixels over them.
+const finest = (width, height, frames) => Math.max(1, Math.min(8, Math.floor(256 / Math.max(width, height)), frames ? Math.floor(Math.sqrt(4194304 / (frames * width * height))) : 8));
 // The frames a recipe drawn n times finer holds: their pixels together at most 4,194,304, the exporter's limit.
 export function framesFit(frames, width, height, n, path) {
   const pixels = frames * width * n * height * n;
-  if (n > 1 && pixels > 4194304) fail(`${path}.subpixels`, `${frames} frames of ${width * n}×${height * n} are ${pixels} pixels, more than the 4,194,304 a recipe's frames share; lower subpixels to ${Math.max(1, Math.floor(Math.sqrt(4194304 / (frames * width * height))))} or use fewer frames`);
+  if (n === 1 && pixels > 4194304) fail(`${path}.effects`, `the effects make ${frames} frames of ${width}×${height}, ${pixels} pixels, more than the 4,194,304 a recipe's frames share; use fewer frames or a smaller canvas`);
+  if (n > 1 && pixels > 4194304) fail(`${path}.subpixels`, `${frames} frames of ${width * n}×${height * n} are ${pixels} pixels, more than the 4,194,304 a recipe's frames share; lower subpixels to ${finest(width, height, frames)} or use fewer frames`);
 }
 export const scaleAnchor = (anchor, n) => (n > 1 && Array.isArray(anchor) && anchor.length === 2 && anchor.every(Number.isInteger) ? [anchor[0] * n, anchor[1] * n] : anchor);
 
@@ -1224,7 +1236,7 @@ function readSource(source, frames) {
   const palette = source.palette ?? {};
   if (!isObject(palette)) fail('bodies.palette', 'expected a palette object');
   const width = integer(source.width, 'bodies.width', 4, 256), height = integer(source.height, 'bodies.height', 4, 256);
-  const n = readSubpixels(source.subpixels, 'bodies', width, height);
+  const n = readSubpixels(source.subpixels, 'bodies', width, height, source.effects);
   const symbols = source.symbols ?? {};
   if (!isObject(symbols)) fail('bodies.symbols', 'expected named symbols for obstacles and sprites');
   for (const [name, rows] of Object.entries(symbols)) {
@@ -1241,7 +1253,7 @@ function readSource(source, frames) {
     identifier(name, path);
     if (seen.has(name.toLowerCase())) fail(path, 'effect names must be unique ignoring case; they name animations and frames');
     seen.add(name.toLowerCase());
-    effects.push({ name, path, effect: readEffect(value, path, { width, height, palette, symbols, frames }) });
+    effects.push({ name, path, effect: readEffect(value, path, { width, height, palette, symbols, frames, subpixels: n }) });
   }
   return { shell, width, height, n, palette, symbols, effects };
 }

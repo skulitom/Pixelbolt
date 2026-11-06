@@ -44,7 +44,7 @@ const fail = (path, message) => { throw new PixelError(path, message); };
 // refusing the layer at `path` that crosses it.
 const spendWork = (work, n, path) => {
   work.spent += n;
-  if (work.spent > SHAPE_WORK) fail(path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames`);
+  if (work.spent > SHAPE_WORK) fail(path, `the shape layers would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels to draw; make them smaller (radius, width, the part on the canvas), fewer, or over fewer frames (a loop whose looks hold paints its cycle twice, and takes twice as long; hold: 0 paints it once)`);
 };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const number = (value, path, min, max) => {

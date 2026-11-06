@@ -18,7 +18,7 @@ import { BODIES_SHOWCASE, buildBodiesGIFs } from '../showcase/bodies/build.mjs';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const GOLDEN = {
-  'ring-escape': '74e2c36fa2b6f1c05b931ebef0556342c970dd4192185632d5c4a69185fed3ea', 'bouncing-pixel': '444ad867ec4c01600cd5560353ba9e6fef9ad6a9fddd02464bf3124d2349f5bd', 'spinning-hoop': 'f8b94600b5e6a477c6146849bf738df1494adfad699c74d92ebd182a12a5ce73', 'crate-topple': '46fc517bbc175daea132767549d92a5076b8af580ce9c2e300098c1e4cbf427d', territory: 'df91dbb9680d2a86741f1079714c5b921b67796cdb7abb10c05d6277a34664f3'
+  'ring-escape': '74e2c36fa2b6f1c05b931ebef0556342c970dd4192185632d5c4a69185fed3ea', 'bouncing-pixel': '444ad867ec4c01600cd5560353ba9e6fef9ad6a9fddd02464bf3124d2349f5bd', 'spinning-hoop': 'f8b94600b5e6a477c6146849bf738df1494adfad699c74d92ebd182a12a5ce73', 'crate-topple': '46fc517bbc175daea132767549d92a5076b8af580ce9c2e300098c1e4cbf427d', territory: '450d73ed85a146aa6f5363a98d0504cd8d620beaa44fafd3502fc79c9dfce857'
 };
 const example = async name => JSON.parse(await readFile(path.join(root, 'examples', `${name}.bodies.json`), 'utf8'));
 const palette = { k: '#111111', w: '#eeeeee', r: '#dd3344', s: '#555566' };

@@ -13,7 +13,7 @@ import { spriteFrames, retexture } from './godot.js';
 import { shareLink } from './share.js';
 import { animationGIF } from './gif.js';
 import { readExpect, checkDelivery } from './check.js';
-import { createSequence, createSceneSequence, createBodiesSequence, frameGrid } from './sequence.js';
+import { createSequence, createSceneSequence, createBodiesSequence, figuresSummary, frameGrid } from './sequence.js';
 import { compilePoses, compileAutotile, compileNormals } from './authoring.js';
 import { testMapScale } from './terrain.js';
 import { compileEffects } from './fx.js';
@@ -88,6 +88,9 @@ const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern,
 // An MCP call writes at most this much sequence: the studio's download cap. Longer or larger shots go through
 // `pixelbolt sequence`, which a person runs on purpose.
 const SEQUENCE_BYTES = 512 * 1048576;
+// And at most this many pixels of different frames from a bodies match, which a call draws in about half its time
+// limit (600 vertical frames took 21 s); a longer match is refused before it is simulated, naming the command line.
+const SEQUENCE_PIXELS = 1.5e9;
 function checkSequenceSize(frames) {
   const total = [...frames.files.values()].reduce((sum, bytes) => sum + bytes.length, 0);
   if (total > SEQUENCE_BYTES) throw new PixelError('sequence', `these ${frames.info.frames} frames come to ${Math.ceil(total / 1048576)} MB, more than one call writes (${SEQUENCE_BYTES / 1048576} MB); lower the size, fps or seconds, or use the pixelbolt sequence command for longer shots`);
@@ -446,9 +449,9 @@ export function createToolRunner({ directory, root, version }) {
         // A bodies match written as numbered video frames, stepped frame after frame, so it may run past 256 frames.
         if (args.sequence !== undefined) {
           if (format !== 'pixelforge-bodies') throw new PixelError('sequence', 'pixel_compile writes video frames for a pixelforge-bodies match; for other sources compile, then pixel_render with sequence');
-          const frames = checkSequenceSize(createBodiesSequence(document, args.sequence)), out = await newFolder(document.name);
+          const frames = checkSequenceSize(createBodiesSequence(document, args.sequence, { budget: SEQUENCE_PIXELS })), out = await newFolder(document.name);
           await writeBundle(frames, path.join(out, 'sequence'));
-          return { content: [textContent({ ok: true, name: document.name, directory: out, sequence: sequenceSummary(frames.info), figures: frames.info.figures })] };
+          return { content: [textContent({ ok: true, name: document.name, directory: out, sequence: sequenceSummary(frames.info), figures: figuresSummary(frames.info.figures) })] };
         }
         const { recipe, metadata, warnings: compiled = [], preview: testMap } = args.preset !== undefined ? compilePreset(document) : COMPILERS[format](document);
         const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
@@ -493,7 +496,7 @@ export function createToolRunner({ directory, root, version }) {
 export const TOOL_TIME_LIMIT = 50_000, TOOL_MEMORY_LIMIT = 2048;
 // Requests that may wait behind a running call before the server stops reading (see startMCP).
 const MAX_WAITING = 256;
-const stopped = (name, why) => ({ isError: true, content: [textContent({ error: `${name} ${why} and was stopped. Make the work smaller (canvas or video size, frames, scale, particles, simulation steps) or split it across calls.` })] });
+const stopped = (name, why, args) => ({ isError: true, content: [textContent({ error: `${name} ${why} and was stopped. ${name === 'pixel_compile' && args?.sequence !== undefined ? 'A long match runs on the command line, which has no time limit: npx -y pixelbolt sequence <source.json> --out <new folder> --fps 30; or use a smaller size or fewer frames.' : 'Make the work smaller (canvas or video size, frames, scale, particles, simulation steps) or split it across calls.'}` })] });
 
 // One worker thread runs the tool calls, one at a time. Stopping a call (past a limit, or cancelled through `signal`)
 // ends its worker, and the next call starts a fresh one, so a stopped call leaves nothing behind but any files it had
@@ -523,10 +526,10 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
       let timer;
       const finish = value => { clearTimeout(timer); signal?.removeEventListener('abort', cancel); thread.off('message', finish).off('error', failed).off('exit', ended); resolve(value); };
       const stop = value => { if (worker === current) worker = null; thread.terminate(); finish(value); };
-      const failed = error => stop(error.code === 'ERR_WORKER_OUT_OF_MEMORY' ? stopped(name, `ran out of memory (${memoryLimit} MB)`) : { isError: true, content: [textContent({ error: error.message })] });
-      const ended = () => stop(stopped(name, 'ended unexpectedly'));
+      const failed = error => stop(error.code === 'ERR_WORKER_OUT_OF_MEMORY' ? stopped(name, `ran out of memory (${memoryLimit} MB)`, args) : { isError: true, content: [textContent({ error: error.message })] });
+      const ended = () => stop(stopped(name, 'ended unexpectedly', args));
       const cancel = () => stop(cancelled);
-      timer = setTimeout(() => stop(stopped(name, `took longer than ${timeLimit / 1000} s`)), timeLimit);
+      timer = setTimeout(() => stop(stopped(name, `took longer than ${timeLimit / 1000} s`, args)), timeLimit);
       thread.on('message', finish).on('error', failed).on('exit', ended);
       signal?.addEventListener('abort', cancel, { once: true });
       // A value the worker can't be sent is this call's error; the worker never saw it and keeps serving.
@@ -621,7 +624,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       initialized = true;
       const mimeTypes = params.capabilities?.extensions?.['io.modelcontextprotocol/ui']?.mimeTypes;
       ui = Array.isArray(mimeTypes) && mimeTypes.includes(UI_MIME);
-      result({ protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {}, ...(ui && { resources: {} }) }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset), and for fewer frames keep N evenly spaced frames with one pixel_patch call, never by lowering frames in the source. pixel_scene reviews assets together.' }); return;
+      result({ protocolVersion: versions.includes(params.protocolVersion) ? params.protocolVersion : versions[0], capabilities: { tools: {}, ...(ui && { resources: {} }) }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water), rigid-body sources (bouncing, toppling, territory matches) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset), and for fewer frames keep N evenly spaced frames with one pixel_patch call, never by lowering frames in the source. pixel_scene reviews assets together.' }); return;
     }
     if (!initialized) { error(-32000, 'Initialize the server first'); return; }
     if (method === 'tools/list') { result({ tools: ui ? tools.map(tool => pictureTools.has(tool.name) ? { ...tool, _meta: { ui: { resourceUri: UI_URI }, 'ui/resourceUri': UI_URI } } : tool) : tools }); return; }

@@ -166,10 +166,13 @@ test('a zero budget follows the serial inclusive check before loading each prese
   sameJSON(await list({ concurrency: 2, budget: 0 }), expired);
 });
 
-test('a worker checks the budget again before compiling a dispatched preset', async t => {
+test('a worker checks the budget again before compiling a dispatched preset, past the first', async t => {
   const { list, state } = await fixture(t, { workerCode: '  Date.now = () => deadline + 1;' });
-  const listing = await list({ budget: 3600000, concurrency: 2 });
-  assert.ok(listing.presets.every(entry => entry.unmeasured));
+  const listing = await list({ budget: 3600000, concurrency: 2 }), measured = listing.presets.filter(entry => !entry.unmeasured && !entry.error);
+  // The first preset handed out is measured whatever the clock says, as the serial listing measures its first, so a
+  // listing on a busy machine still adds to the cache; every other dispatched preset finds the deadline passed.
+  assert.equal(measured.length, 1);
+  assert.ok(listing.presets.every(entry => entry === measured[0] || entry.unmeasured || entry.error));
   assert.ok(state.starts.length > 0, 'jobs were dispatched before their worker clock passed the deadline');
   stopped(state);
 });

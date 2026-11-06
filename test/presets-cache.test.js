@@ -115,3 +115,13 @@ test('a listing never creates the export directory: pixel_help writes only into 
   assert.ok(measured(listing).length > 0);
   assert.deepEqual(await readdir(dir), [], 'no output folder made');
 });
+
+test('a listing past its budget still measures one preset, with worker threads as without, so every listing makes progress', async t => {
+  // Workers that start slowly on a busy machine (a CI runner) once measured nothing within the budget, so the cache never
+  // filled. Whatever the clock does, the first preset handed out is measured, as the serial listing measures its first.
+  for (const concurrency of [1, 4]) {
+    const dir = path.join(await temp(t), '.presets'), listing = await listPresets({ budget: 1, cache: dir, concurrency });
+    assert.equal(measured(listing).length >= 1, true, `concurrency ${concurrency}`);
+    assert.equal(Object.keys(JSON.parse(await readFile(await cacheFile(dir), 'utf8'))).length, measured(listing).length, `concurrency ${concurrency}: cached`);
+  }
+});

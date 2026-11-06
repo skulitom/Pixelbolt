@@ -100,11 +100,18 @@ function readPower(entry, path, context) {
     power, label: entry.label === undefined ? LABELS[power] : label(entry.label, `${path}.label`),
     count: integer(entry.count ?? 3, `${path}.count`, 2, 8), spread: number(entry.spread ?? 30, `${path}.spread`, 1, 180),
     scale: number(entry.scale ?? 2, `${path}.scale`, 1.25, 4), factor: number(entry.factor ?? 1.5, `${path}.factor`, 0.25, 4),
-    to: entry.to === undefined ? null : pair(entry.to, `${path}.to`, -context.width, 2 * context.width),
+    to: entry.to === undefined ? null : target(entry.to, `${path}.to`, context),
     strength: number(entry.strength ?? 0.05, `${path}.strength`, 0.001, 1), frames: integer(entry.frames ?? 120, `${path}.frames`, 1, 18000)
   };
 }
 const POWER_FIELDS = ['power', 'label', 'count', 'spread', 'scale', 'factor', 'to', 'strength', 'frames'];
+// A place a power moves or pulls a body to: on the canvas or up to a canvas beyond it, each axis by its own side.
+function target(value, path, { width, height }) {
+  const [x, y] = pair(value, path, -2 * Math.max(width, height), 4 * Math.max(width, height));
+  if (x < -width || x > 2 * width) fail(`${path}[0]`, `expected a number from ${-width} to ${2 * width}`);
+  if (y < -height || y > 2 * height) fail(`${path}[1]`, `expected a number from ${-height} to ${2 * height}`);
+  return [x, y];
+}
 
 /** `pickups` → [{ at, size, from, until, symbol, color, power… }]: squares a body takes by reaching them. */
 export function readPickups(list, path, context) {
@@ -144,7 +151,7 @@ export function readHud(list, path, context, teams) {
   if (list === undefined) return [];
   if (!teams) fail(path, 'a heads-up display shows a territory\'s score; give the effect a territory');
   if (!Array.isArray(list) || list.length > LIMITS.hud) fail(path, `expected a list of at most ${LIMITS.hud} entries`);
-  const known = new Set(['leader', 'news', 'frame', ...teams.flatMap(team => [team.name, `${team.name}%`])]);
+  const known = new Set(['leader', 'news', 'frame', ...teams.flatMap(team => [team.name, `${team.name}%`])]), fine = context.subpixels ?? 1;
   return list.map((entry, i) => {
     const p = `${path}[${i}]`;
     if (!isObject(entry)) fail(p, 'expected { text, at, color } or { bar }');
@@ -153,7 +160,7 @@ export function readHud(list, path, context, teams) {
       fields(entry, ['bar', 'empty', 'from', 'until'], p);
       if (!isObject(entry.bar)) fail(`${p}.bar`, 'expected { at, size }');
       fields(entry.bar, ['at', 'size'], `${p}.bar`);
-      return { bar: { at: pair(entry.bar.at, `${p}.bar.at`, 0, 4096, true), size: pair(entry.bar.size, `${p}.bar.size`, 1, 4096, true) }, empty: entry.empty === undefined ? null : key(entry.empty, `${p}.empty`, context.palette), from, until };
+      return { bar: { at: pair(entry.bar.at, `${p}.bar.at`, 0, Math.floor(4096 / fine), true), size: pair(entry.bar.size, `${p}.bar.size`, 1, Math.floor(512 / fine), true) }, empty: entry.empty === undefined ? null : key(entry.empty, `${p}.empty`, context.palette), from, until };
     }
     fields(entry, ['text', 'at', 'color', 'align', 'back', 'pad', 'scale', 'news', 'from', 'until'], p);
     if (typeof entry.text !== 'string' || !entry.text.length || entry.text.length > 80 || entry.text.includes('\n')) fail(`${p}.text`, 'expected 1–80 characters on one line');
@@ -161,9 +168,9 @@ export function readHud(list, path, context, teams) {
     layoutText(entry.text.replace(TOKEN, '0'), {}, message => fail(`${p}.text`, message));
     const align = entry.align ?? 'left';
     if (!['left', 'center', 'right'].includes(align)) fail(`${p}.align`, 'expected left, center or right');
-    return { text: entry.text, at: pair(entry.at, `${p}.at`, -4096, 4096, true), color: key(entry.color, `${p}.color`, context.palette), align,
+    return { text: entry.text, at: pair(entry.at, `${p}.at`, -Math.floor(4000 / fine), Math.floor(4000 / fine), true), color: key(entry.color, `${p}.color`, context.palette), align,
       back: entry.back === undefined ? null : key(entry.back, `${p}.back`, context.palette), pad: integer(entry.pad ?? 1, `${p}.pad`, 0, 16),
-      scale: integer(entry.scale ?? 1, `${p}.scale`, 1, 8), news: integer(entry.news ?? 45, `${p}.news`, 1, 18000), from, until };
+      scale: integer(entry.scale ?? 1, `${p}.scale`, 1, Math.max(1, Math.min(8, Math.floor(16 / fine)))), news: integer(entry.news ?? 45, `${p}.news`, 1, 18000), from, until };
   });
 }
 

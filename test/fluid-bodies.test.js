@@ -189,3 +189,17 @@ test('the water a turning paddle stirs keeps a smooth surface: no notch opens ov
     for (let x = 14; x <= 42; x++) assert.ok(top[x] <= Math.max(top[x - 2], top[x + 2]), `frame ${f}: a notch at column ${x} (${top.slice(x - 2, x + 3).join(' ')})`);
   }
 });
+
+test('a crowd that seals the liquid into one-cell pockets compiles, and the live runner draws alike however often it renders', () => {
+  // Sealed one-cell pockets once gave the pressure solve a direction it hardly bends, a step 1e31 long and NaN bodies.
+  const crowd = compileFluid({ format: 'pixelforge-fluid', version: 1, name: 'crowd', width: 32, height: 32, palette: { b: '#2f6fc0', r: '#ff0000' },
+    effects: { crowd: { kind: 'liquid', frames: 40, seed: 1, walls: ['left', 'right', 'bottom', 'top'], fill: [{ x: 0, y: 24, w: 32, h: 8 }], emitters: [],
+      look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }],
+      bodies: [{ shape: 'circle', radius: 0.75, at: [1, 1], grid: { count: [16, 16], step: [2, 1.5] }, fill: 'r', density: 0.5 }] } } });
+  assert.equal(crowd.recipe.frames.length, 40);
+  // Bodies hold their drawn place from step to step, so rendering every step or once draws the same frame.
+  const source = fluidBodyPresets['crate-splash'], every = createLiveFluid(source), once = createLiveFluid(source);
+  for (let k = 0; k < 20; k++) { every.step(); every.render(); }
+  once.step(20);
+  assert.deepEqual(every.render().keys, once.render().keys);
+});

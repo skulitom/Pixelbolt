@@ -29,7 +29,7 @@
     { "name": "pixel_inspect", "description": "Look at a sprite or animation frame by frame: contact sheets, palette-key grids and optional diagnostics." },
     { "name": "pixel_patch", "description": "Fix one pixel, a colour or a frame with targeted edits, corrections or overlays, and compare the result." },
     { "name": "pixel_render", "description": "Export sprite sheets, atlases, Godot SpriteFrames, animations, GIFs, video frames and a Canvas player into a new unique folder, and images, atlases and recipes at paths you name." },
-    { "name": "pixel_compile", "description": "Build character animations from poses, terrain tilesets, particle effects, simulated smoke, fire and water, or lighting normal passes as editable recipes." },
+    { "name": "pixel_compile", "description": "Build character animations from poses, terrain tilesets, particle effects, simulated smoke, fire and water, rigid bodies and territory matches, or lighting normal passes as editable recipes." },
     { "name": "pixel_scene", "description": "Compose and render a scene or room from sprites and tilemaps, with optional scene or frame exports." },
     { "name": "pixel_import", "description": "Turn existing pixel art (a PNG of up to 8 bits per channel: RGB, RGBA, greyscale or indexed) into an editable recipe without changing its pixels." }
   ],

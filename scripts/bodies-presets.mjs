@@ -81,7 +81,7 @@ const ball = (name, team, at, velocity, fill) => ({ name, shape: 'circle', radiu
 const territory = bodiesSource('territory', 72, 128,
   { n: '#1d3557', a: '#f4a259', N: '#0d1b2a', A: '#fff1d6', k: '#10131a', w: '#f8f4ec', p: '#e63973', q: '#ffe0ea' },
   {
-    frames: territoryFrames, duration: 33, gravity: [0, 0], background: 'k', walls: ['left', 'right', 'top'],
+    frames: territoryFrames, duration: 34, gravity: [0, 0], background: 'k', walls: ['left', 'right', 'top'],
     obstacles: [{ symbol: 'floor', x: 0, y: 112, draw: 'none' }],
     territory: { cell: 4, size: [18, 28], split: 'rows', teams: [{ name: 'tide', color: 'n' }, { name: 'ember', color: 'a' }] },
     bodies: [
