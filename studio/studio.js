@@ -50,7 +50,8 @@ const browserStorage = name => { try { return globalThis[name]; } catch { return
 const locks = navigator.locks ?? null, claimed = claimTab(browserStorage('sessionStorage'), locks);
 let drafts = null, offer = null, offers = [], draftTimer, draftWarned = false;
 const ownOffer = () => offer !== null && offer.id === drafts.id;
-const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character · 6 frames' }, { file: 'ember', title: 'Campfire', type: 'Effect · 4 frames' }, { file: 'coin', title: 'Golden coin', type: 'Collectible · 6 frames' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light · 2 frames' }, { file: 'caption', title: 'Caption', type: 'Text, for video · 8 frames' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses · 5 frames' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx · 57 frames' }, { file: 'interference.wave', title: 'Interference', type: 'Paired ripples · 40 frames' }, { file: 'portal.wave', title: 'Portal', type: 'Moving waves, steady rim · 40 frames' }];
+// Each example's frame count is added from its render when the list is built, so a changed example can't leave it stale.
+const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character' }, { file: 'ember', title: 'Campfire', type: 'Effect' }, { file: 'coin', title: 'Golden coin', type: 'Collectible' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light' }, { file: 'caption', title: 'Caption', type: 'Text, for video' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx' }, { file: 'interference.wave', title: 'Interference', type: 'Paired ripples' }, { file: 'portal.wave', title: 'Portal', type: 'Moving waves, steady rim' }];
 const title = name => name.replace(/[-_]/g, ' ').replace(/^./, c => c.toUpperCase());
 function imageCanvas(data, width, height) {
   const c = document.createElement('canvas'); c.width = width; c.height = height;
@@ -352,8 +353,9 @@ $('new').addEventListener('click', () => {
 // The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
 // the draft stays until the user edits again (the draft then follows) or confirms replacing or leaving the recipe.
 $('save').addEventListener('click', () => {
+  // A pose or wave source keeps its format word, as the name above the editor, the CLI and examples/ give it.
   let extension = 'pixel';
-  try { if (JSON.parse(source.value).format === 'pixelforge-wave') extension = 'wave'; } catch { /* Broken drafts can still be saved. */ }
+  try { const format = JSON.parse(source.value)?.format; extension = format === 'pixelforge-poses' ? 'poses' : format === 'pixelforge-wave' ? 'wave' : extension; } catch { /* Broken drafts can still be saved. */ }
   const filename = `${project?.name ?? 'sprite'}.${extension}.json`;
   download(source.value, filename, 'application/json'); sent = source.value;
   toast(`Sent ${filename} to your browser to save.${dirty ? ' Until you load another recipe, its draft is kept here too.' : ''}`); keepDraft();
@@ -432,7 +434,8 @@ async function boot() {
       const response = await fetch(`/examples/${example.file}.json`); const value = await response.json(), preview = renderProject(compileSource(value).recipe);
       const button = document.createElement('button'); button.className = 'example'; button.dataset.file = example.file;
       const label = document.createElement('span'), strong = document.createElement('strong'), small = document.createElement('small');
-      strong.textContent = example.title; small.textContent = example.type; label.append(strong, small);
+      const count = preview.frames.length;
+      strong.textContent = example.title; small.textContent = `${example.type} · ${count} frame${count === 1 ? '' : 's'}`; label.append(strong, small);
       button.append(thumbnail(imageCanvas(preview.frames[0].data, preview.width, preview.height)), label);
       button.addEventListener('click', () => loadExample(example)); $('examples').append(button);
     }
