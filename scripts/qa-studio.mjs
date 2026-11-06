@@ -206,7 +206,12 @@ try {
     const before = await text('frame-counter'); await until(`document.getElementById('frame-counter').textContent !== ${JSON.stringify(before)}`, 'the figure to move');
     await click('#timeline .frame:nth-child(1)');
     const plain = await canvas(); await click('#contacts'); assert.notEqual((await canvas()).hash, plain.hash); await click('#contacts');
-    await click('#motion-view'); assert.match(await text('motion-summary'), /pass/); assert.doesNotMatch(await text('motion-summary'), /check|unavailable/);
+    await click('#motion-view');
+    // No check fails, and each is named with its measure. A run never has both feet down, so the two walk-only gait
+    // checks have nothing to measure in it.
+    const summary = await text('motion-summary');
+    assert.match(summary, /pass/); assert.doesNotMatch(summary, /: check|undefined/);
+    assert.deepEqual(summary.split(' · ').filter(part => part.endsWith(': unavailable')), ['Knees at contact: unavailable', 'Knee lift: unavailable'], summary);
     assert.ok((await canvas()).width > plain.width); await studio.shot('figure-motion');
     await choose('motion-speed', '0'); assert.match(await text('motion-summary'), /check/); await choose('motion-speed', '48');
     await click('#animation-view'); await choose('zoom', '4'); await click('#contacts'); await studio.shot('figure-contacts');
@@ -217,6 +222,9 @@ try {
     assert.equal(JSON.parse(await readFile(saved, 'utf8')).format, 'pixelforge-poses');
     // Named as the page names the source above the editor, and as the CLI and examples/ name a pose source.
     assert.match(path.basename(saved), /\.poses\.json$/); assert.equal(path.basename(saved), await text('source-filename'));
+    // The Frames dialog's command reads the file Save JSON gave.
+    await click('#frames'); await until(`document.getElementById('frames-dialog').open`, 'the frames dialog');
+    assert.ok((await text('frames-call')).startsWith(`pixelbolt sequence ${path.basename(saved)} `), await text('frames-call')); await click('#frames-close');
     const { root: { nodeId } } = await studio.page('DOM.getDocument'), input = await studio.page('DOM.querySelector', { nodeId, selector: '#file' });
     await studio.page('DOM.setFileInputFiles', { files: [saved], nodeId: input.nodeId });
     await until(`document.getElementById('toast').textContent.startsWith('Opened ')`, 'saved poses to reopen');

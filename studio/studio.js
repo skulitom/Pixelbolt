@@ -72,12 +72,15 @@ function reviewMotion() {
   const speed = $('motion-speed').value, ground = $('motion-ground').value;
   motionReview = inspectMotion(project, { animation: $('animation').value, metadata: poseMetadata, scale: 1,
     ...(speed !== '' && { speed: Number(speed) }), ...(ground !== '' && { ground: Number(ground) }) });
-  const names = { slide: 'Foot slide', ground: 'Ground contact', poseSpread: 'Pose changes', loopSeam: 'Loop join' };
+  const names = { slide: 'Foot slide', ground: 'Ground contact', poseSpread: 'Pose changes', loopSeam: 'Loop join', armSwing: 'Arm swing', contactLegs: 'Knees at contact', kneeLift: 'Knee lift' };
   const report = motionReview.motion, details = {
     slide: `${Math.max(0, ...report.slide.map(p => p.pixels ?? 0))} px`,
     ground: `${Math.max(0, ...report.groundErrors.map(p => Math.abs(p.pixels)))} px from ground`,
     poseSpread: `${Math.round(Math.min(1, ...report.poseSpread.map(p => p.share)) * 100)}% minimum`,
-    loopSeam: `${report.loopSeam.maximum}° maximum`
+    loopSeam: `${report.loopSeam.maximum}° maximum`,
+    armSwing: `${report.gait?.arms.degreesFromOpposite}° from opposite`,
+    contactLegs: `${report.gait?.contact.largest?.degrees}° more bent than at rest`,
+    kneeLift: `${report.gait?.lift.largest?.degrees}° from rest`
   };
   $('motion-summary').textContent = Object.entries(report.checks).map(([key, pass]) => `${names[key] ?? key}: ${pass === null ? 'unavailable' : `${pass ? 'pass' : 'check'} (${details[key]})`}`).join(' · ');
   return motionReview;
@@ -350,13 +353,17 @@ $('new').addEventListener('click', () => {
   setSource({ version: 1, name: 'new-sprite', width: 16, height: 16, palette: { g: '#72b58d' }, frames: [{ name: 'idle', duration: 150, ops: [] }] });
   source.focus();
 });
+// The file Save JSON gives the editor's text, and the one the Frames dialog's command reads: a pose or wave source keeps
+// its format word, as the name above the editor, the CLI and examples/ give it.
+function savedName() {
+  let format;
+  try { format = JSON.parse(source.value)?.format; } catch { /* Broken drafts can still be saved. */ }
+  return `${project?.name ?? 'sprite'}.${format === 'pixelforge-poses' ? 'poses' : format === 'pixelforge-wave' ? 'wave' : 'pixel'}.json`;
+}
 // The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
 // the draft stays until the user edits again (the draft then follows) or confirms replacing or leaving the recipe.
 $('save').addEventListener('click', () => {
-  // A pose or wave source keeps its format word, as the name above the editor, the CLI and examples/ give it.
-  let extension = 'pixel';
-  try { const format = JSON.parse(source.value)?.format; extension = format === 'pixelforge-poses' ? 'poses' : format === 'pixelforge-wave' ? 'wave' : extension; } catch { /* Broken drafts can still be saved. */ }
-  const filename = `${project?.name ?? 'sprite'}.${extension}.json`;
+  const filename = savedName();
   download(source.value, filename, 'application/json'); sent = source.value;
   toast(`Sent ${filename} to your browser to save.${dirty ? ' Until you load another recipe, its draft is kept here too.' : ''}`); keepDraft();
 });
@@ -373,7 +380,7 @@ $('gif').addEventListener('click', () => {
 const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: exportScale(256) }) });
 function showFramesCall() {
   const settings = framesSettings(), sizing = settings.size ? `--size ${settings.size}` : `--scale ${settings.scale}`;
-  $('frames-call').textContent = `pixelbolt sequence ${project.name}.pixel.json --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;
+  $('frames-call').textContent = `pixelbolt sequence ${savedName()} --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;
 }
 $('frames').addEventListener('click', () => { compile(); if (!valid) { toast('Fix the recipe to export frames.'); return; } showFramesCall(); $('frames-dialog').showModal(); });
 for (const id of ['frames-fps', 'frames-size']) $(id).addEventListener('change', showFramesCall);

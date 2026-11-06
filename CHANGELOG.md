@@ -75,7 +75,8 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Studio labels
 
 - The studio's examples list counts each example's frames from its render, so the particle-effects example reads 60 frames (it said 57 since it gained three) and a changed example can't leave its count stale.
-- **Save JSON** names a pose source `<name>.poses.json`, as the file name above the editor, the CLI and `examples/` do; it saved as `<name>.pixel.json`.
+- **Save JSON** names a pose source `<name>.poses.json`, as the file name above the editor, the CLI and `examples/` do; it saved as `<name>.pixel.json`. The Frames dialog's command names the file Save JSON gives, so it reads a saved pose or wave source too (it always said `<name>.pixel.json`).
+- The motion review names the gait checks (Arm swing, Knees at contact, Knee lift) with their measure, where it showed `armSwing: pass (undefined)`.
 
 ## 0.12.1 (2026-11-06)
 
