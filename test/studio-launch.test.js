@@ -91,7 +91,15 @@ test('the Windows connect helper pauses after failure only when started without 
 });
 test('an assembled build passes the release checks from a folder with a space and an accent', async t => {
   const tempRoot = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(tempRoot, 'pixelbolt studio é-'));
-  t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); });
+  // Windows can hold a program's file for a moment after it exits, so the folder gets a few tries. rm's own maxRetries
+  // retries again at every level of the tree, which for a file that stays locked comes to many minutes.
+  t.after(async () => {
+    assert.ok(dir.startsWith(tempRoot + path.sep));
+    for (let attempt = 1; ; attempt++) {
+      try { await rm(dir, { recursive: true, force: true }); return; }
+      catch (error) { if (attempt === 5) throw error; await new Promise(resolve => setTimeout(resolve, 200 * attempt)); }
+    }
+  });
   // Where a build is pinned for this machine, the Node running the tests stands in for the pinned runtime, so the
   // launcher scripts really run. Elsewhere the Windows layout is checked for its contents only.
   const target = hostTarget(), runtime = target ? { ...standIn, exe: await readFile(process.execPath) } : standIn;

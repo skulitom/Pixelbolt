@@ -37,7 +37,13 @@ async function tree(base, relative = '') {
 }
 
 // Verifies `archive`, or an already extracted build in `dir`. `pinned: false` accepts a stand-in runtime (tests).
-export async function verifyStudio({ archive, dir, pinned = true, allowDev = false, keep = false, window = Boolean(archive), log = console.log }) {
+// Whatever the checks find, nothing they started is left running or holding the caller's pipes open, so a caller such as
+// the test runner can still exit.
+export async function verifyStudio(options) {
+  const cleanup = [];
+  try { return await verify(options, cleanup); } finally { for (const step of cleanup) step(); }
+}
+async function verify({ archive, dir, pinned = true, allowDev = false, keep = false, window = Boolean(archive), log = console.log }, cleanup) {
   const results = [], notes = [];
   const check = async (name, run) => {
     try { const detail = await run(); results.push({ name, ok: true }); log(`  ok    ${name}${detail ? ` (${detail})` : ''}`); }
@@ -156,17 +162,34 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
       : spawnSync('/bin/sh', ['-c', line], { cwd: dir, env: runEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options });
     // Runs one of the build's own scripts with arguments, the way a terminal or a double-click starts it.
     const script = (file, args = [], options = {}) => windows ? shell(`"${path.join(dir, file)}"${args.map(value => ` ${value}`).join('')}`, options) : spawnSync(path.join(dir, file), args, { cwd: dir, env: runEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options });
+    // What runs from the folder, as "pid program" lines. Windows asks Get-Process, which reads each program's path from the
+    // process itself, not WMI: on a busy machine WMI's process queries (Get-CimInstance, and taskkill /t, which finds a
+    // process's children through them) can stall for minutes and then give up.
     const running = () => {
       const run = windows
-        ? ps('Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($env:PF_DIR, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { "$($_.ProcessId) $($_.Name)" }', { PF_DIR: dir + path.sep })
+        ? ps('Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($env:PF_DIR, [StringComparison]::OrdinalIgnoreCase) } | ForEach-Object { "$($_.Id) $([IO.Path]::GetFileName($_.Path))" }', { PF_DIR: dir + path.sep })
         : spawnSync('ps', ['-A', '-ww', '-o', 'pid=', '-o', 'command='], { encoding: 'utf8' });
-      assert.equal(run.status, 0, run.stderr);
+      assert.equal(run.status, 0, `listing the processes failed: ${run.stderr || run.error?.message}`);
       return run.stdout.split(/\r?\n/).filter(line => line && (windows || line.includes(dir + path.sep))).map(line => line.trim());
     };
     const settled = async () => { for (let i = 0; ; i++) { const left = running(); if (!left.length || i === 20) return left; await sleep(500); } };
-    // taskkill takes about a second each time, so the launchers are stopped together rather than one after another.
-    const stop = child => windows ? new Promise(resolve => spawn(path.join(system, 'taskkill.exe'), ['/pid', String(child.pid), '/t', '/f'], { windowsHide: true, stdio: 'ignore' }).once('error', resolve).once('close', resolve)) : child.kill('SIGTERM');
+    // Ends a process outright (TerminateProcess on Windows); one that has already gone is fine.
+    const end = pid => { try { process.kill(pid, 'SIGKILL'); } catch (error) { if (error.code !== 'ESRCH') throw error; } };
     const launchers = [];
+    // Stops every launcher started so far. Elsewhere that is the SIGTERM a launcher gets, and one that ignores it is found
+    // by the listing that follows. On Windows a launcher is cmd.exe running the bundled runtime, which ending cmd.exe
+    // would leave running, so whatever runs from the folder is ended first; a process cannot refuse that, so each
+    // launcher's exit is sure to come and is waited for.
+    const stopLaunchers = async () => {
+      if (!windows) { for (const child of launchers) child.kill('SIGTERM'); return; }
+      const exits = launchers.map(child => child.exitCode === null && child.signalCode === null ? new Promise(resolve => child.once('exit', resolve)) : null);
+      try { for (const line of running()) end(Number(line.split(' ')[0])); } finally { for (const child of launchers) child.kill(); }
+      await Promise.all(exits);
+    };
+    cleanup.push(() => {
+      try { for (const line of running()) end(Number(line.split(' ')[0])); } catch {}
+      for (const child of launchers) { child.kill('SIGKILL'); child.stdout.destroy(); child.stderr.destroy(); child.unref(); }
+    });
     // `dropped` is a file handed to the launcher, as Explorer does for one dragged onto it; `file` picks the script.
     const launch = (dropped, file = names.studio) => new Promise((resolve, reject) => {
       const child = windows
@@ -257,8 +280,9 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
       assert.match(bundle.get('preview.html').read().toString(), /^<!doctype html>/); return `${bundle.size} files`;
     });
     await check('stopping the launchers leaves no process behind', async () => {
-      await Promise.all(launchers.map(stop));
-      assert.deepEqual(await settled(), []);
+      await stopLaunchers();
+      const left = await settled();
+      assert.ok(!left.length, `still running from the folder: ${left.join(', ')}`);
       await assert.rejects(fetch(first.url), 'the studio still answers after its launcher was stopped');
     });
     // What closing the window does. Windows: the launcher in a console window of its own, closed the way its X button
@@ -270,18 +294,18 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
     });
     else if (window) {
       const run = ps([
-        'function Under { @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($env:PF_DIR, [StringComparison]::OrdinalIgnoreCase) }) }',
+        'function Under { @(Get-Process | Where-Object { $_.Path -and $_.Path.StartsWith($env:PF_DIR, [StringComparison]::OrdinalIgnoreCase) }) }',
         "$p = Start-Process -FilePath $env:ComSpec -ArgumentList ('/d /s /c \"\"' + $env:PF_LAUNCHER + '\" --no-browser\"') -WindowStyle Minimized -PassThru",
         'for ($i = 0; $i -lt 60 -and (Under).Count -eq 0; $i++) { Start-Sleep -Milliseconds 250 }',
         'Start-Sleep -Milliseconds 500; $p.Refresh()',
-        "if ((Under).Count -eq 0 -or $p.MainWindowHandle -eq 0) { & taskkill.exe /pid $p.Id /t /f 2>&1 | Out-Null; 'NOWINDOW'; exit }",
+        "if ((Under).Count -eq 0 -or $p.MainWindowHandle -eq 0) { Under | Stop-Process -Force -ErrorAction SilentlyContinue; Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; 'NOWINDOW'; exit }",
         '[void]$p.CloseMainWindow()',
         'for ($i = 0; $i -lt 60 -and (Under).Count -gt 0; $i++) { Start-Sleep -Milliseconds 250 }',
         "'CLOSED ' + (Under).Count"
       ].join('; '), { PF_DIR: dir + path.sep, PF_LAUNCHER: path.join(dir, names.studio) });
       if (/^CLOSED \d+/m.test(run.stdout)) await check('closing the launcher\'s console window leaves no process behind', () => assert.match(run.stdout, /^CLOSED 0\s*$/m));
       else note(`Window-close check not run: no console window could be opened here (${(run.stdout || run.stderr).trim().split(/\r?\n/).pop() || 'no output'}).`);
-      for (const line of running()) spawnSync(path.join(system, 'taskkill.exe'), ['/pid', line.split(' ')[0], '/t', '/f'], { windowsHide: true });
+      for (const line of running()) end(Number(line.split(' ')[0]));
     }
 
     log('Command line');
@@ -408,7 +432,7 @@ export async function verifyStudio({ archive, dir, pinned = true, allowDev = fal
     });
 
     log('Afterwards');
-    await check('nothing from the folder is still running', async () => assert.deepEqual(await settled(), []));
+    await check('nothing from the folder is still running', async () => { const left = await settled(); assert.ok(!left.length, `still running from the folder: ${left.join(', ')}`); });
     // macOS marks what a browser downloads, and what is extracted from it, as quarantined. A copy of the folder
     // gets the same mark here to see whether the command line still runs; with no one at the screen this is a note.
     if (host === 'macos' && archive) {
