@@ -94,7 +94,7 @@ test('MCP motion review accepts a pose source or a revision with explicit compil
     const saved = await mcp.call('pixel_inspect', { revision: compiled.info.revision, metadata: compiled.info.metadata, ...options });
     assert.ok(!direct.result.isError, JSON.stringify(direct.info));
     assert.deepEqual(direct.result, saved.result);
-    assert.deepEqual(direct.info.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true });
+    assert.deepEqual(direct.info.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true, armSwing: null, contactLegs: null, kneeLift: null });
     assert.equal(direct.result.content.filter(c => c.type === 'image').length, 2);
     const unknown = await mcp.call('pixel_inspect', { revision: compiled.info.revision, ...options });
     assert.equal(unknown.info.motion.checks.slide, null);

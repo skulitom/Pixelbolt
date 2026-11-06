@@ -1,6 +1,7 @@
 // Advisory motion measurements at displayed-frame onsets. Never changes the artwork.
 import { PixelError, parseColor } from './core.js';
 import { angleDelta } from './pose-geometry.js';
+import { sinDeg, cosDeg } from './craft.js';
 
 const fail = (where, message) => { throw new PixelError(`motion.${where}`, message); };
 const rounded = n => Math.round(n * 1e6) / 1e6;
@@ -59,6 +60,61 @@ function poseData(metadata, frame) {
   if (!parts || Array.isArray(parts) || typeof parts !== 'object' || Object.keys(parts).length > 64) fail('metadata', `invalid parts for ${frame.name}`);
   for (const part of Object.values(parts)) if (!part || (part.worldAngle !== undefined && (!Number.isInteger(part.worldAngle) || part.worldAngle < 0 || part.worldAngle > 359))) fail('metadata', `invalid joint angle for ${frame.name}`);
   return { contacts, markers, parts };
+}
+
+// Gait thresholds in degrees: arms within this of swinging opposite the legs, knees bent at most this much more than at
+// rest where both feet are down, a walk's lifted thigh at most this far from its rest angle.
+const ARM_PHASE = 45, CONTACT_BEND = 30, WALK_LIFT = 45;
+const point = value => Array.isArray(value) && value.length === 2 && value.every(Number.isFinite) ? value : null;
+// How far apart two cycles are, in whole degrees from 0 (together) to 180 (opposite): the angle between their
+// once-a-cycle components, so holds and easing within the cycle don't move it. Null when either hardly swings.
+function phaseApart(a, b, phases) {
+  const harmonic = values => values.reduce(([c, s], v, i) => [c + v * cosDeg(phases[i]), s + v * sinDeg(phases[i])], [0, 0]);
+  const [ac, as] = harmonic(a), [bc, bs] = harmonic(b), size = Math.sqrt((ac * ac + as * as) * (bc * bc + bs * bs));
+  if (size < 1e-9) return null;
+  const cosine = (ac * bc + as * bs) / size;
+  let best = 0;
+  for (let degrees = 1; degrees <= 180; degrees++) if (Math.abs(cosDeg(degrees) - cosine) < Math.abs(cosDeg(best) - cosine)) best = degrees;
+  return best;
+}
+
+// What makes a walk or run read, measured where the rig's first two legs trade places over the animation. Every
+// measure is in canvas x, so it holds facing either way: the gap between the feet against the gap between the hands
+// (each hand's reach ahead of its shoulder), each two-bone knee where both feet are down, and each lifted thigh's swing
+// from its rest angle in a walk (a gait with both feet down at some point; a run may lift its knees higher).
+function gaitReview(entries, metadata, duration) {
+  const rig = metadata?.rig, chains = role => (Array.isArray(rig?.[role]) ? rig[role] : []).slice(0, 2).filter(c => Array.isArray(c) && c.length >= 2 && c.every(n => typeof n === 'string'));
+  const legs = chains('legs'), arms = chains('arms'), unmeasured = { legsTrade: null, arms: { pass: null }, contact: { pass: null }, lift: { pass: null } };
+  if (legs.length < 2) return unmeasured;
+  const joints = (entry, name) => entry.parts[name]?.joints;
+  const lead = entries.map(e => { const a = point(joints(e, legs[0].at(-1))?.end), b = point(joints(e, legs[1].at(-1))?.end); return a && b ? a[0] - b[0] : null; });
+  if (lead.some(v => v === null)) return unmeasured;
+  if (Math.max(...lead) < 1 || Math.min(...lead) > -1) return { ...unmeasured, legsTrade: false };
+  const reach = (entry, chain) => { const s = point(joints(entry, chain[0])?.start), e = point(joints(entry, chain.at(-1))?.end); return s && e ? e[0] - s[0] : null; };
+  const gap = arms.length < 2 ? [] : entries.map(e => { const a = reach(e, arms[0]), b = reach(e, arms[1]); return a === null || b === null ? null : a - b; });
+  const apart = gap.length && !gap.includes(null) && duration > 0 ? phaseApart(lead, gap, entries.map(e => 360 * e.start / duration)) : null;
+  const fromOpposite = apart === null ? null : 180 - apart;
+  const rest = typeof rig.rest === 'string' ? metadata.poses?.[rig.rest]?.parts : undefined;
+  const angle = (parts, name) => Number.isInteger(parts?.[name]?.worldAngle) ? parts[name].worldAngle : null;
+  const bend = (parts, chain) => { const a = angle(parts, chain[0]), b = angle(parts, chain[1]); return a === null || b === null ? null : Math.abs(angleDelta(a, b)); };
+  const marker = (entry, chain) => entry.markers.find(m => m.part === chain.at(-1))?.name;
+  const down = entry => entry.contacts !== undefined && legs.every(chain => entry.contacts.includes(marker(entry, chain)));
+  const bent = [], lifted = [];
+  for (const entry of entries.filter(down)) for (const chain of legs.filter(c => c.length === 2)) {
+    const degrees = bend(entry.parts, chain);
+    if (degrees !== null) bent.push({ frame: entry.frame.name, leg: chain.at(-1), degrees: Math.max(0, degrees - (bend(rest, chain) ?? 0)) });
+  }
+  if (entries.some(down)) for (const entry of entries) for (const chain of legs) {
+    if (entry.contacts === undefined || entry.contacts.includes(marker(entry, chain))) continue;
+    const thigh = angle(entry.parts, chain[0]);
+    if (thigh !== null) lifted.push({ frame: entry.frame.name, leg: chain[0], degrees: Math.abs(angleDelta(angle(rest, chain[0]) ?? 90, thigh)) });
+  }
+  const largest = list => list.reduce((best, item) => item.degrees > best.degrees ? item : best, list[0]);
+  const worst = largest(bent), highest = largest(lifted);
+  return { legsTrade: true,
+    arms: { degreesFromOpposite: fromOpposite, maximum: ARM_PHASE, pass: fromOpposite === null ? null : fromOpposite <= ARM_PHASE },
+    contact: { ...(worst && { largest: worst }), maximum: CONTACT_BEND, pass: worst ? worst.degrees <= CONTACT_BEND : null },
+    lift: { ...(highest && { largest: highest }), maximum: WALK_LIFT, pass: highest ? highest.degrees <= WALK_LIFT : null } };
 }
 
 function jointDifference(a, b) {
@@ -149,15 +205,17 @@ export function inspectMotion(project, options = {}) {
   }
   const loopSeam = { ...pixelDifference(entries.at(-1).frame.data, entries[0].frame.data), ...seam, largestInternal,
     pass: !animation.loop || seam.maximum === null || largestInternal === null ? null : seam.joints.every(j => j.pass !== false) };
+  const gait = gaitReview(entries, metadata, time);
   const checks = {
     slide: !contactsAvailable || !names.size || speed === null ? null : slide.every(p => p.pixels <= 1),
     ground: !contactsAvailable || !names.size || ground === null ? null : groundErrors.every(e => e.pixels === 0),
     poseSpread: poseSpread.length ? poseSpread.every(p => p.pass) : null,
-    loopSeam: loopSeam.pass
+    loopSeam: loopSeam.pass,
+    armSwing: gait.arms.pass, contactLegs: gait.contact.pass, kneeLift: gait.lift.pass
   };
   const motion = { animation: options.animation, speed, ground, duration: time, loop: animation.loop,
     sampling: 'Displayed-frame onsets; held-frame travel is excluded. Slide is the farthest pair of world-space contact samples; positive ground error floats, negative sinks.',
-    contactsAvailable, slide, groundErrors, poseSpread, loopSeam, checks };
+    contactsAvailable, slide, groundErrors, poseSpread, loopSeam, gait, checks };
   return { mode: 'motion', motion, ...motionStrip(project, entries, motion, scale, options.background) };
 }
 

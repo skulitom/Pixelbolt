@@ -182,7 +182,7 @@ test('every template at its defaults passes its own motion checks on a plain sid
   for (const animation of ['walk', 'run']) {
     const { motion } = inspectMotion(project, { animation, metadata });
     // Measured, not skipped: feet stay planted on the ground, and the contact poses trade legs.
-    assert.deepEqual(motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true }, animation);
+    assert.deepEqual(motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true, armSwing: true, ...(animation === 'walk' ? { contactLegs: true, kneeLift: true } : { contactLegs: null, kneeLift: null }) }, animation);
     const pair = motion.poseSpread.find(p => p.from === `${animation}-contact-a` && p.to === `${animation}-contact-b`);
     assert.ok(pair.jointDegrees >= 20, `${animation} contact poses differ by ${pair.jointDegrees}°`);
     // Near limbs stay in front of the body in both halves of a side-view cycle.

@@ -138,6 +138,28 @@ export function expandMotions(input, compileRest, probeJoints) {
     // Past four frames there are more phases than breathing words, so idle poses are numbered from 0.
     const fixedLabels = { idle: count === 2 ? ['inhale', 'exhale'] : count === 3 ? ['rest', 'inhale', 'exhale'] : count === 4 ? ['rest', 'inhale', 'settle', 'exhale'] : Array.from({ length: count }, (_, i) => `${i}`),
       jump: ['crouch', 'take-off', 'rise', 'apex', 'fall', 'land', 'recover'], attack: ['anticipation', 'strike', 'follow-through', 'recover'], hurt: ['recoil', 'recover'] };
+    // Where a walking or running foot is aimed in frame i: planted, travelling back under the hip, or lifted.
+    const step = (leg, j, i) => {
+      const k = (i + (j % 2) * half) % count, front = leg.x + direction * travel / 2;
+      if (k < stance) return { x: front - speed * k * duration / 1000, y: rig.ground, planted: true };
+      // The lifted foot lags behind the hip, then reaches forward to land: it leaves the ground behind the body
+      // (kicking further back, toward the stride's rear, when the contact covers less than the stride), passes under
+      // the hip tucked up and lands from in front. Its height peaks a third of the way through, so the heel comes up
+      // behind and the leg is long again as it reaches.
+      const t = (k - stance + 1) / (count - stance + 1), share = Math.min(1, travel / stride);
+      const reach = -share + 2 * share * t * t * (1.8 - .8 * t) + (1 - share) * 10 * t * (1 - t) * (2 * t - 1);
+      return { x: leg.x + direction * stride / 2 * reach, y: rig.ground - (lift === 0 ? 0 : Math.max(1, Math.round(lift * 6.75 * t * (1 - t) * (1 - t)))), planted: false };
+    };
+    // The legs' swing as one cycle: the once-a-cycle part of how far the first foot is ahead of the second, as a cosine
+    // and sine weight. The arms swing opposite it, so they are furthest out when the legs are furthest apart, even
+    // where a run holds its legs apart through flight.
+    let legCycle = [1, 0];
+    if (locomotion) {
+      const turns = Array.from({ length: count }, (_, i) => Math.round(i * 360 / count));
+      const ahead = turns.map((_, i) => direction * (step(legs[0], 0, i).x - step(legs[1], 1, i).x));
+      const c = ahead.reduce((sum, v, i) => sum + v * cosDeg(turns[i]), 0), s = ahead.reduce((sum, v, i) => sum + v * sinDeg(turns[i]), 0), size = Math.sqrt(c * c + s * s);
+      if (size > 1e-9) legCycle = [c / size, s / size];
+    }
     const names = [];
     for (let i = 0; i < count; i++) {
       const pose = structuredClone(rest), label = locomotion ? labels.get(i) ?? `between-${i}` : fixedLabels[template][i];
@@ -169,11 +191,11 @@ export function expandMotions(input, compileRest, probeJoints) {
       }
       if (rig.head && template === 'idle') { const head = parts.get(rig.head); head.at = [...(head.at ?? [0, 0])]; head.at[1] -= Math.round(sinDeg(angle)); }
       for (const [j, tail] of (rig.tail ?? []).entries()) setAngle(parts.get(tail), restAngle(tail) + 10 * sinDeg(angle - j * 25));
-      // Arms swing against the legs: at a contact the arm on the leading leg's side is furthest back and its partner
-      // furthest forward, and they pass the body when the legs do. An elbow bends as its arm comes forward; a runner's
-      // stays bent.
+      // Arms swing against the legs: the arm on the leading leg's side is furthest back when the legs are furthest
+      // apart, and the arms pass the body when the legs do. An elbow bends as its arm comes forward; a runner's stays
+      // bent.
       if (locomotion) for (const [j, chain] of (rig.arms ?? []).entries()) {
-        const swing = cosDeg(angle + j % 2 * 180);
+        const swing = legCycle[0] * cosDeg(angle + j % 2 * 180) + legCycle[1] * sinDeg(angle + j % 2 * 180);
         setAngle(parts.get(chain[0]), restAngle(chain[0]) + direction * (template === 'run' ? 35 : 25) * swing);
         if (chain.length > 1) setAngle(parts.get(chain[1]), restAngle(chain[1]) - direction * ((template === 'run' ? 40 : 0) + 20 * Math.max(0, -swing)));
       }
@@ -181,20 +203,8 @@ export function expandMotions(input, compileRest, probeJoints) {
         const last = parts.get(leg.last);
         delete last.angle; delete last.rotate;
         let x = leg.x, y = rig.ground, planted = true;
-        if (locomotion) {
-          const k = (i + (j % 2) * half) % count, front = leg.x + direction * travel / 2;
-          planted = k < stance;
-          if (planted) x = front - speed * k * duration / 1000;
-          else {
-            // The lifted foot lags behind the hip, then reaches forward to land: it leaves the ground behind the body
-            // (kicking further back, toward the stride's rear, when the contact covers less than the stride), passes
-            // under the hip tucked up and lands from in front. Its height peaks a third of the way through, so the
-            // heel comes up behind and the leg is long again as it reaches.
-            const t = (k - stance + 1) / (count - stance + 1), share = Math.min(1, travel / stride);
-            const reach = -share + 2 * share * t * t * (1.8 - .8 * t) + (1 - share) * 10 * t * (1 - t) * (2 * t - 1);
-            x = leg.x + direction * stride / 2 * reach; y -= lift === 0 ? 0 : Math.max(1, Math.round(lift * 6.75 * t * (1 - t) * (1 - t)));
-          }
-        } else if (template === 'jump' && i > 0 && i < 5) { planted = false; y += Math.min(-1, dy); }
+        if (locomotion) ({ x, y, planted } = step(leg, j, i));
+        else if (template === 'jump' && i > 0 && i < 5) { planted = false; y += Math.min(-1, dy); }
         last.reach = [Math.round(x), Math.round(y)]; last.bend ??= 'forward';
         if (!pose.markers.some(m => m.name === leg.marker)) pose.markers.push({ name: leg.marker, part: leg.last, point: leg.point });
         if (planted) pose.contacts.push(leg.marker);

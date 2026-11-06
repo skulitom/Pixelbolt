@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compilePoses } from '../src/authoring.js';
+import { compilePoses, expandPoses } from '../src/authoring.js';
 import { renderProject, describeStampRecipe, parseColor } from '../src/core.js';
+import { inspectMotion } from '../src/motion.js';
 import { plainRig } from '../scripts/figure-rigs.mjs';
 
 // What makes a walk or run read as one, measured on the plain side-view humanoid (the hero example's figure). It
@@ -15,19 +16,24 @@ const legLength = (() => {
 })();
 
 for (const gait of ['walk', 'run']) {
-  test(`${gait}: at each contact the arm on the leading leg's side is back and its partner forward, and they come together as the legs pass`, () => {
+  test(`${gait}: at each contact the arm on the leading leg's side is behind its partner, and they come together as the legs pass`, () => {
     for (const [suffix, lead, trail] of [['a', 'near', 'far'], ['b', 'far', 'near']]) {
       const parts = pose(`${gait}-contact-${suffix}`);
       assert.ok(parts[`${lead}Shin`].joints.end[0] > parts[`${trail}Shin`].joints.end[0], `${suffix}: the ${lead} foot leads`);
-      assert.ok(parts[`${lead}Upper`].worldAngle >= restArm + 20, `${suffix}: the ${lead} arm swings back`);
-      assert.ok(parts[`${trail}Upper`].worldAngle <= restArm - 20, `${suffix}: the ${trail} arm swings forward`);
+      // A run's arms are furthest out in flight, where its legs are held furthest apart, so at contact they are on the way.
+      assert.ok(parts[`${lead}Upper`].worldAngle > restArm && parts[`${trail}Upper`].worldAngle < restArm, `${suffix}: the ${lead} arm is back, the ${trail} arm forward`);
+      assert.ok(parts[`${lead}Upper`].worldAngle - parts[`${trail}Upper`].worldAngle >= 40, `${suffix}: the arms are well apart`);
       // The elbow bends coming forward: the forward forearm turns further forward than its upper arm.
       const bend = ((parts[`${trail}Fore`].worldAngle - parts[`${trail}Upper`].worldAngle) % 360 + 540) % 360 - 180;
       assert.ok(bend < -15, `${suffix}: the forward elbow bends (${bend}°)`);
     }
-    for (const suffix of ['a', 'b']) {
-      const apart = name => Math.abs(pose(name).nearUpper.worldAngle - pose(name).farUpper.worldAngle);
-      assert.ok(apart(`${gait}-passing-${suffix}`) * 2 < apart(`${gait}-contact-${suffix}`), `passing-${suffix}: the arms come together as the legs pass`);
+    // Where the feet pass each other (closest in x: a walk's passing pose, a run's down pose), so do the hands.
+    const apart = name => Math.abs(pose(name).nearUpper.worldAngle - pose(name).farUpper.worldAngle);
+    const feet = name => Math.abs(pose(name).nearShin.joints.end[0] - pose(name).farShin.joints.end[0]);
+    const frames = recipe.animations[gait].frames, half = frames.length / 2;
+    for (const [suffix, part] of [['a', frames.slice(0, half)], ['b', frames.slice(half)]]) {
+      const passing = part.reduce((best, name) => feet(name) < feet(best) ? name : best);
+      assert.ok(apart(passing) * 2 < apart(`${gait}-contact-${suffix}`), `${passing}: the arms come together as the feet pass`);
     }
   });
 }
@@ -52,6 +58,49 @@ test('walk: contacts are centred under the hip with long legs, the body dips aft
   const at = name => { const parts = pose(name); return parts.farShin.joints.end[0] - parts.farThigh.joints.start[0]; };
   assert.ok(at(lifted[0]) < 0, `${lifted[0]}: the lifted foot starts behind the hip`);
   assert.ok(at(lifted.at(-1)) > 0, `${lifted.at(-1)}: it reaches forward before landing`);
+});
+
+// The motion review's gait checks, on the walk as the templates make it and on three ways a walk went wrong before:
+// arms a quarter cycle late (hanging at each contact, furthest out at passing), a body that sinks into a crouch at
+// each contact, and a lifted knee marched up in front.
+const review = (source, animation = 'walk') => {
+  const { recipe, metadata } = compilePoses(source);
+  return inspectMotion(renderProject(recipe), { animation, metadata, scale: 1 }).motion;
+};
+const broken = change => {
+  const source = expandPoses(plainRig()), walk = source.poses.filter(p => p.name.startsWith('walk-'));
+  walk.forEach((p, i) => change(p, i, name => p.parts.find(part => part.name === name)));
+  return source;
+};
+test('the gait checks pass the template walk and run, and leave other motions unmeasured', () => {
+  const walk = review(plainRig());
+  assert.deepEqual([walk.checks.armSwing, walk.checks.contactLegs, walk.checks.kneeLift], [true, true, true]);
+  assert.ok(walk.gait.arms.degreesFromOpposite <= 10, `arms against legs: ${walk.gait.arms.degreesFromOpposite}° from opposite`);
+  const run = review(plainRig(), 'run');
+  // A run has no moment with both feet down, so neither knee measure applies.
+  assert.deepEqual([run.checks.armSwing, run.checks.contactLegs, run.checks.kneeLift], [true, null, null]);
+  for (const animation of ['idle', 'jump', 'attack', 'hurt']) {
+    const motion = review(plainRig(), animation);
+    assert.equal(motion.gait.legsTrade, false, animation);
+    assert.deepEqual([motion.checks.armSwing, motion.checks.contactLegs, motion.checks.kneeLift], [null, null, null], animation);
+  }
+});
+test('the gait checks fail arms a quarter cycle late, a crouch at contact and a marched knee', () => {
+  const late = review(broken((p, i, part) => {
+    const swing = 25 * Math.sin(i * Math.PI / 4);
+    part('nearUpper').angle += Math.round(swing - 25 * Math.cos(i * Math.PI / 4));
+    part('farUpper').angle -= Math.round(swing - 25 * Math.cos(i * Math.PI / 4));
+  }));
+  assert.equal(late.checks.armSwing, false, `${late.gait.arms.degreesFromOpposite}° from opposite`);
+  // Three pixels lower at each contact: the feet still land on their marks, so slide and ground pass it.
+  const crouch = review(broken(p => { if (p.name.includes('contact')) p.origin = [p.origin[0], p.origin[1] + 3]; }));
+  assert.deepEqual([crouch.checks.slide, crouch.checks.ground, crouch.checks.contactLegs], [true, true, false]);
+  assert.ok(crouch.gait.contact.largest.degrees > 30 && /contact/.test(crouch.gait.contact.largest.frame));
+  const march = review(broken((p, i, part) => { if (p.name === 'walk-up-a') part('farShin').reach = [part('farShin').reach[0] + 1, part('farShin').reach[1] - 5]; }));
+  assert.equal(march.checks.kneeLift, false);
+  assert.deepEqual([march.gait.lift.largest.frame, march.gait.lift.largest.leg], ['walk-up-a', 'farThigh']);
+  // Each change breaks only its own measure.
+  assert.deepEqual([late.checks.contactLegs, late.checks.kneeLift, crouch.checks.armSwing, march.checks.armSwing], [true, true, true, true]);
 });
 
 test('the attack swings in the body\'s frame, though the arms hang from a chest that stands up from the hips', () => {

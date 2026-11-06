@@ -89,7 +89,7 @@ test('CLI motion inspection reads sources and explicit metadata without overwrit
   const out = path.join(dir, 'motion.png'), args = [file('.poses'), '--motion', 'run', '--speed', '48', '--scale', '1'];
   const direct = run([...args, '--out', out]); assert.equal(direct.status, 0, direct.stderr);
   const view = JSON.parse(direct.stdout);
-  assert.deepEqual(view.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true });
+  assert.deepEqual(view.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true, armSwing: null, contactLegs: null, kneeLift: null });
   assert.ok((await readFile(out)).length > 100); assert.ok((await readFile(out.replace('.png', '.native.png'))).length > 100);
   const saved = run([file(''), '--metadata', file('.meta'), '--motion', 'run', '--speed', '48', '--scale', '1']);
   assert.equal(saved.status, 0, saved.stderr); assert.deepEqual(JSON.parse(saved.stdout).motion, view.motion);
