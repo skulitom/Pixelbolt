@@ -184,9 +184,11 @@ export function tiledMap(scene, draws, { tilesets }) {
     const at = map.cells.map(cell => [(cell.x + half[0]) / grid[0], (cell.y + half[1]) / grid[1]]);
     if (at.some(([c, r]) => !Number.isInteger(c) || !Number.isInteger(r)) || new Set(at.map(p => p.join())).size !== at.length) continue;
     // Where its first cell's tile is drawn from, as Tiled draws it: whole cells of that move its cells along the map, and
-    // the rest is the layer's offset (all of it for a map reaching left of or above the scene, whose cells stay).
+    // the rest is the layer's offset (all of it for a map reaching left of or above the scene, whose cells stay). A rule's
+    // `offset` may draw a cell left of or above the map's own first cell; the cells move on until none is before the
+    // map's first row or column, and the offset takes them back (a cell at row -1 threw, one at column -1 was lost).
     const origin = [instance.at[0] - instance.anchor[0] - half[0], instance.at[1] - instance.anchor[1] - half[1] + project(instance.asset).height - grid[1]];
-    const move = origin.map((o, axis) => Math.max(0, Math.ceil(o / grid[axis])));
+    const move = origin.map((o, axis) => Math.max(0, Math.ceil(o / grid[axis]), -Math.min(...at.map(p => p[axis]))));
     placed.set(i, { at: at.map(([c, r]) => [c + move[0], r + move[1]]), offset: origin.map((o, axis) => o - move[axis] * grid[axis]) });
   }
   const layers = [], shaded = new Set(), hazed = new Set(), label = i => scene.instances[i].name ?? scene.instances[i].asset;

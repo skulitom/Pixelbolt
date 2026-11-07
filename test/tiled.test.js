@@ -137,6 +137,24 @@ test('shade and haze have nothing in a Tiled map to become, and the export says 
   assert.deepEqual(files.get('scene.tmx').toString().split('\n').filter(line => line.startsWith('  <object ')).map(line => line.match(/name="(\w+)"/)[1]), [...Array(9).fill('floor'), 'far']);
 });
 
+test('a tilemap whose rule draws above or left of its first cell keeps every tile, the layer moved back by its offset', async () => {
+  // At the scene's origin, a rule's offset of a row up put a cap at row -1, which threw a TypeError and stopped the
+  // whole export; a column left lost the cap from the layer.
+  const tile = { version: 1, name: 'tile', width: 4, height: 4, palette: { a: '#a07040', b: '#40a070' },
+    frames: [{ name: 'post', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color: 'a' }] }, { name: 'cap', ops: [{ op: 'rect', x: 1, y: 1, w: 2, h: 2, color: 'b' }] }] };
+  const layer = async offset => {
+    const { files } = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'edge', width: 16, height: 16, assets: { tile },
+      instances: [{ name: 'posts', asset: 'tile', at: [0, 0], tilemap: { tile: [4, 4], rows: ['#.#', '...'], legend: { '#': { rules: [{ frame: 'post' }, { frame: 'cap', offset }] } } } }] });
+    const tmx = files.get('scene.tmx').toString();
+    return [tmx.split('\n').find(line => line.startsWith(' <layer ')), tmx.split('<data encoding="csv">\n')[1].split('\n</data>')[0].split(',\n').slice(0, 2).map(row => row.split(',').map(Number))];
+  };
+  // Posts are gid 1, caps gid 2; a post at x 0 and 8 either way.
+  assert.deepEqual(await layer([0, 1]), [' <layer id="1" name="posts" width="4" height="4">', [[1, 0, 1, 0], [2, 0, 2, 0]]]);
+  assert.deepEqual(await layer([0, -1]), [' <layer id="1" name="posts" width="4" height="4" offsetx="0" offsety="-4">', [[2, 0, 2, 0], [1, 0, 1, 0]]]);
+  assert.deepEqual(await layer([-1, 0]), [' <layer id="1" name="posts" width="4" height="4" offsetx="-4" offsety="0">', [[2, 1, 2, 1], [0, 0, 0, 0]]]);
+  assert.deepEqual(await layer([-1, -1]), [' <layer id="1" name="posts" width="4" height="4" offsetx="-4" offsety="-4">', [[2, 0, 2, 0], [0, 1, 0, 1]]]);
+});
+
 test('names are written as XML can hold them: markup escaped, tabs and line breaks as references, other control characters replaced', async () => {
   const block = { version: 1, name: 'block', width: 4, height: 4, frames: [{ name: 'f', ops: [{ op: 'rect', x: 0, y: 0, w: 4, h: 4, color: '#408040' }] }] };
   const { files } = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'named', width: 8, height: 8, assets: { 'a&b "<c>"': block },
