@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "Throwaway project with Unreal's default plugins, for checking Pixelbolt sprite sheets in Paper2D",
+	"Plugins": [
+		{ "Name": "PythonScriptPlugin", "Enabled": true },
+		{ "Name": "Fab", "Enabled": false },
+		{ "Name": "Bridge", "Enabled": false },
+		{ "Name": "EditorTelemetry", "Enabled": false },
+		{ "Name": "RuntimeTelemetry", "Enabled": false }
+	]
+}

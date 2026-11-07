@@ -1,0 +1,510 @@
+{
+ "case": "forest-spirit",
+ "atlas": "out/forest-spirit/forest-spirit.atlas.json",
+ "folder": "/Game/T/forest-spirit",
+ "engine": "5.8.4-58902052+++UE5+Release-5.8",
+ "assets": {
+  "/Game/T/forest-spirit/Flipbooks/forest-spirit_blink.forest-spirit_blink": "PaperFlipbook",
+  "/Game/T/forest-spirit/Flipbooks/forest-spirit_bob.forest-spirit_bob": "PaperFlipbook",
+  "/Game/T/forest-spirit/Flipbooks/forest-spirit_idle.forest-spirit_idle": "PaperFlipbook",
+  "/Game/T/forest-spirit/forest-spirit_atlas.forest-spirit_atlas": "PaperSpriteSheet",
+  "/Game/T/forest-spirit/Frames/blink.blink": "PaperSprite",
+  "/Game/T/forest-spirit/Frames/fall.fall": "PaperSprite",
+  "/Game/T/forest-spirit/Frames/float.float": "PaperSprite",
+  "/Game/T/forest-spirit/Frames/rest.rest": "PaperSprite",
+  "/Game/T/forest-spirit/Frames/rise.rise": "PaperSprite",
+  "/Game/T/forest-spirit/Frames/settle.settle": "PaperSprite",
+  "/Game/T/forest-spirit/Textures/forest-spirit.forest-spirit": "Texture2D"
+ },
+ "saved_on_disk": 11,
+ "sheet": "/Game/T/forest-spirit/forest-spirit_atlas.forest-spirit_atlas",
+ "texture": {
+  "path": "/Game/T/forest-spirit/Textures/forest-spirit.forest-spirit",
+  "size": [
+   156,
+   26
+  ],
+  "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+  "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+  "filter": "<TextureFilter.TF_DEFAULT: 3>",
+  "srgb": true,
+  "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>",
+  "exported_png": true
+ },
+ "sprites": {
+  "rest": {
+   "path": "/Game/T/forest-spirit/Frames/rest.rest",
+   "source_uv": [
+    1.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     9.0,
+     0.121795,
+     0.153846
+    ],
+    [
+     -7.0,
+     9.0,
+     0.038462,
+     0.153846
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.038462,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.121795,
+     0.923077
+    ],
+    [
+     6.0,
+     9.0,
+     0.121795,
+     0.153846
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.038462,
+     0.923077
+    ]
+   ]
+  },
+  "rise": {
+   "path": "/Game/T/forest-spirit/Frames/rise.rise",
+   "source_uv": [
+    27.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     10.0,
+     0.288462,
+     0.115385
+    ],
+    [
+     -7.0,
+     10.0,
+     0.205128,
+     0.115385
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.205128,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.288462,
+     0.923077
+    ],
+    [
+     6.0,
+     10.0,
+     0.288462,
+     0.115385
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.205128,
+     0.923077
+    ]
+   ]
+  },
+  "float": {
+   "path": "/Game/T/forest-spirit/Frames/float.float",
+   "source_uv": [
+    53.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     11.0,
+     0.455128,
+     0.076923
+    ],
+    [
+     -7.0,
+     11.0,
+     0.371795,
+     0.076923
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.371795,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.455128,
+     0.923077
+    ],
+    [
+     6.0,
+     11.0,
+     0.455128,
+     0.076923
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.371795,
+     0.923077
+    ]
+   ]
+  },
+  "blink": {
+   "path": "/Game/T/forest-spirit/Frames/blink.blink",
+   "source_uv": [
+    79.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     11.0,
+     0.621795,
+     0.076923
+    ],
+    [
+     -7.0,
+     11.0,
+     0.538462,
+     0.076923
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.538462,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.621795,
+     0.923077
+    ],
+    [
+     6.0,
+     11.0,
+     0.621795,
+     0.076923
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.538462,
+     0.923077
+    ]
+   ]
+  },
+  "fall": {
+   "path": "/Game/T/forest-spirit/Frames/fall.fall",
+   "source_uv": [
+    105.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     10.0,
+     0.788462,
+     0.115385
+    ],
+    [
+     -7.0,
+     10.0,
+     0.705128,
+     0.115385
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.705128,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.788462,
+     0.923077
+    ],
+    [
+     6.0,
+     10.0,
+     0.788462,
+     0.115385
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.705128,
+     0.923077
+    ]
+   ]
+  },
+  "settle": {
+   "path": "/Game/T/forest-spirit/Frames/settle.settle",
+   "source_uv": [
+    131.0,
+    1.0
+   ],
+   "source_dimension": [
+    24.0,
+    24.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    24.0,
+    24.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     9.0,
+     0.955128,
+     0.153846
+    ],
+    [
+     -7.0,
+     9.0,
+     0.871795,
+     0.153846
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.871795,
+     0.923077
+    ],
+    [
+     6.0,
+     -11.0,
+     0.955128,
+     0.923077
+    ],
+    [
+     6.0,
+     9.0,
+     0.955128,
+     0.153846
+    ],
+    [
+     -7.0,
+     -11.0,
+     0.871795,
+     0.923077
+    ]
+   ]
+  }
+ },
+ "flipbooks": {
+  "idle": {
+   "path": "/Game/T/forest-spirit/Flipbooks/forest-spirit_idle.forest-spirit_idle",
+   "fps": 50.0,
+   "num_key_frames": 7,
+   "num_frames": 61,
+   "total_duration": 1.2200000286102295,
+   "expected_ms": 1220,
+   "samples": [
+    {
+     "frame": "rest",
+     "at": 0.12,
+     "got": "/Game/T/forest-spirit/Frames/rest.rest"
+    },
+    {
+     "frame": "rise",
+     "at": 0.31,
+     "got": "/Game/T/forest-spirit/Frames/rise.rise"
+    },
+    {
+     "frame": "float",
+     "at": 0.49,
+     "got": "/Game/T/forest-spirit/Frames/float.float"
+    },
+    {
+     "frame": "blink",
+     "at": 0.65,
+     "got": "/Game/T/forest-spirit/Frames/blink.blink"
+    },
+    {
+     "frame": "float",
+     "at": 0.81,
+     "got": "/Game/T/forest-spirit/Frames/float.float"
+    },
+    {
+     "frame": "fall",
+     "at": 0.99,
+     "got": "/Game/T/forest-spirit/Frames/fall.fall"
+    },
+    {
+     "frame": "settle",
+     "at": 1.14,
+     "got": "/Game/T/forest-spirit/Frames/settle.settle"
+    }
+   ]
+  },
+  "bob": {
+   "path": "/Game/T/forest-spirit/Flipbooks/forest-spirit_bob.forest-spirit_bob",
+   "fps": 50.0,
+   "num_key_frames": 4,
+   "num_frames": 37,
+   "total_duration": 0.7400000095367432,
+   "expected_ms": 740,
+   "samples": [
+    {
+     "frame": "rest",
+     "at": 0.12,
+     "got": "/Game/T/forest-spirit/Frames/rest.rest"
+    },
+    {
+     "frame": "rise",
+     "at": 0.31,
+     "got": "/Game/T/forest-spirit/Frames/rise.rise"
+    },
+    {
+     "frame": "float",
+     "at": 0.49,
+     "got": "/Game/T/forest-spirit/Frames/float.float"
+    },
+    {
+     "frame": "rise",
+     "at": 0.67,
+     "got": "/Game/T/forest-spirit/Frames/rise.rise"
+    }
+   ]
+  },
+  "blink": {
+   "path": "/Game/T/forest-spirit/Flipbooks/forest-spirit_blink.forest-spirit_blink",
+   "fps": 50.0,
+   "num_key_frames": 3,
+   "num_frames": 29,
+   "total_duration": 0.5799999833106995,
+   "expected_ms": 580,
+   "samples": [
+    {
+     "frame": "rest",
+     "at": 0.12,
+     "got": "/Game/T/forest-spirit/Frames/rest.rest"
+    },
+    {
+     "frame": "blink",
+     "at": 0.29,
+     "got": "/Game/T/forest-spirit/Frames/blink.blink"
+    },
+    {
+     "frame": "rest",
+     "at": 0.46,
+     "got": "/Game/T/forest-spirit/Frames/rest.rest"
+    }
+   ]
+  }
+ }
+}

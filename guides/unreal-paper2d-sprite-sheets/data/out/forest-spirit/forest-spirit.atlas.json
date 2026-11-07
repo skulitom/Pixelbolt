@@ -1,0 +1,183 @@
+{
+  "frames": {
+    "rest": {
+      "frame": {
+        "x": 1,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 240
+    },
+    "rise": {
+      "frame": {
+        "x": 27,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 140
+    },
+    "float": {
+      "frame": {
+        "x": 53,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 220
+    },
+    "blink": {
+      "frame": {
+        "x": 79,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 100
+    },
+    "fall": {
+      "frame": {
+        "x": 105,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 140
+    },
+    "settle": {
+      "frame": {
+        "x": 131,
+        "y": 1,
+        "w": 24,
+        "h": 24
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 24
+      },
+      "sourceSize": {
+        "w": 24,
+        "h": 24
+      },
+      "duration": 160
+    }
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        "rest",
+        "rise",
+        "float",
+        "blink",
+        "float",
+        "fall",
+        "settle"
+      ],
+      "loop": true,
+      "duration": 1220
+    },
+    "bob": {
+      "frames": [
+        "rest",
+        "rise",
+        "float",
+        "rise"
+      ],
+      "loop": true,
+      "duration": 740
+    },
+    "blink": {
+      "frames": [
+        "rest",
+        "blink",
+        "rest"
+      ],
+      "loop": false,
+      "duration": 580
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "forest-spirit.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 156,
+      "h": 26
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "bob",
+        "from": 0,
+        "to": 2,
+        "direction": "pingpong"
+      }
+    ]
+  }
+}

@@ -1,0 +1,160 @@
+Excerpts from the Unreal Engine 5.8.4 editor logs of the 7 November 2026 runs (15:53 to 15:55 UTC; the default-plugins record in results-default was re-run at 16:08 on the final script, with the same results).
+<kit> is the folder holding this data; <project> the throwaway project. Full logs are not published (they list local paths).
+Unreal shortens long paths in its Interchange lines; we wrote those out as <kit>/out/<name>/<name>.png.
+
+== final4-default/editor-check.log
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+[2026.11.07-15.54.12:206][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_0 and PaperSpriteSheetImportFactory_0
+[2026.11.07-15.54.12:206][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'forest-spirit_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.12:222][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/forest-spirit/forest-spirit.png]
+[2026.11.07-15.54.12:339][  2]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit
+[2026.11.07-15.54.12:348][  2]LogPython:   forest-spirit_idle (7 key frames at 50 fps, 1220 ms)
+[2026.11.07-15.54.12:349][  2]LogPython:   forest-spirit_bob (4 key frames at 50 fps, 740 ms)
+[2026.11.07-15.54.12:349][  2]LogPython:   forest-spirit_blink (3 key frames at 50 fps, 580 ms)
+[2026.11.07-15.54.12:349][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit_blink
+[2026.11.07-15.54.12:403][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_1 and PaperSpriteSheetImportFactory_1
+[2026.11.07-15.54.12:404][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'forest-spirit-trim2x_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.12:409][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/forest-spirit-trim2x/forest-spirit-trim2x.png]
+[2026.11.07-15.54.12:509][  2]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit-trim2x
+[2026.11.07-15.54.12:510][  2]LogPython:   forest-spirit-trim2x_idle (7 key frames at 50 fps, 1220 ms)
+[2026.11.07-15.54.12:510][  2]LogPython:   forest-spirit-trim2x_bob (4 key frames at 50 fps, 740 ms)
+[2026.11.07-15.54.12:510][  2]LogPython:   forest-spirit-trim2x_blink (3 key frames at 50 fps, 580 ms)
+[2026.11.07-15.54.12:510][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit-trim2x_blink
+[2026.11.07-15.54.12:568][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_2 and PaperSpriteSheetImportFactory_2
+[2026.11.07-15.54.12:569][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'campfire_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.12:576][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/campfire/campfire.png]
+[2026.11.07-15.54.12:809][  2]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire
+[2026.11.07-15.54.12:809][  2]LogPython:   campfire_campfire (24 key frames at 14.2857 fps, 1680 ms)
+[2026.11.07-15.54.13:025][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_3 and PaperSpriteSheetImportFactory_3
+[2026.11.07-15.54.13:027][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'hero_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.13:032][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/hero/hero.png]
+[2026.11.07-15.54.13:406][  2]LogPython: Pixelbolt: 36 sprites and 6 flipbooks in /Game/T/hero
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_idle (4 key frames at 5 fps, 800 ms)
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_walk (8 key frames at 12.5 fps, 640 ms)
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_run (10 key frames at 12.5 fps, 800 ms)
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_jump (7 key frames at 12.5 fps, 560 ms)
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_attack (5 key frames at 12.5 fps, 400 ms)
+[2026.11.07-15.54.13:406][  2]LogPython:   hero_hurt (2 key frames at 12.5 fps, 160 ms)
+[2026.11.07-15.54.13:406][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): hero_jump, hero_attack, hero_hurt
+[2026.11.07-15.54.13:661][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_4 and PaperSpriteSheetImportFactory_4
+[2026.11.07-15.54.13:663][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'fire-spells_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.13:671][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/fire-spells/fire-spells.png]
+[2026.11.07-15.54.15:074][  2]LogPython: Pixelbolt: 107 sprites and 11 flipbooks in /Game/T/fire-spells
+[2026.11.07-15.54.15:074][  2]LogPython:   fire-spells_projectile-0 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:074][  2]LogPython:   fire-spells_projectile-45 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-90 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-135 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-180 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-225 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-270 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_projectile-315 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_impact (12 key frames at 1000 fps, 676 ms)
+[2026.11.07-15.54.15:076][  2]LogPython:   fire-spells_area (19 key frames at 1000 fps, 1201 ms)
+[2026.11.07-15.54.15:077][  2]LogPython:   fire-spells_buff (12 key frames at 12.5 fps, 960 ms)
+[2026.11.07-15.54.15:077][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): fire-spells_impact, fire-spells_area
+[2026.11.07-15.54.16:068][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_5 and PaperSpriteSheetImportFactory_5
+[2026.11.07-15.54.16:069][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'explosion_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.16:076][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/explosion/explosion.png]
+[2026.11.07-15.54.16:186][  2]LogPython: Pixelbolt: explosion Mip Gen Settings <TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP: 0> -> NoMipmaps
+[2026.11.07-15.54.16:582][  2]LogPython: Pixelbolt: 32 sprites and 1 flipbooks in /Game/T/explosion
+[2026.11.07-15.54.16:582][  2]LogPython:   explosion_explosion (32 key frames at 16.6667 fps, 1920 ms)
+[2026.11.07-15.54.16:582][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): explosion_explosion
+[2026.11.07-15.54.17:061][  2]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_6 and PaperSpriteSheetImportFactory_6
+[2026.11.07-15.54.17:063][  2]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'campfire-092_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.17:071][  2]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/campfire-092/campfire-092.png]
+[2026.11.07-15.54.17:444][  2]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire-092
+[2026.11.07-15.54.17:444][  2]LogPython:   campfire-092_campfire (24 key frames at 14.2857 fps, 1680 ms)
+[2026.11.07-15.54.17:801][  2]LogPython: P2D check summary: {"forest-spirit": "ok", "forest-spirit-trim2x": "ok", "campfire": "ok", "hero": "ok", "fire-spells": "ok", "explosion": "ok", "campfire-092": "ok"}
+
+== final4-default/editor-cmd-1.log
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+[2026.11.07-15.54.27:749][  0]Cmd: py <kit>/pixelbolt_paper2d.py <kit>/out/hero/hero.atlas.json /Game/Sprites/Hero
+[2026.11.07-15.54.27:894][  0]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_0 and PaperSpriteSheetImportFactory_0
+[2026.11.07-15.54.27:896][  0]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'hero_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.27:909][  0]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/hero/hero.png]
+[2026.11.07-15.54.28:363][  0]LogPython: Pixelbolt: 36 sprites and 6 flipbooks in /Game/Sprites/Hero
+[2026.11.07-15.54.28:364][  0]LogPython:   hero_idle (4 key frames at 5 fps, 800 ms)
+[2026.11.07-15.54.28:364][  0]LogPython:   hero_walk (8 key frames at 12.5 fps, 640 ms)
+[2026.11.07-15.54.28:365][  0]LogPython:   hero_run (10 key frames at 12.5 fps, 800 ms)
+[2026.11.07-15.54.28:365][  0]LogPython:   hero_jump (7 key frames at 12.5 fps, 560 ms)
+[2026.11.07-15.54.28:365][  0]LogPython:   hero_attack (5 key frames at 12.5 fps, 400 ms)
+[2026.11.07-15.54.28:365][  0]LogPython:   hero_hurt (2 key frames at 12.5 fps, 160 ms)
+[2026.11.07-15.54.28:365][  0]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): hero_jump, hero_attack, hero_hurt
+
+== final4-default/editor-cmd-2.log
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+[2026.11.07-15.54.37:672][  0]Cmd: py <kit>/pixelbolt_paper2d.py <kit>/out/hero/hero.atlas.json /Game/Sprites/Hero
+[2026.11.07-15.54.37:774][  1]LogPython: Error: RuntimeError: /Game/Sprites/Hero already holds assets. Import into a new folder, or delete that one first.
+
+== final4-default/editor-cmd-3.log
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+[2026.11.07-15.54.47:197][  0]Cmd: py <kit>/pixelbolt_paper2d.py <kit>/out/hero/hero.atlas.json /Game/Sprites/Hero2
+[2026.11.07-15.54.47:343][  0]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_0 and PaperSpriteSheetImportFactory_0
+[2026.11.07-15.54.47:345][  0]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'hero_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.54.47:359][  0]LogInterchangeEngine: Display: Interchange import completed [<kit>/out/hero/hero.png]
+[2026.11.07-15.54.47:785][  0]LogPython: Pixelbolt: 36 sprites and 6 flipbooks in /Game/Sprites/Hero2
+[2026.11.07-15.54.47:785][  0]LogPython:   hero_idle (4 key frames at 5 fps, 800 ms)
+[2026.11.07-15.54.47:785][  0]LogPython:   hero_walk (8 key frames at 12.5 fps, 640 ms)
+[2026.11.07-15.54.47:785][  0]LogPython:   hero_run (10 key frames at 12.5 fps, 800 ms)
+[2026.11.07-15.54.47:786][  0]LogPython:   hero_jump (7 key frames at 12.5 fps, 560 ms)
+[2026.11.07-15.54.47:786][  0]LogPython:   hero_attack (5 key frames at 12.5 fps, 400 ms)
+[2026.11.07-15.54.47:786][  0]LogPython:   hero_hurt (2 key frames at 12.5 fps, 160 ms)
+[2026.11.07-15.54.47:786][  0]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): hero_jump, hero_attack, hero_hurt
+
+== final4-strip/editor-check.log
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+[2026.11.07-15.53.43:365][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_0 and PaperSpriteSheetImportFactory_0
+[2026.11.07-15.53.43:367][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'forest-spirit_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.43:469][  1]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit
+[2026.11.07-15.53.43:469][  1]LogPython:   forest-spirit_idle (7 key frames at 50 fps, 1220 ms)
+[2026.11.07-15.53.43:469][  1]LogPython:   forest-spirit_bob (4 key frames at 50 fps, 740 ms)
+[2026.11.07-15.53.43:469][  1]LogPython:   forest-spirit_blink (3 key frames at 50 fps, 580 ms)
+[2026.11.07-15.53.43:469][  1]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit_blink
+[2026.11.07-15.53.43:533][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_1 and PaperSpriteSheetImportFactory_1
+[2026.11.07-15.53.43:534][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'forest-spirit-trim2x_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.43:623][  1]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit-trim2x
+[2026.11.07-15.53.43:623][  1]LogPython:   forest-spirit-trim2x_idle (7 key frames at 50 fps, 1220 ms)
+[2026.11.07-15.53.43:623][  1]LogPython:   forest-spirit-trim2x_bob (4 key frames at 50 fps, 740 ms)
+[2026.11.07-15.53.43:623][  1]LogPython:   forest-spirit-trim2x_blink (3 key frames at 50 fps, 580 ms)
+[2026.11.07-15.53.43:623][  1]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit-trim2x_blink
+[2026.11.07-15.53.43:672][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_2 and PaperSpriteSheetImportFactory_2
+[2026.11.07-15.53.43:673][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'campfire_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.43:891][  1]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire
+[2026.11.07-15.53.43:891][  1]LogPython:   campfire_campfire (24 key frames at 14.2857 fps, 1680 ms)
+[2026.11.07-15.53.44:092][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_3 and PaperSpriteSheetImportFactory_3
+[2026.11.07-15.53.44:094][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'hero_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.44:461][  1]LogPython: Pixelbolt: 36 sprites and 6 flipbooks in /Game/T/hero
+[2026.11.07-15.53.44:461][  1]LogPython:   hero_idle (4 key frames at 5 fps, 800 ms)
+[2026.11.07-15.53.44:461][  1]LogPython:   hero_walk (8 key frames at 12.5 fps, 640 ms)
+[2026.11.07-15.53.44:461][  1]LogPython:   hero_run (10 key frames at 12.5 fps, 800 ms)
+[2026.11.07-15.53.44:461][  1]LogPython:   hero_jump (7 key frames at 12.5 fps, 560 ms)
+[2026.11.07-15.53.44:461][  1]LogPython:   hero_attack (5 key frames at 12.5 fps, 400 ms)
+[2026.11.07-15.53.44:462][  1]LogPython:   hero_hurt (2 key frames at 12.5 fps, 160 ms)
+[2026.11.07-15.53.44:462][  1]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): hero_jump, hero_attack, hero_hurt
+[2026.11.07-15.53.44:756][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_4 and PaperSpriteSheetImportFactory_4
+[2026.11.07-15.53.44:758][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'fire-spells_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.46:258][  1]LogPython: Pixelbolt: 107 sprites and 11 flipbooks in /Game/T/fire-spells
+[2026.11.07-15.53.46:258][  1]LogPython:   fire-spells_projectile-0 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-45 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-90 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-135 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-180 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-225 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:259][  1]LogPython:   fire-spells_projectile-270 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:260][  1]LogPython:   fire-spells_projectile-315 (8 key frames at 16.6667 fps, 480 ms)
+[2026.11.07-15.53.46:260][  1]LogPython:   fire-spells_impact (12 key frames at 1000 fps, 676 ms)
+[2026.11.07-15.53.46:260][  1]LogPython:   fire-spells_area (19 key frames at 1000 fps, 1201 ms)
+[2026.11.07-15.53.46:260][  1]LogPython:   fire-spells_buff (12 key frames at 12.5 fps, 960 ms)
+[2026.11.07-15.53.46:260][  1]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): fire-spells_impact, fire-spells_area
+[2026.11.07-15.53.47:235][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_5 and PaperSpriteSheetImportFactory_5
+[2026.11.07-15.53.47:236][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'explosion_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.47:312][  1]LogPython: Pixelbolt: explosion Mip Gen Settings <TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP: 0> -> NoMipmaps
+[2026.11.07-15.53.47:584][  1]LogPython: Pixelbolt: 32 sprites and 1 flipbooks in /Game/T/explosion
+[2026.11.07-15.53.47:584][  1]LogPython:   explosion_explosion (32 key frames at 16.6667 fps, 1920 ms)
+[2026.11.07-15.53.47:584][  1]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): explosion_explosion
+[2026.11.07-15.53.47:908][  1]LogAssetTools: Warning: Two factories registered with same priority : PaperSpriteSheetReimportFactory_6 and PaperSpriteSheetImportFactory_6
+[2026.11.07-15.53.47:909][  1]LogPaperSpriteSheetImporter: Warning: Unexpected 'app' named 'Pixelbolt' while parsing sprite descriptor file 'campfire-092_atlas'.  Parsing will continue but the format may not be fully supported
+[2026.11.07-15.53.48:164][  1]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire-092
+[2026.11.07-15.53.48:164][  1]LogPython:   campfire-092_campfire (24 key frames at 14.2857 fps, 1680 ms)
+[2026.11.07-15.53.48:377][  1]LogPython: P2D check summary: {"forest-spirit": "ok", "forest-spirit-trim2x": "ok", "campfire": "ok", "hero": "ok", "fire-spells": "ok", "explosion": "ok", "campfire-092": "ok"}
+

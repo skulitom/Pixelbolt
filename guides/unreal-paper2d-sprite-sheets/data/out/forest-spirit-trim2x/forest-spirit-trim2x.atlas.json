@@ -1,0 +1,183 @@
+{
+  "frames": {
+    "rest": {
+      "frame": {
+        "x": 32,
+        "y": 50,
+        "w": 26,
+        "h": 40
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 6,
+        "w": 26,
+        "h": 40
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 240
+    },
+    "rise": {
+      "frame": {
+        "x": 62,
+        "y": 2,
+        "w": 26,
+        "h": 42
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 4,
+        "w": 26,
+        "h": 42
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 140
+    },
+    "float": {
+      "frame": {
+        "x": 2,
+        "y": 2,
+        "w": 26,
+        "h": 44
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 2,
+        "w": 26,
+        "h": 44
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 220
+    },
+    "blink": {
+      "frame": {
+        "x": 32,
+        "y": 2,
+        "w": 26,
+        "h": 44
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 2,
+        "w": 26,
+        "h": 44
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 100
+    },
+    "fall": {
+      "frame": {
+        "x": 2,
+        "y": 50,
+        "w": 26,
+        "h": 42
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 4,
+        "w": 26,
+        "h": 42
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 140
+    },
+    "settle": {
+      "frame": {
+        "x": 62,
+        "y": 50,
+        "w": 26,
+        "h": 40
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 10,
+        "y": 6,
+        "w": 26,
+        "h": 40
+      },
+      "sourceSize": {
+        "w": 48,
+        "h": 48
+      },
+      "duration": 160
+    }
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        "rest",
+        "rise",
+        "float",
+        "blink",
+        "float",
+        "fall",
+        "settle"
+      ],
+      "loop": true,
+      "duration": 1220
+    },
+    "bob": {
+      "frames": [
+        "rest",
+        "rise",
+        "float",
+        "rise"
+      ],
+      "loop": true,
+      "duration": 740
+    },
+    "blink": {
+      "frames": [
+        "rest",
+        "blink",
+        "rest"
+      ],
+      "loop": false,
+      "duration": 580
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "forest-spirit-trim2x.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 90,
+      "h": 94
+    },
+    "scale": "2",
+    "frameTags": [
+      {
+        "name": "bob",
+        "from": 0,
+        "to": 2,
+        "direction": "pingpong"
+      }
+    ]
+  }
+}

@@ -1,0 +1,2216 @@
+{
+ "case": "explosion",
+ "atlas": "out/explosion/explosion.atlas.json",
+ "folder": "/Game/T/explosion",
+ "engine": "5.8.4-58902052+++UE5+Release-5.8",
+ "assets": {
+  "/Game/T/explosion/explosion_atlas.explosion_atlas": "PaperSpriteSheet",
+  "/Game/T/explosion/Flipbooks/explosion_explosion.explosion_explosion": "PaperFlipbook",
+  "/Game/T/explosion/Frames/explosion-0.explosion-0": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-1.explosion-1": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-10.explosion-10": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-11.explosion-11": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-12.explosion-12": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-13.explosion-13": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-14.explosion-14": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-15.explosion-15": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-16.explosion-16": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-17.explosion-17": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-18.explosion-18": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-19.explosion-19": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-2.explosion-2": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-20.explosion-20": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-21.explosion-21": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-22.explosion-22": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-23.explosion-23": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-24.explosion-24": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-25.explosion-25": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-26.explosion-26": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-27.explosion-27": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-28.explosion-28": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-29.explosion-29": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-3.explosion-3": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-30.explosion-30": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-31.explosion-31": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-4.explosion-4": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-5.explosion-5": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-6.explosion-6": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-7.explosion-7": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-8.explosion-8": "PaperSprite",
+  "/Game/T/explosion/Frames/explosion-9.explosion-9": "PaperSprite",
+  "/Game/T/explosion/Textures/explosion.explosion": "Texture2D"
+ },
+ "saved_on_disk": 35,
+ "sheet": "/Game/T/explosion/explosion_atlas.explosion_atlas",
+ "texture": {
+  "path": "/Game/T/explosion/Textures/explosion.explosion",
+  "size": [
+   512,
+   256
+  ],
+  "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+  "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+  "filter": "<TextureFilter.TF_DEFAULT: 3>",
+  "srgb": true,
+  "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>",
+  "exported_png": true
+ },
+ "sprites": {
+  "explosion-0": {
+   "path": "/Game/T/explosion/Frames/explosion-0.explosion-0",
+   "source_uv": [
+    0.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     2.0,
+     0.076172,
+     0.117188
+    ],
+    [
+     -7.0,
+     2.0,
+     0.048828,
+     0.117188
+    ],
+    [
+     -7.0,
+     -13.0,
+     0.048828,
+     0.175781
+    ],
+    [
+     7.0,
+     -13.0,
+     0.076172,
+     0.175781
+    ],
+    [
+     7.0,
+     2.0,
+     0.076172,
+     0.117188
+    ],
+    [
+     -7.0,
+     -13.0,
+     0.048828,
+     0.175781
+    ]
+   ]
+  },
+  "explosion-1": {
+   "path": "/Game/T/explosion/Frames/explosion-1.explosion-1",
+   "source_uv": [
+    64.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     8.0,
+     0.208984,
+     0.09375
+    ],
+    [
+     -15.0,
+     8.0,
+     0.158203,
+     0.09375
+    ],
+    [
+     -15.0,
+     -18.0,
+     0.158203,
+     0.195312
+    ],
+    [
+     11.0,
+     -18.0,
+     0.208984,
+     0.195312
+    ],
+    [
+     11.0,
+     8.0,
+     0.208984,
+     0.09375
+    ],
+    [
+     -15.0,
+     -18.0,
+     0.158203,
+     0.195312
+    ]
+   ]
+  },
+  "explosion-2": {
+   "path": "/Game/T/explosion/Frames/explosion-2.explosion-2",
+   "source_uv": [
+    128.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     15.0,
+     12.0,
+     0.341797,
+     0.078125
+    ],
+    [
+     -18.0,
+     12.0,
+     0.277344,
+     0.078125
+    ],
+    [
+     -18.0,
+     -20.0,
+     0.277344,
+     0.203125
+    ],
+    [
+     15.0,
+     -20.0,
+     0.341797,
+     0.203125
+    ],
+    [
+     15.0,
+     12.0,
+     0.341797,
+     0.078125
+    ],
+    [
+     -18.0,
+     -20.0,
+     0.277344,
+     0.203125
+    ]
+   ]
+  },
+  "explosion-3": {
+   "path": "/Game/T/explosion/Frames/explosion-3.explosion-3",
+   "source_uv": [
+    192.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     20.0,
+     16.0,
+     0.476562,
+     0.0625
+    ],
+    [
+     -23.0,
+     16.0,
+     0.392578,
+     0.0625
+    ],
+    [
+     -23.0,
+     -22.0,
+     0.392578,
+     0.210938
+    ],
+    [
+     20.0,
+     -22.0,
+     0.476562,
+     0.210938
+    ],
+    [
+     20.0,
+     16.0,
+     0.476562,
+     0.0625
+    ],
+    [
+     -23.0,
+     -22.0,
+     0.392578,
+     0.210938
+    ]
+   ]
+  },
+  "explosion-4": {
+   "path": "/Game/T/explosion/Frames/explosion-4.explosion-4",
+   "source_uv": [
+    256.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     24.0,
+     20.0,
+     0.609375,
+     0.046875
+    ],
+    [
+     -27.0,
+     20.0,
+     0.509766,
+     0.046875
+    ],
+    [
+     -27.0,
+     -22.0,
+     0.509766,
+     0.210938
+    ],
+    [
+     24.0,
+     -22.0,
+     0.609375,
+     0.210938
+    ],
+    [
+     24.0,
+     20.0,
+     0.609375,
+     0.046875
+    ],
+    [
+     -27.0,
+     -22.0,
+     0.509766,
+     0.210938
+    ]
+   ]
+  },
+  "explosion-5": {
+   "path": "/Game/T/explosion/Frames/explosion-5.explosion-5",
+   "source_uv": [
+    320.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     28.0,
+     24.0,
+     0.742188,
+     0.03125
+    ],
+    [
+     -32.0,
+     24.0,
+     0.625,
+     0.03125
+    ],
+    [
+     -32.0,
+     -21.0,
+     0.625,
+     0.207031
+    ],
+    [
+     28.0,
+     -21.0,
+     0.742188,
+     0.207031
+    ],
+    [
+     28.0,
+     24.0,
+     0.742188,
+     0.03125
+    ],
+    [
+     -32.0,
+     -21.0,
+     0.625,
+     0.207031
+    ]
+   ]
+  },
+  "explosion-6": {
+   "path": "/Game/T/explosion/Frames/explosion-6.explosion-6",
+   "source_uv": [
+    384.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     32.0,
+     28.0,
+     0.875,
+     0.015625
+    ],
+    [
+     -32.0,
+     28.0,
+     0.75,
+     0.015625
+    ],
+    [
+     -32.0,
+     -20.0,
+     0.75,
+     0.203125
+    ],
+    [
+     32.0,
+     -20.0,
+     0.875,
+     0.203125
+    ],
+    [
+     32.0,
+     28.0,
+     0.875,
+     0.015625
+    ],
+    [
+     -32.0,
+     -20.0,
+     0.75,
+     0.203125
+    ]
+   ]
+  },
+  "explosion-7": {
+   "path": "/Game/T/explosion/Frames/explosion-7.explosion-7",
+   "source_uv": [
+    448.0,
+    0.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     32.0,
+     31.0,
+     1.0,
+     0.003906
+    ],
+    [
+     -32.0,
+     31.0,
+     0.875,
+     0.003906
+    ],
+    [
+     -32.0,
+     -19.0,
+     0.875,
+     0.199219
+    ],
+    [
+     32.0,
+     -19.0,
+     1.0,
+     0.199219
+    ],
+    [
+     32.0,
+     31.0,
+     1.0,
+     0.003906
+    ],
+    [
+     -32.0,
+     -19.0,
+     0.875,
+     0.199219
+    ]
+   ]
+  },
+  "explosion-8": {
+   "path": "/Game/T/explosion/Frames/explosion-8.explosion-8",
+   "source_uv": [
+    0.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     32.0,
+     32.0,
+     0.125,
+     0.25
+    ],
+    [
+     -32.0,
+     32.0,
+     0.0,
+     0.25
+    ],
+    [
+     -32.0,
+     -18.0,
+     0.0,
+     0.445312
+    ],
+    [
+     32.0,
+     -18.0,
+     0.125,
+     0.445312
+    ],
+    [
+     32.0,
+     32.0,
+     0.125,
+     0.25
+    ],
+    [
+     -32.0,
+     -18.0,
+     0.0,
+     0.445312
+    ]
+   ]
+  },
+  "explosion-9": {
+   "path": "/Game/T/explosion/Frames/explosion-9.explosion-9",
+   "source_uv": [
+    64.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     32.0,
+     29.0,
+     0.25,
+     0.261719
+    ],
+    [
+     -32.0,
+     29.0,
+     0.125,
+     0.261719
+    ],
+    [
+     -32.0,
+     -18.0,
+     0.125,
+     0.445312
+    ],
+    [
+     32.0,
+     -18.0,
+     0.25,
+     0.445312
+    ],
+    [
+     32.0,
+     29.0,
+     0.25,
+     0.261719
+    ],
+    [
+     -32.0,
+     -18.0,
+     0.125,
+     0.445312
+    ]
+   ]
+  },
+  "explosion-10": {
+   "path": "/Game/T/explosion/Frames/explosion-10.explosion-10",
+   "source_uv": [
+    128.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     29.0,
+     31.0,
+     0.369141,
+     0.253906
+    ],
+    [
+     -32.0,
+     31.0,
+     0.25,
+     0.253906
+    ],
+    [
+     -32.0,
+     -17.0,
+     0.25,
+     0.441406
+    ],
+    [
+     29.0,
+     -17.0,
+     0.369141,
+     0.441406
+    ],
+    [
+     29.0,
+     31.0,
+     0.369141,
+     0.253906
+    ],
+    [
+     -32.0,
+     -17.0,
+     0.25,
+     0.441406
+    ]
+   ]
+  },
+  "explosion-11": {
+   "path": "/Game/T/explosion/Frames/explosion-11.explosion-11",
+   "source_uv": [
+    192.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     18.0,
+     32.0,
+     0.472656,
+     0.25
+    ],
+    [
+     -20.0,
+     32.0,
+     0.398438,
+     0.25
+    ],
+    [
+     -20.0,
+     -17.0,
+     0.398438,
+     0.441406
+    ],
+    [
+     18.0,
+     -17.0,
+     0.472656,
+     0.441406
+    ],
+    [
+     18.0,
+     32.0,
+     0.472656,
+     0.25
+    ],
+    [
+     -20.0,
+     -17.0,
+     0.398438,
+     0.441406
+    ]
+   ]
+  },
+  "explosion-12": {
+   "path": "/Game/T/explosion/Frames/explosion-12.explosion-12",
+   "source_uv": [
+    256.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     20.0,
+     32.0,
+     0.601562,
+     0.25
+    ],
+    [
+     -20.0,
+     32.0,
+     0.523438,
+     0.25
+    ],
+    [
+     -20.0,
+     -15.0,
+     0.523438,
+     0.433594
+    ],
+    [
+     20.0,
+     -15.0,
+     0.601562,
+     0.433594
+    ],
+    [
+     20.0,
+     32.0,
+     0.601562,
+     0.25
+    ],
+    [
+     -20.0,
+     -15.0,
+     0.523438,
+     0.433594
+    ]
+   ]
+  },
+  "explosion-13": {
+   "path": "/Game/T/explosion/Frames/explosion-13.explosion-13",
+   "source_uv": [
+    320.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     24.0,
+     0.724609,
+     0.28125
+    ],
+    [
+     -20.0,
+     24.0,
+     0.648438,
+     0.28125
+    ],
+    [
+     -20.0,
+     -15.0,
+     0.648438,
+     0.433594
+    ],
+    [
+     19.0,
+     -15.0,
+     0.724609,
+     0.433594
+    ],
+    [
+     19.0,
+     24.0,
+     0.724609,
+     0.28125
+    ],
+    [
+     -20.0,
+     -15.0,
+     0.648438,
+     0.433594
+    ]
+   ]
+  },
+  "explosion-14": {
+   "path": "/Game/T/explosion/Frames/explosion-14.explosion-14",
+   "source_uv": [
+    384.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     25.0,
+     0.849609,
+     0.277344
+    ],
+    [
+     -20.0,
+     25.0,
+     0.773438,
+     0.277344
+    ],
+    [
+     -20.0,
+     -13.0,
+     0.773438,
+     0.425781
+    ],
+    [
+     19.0,
+     -13.0,
+     0.849609,
+     0.425781
+    ],
+    [
+     19.0,
+     25.0,
+     0.849609,
+     0.277344
+    ],
+    [
+     -20.0,
+     -13.0,
+     0.773438,
+     0.425781
+    ]
+   ]
+  },
+  "explosion-15": {
+   "path": "/Game/T/explosion/Frames/explosion-15.explosion-15",
+   "source_uv": [
+    448.0,
+    64.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     26.0,
+     0.974609,
+     0.273438
+    ],
+    [
+     -20.0,
+     26.0,
+     0.898438,
+     0.273438
+    ],
+    [
+     -20.0,
+     -13.0,
+     0.898438,
+     0.425781
+    ],
+    [
+     19.0,
+     -13.0,
+     0.974609,
+     0.425781
+    ],
+    [
+     19.0,
+     26.0,
+     0.974609,
+     0.273438
+    ],
+    [
+     -20.0,
+     -13.0,
+     0.898438,
+     0.425781
+    ]
+   ]
+  },
+  "explosion-16": {
+   "path": "/Game/T/explosion/Frames/explosion-16.explosion-16",
+   "source_uv": [
+    0.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     26.0,
+     0.099609,
+     0.523438
+    ],
+    [
+     -20.0,
+     26.0,
+     0.023438,
+     0.523438
+    ],
+    [
+     -20.0,
+     -11.0,
+     0.023438,
+     0.667969
+    ],
+    [
+     19.0,
+     -11.0,
+     0.099609,
+     0.667969
+    ],
+    [
+     19.0,
+     26.0,
+     0.099609,
+     0.523438
+    ],
+    [
+     -20.0,
+     -11.0,
+     0.023438,
+     0.667969
+    ]
+   ]
+  },
+  "explosion-17": {
+   "path": "/Game/T/explosion/Frames/explosion-17.explosion-17",
+   "source_uv": [
+    64.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     26.0,
+     0.224609,
+     0.523438
+    ],
+    [
+     -20.0,
+     26.0,
+     0.148438,
+     0.523438
+    ],
+    [
+     -20.0,
+     -10.0,
+     0.148438,
+     0.664062
+    ],
+    [
+     19.0,
+     -10.0,
+     0.224609,
+     0.664062
+    ],
+    [
+     19.0,
+     26.0,
+     0.224609,
+     0.523438
+    ],
+    [
+     -20.0,
+     -10.0,
+     0.148438,
+     0.664062
+    ]
+   ]
+  },
+  "explosion-18": {
+   "path": "/Game/T/explosion/Frames/explosion-18.explosion-18",
+   "source_uv": [
+    128.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     27.0,
+     0.349609,
+     0.519531
+    ],
+    [
+     -20.0,
+     27.0,
+     0.273438,
+     0.519531
+    ],
+    [
+     -20.0,
+     -9.0,
+     0.273438,
+     0.660156
+    ],
+    [
+     19.0,
+     -9.0,
+     0.349609,
+     0.660156
+    ],
+    [
+     19.0,
+     27.0,
+     0.349609,
+     0.519531
+    ],
+    [
+     -20.0,
+     -9.0,
+     0.273438,
+     0.660156
+    ]
+   ]
+  },
+  "explosion-19": {
+   "path": "/Game/T/explosion/Frames/explosion-19.explosion-19",
+   "source_uv": [
+    192.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     28.0,
+     0.474609,
+     0.515625
+    ],
+    [
+     -20.0,
+     28.0,
+     0.398438,
+     0.515625
+    ],
+    [
+     -20.0,
+     -7.0,
+     0.398438,
+     0.652344
+    ],
+    [
+     19.0,
+     -7.0,
+     0.474609,
+     0.652344
+    ],
+    [
+     19.0,
+     28.0,
+     0.474609,
+     0.515625
+    ],
+    [
+     -20.0,
+     -7.0,
+     0.398438,
+     0.652344
+    ]
+   ]
+  },
+  "explosion-20": {
+   "path": "/Game/T/explosion/Frames/explosion-20.explosion-20",
+   "source_uv": [
+    256.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     28.0,
+     0.599609,
+     0.515625
+    ],
+    [
+     -20.0,
+     28.0,
+     0.523438,
+     0.515625
+    ],
+    [
+     -20.0,
+     -7.0,
+     0.523438,
+     0.652344
+    ],
+    [
+     19.0,
+     -7.0,
+     0.599609,
+     0.652344
+    ],
+    [
+     19.0,
+     28.0,
+     0.599609,
+     0.515625
+    ],
+    [
+     -20.0,
+     -7.0,
+     0.523438,
+     0.652344
+    ]
+   ]
+  },
+  "explosion-21": {
+   "path": "/Game/T/explosion/Frames/explosion-21.explosion-21",
+   "source_uv": [
+    320.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     19.0,
+     28.0,
+     0.724609,
+     0.515625
+    ],
+    [
+     -20.0,
+     28.0,
+     0.648438,
+     0.515625
+    ],
+    [
+     -20.0,
+     -5.0,
+     0.648438,
+     0.644531
+    ],
+    [
+     19.0,
+     -5.0,
+     0.724609,
+     0.644531
+    ],
+    [
+     19.0,
+     28.0,
+     0.724609,
+     0.515625
+    ],
+    [
+     -20.0,
+     -5.0,
+     0.648438,
+     0.644531
+    ]
+   ]
+  },
+  "explosion-22": {
+   "path": "/Game/T/explosion/Frames/explosion-22.explosion-22",
+   "source_uv": [
+    384.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     17.0,
+     28.0,
+     0.845703,
+     0.515625
+    ],
+    [
+     -19.0,
+     28.0,
+     0.775391,
+     0.515625
+    ],
+    [
+     -19.0,
+     -5.0,
+     0.775391,
+     0.644531
+    ],
+    [
+     17.0,
+     -5.0,
+     0.845703,
+     0.644531
+    ],
+    [
+     17.0,
+     28.0,
+     0.845703,
+     0.515625
+    ],
+    [
+     -19.0,
+     -5.0,
+     0.775391,
+     0.644531
+    ]
+   ]
+  },
+  "explosion-23": {
+   "path": "/Game/T/explosion/Frames/explosion-23.explosion-23",
+   "source_uv": [
+    448.0,
+    128.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     17.0,
+     28.0,
+     0.970703,
+     0.515625
+    ],
+    [
+     -19.0,
+     28.0,
+     0.900391,
+     0.515625
+    ],
+    [
+     -19.0,
+     -3.0,
+     0.900391,
+     0.636719
+    ],
+    [
+     17.0,
+     -3.0,
+     0.970703,
+     0.636719
+    ],
+    [
+     17.0,
+     28.0,
+     0.970703,
+     0.515625
+    ],
+    [
+     -19.0,
+     -3.0,
+     0.900391,
+     0.636719
+    ]
+   ]
+  },
+  "explosion-24": {
+   "path": "/Game/T/explosion/Frames/explosion-24.explosion-24",
+   "source_uv": [
+    0.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     15.0,
+     29.0,
+     0.091797,
+     0.761719
+    ],
+    [
+     -18.0,
+     29.0,
+     0.027344,
+     0.761719
+    ],
+    [
+     -18.0,
+     -3.0,
+     0.027344,
+     0.886719
+    ],
+    [
+     15.0,
+     -3.0,
+     0.091797,
+     0.886719
+    ],
+    [
+     15.0,
+     29.0,
+     0.091797,
+     0.761719
+    ],
+    [
+     -18.0,
+     -3.0,
+     0.027344,
+     0.886719
+    ]
+   ]
+  },
+  "explosion-25": {
+   "path": "/Game/T/explosion/Frames/explosion-25.explosion-25",
+   "source_uv": [
+    64.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     15.0,
+     29.0,
+     0.216797,
+     0.761719
+    ],
+    [
+     -18.0,
+     29.0,
+     0.152344,
+     0.761719
+    ],
+    [
+     -18.0,
+     -1.0,
+     0.152344,
+     0.878906
+    ],
+    [
+     15.0,
+     -1.0,
+     0.216797,
+     0.878906
+    ],
+    [
+     15.0,
+     29.0,
+     0.216797,
+     0.761719
+    ],
+    [
+     -18.0,
+     -1.0,
+     0.152344,
+     0.878906
+    ]
+   ]
+  },
+  "explosion-26": {
+   "path": "/Game/T/explosion/Frames/explosion-26.explosion-26",
+   "source_uv": [
+    128.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     29.0,
+     0.333984,
+     0.761719
+    ],
+    [
+     -18.0,
+     29.0,
+     0.277344,
+     0.761719
+    ],
+    [
+     -18.0,
+     1.0,
+     0.277344,
+     0.871094
+    ],
+    [
+     11.0,
+     1.0,
+     0.333984,
+     0.871094
+    ],
+    [
+     11.0,
+     29.0,
+     0.333984,
+     0.761719
+    ],
+    [
+     -18.0,
+     1.0,
+     0.277344,
+     0.871094
+    ]
+   ]
+  },
+  "explosion-27": {
+   "path": "/Game/T/explosion/Frames/explosion-27.explosion-27",
+   "source_uv": [
+    192.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     29.0,
+     0.451172,
+     0.761719
+    ],
+    [
+     -16.0,
+     29.0,
+     0.40625,
+     0.761719
+    ],
+    [
+     -16.0,
+     3.0,
+     0.40625,
+     0.863281
+    ],
+    [
+     7.0,
+     3.0,
+     0.451172,
+     0.863281
+    ],
+    [
+     7.0,
+     29.0,
+     0.451172,
+     0.761719
+    ],
+    [
+     -16.0,
+     3.0,
+     0.40625,
+     0.863281
+    ]
+   ]
+  },
+  "explosion-28": {
+   "path": "/Game/T/explosion/Frames/explosion-28.explosion-28",
+   "source_uv": [
+    256.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     29.0,
+     0.572266,
+     0.761719
+    ],
+    [
+     -14.0,
+     29.0,
+     0.535156,
+     0.761719
+    ],
+    [
+     -14.0,
+     3.0,
+     0.535156,
+     0.863281
+    ],
+    [
+     5.0,
+     3.0,
+     0.572266,
+     0.863281
+    ],
+    [
+     5.0,
+     29.0,
+     0.572266,
+     0.761719
+    ],
+    [
+     -14.0,
+     3.0,
+     0.535156,
+     0.863281
+    ]
+   ]
+  },
+  "explosion-29": {
+   "path": "/Game/T/explosion/Frames/explosion-29.explosion-29",
+   "source_uv": [
+    320.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     29.0,
+     0.697266,
+     0.761719
+    ],
+    [
+     -14.0,
+     29.0,
+     0.660156,
+     0.761719
+    ],
+    [
+     -14.0,
+     9.0,
+     0.660156,
+     0.839844
+    ],
+    [
+     5.0,
+     9.0,
+     0.697266,
+     0.839844
+    ],
+    [
+     5.0,
+     29.0,
+     0.697266,
+     0.761719
+    ],
+    [
+     -14.0,
+     9.0,
+     0.660156,
+     0.839844
+    ]
+   ]
+  },
+  "explosion-30": {
+   "path": "/Game/T/explosion/Frames/explosion-30.explosion-30",
+   "source_uv": [
+    384.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     3.0,
+     29.0,
+     0.818359,
+     0.761719
+    ],
+    [
+     -12.0,
+     29.0,
+     0.789062,
+     0.761719
+    ],
+    [
+     -12.0,
+     13.0,
+     0.789062,
+     0.824219
+    ],
+    [
+     3.0,
+     13.0,
+     0.818359,
+     0.824219
+    ],
+    [
+     3.0,
+     29.0,
+     0.818359,
+     0.761719
+    ],
+    [
+     -12.0,
+     13.0,
+     0.789062,
+     0.824219
+    ]
+   ]
+  },
+  "explosion-31": {
+   "path": "/Game/T/explosion/Frames/explosion-31.explosion-31",
+   "source_uv": [
+    448.0,
+    192.0
+   ],
+   "source_dimension": [
+    64.0,
+    64.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    64.0,
+    64.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     32.0,
+     -31.0,
+     1.0,
+     0.996094
+    ],
+    [
+     31.0,
+     -31.0,
+     0.998047,
+     0.996094
+    ],
+    [
+     31.0,
+     -32.0,
+     0.998047,
+     1.0
+    ],
+    [
+     32.0,
+     -32.0,
+     1.0,
+     1.0
+    ],
+    [
+     32.0,
+     -31.0,
+     1.0,
+     0.996094
+    ],
+    [
+     31.0,
+     -32.0,
+     0.998047,
+     1.0
+    ]
+   ]
+  }
+ },
+ "flipbooks": {
+  "explosion": {
+   "path": "/Game/T/explosion/Flipbooks/explosion_explosion.explosion_explosion",
+   "fps": 16.66666603088379,
+   "num_key_frames": 32,
+   "num_frames": 32,
+   "total_duration": 1.9200000762939453,
+   "expected_ms": 1920,
+   "samples": [
+    {
+     "frame": "explosion-0",
+     "at": 0.03,
+     "got": "/Game/T/explosion/Frames/explosion-0.explosion-0"
+    },
+    {
+     "frame": "explosion-1",
+     "at": 0.09,
+     "got": "/Game/T/explosion/Frames/explosion-1.explosion-1"
+    },
+    {
+     "frame": "explosion-2",
+     "at": 0.15,
+     "got": "/Game/T/explosion/Frames/explosion-2.explosion-2"
+    },
+    {
+     "frame": "explosion-3",
+     "at": 0.21,
+     "got": "/Game/T/explosion/Frames/explosion-3.explosion-3"
+    },
+    {
+     "frame": "explosion-4",
+     "at": 0.27,
+     "got": "/Game/T/explosion/Frames/explosion-4.explosion-4"
+    },
+    {
+     "frame": "explosion-5",
+     "at": 0.33,
+     "got": "/Game/T/explosion/Frames/explosion-5.explosion-5"
+    },
+    {
+     "frame": "explosion-6",
+     "at": 0.39,
+     "got": "/Game/T/explosion/Frames/explosion-6.explosion-6"
+    },
+    {
+     "frame": "explosion-7",
+     "at": 0.45,
+     "got": "/Game/T/explosion/Frames/explosion-7.explosion-7"
+    },
+    {
+     "frame": "explosion-8",
+     "at": 0.51,
+     "got": "/Game/T/explosion/Frames/explosion-8.explosion-8"
+    },
+    {
+     "frame": "explosion-9",
+     "at": 0.57,
+     "got": "/Game/T/explosion/Frames/explosion-9.explosion-9"
+    },
+    {
+     "frame": "explosion-10",
+     "at": 0.63,
+     "got": "/Game/T/explosion/Frames/explosion-10.explosion-10"
+    },
+    {
+     "frame": "explosion-11",
+     "at": 0.69,
+     "got": "/Game/T/explosion/Frames/explosion-11.explosion-11"
+    },
+    {
+     "frame": "explosion-12",
+     "at": 0.75,
+     "got": "/Game/T/explosion/Frames/explosion-12.explosion-12"
+    },
+    {
+     "frame": "explosion-13",
+     "at": 0.81,
+     "got": "/Game/T/explosion/Frames/explosion-13.explosion-13"
+    },
+    {
+     "frame": "explosion-14",
+     "at": 0.87,
+     "got": "/Game/T/explosion/Frames/explosion-14.explosion-14"
+    },
+    {
+     "frame": "explosion-15",
+     "at": 0.93,
+     "got": "/Game/T/explosion/Frames/explosion-15.explosion-15"
+    },
+    {
+     "frame": "explosion-16",
+     "at": 0.99,
+     "got": "/Game/T/explosion/Frames/explosion-16.explosion-16"
+    },
+    {
+     "frame": "explosion-17",
+     "at": 1.05,
+     "got": "/Game/T/explosion/Frames/explosion-17.explosion-17"
+    },
+    {
+     "frame": "explosion-18",
+     "at": 1.11,
+     "got": "/Game/T/explosion/Frames/explosion-18.explosion-18"
+    },
+    {
+     "frame": "explosion-19",
+     "at": 1.17,
+     "got": "/Game/T/explosion/Frames/explosion-19.explosion-19"
+    },
+    {
+     "frame": "explosion-20",
+     "at": 1.23,
+     "got": "/Game/T/explosion/Frames/explosion-20.explosion-20"
+    },
+    {
+     "frame": "explosion-21",
+     "at": 1.29,
+     "got": "/Game/T/explosion/Frames/explosion-21.explosion-21"
+    },
+    {
+     "frame": "explosion-22",
+     "at": 1.35,
+     "got": "/Game/T/explosion/Frames/explosion-22.explosion-22"
+    },
+    {
+     "frame": "explosion-23",
+     "at": 1.41,
+     "got": "/Game/T/explosion/Frames/explosion-23.explosion-23"
+    },
+    {
+     "frame": "explosion-24",
+     "at": 1.47,
+     "got": "/Game/T/explosion/Frames/explosion-24.explosion-24"
+    },
+    {
+     "frame": "explosion-25",
+     "at": 1.53,
+     "got": "/Game/T/explosion/Frames/explosion-25.explosion-25"
+    },
+    {
+     "frame": "explosion-26",
+     "at": 1.59,
+     "got": "/Game/T/explosion/Frames/explosion-26.explosion-26"
+    },
+    {
+     "frame": "explosion-27",
+     "at": 1.65,
+     "got": "/Game/T/explosion/Frames/explosion-27.explosion-27"
+    },
+    {
+     "frame": "explosion-28",
+     "at": 1.71,
+     "got": "/Game/T/explosion/Frames/explosion-28.explosion-28"
+    },
+    {
+     "frame": "explosion-29",
+     "at": 1.77,
+     "got": "/Game/T/explosion/Frames/explosion-29.explosion-29"
+    },
+    {
+     "frame": "explosion-30",
+     "at": 1.83,
+     "got": "/Game/T/explosion/Frames/explosion-30.explosion-30"
+    },
+    {
+     "frame": "explosion-31",
+     "at": 1.89,
+     "got": "/Game/T/explosion/Frames/explosion-31.explosion-31"
+    }
+   ]
+  }
+ }
+}

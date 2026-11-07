@@ -1,0 +1,29 @@
+The five searches this guide answers, run in a standard web search tool on 7 November 2026 (about 15:15 UTC).
+Ranked links in order, then one line from the tool's own summary. No Pixelbolt page appeared in any of them.
+
+1. "Unreal Engine 5 Paper2D import sprite sheet JSON"
+   Epic's Python API pages for PaperSpriteSheetImportFactory (5.0, 5.1, 5.5, current), docs.unrealengine.com's
+   PythonAPI page, Epic's "Import sprites in Unreal Engine" (twice).
+   Summary: "the results don't include a step-by-step for a generic JSON sprite sheet in the UE5 editor" ... "you may
+   need to ... test the import directly."
+
+2. "Paper2D flipbook from sprite sheet pixel art settings UE5"
+   ENFP-Dev-Studio Aseprite Importer (Unreal forums), CodeAndWeb's TexturePacker tutorial for Paper 2D, Epic's 4.26
+   Paper2D importing page, a forum thread "2D Flipbook Problems with Paper2D", Epic's "Import sprites", Epic's
+   "Paper 2D overview".
+   Summary: "The search didn't turn up a single authoritative UE5 guide with exact pixel-art texture values".
+
+3. "AI pixel art sprite sheet generator for Unreal Engine Paper2D"
+   seeles.ai, scenario.com, segmind.com (two), sorceress.games (two), pixa.com.
+   Summary: "I didn't find a dedicated Unreal or Paper2D plugin."
+
+4. "import TexturePacker JSON hash into Unreal Engine 5 Paper2D free alternative"
+   Epic's "Import sprites" (Korean, Japanese, English twice), CodeAndWeb's Unreal and Paper2D tutorials, Epic's 4.26
+   Paper2D importing page.
+   Summary: "No result covered importing a TexturePacker JSON Hash file into Paper2D, and none named a free
+   alternative for that job."
+
+5. "free pixel art effects sprite sheet for Unreal Engine 2D game jam"
+   cgtrader, two Unreal Marketplace pages, itch.io collections and tag pages, cartooncoffee.itch.io (two), three Fab
+   listings, rs-pixel-store.itch.io, ragnapixel.itch.io.
+   Summary: "I didn't find a pack that is free, Unreal-specific, and aimed at game jams."

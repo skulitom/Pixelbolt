@@ -1,0 +1,247 @@
+{
+ "forest-spirit": {
+  "problems": [],
+  "assets": {
+   "PaperFlipbook": 3,
+   "PaperSpriteSheet": 1,
+   "PaperSprite": 6,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "TranslucentUnlitSpriteMaterial": 6
+  },
+  "pivots_on_canvas": [
+   [
+    12.0,
+    12.0
+   ]
+  ],
+  "flipbooks": {
+   "idle": "50 fps, 7 keys, 1220 ms",
+   "bob": "50 fps, 4 keys, 740 ms",
+   "blink": "50 fps, 3 keys, 580 ms"
+  }
+ },
+ "forest-spirit-trim2x": {
+  "problems": [],
+  "assets": {
+   "PaperFlipbook": 3,
+   "PaperSpriteSheet": 1,
+   "PaperSprite": 6,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "TranslucentUnlitSpriteMaterial": 6
+  },
+  "pivots_on_canvas": [
+   [
+    24.0,
+    24.0
+   ]
+  ],
+  "flipbooks": {
+   "idle": "50 fps, 7 keys, 1220 ms",
+   "bob": "50 fps, 4 keys, 740 ms",
+   "blink": "50 fps, 3 keys, 580 ms"
+  }
+ },
+ "campfire": {
+  "problems": [],
+  "assets": {
+   "PaperSpriteSheet": 1,
+   "PaperFlipbook": 1,
+   "PaperSprite": 24,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "MaskedUnlitSpriteMaterial": 24
+  },
+  "pivots_on_canvas": [
+   [
+    16.0,
+    24.0
+   ]
+  ],
+  "flipbooks": {
+   "campfire": "14.2857 fps, 24 keys, 1680 ms"
+  }
+ },
+ "hero": {
+  "problems": [],
+  "assets": {
+   "PaperFlipbook": 6,
+   "PaperSprite": 36,
+   "PaperSpriteSheet": 1,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "MaskedUnlitSpriteMaterial": 36
+  },
+  "pivots_on_canvas": [
+   [
+    15.0,
+    27.0
+   ],
+   [
+    15.0,
+    31.0
+   ],
+   [
+    15.0,
+    35.0
+   ],
+   [
+    15.0,
+    36.0
+   ],
+   [
+    15.0,
+    37.0
+   ]
+  ],
+  "flipbooks": {
+   "idle": "5 fps, 4 keys, 800 ms",
+   "walk": "12.5 fps, 8 keys, 640 ms",
+   "run": "12.5 fps, 10 keys, 800 ms",
+   "jump": "12.5 fps, 7 keys, 560 ms",
+   "attack": "12.5 fps, 5 keys, 400 ms",
+   "hurt": "12.5 fps, 2 keys, 160 ms"
+  }
+ },
+ "fire-spells": {
+  "problems": [],
+  "assets": {
+   "PaperSpriteSheet": 1,
+   "PaperFlipbook": 11,
+   "PaperSprite": 107,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "MaskedUnlitSpriteMaterial": 107
+  },
+  "pivots_on_canvas": [
+   [
+    32.0,
+    40.0
+   ]
+  ],
+  "flipbooks": {
+   "projectile-0": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-45": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-90": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-135": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-180": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-225": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-270": "16.6667 fps, 8 keys, 480 ms",
+   "projectile-315": "16.6667 fps, 8 keys, 480 ms",
+   "impact": "1000 fps, 12 keys, 676 ms",
+   "area": "1000 fps, 19 keys, 1201 ms",
+   "buff": "12.5 fps, 12 keys, 960 ms"
+  }
+ },
+ "explosion": {
+  "problems": [],
+  "assets": {
+   "PaperSpriteSheet": 1,
+   "PaperFlipbook": 1,
+   "PaperSprite": 32,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "MaskedUnlitSpriteMaterial": 32
+  },
+  "pivots_on_canvas": [
+   [
+    32.0,
+    32.0
+   ]
+  ],
+  "flipbooks": {
+   "explosion": "16.6667 fps, 32 keys, 1920 ms"
+  }
+ },
+ "campfire-092": {
+  "problems": [],
+  "assets": {
+   "PaperSpriteSheet": 1,
+   "PaperFlipbook": 1,
+   "PaperSprite": 24,
+   "Texture2D": 1
+  },
+  "engine": "5.8.4-58902052+++UE5+Release-5.8",
+  "texture": {
+   "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+   "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+   "filter": "<TextureFilter.TF_DEFAULT: 3>",
+   "srgb": true,
+   "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>"
+  },
+  "pixels_identical": true,
+  "materials": {
+   "MaskedUnlitSpriteMaterial": 24
+  },
+  "pivots_on_canvas": [
+   [
+    16.0,
+    24.0
+   ]
+  ],
+  "flipbooks": {
+   "campfire": "14.2857 fps, 24 keys, 1680 ms"
+  }
+ }
+}
