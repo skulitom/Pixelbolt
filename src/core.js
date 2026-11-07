@@ -1297,10 +1297,10 @@ export function wildcard(pattern, text) {
 
 // The parts view: every pixel in one flat colour for what drew it last, so a stray pixel or a tangle where limbs cross
 // names its part. Colours go to the parts in the shown cells in drawing order, well apart in hue and lightness;
-// past twenty they repeat darker. A background shows in one dark grey.
+// past twenty they repeat darker. A background shows in one dark grey. The studio's Parts view colours the same way.
 const PART_COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#ffe119', '#911eb4', '#f58231', '#42d4f4', '#f032e6', '#bfef45', '#9a6324',
   '#469990', '#fabed4', '#000075', '#aaffc3', '#800000', '#dcbeff', '#808000', '#ffd8b1', '#ffffff', '#fffac8'].map(hex => parseColor(hex));
-function partColors(project, indices, region) {
+export function partColors(project, indices, region = { x: 0, y: 0, w: project.width, h: project.height }) {
   const { width, frames, ownerNames } = project, counts = new Map();
   for (const index of indices) {
     const owners = frames[index].owners;

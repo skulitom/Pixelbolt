@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { renderProject, inspectProject } from '../src/core.js';
+import { renderProject, inspectProject, partColors } from '../src/core.js';
 import { compilePoses } from '../src/authoring.js';
 
 const root = new URL('../', import.meta.url);
@@ -66,6 +66,8 @@ test('the parts view paints each part one flat colour, lists the parts it shows 
   assert.deepEqual(cropped.parts.map(part => part.name), ['front']);
   assert.ok(cropped.nativeSheet.width > 3);
   assert.throws(() => inspectProject(renderProject(recipe), { view: 'parts' }), /inspect\.view.*owners/);
+  // The studio colours frames with the same function, over the whole canvas by default.
+  assert.deepEqual(partColors(project, [0, 1]).legend.map(({ name, color, pixels }) => ({ name, color: hex(color), pixels })), view.parts);
 });
 
 test('a pose\'s parts own every pixel of the figure, the inner lines where limbs cross included', () => {

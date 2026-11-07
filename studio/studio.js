@@ -1,4 +1,4 @@
-import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, animationPosition, animationNeighbors, inlineSharedPalette, MAX_REQUEST_BYTES } from '/core.js';
+import { renderProject, buildAtlas, parseColor, reviewPixels, onionPixels, partColors, animationPosition, animationNeighbors, inlineSharedPalette, MAX_REQUEST_BYTES } from '/core.js';
 import { animationGIF } from '/gif.js';
 import { createDraftStore, claimTab, openTabs } from '/draft.js';
 import { compilePoses } from '/authoring.js';
@@ -11,6 +11,9 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let project, spec, atlas, frameImages = [], selected = 0, playing = !reducedMotion, mode = 'animation';
 let position = 0;
 let poseMetadata = null, motionReview = null;
+// The Parts view: the recipe rendered again with what drew each pixel, only once Parts is picked, and its colours for
+// the current animation, as pixelbolt inspect --view parts --animation gives them.
+let ownedProject = null, partsView = null;
 // The editor holds the recipe as written, and Save JSON writes it, so a palette that links a shared file keeps its
 // `$ref`. Only the drawing puts the file's colours in. The page reads no file: `pixelbolt preview` sends the one file
 // the recipe it opened links, and a recipe that names another file, or any file when there is none, is not drawn.
@@ -85,6 +88,21 @@ function reviewMotion() {
   $('motion-summary').textContent = Object.entries(report.checks).map(([key, pass]) => `${names[key] ?? key}: ${pass === null ? 'unavailable' : `${pass ? 'pass' : 'check'} (${details[key]})`}`).join(' · ');
   return motionReview;
 }
+function reviewParts() {
+  ownedProject ??= renderProject(spec, { owners: true });
+  if (partsView) return partsView;
+  const name = $('animation').value, animation = ownedProject.animations[name];
+  partsView = partColors(ownedProject, [...new Set(animation.frames)]);
+  $('parts-list').replaceChildren(...partsView.legend.map(part => {
+    const item = document.createElement('li'), swatch = document.createElement('span');
+    swatch.className = 'swatch'; swatch.style.background = `rgb(${part.color.slice(0, 3).join(' ')})`;
+    item.title = `${part.pixels} pixels in ${title(name)}`; item.append(swatch, part.name);
+    return item;
+  }));
+  $('parts-call').textContent = `pixelbolt inspect ${savedName()} --view parts --animation ${name}
+pixel_inspect { "revision": "…", "view": "parts", "animation": ${JSON.stringify(name)} }`;
+  return partsView;
+}
 // The scale "fit" shows: the largest whole number that fits the artboard, or below 1× when even 1× does not fit.
 function fittedScale(width, height) {
   const board = $('artboard'), whole = Math.max(1 / 64, Math.min((board.clientWidth - 72) / width, (board.clientHeight - 72) / height));
@@ -99,9 +117,12 @@ function render() {
   const width = isMotion ? review.nativeSheet.width : isSheet ? atlas.width : project.width, height = isMotion ? review.nativeSheet.height : isSheet ? atlas.height : project.height;
   canvas.width = width; canvas.height = height;
   context.imageSmoothingEnabled = false;
-  const animation = project.animations[$('animation').value];
-  const pixels = isMotion ? review.nativeSheet.data : isSheet ? atlas.data : $('onion').getAttribute('aria-pressed') === 'true' ? onionPixels(project, animation, position) : project.frames[selected].data;
-  context.putImageData(new ImageData(new Uint8ClampedArray(reviewPixels(pixels, $('review-view').value)), width, height), 0, 0);
+  const animation = project.animations[$('animation').value], view = $('review-view').value;
+  // Parts colours one frame at a time, onion skin or not; the sheet and the motion review stay in colour.
+  const parts = view === 'parts' && !isSheet && !isMotion;
+  $('parts-legend').hidden = !parts;
+  const pixels = parts ? reviewParts().pixels.get(selected) ?? project.frames[selected].data : isMotion ? review.nativeSheet.data : isSheet ? atlas.data : $('onion').getAttribute('aria-pressed') === 'true' ? onionPixels(project, animation, position) : project.frames[selected].data;
+  context.putImageData(new ImageData(new Uint8ClampedArray(view === 'parts' ? pixels : reviewPixels(pixels, view)), width, height), 0, 0);
   if (!isSheet && !isMotion && poseMetadata && $('contacts').getAttribute('aria-pressed') === 'true') {
     const pose = poseMetadata.poses[project.frames[selected].name], ground = $('motion-ground').value;
     context.fillStyle = '#506473';
@@ -130,7 +151,7 @@ function render() {
 }
 function animationChanged() {
   elapsed = 0;
-  motionReview = null;
+  motionReview = null; partsView = null;
   $('motion-speed').value = poseMetadata?.animations[$('animation').value]?.speed ?? '';
   const animation = project.animations[$('animation').value];
   position = 0;
@@ -164,7 +185,7 @@ function compile() {
     const compiled = compileSource(nextSpec), nextProject = renderProject(compiled.recipe), nextAtlas = buildAtlas(nextProject);
     fitZoom(nextProject);
     spec = compiled.recipe; poseMetadata = compiled.metadata?.format === 'pixelforge-pose-metadata' ? compiled.metadata : null; project = nextProject; atlas = nextAtlas;
-    motionReview = null;
+    motionReview = null; ownedProject = null; partsView = null;
     $('motion-view').disabled = !poseMetadata; $('contacts').disabled = !poseMetadata;
     $('motion-tools').hidden = !poseMetadata;
     $('motion-ground').value = poseMetadata?.rig?.ground ?? '';

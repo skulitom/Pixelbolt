@@ -191,7 +191,7 @@ Numbers pass art that looks wrong, so the strip also draws the **arcs**, as an a
 
 The reply's `arcs` gives the panel's `origin`, `magnification` and mapping from canvas pixels, the traced `tracks` (kind, part, side, colour) and the `landings`. Without a rig, each marker is traced in a colour of its own and ringed where it lands; without metadata, or when the panel would take the image past 4,194,304 pixels, `arcs.shown` is false with the reason.
 
-The studio opens `.poses.json` directly, including from `pixelbolt preview character.poses.json`, and preserves that source when saving. Choose **Motion** for these same checks and strips, or **Show contacts** during playback. **Travel (px/s)** and **Ground row** override review settings; playback speed changes only preview timing. Export still produces ordinary recipe assets.
+The studio opens `.poses.json` directly, including from `pixelbolt preview character.poses.json`, and preserves that source when saving. Choose **Motion** for these same checks and strips (arcs included), or **Show contacts** during playback. **Parts** in the review menu colours each frame by the part that drew it, with a legend of names and the `pixelbolt inspect --view parts --animation <name>` call that gives the same colours. **Travel (px/s)** and **Ground row** override review settings; playback speed changes only preview timing. Export still produces ordinary recipe assets.
 
 ## Scene and tile review
 

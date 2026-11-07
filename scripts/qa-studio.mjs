@@ -219,6 +219,19 @@ try {
     await studio.size(390, 844);
     assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'figure controls cause horizontal overflow');
     await studio.shot('figure-narrow'); await studio.size(1440, 900); await click('#contacts');
+    // Parts: each part one flat colour, every colour on the canvas named in the legend, with the command that shows
+    // the same view; the legend wraps in a narrow window, and Color brings back the frame as it was.
+    await choose('review-view', 'parts');
+    const parts = await canvas(), legend = await evaluate(`[...document.querySelectorAll('#parts-list li')].map(li => [li.textContent, li.querySelector('.swatch').style.background.match(/\\d+/g).map(v => Number(v).toString(16).padStart(2, '0')).join('')])`);
+    assert.notEqual(parts.hash, plain.hash);
+    assert.ok(legend.some(([name]) => name === 'nearThigh') && legend.some(([name]) => name === 'head'), JSON.stringify(legend));
+    const named = new Set(legend.map(([, color]) => color));
+    assert.ok(parts.colors.every(color => named.has(color)), `${parts.colors.filter(color => !named.has(color))} are on the canvas but not in the legend`);
+    assert.match(await text('parts-call'), /^pixelbolt inspect \S+\.poses\.json --view parts --animation run\n/);
+    await studio.shot('figure-parts'); await studio.size(390, 844);
+    assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), 'the parts legend causes horizontal overflow');
+    await studio.size(1440, 900); await choose('review-view', 'color');
+    assert.equal((await canvas()).hash, plain.hash); assert.ok(await evaluate(`document.getElementById('parts-legend').hidden`));
     const saved = await download(() => click('#save'));
     assert.equal(JSON.parse(await readFile(saved, 'utf8')).format, 'pixelforge-poses');
     // Named as the page names the source above the editor, and as the CLI and examples/ name a pose source.
