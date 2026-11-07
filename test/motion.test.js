@@ -80,6 +80,24 @@ test('motion reports missing information instead of claiming contacts or angles 
   f.metadata.poses.f0.contacts = ['absent']; assert.throws(() => f.review(), /invalid contacts/);
 });
 
+test('without a rig the arcs trace each marker; without metadata, or past the image limit, they are left out and say why', () => {
+  const f = fixture([[4, 12], [6, 11], [8, 12]], { loop: true, contacts: [['foot'], [], ['foot']] }), review = f.review({ scale: 1 });
+  assert.deepEqual(review.arcs.tracks, [{ kind: 'marker', part: 'foot', side: 'near', color: '#96e678' }]);
+  assert.deepEqual(review.arcs.landings.map(l => [l.frame, l.side]), [['f2', 'near']]);
+  // The arcs sit under the timing cells, inside the image, and the timing cells keep their places.
+  const { origin, width, height } = review.arcs, sheet = review.nativeSheet;
+  assert.ok(origin[1] >= review.cells.at(-1).timing[1] + 16 && origin[0] + width <= sheet.width && origin[1] + height <= sheet.height);
+  assert.deepEqual(review.cells.map(c => c.timing), inspectMotion(f.project, { animation: 'move', speed: 0, scale: 1 }).cells.map(c => c.timing));
+  const sample = ([x, y]) => [...sheet.data.slice(((origin[1] + (y + 1) * review.arcs.magnification + 1) * sheet.width + origin[0] + (x + 1) * review.arcs.magnification + 1) * 4).slice(0, 3)];
+  assert.deepEqual(sample([6, 11]), [150, 230, 120]);
+  assert.deepEqual(inspectMotion(f.project, { animation: 'move' }).arcs, { shown: false, reason: 'Arcs need pose metadata with a rig (legs, arms, head) or markers.' });
+  // A 600-pixel canvas: its cell fits, but four times its size does not.
+  const big = { version: 1, name: 'big', width: 600, height: 600, palette: { a: '#f00' }, frames: [{ name: 'f0', ops: [{ op: 'pixel', x: 4, y: 12, color: 'a' }] }], animations: { move: { frames: ['f0'] } } };
+  const wide = inspectMotion(renderProject(big), { animation: 'move', metadata: { format: 'pixelforge-pose-metadata', version: 1, poses: { f0: { markers: [{ name: 'foot', at: [4, 12] }], parts: {} } } } });
+  assert.deepEqual([wide.arcs.shown, /4,194,304/.test(wide.arcs.reason)], [false, true]);
+  assert.ok(wide.nativeSheet.width * wide.nativeSheet.height <= 4194304);
+});
+
 test('pose contacts are validated, mirrored and copied into playback entries; tweens declare contacts explicitly', () => {
   const source = { format: 'pixelforge-poses', version: 1, name: 'contacts', width: 16, height: 16, palette: { a: '#f00' }, rig: { ground: 12 },
     parts: { dot: { rows: ['a'], points: { end: [0, 0] } } },

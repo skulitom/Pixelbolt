@@ -12,6 +12,13 @@ import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
 import { PRESET_FOLDER, listPresets, briefListing, findPreset, loadPreset, compilePreset, presetNext } from '../src/presets.js';
 import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, createBodiesSequence, figuresSummary, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, compareProjects, patchRecipe, encodePNG, compilePoses, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference, testMapScale } from '../src/index.js';
 
+// A reader that stops early (`| head -1`) closes the pipe: stop quietly, as other command-line tools do. Commands print
+// their reply after writing their files, so only the rest of the reply is lost.
+process.stdout.on('error', error => {
+  if (error.code !== 'EPIPE') throw error;
+  process.exit(process.exitCode ?? 0);
+});
+
 const HELP = `Pixelbolt — text to pixels, without dependencies
 
   pixelbolt init [file.json]               Create an editable example
@@ -78,11 +85,13 @@ input file's folder.
 Inspect: --frames a,b or --animation name picks cells (* and ? in a name match frames: --frames 'flash-*');
 --step n [--offset k] keeps every nth cell from position k (0 is the first); --region x,y,w,h crops;
 --grid adds palette-key rows; --scale 1-16 and --background color style the sheet.
---view color|silhouette|grayscale|onion|tile; --native adds a 1x PNG; --diagnostics adds advisory evidence.
+--view color|silhouette|grayscale|onion|tile|parts (each pixel coloured by the layer or pose part that drew it);
+--native adds a 1x PNG; --diagnostics adds advisory evidence.
 --guides '{"horizon":40,"vanish":[[64,40]],"iso":{"tile":[32,16]}}' (or a file) draws perspective guides over the
 enlarged sheet; scene --image takes the same.
---motion name --speed px/s reviews contacts, ground, pose spread and loop seam. Input may be a pose source,
-or a compiled recipe with --metadata meta.json. --ground row overrides the metadata's ground.
+--motion name --speed px/s reviews contacts, ground, pose spread, loop seam and gait, and draws the limb arcs.
+Input may be a pose source, or a compiled recipe with --metadata meta.json. --ground row overrides the
+metadata's ground.
 --max-cells 1-256 samples long sequences with explicit omission metadata; evenly spaced samples can alias with a
 repeating pattern (a strobe alternating A and B), so pick positions with --step and --offset.
 Patch accepts correction overlays as --changes; a changed base fails with a fingerprint conflict.
@@ -369,7 +378,7 @@ try {
       const input = await readResolved(positional[0]), compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : input.document.format === 'pixelforge-wave' ? compileWaves(input.document) : null;
       if (input.document.format === 'pixelforge-wave' && options.motion) throw new Error('--motion reviews character poses; inspect a wave without --motion');
       if (compiled && options.metadata) throw new Error('A pose source supplies its own metadata; omit --metadata');
-      const recipe = compiled?.recipe ?? input.document, project = renderProject(recipe, layerOptions);
+      const recipe = compiled?.recipe ?? input.document, project = renderProject(recipe, { ...layerOptions, ...(options.view === 'parts' && { owners: true }) });
       const comparison = options.reference ? compareProjects(renderProject((await readResolved(options.reference)).document, layerOptions), project) : undefined;
       const { image: referenceImage, ...comparisonReport } = comparison ?? {};
       const view = options.motion ? inspectMotion(project, { animation: options.motion, metadata: compiled?.metadata ?? (options.metadata ? await readProject(options.metadata) : undefined),

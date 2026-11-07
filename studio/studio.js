@@ -238,7 +238,7 @@ function setMode(next) {
   mode = next;
   for (const [id, value] of [['animation-view', 'animation'], ['sheet-view', 'sheet'], ['motion-view', 'motion']]) { $(id).classList.toggle('active', value === mode); $(id).setAttribute('aria-pressed', String(value === mode)); }
   $('motion-summary').hidden = mode !== 'motion';
-  $('artboard-caption').textContent = mode === 'motion' ? 'Movement at left · poses at right · yellow marks planted feet' : mode === 'sheet' ? 'Export layout · transparent padding' : 'Transparent background';
+  $('artboard-caption').textContent = mode === 'motion' ? 'Movement at left · poses at right · limb arcs below them · yellow marks planted feet' : mode === 'sheet' ? 'Export layout · transparent padding' : 'Transparent background';
   render();
 }
 source.addEventListener('input', () => { dirty = true; valid = false; $('export').disabled = true; clearTimeout(compileTimer); compileTimer = setTimeout(compile, 20); clearTimeout(draftTimer); draftTimer = setTimeout(keepDraft, 400); });

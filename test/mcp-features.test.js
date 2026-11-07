@@ -96,6 +96,19 @@ test('MCP motion review accepts a pose source or a revision with explicit compil
     assert.deepEqual(direct.result, saved.result);
     assert.deepEqual(direct.info.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true, armSwing: null, contactLegs: null, kneeLift: null });
     assert.equal(direct.result.content.filter(c => c.type === 'image').length, 2);
+    // The reply describes the arcs drawn into the image: what each traced path is and where feet land.
+    assert.equal(direct.info.arcs.shown, true);
+    // The skink's rig names no limbs, so its four foot markers are traced, each in a colour of its own.
+    assert.deepEqual(direct.info.arcs.tracks.map(t => [t.kind, t.part]), ['nearHindFoot', 'nearForeFoot', 'farHindFoot', 'farForeFoot'].map(name => ['marker', name]));
+    assert.equal(new Set(direct.info.arcs.tracks.map(t => t.color)).size, 4);
+    assert.ok(direct.info.arcs.landings.length > 0);
+    // The parts view of the same source: a legend in the reply, part keys in the grid text.
+    const parts = await mcp.call('pixel_inspect', { source, view: 'parts', frames: [direct.info.cells[0].frame], grid: true, scale: 2 });
+    assert.ok(!parts.result.isError, JSON.stringify(parts.info));
+    assert.equal(parts.info.mode, 'parts');
+    assert.ok(parts.info.parts.length > 3 && parts.info.parts.every(part => /^#[0-9a-f]{6}$/.test(part.color) && part.pixels > 0));
+    const grid = parts.result.content.find(c => c.type === 'text' && c.text.startsWith('Part-key grids')).text;
+    assert.ok(grid.includes(`= ${parts.info.parts[0].name} ${parts.info.parts[0].color}`), grid.slice(0, 400));
     const unknown = await mcp.call('pixel_inspect', { revision: compiled.info.revision, ...options });
     assert.equal(unknown.info.motion.checks.slide, null);
     const conflicting = await mcp.call('pixel_inspect', { source, revision: compiled.info.revision, ...options });

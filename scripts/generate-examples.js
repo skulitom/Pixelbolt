@@ -207,8 +207,15 @@ const hero = { format: 'pixelforge-poses', version: 1, name: 'hero', width: 32, 
     farUpper: limb(4, [2, 2], 1, 1, ['round', 'round']), farFore: limb(4, [2, 2], 1, 1),
     hand: { rows: ['.kk.', 'kzzk', 'kyyk', '.kk.'], anchor: [1, 1] },
     farHand: { rows: ['.kk.', 'kyyk', 'kxxk', '.kk.'], anchor: [1, 1] },
-    boot: { rows: ['kcck..', 'kccwck', 'kkkkkk'], anchor: [1, 1] },
-    farBoot: { rows: ['kbbk..', 'kbbcbk', 'kkkkkk'], anchor: [1, 1] }
+    // Each boot also has its toe pointing down (view 30, as it leaves the ground: the toe hangs a row below the flat
+    // sole, so the templates hold the foot that much higher) and its toe lifted (view 330, landing on the heel), which
+    // the templates roll it to.
+    boot: { rows: ['kcck..', 'kccwck', 'kkkkkk'], anchor: [1, 1], views: {
+      30: { rows: ['kcck..', 'kcck..', 'kkkwck', '...kkk'], anchor: [1, 1] },
+      330: { rows: ['kcckck', 'kccwkk', 'kkkk..'], anchor: [1, 1] } } },
+    farBoot: { rows: ['kbbk..', 'kbbcbk', 'kkkkkk'], anchor: [1, 1], views: {
+      30: { rows: ['kbbk..', 'kbbk..', 'kkkcbk', '...kkk'], anchor: [1, 1] },
+      330: { rows: ['kbbkbk', 'kbbckk', 'kkkk..'], anchor: [1, 1] } } }
   },
   poses: [{ name: 'stand', duration: 200, origin: [15, 35], parts: [
     { name: 'tail', part: 'tail', attach: { part: 'chest', point: 'nape' }, angle: -145 },

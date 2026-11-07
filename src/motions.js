@@ -80,8 +80,79 @@ export function expandMotions(input, compileRest, probeJoints) {
     const existing = rest.markers?.find(m => m.part === last.name && m.point === point);
     const marker = existing?.name ?? id(`${last.name}Foot`, `poses.rig.legs[${i}]`);
     if (!existing && rest.markers?.some(m => m.name === marker)) fail(`poses.rig.legs[${i}]`, `marker ${marker} is already used for another point`);
-    return { last: last.name, point, marker, x: restData.parts[last.name].points[point][0] };
+    const [x, y] = restData.parts[last.name].points[point];
+    return { last: last.name, point, marker, x, y, hip: restData.parts[chain[0]].joints.start };
   });
+  // A foot is a grid part on a leg's end point. One drawn with views, and holding its own angle at rest, rolls: the
+  // templates turn it to the view that lifts its toe as it lands on its heel, and to the view that points its toe down
+  // as it leaves the ground. A planted ankle stays on rig.ground, so a foot never rolls onto its toe while it is
+  // planted: lifting the heel there would bare the end of the shin. A view is the pixel artist's own drawing, so feet
+  // without views stay flat rather than turn a small grid into a smear.
+  const feet = legs.map(leg => rest.parts.filter(p => p.attach?.part === leg.last && p.attach.point === leg.point && p.angle === undefined
+    && !p.rotate && source.parts[p.part]?.rows && source.parts[p.part].views).map(p => p.name));
+  // The view that lifts a foot's heel or toe as the figure moves toward forward (1 right, -1 left). A heel rises as a
+  // right-pointing foot turns clockwise (views 1–89) and a toe as it turns back (271–359); a flipped foot points the
+  // other way. The view nearest the flat foot is used.
+  const rollView = (name, forward, side) => {
+    const instance = instances.get(name), flip = instance.flipX === true;
+    const clockwise = (forward * (flip ? -1 : 1) > 0) === (side === 'heel');
+    const keys = Object.keys(source.parts[instance.part].views).map(Number).filter(k => clockwise ? k > 0 && k < 90 : k > 270);
+    return keys.length ? clockwise ? Math.min(...keys) : Math.max(...keys) : null;
+  };
+  const lowest = (rows, anchor) => rows.findLastIndex(row => /[^. ]/.test(row)) - anchor[1];
+  // Rolls leg j's feet and returns how much further below the ankle the rolled drawings reach than the flat ones, so a
+  // lifted foot can be held up clear of the ground.
+  const roll = (parts, j, forward, side) => {
+    let deeper = 0;
+    for (const name of side ? feet[j] : []) {
+      const key = rollView(name, forward, side);
+      if (key === null) continue;
+      const instance = instances.get(name), definition = source.parts[instance.part], view = definition.views[key];
+      parts.get(name).rotate = instance.flipX === true ? -key : key;
+      deeper = Math.max(deeper, lowest(view.rows, view.anchor) - lowest(definition.rows, definition.anchor ?? [0, 0]));
+    }
+    return deeper;
+  };
+  // Each arm's hand: what hangs from the arm's last bone, with whatever that holds. The rest of the arm is its bones and
+  // anything else on them.
+  const subtree = roots => {
+    const found = new Set(roots);
+    for (let changed = true; changed;) { changed = false; for (const p of rest.parts) if (p.attach && found.has(p.attach.part) && !found.has(p.name)) { found.add(p.name); changed = true; } }
+    return found;
+  };
+  const arms = (rig.arms ?? []).map(chain => {
+    const hand = subtree(rest.parts.filter(p => p.attach?.part === chain.at(-1)).map(p => p.name));
+    return { chain, hand, arm: new Set([...subtree([chain[0]])].filter(name => !hand.has(name))) };
+  });
+  // Which instance draws each pixel of a pose, as the compiler draws it.
+  const owners = pose => {
+    const { recipe } = compileRest({ ...checkSource, poses: [pose], animations: { check: { frames: [pose.name], loop: false } } }), owner = new Map();
+    for (const layer of recipe.frames[0].layers) for (const op of layer.ops) recipe.symbols[op.symbol].forEach((row, y) => {
+      for (let x = 0; x < row.length; x++) if (row[x] !== '.' && row[x] !== ' ') owner.set(`${op.flipX ? op.x + row.length - 1 - x : op.x + x},${op.y + y}`, layer.name);
+    });
+    return owner;
+  };
+  // A hand that shows while all of its arm is hidden behind the body floats beside it, as a far hand does when its arm
+  // swings forward behind the chest. There the elbow bends further, 15° at a time up to 60°, which brings the hand up
+  // with its forearm out in front, or tucks it away; failing that it straightens a little (a runner's bent arm near
+  // rest), and then the arm swings back toward rest. The pose's own pixels decide, so every rig is judged as it is drawn.
+  const attachHands = (pose, forward) => {
+    const byName = new Map(pose.parts.map(p => [p.name, p])), turn = v => ((Math.round(v) + 180) % 360 + 360) % 360 - 180;
+    for (const { chain, hand, arm } of arms) {
+      const shoulder = byName.get(chain[0]), elbow = byName.get(chain[1]);
+      if (!hand.size || shoulder.angle === undefined || elbow.angle === undefined) continue;
+      const floats = () => {
+        const shown = [], drawn = new Set();
+        for (const [at, name] of owners(pose)) { if (hand.has(name)) shown.push(at); else if (arm.has(name)) drawn.add(at); }
+        return shown.length > 0 && !shown.some(at => { const [x, y] = at.split(',').map(Number); return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => drawn.has(`${x + dx},${y + dy}`)); });
+      };
+      if (!floats()) continue;
+      const bend = elbow.angle, swing = shoulder.angle, from = turn(restAngle(chain[0])), out = turn(swing - from);
+      const tries = [...[15, 30, 45, 60, -15, -30].map(extra => [swing, turn(bend - forward * extra)]), ...[.75, .5, .25, 0].map(share => [turn(from + out * share), bend])];
+      const fix = tries.find(([s, e]) => { shoulder.angle = s; elbow.angle = e; return !floats(); }) ?? [swing, bend];
+      [shoulder.angle, elbow.angle] = fix;
+    }
+  };
   const generated = [], animations = { ...(source.animations ?? {}) }, motionInfo = {}, groundedPoses = new Map();
   for (const [name, motion] of Object.entries(source.motions)) {
     const path = `poses.motions.${name}`; id(name, path);
@@ -171,7 +242,18 @@ export function expandMotions(input, compileRest, probeJoints) {
       // A walking or running body's height comes from its legs and the bob, once every pose is made (below).
       if (locomotion) { bodySquash = template === 'run' ? (i % half === downIndex ? .9 : i % half === half - 1 ? 1.05 : 1) : 1; setAngle(torso, restAngle(rig.body) + lean); }
       if (template === 'idle') bodySquash = 1 + (grounded ? squashBy : breath) * sinDeg(angle);
-      if (template === 'jump') { dy = [2, 0, -apex, -apex * 2, -apex, 2, 0][i]; bodySquash = [crouch, stretch, 1.05, 1, 1, crouch, 1][i]; }
+      if (template === 'jump') {
+        dy = [2, 0, -apex, -apex * 2, -apex, 2, 0][i]; bodySquash = [crouch, stretch, 1.05, 1, 1, crouch, 1][i];
+        // The body leans into the crouch and the landing. The arms swing back as it crouches and forward through the
+        // take-off, then ease down through the apex and fall with the forearms coming forward to meet the landing. They
+        // stay below the shoulders, where a raised arm would cross the face of a big-headed figure. The far arm swings
+        // a little less, so the two don't draw as one.
+        setAngle(torso, restAngle(rig.body) + [8, 4, 0, 0, 0, 8, 0][i]);
+        for (const [j, chain] of (rig.arms ?? []).entries()) {
+          setAngle(parts.get(chain[0]), restAngle(chain[0]) + Math.round([35, -70, -55, -25, -10, -35, 0][i] * (j % 2 ? .85 : 1)));
+          if (chain.length > 1) setAngle(parts.get(chain[1]), restAngle(chain[1]) - [10, 30, 35, 45, 50, 20, 0][i]);
+        }
+      }
       // Follow-through carries the swing well past the strike and settles the body, so it reads as its own key pose.
       // windup and strike are angles in the body's frame. An arm that hangs from another part (a chest standing up from
       // the hips) takes them less that part's turn from the body at rest, so the blow goes the same way on either rig.
@@ -203,8 +285,20 @@ export function expandMotions(input, compileRest, probeJoints) {
         const last = parts.get(leg.last);
         delete last.angle; delete last.rotate;
         let x = leg.x, y = rig.ground, planted = true;
-        if (locomotion) ({ x, y, planted } = step(leg, j, i));
-        else if (template === 'jump' && i > 0 && i < 5) { planted = false; y += Math.min(-1, dy); }
+        if (locomotion) {
+          ({ x, y, planted } = step(leg, j, i));
+          // The heel strikes with the toe up, and the toe trails down as the foot leaves the ground.
+          const k = (i + (j % 2) * half) % count, deeper = roll(parts, j, direction, k === 0 ? 'toe' : k === stance ? 'heel' : null);
+          if (!planted) y = Math.min(y, rig.ground - deeper);
+        } else if (template === 'jump' && i > 0 && i < 5) {
+          // In the air the feet are aimed from the hip, a share of the leg's length at rest: pushed off and long at
+          // take-off, tucked up under the body (the knees forward) at the apex, and reaching down again to land. The
+          // second leg trails the first. The toes point down as they leave the ground.
+          planted = false;
+          const span = leg.y - leg.hip[1], [ahead, down] = [[[-.1, 1], [-.2, 1]], [[.05, .75], [-.1, .8]], [[.2, .6], [.05, .65]], [[.15, .85], [0, .9]]][i - 1][j % 2];
+          x = leg.x + direction * ahead * span;
+          y = Math.min(i === 1 ? rig.ground - 1 : leg.hip[1] + dy + down * span, rig.ground - roll(parts, j, direction, i < 3 ? 'heel' : null));
+        }
         last.reach = [Math.round(x), Math.round(y)]; last.bend ??= 'forward';
         if (!pose.markers.some(m => m.name === leg.marker)) pose.markers.push({ name: leg.marker, part: leg.last, point: leg.point });
         if (planted) pose.contacts.push(leg.marker);
@@ -279,9 +373,11 @@ export function expandMotions(input, compileRest, probeJoints) {
       });
     } else {
       // The other templates lower every pose by the deepest sink, so the motion keeps its shape and no frame dips alone.
+      // A foot in the air keeps its target, which never lies below rig.ground.
       const depth = Math.max(...motionPoses.map(sink));
       if (depth) for (const pose of motionPoses) pose.origin[1] += depth;
     }
+    if (locomotion || template === 'jump') for (const pose of motionPoses) attachHands(pose, direction);
     if (Object.hasOwn(animations, name)) fail(`${path}`, 'the generated animation name is already authored; choose another motion name');
     const playback = template === 'attack' ? [names[0], ...Array(hold).fill(names[1]), ...names.slice(2)] : names;
     animations[name] = { frames: playback, loop: locomotion || template === 'idle' };

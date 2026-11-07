@@ -1,7 +1,7 @@
 // Browser-compatible, deterministic rasterizer. No I/O and no dependencies.
 import { patternProblem, ditherThreshold, traceLine, pixelId, colorOf, idsOf, cleanupIds, ruleVariants, rewriteIds } from './craft.js';
 import { AUTOTILE_MODES, tilePieces, templatePiece, expandTilemap, isoLayout } from './autotile.js';
-import { layoutText } from './font.js';
+import { layoutText, FONT_HEIGHT } from './font.js';
 export class PixelError extends Error {
   constructor(path, message) { super(`${path}: ${message}`); this.name = 'PixelError'; this.path = path; }
 }
@@ -250,8 +250,9 @@ export function inlineSharedPalette(document, { palette, ramps = null }) {
 }
 
 export function renderProject(spec, options = {}) {
-  object(options, 'render', ['layers', 'stats']);
+  object(options, 'render', ['layers', 'stats', 'owners']);
   if (options.stats !== undefined) boolean(options.stats, 'render.stats');
+  if (options.owners !== undefined) boolean(options.owners, 'render.owners');
   if (options.layers !== undefined) {
     renderProject(spec); // Validate the complete recipe before hiding any drawing.
     list(options.layers, 'render.layers', 64);
@@ -260,7 +261,7 @@ export function renderProject(spec, options = {}) {
     for (const ref of options.layers) if (typeof ref !== 'string' || !known.has(ref)) fail('render.layers', `unknown layer ${JSON.stringify(ref)}`);
     const isolated = structuredClone(spec); isolated.background = 'transparent';
     for (const frame of isolated.frames) { delete frame.ops; delete frame.pixels; frame.layers = (frame.layers ?? []).filter(layer => options.layers.includes(layer.name)); }
-    return renderProject(isolated, { ...(options.stats && { stats: true }) });
+    return renderProject(isolated, { ...(options.stats && { stats: true }), ...(options.owners && { owners: true }) });
   }
   const { projectName, width, height, palette, ramps, background, projectAnchor, symbols } = readProject(spec);
   // Rectangles, ellipses and dither or shade regions may overhang the canvas: up to 512 pixels, or twice the side of a
@@ -269,6 +270,10 @@ export function renderProject(spec, options = {}) {
   let activePalette = palette;
   const color = (value, path) => parseColor(value, activePalette, path);
   let work = 0, operationCount = 0, layerPixels = 0;
+  // With owners, each frame also records what drew each pixel last: a number into ownerNames (a layer's name, or
+  // layers[i] for an unnamed one, background, frame.ops or frame.pixels), 0 for nothing. Only the parts view asks.
+  const ownerNames = options.owners ? [] : null, ownerIds = new Map();
+  const ownerId = label => { if (!ownerIds.has(label)) { ownerNames.push(label); ownerIds.set(label, ownerNames.length); } return ownerIds.get(label); };
   const spend = amount => { work += amount; if (work > 67108864) fail('project', 'drawing work exceeds the 67-million-pixel budget; simplify repeated operations'); };
   // An invalid drawing operation is noted and skipped while the rest are checked, so one reply names every broken
   // operation (up to ten) instead of one per run. Operations don't depend on each other being valid, and a render that
@@ -736,11 +741,15 @@ export function renderProject(spec, options = {}) {
       points = Object.fromEntries(Object.entries(frame.points).map(([key, value]) => [name(key, `${p}.points.${key}`), point(value, `${p}.points.${key}`)]));
     }
     const tile = frame.tile === undefined ? null : tileFacts(frame.tile, `${p}.tile`, width, height);
-    let data = new Uint8ClampedArray(width * height * 4);
+    let data = new Uint8ClampedArray(width * height * 4), owner = ownerNames && new Uint16Array(width * height);
     if (frame.from !== undefined) {
       if (typeof frame.from !== 'string' || !rendered.has(frame.from)) fail(`${p}.from`, 'must name an earlier frame');
       data.set(rendered.get(frame.from).data);
-    } else if (background.some(Boolean)) for (let i = 0; i < data.length; i += 4) data.set(background, i);
+      owner?.set(rendered.get(frame.from).owners);
+    } else if (background.some(Boolean)) {
+      for (let i = 0; i < data.length; i += 4) data.set(background, i);
+      if (owner && background[3]) owner.fill(ownerId('background'));
+    }
     const translate = frame.translate ?? [0, 0];
     list(translate, `${p}.translate`, 2);
     if (translate.length !== 2) fail(`${p}.translate`, 'expected [x, y]');
@@ -748,16 +757,27 @@ export function renderProject(spec, options = {}) {
     const flipX = boolean(frame.flipX ?? false, `${p}.flipX`), flipY = boolean(frame.flipY ?? false, `${p}.flipY`);
     const wrap = boolean(frame.wrap ?? false, `${p}.wrap`);
     if (dx || dy || flipX || flipY) {
-      const transformed = new Uint8ClampedArray(data.length);
+      const transformed = new Uint8ClampedArray(data.length), moved = owner && new Uint16Array(owner.length);
       for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
         let px = (flipX ? width - 1 - x : x) + dx, py = (flipY ? height - 1 - y : y) + dy;
         if (wrap) { px = ((px % width) + width) % width; py = ((py % height) + height) % height; }
-        if (px >= 0 && py >= 0 && px < width && py < height) transformed.set(data.subarray((y * width + x) * 4, (y * width + x) * 4 + 4), (py * width + px) * 4);
-        else if (data[(y * width + x) * 4 + 3]) clip(`${p}.translate`);
+        if (px >= 0 && py >= 0 && px < width && py < height) {
+          transformed.set(data.subarray((y * width + x) * 4, (y * width + x) * 4 + 4), (py * width + px) * 4);
+          if (moved) moved[py * width + px] = owner[y * width + x];
+        } else if (data[(y * width + x) * 4 + 3]) clip(`${p}.translate`);
       }
-      data = transformed;
+      data = transformed; owner = moved;
     }
+    // Frame operations may draw anywhere and erase: what they changed is theirs.
+    const unchanged = owner && frame.ops?.length ? data.slice() : null;
     drawOps(data, frame.ops ?? [], `${p}.ops`);
+    if (unchanged) {
+      const id = ownerId('frame.ops');
+      for (let at = 0; at < owner.length; at++) {
+        const i = at * 4;
+        if (data[i] !== unchanged[i] || data[i + 1] !== unchanged[i + 1] || data[i + 2] !== unchanged[i + 2] || data[i + 3] !== unchanged[i + 3]) owner[at] = data[i + 3] ? id : 0;
+      }
+    }
     list(frame.layers ?? [], `${p}.layers`, 64);
     const framePalette = activePalette, layerPalettes = [];
     // Reuse a layer scratch buffer; clear only dirty rows after compositing. Empty layers allocate nothing extra.
@@ -799,6 +819,13 @@ export function renderProject(spec, options = {}) {
             } else blend(data, to, pixels.subarray(i, i + 4), opacity);
           } else clip(lp);
         }
+        if (owner) {
+          const id = ownerId(layer.name ?? `layers[${li}]`);
+          for (let y = bounds[1]; y <= bounds[3]; y++) for (let x = bounds[0]; x <= bounds[2]; x++) {
+            const tx = x + lx, ty = y + ly;
+            if (pixels[(y * width + x) * 4 + 3] && tx >= 0 && tx < width && ty >= 0 && ty < height) owner[ty * width + tx] = id;
+          }
+        }
       }
       for (let y = bounds[1]; y <= bounds[3]; y++) pixels.fill(0, (y * width + bounds[0]) * 4, (y * width + bounds[2] + 1) * 4);
     }
@@ -810,9 +837,12 @@ export function renderProject(spec, options = {}) {
       object(pixel, pp, ['x', 'y', 'color']);
       const x = integer(pixel.x, `${pp}.x`, 0, width - 1), y = integer(pixel.y, `${pp}.y`, 0, height - 1);
       data.set(color(pixel.color, `${pp}.color`), (y * width + x) * 4);
+      // A correction over drawn pixels recolours them (a pose's inner lines recolour its parts' outlines), so they
+      // stay their owner's; one on empty canvas is its own.
+      if (owner) owner[y * width + x] = !data[(y * width + x) * 4 + 3] ? 0 : owner[y * width + x] || ownerId('frame.pixels');
     }
     activePalette = palette;
-    const result = { name: frameName, duration, data, ...(frameAnchor && { anchor: frameAnchor }), ...(points && { points }), ...(tile && { tile }), ...(overrides && { palette: overrides }), ...(layerPalettes.length && { layerPalettes }) };
+    const result = { name: frameName, duration, data, ...(owner && { owners: owner }), ...(frameAnchor && { anchor: frameAnchor }), ...(points && { points }), ...(tile && { tile }), ...(overrides && { palette: overrides }), ...(layerPalettes.length && { layerPalettes }) };
     rendered.set(frameName, result);
     return result;
   }));
@@ -824,6 +854,7 @@ export function renderProject(spec, options = {}) {
   return {
     name: projectName, width, height, frames, animations, palette, ramps,
     ...(options.stats && { work: { pixels: work, layerPixels, operations: operationCount } }),
+    ...(ownerNames && { ownerNames }),
     sheet,
     warnings, ...(clipping.length && { clipping: clipping.slice(0, 16), ...(clipping.length > 16 && { clippingOmitted: clipping.length - 16 }) })
   };
@@ -1264,6 +1295,60 @@ export function wildcard(pattern, text) {
   return p === pattern.length;
 }
 
+// The parts view: every pixel in one flat colour for what drew it last, so a stray pixel or a tangle where limbs cross
+// names its part. Colours go to the parts in the shown cells in drawing order, well apart in hue and lightness;
+// past twenty they repeat darker. A background shows in one dark grey.
+const PART_COLORS = ['#e6194b', '#3cb44b', '#4363d8', '#ffe119', '#911eb4', '#f58231', '#42d4f4', '#f032e6', '#bfef45', '#9a6324',
+  '#469990', '#fabed4', '#000075', '#aaffc3', '#800000', '#dcbeff', '#808000', '#ffd8b1', '#ffffff', '#fffac8'].map(hex => parseColor(hex));
+function partColors(project, indices, region) {
+  const { width, frames, ownerNames } = project, counts = new Map();
+  for (const index of indices) {
+    const owners = frames[index].owners;
+    for (let y = region.y; y < region.y + region.h; y++) for (let x = region.x; x < region.x + region.w; x++) {
+      const id = owners[y * width + x];
+      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+  let next = 0;
+  const legend = [...counts.keys()].sort((a, b) => a - b).map(id => {
+    const name = ownerNames[id - 1], round = Math.floor(next / PART_COLORS.length), base = PART_COLORS[next % PART_COLORS.length];
+    const color = name === 'background' ? [43, 48, 54, 255] : base.map((v, c) => c === 3 ? 255 : v >> round);
+    if (name !== 'background') next++;
+    return { id, name, color, pixels: counts.get(id) };
+  });
+  const colors = new Map(legend.map(entry => [entry.id, entry.color])), pixels = new Map();
+  for (const index of indices) {
+    const owners = frames[index].owners, data = new Uint8ClampedArray(owners.length * 4);
+    for (let at = 0; at < owners.length; at++) if (owners[at]) data.set(colors.get(owners[at]) ?? [128, 128, 128, 255], at * 4);
+    pixels.set(index, data);
+  }
+  return { legend, pixels };
+}
+// A legend to the right of a contact sheet: a swatch and the part's name in the built-in font, in columns of at most
+// as many rows as the sheet is tall (twelve at least). The cells keep their places.
+function drawPartLegend(sheet, legend) {
+  const t = Math.max(1, Math.min(2, Math.floor(sheet.scale / 2))), pad = 3 * t, row = (FONT_HEIGHT + 4) * t, swatch = 7 * t;
+  const perColumn = Math.max(1, Math.min(legend.length, Math.max(12, Math.floor((sheet.height - 2 * pad) / row))));
+  const texts = legend.map(entry => layoutText(entry.name)), columns = [];
+  for (let i = 0; i < legend.length; i += perColumn) columns.push(Math.max(...texts.slice(i, i + perColumn).map(text => text.width)) * t + swatch + 3 * t + pad);
+  const width = sheet.width + pad + columns.reduce((sum, w) => sum + w, 0), height = Math.max(sheet.height, perColumn * row + 2 * pad);
+  if (width > SHEET_SIDE * 2 || height > SHEET_SIDE * 2) fail('inspect.view', `the parts legend would make the sheet ${width}×${height} pixels; select fewer frames or a smaller region`);
+  const data = new Uint8ClampedArray(width * height * 4);
+  data.set(gutterColor, 0);
+  for (let filled = 4; filled < data.length; filled *= 2) data.copyWithin(filled, 0, Math.min(filled, data.length - filled));
+  for (let y = 0; y < sheet.height; y++) data.set(sheet.data.subarray(y * sheet.width * 4, (y + 1) * sheet.width * 4), y * width * 4);
+  const fill = (x0, y0, w, h, color) => { for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) data.set(color, (y * width + x) * 4); };
+  let left = sheet.width + pad;
+  legend.forEach((entry, i) => {
+    const column = Math.floor(i / perColumn), top = pad + (i % perColumn) * row;
+    if (i % perColumn === 0 && column) left += columns[column - 1];
+    fill(left, top, swatch, swatch, [0, 0, 0, 255]); fill(left + t, top + t, swatch - 2 * t, swatch - 2 * t, entry.color);
+    const text = texts[i], x0 = left + swatch + 3 * t, y0 = top + text.top * t;
+    text.rows.forEach((cells, y) => { for (let x = 0; x < cells.length; x++) if (cells[x] === '#') fill(x0 + x * t, y0 + y * t, t, t, [230, 234, 238, 255]); });
+  });
+  return { ...sheet, width, height, data };
+}
+
 export function inspectProject(project, options = {}) {
   object(options, 'inspect', ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'view', 'native', 'diagnostics', 'maxCells', 'step', 'offset', 'guides']);
   const { width, height, frames } = project;
@@ -1289,7 +1374,8 @@ export function inspectProject(project, options = {}) {
     if (cells.length > 1024) fail('inspect.frames', `the names and patterns select ${cells.length} frames; at most 1,024 cells`);
   }
   const mode = options.view ?? 'color';
-  if (!['color', 'silhouette', 'grayscale', 'onion', 'tile'].includes(mode)) fail('inspect.view', 'expected color, silhouette, grayscale, onion or tile');
+  if (!['color', 'silhouette', 'grayscale', 'onion', 'tile', 'parts'].includes(mode)) fail('inspect.view', 'expected color, silhouette, grayscale, onion, tile or parts');
+  if (mode === 'parts' && !project.ownerNames) fail('inspect.view', 'parts needs the project rendered with { owners: true }, which records the layer that drew each pixel');
   if (mode === 'onion' && options.animation === undefined) fail('inspect.view', 'onion requires an animation so neighbors have an unambiguous playback position');
   if (mode === 'tile' && options.region !== undefined) fail('inspect.region', 'tile view repeats whole frames; omit region');
   if (mode === 'tile' && options.guides !== undefined) fail('inspect.guides', 'guides draw over one canvas; tile view repeats it, so omit guides');
@@ -1333,7 +1419,8 @@ export function inspectProject(project, options = {}) {
     view.tiles = unique.map(i => ({ frame: frames[i].name, ...tileReport(frames[i].data, width, height) }));
     if (native) view.nativeSheet = drawSheet(cells.map(i => repeats.get(i)), width * 3, tiled, { scale: 1, background });
   } else {
-    const sources = cells.map((i, n) => mode === 'onion' ? onionPixels(project, project.animations[options.animation], positions[n]) : reviewPixels(frames[i].data, mode));
+    const parts = mode === 'parts' ? partColors(project, unique, region) : null;
+    const sources = cells.map((i, n) => mode === 'onion' ? onionPixels(project, project.animations[options.animation], positions[n]) : parts ? parts.pixels.get(i) : reviewPixels(frames[i].data, mode));
     view = { cells: cells.map(i => ({ frame: frames[i].name, duration: frames[i].duration })), region, sheet: drawSheet(sources, width, region, { scale, background }) };
     if (guides) {
       // Over every cell of the enlarged sheet; the native sheet keeps its exact pixels.
@@ -1343,6 +1430,11 @@ export function inspectProject(project, options = {}) {
     }
     if (mode !== 'color') view.mode = mode;
     if (native) view.nativeSheet = drawSheet(sources, width, region, { scale: 1, background });
+    if (parts) {
+      view.parts = parts.legend.map(({ name, color, pixels }) => ({ name, color: toHex(color), pixels }));
+      view.sheet = drawPartLegend(view.sheet, parts.legend);
+      if (native) view.nativeSheet = drawPartLegend(view.nativeSheet, parts.legend);
+    }
   }
   if (total !== cells.length) view.sampling = { total, shown: cells.length, omitted: total - cells.length, positions, ...((step > 1 || offset > 0) && { step, offset }), method: `${methods.join(', then ')}; durations are original, not playback timing` };
   if (diagnostics) view.diagnostics = analyzeProject(project);
@@ -1354,6 +1446,15 @@ export function inspectProject(project, options = {}) {
     }) };
   }
   if (!grid) return view;
+  if (mode === 'parts') {
+    // One character per part: its legend symbol, "." where nothing drew.
+    const symbols = new Map(view.parts.map((part, i) => [part.name, legendSymbols[i] ?? '?']));
+    const key = id => id ? symbols.get(project.ownerNames[id - 1]) : '.';
+    view.grids = unique.map(index => ({ frame: frames[index].name, rows: Array.from({ length: region.h }, (_, y) =>
+      Array.from({ length: region.w }, (_, x) => key(frames[index].owners[(region.y + y) * width + region.x + x])).join('')) }));
+    view.legend = Object.fromEntries(view.parts.map((part, i) => [legendSymbols[i] ?? '?', { part: part.name, color: part.color }]));
+    return view;
+  }
   const namer = colorNamer(project);
   view.grids = unique.map(index => ({ frame: frames[index].name, rows: readRegion(frames[index].data, width, region, namer) }));
   view.legend = namer.legend();

@@ -187,8 +187,12 @@ export function plainRig() {
       farUpper: limb(4, [2, 2], 1, 1, ['round', 'round']), farFore: limb(4, [2, 2], 1, 1),
       hand: { rows: ['.kk.', 'kzzk', 'kyyk', '.kk.'], anchor: [1, 1] },
       farHand: { rows: ['.kk.', 'kyyk', 'kxxk', '.kk.'], anchor: [1, 1] },
-      boot: { rows: ['kcck..', 'kccwck', 'kkkkkk'], anchor: [1, 1] },
-      farBoot: { rows: ['kbbk..', 'kbbcbk', 'kkkkkk'], anchor: [1, 1] }
+      boot: { rows: ['kcck..', 'kccwck', 'kkkkkk'], anchor: [1, 1], views: {
+        30: { rows: ['kcck..', 'kcck..', 'kkkwck', '...kkk'], anchor: [1, 1] },
+        330: { rows: ['kcckck', 'kccwkk', 'kkkk..'], anchor: [1, 1] } } },
+      farBoot: { rows: ['kbbk..', 'kbbcbk', 'kkkkkk'], anchor: [1, 1], views: {
+        30: { rows: ['kbbk..', 'kbbk..', 'kkkcbk', '...kkk'], anchor: [1, 1] },
+        330: { rows: ['kbbkbk', 'kbbckk', 'kkkk..'], anchor: [1, 1] } } }
     },
     rig: { body: 'hips', head: 'head', ground: 33, rest: 'stand',
       legs: [['nearThigh', 'nearShin'], ['farThigh', 'farShin']], arms: [['nearUpper', 'nearFore'], ['farUpper', 'farFore']], tail: ['tail', 'tip'] },

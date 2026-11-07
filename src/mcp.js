@@ -41,8 +41,9 @@ function viewSummary({ sheet: { data, ...sheet }, nativeSheet, grids, legend, ..
 function gridText({ region, legend, grids }) {
   const label = String(region.y + region.h - 1).length, xs = Array.from({ length: region.w }, (_, i) => region.x + i);
   const rulers = [100, 10, 1].filter(p => p === 1 || xs.at(-1) >= p).map(p => ' '.repeat(label + 2) + xs.map(x => (x >= p || p === 1 ? Math.floor(x / p) % 10 : ' ')).join(''));
-  const lines = [`Palette-key grids for x ${region.x}–${region.x + region.w - 1}, y ${region.y}–${region.y + region.h - 1}. "." is transparent.`];
-  for (const [symbol, entry] of Object.entries(legend)) lines.push(symbol === '?' ? `? = ${entry.colors} more colors without a symbol` : `${symbol} = ${entry.palette ? `palette "${entry.palette}" ${entry.color}` : `${entry.color}, not in the palette`}`);
+  const parts = Object.values(legend).some(entry => entry.part !== undefined);
+  const lines = [`${parts ? 'Part' : 'Palette'}-key grids for x ${region.x}–${region.x + region.w - 1}, y ${region.y}–${region.y + region.h - 1}. "." is ${parts ? 'empty' : 'transparent'}.`];
+  for (const [symbol, entry] of Object.entries(legend)) lines.push(entry.part !== undefined ? `${symbol} = ${entry.part} ${entry.color}` : symbol === '?' ? `? = ${entry.colors} more colors without a symbol` : `${symbol} = ${entry.palette ? `palette "${entry.palette}" ${entry.color}` : `${entry.color}, not in the palette`}`);
   for (const { frame, rows } of grids) lines.push('', frame, ...rulers, ...rows.map((row, y) => `${String(region.y + y).padStart(label)}  ${row}`));
   return lines.join('\n');
 }
@@ -373,7 +374,7 @@ export function createToolRunner({ directory, root, version }) {
           const input = await resolveReferences(poseSource, { baseDir: root, root });
           ({ recipe, metadata, warnings: poseWarnings = [] } = compilePoses(input.document)); resolved = sources = relativeToRoot(input.files);
         } else ({ recipe, resolved, sources } = await recipeFrom(spec, revision));
-        const project = renderProject(recipe, layers === undefined ? {} : { layers });
+        const project = renderProject(recipe, { ...(layers !== undefined && { layers }), ...(inspection.view === 'parts' && { owners: true }) });
         let view;
         if (inspection.view === 'motion') {
           if (layers !== undefined || reference !== undefined) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers and reference');
@@ -584,7 +585,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     grid: { type: 'boolean', description: 'Also return palette-key text grids with x/y rulers (at most 16,384 pixels).' },
     scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024 px.' },
     background: { type: 'string', description: 'checker (default), transparent, a palette name or a hex color.' },
-    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'motion'], description: 'onion and motion need animation; motion reports foot slide, ground error and loop joins (source or metadata adds contacts); tile repeats each frame 3x3.' },
+    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'parts', 'motion'], description: 'onion and motion need animation; motion reports foot slide, ground error and loop joins and traces limb arcs (source or metadata adds contacts); parts colours each pixel by the layer or pose part that drew it; tile repeats each frame 3x3.' },
     native: { type: 'boolean', description: 'Also return a 1x contact sheet.' },
     diagnostics: { type: 'boolean', description: 'Advisory evidence: duplicate and empty frames, stray pixels, palette, loop joins, timing, cleanup counts.' },
     maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Show at most this many evenly spaced cells; step and offset pick positions instead.' },

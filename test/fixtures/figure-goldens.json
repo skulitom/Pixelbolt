@@ -53,7 +53,7 @@
     ]
   },
   "R2": {
-    "compiled": "4fc8d845b5df5a396a510b0b9f3d3735b7e57dbdf49f203f89d8335551a0e6ef",
+    "compiled": "6ba7b770c2170280bf78e2fc54e3be710ccf29bfc177c7225b4513edc3c7bcab",
     "frames": [
       {
         "name": "stand",
@@ -173,27 +173,27 @@
       },
       {
         "name": "jump-crouch",
-        "rgba": "f96acf38f3c6be3761343ee9e4a17a95603d19a85964b27dd09adfd8de22b6fe"
+        "rgba": "c987ef6aed303ae3295882833c971b2c18179371efc755e6d82b4abc8951dd68"
       },
       {
         "name": "jump-take-off",
-        "rgba": "f09868dfebbd0fb0470f0c47f789606cf5ece948f9f6c86cc720b4f88849eec8"
+        "rgba": "508ec3f633769ac9ad7d07b57238e4934c2560c627d24fbd57806cc57776fef4"
       },
       {
         "name": "jump-rise",
-        "rgba": "3b462d318fad3705e8abe40993fc756afa830a0d469480ae1d7241b11b24241d"
+        "rgba": "02dda9e5b35b59c294036da9f1dfeabd11b9c335069dc7b985b9ccf28ecec2ef"
       },
       {
         "name": "jump-apex",
-        "rgba": "e89335048c4f1941a5544e9dc977b0531b45f94853fe4de0060472a21293bb3c"
+        "rgba": "17dfdb1ed56275e32dd58025c9fb0dede3afbc65cd41212e543725bd32c4f2d6"
       },
       {
         "name": "jump-fall",
-        "rgba": "551715e0d63c292abaad2767b8beb9608363dee7a7f03b29d3833ca6e69ca809"
+        "rgba": "48cf3aafc298497e6c71048c3bc6f6d97e22b9fd179acc30e38462f597c80de4"
       },
       {
         "name": "jump-land",
-        "rgba": "b131fde9e09dc63d44a0ae16e88ecef3305e7eca21092844586138ee84c452f2"
+        "rgba": "bcb771d2a5cd3f53e90997e8e08a2ce2051f2221e52081756930b406e18e57c0"
       },
       {
         "name": "jump-recover",
@@ -218,7 +218,7 @@
     ]
   },
   "R3": {
-    "compiled": "08e4cb01d4e9442d9d9e8d6129ddbf794b79d74e9b6310cfad874c575b7c50b9",
+    "compiled": "68f60dfec73b877082f5bdbf3731d90fcea8ae4403dc708d449539c98f19b542",
     "frames": [
       {
         "name": "stand",
@@ -254,11 +254,11 @@
       },
       {
         "name": "walk-between-3",
-        "rgba": "bee8e5b5920fba5a0032533998e9d8d8ea34e98facea48aa25434119154fe3b5"
+        "rgba": "054bdc3eaa7c0c5d6631dbbdc164c860e6c0cc501fe4859470ee99e0c8090c80"
       },
       {
         "name": "walk-passing-a",
-        "rgba": "f9fc9bb9ac7e1c4f5d9035d209877f3a6debc7502049b1af91a10ab16cd771bf"
+        "rgba": "bbb044ed1fd01703bf6fbe7536e1722f8970abf239a95db6bfdc196f31f265a7"
       },
       {
         "name": "walk-between-5",
@@ -286,7 +286,7 @@
       },
       {
         "name": "walk-between-11",
-        "rgba": "1782f991c08ba0ee5ff2341e9731913c0d9ae44c28adf8f67a18e8a722203352"
+        "rgba": "d299797b5ab081bdcdc033b65b1345f138198e9ce12e6c791d10825bccdbf93a"
       },
       {
         "name": "walk-passing-b",
@@ -322,7 +322,7 @@
       },
       {
         "name": "run-passing-a",
-        "rgba": "90e6d4d7b57b9c08417011a712dd8e63cfc3fa8df01af7c4f0eb3da170aa732c"
+        "rgba": "4e085e55454354ec8b50195dd88dac16f94240fc0c074c91db0d2ce8b8635176"
       },
       {
         "name": "run-between-5",
@@ -338,11 +338,11 @@
       },
       {
         "name": "run-contact-b",
-        "rgba": "78c1e2e28b7e29430c4ff5d941cd1007f99a727b6e5326edb4649a8276536ac2"
+        "rgba": "8b5a544e3137e641cd2bec8f01eca9baafbdcdad6e5680331e4edad5fda78833"
       },
       {
         "name": "run-between-9",
-        "rgba": "e6ea082b33d2d71a7f6d3d1b2c298281786bb496347e318a074974193264976a"
+        "rgba": "fc2572fe2e01d16d460692c402d1f5cd88b2f8fbdf3ecda952e67ff5097555c3"
       },
       {
         "name": "run-down-b",
@@ -370,31 +370,31 @@
       },
       {
         "name": "jump-crouch",
-        "rgba": "f712a87e2a1cda58c0e5b3368967a285b6a2f6cdd53eee0a11e038e7d0196ace"
+        "rgba": "f599c1fe366b40c7294ad80aef4552632103ead9410bd668baaab0dba08c5438"
       },
       {
         "name": "jump-take-off",
-        "rgba": "c13fca8c575f1b8e93dafb49de903fd505988569281d3528d31c8ad7775d7cf9"
+        "rgba": "dc294fc19457a484ba88065a138d8125caf0273147df32d0ba11bd1656802abd"
       },
       {
         "name": "jump-rise",
-        "rgba": "78138bae5c840d3c36b7b13534d6ef418d68e0ff2a72cc425d75ba40b4ca9778"
+        "rgba": "8531ead90dfd200c9162346f5413853d8582088675055e15fa6f01726822a752"
       },
       {
         "name": "jump-apex",
-        "rgba": "9031f37c09474a97e0d1d53fce35941a783812c839de4925776445ed5db48e2e"
+        "rgba": "a8d4ac2eedbed79e069e3dd17c1ab3043fe723d55bf5facc2956221bdd708696"
       },
       {
         "name": "jump-fall",
-        "rgba": "2bda4672e7efa588f90211628b656d0168da54b25a681a7d3fe2558d0f7a0c82"
+        "rgba": "2679ad3f54bbd2fdce13cbdc8b5e51a9f89d39a20692667e23fe4b2aa980e78c"
       },
       {
         "name": "jump-land",
-        "rgba": "cabdfc8b2520ee0176b6d7cbc6e52fab51d035f1797d0ccf607f56f1e7619860"
+        "rgba": "a9289fe5819fefb878e0b377a987423a2dd27ae5a0fbe4a070ecca8dd26b7e2a"
       },
       {
         "name": "jump-recover",
-        "rgba": "fe84514908f1710c37875618f8b683ec85b691110e93a6eedb76ce3ab17f473e"
+        "rgba": "f41ee492b955423bf8dc599302ec80195b1896c426133db6c74b03d436274f2d"
       },
       {
         "name": "attack-anticipation",
@@ -446,11 +446,11 @@
       },
       {
         "name": "prowl-passing-a",
-        "rgba": "475f3618fc0f4eb08f36d24d0e06e7bf97c3652332b1546baa7d50377aa53768"
+        "rgba": "28c3d16eee4922bfafb088c1b9b33f030b41c713d341f5856a7fe47341783614"
       },
       {
         "name": "prowl-between-7",
-        "rgba": "35f14f5f44428d0343ab050310c8fe258f437ad57d9b8a203f86ddb666c5517e"
+        "rgba": "cea3d8b79b5a6af96722242650ba888280b89a35d75a79e1008f40e3e3fc7489"
       },
       {
         "name": "prowl-between-8",
@@ -494,11 +494,11 @@
       },
       {
         "name": "prowl-passing-b",
-        "rgba": "86874b269229039464e51a47106837f3fab4c86f3e68b2a2b5574f41a5f1a0e4"
+        "rgba": "3e661420a19c6b9d445ce3cc9a0028824685c68ceafd410af5bd9a1f6a216479"
       },
       {
         "name": "prowl-between-19",
-        "rgba": "7b83397e7f4487a38b62242b4910583a8b830258162de984d54dec1db486b78c"
+        "rgba": "5c079755d1cdf79ceeb4571b0c5f685ec81352452120b18dd8b73088b6c21138"
       },
       {
         "name": "prowl-between-20",
@@ -538,15 +538,15 @@
       },
       {
         "name": "charge-passing-a",
-        "rgba": "5ca0c1799ab3a9a5b937d8250f294b70807e0957c09fc1c0b470871a8060ed19"
+        "rgba": "b7fde24a06fc1ee58e278d4b0de1a2dacfd6fde207001aa771e5f0d18ebcbf52"
       },
       {
         "name": "charge-between-6",
-        "rgba": "cff2b3595fcf18d21b848ebbdda26a1d178dfccccc577145e30027774f937f71"
+        "rgba": "08d0b9f0fa085bee9ff77bb3f0acf1d75f621b9746159489055ab524e5c5a471"
       },
       {
         "name": "charge-between-7",
-        "rgba": "61f641581717e3d25ffec22ff4d69aae4e324bc0e5c0071e6bedabf79fcc77b2"
+        "rgba": "f03c392fce9153c61b4ebf65a958ec7612db09f1bb82e8344f4ad1ceb42624c5"
       },
       {
         "name": "charge-up-a",
@@ -558,19 +558,19 @@
       },
       {
         "name": "charge-flight-a",
-        "rgba": "134845acaa81b093979197ab85c1b744219b9f819485a6d34968e11be7e4eab7"
+        "rgba": "590eef06cce054bc44e2d890d8dd433947d420682e7930ae78d3f5efbc91da43"
       },
       {
         "name": "charge-contact-b",
-        "rgba": "89a5f6ddcc35c82f9540f5df4d59d8c1184eddb69188aa39682edf722f0df18f"
+        "rgba": "0835964f717b70976b14ccac2d231d59de3eb1ffa76e9d3501137f373fbcef1b"
       },
       {
         "name": "charge-between-12",
-        "rgba": "85bd840eb6a575abb4b7fa0aaadc38c728ef23f57a83da8aaf0ff5a6636d5992"
+        "rgba": "0752ced4385c1ad7c4ccd36221980611a129d0a14ddc3221aaba910414c48fa3"
       },
       {
         "name": "charge-down-b",
-        "rgba": "ebfad082582866b1fee6ecf6c8ef1d1a50b9e626dd0008c13bbd8c0afca29b85"
+        "rgba": "c3d576cfdfca620e137308c12ed6a9f75d7e7beef09cc45b50255840e25c0ade"
       },
       {
         "name": "charge-between-14",
@@ -607,7 +607,7 @@
     ]
   },
   "plain": {
-    "compiled": "664e87e77fdd85961342fd9bfc57651fdb8e1599043f66213c7420598a23d2f1",
+    "compiled": "0f5a8d07279b5e64630d48439a6dcc35bcdff4f460e18a953c1c2dffc8717457",
     "frames": [
       {
         "name": "stand",
@@ -631,11 +631,11 @@
       },
       {
         "name": "walk-contact-a",
-        "rgba": "76f63136f640ebf746266c9442c534ae4c02815120e05c7ba59e4f503124a973"
+        "rgba": "7e78dc9b90df22b713d8bead056015c7d79dd1f8739daf6f6b2fb9e1e6f72672"
       },
       {
         "name": "walk-down-a",
-        "rgba": "9f72c91bd208883f738d84cc73b7e160a880e748e8fd1e5fae0a903fb92ab17b"
+        "rgba": "ee1a3728dc23a246ad0ac5239db1a4135e7add90dec97130730e78686949a91d"
       },
       {
         "name": "walk-passing-a",
@@ -647,11 +647,11 @@
       },
       {
         "name": "walk-contact-b",
-        "rgba": "81f9f96ac9953ce878b40d9d016d4922f1a1c5c8b03982e1cb0029e0e0875026"
+        "rgba": "9acc621342df0f30a0077a5bc0ba1869adcac392a30c7fc3090e97c1e7ec33c2"
       },
       {
         "name": "walk-down-b",
-        "rgba": "3a7470bb5acd752bf09d7c78bed0c0b58b7efe016909f4e3d1f0c446d2b2d722"
+        "rgba": "82d0ec57dfb37517c6394774d4b925f0d2068716d8c58169267de055312bb480"
       },
       {
         "name": "walk-passing-b",
@@ -659,15 +659,15 @@
       },
       {
         "name": "walk-up-b",
-        "rgba": "da0e6470bf9ec9e3e7763849e8169d9d673503999e24b968ea0492da9544546d"
+        "rgba": "0fca954fde1ea6ceb5a3a455f4018da2cfd8265d584bcb44ac1aabd490940dbe"
       },
       {
         "name": "run-contact-a",
-        "rgba": "4231cf2f30bd4650685490953babd8bd93836514a1c5edf419f5f9d19bb6c92a"
+        "rgba": "bda842f519db68791107c02d6fc341cb0b7d2a8532f0cc9d53120c0f29bfd2e9"
       },
       {
         "name": "run-down-a",
-        "rgba": "581966f2f4cb4489fb39d9449a3ed07bac9aeecb318525c2276f392fe7d83537"
+        "rgba": "b62d4efda4b6bd10b2fb5d4c68bd92d45ff1d984860f57e7d4383d95f2de4f81"
       },
       {
         "name": "run-passing-a",
@@ -675,15 +675,15 @@
       },
       {
         "name": "run-up-a",
-        "rgba": "b0b0239a340109de3e41f37e314050b7c3143130aef4926b696884f11cd74240"
+        "rgba": "dd6522371824f354221d115455dc47c75311d386d4c929e8cfa5e36e6c964b4a"
       },
       {
         "name": "run-flight-a",
-        "rgba": "ef3aad754ce913a32f1598fa869400636979488cba921e1721cf70c94bab2dfa"
+        "rgba": "ad745bf58a00216171862c89babcdc71b72dedb805565d6506ccedf2f89bfc6f"
       },
       {
         "name": "run-contact-b",
-        "rgba": "a902458aa901c8462be368a3572f7dff2df67106ffa1e13af8e086af1207dba3"
+        "rgba": "cdd3e2921e986f84beaeb9dc41ae03d939fbaba3bc7c35b3c13dab0443487891"
       },
       {
         "name": "run-down-b",
@@ -691,11 +691,11 @@
       },
       {
         "name": "run-passing-b",
-        "rgba": "88d1421806961843d026ca57707e5483db349062cb0121284c426d1f390e7f71"
+        "rgba": "488566793a07e4b61355c8f18a37d95096b98dd7073415c27935661f6ed65f92"
       },
       {
         "name": "run-up-b",
-        "rgba": "5c8f010cfcdbcc5f8d4846684724b71c22dd4c17f509434e1dea2097c326bc9b"
+        "rgba": "dd9d50f9d6771ccf04dfb9f7bacfa41cf1628865860f93b9fb7bc6f560f57a1a"
       },
       {
         "name": "run-flight-b",
@@ -703,27 +703,27 @@
       },
       {
         "name": "jump-crouch",
-        "rgba": "d7ba2af22f7d06c6a4f811fa932b49c68e137fa46de6e2878d0887f55df5b2bd"
+        "rgba": "b6a64fd04ff951eed07229dc58094c90805d4ff99174e36e6926186e77894583"
       },
       {
         "name": "jump-take-off",
-        "rgba": "c5be9431cf3c68543fdbc29d93582786d7de8e5ac500e09dadeda5e3a7fb1244"
+        "rgba": "f945bb5296e053937d140604c715158c730c28f0a4902d69d77742e10b910543"
       },
       {
         "name": "jump-rise",
-        "rgba": "7f4bd5b58b23393f1e4f32c8e3a97953be50630de34992af88a055e946af8785"
+        "rgba": "145c97fc2a09b7efba31af72a446074dfb9d34d91444dc38b5a6fb532c7c923a"
       },
       {
         "name": "jump-apex",
-        "rgba": "9f33c473908bad15788ae9fb3e4f32b61878f54ff32707a30200c47811202ca1"
+        "rgba": "fa366666aec19e798b978107cc443286e9fdb75371b945f649e2b40ea5c0af4f"
       },
       {
         "name": "jump-fall",
-        "rgba": "98c7d128c0072afa8c573bd8a20a56a39f606c68b34a426741e98206b3b3de97"
+        "rgba": "7a68db3d290e265641e7d2204067a1d32ddc61017819b8ed195b14f6366a33f1"
       },
       {
         "name": "jump-land",
-        "rgba": "ba733abe930e6ad28a86c265c5c4333eeb083a877f0d7443d7e6394d96623149"
+        "rgba": "6aa32cb025e92a52c296e4c1644a155b6dc2f087b9db29dbf7a9a64ebc02891f"
       },
       {
         "name": "jump-recover",

@@ -127,7 +127,26 @@
         "kccwck",
         "kkkkkk"
       ],
-      "anchor": [1, 1]
+      "anchor": [1, 1],
+      "views": {
+        "30": {
+          "rows": [
+            "kcck..",
+            "kcck..",
+            "kkkwck",
+            "...kkk"
+          ],
+          "anchor": [1, 1]
+        },
+        "330": {
+          "rows": [
+            "kcckck",
+            "kccwkk",
+            "kkkk.."
+          ],
+          "anchor": [1, 1]
+        }
+      }
     },
     "farBoot": {
       "rows": [
@@ -135,7 +154,26 @@
         "kbbcbk",
         "kkkkkk"
       ],
-      "anchor": [1, 1]
+      "anchor": [1, 1],
+      "views": {
+        "30": {
+          "rows": [
+            "kbbk..",
+            "kbbk..",
+            "kkkcbk",
+            "...kkk"
+          ],
+          "anchor": [1, 1]
+        },
+        "330": {
+          "rows": [
+            "kbbkbk",
+            "kbbckk",
+            "kkkk.."
+          ],
+          "anchor": [1, 1]
+        }
+      }
     },
     "sword": {
       "rows": [

@@ -44,7 +44,7 @@ Coordinates are whole pixels from the top-left, and y points down. Shapes are ne
 ## The tools
 
 1. **`pixel_validate`** `{project}` checks a recipe without images and returns a `revision` id. Every tool that takes `project` also takes `revision`, so send the full recipe once and use the id afterwards. Revisions persist in the server's output folder.
-2. **`pixel_inspect`** returns a PNG contact sheet of every frame. Options: `animation` (playback order), `frames`, `region: {x, y, w, h}` to zoom, `grid: true` for exact palette-key rows with rulers, `view: silhouette | grayscale | onion | tile`, `native: true`, `diagnostics: true` and `guides` (a horizon, vanishing points or an isometric grid drawn over the image).
+2. **`pixel_inspect`** returns a PNG contact sheet of every frame. Options: `animation` (playback order), `frames`, `region: {x, y, w, h}` to zoom, `grid: true` for exact palette-key rows with rulers, `view: silhouette | grayscale | onion | tile | parts` (parts colours each pixel by the part that drew it), `native: true`, `diagnostics: true` and `guides` (a horizon, vanishing points or an isometric grid drawn over the image).
 3. **`pixel_patch`** `{revision, changes}` edits in order and returns a before/after image listing every pixel that changed:
    - `{"paint": "frames[blink]", "value": [{"x": 4, "y": 5, "color": "k"}]}` sets exact pixels after all layers (`transparent` erases).
    - `{"grid": "frames[rest]", "value": {"x": 3, "y": 4, "rows": ["kk.", ".k."]}}` paints a small region; dots keep pixels.
