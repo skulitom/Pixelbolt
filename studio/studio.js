@@ -50,7 +50,8 @@ const browserStorage = name => { try { return globalThis[name]; } catch { return
 const locks = navigator.locks ?? null, claimed = claimTab(browserStorage('sessionStorage'), locks);
 let drafts = null, offer = null, offers = [], draftTimer, draftWarned = false;
 const ownOffer = () => offer !== null && offer.id === drafts.id;
-const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character · 6 frames' }, { file: 'ember', title: 'Campfire', type: 'Effect · 4 frames' }, { file: 'coin', title: 'Golden coin', type: 'Collectible · 6 frames' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light · 2 frames' }, { file: 'caption', title: 'Caption', type: 'Text, for video · 8 frames' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses · 5 frames' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx · 57 frames' }, { file: 'interference.wave', title: 'Interference', type: 'Paired ripples · 40 frames' }, { file: 'portal.wave', title: 'Portal', type: 'Moving waves, steady rim · 40 frames' }];
+// Each example's frame count is added from its render when the list is built, so a changed example can't leave it stale.
+const examples = [{ file: 'forest-spirit', title: 'Forest spirit', type: 'Character' }, { file: 'ember', title: 'Campfire', type: 'Effect' }, { file: 'coin', title: 'Golden coin', type: 'Collectible' }, { file: 'shrine', title: 'Moonlit shrine', type: 'Dither, rewrite, rim light' }, { file: 'caption', title: 'Caption', type: 'Text, for video' }, { file: 'swing', title: 'Sword swing', type: 'Rotated, tweened poses' }, { file: 'effects', title: 'Particle effects', type: 'Compiled fx' }, { file: 'interference.wave', title: 'Interference', type: 'Paired ripples' }, { file: 'portal.wave', title: 'Portal', type: 'Moving waves, steady rim' }];
 const title = name => name.replace(/[-_]/g, ' ').replace(/^./, c => c.toUpperCase());
 function imageCanvas(data, width, height) {
   const c = document.createElement('canvas'); c.width = width; c.height = height;
@@ -71,12 +72,15 @@ function reviewMotion() {
   const speed = $('motion-speed').value, ground = $('motion-ground').value;
   motionReview = inspectMotion(project, { animation: $('animation').value, metadata: poseMetadata, scale: 1,
     ...(speed !== '' && { speed: Number(speed) }), ...(ground !== '' && { ground: Number(ground) }) });
-  const names = { slide: 'Foot slide', ground: 'Ground contact', poseSpread: 'Pose changes', loopSeam: 'Loop join' };
+  const names = { slide: 'Foot slide', ground: 'Ground contact', poseSpread: 'Pose changes', loopSeam: 'Loop join', armSwing: 'Arm swing', contactLegs: 'Knees at contact', kneeLift: 'Knee lift' };
   const report = motionReview.motion, details = {
     slide: `${Math.max(0, ...report.slide.map(p => p.pixels ?? 0))} px`,
     ground: `${Math.max(0, ...report.groundErrors.map(p => Math.abs(p.pixels)))} px from ground`,
     poseSpread: `${Math.round(Math.min(1, ...report.poseSpread.map(p => p.share)) * 100)}% minimum`,
-    loopSeam: `${report.loopSeam.maximum}° maximum`
+    loopSeam: `${report.loopSeam.maximum}° maximum`,
+    armSwing: `${report.gait?.arms.degreesFromOpposite}° from opposite`,
+    contactLegs: `${report.gait?.contact.largest?.degrees}° more bent than at rest`,
+    kneeLift: `${report.gait?.lift.largest?.degrees}° from rest`
   };
   $('motion-summary').textContent = Object.entries(report.checks).map(([key, pass]) => `${names[key] ?? key}: ${pass === null ? 'unavailable' : `${pass ? 'pass' : 'check'} (${details[key]})`}`).join(' · ');
   return motionReview;
@@ -349,12 +353,17 @@ $('new').addEventListener('click', () => {
   setSource({ version: 1, name: 'new-sprite', width: 16, height: 16, palette: { g: '#72b58d' }, frames: [{ name: 'idle', duration: 150, ops: [] }] });
   source.focus();
 });
+// The file Save JSON gives the editor's text, and the one the Frames dialog's command reads: a pose or wave source keeps
+// its format word, as the name above the editor, the CLI and examples/ give it.
+function savedName() {
+  let format;
+  try { format = JSON.parse(source.value.replace(/^﻿/, ''))?.format; } catch { /* Broken drafts can still be saved. */ }
+  return `${project?.name ?? 'sprite'}.${format === 'pixelforge-poses' ? 'poses' : format === 'pixelforge-wave' ? 'wave' : 'pixel'}.json`;
+}
 // The browser may ask where to save, and the page never learns whether the file was kept, so nothing is settled here:
 // the draft stays until the user edits again (the draft then follows) or confirms replacing or leaving the recipe.
 $('save').addEventListener('click', () => {
-  let extension = 'pixel';
-  try { if (JSON.parse(source.value).format === 'pixelforge-wave') extension = 'wave'; } catch { /* Broken drafts can still be saved. */ }
-  const filename = `${project?.name ?? 'sprite'}.${extension}.json`;
+  const filename = savedName();
   download(source.value, filename, 'application/json'); sent = source.value;
   toast(`Sent ${filename} to your browser to save.${dirty ? ' Until you load another recipe, its draft is kept here too.' : ''}`); keepDraft();
 });
@@ -371,7 +380,7 @@ $('gif').addEventListener('click', () => {
 const framesSettings = () => ({ fps: $('frames-fps').value, animation: $('animation').value, ...($('frames-size').value ? { size: $('frames-size').value } : { scale: exportScale(256) }) });
 function showFramesCall() {
   const settings = framesSettings(), sizing = settings.size ? `--size ${settings.size}` : `--scale ${settings.scale}`;
-  $('frames-call').textContent = `pixelbolt sequence ${project.name}.pixel.json --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;
+  $('frames-call').textContent = `pixelbolt sequence ${savedName()} --fps ${settings.fps} ${sizing} --animation ${settings.animation} --out frames\n\npixel_render { "revision": "…", "sequence": ${JSON.stringify(settings)} }`;
 }
 $('frames').addEventListener('click', () => { compile(); if (!valid) { toast('Fix the recipe to export frames.'); return; } showFramesCall(); $('frames-dialog').showModal(); });
 for (const id of ['frames-fps', 'frames-size']) $(id).addEventListener('change', showFramesCall);
@@ -432,7 +441,8 @@ async function boot() {
       const response = await fetch(`/examples/${example.file}.json`); const value = await response.json(), preview = renderProject(compileSource(value).recipe);
       const button = document.createElement('button'); button.className = 'example'; button.dataset.file = example.file;
       const label = document.createElement('span'), strong = document.createElement('strong'), small = document.createElement('small');
-      strong.textContent = example.title; small.textContent = example.type; label.append(strong, small);
+      const count = preview.frames.length;
+      strong.textContent = example.title; small.textContent = `${example.type} · ${count} frame${count === 1 ? '' : 's'}`; label.append(strong, small);
       button.append(thumbnail(imageCanvas(preview.frames[0].data, preview.width, preview.height)), label);
       button.addEventListener('click', () => loadExample(example)); $('examples').append(button);
     }

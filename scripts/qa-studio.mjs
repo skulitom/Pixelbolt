@@ -161,7 +161,10 @@ try {
     await studio.page('Input.insertText', { text: recipe });
     await sleep(600);
   };
-  const samples = await (async () => { await studio.size(1440, 900); await studio.goto(`${origin}/`); await ready(); return evaluate(`[...document.querySelectorAll('#examples .example')].map(button => ({ file: button.dataset.file, title: button.querySelector('strong').textContent }))`); })();
+  const samples = await (async () => { await studio.size(1440, 900); await studio.goto(`${origin}/`); await ready(); return evaluate(`[...document.querySelectorAll('#examples .example')].map(button => ({ file: button.dataset.file, title: button.querySelector('strong').textContent, type: button.querySelector('small').textContent }))`); })();
+  // How many frames a sample's example renders to: Node renders the file the studio serves, as the page compiles it.
+  const { compileWaves } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'wave.js')));
+  const framesOf = async file => { const value = await (await fetch(`${origin}/examples/${file}.json`)).json(); return renderProject(value.format === 'pixelforge-poses' ? compilePoses(value).recipe : value.format === 'pixelforge-wave' ? compileWaves(value).recipe : value).frames.length; };
 
   console.log('Samples and playback');
   await check('the studio loads with its samples listed and counted, and the first one drawn', async () => {
@@ -179,6 +182,8 @@ try {
     await click('#play'); assert.equal(await evaluate(`document.getElementById('play').getAttribute('aria-label')`), 'Pause animation');
   });
   for (const [index, sample] of samples.entries()) await check(`sample "${sample.title}" opens and renders`, async () => {
+    const count = await framesOf(sample.file);
+    assert.equal(sample.type.match(/ · (\d+) frames?$/)?.[1], String(count), `the list says "${sample.type}" for an example of ${count} frames`);
     await click(`#examples .example:nth-child(${index + 1})`);
     await until(`document.querySelector('#examples .example:nth-child(${index + 1})').classList.contains('active') && document.getElementById('source').value.includes(${JSON.stringify(`"name": "`)})`, 'the sample to load');
     // Wait for the drawing rather than a fixed pause; if it never comes, the assertion below says what is missing.
@@ -201,7 +206,13 @@ try {
     const before = await text('frame-counter'); await until(`document.getElementById('frame-counter').textContent !== ${JSON.stringify(before)}`, 'the figure to move');
     await click('#timeline .frame:nth-child(1)');
     const plain = await canvas(); await click('#contacts'); assert.notEqual((await canvas()).hash, plain.hash); await click('#contacts');
-    await click('#motion-view'); assert.match(await text('motion-summary'), /pass/); assert.doesNotMatch(await text('motion-summary'), /check|unavailable/);
+    await click('#motion-view');
+    // No check fails, and each is named with its measure. This rig's two knee checks have nothing to measure in its run:
+    // knee lift is read only in a gait with both feet down at some point, and knees at contact only on two-bone legs
+    // (this rig's are three-bone).
+    const summary = await text('motion-summary');
+    assert.match(summary, /pass/); assert.doesNotMatch(summary, /: check|undefined/);
+    assert.deepEqual(summary.split(' · ').filter(part => part.endsWith(': unavailable')), ['Knees at contact: unavailable', 'Knee lift: unavailable'], summary);
     assert.ok((await canvas()).width > plain.width); await studio.shot('figure-motion');
     await choose('motion-speed', '0'); assert.match(await text('motion-summary'), /check/); await choose('motion-speed', '48');
     await click('#animation-view'); await choose('zoom', '4'); await click('#contacts'); await studio.shot('figure-contacts');
@@ -210,6 +221,12 @@ try {
     await studio.shot('figure-narrow'); await studio.size(1440, 900); await click('#contacts');
     const saved = await download(() => click('#save'));
     assert.equal(JSON.parse(await readFile(saved, 'utf8')).format, 'pixelforge-poses');
+    // Named as the page names the source above the editor, and as the CLI and examples/ name a pose source.
+    assert.match(path.basename(saved), /\.poses\.json$/); assert.equal(path.basename(saved), await text('source-filename'));
+    // The Frames dialog's command reads the file Save JSON gave.
+    await click('#frames'); await until(`document.getElementById('frames-dialog').open`, 'the frames dialog');
+    const call = await text('frames-call'); await click('#frames-close');
+    assert.ok(call.startsWith(`pixelbolt sequence ${path.basename(saved)} `), call);
     const { root: { nodeId } } = await studio.page('DOM.getDocument'), input = await studio.page('DOM.querySelector', { nodeId, selector: '#file' });
     await studio.page('DOM.setFileInputFiles', { files: [saved], nodeId: input.nodeId });
     await until(`document.getElementById('toast').textContent.startsWith('Opened ')`, 'saved poses to reopen');
@@ -641,7 +658,6 @@ try {
   console.log('Baked wave effects');
   await studio.goto(`${origin}/`); await ready();
   await check('both wave presets match Node recipes and every RGBA frame in the browser', async () => {
-    const { compileWaves } = await import(pathToFileURL(path.join(path.resolve(options.app), 'src', 'wave.js')));
     const sha = data => createHash('sha256').update(data).digest('hex'), hashes = [];
     for (const name of ['interference', 'portal']) {
       const source = JSON.parse(await readFile(path.join(path.resolve(options.app), 'examples', `${name}.wave.json`), 'utf8'));
