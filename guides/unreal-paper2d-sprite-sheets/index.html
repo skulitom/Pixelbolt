@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Import a JSON sprite sheet into Unreal Engine 5 Paper2D, with flipbooks at exact frame times (tested in UE 5.8.4)</title>
+<meta name="description" content="Import name.atlas.json with Paper2D's own sprite sheet importer, then set each Flipbook's Frames Per Second to 1000 ÷ the largest step dividing its frame times and each frame run to time ÷ step. Tested 7 Nov 2026 in Unreal Engine 5.8.4 on seven Pixelbolt sheets (235 frames) with a free script.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Import a JSON sprite sheet into Unreal Engine 5 Paper2D, with flipbooks at exact frame times">
+<meta property="og:description" content="Tested in Unreal Engine 5.8.4 on seven Pixelbolt sheets: Paper2D's own importer for the sprites, a free script for the flipbooks' frame times and the texture's mipmaps.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The 36-frame pixel art hero sprite sheet used in the Unreal Paper2D test">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Import a JSON sprite sheet into Unreal Engine 5 Paper2D, with flipbooks at exact frame times (tested in UE 5.8.4)",
+  "description": "Import name.atlas.json with Paper2D's own sprite sheet importer, then set each Flipbook's Frames Per Second to 1000 ÷ the largest step dividing its frame times and each frame run to time ÷ step. Tested 7 Nov 2026 in Unreal Engine 5.8.4 on seven Pixelbolt sheets (235 frames) with a free script.",
+  "image": "https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/preview.png",
+  "datePublished": "2026-11-07",
+  "dateModified": "2026-11-07",
+  "inLanguage": "en",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/",
+  "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/",
+  "proficiencyLevel": "Beginner",
+  "dependencies": "Unreal Engine 5.8.4 with the Paper2D and Python Editor Script plugins; Pixelbolt 0.12.1",
+  "author": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Pixelbolt",
+    "url": "https://skulitom.github.io/Pixelbolt/"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Pixelbolt",
+      "url": "https://github.com/skulitom/Pixelbolt",
+      "applicationCategory": "MultimediaApplication",
+      "softwareVersion": "0.12.1",
+      "license": "https://opensource.org/licenses/MIT"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Unreal Engine",
+      "softwareVersion": "5.8.4",
+      "applicationCategory": "DeveloperApplication"
+    }
+  ]
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --pass: #1a7f37; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --pass: #6fd08c; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure { margin: 1rem 0; }
+.stage { background: var(--stage); border-radius: 6px; padding: 16px; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; align-items: center; }
+.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+figcaption { color: var(--muted); font-size: 0.92rem; margin-top: 0.5rem; }
+.table { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { border-bottom: 1px solid var(--rule); padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+th { background: var(--head); font-weight: 600; }
+td.num { text-align: right; white-space: nowrap; }
+.pass { color: var(--pass); font-weight: 600; }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Pixelbolt</a> › <a href="../">Guides</a></nav>
+<h1>Import a pixel art JSON sprite sheet into Unreal Engine 5 Paper2D, with flipbooks</h1>
+<p class="lead">To import a JSON sprite sheet (<code>name.png</code> with a TexturePacker-style <code>name.atlas.json</code>) into Unreal Engine 5 Paper2D, import the JSON with Paper2D's own sprite sheet importer, then give each Flipbook a frame rate of 1000 ÷ the largest step that divides every frame's milliseconds, with each key frame running its time ÷ that step. On 7 November 2026 in Unreal Engine 5.8.4, our free 157-line script did both for seven Pixelbolt sheets (235 frames, 26 animations): each stored texture matched its sheet pixel for pixel, every sprite got its frame's rectangle, trim and pivot, and every flipbook kept its frame times (<a href="#how-we-tested">method</a>, <a href="pixelbolt_paper2d.py">script</a> and <a href="data/README.txt">data</a> below).</p>
+<p><strong>We make Pixelbolt</strong>, a free, MIT-licensed pixel art toolkit for game makers and AI agents. This guide is about getting its sprite sheets into Unreal; Paper2D's importer also reads JSON sheets from TexturePacker and Adobe Flash, but the script expects a Pixelbolt atlas.</p>
+<p class="muted">Pixelbolt 0.12.1 · Unreal Engine 5.8.4 (Windows) · Published 7 November 2026 · Last checked 7 November 2026 · On this page: <a href="#steps">Five steps</a> · <a href="#results">What Paper2D did</a> · <a href="#timing">Frame times</a> · <a href="#by-hand">Without the script</a> · <a href="#other-tools">When to use something else</a> · <a href="#how-we-tested">How we tested</a></p>
+
+<figure>
+<div class="stage"><picture><source srcset="hero-walk-still.png" media="(prefers-reduced-motion: reduce)"><img src="hero-walk.gif" width="128" height="144" alt="Pixel art hero walking, eight frames of 80 ms" decoding="async"></picture><img src="hero-sheet.png" width="512" height="360" alt="The hero's sprite sheet: 36 frames of 32 by 36 pixels" loading="lazy" decoding="async"></div>
+<figcaption>The hero preset from Pixelbolt, one of the seven test sheets: 36 frames of 32 × 36 pixels and six animations. Shown at 4× and 2×.</figcaption>
+</figure>
+
+<section id="steps">
+<h2>Five steps</h2>
+<ol>
+<li><strong>Make the sheet and its atlas.</strong> With Node.js 20 or newer:
+<pre><code>npx -y pixelbolt@0.12.1 compile --preset hero --out hero.json
+npx -y pixelbolt@0.12.1 render hero.json --out C:/pixelbolt/hero</code></pre>
+<code>compile</code> turns one of Pixelbolt's shipped presets (here the hero) into a recipe; skip it for a recipe of your own. <code>render</code> writes a new folder holding <code>hero.png</code> and <code>hero.atlas.json</code>, among other files. In the browser instead, the <a href="../../playground/">playground</a>'s <strong>Atlas PNG + JSON</strong> button saves the same two files; it renders on Pixelbolt 0.9.2, and a 0.9.2 campfire, rendered from the command line, passed the same test.</li>
+<li><strong>Download <a href="pixelbolt_paper2d.py" download>pixelbolt_paper2d.py</a></strong> into <code>C:/pixelbolt</code>, or any folder whose path has no spaces.</li>
+<li><strong>Turn on two plugins.</strong> In Unreal, <strong>Edit → Plugins</strong>: Paper2D (on by default) and <strong>Python Editor Script Plugin</strong> (off by default, marked Beta). Restart the editor when it asks.</li>
+<li><strong>Run the script.</strong> Open <strong>Window → Output Log</strong>, choose <strong>Cmd</strong> beside its command box, and type:
+<pre><code>py C:/pixelbolt/pixelbolt_paper2d.py C:/pixelbolt/hero/hero.atlas.json /Game/Sprites/Hero</code></pre>
+The last part is the Content Browser folder (default <code>/Game/Pixelbolt/&lt;name&gt;</code>); give each import a folder of its own, since the script stops, changing nothing, if the folder already holds assets. For the hero it took under a second in our test and left <code>Textures/hero</code>, the Sprite Sheet <code>hero_atlas</code>, one Sprite per frame in <code>Frames/</code> and one Flipbook per animation in <code>Flipbooks/</code>, such as <code>hero_walk</code>, all saved. It also sets the texture's Mip Gen Settings to NoMipmaps (see below).</li>
+<li><strong>Use the flipbooks.</strong> Drag one into the level, which places it as a Paper Flipbook Actor (the editor's "Animated Sprite"), or set it on a Paper Flipbook Component. The component loops by default and has no looping checkbox, so for an animation Pixelbolt marks as playing once (the hero's jump, attack and hurt, which the script lists), call <strong>Set Looping</strong> with it unticked in a Blueprint, then <strong>Play From Start</strong>. (From Paper2D's 5.8.4 source; we did not place or play a flipbook.)</li>
+</ol>
+<p>The Output Log shows two warnings per import: AssetTools' <code>Two factories registered with same priority</code> (Paper2D's import and re-import factories) and Paper2D's <code>Unexpected 'app' named 'Pixelbolt' … Parsing will continue</code>. By Paper2D's source, the second appears for a sheet whose <code>meta.app</code> doesn't start with Adobe Flash's or TexturePacker's name (one with no <code>meta.app</code> or <code>meta.image</code> is refused). In our test every field Paper2D reads (rectangle, trim, untrimmed size, pivot) came through right. It ignores Pixelbolt's frame times and animations, which is what the script is for.</p>
+</section>
+
+<section id="results">
+<h2>What Paper2D did with the seven sheets</h2>
+<p>We ran the test twice, in a project with Unreal's default plugins and in one with every engine plugin off but Paper2D and Python. Both gave these results.</p>
+<div class="table"><table>
+<thead><tr><th>Sheet</th><th>Frames</th><th>Flipbooks</th><th>Texture pixels</th><th>Pivot</th><th>Material</th></tr></thead>
+<tbody>
+<tr><td>Forest spirit, 24 × 24, frames of 100 to 240 ms</td><td class="num">6</td><td class="num">3</td><td class="pass">identical</td><td>canvas centre (no anchor)</td><td>translucent</td></tr>
+<tr><td>Forest spirit, trimmed, at 2×</td><td class="num">6</td><td class="num">3</td><td class="pass">identical</td><td>canvas centre, trims kept</td><td>translucent</td></tr>
+<tr><td>Campfire, 32 × 48, frames of 70 ms</td><td class="num">24</td><td class="num">1</td><td class="pass">identical</td><td>canvas centre</td><td>masked</td></tr>
+<tr><td>Hero, 32 × 36, frames of 80 and 200 ms</td><td class="num">36</td><td class="num">6</td><td class="pass">identical</td><td>each frame's anchor</td><td>masked</td></tr>
+<tr><td>Fire spells, 64 × 64, frames of 40 to 100 ms</td><td class="num">107</td><td class="num">11</td><td class="pass">identical</td><td>the anchor, (32, 40)</td><td>masked</td></tr>
+<tr><td>Explosion, 64 × 64 on a 512 × 256 sheet, frames of 60 ms</td><td class="num">32</td><td class="num">1</td><td class="pass">identical</td><td>canvas centre</td><td>masked</td></tr>
+<tr><td>Campfire rendered by Pixelbolt 0.9.2</td><td class="num">24</td><td class="num">1</td><td class="pass">identical</td><td>canvas centre</td><td>masked</td></tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Pixels.</strong> "Identical" means the texture as Unreal stored it, exported back to PNG, matched the Pixelbolt sheet pixel for pixel. In the default-plugins project, Unreal's Interchange framework imported the PNGs; in the other, the older texture importer did.</li>
+<li><strong>Sprites.</strong> Each sprite's rectangle, its trim offset and its untrimmed size match the atlas, at 1 pixel per unit. These results, the texture group, the compression and the material choice come from Paper2D's import settings (Project Settings), which we left at their defaults.</li>
+<li><strong>Pivots.</strong> Paper2D reads each frame's <code>pivot</code>, which Pixelbolt writes for a recipe with an anchor (here the hero and the fire spells), and otherwise uses the centre of the frame's untrimmed canvas. Worked out from Paper2D's own vertex data, every frame's pivot sits on that point, so the frames of a flipbook line up, trimmed ones included. By Paper2D's source a pivot is snapped to a whole pixel, so the centre of an odd-sized canvas moves half a pixel; all our canvases had even sizes.</li>
+<li><strong>Materials.</strong> Paper2D chose the masked sprite material for sheets whose pixels are all fully opaque or fully clear, and the translucent one for the forest spirit, whose soft edges are partly transparent. By its source it decides frame by frame; no test sheet mixed the two.</li>
+<li><strong>Texture settings.</strong> Paper2D set Texture Group <strong>2D Pixels (unfiltered)</strong> and Compression <strong>Uncompressed (RGBA8)</strong>; Filter stayed <strong>Default (from Texture Group)</strong>, which that group's line in the engine's <code>BaseDeviceProfiles.ini</code> makes point (nearest) filtering, and sRGB stayed on. No smoothing and no compression, as pixel art needs.</li>
+<li><strong>Mipmaps depend on the sheet's size.</strong> Six of the sheets have a side that isn't a power of two, and Unreal gave those NoMipmaps by itself. The explosion's 512 × 256 sheet came in with Mip Gen Settings <strong>FromTextureGroup</strong>, which for 2D Pixels makes smaller copies (SimpleAverage in <code>BaseDeviceProfiles.ini</code>) that blur pixel art when a sprite is drawn small. So the script sets <strong>NoMipmaps</strong> on every sheet it imports; without the script, set it yourself on a power-of-two sheet.</li>
+</ul>
+<p>Our test ran without a GPU, so we checked these settings, not a frame drawn on screen.</p>
+</section>
+
+<section id="timing">
+<h2>Frame times</h2>
+<p>Pixelbolt gives every frame its own time in whole milliseconds. A Paper2D Flipbook has one <strong>Frames Per Second</strong> and shows each key frame for a whole number of frames, its frame run (<a href="https://dev.epicgames.com/documentation/unreal-engine/paper-2d-flipbooks-in-unreal-engine">Epic's Paper 2D Flipbooks page</a>). So the script picks, for each animation, the largest step that divides every frame time: the frame rate is 1000 ÷ that step, and each key frame runs its time ÷ the step. All 26 flipbooks came out at their animations' lengths (to within 0.01 ms, our check's tolerance, since Unreal stores the length as a float), and asked for the sprite at the middle of each frame, every flipbook returned that frame's sprite.</p>
+<div class="table"><table>
+<thead><tr><th>Animation</th><th>Frame times (ms)</th><th>Frames per second</th><th>Frame runs</th></tr></thead>
+<tbody>
+<tr><td>Hero walk</td><td>8 × 80</td><td class="num">12.5</td><td>1 each</td></tr>
+<tr><td>Campfire</td><td>24 × 70</td><td class="num">14.2857</td><td>1 each</td></tr>
+<tr><td>Explosion (plays once)</td><td>32 × 60</td><td class="num">16.6667</td><td>1 each</td></tr>
+<tr><td>Forest spirit idle</td><td>240, 140, 220, 100, 220, 140, 160</td><td class="num">50</td><td>12, 7, 11, 5, 11, 7, 8</td></tr>
+<tr><td>Fire spells impact</td><td>12 frames from 40 to 100 (676 in all)</td><td class="num">1000</td><td>40 to 100</td></tr>
+</tbody>
+</table></div>
+<p>Paper2D's 5.8.4 source clamps Frames Per Second to 1000, its highest value, so even a 41 ms frame keeps its exact time. Paper2D's own <strong>Create Flipbooks</strong> (right-click a Sprite Sheet) gives every frame a run of 1 at one frame rate, by the same source: fine for an evenly timed loop like the campfire once you set 14.2857 frames per second, but it flattens the forest spirit's or the spell's mixed times. It also groups sprites by the last number in their names (sprites with none go into one flipbook, in name order) and never reads the atlas's animations, so it can't rebuild the hero's or the forest spirit's.</p>
+</section>
+
+<section id="by-hand">
+<h2>Without the script</h2>
+<p>Drag <code>hero.atlas.json</code> (with <code>hero.png</code> beside it) into the Content Browser: Epic's <a href="https://dev.epicgames.com/documentation/unreal-engine/import-sprites-in-unreal-engine">Import sprites</a> page describes the same import for TexturePacker's files, which makes a Sprite Sheet asset with <code>Frames</code> and <code>Textures</code> folders. The script imports through the editor's own import call with no importer named, so Unreal picks Paper2D's sprite sheet importer by the file's type and content; we tested that scripted import, not a drag. On a sheet whose sides are both powers of two, set the texture's Mip Gen Settings to NoMipmaps.</p>
+<p>Then build each flipbook: select its sprites, right-click, <strong>Create Flipbook</strong>. It adds the sprites in alphabetical order (<a href="https://dev.epicgames.com/documentation/unreal-engine/paper-2d-flipbooks-in-unreal-engine">Epic's Paper 2D Flipbooks page</a>), so in the Flipbook editor reorder the key frames to match the animation's <code>frames</code> list in the atlas, add any frame the animation repeats (the forest spirit's idle shows <code>float</code> twice), and set the frames per second and each frame run from the frame times, the atlas's <code>duration</code> in milliseconds.</p>
+</section>
+
+<section id="other-tools">
+<h2>When to use something else</h2>
+<ul>
+<li><strong>TexturePacker</strong> packs many separate images into one sheet and has a Paper2D exporter that writes a <code>.paper2dsprites</code> file, which you drag into the Content Browser (Epic's <a href="https://dev.epicgames.com/documentation/unreal-engine/import-sprites-in-unreal-engine">Import sprites</a> page for 5.8). Pivots are set in TexturePacker's sprite settings. It is paid, with a 7-day trial (<a href="https://www.codeandweb.com/texturepacker/tutorials/how-to-create-sprite-sheets-with-unreal-paper2d">CodeAndWeb's Paper 2D tutorial</a>, updated 8 September 2026, read 7 November 2026). Use it when your frames are loose PNGs from several sources, such as a bought pack. From its docs, not run by us.</li>
+<li><strong>An Aseprite importer plugin</strong>, if you draw in Aseprite: ENFP-Dev-Studio's importer reads <code>.aseprite</code> files into Paper2D, makes flipbooks on import, named from its animation tags, and can add experimental PaperZD animation assets (<a href="https://forums.unrealengine.com/t/enfp-dev-studio-aseprite-importer/2728353">its forum thread</a>, v1.10 of 13 June 2026, read 7 November 2026; its v1.9 notes say it removed the option to take frame rates from Aseprite's timing). From its notes, not run by us.</li>
+<li><strong>Paper2D's own Create Flipbooks</strong>, for evenly timed animations whose sprites are numbered in playback order (above).</li>
+<li><strong>Godot or Phaser instead of Unreal:</strong> Pixelbolt writes a Godot 4 SpriteFrames file with each animation's frame times (exact for most timings; see the notes), and the atlas loads in Phaser with <code>load.atlas</code> (<a href="https://github.com/skulitom/Pixelbolt/blob/v0.12.1/docs/game-integration.md">game integration notes</a>).</li>
+</ul>
+</section>
+
+<section id="how-we-tested">
+<h2>How we tested</h2>
+<ul>
+<li><strong>Sheets.</strong> Seven bundles rendered from Pixelbolt's own examples with 0.12.1 from npm (the forest spirit, the same trimmed at 2×, the campfire, the hero, the fire spells and the explosion), and the campfire again with 0.9.2, the version the playground pinned on test day. <a href="data/make_sheets.sh">make_sheets.sh</a> rebuilds them byte for byte; the files as tested are in <code>data/out/</code>, for example <a href="data/out/hero/hero.atlas.json">hero.atlas.json</a> and <a href="data/out/hero/hero.png">hero.png</a>.</li>
+<li><strong>Unreal.</strong> Unreal Engine 5.8.4 (an installed build on Windows 11) with two throwaway Blueprint-only projects: <a href="data/P2DDefault.uproject">P2DDefault.uproject</a> keeps Unreal's default plugins, turns the Python Editor Script Plugin on and turns off Fab, Bridge and two telemetry plugins, which the test didn't need; <a href="data/P2DTest.uproject">P2DTest.uproject</a> turns every engine plugin off but Paper2D and Python. The editor ran headless with <code>-RenderOffScreen</code> (no window), <code>-nullrhi</code> (no GPU, so nothing was drawn) and <code>-unattended</code>, which answers any dialog by itself.</li>
+<li><strong>The record.</strong> <a href="data/ue_check.py">ue_check.py</a> ran the guide's script on each sheet inside the editor, then recorded what Paper2D built: the assets and whether they were saved, the texture's settings and its stored pixels exported back as PNG, each sprite's rectangle, trim, pivot mode, pixels per unit, material and baked vertices, and each flipbook's frame rate, key frames, length and the sprite it returns for the middle of every frame. The whole run, from launch to exit, took about 30 seconds with the default plugins and 16 without (by the log timestamps).</li>
+<li><strong>The check.</strong> <a href="data/check_results.py">check_results.py</a> compared each record with the atlas, decoding the PNGs with Pillow (an image library independent of Pixelbolt), and requires the texture settings above: all seven sheets passed in both projects (<a href="data/results-default/check.json">default plugins</a>, <a href="data/results/check.json">Paper2D and Python only</a>).</li>
+<li><strong>The command.</strong> The step 4 command, with our kit's paths and <code>,QUIT_EDITOR</code> added, was run through <code>-ExecCmds</code> three times on the hero in the default-plugins project: into a new folder (44 assets), into the same folder again (the script stopped with "already holds assets" and changed nothing) and into <code>/Game/Sprites/Hero2</code> (44 assets). <a href="data/log-excerpts.txt">Log excerpts</a>.</li>
+<li><strong>Not tested:</strong> a frame drawn on screen; a windowed editor with someone at it; dragging the JSON in by hand; placing or playing a flipbook; other Unreal versions; macOS and Linux; paths with spaces; JSON sheets from other tools (the script refuses anything but a Pixelbolt atlas).</li>
+</ul>
+<p>To repeat it: <a href="data/README.txt">data/README.txt</a> has the commands. The searches this page answers, and what ranked for them on 7 November 2026, are in <a href="data/searches-2026-11-07.txt">searches-2026-11-07.txt</a>.</p>
+</section>
+
+<h2>Licence</h2>
+<p>Pixelbolt and <a href="pixelbolt_paper2d.py">pixelbolt_paper2d.py</a> are free and open source under the MIT licence. The example recipes ship in Pixelbolt's MIT-licensed npm package, and its README says the included artwork is original and covered by the same licence. Unreal Engine and Paper2D are Epic Games' and come under Unreal Engine's own licence.</p>
+
+<h2>Pixel art to import</h2>
+<ul>
+<li><a href="../pixel-art-fire-animation/">Fire: a campfire, a torch and a hand-drawn flame</a></li>
+<li><a href="../pixel-art-explosion/">Explosions: a fireball with smoke and sparks, and small particle bursts</a></li>
+<li><a href="../pixel-art-smoke-and-steam/">Smoke and steam: a cartoon smoke puff, a steam vent and a dust wave</a></li>
+<li><a href="../pixel-art-water-animation/">Water: a waterfall, a splash, a drip and a dam break</a></li>
+<li><a href="../pixel-art-slime-and-honey/">Slime and honey: a squashing slime, a bursting slime, pouring honey and a honey drop</a></li>
+<li><a href="../pixel-art-magic-effects/">Magic: a spell swirl and a bubbling potion</a></li>
+</ul>
+<p><a href="../">All guides</a> · <a href="../../playground/">The playground</a> · <a href="../../gallery/">The gallery</a> · <a href="../../compare/">All comparisons</a> · <a href="../../">Pixelbolt home</a></p>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</main>
+</body>
+</html>

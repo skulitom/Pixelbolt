@@ -1,0 +1,1672 @@
+{
+ "case": "campfire-092",
+ "atlas": "out/campfire-092/campfire-092.atlas.json",
+ "folder": "/Game/T/campfire-092",
+ "engine": "5.8.4-58902052+++UE5+Release-5.8",
+ "assets": {
+  "/Game/T/campfire-092/campfire-092_atlas.campfire-092_atlas": "PaperSpriteSheet",
+  "/Game/T/campfire-092/Flipbooks/campfire-092_campfire.campfire-092_campfire": "PaperFlipbook",
+  "/Game/T/campfire-092/Frames/campfire-0.campfire-0": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-1.campfire-1": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-10.campfire-10": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-11.campfire-11": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-12.campfire-12": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-13.campfire-13": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-14.campfire-14": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-15.campfire-15": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-16.campfire-16": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-17.campfire-17": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-18.campfire-18": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-19.campfire-19": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-2.campfire-2": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-20.campfire-20": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-21.campfire-21": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-22.campfire-22": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-23.campfire-23": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-3.campfire-3": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-4.campfire-4": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-5.campfire-5": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-6.campfire-6": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-7.campfire-7": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-8.campfire-8": "PaperSprite",
+  "/Game/T/campfire-092/Frames/campfire-9.campfire-9": "PaperSprite",
+  "/Game/T/campfire-092/Textures/campfire-092.campfire-092": "Texture2D"
+ },
+ "saved_on_disk": 27,
+ "sheet": "/Game/T/campfire-092/campfire-092_atlas.campfire-092_atlas",
+ "texture": {
+  "path": "/Game/T/campfire-092/Textures/campfire-092.campfire-092",
+  "size": [
+   256,
+   144
+  ],
+  "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+  "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+  "filter": "<TextureFilter.TF_DEFAULT: 3>",
+  "srgb": true,
+  "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>",
+  "exported_png": true
+ },
+ "sprites": {
+  "campfire-0": {
+   "path": "/Game/T/campfire-092/Frames/campfire-0.campfire-0",
+   "source_uv": [
+    0.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     7.0,
+     0.105469,
+     0.118056
+    ],
+    [
+     -11.0,
+     7.0,
+     0.019531,
+     0.118056
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.105469,
+     0.333333
+    ],
+    [
+     11.0,
+     7.0,
+     0.105469,
+     0.118056
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-1": {
+   "path": "/Game/T/campfire-092/Frames/campfire-1.campfire-1",
+   "source_uv": [
+    32.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     9.0,
+     0.230469,
+     0.104167
+    ],
+    [
+     -11.0,
+     9.0,
+     0.144531,
+     0.104167
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.230469,
+     0.333333
+    ],
+    [
+     11.0,
+     9.0,
+     0.230469,
+     0.104167
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-2": {
+   "path": "/Game/T/campfire-092/Frames/campfire-2.campfire-2",
+   "source_uv": [
+    64.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     10.0,
+     0.355469,
+     0.097222
+    ],
+    [
+     -11.0,
+     10.0,
+     0.269531,
+     0.097222
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.355469,
+     0.333333
+    ],
+    [
+     11.0,
+     10.0,
+     0.355469,
+     0.097222
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-3": {
+   "path": "/Game/T/campfire-092/Frames/campfire-3.campfire-3",
+   "source_uv": [
+    96.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     9.0,
+     0.480469,
+     0.104167
+    ],
+    [
+     -11.0,
+     9.0,
+     0.394531,
+     0.104167
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.480469,
+     0.333333
+    ],
+    [
+     11.0,
+     9.0,
+     0.480469,
+     0.104167
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-4": {
+   "path": "/Game/T/campfire-092/Frames/campfire-4.campfire-4",
+   "source_uv": [
+    128.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     11.0,
+     0.605469,
+     0.090278
+    ],
+    [
+     -11.0,
+     11.0,
+     0.519531,
+     0.090278
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.605469,
+     0.333333
+    ],
+    [
+     11.0,
+     11.0,
+     0.605469,
+     0.090278
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-5": {
+   "path": "/Game/T/campfire-092/Frames/campfire-5.campfire-5",
+   "source_uv": [
+    160.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     13.0,
+     0.730469,
+     0.076389
+    ],
+    [
+     -11.0,
+     13.0,
+     0.644531,
+     0.076389
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.730469,
+     0.333333
+    ],
+    [
+     11.0,
+     13.0,
+     0.730469,
+     0.076389
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-6": {
+   "path": "/Game/T/campfire-092/Frames/campfire-6.campfire-6",
+   "source_uv": [
+    192.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     14.0,
+     0.855469,
+     0.069444
+    ],
+    [
+     -11.0,
+     14.0,
+     0.769531,
+     0.069444
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.855469,
+     0.333333
+    ],
+    [
+     11.0,
+     14.0,
+     0.855469,
+     0.069444
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-7": {
+   "path": "/Game/T/campfire-092/Frames/campfire-7.campfire-7",
+   "source_uv": [
+    224.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     16.0,
+     0.980469,
+     0.055556
+    ],
+    [
+     -11.0,
+     16.0,
+     0.894531,
+     0.055556
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     0.333333
+    ],
+    [
+     11.0,
+     -24.0,
+     0.980469,
+     0.333333
+    ],
+    [
+     11.0,
+     16.0,
+     0.980469,
+     0.055556
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     0.333333
+    ]
+   ]
+  },
+  "campfire-8": {
+   "path": "/Game/T/campfire-092/Frames/campfire-8.campfire-8",
+   "source_uv": [
+    0.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     17.0,
+     0.105469,
+     0.381944
+    ],
+    [
+     -11.0,
+     17.0,
+     0.019531,
+     0.381944
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.105469,
+     0.666667
+    ],
+    [
+     11.0,
+     17.0,
+     0.105469,
+     0.381944
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-9": {
+   "path": "/Game/T/campfire-092/Frames/campfire-9.campfire-9",
+   "source_uv": [
+    32.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     16.0,
+     0.230469,
+     0.388889
+    ],
+    [
+     -11.0,
+     16.0,
+     0.144531,
+     0.388889
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.230469,
+     0.666667
+    ],
+    [
+     11.0,
+     16.0,
+     0.230469,
+     0.388889
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-10": {
+   "path": "/Game/T/campfire-092/Frames/campfire-10.campfire-10",
+   "source_uv": [
+    64.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     17.0,
+     0.355469,
+     0.381944
+    ],
+    [
+     -11.0,
+     17.0,
+     0.269531,
+     0.381944
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.355469,
+     0.666667
+    ],
+    [
+     11.0,
+     17.0,
+     0.355469,
+     0.381944
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-11": {
+   "path": "/Game/T/campfire-092/Frames/campfire-11.campfire-11",
+   "source_uv": [
+    96.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     19.0,
+     0.480469,
+     0.368056
+    ],
+    [
+     -11.0,
+     19.0,
+     0.394531,
+     0.368056
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.480469,
+     0.666667
+    ],
+    [
+     11.0,
+     19.0,
+     0.480469,
+     0.368056
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-12": {
+   "path": "/Game/T/campfire-092/Frames/campfire-12.campfire-12",
+   "source_uv": [
+    128.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     20.0,
+     0.605469,
+     0.361111
+    ],
+    [
+     -11.0,
+     20.0,
+     0.519531,
+     0.361111
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.605469,
+     0.666667
+    ],
+    [
+     11.0,
+     20.0,
+     0.605469,
+     0.361111
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-13": {
+   "path": "/Game/T/campfire-092/Frames/campfire-13.campfire-13",
+   "source_uv": [
+    160.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     6.0,
+     0.730469,
+     0.458333
+    ],
+    [
+     -11.0,
+     6.0,
+     0.644531,
+     0.458333
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.730469,
+     0.666667
+    ],
+    [
+     11.0,
+     6.0,
+     0.730469,
+     0.458333
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-14": {
+   "path": "/Game/T/campfire-092/Frames/campfire-14.campfire-14",
+   "source_uv": [
+    192.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     7.0,
+     0.855469,
+     0.451389
+    ],
+    [
+     -11.0,
+     7.0,
+     0.769531,
+     0.451389
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.855469,
+     0.666667
+    ],
+    [
+     11.0,
+     7.0,
+     0.855469,
+     0.451389
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-15": {
+   "path": "/Game/T/campfire-092/Frames/campfire-15.campfire-15",
+   "source_uv": [
+    224.0,
+    48.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     8.0,
+     0.980469,
+     0.444444
+    ],
+    [
+     -11.0,
+     8.0,
+     0.894531,
+     0.444444
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     0.666667
+    ],
+    [
+     11.0,
+     -24.0,
+     0.980469,
+     0.666667
+    ],
+    [
+     11.0,
+     8.0,
+     0.980469,
+     0.444444
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     0.666667
+    ]
+   ]
+  },
+  "campfire-16": {
+   "path": "/Game/T/campfire-092/Frames/campfire-16.campfire-16",
+   "source_uv": [
+    0.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     9.0,
+     0.105469,
+     0.770833
+    ],
+    [
+     -11.0,
+     9.0,
+     0.019531,
+     0.770833
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.105469,
+     1.0
+    ],
+    [
+     11.0,
+     9.0,
+     0.105469,
+     0.770833
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.019531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-17": {
+   "path": "/Game/T/campfire-092/Frames/campfire-17.campfire-17",
+   "source_uv": [
+    32.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     7.0,
+     0.230469,
+     0.784722
+    ],
+    [
+     -11.0,
+     7.0,
+     0.144531,
+     0.784722
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.230469,
+     1.0
+    ],
+    [
+     11.0,
+     7.0,
+     0.230469,
+     0.784722
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.144531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-18": {
+   "path": "/Game/T/campfire-092/Frames/campfire-18.campfire-18",
+   "source_uv": [
+    64.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     8.0,
+     0.355469,
+     0.777778
+    ],
+    [
+     -11.0,
+     8.0,
+     0.269531,
+     0.777778
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.355469,
+     1.0
+    ],
+    [
+     11.0,
+     8.0,
+     0.355469,
+     0.777778
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.269531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-19": {
+   "path": "/Game/T/campfire-092/Frames/campfire-19.campfire-19",
+   "source_uv": [
+    96.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     5.0,
+     0.480469,
+     0.798611
+    ],
+    [
+     -11.0,
+     5.0,
+     0.394531,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.480469,
+     1.0
+    ],
+    [
+     11.0,
+     5.0,
+     0.480469,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.394531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-20": {
+   "path": "/Game/T/campfire-092/Frames/campfire-20.campfire-20",
+   "source_uv": [
+    128.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     5.0,
+     0.605469,
+     0.798611
+    ],
+    [
+     -11.0,
+     5.0,
+     0.519531,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.605469,
+     1.0
+    ],
+    [
+     11.0,
+     5.0,
+     0.605469,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.519531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-21": {
+   "path": "/Game/T/campfire-092/Frames/campfire-21.campfire-21",
+   "source_uv": [
+    160.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     5.0,
+     0.730469,
+     0.798611
+    ],
+    [
+     -11.0,
+     5.0,
+     0.644531,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.730469,
+     1.0
+    ],
+    [
+     11.0,
+     5.0,
+     0.730469,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.644531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-22": {
+   "path": "/Game/T/campfire-092/Frames/campfire-22.campfire-22",
+   "source_uv": [
+    192.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     3.0,
+     0.855469,
+     0.8125
+    ],
+    [
+     -11.0,
+     3.0,
+     0.769531,
+     0.8125
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.855469,
+     1.0
+    ],
+    [
+     11.0,
+     3.0,
+     0.855469,
+     0.8125
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.769531,
+     1.0
+    ]
+   ]
+  },
+  "campfire-23": {
+   "path": "/Game/T/campfire-092/Frames/campfire-23.campfire-23",
+   "source_uv": [
+    224.0,
+    96.0
+   ],
+   "source_dimension": [
+    32.0,
+    48.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    48.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CENTER_CENTER: 4>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     11.0,
+     5.0,
+     0.980469,
+     0.798611
+    ],
+    [
+     -11.0,
+     5.0,
+     0.894531,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     1.0
+    ],
+    [
+     11.0,
+     -24.0,
+     0.980469,
+     1.0
+    ],
+    [
+     11.0,
+     5.0,
+     0.980469,
+     0.798611
+    ],
+    [
+     -11.0,
+     -24.0,
+     0.894531,
+     1.0
+    ]
+   ]
+  }
+ },
+ "flipbooks": {
+  "campfire": {
+   "path": "/Game/T/campfire-092/Flipbooks/campfire-092_campfire.campfire-092_campfire",
+   "fps": 14.285714149475098,
+   "num_key_frames": 24,
+   "num_frames": 24,
+   "total_duration": 1.6800000667572021,
+   "expected_ms": 1680,
+   "samples": [
+    {
+     "frame": "campfire-0",
+     "at": 0.035,
+     "got": "/Game/T/campfire-092/Frames/campfire-0.campfire-0"
+    },
+    {
+     "frame": "campfire-1",
+     "at": 0.105,
+     "got": "/Game/T/campfire-092/Frames/campfire-1.campfire-1"
+    },
+    {
+     "frame": "campfire-2",
+     "at": 0.175,
+     "got": "/Game/T/campfire-092/Frames/campfire-2.campfire-2"
+    },
+    {
+     "frame": "campfire-3",
+     "at": 0.245,
+     "got": "/Game/T/campfire-092/Frames/campfire-3.campfire-3"
+    },
+    {
+     "frame": "campfire-4",
+     "at": 0.315,
+     "got": "/Game/T/campfire-092/Frames/campfire-4.campfire-4"
+    },
+    {
+     "frame": "campfire-5",
+     "at": 0.385,
+     "got": "/Game/T/campfire-092/Frames/campfire-5.campfire-5"
+    },
+    {
+     "frame": "campfire-6",
+     "at": 0.455,
+     "got": "/Game/T/campfire-092/Frames/campfire-6.campfire-6"
+    },
+    {
+     "frame": "campfire-7",
+     "at": 0.525,
+     "got": "/Game/T/campfire-092/Frames/campfire-7.campfire-7"
+    },
+    {
+     "frame": "campfire-8",
+     "at": 0.595,
+     "got": "/Game/T/campfire-092/Frames/campfire-8.campfire-8"
+    },
+    {
+     "frame": "campfire-9",
+     "at": 0.665,
+     "got": "/Game/T/campfire-092/Frames/campfire-9.campfire-9"
+    },
+    {
+     "frame": "campfire-10",
+     "at": 0.735,
+     "got": "/Game/T/campfire-092/Frames/campfire-10.campfire-10"
+    },
+    {
+     "frame": "campfire-11",
+     "at": 0.805,
+     "got": "/Game/T/campfire-092/Frames/campfire-11.campfire-11"
+    },
+    {
+     "frame": "campfire-12",
+     "at": 0.875,
+     "got": "/Game/T/campfire-092/Frames/campfire-12.campfire-12"
+    },
+    {
+     "frame": "campfire-13",
+     "at": 0.945,
+     "got": "/Game/T/campfire-092/Frames/campfire-13.campfire-13"
+    },
+    {
+     "frame": "campfire-14",
+     "at": 1.015,
+     "got": "/Game/T/campfire-092/Frames/campfire-14.campfire-14"
+    },
+    {
+     "frame": "campfire-15",
+     "at": 1.085,
+     "got": "/Game/T/campfire-092/Frames/campfire-15.campfire-15"
+    },
+    {
+     "frame": "campfire-16",
+     "at": 1.155,
+     "got": "/Game/T/campfire-092/Frames/campfire-16.campfire-16"
+    },
+    {
+     "frame": "campfire-17",
+     "at": 1.225,
+     "got": "/Game/T/campfire-092/Frames/campfire-17.campfire-17"
+    },
+    {
+     "frame": "campfire-18",
+     "at": 1.295,
+     "got": "/Game/T/campfire-092/Frames/campfire-18.campfire-18"
+    },
+    {
+     "frame": "campfire-19",
+     "at": 1.365,
+     "got": "/Game/T/campfire-092/Frames/campfire-19.campfire-19"
+    },
+    {
+     "frame": "campfire-20",
+     "at": 1.435,
+     "got": "/Game/T/campfire-092/Frames/campfire-20.campfire-20"
+    },
+    {
+     "frame": "campfire-21",
+     "at": 1.505,
+     "got": "/Game/T/campfire-092/Frames/campfire-21.campfire-21"
+    },
+    {
+     "frame": "campfire-22",
+     "at": 1.575,
+     "got": "/Game/T/campfire-092/Frames/campfire-22.campfire-22"
+    },
+    {
+     "frame": "campfire-23",
+     "at": 1.645,
+     "got": "/Game/T/campfire-092/Frames/campfire-23.campfire-23"
+    }
+   ]
+  }
+ }
+}

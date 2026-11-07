@@ -1,0 +1,1519 @@
+{
+  "frames": {
+    "stand": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 200,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      }
+    },
+    "idle-rest": {
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 200,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "idle-inhale": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 200,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "idle-settle": {
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 200,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "idle-exhale": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 200,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "walk-contact-a": {
+      "frame": {
+        "x": 160,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 20,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 12,
+          "y": 34
+        }
+      }
+    },
+    "walk-down-a": {
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 18,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 14,
+          "y": 32
+        }
+      }
+    },
+    "walk-passing-a": {
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 16,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 16,
+          "y": 32
+        }
+      }
+    },
+    "walk-up-a": {
+      "frame": {
+        "x": 0,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 14,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 18,
+          "y": 32
+        }
+      }
+    },
+    "walk-contact-b": {
+      "frame": {
+        "x": 32,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 12,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 20,
+          "y": 34
+        }
+      }
+    },
+    "walk-down-b": {
+      "frame": {
+        "x": 64,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 14,
+          "y": 32
+        },
+        "farShinFoot": {
+          "x": 18,
+          "y": 34
+        }
+      }
+    },
+    "walk-passing-b": {
+      "frame": {
+        "x": 96,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 16,
+          "y": 32
+        },
+        "farShinFoot": {
+          "x": 16,
+          "y": 34
+        }
+      }
+    },
+    "walk-up-b": {
+      "frame": {
+        "x": 128,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 18,
+          "y": 32
+        },
+        "farShinFoot": {
+          "x": 14,
+          "y": 34
+        }
+      }
+    },
+    "run-contact-a": {
+      "frame": {
+        "x": 160,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 20,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 30
+        }
+      }
+    },
+    "run-down-a": {
+      "frame": {
+        "x": 192,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 16,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 16,
+          "y": 30
+        }
+      }
+    },
+    "run-passing-a": {
+      "frame": {
+        "x": 224,
+        "y": 36,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 12,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 17,
+          "y": 30
+        }
+      }
+    },
+    "run-up-a": {
+      "frame": {
+        "x": 0,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 13,
+          "y": 32
+        },
+        "farShinFoot": {
+          "x": 18,
+          "y": 31
+        }
+      }
+    },
+    "run-flight-a": {
+      "frame": {
+        "x": 32,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 14,
+          "y": 31
+        },
+        "farShinFoot": {
+          "x": 19,
+          "y": 32
+        }
+      }
+    },
+    "run-contact-b": {
+      "frame": {
+        "x": 64,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 30
+        },
+        "farShinFoot": {
+          "x": 20,
+          "y": 34
+        }
+      }
+    },
+    "run-down-b": {
+      "frame": {
+        "x": 96,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 16,
+          "y": 30
+        },
+        "farShinFoot": {
+          "x": 16,
+          "y": 34
+        }
+      }
+    },
+    "run-passing-b": {
+      "frame": {
+        "x": 128,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 17,
+          "y": 30
+        },
+        "farShinFoot": {
+          "x": 12,
+          "y": 34
+        }
+      }
+    },
+    "run-up-b": {
+      "frame": {
+        "x": 160,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 18,
+          "y": 31
+        },
+        "farShinFoot": {
+          "x": 13,
+          "y": 32
+        }
+      }
+    },
+    "run-flight-b": {
+      "frame": {
+        "x": 192,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 19,
+          "y": 32
+        },
+        "farShinFoot": {
+          "x": 14,
+          "y": 31
+        }
+      }
+    },
+    "jump-crouch": {
+      "frame": {
+        "x": 224,
+        "y": 72,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "jump-take-off": {
+      "frame": {
+        "x": 0,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 33
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 33
+        }
+      }
+    },
+    "jump-rise": {
+      "frame": {
+        "x": 32,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.861111
+      },
+      "anchor": {
+        "x": 15,
+        "y": 31
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 30
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 30
+        }
+      }
+    },
+    "jump-apex": {
+      "frame": {
+        "x": 64,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.75
+      },
+      "anchor": {
+        "x": 15,
+        "y": 27
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 26
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 26
+        }
+      }
+    },
+    "jump-fall": {
+      "frame": {
+        "x": 96,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.861111
+      },
+      "anchor": {
+        "x": 15,
+        "y": 31
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 30
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 30
+        }
+      }
+    },
+    "jump-land": {
+      "frame": {
+        "x": 128,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1.027778
+      },
+      "anchor": {
+        "x": 15,
+        "y": 37
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "jump-recover": {
+      "frame": {
+        "x": 160,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "attack-anticipation": {
+      "frame": {
+        "x": 192,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "attack-strike": {
+      "frame": {
+        "x": 224,
+        "y": 108,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "strike": {
+          "x": 21,
+          "y": 23
+        }
+      }
+    },
+    "attack-follow-through": {
+      "frame": {
+        "x": 0,
+        "y": 144,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "attack-recover": {
+      "frame": {
+        "x": 32,
+        "y": 144,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 0.972222
+      },
+      "anchor": {
+        "x": 15,
+        "y": 35
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "hurt-recoil": {
+      "frame": {
+        "x": 64,
+        "y": 144,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    },
+    "hurt-recover": {
+      "frame": {
+        "x": 96,
+        "y": 144,
+        "w": 32,
+        "h": 36
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 32,
+        "h": 36
+      },
+      "sourceSize": {
+        "w": 32,
+        "h": 36
+      },
+      "duration": 80,
+      "pivot": {
+        "x": 0.46875,
+        "y": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 36
+      },
+      "points": {
+        "nearShinFoot": {
+          "x": 15,
+          "y": 34
+        },
+        "farShinFoot": {
+          "x": 15,
+          "y": 34
+        }
+      }
+    }
+  },
+  "animations": {
+    "idle": {
+      "frames": [
+        "idle-rest",
+        "idle-inhale",
+        "idle-settle",
+        "idle-exhale"
+      ],
+      "loop": true,
+      "duration": 800
+    },
+    "walk": {
+      "frames": [
+        "walk-contact-a",
+        "walk-down-a",
+        "walk-passing-a",
+        "walk-up-a",
+        "walk-contact-b",
+        "walk-down-b",
+        "walk-passing-b",
+        "walk-up-b"
+      ],
+      "loop": true,
+      "duration": 640
+    },
+    "run": {
+      "frames": [
+        "run-contact-a",
+        "run-down-a",
+        "run-passing-a",
+        "run-up-a",
+        "run-flight-a",
+        "run-contact-b",
+        "run-down-b",
+        "run-passing-b",
+        "run-up-b",
+        "run-flight-b"
+      ],
+      "loop": true,
+      "duration": 800
+    },
+    "jump": {
+      "frames": [
+        "jump-crouch",
+        "jump-take-off",
+        "jump-rise",
+        "jump-apex",
+        "jump-fall",
+        "jump-land",
+        "jump-recover"
+      ],
+      "loop": false,
+      "duration": 560
+    },
+    "attack": {
+      "frames": [
+        "attack-anticipation",
+        "attack-strike",
+        "attack-strike",
+        "attack-follow-through",
+        "attack-recover"
+      ],
+      "loop": false,
+      "duration": 400
+    },
+    "hurt": {
+      "frames": [
+        "hurt-recoil",
+        "hurt-recover"
+      ],
+      "loop": false,
+      "duration": 160
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "hero.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 256,
+      "h": 180
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "idle",
+        "from": 1,
+        "to": 4,
+        "direction": "forward"
+      },
+      {
+        "name": "walk",
+        "from": 5,
+        "to": 12,
+        "direction": "forward"
+      },
+      {
+        "name": "run",
+        "from": 13,
+        "to": 22,
+        "direction": "forward"
+      },
+      {
+        "name": "jump",
+        "from": 23,
+        "to": 29,
+        "direction": "forward"
+      },
+      {
+        "name": "hurt",
+        "from": 34,
+        "to": 35,
+        "direction": "forward"
+      }
+    ]
+  }
+}

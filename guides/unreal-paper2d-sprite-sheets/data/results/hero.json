@@ -1,0 +1,2543 @@
+{
+ "case": "hero",
+ "atlas": "out/hero/hero.atlas.json",
+ "folder": "/Game/T/hero",
+ "engine": "5.8.4-58902052+++UE5+Release-5.8",
+ "assets": {
+  "/Game/T/hero/Flipbooks/hero_attack.hero_attack": "PaperFlipbook",
+  "/Game/T/hero/Flipbooks/hero_hurt.hero_hurt": "PaperFlipbook",
+  "/Game/T/hero/Flipbooks/hero_idle.hero_idle": "PaperFlipbook",
+  "/Game/T/hero/Flipbooks/hero_jump.hero_jump": "PaperFlipbook",
+  "/Game/T/hero/Flipbooks/hero_run.hero_run": "PaperFlipbook",
+  "/Game/T/hero/Flipbooks/hero_walk.hero_walk": "PaperFlipbook",
+  "/Game/T/hero/Frames/attack-anticipation.attack-anticipation": "PaperSprite",
+  "/Game/T/hero/Frames/attack-follow-through.attack-follow-through": "PaperSprite",
+  "/Game/T/hero/Frames/attack-recover.attack-recover": "PaperSprite",
+  "/Game/T/hero/Frames/attack-strike.attack-strike": "PaperSprite",
+  "/Game/T/hero/Frames/hurt-recoil.hurt-recoil": "PaperSprite",
+  "/Game/T/hero/Frames/hurt-recover.hurt-recover": "PaperSprite",
+  "/Game/T/hero/Frames/idle-exhale.idle-exhale": "PaperSprite",
+  "/Game/T/hero/Frames/idle-inhale.idle-inhale": "PaperSprite",
+  "/Game/T/hero/Frames/idle-rest.idle-rest": "PaperSprite",
+  "/Game/T/hero/Frames/idle-settle.idle-settle": "PaperSprite",
+  "/Game/T/hero/Frames/jump-apex.jump-apex": "PaperSprite",
+  "/Game/T/hero/Frames/jump-crouch.jump-crouch": "PaperSprite",
+  "/Game/T/hero/Frames/jump-fall.jump-fall": "PaperSprite",
+  "/Game/T/hero/Frames/jump-land.jump-land": "PaperSprite",
+  "/Game/T/hero/Frames/jump-recover.jump-recover": "PaperSprite",
+  "/Game/T/hero/Frames/jump-rise.jump-rise": "PaperSprite",
+  "/Game/T/hero/Frames/jump-take-off.jump-take-off": "PaperSprite",
+  "/Game/T/hero/Frames/run-contact-a.run-contact-a": "PaperSprite",
+  "/Game/T/hero/Frames/run-contact-b.run-contact-b": "PaperSprite",
+  "/Game/T/hero/Frames/run-down-a.run-down-a": "PaperSprite",
+  "/Game/T/hero/Frames/run-down-b.run-down-b": "PaperSprite",
+  "/Game/T/hero/Frames/run-flight-a.run-flight-a": "PaperSprite",
+  "/Game/T/hero/Frames/run-flight-b.run-flight-b": "PaperSprite",
+  "/Game/T/hero/Frames/run-passing-a.run-passing-a": "PaperSprite",
+  "/Game/T/hero/Frames/run-passing-b.run-passing-b": "PaperSprite",
+  "/Game/T/hero/Frames/run-up-a.run-up-a": "PaperSprite",
+  "/Game/T/hero/Frames/run-up-b.run-up-b": "PaperSprite",
+  "/Game/T/hero/Frames/stand.stand": "PaperSprite",
+  "/Game/T/hero/Frames/walk-contact-a.walk-contact-a": "PaperSprite",
+  "/Game/T/hero/Frames/walk-contact-b.walk-contact-b": "PaperSprite",
+  "/Game/T/hero/Frames/walk-down-a.walk-down-a": "PaperSprite",
+  "/Game/T/hero/Frames/walk-down-b.walk-down-b": "PaperSprite",
+  "/Game/T/hero/Frames/walk-passing-a.walk-passing-a": "PaperSprite",
+  "/Game/T/hero/Frames/walk-passing-b.walk-passing-b": "PaperSprite",
+  "/Game/T/hero/Frames/walk-up-a.walk-up-a": "PaperSprite",
+  "/Game/T/hero/Frames/walk-up-b.walk-up-b": "PaperSprite",
+  "/Game/T/hero/hero_atlas.hero_atlas": "PaperSpriteSheet",
+  "/Game/T/hero/Textures/hero.hero": "Texture2D"
+ },
+ "saved_on_disk": 44,
+ "sheet": "/Game/T/hero/hero_atlas.hero_atlas",
+ "texture": {
+  "path": "/Game/T/hero/Textures/hero.hero",
+  "size": [
+   256,
+   180
+  ],
+  "lod_group": "<TextureGroup.TEXTUREGROUP_PIXELS2D: 28>",
+  "compression_settings": "<TextureCompressionSettings.TC_EDITOR_ICON: 7>",
+  "filter": "<TextureFilter.TF_DEFAULT: 3>",
+  "srgb": true,
+  "mip_gen_settings": "<TextureMipGenSettings.TMGS_NO_MIPMAPS: 13>",
+  "exported_png": true
+ },
+ "sprites": {
+  "stand": {
+   "path": "/Game/T/hero/Frames/stand.stand",
+   "source_uv": [
+    0.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.078125,
+     0.05
+    ],
+    [
+     -4.0,
+     26.0,
+     0.042969,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.042969,
+     0.2
+    ],
+    [
+     5.0,
+     -1.0,
+     0.078125,
+     0.2
+    ],
+    [
+     5.0,
+     26.0,
+     0.078125,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.042969,
+     0.2
+    ]
+   ]
+  },
+  "idle-rest": {
+   "path": "/Game/T/hero/Frames/idle-rest.idle-rest",
+   "source_uv": [
+    32.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.05
+    ],
+    [
+     -4.0,
+     26.0,
+     0.167969,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     0.2
+    ],
+    [
+     5.0,
+     -1.0,
+     0.203125,
+     0.2
+    ],
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     0.2
+    ]
+   ]
+  },
+  "idle-inhale": {
+   "path": "/Game/T/hero/Frames/idle-inhale.idle-inhale",
+   "source_uv": [
+    64.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     27.0,
+     0.328125,
+     0.044444
+    ],
+    [
+     -4.0,
+     27.0,
+     0.292969,
+     0.044444
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.292969,
+     0.2
+    ],
+    [
+     5.0,
+     -1.0,
+     0.328125,
+     0.2
+    ],
+    [
+     5.0,
+     27.0,
+     0.328125,
+     0.044444
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.292969,
+     0.2
+    ]
+   ]
+  },
+  "idle-settle": {
+   "path": "/Game/T/hero/Frames/idle-settle.idle-settle",
+   "source_uv": [
+    96.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.05
+    ],
+    [
+     -4.0,
+     26.0,
+     0.417969,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.417969,
+     0.2
+    ],
+    [
+     5.0,
+     -1.0,
+     0.453125,
+     0.2
+    ],
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.05
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.417969,
+     0.2
+    ]
+   ]
+  },
+  "idle-exhale": {
+   "path": "/Game/T/hero/Frames/idle-exhale.idle-exhale",
+   "source_uv": [
+    128.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     25.0,
+     0.578125,
+     0.055556
+    ],
+    [
+     -4.0,
+     25.0,
+     0.542969,
+     0.055556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.542969,
+     0.2
+    ],
+    [
+     5.0,
+     -1.0,
+     0.578125,
+     0.2
+    ],
+    [
+     5.0,
+     25.0,
+     0.578125,
+     0.055556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.542969,
+     0.2
+    ]
+   ]
+  },
+  "walk-contact-a": {
+   "path": "/Game/T/hero/Frames/walk-contact-a.walk-contact-a",
+   "source_uv": [
+    160.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     9.0,
+     26.0,
+     0.71875,
+     0.061111
+    ],
+    [
+     -4.0,
+     26.0,
+     0.667969,
+     0.061111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.667969,
+     0.2
+    ],
+    [
+     9.0,
+     1.0,
+     0.71875,
+     0.2
+    ],
+    [
+     9.0,
+     26.0,
+     0.71875,
+     0.061111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.667969,
+     0.2
+    ]
+   ]
+  },
+  "walk-down-a": {
+   "path": "/Game/T/hero/Frames/walk-down-a.walk-down-a",
+   "source_uv": [
+    192.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.835938,
+     0.055556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.792969,
+     0.055556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.792969,
+     0.2
+    ],
+    [
+     7.0,
+     0.0,
+     0.835938,
+     0.2
+    ],
+    [
+     7.0,
+     26.0,
+     0.835938,
+     0.055556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.792969,
+     0.2
+    ]
+   ]
+  },
+  "walk-passing-a": {
+   "path": "/Game/T/hero/Frames/walk-passing-a.walk-passing-a",
+   "source_uv": [
+    224.0,
+    0.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     8.0,
+     26.0,
+     0.964844,
+     0.05
+    ],
+    [
+     -5.0,
+     26.0,
+     0.914062,
+     0.05
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.914062,
+     0.2
+    ],
+    [
+     8.0,
+     -1.0,
+     0.964844,
+     0.2
+    ],
+    [
+     8.0,
+     26.0,
+     0.964844,
+     0.05
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.914062,
+     0.2
+    ]
+   ]
+  },
+  "walk-up-a": {
+   "path": "/Game/T/hero/Frames/walk-up-a.walk-up-a",
+   "source_uv": [
+    0.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.085938,
+     0.255556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.042969,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.042969,
+     0.4
+    ],
+    [
+     7.0,
+     0.0,
+     0.085938,
+     0.4
+    ],
+    [
+     7.0,
+     26.0,
+     0.085938,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.042969,
+     0.4
+    ]
+   ]
+  },
+  "walk-contact-b": {
+   "path": "/Game/T/hero/Frames/walk-contact-b.walk-contact-b",
+   "source_uv": [
+    32.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     9.0,
+     26.0,
+     0.21875,
+     0.261111
+    ],
+    [
+     -4.0,
+     26.0,
+     0.167969,
+     0.261111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.167969,
+     0.4
+    ],
+    [
+     9.0,
+     1.0,
+     0.21875,
+     0.4
+    ],
+    [
+     9.0,
+     26.0,
+     0.21875,
+     0.261111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.167969,
+     0.4
+    ]
+   ]
+  },
+  "walk-down-b": {
+   "path": "/Game/T/hero/Frames/walk-down-b.walk-down-b",
+   "source_uv": [
+    64.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.335938,
+     0.255556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.292969,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.292969,
+     0.4
+    ],
+    [
+     7.0,
+     0.0,
+     0.335938,
+     0.4
+    ],
+    [
+     7.0,
+     26.0,
+     0.335938,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.292969,
+     0.4
+    ]
+   ]
+  },
+  "walk-passing-b": {
+   "path": "/Game/T/hero/Frames/walk-passing-b.walk-passing-b",
+   "source_uv": [
+    96.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     8.0,
+     26.0,
+     0.464844,
+     0.25
+    ],
+    [
+     -5.0,
+     26.0,
+     0.414062,
+     0.25
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.414062,
+     0.4
+    ],
+    [
+     8.0,
+     -1.0,
+     0.464844,
+     0.4
+    ],
+    [
+     8.0,
+     26.0,
+     0.464844,
+     0.25
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.414062,
+     0.4
+    ]
+   ]
+  },
+  "walk-up-b": {
+   "path": "/Game/T/hero/Frames/walk-up-b.walk-up-b",
+   "source_uv": [
+    128.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.585938,
+     0.255556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.542969,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.542969,
+     0.4
+    ],
+    [
+     7.0,
+     0.0,
+     0.585938,
+     0.4
+    ],
+    [
+     7.0,
+     26.0,
+     0.585938,
+     0.255556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.542969,
+     0.4
+    ]
+   ]
+  },
+  "run-contact-a": {
+   "path": "/Game/T/hero/Frames/run-contact-a.run-contact-a",
+   "source_uv": [
+    160.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     9.0,
+     26.0,
+     0.71875,
+     0.261111
+    ],
+    [
+     -4.0,
+     26.0,
+     0.667969,
+     0.261111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.667969,
+     0.4
+    ],
+    [
+     9.0,
+     1.0,
+     0.71875,
+     0.4
+    ],
+    [
+     9.0,
+     26.0,
+     0.71875,
+     0.261111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.667969,
+     0.4
+    ]
+   ]
+  },
+  "run-down-a": {
+   "path": "/Game/T/hero/Frames/run-down-a.run-down-a",
+   "source_uv": [
+    192.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     25.0,
+     0.835938,
+     0.261111
+    ],
+    [
+     -4.0,
+     25.0,
+     0.792969,
+     0.261111
+    ],
+    [
+     -4.0,
+     0.0,
+     0.792969,
+     0.4
+    ],
+    [
+     7.0,
+     0.0,
+     0.835938,
+     0.4
+    ],
+    [
+     7.0,
+     25.0,
+     0.835938,
+     0.261111
+    ],
+    [
+     -4.0,
+     0.0,
+     0.792969,
+     0.4
+    ]
+   ]
+  },
+  "run-passing-a": {
+   "path": "/Game/T/hero/Frames/run-passing-a.run-passing-a",
+   "source_uv": [
+    224.0,
+    36.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.960938,
+     0.25
+    ],
+    [
+     -5.0,
+     26.0,
+     0.914062,
+     0.25
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.914062,
+     0.4
+    ],
+    [
+     7.0,
+     -1.0,
+     0.960938,
+     0.4
+    ],
+    [
+     7.0,
+     26.0,
+     0.960938,
+     0.25
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.914062,
+     0.4
+    ]
+   ]
+  },
+  "run-up-a": {
+   "path": "/Game/T/hero/Frames/run-up-a.run-up-a",
+   "source_uv": [
+    0.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.085938,
+     0.45
+    ],
+    [
+     -5.0,
+     26.0,
+     0.039062,
+     0.45
+    ],
+    [
+     -5.0,
+     1.0,
+     0.039062,
+     0.588889
+    ],
+    [
+     7.0,
+     1.0,
+     0.085938,
+     0.588889
+    ],
+    [
+     7.0,
+     26.0,
+     0.085938,
+     0.45
+    ],
+    [
+     -5.0,
+     1.0,
+     0.039062,
+     0.588889
+    ]
+   ]
+  },
+  "run-flight-a": {
+   "path": "/Game/T/hero/Frames/run-flight-a.run-flight-a",
+   "source_uv": [
+    32.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     8.0,
+     26.0,
+     0.214844,
+     0.455556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.167969,
+     0.455556
+    ],
+    [
+     -4.0,
+     2.0,
+     0.167969,
+     0.588889
+    ],
+    [
+     8.0,
+     2.0,
+     0.214844,
+     0.588889
+    ],
+    [
+     8.0,
+     26.0,
+     0.214844,
+     0.455556
+    ],
+    [
+     -4.0,
+     2.0,
+     0.167969,
+     0.588889
+    ]
+   ]
+  },
+  "run-contact-b": {
+   "path": "/Game/T/hero/Frames/run-contact-b.run-contact-b",
+   "source_uv": [
+    64.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     9.0,
+     26.0,
+     0.34375,
+     0.461111
+    ],
+    [
+     -4.0,
+     26.0,
+     0.292969,
+     0.461111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.292969,
+     0.6
+    ],
+    [
+     9.0,
+     1.0,
+     0.34375,
+     0.6
+    ],
+    [
+     9.0,
+     26.0,
+     0.34375,
+     0.461111
+    ],
+    [
+     -4.0,
+     1.0,
+     0.292969,
+     0.6
+    ]
+   ]
+  },
+  "run-down-b": {
+   "path": "/Game/T/hero/Frames/run-down-b.run-down-b",
+   "source_uv": [
+    96.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     25.0,
+     0.460938,
+     0.461111
+    ],
+    [
+     -4.0,
+     25.0,
+     0.417969,
+     0.461111
+    ],
+    [
+     -4.0,
+     0.0,
+     0.417969,
+     0.6
+    ],
+    [
+     7.0,
+     0.0,
+     0.460938,
+     0.6
+    ],
+    [
+     7.0,
+     25.0,
+     0.460938,
+     0.461111
+    ],
+    [
+     -4.0,
+     0.0,
+     0.417969,
+     0.6
+    ]
+   ]
+  },
+  "run-passing-b": {
+   "path": "/Game/T/hero/Frames/run-passing-b.run-passing-b",
+   "source_uv": [
+    128.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.585938,
+     0.45
+    ],
+    [
+     -5.0,
+     26.0,
+     0.539062,
+     0.45
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.539062,
+     0.6
+    ],
+    [
+     7.0,
+     -1.0,
+     0.585938,
+     0.6
+    ],
+    [
+     7.0,
+     26.0,
+     0.585938,
+     0.45
+    ],
+    [
+     -5.0,
+     -1.0,
+     0.539062,
+     0.6
+    ]
+   ]
+  },
+  "run-up-b": {
+   "path": "/Game/T/hero/Frames/run-up-b.run-up-b",
+   "source_uv": [
+    160.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     7.0,
+     26.0,
+     0.710938,
+     0.45
+    ],
+    [
+     -5.0,
+     26.0,
+     0.664062,
+     0.45
+    ],
+    [
+     -5.0,
+     1.0,
+     0.664062,
+     0.588889
+    ],
+    [
+     7.0,
+     1.0,
+     0.710938,
+     0.588889
+    ],
+    [
+     7.0,
+     26.0,
+     0.710938,
+     0.45
+    ],
+    [
+     -5.0,
+     1.0,
+     0.664062,
+     0.588889
+    ]
+   ]
+  },
+  "run-flight-b": {
+   "path": "/Game/T/hero/Frames/run-flight-b.run-flight-b",
+   "source_uv": [
+    192.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     8.0,
+     26.0,
+     0.839844,
+     0.455556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.792969,
+     0.455556
+    ],
+    [
+     -4.0,
+     2.0,
+     0.792969,
+     0.588889
+    ],
+    [
+     8.0,
+     2.0,
+     0.839844,
+     0.588889
+    ],
+    [
+     8.0,
+     26.0,
+     0.839844,
+     0.455556
+    ],
+    [
+     -4.0,
+     2.0,
+     0.792969,
+     0.588889
+    ]
+   ]
+  },
+  "jump-crouch": {
+   "path": "/Game/T/hero/Frames/jump-crouch.jump-crouch",
+   "source_uv": [
+    224.0,
+    72.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     25.0,
+     0.957031,
+     0.466667
+    ],
+    [
+     -5.0,
+     25.0,
+     0.914062,
+     0.466667
+    ],
+    [
+     -5.0,
+     1.0,
+     0.914062,
+     0.6
+    ],
+    [
+     6.0,
+     1.0,
+     0.957031,
+     0.6
+    ],
+    [
+     6.0,
+     25.0,
+     0.957031,
+     0.466667
+    ],
+    [
+     -5.0,
+     1.0,
+     0.914062,
+     0.6
+    ]
+   ]
+  },
+  "jump-take-off": {
+   "path": "/Game/T/hero/Frames/jump-take-off.jump-take-off",
+   "source_uv": [
+    0.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     27.0,
+     0.078125,
+     0.644444
+    ],
+    [
+     -4.0,
+     27.0,
+     0.042969,
+     0.644444
+    ],
+    [
+     -4.0,
+     0.0,
+     0.042969,
+     0.794444
+    ],
+    [
+     5.0,
+     0.0,
+     0.078125,
+     0.794444
+    ],
+    [
+     5.0,
+     27.0,
+     0.078125,
+     0.644444
+    ],
+    [
+     -4.0,
+     0.0,
+     0.042969,
+     0.794444
+    ]
+   ]
+  },
+  "jump-rise": {
+   "path": "/Game/T/hero/Frames/jump-rise.jump-rise",
+   "source_uv": [
+    32.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.627778
+    ],
+    [
+     -4.0,
+     26.0,
+     0.167969,
+     0.627778
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     0.777778
+    ],
+    [
+     5.0,
+     -1.0,
+     0.203125,
+     0.777778
+    ],
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.627778
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     0.777778
+    ]
+   ]
+  },
+  "jump-apex": {
+   "path": "/Game/T/hero/Frames/jump-apex.jump-apex",
+   "source_uv": [
+    64.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.328125,
+     0.605556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.292969,
+     0.605556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.292969,
+     0.755556
+    ],
+    [
+     5.0,
+     -1.0,
+     0.328125,
+     0.755556
+    ],
+    [
+     5.0,
+     26.0,
+     0.328125,
+     0.605556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.292969,
+     0.755556
+    ]
+   ]
+  },
+  "jump-fall": {
+   "path": "/Game/T/hero/Frames/jump-fall.jump-fall",
+   "source_uv": [
+    96.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.627778
+    ],
+    [
+     -4.0,
+     26.0,
+     0.417969,
+     0.627778
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.417969,
+     0.777778
+    ],
+    [
+     5.0,
+     -1.0,
+     0.453125,
+     0.777778
+    ],
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.627778
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.417969,
+     0.777778
+    ]
+   ]
+  },
+  "jump-land": {
+   "path": "/Game/T/hero/Frames/jump-land.jump-land",
+   "source_uv": [
+    128.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     25.0,
+     0.582031,
+     0.666667
+    ],
+    [
+     -5.0,
+     25.0,
+     0.539062,
+     0.666667
+    ],
+    [
+     -5.0,
+     1.0,
+     0.539062,
+     0.8
+    ],
+    [
+     6.0,
+     1.0,
+     0.582031,
+     0.8
+    ],
+    [
+     6.0,
+     25.0,
+     0.582031,
+     0.666667
+    ],
+    [
+     -5.0,
+     1.0,
+     0.539062,
+     0.8
+    ]
+   ]
+  },
+  "jump-recover": {
+   "path": "/Game/T/hero/Frames/jump-recover.jump-recover",
+   "source_uv": [
+    160.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.703125,
+     0.65
+    ],
+    [
+     -4.0,
+     26.0,
+     0.667969,
+     0.65
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.667969,
+     0.8
+    ],
+    [
+     5.0,
+     -1.0,
+     0.703125,
+     0.8
+    ],
+    [
+     5.0,
+     26.0,
+     0.703125,
+     0.65
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.667969,
+     0.8
+    ]
+   ]
+  },
+  "attack-anticipation": {
+   "path": "/Game/T/hero/Frames/attack-anticipation.attack-anticipation",
+   "source_uv": [
+    192.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.828125,
+     0.65
+    ],
+    [
+     -7.0,
+     26.0,
+     0.78125,
+     0.65
+    ],
+    [
+     -7.0,
+     -1.0,
+     0.78125,
+     0.8
+    ],
+    [
+     5.0,
+     -1.0,
+     0.828125,
+     0.8
+    ],
+    [
+     5.0,
+     26.0,
+     0.828125,
+     0.65
+    ],
+    [
+     -7.0,
+     -1.0,
+     0.78125,
+     0.8
+    ]
+   ]
+  },
+  "attack-strike": {
+   "path": "/Game/T/hero/Frames/attack-strike.attack-strike",
+   "source_uv": [
+    224.0,
+    108.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     8.0,
+     26.0,
+     0.964844,
+     0.65
+    ],
+    [
+     -4.0,
+     26.0,
+     0.917969,
+     0.65
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.917969,
+     0.8
+    ],
+    [
+     8.0,
+     -1.0,
+     0.964844,
+     0.8
+    ],
+    [
+     8.0,
+     26.0,
+     0.964844,
+     0.65
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.917969,
+     0.8
+    ]
+   ]
+  },
+  "attack-follow-through": {
+   "path": "/Game/T/hero/Frames/attack-follow-through.attack-follow-through",
+   "source_uv": [
+    0.0,
+    144.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     25.0,
+     0.082031,
+     0.855556
+    ],
+    [
+     -4.0,
+     25.0,
+     0.042969,
+     0.855556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.042969,
+     1.0
+    ],
+    [
+     6.0,
+     -1.0,
+     0.082031,
+     1.0
+    ],
+    [
+     6.0,
+     25.0,
+     0.082031,
+     0.855556
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.042969,
+     1.0
+    ]
+   ]
+  },
+  "attack-recover": {
+   "path": "/Game/T/hero/Frames/attack-recover.attack-recover",
+   "source_uv": [
+    32.0,
+    144.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.85
+    ],
+    [
+     -4.0,
+     26.0,
+     0.167969,
+     0.85
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     1.0
+    ],
+    [
+     5.0,
+     -1.0,
+     0.203125,
+     1.0
+    ],
+    [
+     5.0,
+     26.0,
+     0.203125,
+     0.85
+    ],
+    [
+     -4.0,
+     -1.0,
+     0.167969,
+     1.0
+    ]
+   ]
+  },
+  "hurt-recoil": {
+   "path": "/Game/T/hero/Frames/hurt-recoil.hurt-recoil",
+   "source_uv": [
+    64.0,
+    144.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     6.0,
+     26.0,
+     0.332031,
+     0.855556
+    ],
+    [
+     -5.0,
+     26.0,
+     0.289062,
+     0.855556
+    ],
+    [
+     -5.0,
+     0.0,
+     0.289062,
+     1.0
+    ],
+    [
+     6.0,
+     0.0,
+     0.332031,
+     1.0
+    ],
+    [
+     6.0,
+     26.0,
+     0.332031,
+     0.855556
+    ],
+    [
+     -5.0,
+     0.0,
+     0.289062,
+     1.0
+    ]
+   ]
+  },
+  "hurt-recover": {
+   "path": "/Game/T/hero/Frames/hurt-recover.hurt-recover",
+   "source_uv": [
+    96.0,
+    144.0
+   ],
+   "source_dimension": [
+    32.0,
+    36.0
+   ],
+   "trimmed": false,
+   "origin_before_trim": [
+    0.0,
+    0.0
+   ],
+   "size_before_trim": [
+    32.0,
+    36.0
+   ],
+   "rotated": false,
+   "pivot_mode": "<SpritePivotMode.CUSTOM: 9>",
+   "pixels_per_unit": 1.0,
+   "material": "/Paper2D/MaskedUnlitSpriteMaterial.MaskedUnlitSpriteMaterial",
+   "baked": [
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.855556
+    ],
+    [
+     -4.0,
+     26.0,
+     0.417969,
+     0.855556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.417969,
+     1.0
+    ],
+    [
+     5.0,
+     0.0,
+     0.453125,
+     1.0
+    ],
+    [
+     5.0,
+     26.0,
+     0.453125,
+     0.855556
+    ],
+    [
+     -4.0,
+     0.0,
+     0.417969,
+     1.0
+    ]
+   ]
+  }
+ },
+ "flipbooks": {
+  "idle": {
+   "path": "/Game/T/hero/Flipbooks/hero_idle.hero_idle",
+   "fps": 5.0,
+   "num_key_frames": 4,
+   "num_frames": 4,
+   "total_duration": 0.800000011920929,
+   "expected_ms": 800,
+   "samples": [
+    {
+     "frame": "idle-rest",
+     "at": 0.1,
+     "got": "/Game/T/hero/Frames/idle-rest.idle-rest"
+    },
+    {
+     "frame": "idle-inhale",
+     "at": 0.3,
+     "got": "/Game/T/hero/Frames/idle-inhale.idle-inhale"
+    },
+    {
+     "frame": "idle-settle",
+     "at": 0.5,
+     "got": "/Game/T/hero/Frames/idle-settle.idle-settle"
+    },
+    {
+     "frame": "idle-exhale",
+     "at": 0.7,
+     "got": "/Game/T/hero/Frames/idle-exhale.idle-exhale"
+    }
+   ]
+  },
+  "walk": {
+   "path": "/Game/T/hero/Flipbooks/hero_walk.hero_walk",
+   "fps": 12.5,
+   "num_key_frames": 8,
+   "num_frames": 8,
+   "total_duration": 0.6399999856948853,
+   "expected_ms": 640,
+   "samples": [
+    {
+     "frame": "walk-contact-a",
+     "at": 0.04,
+     "got": "/Game/T/hero/Frames/walk-contact-a.walk-contact-a"
+    },
+    {
+     "frame": "walk-down-a",
+     "at": 0.12,
+     "got": "/Game/T/hero/Frames/walk-down-a.walk-down-a"
+    },
+    {
+     "frame": "walk-passing-a",
+     "at": 0.2,
+     "got": "/Game/T/hero/Frames/walk-passing-a.walk-passing-a"
+    },
+    {
+     "frame": "walk-up-a",
+     "at": 0.28,
+     "got": "/Game/T/hero/Frames/walk-up-a.walk-up-a"
+    },
+    {
+     "frame": "walk-contact-b",
+     "at": 0.36,
+     "got": "/Game/T/hero/Frames/walk-contact-b.walk-contact-b"
+    },
+    {
+     "frame": "walk-down-b",
+     "at": 0.44,
+     "got": "/Game/T/hero/Frames/walk-down-b.walk-down-b"
+    },
+    {
+     "frame": "walk-passing-b",
+     "at": 0.52,
+     "got": "/Game/T/hero/Frames/walk-passing-b.walk-passing-b"
+    },
+    {
+     "frame": "walk-up-b",
+     "at": 0.6,
+     "got": "/Game/T/hero/Frames/walk-up-b.walk-up-b"
+    }
+   ]
+  },
+  "run": {
+   "path": "/Game/T/hero/Flipbooks/hero_run.hero_run",
+   "fps": 12.5,
+   "num_key_frames": 10,
+   "num_frames": 10,
+   "total_duration": 0.800000011920929,
+   "expected_ms": 800,
+   "samples": [
+    {
+     "frame": "run-contact-a",
+     "at": 0.04,
+     "got": "/Game/T/hero/Frames/run-contact-a.run-contact-a"
+    },
+    {
+     "frame": "run-down-a",
+     "at": 0.12,
+     "got": "/Game/T/hero/Frames/run-down-a.run-down-a"
+    },
+    {
+     "frame": "run-passing-a",
+     "at": 0.2,
+     "got": "/Game/T/hero/Frames/run-passing-a.run-passing-a"
+    },
+    {
+     "frame": "run-up-a",
+     "at": 0.28,
+     "got": "/Game/T/hero/Frames/run-up-a.run-up-a"
+    },
+    {
+     "frame": "run-flight-a",
+     "at": 0.36,
+     "got": "/Game/T/hero/Frames/run-flight-a.run-flight-a"
+    },
+    {
+     "frame": "run-contact-b",
+     "at": 0.44,
+     "got": "/Game/T/hero/Frames/run-contact-b.run-contact-b"
+    },
+    {
+     "frame": "run-down-b",
+     "at": 0.52,
+     "got": "/Game/T/hero/Frames/run-down-b.run-down-b"
+    },
+    {
+     "frame": "run-passing-b",
+     "at": 0.6,
+     "got": "/Game/T/hero/Frames/run-passing-b.run-passing-b"
+    },
+    {
+     "frame": "run-up-b",
+     "at": 0.68,
+     "got": "/Game/T/hero/Frames/run-up-b.run-up-b"
+    },
+    {
+     "frame": "run-flight-b",
+     "at": 0.76,
+     "got": "/Game/T/hero/Frames/run-flight-b.run-flight-b"
+    }
+   ]
+  },
+  "jump": {
+   "path": "/Game/T/hero/Flipbooks/hero_jump.hero_jump",
+   "fps": 12.5,
+   "num_key_frames": 7,
+   "num_frames": 7,
+   "total_duration": 0.5600000023841858,
+   "expected_ms": 560,
+   "samples": [
+    {
+     "frame": "jump-crouch",
+     "at": 0.04,
+     "got": "/Game/T/hero/Frames/jump-crouch.jump-crouch"
+    },
+    {
+     "frame": "jump-take-off",
+     "at": 0.12,
+     "got": "/Game/T/hero/Frames/jump-take-off.jump-take-off"
+    },
+    {
+     "frame": "jump-rise",
+     "at": 0.2,
+     "got": "/Game/T/hero/Frames/jump-rise.jump-rise"
+    },
+    {
+     "frame": "jump-apex",
+     "at": 0.28,
+     "got": "/Game/T/hero/Frames/jump-apex.jump-apex"
+    },
+    {
+     "frame": "jump-fall",
+     "at": 0.36,
+     "got": "/Game/T/hero/Frames/jump-fall.jump-fall"
+    },
+    {
+     "frame": "jump-land",
+     "at": 0.44,
+     "got": "/Game/T/hero/Frames/jump-land.jump-land"
+    },
+    {
+     "frame": "jump-recover",
+     "at": 0.52,
+     "got": "/Game/T/hero/Frames/jump-recover.jump-recover"
+    }
+   ]
+  },
+  "attack": {
+   "path": "/Game/T/hero/Flipbooks/hero_attack.hero_attack",
+   "fps": 12.5,
+   "num_key_frames": 5,
+   "num_frames": 5,
+   "total_duration": 0.4000000059604645,
+   "expected_ms": 400,
+   "samples": [
+    {
+     "frame": "attack-anticipation",
+     "at": 0.04,
+     "got": "/Game/T/hero/Frames/attack-anticipation.attack-anticipation"
+    },
+    {
+     "frame": "attack-strike",
+     "at": 0.12,
+     "got": "/Game/T/hero/Frames/attack-strike.attack-strike"
+    },
+    {
+     "frame": "attack-strike",
+     "at": 0.2,
+     "got": "/Game/T/hero/Frames/attack-strike.attack-strike"
+    },
+    {
+     "frame": "attack-follow-through",
+     "at": 0.28,
+     "got": "/Game/T/hero/Frames/attack-follow-through.attack-follow-through"
+    },
+    {
+     "frame": "attack-recover",
+     "at": 0.36,
+     "got": "/Game/T/hero/Frames/attack-recover.attack-recover"
+    }
+   ]
+  },
+  "hurt": {
+   "path": "/Game/T/hero/Flipbooks/hero_hurt.hero_hurt",
+   "fps": 12.5,
+   "num_key_frames": 2,
+   "num_frames": 2,
+   "total_duration": 0.1599999964237213,
+   "expected_ms": 160,
+   "samples": [
+    {
+     "frame": "hurt-recoil",
+     "at": 0.04,
+     "got": "/Game/T/hero/Frames/hurt-recoil.hurt-recoil"
+    },
+    {
+     "frame": "hurt-recover",
+     "at": 0.12,
+     "got": "/Game/T/hero/Frames/hurt-recover.hurt-recover"
+    }
+   ]
+  }
+ }
+}
