@@ -17,8 +17,9 @@ const temp = async t => {
 };
 // The cache needs some presets measured, not every shipped one: with the shipped folder each listing here waited 10 to
 // 30 s for its in-flight presets (blade-bloom alone takes 7 s). So each test lists a copy of the package that holds a
-// small preset of each kind, one with more than 12 animations (holy-spells) and the files they name; presets.test.js
-// measures every shipped preset. A kind left without one of these names gets its first preset.
+// small preset of each kind, one with more than 12 animations (holy-spells) and the files they name. presets.test.js
+// compiles and renders every shipped preset and checks the facts its listing gives. A kind left without one of these
+// names gets its first preset.
 const SMALL = ['bouncing-pixel', 'coin', 'holy-spells', 'interference', 'smoke-puff', 'snowflakes', 'swing', 'swing-trail'];
 const smallPackage = async dir => {
   const pkg = path.join(dir, 'pkg'), entries = await presetEntries(), picked = entries.filter(entry => SMALL.includes(entry.name));
