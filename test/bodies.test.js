@@ -14,12 +14,13 @@ import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { bodiesPresets } from '../scripts/bodies-presets.mjs';
 import { BODIES_SHOWCASE, buildBodiesGIFs } from '../showcase/bodies/build.mjs';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const GOLDEN = {
-  'ring-escape': '12ce30e2a30240499a3b7442550d5f5085158ec51a8c20eb3cb7f54c3ac23c6e', 'bouncing-pixel': '22d7b1e4fdeacec4f88ab370e864c20097dab67e2097d538072495f3dc1e2e2e', 'spinning-hoop': 'e3b290ee0f38e34623368381973b7362fe0ce7243797d49dcea37cdcd76e5538', 'crate-topple': '5c9e52ca11859b586116e0bbed1cf38e5c5ea439ba72ebddafee52c0b4fa81eb', territory: '8745dc5981857cddd5ffb587c3ca0bd5a7e65d19bd8337495af6ca7963fc9025', 'blade-bloom': 'eb4397b860abbb2b7233a9e6c5c6256c99c6f93bb2a190aea9c889b657798fe1', 'crate-smash': '41a154c53c329df13461fd763eceb083f7e6536027beb0874813f7db83e43303'
-};
+// The compiled recipe of every example, in test/goldens/bodies.json: node scripts/goldens.mjs bodies draws any that
+// change before and after, and --write updates them.
+const golden = goldens(new URL('./goldens/bodies.json', import.meta.url));
 const example = async name => JSON.parse(await readFile(path.join(root, 'examples', `${name}.bodies.json`), 'utf8'));
 const palette = { k: '#111111', w: '#eeeeee', r: '#dd3344', s: '#555566' };
 const scene = (effect, extra = {}) => ({ format: 'pixelforge-bodies', version: 1, name: 'bodies', width: 48, height: 32, palette, ...extra, effects: { e: { frames: 40, ...effect } } });
@@ -133,12 +134,12 @@ test('the work estimate counts the obstacle faces near each body and the pixels 
   assert.throws(() => bodiesFrames(fine(8)), error => error instanceof PixelError && error.path === 'bodies.effects.e' && /the match needs about \d+ million updates, more than 4000 million; .*or subpixels/.test(error.message));
 });
 
-test('every rigid-body example compiles to its golden recipe and draws only palette keys', async () => {
+golden.test('every rigid-body example compiles to its golden recipe and draws only palette keys', async () => {
   for (const name of BODIES_SHOWCASE) {
     const source = await example(name);
     assert.deepEqual(source, JSON.parse(JSON.stringify(bodiesPresets[name])), `examples/${name}.bodies.json is stale; run node scripts/generate-examples.js`);
     const { recipe } = compileBodies(source);
-    assert.equal(sha(recipe), GOLDEN[name], `${name} compiled differently; if the change is intended, update GOLDEN and rebuild the GIFs`);
+    golden.equal(name, sha(recipe), { recipe, note: 'Rebuild the GIFs too: npm run art:bodies -- --force.' });
     const keys = new Set(Object.keys(source.palette));
     for (const frame of recipe.frames) for (const op of frame.ops ?? []) {
       // A territory's heads-up display adds text and its boxes and bars.

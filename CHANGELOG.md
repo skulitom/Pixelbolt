@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### For contributors: one goldens command and related tests
+
+- Every pinned output hash outside the frozen pre-M0 baseline now lives in `test/goldens/<set>.json`, one set per test file (fluid, bodies, crystal, shapes, fx, spell library, idle squash, figures, terrain and wave), and each case is still defined in its test, checked with the `goldens()` helper from `scripts/goldens.mjs`. A test that stops reaching a pinned case fails instead of passing with less to compare.
+- `npm run goldens` (`node scripts/goldens.mjs [set | set/case ...]`) runs only the golden tests, lists every case whose output changed and draws its frames before (the last commit, or `--base <ref>`) and after, side by side with the changed pixels marked, under `output/goldens/`. `--write` then updates the hashes, for a whole set or one case. It replaces hand-editing hashes in several test files after a full test run, and `scripts/check-figure-goldens.mjs --snapshot`.
+- `npm run test:related -- src/motions.js` runs only the test files that import a file, directly or through other modules, from a static import graph; with no files it takes those changed since the last commit. `npm test` still runs everything before a push.
+
 ### Seeing motion and parts
 
 - The motion review (`view: "motion"`, `pixelbolt inspect --motion`) draws the arcs under its playback cells: one cycle's path of each foot and hand and the top of the head over the first pose, magnified, near limbs solid and far ones dashed, ringed where each foot lands (that foot, its hand and the head), with a key in the image and `arcs` in the reply. Arms a quarter cycle late, a crouch into each contact and a marched knee, which the gait checks report as numbers, show in this one picture: a hand ringed mid-arc, a head ringed at the bottom of a long path, one foot's loop rising above its partner's. Without a rig each marker is traced; the panel is dropped, with the reason, before the image passes 4,194,304 pixels.

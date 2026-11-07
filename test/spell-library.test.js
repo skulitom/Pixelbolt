@@ -7,11 +7,13 @@ import { fileURLToPath } from 'node:url';
 import { renderProject } from '../src/core.js';
 import { compileEffects } from '../src/fx.js';
 import { spellLibrary } from '../scripts/spell-library.mjs';
+import { goldens } from '../scripts/goldens.mjs';
 
 // The spell library: seven elements, each a projectile (looping, in eight directions), an impact, an area effect and a
 // looping buff on one 64 × 64 canvas anchored at the point a game places them.
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+const golden = goldens(new URL('./goldens/spell-library.json', import.meta.url));
 const ELEMENTS = ['fire', 'ice', 'lightning', 'water', 'poison', 'holy', 'shadow'];
 const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2] || a[i + 3] !== b[i + 3]) n++; return n; };
 const drawn = data => { let n = 0; for (let i = 3; i < data.length; i += 4) if (data[i]) n++; return n; };
@@ -48,15 +50,11 @@ test('every library effect loops seamlessly or ends empty, and has a hit cue whe
   }
 });
 
-test('the spell library compiles to the pixels that were approved', () => {
-  // These change with any change to the library's pixels: regenerate them only after the art is seen again.
-  const golden = {};
-  for (const element of ELEMENTS) golden[element] = sha(compileEffects(spellLibrary[element]).recipe);
-  assert.deepEqual(golden, GOLDEN);
+golden.test('the spell library compiles to the pixels that were approved', () => {
+  // These change with any change to the library's pixels: node scripts/goldens.mjs spell-library draws them before and
+  // after, and --write updates them only after the art is seen again.
+  for (const element of ELEMENTS) {
+    const { recipe } = compileEffects(spellLibrary[element]);
+    golden.equal(element, sha(recipe), { recipe });
+  }
 });
-const GOLDEN = {
-  fire: 'cf66ba352843a14d36b517668187b4e5300cd443d76034b6bc5451bb0546372e', ice: 'e2df8764564bc852c9bff988a1870a4df7bee626f82e29fb25f0390caabebe7e',
-  lightning: '95e96628ed94b52d6d3f24bbd761af0c4d394e61c567f4f9659a931b8c4caeb3', water: '9e12c9680d3712350c13c1eb20bf253860b8fba8b3bc8b9acf80502534fa0a95',
-  poison: '150574181245a4be62d9829745814a00e7870364ba4144dff4c1aca032bdd49a', holy: '7951c63eab23ddb96efda927d0892629f6cef258eecf12640cb3ae4b36aa6dd2',
-  shadow: '9086ad650ce7301026e895e757f6fd4672cdd3caf414a6425f38882d5a119872'
-};

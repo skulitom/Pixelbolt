@@ -13,15 +13,13 @@ import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { crystalPresets } from '../scripts/crystal-presets.mjs';
 import { CRYSTAL_SHOWCASE, buildCrystalGIFs } from '../showcase/crystals/build.mjs';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-// The compiled recipe of every preset. They change with any change to what the compiler draws: if a change is
-// intended, look at the GIFs (node showcase/crystals/build.mjs --force) and update these.
-const GOLDEN = {
-  geode: 'f108ba750018926e0c3661b74de1b5fe8cf82daa87fb0648188c1cc82857d310', 'quartz-cluster': '118077f7f357e4573fef2f47a7757968166d6e40ddb97c9caa63a83028abf7ba',
-  pyrite: '0be93adb0c7e350a7217b95e35e9e093d7f1cb60c45649b8c2a2f97c208a3505', snowflakes: '8bbb7824f44fdb6370c59870d4ea73385b43a1830af9728c51ca083d65960751'
-};
+// The compiled recipe of every preset, in test/goldens/crystal.json. They change with any change to what the compiler
+// draws: node scripts/goldens.mjs crystal draws them before and after, and --write updates them.
+const golden = goldens(new URL('./goldens/crystal.json', import.meta.url));
 const palette = { k: '#101018', a: '#40306a', b: '#7050b0', c: '#a080e0', d: '#e0d0ff', w: '#ffffff' };
 const looks = { gem: { colors: ['a', 'b', 'c', 'd'], outline: 'k', glint: 'w' } };
 const source = (crystals, effect = {}, extra = {}) => ({ format: 'pixelforge-crystal', version: 1, name: 'probe', width: 48, height: 40, palette, looks: structuredClone(looks), ...extra, effects: { e: { frames: 40, crystals, ...effect } } });
@@ -125,12 +123,12 @@ test('a snowflake grows six matching arms with branches that never touch, mirror
   }
 });
 
-test('every crystal example compiles to its golden recipe, draws only palette keys and comes to rest', async () => {
+golden.test('every crystal example compiles to its golden recipe, draws only palette keys and comes to rest', async () => {
   for (const name of CRYSTAL_SHOWCASE) {
     const example = JSON.parse(await readFile(path.join(root, 'examples', `${name}.crystal.json`), 'utf8'));
     assert.deepEqual(example, JSON.parse(JSON.stringify(crystalPresets[name])), `examples/${name}.crystal.json is stale; run node scripts/generate-examples.js`);
     const { recipe, metadata, warnings } = compileCrystals(example);
-    assert.equal(sha(recipe), GOLDEN[name], `${name} compiled differently; if the change is intended, update GOLDEN and rebuild the GIFs`);
+    golden.equal(name, sha(recipe), { recipe, note: 'Rebuild the GIFs too: node showcase/crystals/build.mjs --force.' });
     assert.deepEqual(warnings, [], name);
     const keys = new Set(Object.keys(example.palette));
     for (const frame of recipe.frames) for (const layer of frame.layers) for (const row of layer.ops[0].rows) for (const key of row) assert.ok(key === '.' || keys.has(key), `${name} draws ${key}`);

@@ -14,8 +14,10 @@ import { resolveReferences } from '../src/resolve.js';
 import { readShareLink } from '../src/share.js';
 import { startMCP } from '../src/mcp.js';
 import { startStudio } from '../src/server.js';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const golden = goldens(new URL('./goldens/wave.json', import.meta.url));
 const tiny = () => ({ format: 'pixelforge-wave', version: 1, name: 'probe', width: 8, height: 4,
   palette: { a: '#fff', b: '#f00', z: 'transparent' }, effects: { loop: { frames: 16, duration: 60,
     sources: [{ kind: 'directional', at: [0, 0], angle: 0, wavelength: 8, amplitude: 0.1, cycles: 1 }],
@@ -110,14 +112,15 @@ test('schema and compiler agree on source kinds, effect controls and bounds', as
   }
 });
 
-test('reviewed presets regenerate exactly and keep palette-only, byte-stable output', async () => {
-  const expected = JSON.parse(await readFile(new URL('../showcase/waves/goldens.json', import.meta.url), 'utf8'));
+// The hash of every RGBA frame each preset draws, in test/goldens/wave.json: node scripts/goldens.mjs wave draws any that
+// change before and after, and --write updates them after a deliberate review.
+golden.test('reviewed presets regenerate exactly and keep palette-only, byte-stable output', async () => {
   for (const [name, source] of Object.entries(wavePresets)) {
     const example = JSON.parse(await readFile(new URL(`../examples/${name}.wave.json`, import.meta.url), 'utf8'));
     assert.deepEqual(example, source);
-    assert.equal(digest(example), expected[name]);
-    assert.equal(digest(example), digest(example));
     const { recipe } = compileWaves(example);
+    golden.equal(name, digest(example), { recipe });
+    assert.equal(digest(example), digest(example));
     for (const frame of recipe.frames) for (const layer of frame.layers) for (const row of layer.ops[0].rows)
       for (const key of row) assert.ok(key === '.' || Object.hasOwn(example.palette, key));
   }

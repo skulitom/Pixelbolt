@@ -12,8 +12,12 @@ import { renderProject } from '../src/core.js';
 import { neighbourMask, BLOB_MASKS } from '../src/autotile.js';
 import { readTerrain, drawTerrain, terrainTemplate, templateSeams, TEST_MAP } from '../src/terrain.js';
 import { startMCP } from '../src/mcp.js';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// The example terrains' tile pixels, in test/goldens/terrain.json. They change with any change to what a terrain draws:
+// node scripts/goldens.mjs terrain draws them before and after, and --write updates them deliberately.
+const golden = goldens(new URL('./goldens/terrain.json', import.meta.url));
 const example = async name => JSON.parse(await readFile(path.join(root, 'examples', `${name}.autotile.json`), 'utf8'));
 const palette = { k: '#1b1528', g: '#4a9a4a', G: '#6cbf4a', d: '#2f6f3a', L: '#9be06a', s: '#00000055', b: '#3a7a2a', y: '#ffd166', u: '#7a5534' };
 const source = (extra = {}) => ({ format: 'pixelforge-autotile', version: 1, name: 'turf', tile: 16, palette, frame: 'turf-{mask}', ...extra });
@@ -51,14 +55,12 @@ test('a terrain draws a template whose tiles, stitched into any map, are the ter
   assert.deepEqual(terrainTemplate(turf, { tile: 16, palette }), terrainTemplate(structuredClone(turf), { tile: 16, palette }));
 });
 
-test('the example terrains compile without seam warnings to their reviewed pixels', async () => {
-  // Regenerate these deliberately: they change with any change to what a terrain draws.
-  const golden = { meadow: ['50d70244be8c4db2', 188], ground: ['4e050580ed95fcb4', 151], shore: ['19cff9f62a9373a5', 90] };
-  for (const [name, [hash, frames]] of Object.entries(golden)) {
+golden.test('the example terrains compile without seam warnings to their reviewed pixels', async () => {
+  for (const [name, frames] of Object.entries({ meadow: 188, ground: 151, shore: 90 })) {
     const compiled = compileAutotile(await example(name));
     assert.equal(compiled.warnings, undefined, name);
     assert.equal(compiled.recipe.frames.length, frames);
-    assert.equal(createHash('sha256').update(JSON.stringify(compiled.recipe.symbols)).digest('hex').slice(0, 16), hash, name);
+    golden.equal(name, createHash('sha256').update(JSON.stringify(compiled.recipe.symbols)).digest('hex'), { recipe: compiled.recipe });
   }
 });
 

@@ -8,9 +8,14 @@ import { renderProject } from '../src/core.js';
 import { compileEffects } from '../src/fx.js';
 import { SHAPE_KINDS, atan2Deg } from '../src/shapes.js';
 import { spellPresets } from '../scripts/spell-presets.mjs';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+// The compiled recipes pinned in test/goldens/shapes.json: layer/<kind>, example/<name> and liquid. They change with any
+// change to the shapes' or particles' pixels: node scripts/goldens.mjs shapes draws them before and after, and --write
+// updates them, after looking at the art.
+const golden = goldens(new URL('./goldens/shapes.json', import.meta.url));
 const palette = { k: '#112', b: '#24a', c: '#5af', W: '#fff', o: '#f93', y: '#fe6', g: '#2a5', s: '#999' };
 const looks = { cool: { colors: ['b', 'c', 'W'], thresholds: [0.15, 0.45, 0.8] }, warm: { colors: ['o', 'y', 'W'], thresholds: [0.2, 0.5, 0.8] } };
 const source = (effect, extra = {}) => ({ format: 'pixelforge-fx', version: 1, name: 'shapes', width: 48, height: 48, palette, effects: { hit: { frames: 8, looks, ...effect } }, ...extra });
@@ -64,23 +69,16 @@ test('every shape kind compiles alone into an ordinary recipe of one grid per fr
   }
 });
 
-test('shape layers compile to golden recipes, the same every time', () => {
+golden.test('shape layers compile to golden recipes, the same every time', () => {
   // The aura and the trail came later, so they have goldens of their own and stay out of all.
   const all = source({ cleanup: { corners: true, strays: true }, layers: Object.values(LAYERS).filter(layer => !['aura', 'trail'].includes(layer.kind)).map((layer, i) => ({ ...layer, frames: [i % 3, 8] })) });
   const first = compileEffects(all), second = compileEffects(structuredClone(all));
   assert.deepEqual(first, second);
-  // These change with any change to the shapes' pixels: regenerate them deliberately, after looking at the art.
-  const golden = {};
-  for (const [kind, layer] of Object.entries(LAYERS)) golden[kind] = sha(compileEffects(source({ layers: [layer] }, kind === 'aura' ? { symbols: MAN } : {})).recipe);
-  golden.all = sha(first.recipe);
-  assert.deepEqual(golden, {
-    ring: '191f11c86cd6efb5bcb6a20045a32ca431cfc314444542e802dfa61eee6ff5f9', slash: 'd492d264e470aebe75138384c462467d31f879264e81c1074587e715d31a0ec6',
-    beam: '1a6015f6ac97c80ecff26e8e5b7258c9211613df1440c5c55f7f336ead225420', bolt: 'ecffa8e9ea6bd91b2a81ef7407a23b3e6424775684c9e0f9490b4740fc68b813',
-    glyph: '42d4b90ce7381601ac01c477b8f93097db7f2967d09c0a72cec8e9172d1be94b', star: '1a508a7b8019118c88f0a4a26b581d11c480546e45e498de6a09e2fabfc6c7d4',
-    burst: 'bc1ae713fe6d5dcde3c3a44bee3c5d0af169240940057bbd196ab84a4d9aa085', stream: '4aca6f0e95271ef8b40e228c410cfd3d7f1ba3e70c6ceb38841d090ae7f037d5',
-    aura: '0dcba5a600431f1b6282304fae076bb9959c327adbae1cc740aab43fb5fd504e', trail: '35bdb6b3367eec0407aeccad0d82dce96edd7d5613a618ca30c9ee88f32d09bd',
-    all:'2bd2c2ec91632cd65d4cc9dba333b706e35c4908bfadd1af1417d4809399ff29'
-  });
+  for (const [kind, layer] of Object.entries(LAYERS)) {
+    const { recipe } = compileEffects(source({ layers: [layer] }, kind === 'aura' ? { symbols: MAN } : {}));
+    golden.equal(`layer/${kind}`, sha(recipe), { recipe });
+  }
+  golden.equal('layer/all', sha(first.recipe), { recipe: first.recipe });
 });
 
 test('a beam\'s squash flattens its round ends alone, so a pillar stands on the ground of its circle', () => {
@@ -196,22 +194,14 @@ test('effects without shape layers keep their exact output', async () => {
   assert.deepEqual(compiled.frames, generated.frames);
 });
 
-test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
-  // These change with any change to the shapes' or particles' pixels: regenerate them only after the art is seen again.
-  const golden = {
-    'slash-hit': '82c0d47e7f98278a1df4110d997d470cdb2e14427c51b51b2529e032bfb98b89', 'fire-explosion': '90534164857180202e5fe97ccd729db9b92fe60fc6709a822ae3da13ec0de393',
-    fireball: '86dd24eae581bd4deadbb7039280c5585ec29f9072af52dcc57227e91a1cdc1a',
-    'lightning-strike': '972a299804a6ae4cd8f5507082e65132f5a8d16e66d622cf1fb2e2679278634a', 'healing-circle': '74e710d673512e6456cd0405902c4ecc66d9f20e5552a88ff53649210c541ea8',
-    water: 'd77be4017cfbcb94231fd385fa481d142424bba794d9bca7fd45c027370f7c20', vortex: 'a7f31e33266afa2f898a898d6409496b90e31423931f908c63af55b03b290a7f',
-    meteor: '02c7900fc4419aa4268e51704fe63af833e4357c60d484de1348919f0f461f10', shield: 'a896712ce2cc23a1c1b08aca9371b1895c1a8db1f1829eae57892c9f4b10511e'
-  };
-  assert.deepEqual(Object.keys(spellPresets), Object.keys(golden));
+golden.test('the reviewed shape examples match their presets and compile to the pixels that were approved', async () => {
+  // Every preset has a golden, and every golden a preset (the helper fails on one left unchecked).
   for (const [name, preset] of Object.entries(spellPresets)) {
     const example = JSON.parse(await readFile(path.join(root, `examples/${name}.fx.json`), 'utf8'));
     assert.deepEqual(example, preset, `examples/${name}.fx.json is stale; run node scripts/generate-examples.js`);
     const { recipe } = compileEffects(example);
     assert.deepEqual(renderProject(recipe).warnings, [], name);
-    assert.equal(sha(recipe), golden[name], name);
+    golden.equal(`example/${name}`, sha(recipe), { recipe });
   }
 });
 
@@ -313,13 +303,14 @@ test('blob particles draw soft discs into a look, merging where they touch, shri
   assert.match(twice(drop([24, 24]), { at: [24, 24], burst: 1 }), /emitters\[1\]\.shapes: expected 1–64 symbol names .* or a blob drawn into a look/);
 });
 
-test('liquid shapes compile to golden recipes, the same every time', () => {
+golden.test('liquid shapes compile to golden recipes, the same every time', () => {
   const liquid = source({ looks: { cool: { ...water, light: [-1, -0.5] } }, cleanup: { corners: true, strays: true },
     layers: [{ ...LAYERS.stream, look: 'cool', floor: 36 }, { kind: 'ring', look: 'cool', at: [24, 38], radius: [4, 18], width: [4, 2], squash: [1, 0.3], noise: 0.7, power: [1.3, 0.25] },
       { ...LAYERS.slash, noise: 0.8, power: [1.4, 0.3] }],
     emitters: [{ at: [40, 10], area: [6, 3], burst: 6, start: 3, angle: [200, 340], speed: [0.6, 1.4], gravity: [0, 0.25], floor: 38, life: [4, 6], blob: { radius: [2.5, 1.2] } }] });
+  const { recipe } = compileEffects(liquid);
   assert.deepEqual(compileEffects(liquid), compileEffects(structuredClone(liquid)));
-  assert.equal(sha(compileEffects(liquid).recipe), '3197837952363f60d753d5b12676584092427bad197704153c6455c3e1dc51d3');
+  golden.equal('liquid', sha(recipe), { recipe });
 });
 
 // ---- Looping shapes: a layer that spans a looping effect is a cycle ------------------------------------------------------

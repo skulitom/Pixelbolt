@@ -21,7 +21,7 @@ What "looks good and feels satisfying" means here:
 
 ## 1. Compatibility
 
-- Every new behaviour is opt-in. A source that doesn't use a feature renders exactly as before, and the golden hashes in `test/fluid.test.js` do not move. A shared refactor that changes existing pixels is a bug, unless it is a deliberate fix to how something looks, regenerated and described in its commit.
+- Every new behaviour is opt-in. A source that doesn't use a feature renders exactly as before, and the golden hashes in `test/goldens/fluid.json` do not move (`node scripts/goldens.mjs fluid` checks them). A shared refactor that changes existing pixels is a bug, unless it is a deliberate fix to how something looks, regenerated and described in its commit.
 - Determinism as in `AGENTS.md`: only + − × ÷ and sqrt, `craft.js` trigonometry and seeded hashing, fixed substeps and iteration counts.
 
 ## 2. Units

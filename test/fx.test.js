@@ -9,8 +9,12 @@ import { renderProject } from '../src/core.js';
 import { compilePoses } from '../src/authoring.js';
 import { compileEffects } from '../src/fx.js';
 import { prepareScene, renderScene } from '../src/scene.js';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// The approved examples' compiled recipes: node scripts/goldens.mjs fx draws any that change before and after, and
+// --write updates them only after the art is seen again.
+const golden = goldens(new URL('./goldens/fx.json', import.meta.url));
 const effects = (effect, extra = {}) => ({ format: 'pixelforge-fx', version: 1, name: 'fx', width: 24, height: 24, palette: { w: '#fff', y: '#fd6', o: '#e83', g: '#6b4', l: '#9d6' },
   symbols: { dot: ['w'], warm: ['y'], cool: ['o'], chip: ['yy', 'yo'], leafA: ['gl'], leafB: ['lg'] }, effects: { burst: effect }, ...extra });
 const opsOf = recipe => recipe.frames.map(frame => frame.ops ?? []);
@@ -389,15 +393,15 @@ test('a symbol can be a frame of a recipe or pose source, its colours joining th
   assert.equal(compileEffects(document).recipe.symbols.hero.length, 36);
 });
 
-test('the hero magic example compiles from the hero\'s pose source to the pixels that were approved, its aura looping', async () => {
+golden.test('the hero magic example compiles from the hero\'s pose source to the pixels that were approved, its aura looping', async () => {
   const { resolveReferences } = await import('../src/resolve.js');
   const { createHash } = await import('node:crypto');
   const written = JSON.parse(await readFile(path.join(root, 'examples/hero-magic.fx.json'), 'utf8'));
   const { recipe } = compileEffects((await resolveReferences(written, { baseDir: path.join(root, 'examples') })).document);
   const project = renderProject(recipe);
   assert.deepEqual(project.warnings, []);
-  // This changes with any change to the sprite, aura or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), 'cf80c17b8c4cb1ed986a424ea7dbe55fe9fe65d2116a2bb708d69c6db0f8046d');
+  // This changes with any change to the sprite, aura or particle pixels.
+  golden.equal('hero-magic', createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), { recipe });
   // The aura's last frame runs into its first no more than any two neighbouring frames differ.
   const aura = project.frames.filter(frame => frame.name.startsWith('aura-')).map(frame => frame.data);
   const differ = (a, b) => { let n = 0; for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 3] !== b[i + 3] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) n++; return n; };
@@ -486,15 +490,15 @@ test('a trail spanning a loop reads its places round the cycle, so frame 0 conti
   assert.equal(cellsOf(gridIn(loop({ points, length: 3, frames: [0, 7] }).recipe.frames[0])).length, 0);
 });
 
-test('the swing trail example compiles from the swing\'s pose source to the pixels that were approved', async () => {
+golden.test('the swing trail example compiles from the swing\'s pose source to the pixels that were approved', async () => {
   const { resolveReferences } = await import('../src/resolve.js');
   const { createHash } = await import('node:crypto');
   const written = JSON.parse(await readFile(path.join(root, 'examples/swing-trail.fx.json'), 'utf8'));
   const { recipe, metadata } = compileEffects((await resolveReferences(written, { baseDir: path.join(root, 'examples') })).document);
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.swing.cues, [{ name: 'hit', frame: 3, at: [32, 31] }]);
-  // This changes with any change to the trail, sprite or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '702927931844707eaee181230fc1101add99debbfafa5937db67330720d226ee');
+  // This changes with any change to the trail, sprite or particle pixels.
+  golden.equal('swing-trail', createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), { recipe });
 });
 
 test('a fluid or a wave can play inside an effect as a sprite, drawing exactly the pixels it draws on its own', async () => {
@@ -510,7 +514,7 @@ test('a fluid or a wave can play inside an effect as a sprite, drawing exactly t
   }
 });
 
-test('the fluid blast example compiles from the explosion fluid source to the pixels that were approved', async () => {
+golden.test('the fluid blast example compiles from the explosion fluid source to the pixels that were approved', async () => {
   const { resolveReferences } = await import('../src/resolve.js');
   const { createHash } = await import('node:crypto');
   const written = JSON.parse(await readFile(path.join(root, 'examples/fluid-blast.fx.json'), 'utf8'));
@@ -520,8 +524,8 @@ test('the fluid blast example compiles from the explosion fluid source to the pi
   const { recipe, metadata } = compileEffects(document);
   assert.deepEqual(renderProject(recipe).warnings, []);
   assert.deepEqual(metadata.effects.blast.cues.map(cue => cue.name), ['boom']);
-  // This changes with any change to the fluid, shape or particle pixels: regenerate it only after the art is seen again.
-  assert.equal(createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), '102297faa77226f0bea87b115ed9838237803ae6c44f3fef129364e7bc91b524');
+  // This changes with any change to the fluid, shape or particle pixels.
+  golden.equal('fluid-blast', createHash('sha256').update(JSON.stringify(recipe)).digest('hex'), { recipe });
 });
 
 // ---- Turned copies: one effect drawn in several directions ---------------------------------------------------------------

@@ -14,6 +14,8 @@
   "files": ["bin", "src", "studio", "examples", "schema.json", "poses.schema.json", "scene.schema.json", "autotile.schema.json", "fx.schema.json", "fluid.schema.json", "wave.schema.json", "crystal.schema.json", "bodies.schema.json", "normals.schema.json", "docs", "skills", "README.md", "README.zh-CN.md", "README.ja.md", "README.ko.md", "README.es.md", "AGENTS.md", "CONTRIBUTING.md", "llms.txt", "LICENSE"],
   "scripts": {
     "test": "node --test",
+    "test:related": "node scripts/related-tests.mjs",
+    "goldens": "node scripts/goldens.mjs",
     "start": "node bin/pixelbolt.js preview",
     "demo": "node bin/pixelbolt.js render examples/forest-spirit.json --out output/forest-spirit",
     "play": "node scripts/serve-emberfall.mjs",

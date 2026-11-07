@@ -8,9 +8,11 @@ import { rasterizeMass } from '../src/craft.js';
 import { animationGIF } from '../src/gif.js';
 import { inspectMotion } from '../src/motion.js';
 import { decodeGIF } from './fixtures/decode-gif.js';
+import { goldens } from '../scripts/goldens.mjs';
 
 const read = async file => JSON.parse(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'));
 const hash = data => createHash('sha256').update(data).digest('hex');
+const golden = goldens(new URL('./goldens/idle-squash.json', import.meta.url));
 const slime = await read('examples/slime-idle.poses.json');
 const palette = { k: '#1d2b3a', d: '#2b7a3d', g: '#3fa34d', l: '#8fd16a', w: '#f4f4e8' };
 // A one-mass rig whose rest pose stands above rig.ground, so grounding has to move it.
@@ -196,24 +198,26 @@ test('a flat mass keeps its base on its anchor row under every squash, keeps its
   assert.deepEqual(rasterizeMass(ellipse, { ramp }).rows, plain.rows);
 });
 
-test('idles and ellipse masses without the new fields stay byte-identical to the output before grounded squash', () => {
-  // Hashes of the compiled JSON and every RGBA frame, taken before flat masses and idle squash existed. Regenerate
-  // them only for a deliberate change to the idle template, mass drawing or the rigs above. The strider's legs cross
-  // its body, so it keeps its outline-coloured inner lines, as everything was drawn then.
+golden.test('idles and ellipse masses without the new fields stay byte-identical to the output before grounded squash', () => {
+  // Hashes of the compiled JSON and every RGBA frame, taken before flat masses and idle squash existed, in
+  // test/goldens/idle-squash.json. Change them (node scripts/goldens.mjs idle-squash, then --write) only for a deliberate
+  // change to the idle template, mass drawing or the rigs above. The strider's legs cross its body, so it keeps its
+  // outline-coloured inner lines, as everything was drawn then.
   const compiled = source => { const result = compilePoses(source); return hash(JSON.stringify(result) + renderProject(result.recipe).frames.map(frame => hash(frame.data)).join()); };
-  assert.deepEqual([...[2, 3, 4].map(frames => compiled({ ...strider({ frames, breath: .1 }), innerLines: 'outline' })), ...[2, 3, 4].map(frames => compiled(blob({ idle: { frames, breath: .15 } }))), compiled(blob({ mass: { outline: 'selective' }, body: { angle: 20 } }))], [
-    '06cd66bdf8a51a7a5e692784c8aa776fb33d4b3c082b5701e2343abde556e24a',
-    '4ef8b1eb52f03c49defde6735b88002d1afc8b508613ae534943c7dc57155536',
-    '55719b3e381bd650155ed8e56aae851b606e0ead9b2cf3824ba6d09f3e594a12',
-    'e7bb07f06fc353b42345a5dafc5a7fabe9ebd972cc388c23813a6b08d9f87c63',
-    '2c46ead9cd7e3a30334e221010baa8ebf8d033f677538bb35a988896fc427fa7',
-    '905e03e98f3045aecfd5d0d6a92e1252b6c89d010a2a5d70504f30526a47e72c',
-    '1ea16cceb746be26c05a4c118deb58a2dc660d6083d57c124036c6003ff01662'
-  ]);
-  const ellipses = [];
+  const idles = [...[2, 3, 4].map(frames => [`strider-idle-${frames}`, { ...strider({ frames, breath: .1 }), innerLines: 'outline' }]),
+    ...[2, 3, 4].map(frames => [`blob-idle-${frames}`, blob({ idle: { frames, breath: .15 } })]), ['blob-selective-turned-20', blob({ mass: { outline: 'selective' }, body: { angle: 20 } })]];
+  for (const [name, source] of idles) golden.equal(name, compiled(source), { recipe: () => compilePoses(source).recipe });
+  const ellipses = [], rasters = [];
   for (const size of [[2, 2], [7, 9], [12, 10], [20, 14]]) for (const outline of ['k', null, 'selective']) for (const angle of [0, 33, 90]) for (const flipX of [false, true]) for (const squash of [.5, .85, 1, 1.15, 2]) {
     const raster = rasterizeMass({ size, ramp: 0, base: 1, outline }, { angle, flipX, squash, ramp: ['d', 'g', 'l'] });
     ellipses.push(JSON.stringify([raster.rows, raster.pivot, raster.work, raster.targetArea, raster.map([3, -2])]));
+    rasters.push({ name: `${size.join('x')} ${outline ?? 'no'} outline ${angle} deg${flipX ? ' flipped' : ''} squash ${squash}`, rows: raster.rows });
   }
-  assert.equal(hash(ellipses.join('\n')), '0a707fb68225cd6b0b73939149ac07b9b3c0677e29096ed374ed339ed8839348');
+  // Drawn only when the hash changes: each raster's keys in the palette's colours.
+  const frames = () => rasters.map(({ name, rows }) => {
+    const width = Math.max(1, ...rows.map(row => row.length)), height = Math.max(1, rows.length), data = new Uint8Array(width * height * 4);
+    rows.forEach((row, y) => [...row].forEach((key, x) => { if (palette[key]) data.set([1, 3, 5].map(i => parseInt(palette[key].slice(i, i + 2), 16)).concat(255), (y * width + x) * 4); }));
+    return { name, width, height, data };
+  });
+  golden.equal('ellipses', hash(ellipses.join('\n')), { frames });
 });

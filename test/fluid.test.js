@@ -12,50 +12,14 @@ import { compileFluid, createLiveFluid, FLUID_FIELDS, FLUID_WALLS } from '../src
 import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { FLUID_SHOWCASE, buildFluidGIFs } from '../showcase/fluid/build.mjs';
+import { goldens } from '../scripts/goldens.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = async file => JSON.parse(await readFile(path.join(root, file), 'utf8'));
-// The same source must give the same recipe on every machine and engine: these hashes are checked on every CI system.
-const GOLDEN = {
-  campfire: '06161942eb47f5904af61dbbc192055a041aa2dc101508f8f7858ff3867aa5dc',
-  explosion: '0e659c9afeee3cb4f0c125e47f13da99bea4f0336f698423f0339405759fd3db',
-  'smoke-puff': '31e2de6a2f4be0d836d68a4f14df2223a4f637f440de26055345deec27609d78',
-  'steam-vent': '64ebb392fa9d3fc41668f4597b9d6bf5bc77e08b203496f7ba976ba3f0d8e9a3',
-  'magic-swirl': 'f2711b5c9daf146cc2220ad6e03bac50c85cbcd30add3632a4a17327acdc618e',
-  torch: 'a8a63120d24a8a512a78f99cbb7a56485c2d3627a629a15b31dc01fa9c03b382',
-  splash: 'c69bbbcb210dfaa4cd6bc4f2a5693abe42290ecde577b3f910e00332607fb531',
-  waterfall: 'c0632cf3e5844eed17d4ea949d36065bf49389a2ec39357218d9b86ca1b9c289',
-  drip: '59489d63411f7fbe56166526f14c2f0fccaf45e1001ebe1a22a945046f14fc2a',
-  potion: 'a0b618a951230102fcf22603f3782508e2556fe9a891d5d77d25dd289b299aa4',
-  honey: '9e8d730439802fd9d0c7bf7d8ae97a97a3b3fe0f7da2483968cd47c7ac1c19cc',
-  slime: 'd5b27535f71d925b683b585e868ee613fdfb9c760009cd36d028ab371208b0ae',
-  'roof-snow': '7fd462ec52cf62e104e69b68eb934d30b501a4b3c393b12a43c1f2659058b423',
-  'dam-break': '11e7cde7e7585f198d94c4a612387a41449bc81f2a203c66d1d8db433bc875b1',
-  'dust-wave': 'a03847a28a4ab4c6193b32dc036de84c3420164d447485e8e48cd3ab6beb7c19',
-  'slime-burst': '103248f75de837958789aa2b491d928790b28dc0e858d2e366da2601c5f047e8',
-  'honey-drop': '4d8be19dc1db0c1a460a82c5e19eaca9e786ae90d49ad08e10372be2d021d41c',
-  aquarium: '8b366d7e7960e2752cc21ccda50e91fd82f2b7de160c8c52d98cf9700d834280',
-  'honey-dipper': 'dbc42baa392e2f6739c825dbba3ca7cd262dad4419dde6929ab668bf7e974f1a',
-  glug: '4ef80578fe9111fbde86d4ede57ce426f783d715246e33c6ecceb911a226d11f',
-  'jacobs-ladder': 'f66ca057b510de6440e487391e160dc5246be9e54dbafdb72a8d9f7182dc70e1',
-  lightning: '9aa1a32d513541871ca6c8bfe2c33dbd69a43a12877a038461eda63f4ab0be6d',
-  'tesla-coil': 'b9832416993612805a68b12be2ad98accf2d81ca67cfa7fcdb104cfe5fda440b',
-  'plasma-globe': 'c14fc65bc35a3f5a6e9f8b71592c2a57e77c1506926d0250385e878a543949d3',
-  'ice-melt': 'eb00732359a895af9f03426aab1bd548eda10faca1171f6386628f18f486776e',
-  'pond-freeze': '8f25ab3ef9f6ca18b735b49c25360e7e03d6c707208d8da60443e90c416edc96',
-  'boiling-pot': 'd177c41653eeb08191bc9bec00c0b3e541515d13980ba0a47dd57be66e6c422f',
-  'frost-window': 'faefe045c031a5f64f65cb916e5388a88b35dbcb021b1c53efed84b7d0820e5e',
-  'dry-ice': '99a681bc233f7f990c5bdd41e40a15c20e5acc5624d2a96c5211e526b2758fb1',
-  'lightning-pond': 'cc71b4f3e790f720f0b629c3e7afb75335ad6f6757941e2f9f757fb3eb2a222f',
-  hourglass: 'f9914adc72c61d7e550a907ffb8c1c138338763e6543c31f7999c4f756511a60',
-  'sand-gate': '0dd4c370d4e56407236d6b2efdf66f8851a699ca9963fde3ad839665fe9941b5',
-  'sand-plough': '7692a19c243e76e863a5b8bc516820989fabe6a16ab1b11a96b5906ef45784e0',
-  'crate-splash': 'f1103c930b1deb000fb86889ae3cf8e9bdb33f04b03280e526837697df236092',
-  'sand-slide': 'e3d9436b3dffff36ab1287daaf0eac9345cccea9c4fdb03e09d9c9b080663d1a',
-  'water-wheel': '999b46d404a9812c0cba36b88dba4c613ca0da517c033df4cbe20cef27192574',
-  'hot-stone': 'd8d79e83519df5ffc14066f8ddaae2ccdf775a46e3624ad0ddaeb4271929ed96',
-  'plank-tip': '2bb64a47086b0b3751730251dbbcd59a1b67afd6e913a7417611a72c0c0f21ac'
-};
+// The same source must give the same recipe on every machine and engine: these hashes, in test/goldens/fluid.json, are
+// checked on every CI system. node scripts/goldens.mjs fluid draws any that change before and after; --write updates them.
+const golden = goldens(new URL('./goldens/fluid.json', import.meta.url));
+const ART = 'Rebuild the GIFs too: npm run art:fluid -- --force.';
 const examples = new Map();
 const example = async name => {
   if (!examples.has(name)) {
@@ -70,12 +34,12 @@ const smoke = [{ field: 'density', colors: ['s', 'w'], thresholds: [0.2, 0.6] }]
 const pixelsOf = frame => { let n = 0; for (let i = 3; i < frame.data.length; i += 4) if (frame.data[i]) n++; return n; };
 const changed = (a, b) => { let n = 0; for (let i = 0; i < a.data.length; i += 4) if (a.data[i] !== b.data[i] || a.data[i + 1] !== b.data[i + 1] || a.data[i + 2] !== b.data[i + 2] || a.data[i + 3] !== b.data[i + 3]) n++; return n; };
 
-test('every fluid example compiles to its golden recipe, using only its palette and grid operations', async () => {
+golden.test('every fluid example compiles to its golden recipe, using only its palette and grid operations', async () => {
   const sources = (await readFile(path.join(root, 'scripts/generate-examples.js'), 'utf8')).match(/\.fluid\b/g);
   assert.ok(sources.length >= 1);
   for (const name of FLUID_SHOWCASE) {
     const { source, recipe, project } = await example(name);
-    assert.equal(sha(recipe), GOLDEN[name], `${name} compiled differently; if the change is intended, update GOLDEN and rebuild the GIFs`);
+    golden.equal(name, sha(recipe), { recipe, note: ART });
     const keys = new Set(Object.keys(source.palette)), colours = new Set(Object.values(source.palette).map(hex => hex.toLowerCase()));
     for (const frame of recipe.frames) for (const op of frame.ops ?? []) {
       // An obstacle partly off the canvas (dam-break's plank as it lifts away) is drawn as a copy of its visible part.
@@ -1488,19 +1452,17 @@ test('the package ships the fluid schema and example sources', async () => {
 // ---- Live runner ------------------------------------------------------------------------------------------------------
 const sameData = (a, b) => a.length === b.length && a.every((value, i) => value === b[i]);
 const keysCount = (keys, test) => keys.reduce((n, row) => n + [...row].filter(test).length, 0);
-// A scripted session: pushes, puffs and a boost between steps, hashed frame by frame.
-const session = (source, script) => {
+// A scripted session: pushes, puffs and a boost between steps, hashed frame by frame (and kept in `frames` if given).
+const session = (source, script, frames) => {
   const live = createLiveFluid(source, { warmup: 8 }), hash = createHash('sha256');
   for (let k = 0; k < 24; k++) {
     script(live, k);
     const { rgba, keys } = live.step().render();
     hash.update(keys.join('\n')).update(rgba);
+    frames?.push({ name: `step ${k + 1}`, width: live.width, height: live.height, data: rgba });
   }
   return hash.digest('hex');
 };
-// The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
-// Firefox and WebKit as well as Node).
-const LIVE_GOLDEN = { torch: '3993461d4ad317ebb8efec97dace7973eca4543b6ca850ef53422f29fab50915', potion: '354b0862b2b178def9bced44a10b87dbfa76e0bc0908bc1df197610b83dfea24' };
 const scripts = {
   torch: (live, k) => { if (k === 2) live.push({ x: 8, y: 18, vx: 2, vy: -1, radius: 5 }); if (k === 5) live.puff({ x: 6, y: 14, radius: 3, density: 1.5, temperature: 1 }); if (k === 9) live.boost('flame', 2.5, 6); },
   potion: (live, k) => { if (k === 2) live.push({ x: 16, y: 28, vx: 2.5, vy: -1.5, radius: 8 }); if (k === 5) live.puff({ x: 12, y: 18, radius: 3 }); if (k === 9) live.boost('bubbles', 4, 8).boost('heat', 3, 8); }
@@ -1544,11 +1506,13 @@ test('a live runner steps the simulation compileFluid bakes, frame for frame', a
   assert.deepEqual(runner.palette, { s: '#888888', w: '#ffffff', y: '#ffdd66', k: '#000000', o: '#0000ff88', h: '#88ccff88' });
 });
 
-test('live runs are deterministic: the same calls give the same pixels everywhere', async () => {
+// The same source and the same calls must give the same pixels on every machine and engine (these match Chromium,
+// Firefox and WebKit as well as Node): live/torch and live/potion in test/goldens/fluid.json.
+golden.test('live runs are deterministic: the same calls give the same pixels everywhere', async () => {
   for (const name of ['torch', 'potion']) {
     const source = (await example(name)).source, first = session(source, scripts[name]);
     assert.equal(session(source, scripts[name]), first, `${name} repeats`);
-    assert.equal(first, LIVE_GOLDEN[name], `${name} ran differently; if the change is intended, update LIVE_GOLDEN`);
+    golden.equal(`live/${name}`, first, { frames: () => { const frames = []; session(source, scripts[name], frames); return frames; } });
     // The same calls a frame later make a different session.
     assert.notEqual(session(source, (live, k) => scripts[name](live, k - 1)), first);
   }
