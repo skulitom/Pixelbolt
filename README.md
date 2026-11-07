@@ -20,7 +20,7 @@ For Codex, Cursor and the other agents the open [skills CLI](https://skills.sh) 
 
 [Poke the pixels](https://skulitom.github.io/Pixelbolt/playground/fluids/): blow on a live pixel-art campfire, pour honey and slime, then save a GIF or share a link that replays exactly what you did.
 
-[Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground.
+[Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground. Using Unreal Engine? [Import the sheets into Paper2D, with flipbooks](https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/) (tested in 5.8.4).
 
 [Neon Voyage](https://skulitom.github.io/NeonRocketGame/): a free browser game made with Pixelbolt. Every sprite, effect and letter is a [recipe](https://github.com/skulitom/NeonRocketGame/tree/main/art), and the rocket's exhaust is a live fluid simulation that bends as you steer.
 
