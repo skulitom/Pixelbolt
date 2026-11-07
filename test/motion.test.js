@@ -98,6 +98,18 @@ test('without a rig the arcs trace each marker; without metadata, or past the im
   assert.ok(wide.nativeSheet.width * wide.nativeSheet.height <= 4194304);
 });
 
+test('the arcs key draws a marker name the font cannot draw with ?, and the review still runs', () => {
+  const f = fixture([[4, 12], [6, 11], [8, 12]], { loop: true, contacts: [['foot'], [], ['foot']] });
+  const renamed = name => {
+    const metadata = structuredClone(f.metadata);
+    for (const pose of Object.values(metadata.poses)) { pose.markers[0].name = name; pose.contacts = pose.contacts.map(() => name); }
+    return inspectMotion(f.project, { animation: 'move', metadata, speed: 0, scale: 1 });
+  };
+  const review = renamed('tip·足');
+  assert.deepEqual([review.arcs.shown, review.arcs.tracks.map(t => t.part), review.motion.slide.map(s => s.marker)], [true, ['tip·足'], ['tip·足']]);
+  assert.deepEqual(review.nativeSheet.data, renamed('tip·?').nativeSheet.data);
+});
+
 test('pose contacts are validated, mirrored and copied into playback entries; tweens declare contacts explicitly', () => {
   const source = { format: 'pixelforge-poses', version: 1, name: 'contacts', width: 16, height: 16, palette: { a: '#f00' }, rig: { ground: 12 },
     parts: { dot: { rows: ['a'], points: { end: [0, 0] } } },

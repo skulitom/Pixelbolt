@@ -457,8 +457,9 @@ export function createToolRunner({ directory, root, version }) {
         if (args.draftViews !== undefined) {
           if (format !== 'pixelforge-poses') throw new PixelError('draftViews', 'draft views turn grid parts of a pixelforge-poses source');
           if (args.metadata !== undefined || args.sequence !== undefined) throw new PixelError('draftViews', 'draftViews replaces compiling; leave out metadata and sequence');
-          const { drafts, sheet } = draftViews(document, args.draftViews);
-          return { content: [textContent({ ok: true, drafts, sheet: 'one row per draft: the flat drawing, the turn the compiler draws today without a view, the draft, and any drawn view used at that angle; the anchor is outlined in magenta, named points in cyan', next: 'Drafts, not art: correct the rows of each by eye, then add the view to parts.<name>.views in your source. A view is drawn within 22.5° of its key. Nothing was written.' }), imageContent(sheet)] };
+          // A sheet too large to draw is left out, saying why; the drafts come back either way.
+          const { drafts, sheet, noSheet } = draftViews(document, args.draftViews);
+          return { content: [textContent({ ok: true, drafts, sheet: sheet ? 'one row per draft: the flat drawing, the turn the compiler draws today without a view, the draft, and any drawn view used at that angle; the anchor is outlined in magenta, named points in cyan' : `not drawn: ${noSheet}`, next: 'Drafts, not art: correct the rows of each by eye, then add the view to parts.<name>.views in your source. A view is drawn within 22.5° of its key. Nothing was written.' }), ...(sheet ? [imageContent(sheet)] : [])] };
         }
         // A bodies match written as numbered video frames, stepped frame after frame, so it may run past 256 frames.
         if (args.sequence !== undefined) {

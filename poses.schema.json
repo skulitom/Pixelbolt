@@ -173,7 +173,27 @@
       "required": [
         "ground"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "fore": [
+          "hind"
+        ],
+        "hind": [
+          "fore"
+        ],
+        "chest": [
+          "fore"
+        ],
+        "neck": [
+          "fore"
+        ]
+      },
+      "not": {
+        "required": [
+          "legs",
+          "fore"
+        ]
+      }
     },
     "motions": {
       "type": "object",

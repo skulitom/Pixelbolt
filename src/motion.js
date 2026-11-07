@@ -2,7 +2,7 @@
 import { PixelError, parseColor } from './core.js';
 import { angleDelta } from './pose-geometry.js';
 import { sinDeg, cosDeg, traceLine } from './craft.js';
-import { layoutText } from './font.js';
+import { layoutText, FONT_CHARACTERS } from './font.js';
 
 const fail = (where, message) => { throw new PixelError(`motion.${where}`, message); };
 const rounded = n => Math.round(n * 1e6) / 1e6;
@@ -254,6 +254,8 @@ function arcTracks(entries, metadata) {
 }
 
 // The key under the arcs: a sample of each mark and its meaning in the built-in font, wrapped to the panel's width.
+// Marker names come from metadata, so a character the font has no glyph for is drawn as ?.
+const GLYPHS = new Set(FONT_CHARACTERS), inFont = text => [...text.normalize('NFC')].map(c => GLYPHS.has(c) ? c : '?').join('');
 function arcKey(tracks, landings, width) {
   const names = { foot: 'feet', hand: 'hands', head: 'head' }, markers = tracks.filter(t => t.kind === 'marker');
   const items = markers.length ? markers.map(t => ({ mark: 'swatch', color: t.color, text: t.part }))
@@ -264,7 +266,7 @@ function arcKey(tracks, landings, width) {
   const laid = [];
   let x = 0, y = 0;
   for (const item of items) {
-    const text = layoutText(item.text), size = 9 + text.width;
+    const text = layoutText(inFont(item.text)), size = 9 + text.width;
     if (x && x + size > width) { x = 0; y += 10; }
     laid.push({ ...item, text, x, y }); x += size + 6;
   }

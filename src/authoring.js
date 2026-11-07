@@ -23,6 +23,16 @@ const identifier = (value, path) => {
 // Compiled output is plain JSON data (null-prototype maps are only used while compiling).
 const plain = value => JSON.parse(JSON.stringify(value));
 
+// An authored view of a grid part: its rows, its anchor and every point the part names, as the compiler draws it.
+const VIEW_KEY = /^(0|[1-9][0-9]{0,2})$/;
+function checkView(view, path, part, palette) {
+  fields(view, ['rows', 'anchor', 'points'], path);
+  readRows(view.rows, `${path}.rows`, palette);
+  point(view.anchor, `${path}.anchor`);
+  if (view.points !== undefined) fields(view.points, Object.keys(part.points ?? {}), `${path}.points`);
+  for (const key of Object.keys(part.points ?? {})) point(view.points?.[key], `${path}.points.${key}`);
+}
+
 function structuralPart(part, source, path) {
   const kind = part.bone !== undefined ? 'bone' : 'mass', shape = part[kind], p = `${path}.${kind}`;
   fields(shape, kind === 'bone' ? ['length', 'width', 'ramp', 'base', 'outline', 'caps', 'snap'] : ['size', 'ramp', 'base', 'outline', 'flat'], p, ['outline']);
@@ -133,12 +143,8 @@ export function compilePoses(source, mode) {
       if (structural) fail(vp, 'authored views belong to grid parts');
       if (!part.views || typeof part.views !== 'object' || Array.isArray(part.views) || !Object.keys(part.views).length || Object.keys(part.views).length > 16) fail(vp, 'expected 1–16 drawings keyed by whole degrees from 0 to 359');
       for (const [angle, view] of Object.entries(part.views)) {
-        if (!/^(0|[1-9][0-9]{0,2})$/.test(angle) || Number(angle) > 359) fail(`${vp}.${angle}`, 'expected whole degrees from 0 to 359');
-        fields(view, ['rows', 'anchor', 'points'], `${vp}.${angle}`);
-        readRows(view.rows, `${vp}.${angle}.rows`, source.palette ?? {});
-        point(view.anchor, `${vp}.${angle}.anchor`);
-        if (view.points !== undefined) fields(view.points, Object.keys(part.points ?? {}), `${vp}.${angle}.points`);
-        for (const key of Object.keys(part.points ?? {})) point(view.points?.[key], `${vp}.${angle}.points.${key}`);
+        if (!VIEW_KEY.test(angle) || Number(angle) > 359) fail(`${vp}.${angle}`, 'expected whole degrees from 0 to 359');
+        checkView(view, `${vp}.${angle}`, part, source.palette ?? {});
       }
     }
   }
@@ -600,13 +606,15 @@ function drawOverTemplate(rows, ops, { tile, palette, ramps, symbols, path, rows
 
 // Draft drawings of grid parts turned to the angles asked for (craft.js draftTurn), as the source an author pastes into
 // parts.<name>.views once each is corrected. Only the parts asked about are checked, so a draft can be had while the
-// rest of a source is unfinished. Nothing is compiled: the poses compiler draws authored views and never a draft.
+// rest of a source is unfinished; an unfinished authored view is named in its note and left off the sheet. Nothing is
+// compiled: the poses compiler draws authored views and never a draft.
 // `request` maps part names to whole degrees, { boot: [30, 330] }. Returns { drafts: { <part>: { views, notes } },
 // sheet }: each view's rows, anchor and points, a note on how it was drafted, and a picture sheet with one row per
 // draft beside the flat drawing, the part as the compiler turns it without a view, and the authored view it draws at
-// that angle, if any.
+// that angle, if any. A sheet too large to draw is null, with the reason as `noSheet`, and the drafts still come
+// back; `{ sheet: false }` leaves the sheet out.
 export const DRAFT_LIMITS = Object.freeze({ drafts: 32, side: 64 });
-export function draftViews(source, request) {
+export function draftViews(source, request, { sheet: drawSheet = true } = {}) {
   if (source?.format !== 'pixelforge-poses') fail('poses', 'draft views come from a pixelforge-poses source');
   if (!source.parts || typeof source.parts !== 'object' || Array.isArray(source.parts)) fail('poses.parts', 'expected part definitions');
   if (!request || typeof request !== 'object' || Array.isArray(request) || !Object.keys(request).length) fail('draftViews', 'name grid parts and the angles to draft, such as {"boot": [30, 330]}');
@@ -626,27 +634,39 @@ export function draftViews(source, request) {
     if (!Array.isArray(angles) || !angles.length || angles.length > 16) fail(path, 'expected 1–16 angles: a part holds at most 16 views');
     angles.forEach((angle, i) => { if (!Number.isInteger(angle) || angle < 0 || angle > 359) fail(`${path}[${i}]`, 'expected whole degrees from 0 to 359, clockwise'); });
     if (new Set(angles).size !== angles.length) fail(path, 'each angle once');
-    const views = {}, notes = {}, authored = part.views && typeof part.views === 'object' ? part.views : {};
+    const views = {}, notes = {}, authored = part.views && typeof part.views === 'object' && !Array.isArray(part.views) ? part.views : {};
+    const keys = Object.keys(authored).filter(key => VIEW_KEY.test(key) && Number(key) <= 359).map(Number);
     for (const angle of angles) {
       const draft = draftTurn(part.rows, angle, { anchor, points });
       views[angle] = { rows: draft.rows, anchor: draft.anchor, ...(Object.keys(points).length && { points: draft.points }) };
-      // The view the compiler draws at this angle today: the nearest authored one within 22.5°, as shapeOf picks it.
-      const nearest = Object.keys(authored).map(Number).sort((a, b) => Math.abs(angleDelta(angle, a)) - Math.abs(angleDelta(angle, b)) || a - b)[0];
+      // The view the compiler draws at this angle today: the nearest authored one within 22.5°, as shapeOf picks it,
+      // checked as the compiler checks it. One still unfinished is named in the note and left off the sheet.
+      const nearest = [...keys].sort((a, b) => Math.abs(angleDelta(angle, a)) - Math.abs(angleDelta(angle, b)) || a - b)[0];
       const used = nearest !== undefined && Math.abs(angleDelta(angle, nearest)) <= 22.5 ? nearest : undefined;
+      let view = null, unfinished = null;
+      if (used !== undefined) {
+        try { checkView(authored[used], `poses.parts.${name}.views.${used}`, part, palette); view = authored[used]; } catch (error) { if (!(error instanceof PixelError)) throw error; unfinished = error.message; }
+      }
       notes[angle] = [draft.how === 'shear' ? `columns slid along a ${draft.slope} slope` : draft.how === 'cover' ? 'turned silhouette, colours by ring' : draft.how === 'quarter' ? 'exact quarter turn' : 'unturned: under 5° from flat or a quarter turn',
         draft.shortened && `${draft.shortened} repeated column${draft.shortened > 1 ? 's' : ''} dropped`, draft.closed && `${draft.closed} outline pixel${draft.closed > 1 ? 's' : ''} added`, draft.nubs && `${draft.nubs} lone outline pixel${draft.nubs > 1 ? 's' : ''} removed`,
-        used !== undefined && `the compiler draws authored view ${used} here`].filter(Boolean).join('; ');
+        view && `the compiler draws authored view ${used} here`, unfinished && `authored view ${used} would be drawn here but is unfinished (${unfinished}), so the sheet leaves it out`].filter(Boolean).join('; ');
+      if (!drawSheet) continue;
       const turned = angle ? rotateRows(part.rows, angle, anchor, { cleanup: angle % 90 !== 0 }) : null;
       const today = turned ? { rows: turned.rows, anchor: turned.pivot, points: Object.fromEntries(Object.keys(points).map(key => [key, turned.map(points[key])])) } : { rows: part.rows, anchor, points };
-      const view = used === undefined ? null : authored[used];
       if (view) drawn = true;
-      lines.push({ label: `${name} ${angle}°`, cells: [{ rows: part.rows, anchor, points }, today, views[angle], view?.rows ? { rows: view.rows, anchor: view.anchor, points: view.points } : null] });
+      lines.push({ label: `${name} ${angle}°`, cells: [{ rows: part.rows, anchor, points }, today, views[angle], view && { rows: view.rows, anchor: view.anchor, points: view.points }] });
     }
     drafts[name] = { views, notes };
   }
-  const sheet = pictureSheet({ palette, headings: ['flat', 'turned today', 'draft', ...(drawn ? ['drawn'] : [])], rows: drawn ? lines : lines.map(line => ({ ...line, cells: line.cells.slice(0, 3) })),
-    scale: Math.max(6, Math.min(10, Math.floor(96 / Math.max(...lines.flatMap(line => line.cells.filter(Boolean).map(cell => Math.max(cell.rows.length, cell.rows[0].length))))))) });
-  return { drafts, sheet };
+  if (!drawSheet) return { drafts };
+  // The drafts are the answer: a sheet that cannot be drawn (a far anchor or point widens every cell) is left out.
+  try {
+    return { drafts, sheet: pictureSheet({ palette, headings: ['flat', 'turned today', 'draft', ...(drawn ? ['drawn'] : [])], rows: drawn ? lines : lines.map(line => ({ ...line, cells: line.cells.slice(0, 3) })),
+      scale: Math.max(6, Math.min(10, Math.floor(96 / Math.max(...lines.flatMap(line => line.cells.filter(Boolean).map(cell => Math.max(cell.rows.length, cell.rows[0].length))))))) }) };
+  } catch (error) {
+    if (!(error instanceof PixelError)) throw error;
+    return { drafts, sheet: null, noSheet: error.message.replace(/^sheet: /, '') };
+  }
 }
 
 // Compiles an autotile set from a template two tiles wide and three tall:

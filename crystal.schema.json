@@ -662,8 +662,8 @@
                     "count": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 64,
-                      "description": "Crystals in this entry: a cluster whose seeds spread along at, each drawing its own size, angle and timing from the ranges. Default 1. A cluster is drawn longest first, so short crystals stand in front."
+                      "maximum": 1,
+                      "description": "A snowflake grows alone: give each snowflake its own entry."
                     },
                     "start": {
                       "oneOf": [

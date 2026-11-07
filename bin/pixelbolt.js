@@ -321,11 +321,13 @@ try {
       for (const key of ['metadata', 'expand']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --draft-views`);
       if (options.out && !/\.json$/i.test(options.out)) throw new Error('--out must name a new .json file for the drafts');
       if (options.preview !== undefined && !/\.png$/i.test(options.preview)) throw new Error('--preview must name a new .png file');
-      const input = await readResolved(positional[0]), { drafts, sheet } = draftViews(input.document, readDraftViews(options['draft-views']));
+      // The sheet is drawn only for --preview; one too large to draw leaves the drafts to come back without it.
+      const input = await readResolved(positional[0]), { drafts, sheet, noSheet } = draftViews(input.document, readDraftViews(options['draft-views']), { sheet: options.preview !== undefined });
       const reply = { ok: true, drafts, next: DRAFT_NEXT };
-      const written = await writeOutputs({ ...(options.out && { drafts: [options.out, formatJSON(reply)] }), ...(options.preview !== undefined && { preview: [options.preview, encodePNG(sheet.data, sheet.width, sheet.height)] }) }, options.force, inputsOf(input));
-      if (options.out) console.log(JSON.stringify({ ok: true, ...written, parts: Object.keys(drafts), next: DRAFT_NEXT, ...referenced(input) }, null, 2));
-      else process.stdout.write(formatJSON({ ...reply, ...written, ...(options.preview === undefined && { hint: 'Pass --preview <new.png> to see each draft beside the flat drawing, the turn the compiler draws today and any drawn view.' }), ...referenced(input) }));
+      const written = await writeOutputs({ ...(options.out && { drafts: [options.out, formatJSON(reply)] }), ...(sheet && { preview: [options.preview, encodePNG(sheet.data, sheet.width, sheet.height)] }) }, options.force, inputsOf(input));
+      const unwritten = noSheet && { preview: `not written: ${noSheet}` };
+      if (options.out) console.log(JSON.stringify({ ok: true, ...written, ...unwritten, parts: Object.keys(drafts), next: DRAFT_NEXT, ...referenced(input) }, null, 2));
+      else process.stdout.write(formatJSON({ ...reply, ...written, ...unwritten, ...(options.preview === undefined && { hint: 'Pass --preview <new.png> to see each draft beside the flat drawing, the turn the compiler draws today and any drawn view.' }), ...referenced(input) }));
     } else if (command === 'compile' && options.expand) {
       if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');
       if (options.out && !/\.json$/i.test(options.out)) throw new Error('--out must name a .json file');
@@ -334,10 +336,12 @@ try {
       else process.stdout.write(formatJSON(expanded));
     } else if (command === 'share') {
       const input = await readResolved(positional[0]), version = await engineVersion();
-      // The hosted playground can play these ordinary grids even before its engine gains wave sources.
-      const document = input.document?.format === 'pixelforge-wave' ? compileWaves(input.document).recipe : input.document;
+      // The hosted playground has no compiler for wave, crystal or bodies sources, so they are shared as the ordinary
+      // grids they compile to.
+      const compile = { 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-bodies': compileBodies }[input.document?.format];
+      const document = compile ? compile(input.document).recipe : input.document;
       const link = await shareLink(document, version);
-      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(document !== input.document && { compiledFrom: 'pixelforge-wave' }) }));
+      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(compile && { compiledFrom: input.document.format }) }));
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');

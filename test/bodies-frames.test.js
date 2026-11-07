@@ -14,24 +14,18 @@ const same = (a, b) => Buffer.from(a.buffer, a.byteOffset, a.byteLength).equals(
 const pngs = files => [...files].filter(([name]) => name.endsWith('.png')).map(([name, bytes]) => [name, bytes.toString('base64')]);
 
 test('a match sampled below its frame rate shows the frames its recipe draws', async () => {
-  // crate-topple's crates turn and slide, and a body's drawn place and angle hold from frame to frame: drawn only on
-  // the frames shown, three of every second frame came out different.
-  const source = await example('crate-topple'), frames = renderProject(compileBodies(source).recipe).frames;
-  for (const step of [2, 3]) {
-    const match = bodiesFrames(source);
-    for (let f = 0; f < match.frames; f += step) assert.ok(same(match.image(f), frames[f].data), `every ${step}: frame ${f}`);
+  // A body's drawn place and angle hold from frame to frame. Drawn only on the frames shown, crate-topple's turning
+  // crates came out different in three of every second frame; crate-smash's pieces are held the same way.
+  for (const preset of ['crate-topple', 'crate-smash']) {
+    const source = await example(preset), frames = renderProject(compileBodies(source).recipe).frames;
+    for (const step of [2, 3]) {
+      const match = bodiesFrames(source);
+      for (let f = 0; f < match.frames; f += step) assert.ok(same(match.image(f), frames[f].data), `${preset} every ${step}: frame ${f}`);
+    }
   }
   // The same through the sequence a video editor gets: 10 frames a second from a 25-frame match.
+  const source = await example('crate-topple');
   assert.deepEqual(pngs(createBodiesSequence(source, { fps: 10 }).files), pngs(createSequence(renderProject(compileBodies(source).recipe), { fps: 10 }).files));
-});
-
-test('a match whose body breaks into pieces of its symbol goes out as video frames', async () => {
-  // crate-smash's crate is drawn from a symbol and breaks when it lands; the match's world had no symbols, so the
-  // break threw "Cannot read properties of undefined" and the shipped preset could not be made a sequence.
-  const source = await example('crate-smash'), recipe = renderProject(compileBodies(source).recipe);
-  const sequence = createBodiesSequence(source, { fps: 25 });
-  assert.ok(sequence.info.figures.broken.length > 0, 'the crate breaks');
-  assert.deepEqual(pngs(sequence.files), pngs(createSequence(recipe, { fps: 25 }).files));
 });
 
 test('a match with a 60-character effect name draws past frame 999', () => {

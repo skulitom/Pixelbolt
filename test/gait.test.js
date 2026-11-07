@@ -294,3 +294,38 @@ test('a compiled stamp recipe accepts final pixels in palette keys inside the ca
   assert.throws(() => describeStampRecipe(frame([{ x: 2, y: 2, color: '#ffffff' }])), /project\.frames\[0\]\.pixels\[0\]\.color/);
   assert.throws(() => describeStampRecipe(frame([{ x: 4, y: 0, color: 'k' }])), /project\.frames\[0\]\.pixels\[0\]\.x/);
 });
+
+test('a figure facing left (negative speed) bends its knees and leans the way it faces, and passes the gait checks', () => {
+  // The plain figure mirrored: every authored part flipped about its pose's origin, its turns negated, and the walk and
+  // run sent left. A bend is a side of the canvas, so the templates once bent a left-facing figure's knees backward.
+  const right = plainRig(), left = structuredClone(right);
+  for (const p of left.poses) if (p.parts) p.parts = p.parts.map(part => {
+    const q = { ...part, at: [-(part.at?.[0] ?? 0) - (part.attach ? 0 : 1), part.at?.[1] ?? 0], flipX: !part.flipX };
+    if (!q.flipX) delete q.flipX;
+    if (part.angle !== undefined) q.angle = -part.angle;
+    if (part.rotate !== undefined) q.rotate = -part.rotate;
+    if (part.reach) { q.reach = [2 * p.origin[0] - 1 - part.reach[0], part.reach[1]]; q.bend = (part.bend ?? 'forward') === 'forward' ? 'back' : 'forward'; }
+    return q;
+  });
+  for (const [name, motion] of Object.entries(left.motions)) if (['walk', 'run'].includes(motion.template)) motion.speed = -(motion.speed ?? { walk: 24, run: 48 }[motion.template]);
+  else delete left.motions[name];
+  const R = compilePoses(right).metadata, L = compilePoses(left), project = renderProject(L.recipe);
+  const side = ([ax, ay], [mx, my], [bx, by]) => Math.sign((bx - ax) * (my - ay) - (by - ay) * (mx - ax));
+  for (const animation of ['walk', 'run']) {
+    for (const name of new Set(L.metadata.animations[animation].entries.map(entry => entry.frame))) for (const [thigh, shin] of [['nearThigh', 'nearShin'], ['farThigh', 'farShin']]) {
+      const knee = M => { const parts = M.poses[name].parts; return side(parts[thigh].joints.start, parts[thigh].joints.end, parts[shin].joints.end); };
+      const r = knee(R), l = knee(L.metadata);
+      assert.ok(r === 0 || l === 0 || l === -r, `${name} ${thigh}: the knee bends as the mirror's does`);
+    }
+    const { checks } = inspectMotion(project, { animation, metadata: L.metadata, scale: 1 }).motion;
+    assert.deepEqual(Object.entries(checks).filter(([, value]) => value === false).map(([key]) => key), [], `${animation} facing left`);
+  }
+});
+
+test('a tail swings on its own, so it cannot also be a bone of a leg or arm', () => {
+  for (const [extra, role] of [['nearShin', 'a leg'], ['nearUpper', 'an arm']]) {
+    const source = plainRig();
+    source.rig.tail = [...source.rig.tail, extra];
+    assert.throws(() => compilePoses(source), error => error.path === `poses.rig.tail[${source.rig.tail.length - 1}]` && /already a motion role/.test(error.message), role);
+  }
+});

@@ -108,6 +108,9 @@ export function expandMotions(input, compileRest, probeJoints) {
     endPoint(source, instances.get(chain.at(-1)), `poses.rig.${role}[${i}]`);
   }
   for (const key of ['chest', 'neck']) if (used.has(rig[key])) fail(`poses.rig.${key}`, 'motion chains cannot share instances');
+  // A tail swings on its own springs, so it can't also be a bone the templates turn: the chest, the neck or a limb's.
+  // (A legless body may sway as part of its tail.)
+  for (const [i, name] of (rig.tail ?? []).entries()) if (used.has(name) || [rig.chest, rig.neck].includes(name)) fail(`poses.rig.tail[${i}]`, `${name} is already a motion role (the chest, the neck or a leg or arm bone); a tail instance swings on its own`);
   // Every leg the templates plant, hind legs first on a four-legged rig: its role, side (0 near, 1 far) and rig path.
   const legChains = quad ? [...rig.hind.map((chain, side) => ({ chain, role: 'hind', side })), ...rig.fore.map((chain, side) => ({ chain, role: 'fore', side }))]
     : (rig.legs ?? []).map((chain, i) => ({ chain, role: 'leg', side: i % 2, index: i }));
@@ -278,7 +281,10 @@ export function expandMotions(input, compileRest, probeJoints) {
       for (let i = 0; i < count; i++) {
         const before = down((i + count - 1) % count);
         if (labels.has(i) || down(i).length || !before.length) continue;
-        labels.set(i, template === 'run' ? before.some(leg => leg.role === 'fore') ? 'gathered' : 'extended' : `flight-${before.some(leg => leg.role === 'hind' && leg.side === 0) ? 'a' : 'b'}`);
+        // A cycle may leave the ground more than once after the same feet (a quick or many-framed gait): the first
+        // such flight is its key, and the others stay in-betweens, since pose names are unique.
+        const label = template === 'run' ? before.some(leg => leg.role === 'fore') ? 'gathered' : 'extended' : `flight-${before.some(leg => leg.role === 'hind' && leg.side === 0) ? 'a' : 'b'}`;
+        if (![...labels.values()].includes(label)) labels.set(i, label);
       }
       if (template === 'trot') for (const [offset, suffix] of [[0, 'a'], [half, 'b']]) if (!labels.has(offset + passingIndex)) labels.set(offset + passingIndex, `passing-${suffix}`);
     }
@@ -329,7 +335,7 @@ export function expandMotions(input, compileRest, probeJoints) {
     // the spine curls about its middle) and the neck turns back by half of the chest's turn.
     const pitchBody = (parts, pitch, bend) => {
       const chest = rig.chest !== undefined;
-      setAngleOf(parts.get(rig.body), restAngle(rig.body) + lean + direction * (pitch - (chest ? bend / 2 : 0)));
+      setAngleOf(parts.get(rig.body), restAngle(rig.body) + direction * (lean + pitch - (chest ? bend / 2 : 0)));
       if (chest) setAngleOf(parts.get(rig.chest), restAngle(rig.chest) + direction * bend);
       if (rig.neck !== undefined) setAngleOf(parts.get(rig.neck), restAngle(rig.neck) - direction * (pitch + (chest ? bend / 2 : 0)) / 2);
     };
@@ -343,7 +349,7 @@ export function expandMotions(input, compileRest, probeJoints) {
       let dy = 0, bodySquash = 1;
       // A walking or running body's height comes from its legs and the bob, once every pose is made (below).
       if (locomotion && quad) pitchBody(parts, ...spine(i));
-      else if (locomotion) { bodySquash = template === 'run' ? (i % half === downIndex ? .9 : i % half === half - 1 ? 1.05 : 1) : 1; setAngle(torso, restAngle(rig.body) + lean); }
+      else if (locomotion) { bodySquash = template === 'run' ? (i % half === downIndex ? .9 : i % half === half - 1 ? 1.05 : 1) : 1; setAngle(torso, restAngle(rig.body) + direction * lean); }
       if (template === 'idle') bodySquash = 1 + (grounded ? squashBy : breath) * sinDeg(angle);
       if (template === 'jump' && quad) {
         // A four-legged body crouches with its back curled, rears up with it stretched as the hind legs push off,
@@ -410,7 +416,9 @@ export function expandMotions(input, compileRest, probeJoints) {
           y = Math.min(i === 1 && leg.role !== 'fore' ? rig.ground - 1 : leg.hip[1] + dy + down * span, rig.ground - roll(parts, j, direction, i < 3 ? 'heel' : null));
         }
         // A planted fore leg gives at the elbow, which points back; a lifted one folds at the wrist, which comes forward.
-        last.reach = [Math.round(x), Math.round(y)]; last.bend ??= leg.role === 'fore' && planted ? 'back' : leg.bend;
+        // A bend is a side of the canvas, so a figure facing left (negative speed) bends the other way.
+        const bend = leg.role === 'fore' && planted ? 'back' : leg.bend;
+        last.reach = [Math.round(x), Math.round(y)]; last.bend ??= direction < 0 ? bend === 'forward' ? 'back' : 'forward' : bend;
         if (!pose.markers.some(m => m.name === leg.marker)) pose.markers.push({ name: leg.marker, part: leg.last, point: leg.point });
         if (planted) pose.contacts.push(leg.marker);
       }

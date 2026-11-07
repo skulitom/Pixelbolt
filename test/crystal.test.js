@@ -43,6 +43,9 @@ test('crystal sources are read strictly, with paths and the fix in each message'
   refused(source([{ ...prism, ease: 'hold' }]), 'crystal.effects.e.crystals[0].ease', /inOut/);
   refused(source([{ ...prism, at: [[1, 1]] }]), 'crystal.effects.e.crystals[0].at', /2–16 points/);
   refused(source([prism], { light: [0, 0] }), 'crystal.effects.e.light', /toward the light/);
+  // A light too short to divide by (its square rounds to 0) is refused too; a short one that divides points as a long one.
+  refused(source([prism], { light: [1e-200, 0] }), 'crystal.effects.e.light', /toward the light.*at least 0\.001 long/);
+  assert.equal(sha(compileCrystals(source([prism], { light: [0.0625, 0] })).recipe), sha(compileCrystals(source([prism], { light: [1, 0] })).recipe));
   refused(source([prism], {}, { looks: { gem: { colors: ['a'] } } }), 'crystal.looks.gem.colors', /2–6 palette keys/);
   refused(source([prism], {}, { looks: { gem: { colors: ['a', 'z'] } } }), 'crystal.looks.gem.colors[1]', /palette/);
   refused(source([prism], { underlay: ['a'] }), 'crystal.effects.e.underlay', /full-canvas/);
@@ -52,6 +55,21 @@ test('crystal sources are read strictly, with paths and the fix in each message'
   const late = compileCrystals(source([{ ...prism, start: 30, grow: 20 }, { ...prism, at: [80, 10] }]));
   assert.match(late.warnings.join('\n'), /still growing on the last frame/);
   assert.match(late.warnings.join('\n'), /crystal 2 \(prism\) grows from \[80, 10\], outside the canvas/);
+});
+
+test('the work estimate counts every frame each crystal is drawn in, grown or not, and nothing off the canvas', () => {
+  const big = effects => ({ ...source([]), width: 256, height: 256, effects });
+  const field = (at, grow = 5) => Array.from({ length: 4 }, () => ({ habit: 'cube', at, count: 64, size: 122, grow }));
+  // 256 big cubes painted over 5 frames: about 190 million pixel tests, under the limit. Held on the canvas for the
+  // rest of 64 frames, drawing their cells and outlines adds about 15 million more, so the field is refused at once.
+  refused(big({ e: { frames: 64, crystals: field([[0, 200], [255, 200]]) } }), 'crystal.effects.e.crystals', /about 205 million pixel tests, more than 200 million/);
+  // The same field seeded far above the canvas draws nothing, so it is accepted.
+  const away = compileCrystals(big({ e: { frames: 64, crystals: field([[0, -1000], [255, -1000]]) } }));
+  assert.ok(grids(away).every(rows => rows.every(row => /^\.+$/.test(row))));
+  assert.equal(away.warnings.length, 256);
+  // Painting crystals wholly off one side of the canvas counts nothing, never less than nothing, so it leaves the next
+  // effect's allowance as it was.
+  refused(big({ off: { frames: 32, crystals: field([[-1000, 0], [-1000, 255]]) }, heavy: { frames: 32, crystals: field([[0, 200], [255, 200]], 6) } }), 'crystal.effects.heavy.crystals', /million pixel tests/);
 });
 
 test('a prism seeds as one bright pixel, grows only outward, glints once grown and then holds still', () => {
@@ -199,4 +217,18 @@ test('MCP and the CLI compile crystal sources and presets', async t => {
   const listed = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'presets', 'snowflakes'], { encoding: 'utf8' });
   assert.equal(listed.status, 0, listed.stderr);
   assert.match(listed.stdout, /pixelforge-crystal/);
+});
+
+test('pixelbolt share shares crystal and bodies sources as the ordinary grids they compile to', async () => {
+  // The hosted playground has no crystal or bodies compiler, so the CLI compiles them first, as it does waves.
+  const { readShareLink } = await import('../src/share.js');
+  const cli = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', ...args], { cwd: root, encoding: 'utf8' });
+  const snow = cli('share', 'examples/snowflakes.crystal.json');
+  assert.equal(snow.status, 0, snow.stderr);
+  const info = JSON.parse(snow.stdout), decoded = await readShareLink(info.link);
+  assert.equal(info.compiledFrom, 'pixelforge-crystal');
+  assert.equal(decoded.recipe.format, undefined);
+  assert.deepEqual(decoded.recipe.frames, compileCrystals(JSON.parse(await readFile(new URL('../examples/snowflakes.crystal.json', import.meta.url), 'utf8'))).recipe.frames);
+  // A bodies scene too large for a link says so, instead of naming its format.
+  assert.match(cli('share', 'examples/crate-topple.bodies.json').stderr, /character link, over the 16,384-character limit/);
 });
