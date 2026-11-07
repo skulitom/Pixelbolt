@@ -115,6 +115,20 @@ const CASES = [
   { id: 'render/waterfall', what: 'renderProject (compiled waterfall)', inputs: ['waterfall'],
     setup: async load => ({ renderProject: (await load('src/core.js')).renderProject, recipe: prepared('waterfall') }),
     run: ({ renderProject, recipe }) => { const project = renderProject(recipe); return { frames: project.frames.length, hash: projectHash(project) }; } },
+  // A patch preview's comparison (P-064): a palette recolour of a large still changes every pixel, and a dithered HD
+  // still's recolour changes most of them through two colours.
+  ...[['compare/still-recolour', 'compareProjects: a 2560 × 1440 still recoloured, every pixel changed', 2560, 1440, []],
+    ['compare/dither-recolour', 'compareProjects: a dithered 1920 × 1080 still recoloured', 1920, 1080, [{ op: 'dither', color: 's', density: 0.3, pattern: 'noise' }]]].map(([id, what, width, height, more]) => ({ id, what,
+    setup: async load => {
+      const { renderProject, compareProjects } = await load('src/core.js');
+      const still = k => ({ version: 1, name: 'mural', width, height, palette: { k, s: '#f0c080' }, frames: [{ name: 'still', ops: [{ op: 'rect', x: 0, y: 0, w: width, h: height, color: 'k' }, ...more] }] });
+      return { compareProjects, before: renderProject(still('#102030')), after: renderProject(still('#112233')) };
+    },
+    run: ({ compareProjects, before, after }) => { const { image, ...report } = compareProjects(before, after); return { frames: report.frames.changed.length, hash: hash(JSON.stringify(report), ...(image ? [image.sheet.data] : [])) }; } })),
+  // A contact sheet of every frame, as inspect, render and patch replies carry one (the same drawing as above).
+  { id: 'inspect/waterfall', what: 'inspectProject: a contact sheet of the compiled waterfall', inputs: ['waterfall'],
+    setup: async load => ({ inspectProject: (await load('src/core.js')).inspectProject, project: (await load('src/core.js')).renderProject(prepared('waterfall')) }),
+    run: ({ inspectProject, project }) => { const view = inspectProject(project); return { frames: project.frames.length, hash: hash(view.sheet.data) }; } },
   { id: 'export/bundle-waterfall', what: 'createBundle: sheet, atlas, frames, APNG, CSS', inputs: ['waterfall'],
     setup: async load => ({ createBundle: (await load('src/export.js')).createBundle, recipe: prepared('waterfall') }),
     run: async ({ createBundle, recipe }) => {

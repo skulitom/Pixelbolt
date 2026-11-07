@@ -981,9 +981,15 @@ function packBoxes(boxes, padding, scale) {
 export function scalePixels(data, width, height, scale = 1) {
   integer(scale, 'scale', 1, 16);
   const result = new Uint8ClampedArray(width * height * scale * scale * 4);
-  for (let y = 0; y < height * scale; y++) for (let x = 0; x < width * scale; x++) {
-    const from = (Math.floor(y / scale) * width + Math.floor(x / scale)) * 4;
-    result.set(data.subarray(from, from + 4), (y * width * scale + x) * 4);
+  if (scale === 1) { result.set(data.length > result.length ? data.subarray(0, result.length) : data); return result; }
+  // Each source row is widened once, byte by byte, and that row copied into the rest of its `scale` rows.
+  const rowBytes = width * scale * 4;
+  for (let y = 0; y < height; y++) {
+    const top = y * scale * rowBytes;
+    for (let x = 0, from = y * width * 4, to = top; x < width; x++, from += 4) for (let r = 0; r < scale; r++, to += 4) {
+      result[to] = data[from]; result[to + 1] = data[from + 1]; result[to + 2] = data[from + 2]; result[to + 3] = data[from + 3];
+    }
+    for (let r = 1; r < scale; r++) result.copyWithin(top + r * rowBytes, top, top + rowBytes);
   }
   return result;
 }
@@ -1182,14 +1188,18 @@ function drawSheet(sources, width, region, { scale, background = null, columns, 
   }
   if (layout.width > SHEET_SIDE + 2 * (layout.columns + 1) || layout.height > SHEET_SIDE + 2 * (layout.rows + 1)) fail(where, `the contact sheet would be ${layout.width}×${layout.height} pixels, above the 4096-pixel limit (4096 pixels of frames and 2-pixel gutters); select fewer frames, a smaller region or a lower scale`);
   const data = new Uint8ClampedArray(layout.width * layout.height * 4), square = Math.max(2, Math.ceil(8 / layout.scale)), composed = new Map();
-  for (let i = 0; i < data.length; i += 4) data.set(gutterColor, i);
+  // The gutter colour is written once and doubled with copyWithin; each cell pixel's source colour is read into one
+  // reused buffer for blend, rather than a new view of the frame a pixel.
+  data.set(gutterColor, 0);
+  for (let filled = 4; filled < data.length; filled *= 2) data.copyWithin(filled, 0, Math.min(filled, data.length - filled));
+  const color = new Uint8ClampedArray(4);
   sources.forEach((source, n) => {
     if (!composed.has(source)) {
       const pixels = new Uint8ClampedArray(region.w * region.h * 4);
       for (let y = 0; y < region.h; y++) for (let x = 0; x < region.w; x++) {
-        const at = (y * region.w + x) * 4, from = ((region.y + y) * width + region.x + x) * 4;
-        pixels.set(background ?? checkerColors[(Math.floor(x / square) + Math.floor(y / square)) % 2], at);
-        if (source) blend(pixels, at, source.subarray(from, from + 4));
+        const at = (y * region.w + x) * 4, from = ((region.y + y) * width + region.x + x) * 4, under = background ?? checkerColors[(Math.floor(x / square) + Math.floor(y / square)) % 2];
+        pixels[at] = under[0]; pixels[at + 1] = under[1]; pixels[at + 2] = under[2]; pixels[at + 3] = under[3];
+        if (source) { color[0] = source[from]; color[1] = source[from + 1]; color[2] = source[from + 2]; color[3] = source[from + 3]; blend(pixels, at, color); }
       }
       composed.set(source, scalePixels(pixels, region.w, region.h, layout.scale));
     }
@@ -1454,10 +1464,30 @@ export function analyzeProject(project) {
   return { advisory: true, frames: stats, animations, findings };
 }
 
+// Two names make one number: the first times NAME_PAIRS (2 to the 26th, more names than a frame has pixels) plus the second.
+const NAME_PAIRS = 67108864;
+// A namer's names as small numbers: `index` names a pixel's colour (once per colour, through `char`, which also notes
+// the legend) and returns the name's place in `chars`, the same place for colours that share a name.
+function nameIndex(namer) {
+  const byColor = new Map(), byChar = new Map(), chars = [];
+  return { chars, index(data, at) {
+    const id = colorId(data, at);
+    let place = byColor.get(id);
+    if (place === undefined) {
+      const char = namer.char(data, at);
+      place = byChar.get(char);
+      if (place === undefined) { place = chars.length; chars.push(char); byChar.set(char, place); }
+      byColor.set(id, place);
+    }
+    return place;
+  } };
+}
+
 // Compares two rendered revisions, matching frames by name, so a patch can report every visible effect.
 export function compareProjects(before, after) {
   const { width, height } = after, resized = before.width !== width || before.height !== height;
   const namer = colorNamer(after, [before]), previous = new Map(before.frames.map(frame => [frame.name, frame]));
+  const names = nameIndex(namer);
   const kept = new Set(after.frames.map(frame => frame.name)), changed = [], unchanged = [], added = [], durations = [], shown = [];
   for (const frame of after.frames) {
     const old = previous.get(frame.name);
@@ -1465,17 +1495,19 @@ export function compareProjects(before, after) {
     if (old.duration !== frame.duration) durations.push({ frame: frame.name, from: old.duration, to: frame.duration });
     if (resized) { changed.push({ frame: frame.name }); continue; }
     let pixels = 0, left = width, top = height, right = -1, bottom = -1;
-    const changes = [], transitions = new Map();
-    for (let at = 0; at < frame.data.length; at += 4) {
-      if (colorId(frame.data, at) === colorId(old.data, at) || (!frame.data[at + 3] && !old.data[at + 3])) continue;
-      const x = at / 4 % width, y = Math.floor(at / 4 / width), from = namer.char(old.data, at), to = namer.char(frame.data, at);
-      pixels++; left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x); bottom = Math.max(bottom, y);
-      if (changes.length < 16) changes.push({ x, y, from, to });
-      transitions.set(from + to, (transitions.get(from + to) ?? 0) + 1);
+    // Each colour is named once and each pair of names counted under a number, in the order pairs first appear, so a
+    // still whose every pixel changes costs a few array reads a pixel instead of two lookups, a string and a map entry.
+    const changes = [], transitions = new Map(), { data } = frame, was = old.data;
+    for (let y = 0, at = 0; y < height; y++) for (let x = 0; x < width; x++, at += 4) {
+      if ((data[at] === was[at] && data[at + 1] === was[at + 1] && data[at + 2] === was[at + 2] && data[at + 3] === was[at + 3]) || (!data[at + 3] && !was[at + 3])) continue;
+      const from = names.index(was, at), to = names.index(data, at), pair = from * NAME_PAIRS + to;
+      pixels++; if (x < left) left = x; if (y < top) top = y; if (x > right) right = x; bottom = y;
+      if (changes.length < 16) changes.push({ x, y, from: names.chars[from], to: names.chars[to] });
+      transitions.set(pair, (transitions.get(pair) ?? 0) + 1);
     }
     if (!pixels) { unchanged.push(frame.name); continue; }
     const box = { x: left, y: top, w: right - left + 1, h: bottom - top + 1 };
-    const detail = pixels <= 16 ? { changes } : { transitions: [...transitions].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([pair, count]) => ({ from: pair[0], to: pair[1], pixels: count })) };
+    const detail = pixels <= 16 ? { changes } : { transitions: [...transitions].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([pair, count]) => ({ from: names.chars[Math.floor(pair / NAME_PAIRS)], to: names.chars[pair % NAME_PAIRS], pixels: count })) };
     changed.push({ frame: frame.name, pixels, box, ...detail });
     shown.push({ frame: frame.name, status: 'changed', before: old.data, after: frame.data, box });
   }
