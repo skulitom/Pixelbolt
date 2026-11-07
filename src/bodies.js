@@ -1932,13 +1932,22 @@ export function bodiesFrames(source, effectName) {
   const { name, path, effect } = chosen;
   const needs = work(effect, { width, height, n, symbols });
   if (needs > MATCH_WORK) fail(path, `the match needs about ${Math.round(needs / 1e6)} million updates, more than ${MATCH_WORK / 1e6} million; lower frames, substeps, iterations, the number or size of the bodies, the obstacle faces near them (a checkerboard has one on every pixel edge) or subpixels`);
-  const world = createBodyWorld(effect, { width, height }), context = { width, height, symbols, subpixels: n };
+  // The world gets the symbols compileBodies gives it: a body drawn from a symbol breaks into pieces of that picture.
+  const context = { width, height, symbols, subpixels: n }, world = createBodyWorld(effect, context);
   let at = -1, image = null;
   return {
     name: source.name, effect: name, width: width * n, height: height * n, palette, frames: effect.frames, duration: effect.duration,
     image: f => {
       if (!Number.isInteger(f) || f < at || f >= effect.frames) fail('sequence', `frame ${f} is not ahead of frame ${at} within the match's ${effect.frames}`);
-      while (at < f) { at++; world.advance(at); if (at === f) { const ops = frameOps(effect, drawFrame(world, width, height, context, at, effect.hud), width, height, n); image = renderProject({ ...shell, frames: [{ name: `${name}-${at}`, ...(ops.length && { ops }) }] }).frames[0].data; } }
+      // Every frame is drawn, shown or not, as compileBodies draws them: a body's drawn place and angle hold from frame
+      // to frame, so a frame drawn after skipped ones must have seen each of them. Only the shown one is rendered, as a
+      // one-frame recipe whose frame name is fixed (the effect's name and frame number passed the renderer's 64).
+      while (at < f) {
+        at++;
+        world.advance(at);
+        const drawn = drawFrame(world, width, height, context, at, at === f ? effect.hud : []);
+        if (at === f) { const ops = frameOps(effect, drawn, width, height, n); image = renderProject({ ...shell, frames: [{ name: 'frame', ...(ops.length && { ops }) }] }).frames[0].data; }
+      }
       return image;
     },
     figures: () => ({ frames: at + 1, ...(copiesOf(world, effect) && { copies: copiesOf(world, effect) }), hits: world.stats.hits, escaped: world.stats.escaped, ...(world.stats.broken.length && { broken: world.stats.broken }), ...territoryFigures(world.turf, effect.territory) })
