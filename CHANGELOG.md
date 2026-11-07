@@ -4,6 +4,37 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.12.1 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
+
+## 0.13.0 (2026-11-07)
+
+### Fixes from a review before release
+
+- **Breaking bodies:**
+  - A symbol body that breaks no longer crashes a match drawn frame by frame (`pixelbolt sequence`, `pixel_compile` with `sequence`), which broke the crate-smash preset.
+  - An effect's `most` now leaves room by default for every body with `breaks` to break into all its pieces, up to 4,096. Before, it stayed at 256, so late breaks were cut short or skipped without a word. A compile now warns when a break is cut short.
+  - A fixed body that an event breaks is priced in the work estimate as the free pieces it becomes, so such a scene is refused up front instead of running past MCP's time limit.
+  - A `break` event aimed at a hoop is refused, as `breaks` on a hoop already was.
+  - The fluid schema no longer offers `breaks`, which fluids refuse.
+- **Figures:**
+  - A figure facing left (a walk or run with a negative `speed`) bends its knees and leans the way it faces; before, its knees bent backward.
+  - A four-legged walk or run that leaves the ground more than once after the same feet (a quick gait, or 28 frames or more) no longer names two poses alike and fails to compile.
+  - A `rig.tail` instance can't also be a leg or arm bone, the chest or the neck; before, its swing silently overwrote the leg or arm.
+  - The poses schema refuses what the compiler refuses: `fore` without `hind`, `legs` with `fore`, and `chest` or `neck` without `fore`.
+- **Draft views:**
+  - A named point on a column a shear draft drops moves to the kept column beside it, so a blade's tip stays on the blade.
+  - Names the built-in font can't draw are labelled with `?`, in the motion review's arcs key and in a draft sheet, instead of failing the call.
+- **Crystals:**
+  - A crystal that has stopped growing reuses its outline instead of tracing it again each frame, so a large field of crystals draws in seconds instead of minutes, with the same pixels. The work estimate now counts each frame's drawing as well as its painting.
+  - A `light` too short to normalise is refused.
+  - The snowflake schema allows only `count: 1`, which is all the compiler takes.
+- **Package:**
+  - `pixelbolt/crystal` is a package export, as `pixelbolt/wave` and `pixelbolt/bodies` are.
+  - `pixelbolt share` shares crystal and bodies sources as the ordinary grids they compile to, as it does waves.
+
 ### Tails that follow through
 
 - Motion templates move `rig.tail` with the body instead of one fixed sway. Each tail instance hangs from its attach point on a damped spring that holds its rest angle against gravity, and the attach point's own motion swings it: the starts and stops of the body, gravity as the body leans or turns, and the air the figure moves through. A link on another tail link hangs from that link's moving end, so it lags the one before it.
@@ -27,6 +58,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Drafts follow pixel-art rules (`draftTurn` in `src/craft.js`). Quarter turns are exact. A long or thin part slides whole columns along the nearest clean slope (1:6 to 1:1), so straight runs become even staircases and every pixel keeps its colour; repeated columns are dropped to keep its length along the slope, a cross piece such as a guard tilts with it, gaps close in the outline colour and outline pixels left sticking out go. A compact part keeps its area and its outline ring, and a pixel none of its neighbours share (an eye) is drawn once. Only the part's own palette keys are used, and the anchor and points move with the pixels under them.
 - The hero's hand-drawn boot views keyed 30 and 330 are exactly the drafts at 15 and 345, and the drafts at 30 and 330 are those drawings one repeated column shorter. Its hands keep their round shape, where the compiler's turn breaks them. `test/goldens/drafts.json` pins the drafts of the hero's and the courier's parts every 15°.
 - `pictureSheet` in `src/core.js` lays small palette pictures side by side with labels in the built-in font, aligned on their anchors.
+- The sheet is drawn only for `--preview` (and the MCP image), and one too large to draw, such as for a part anchored far from its pixels, never stops the drafts: they come back with `preview` (CLI) or `sheet` (MCP) saying why there is no image. An unfinished authored view at a drafted angle is named, with its path, in that draft's note and left off the sheet.
 
 ### For contributors: one goldens command and related tests
 
@@ -105,11 +137,6 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A loop reports its bodies over its cycle: `hits` are the cycle's (counted from the start, they grew with the warm-up), `escaped` lists the bodies that leave in it at their frame of the loop, and a named body's path has a place for every frame, null once it has left (it stopped growing, so a body gone in the warm-up had an empty path). A body that leaves the canvas in the warm-up, which the loop never shows, or in the cycle, which brings it back at frame 0, is warned about. In `compileBodies` too, a body that leaves keeps a null in its path for every later frame.
 - The bodies work estimate counts the obstacle faces each moving body is tested against (as many as the densest patch its size holds: a checkerboard has a face on every pixel edge, and a territory's cells up to two a cell) and, every frame, the pixels its drawing visits (each body's reach drawn finer with `subpixels`, its trail and the fine canvas). Eight boxes kept moving over a checkerboard counted 2.7 million updates and ran for 10 seconds, and are now refused before simulating at 464 million; an 18,000-frame match of 256 boxes drawn 8 times finer counted 958 million of the 4,000 million allowed and ran for about an hour, and is refused at 76,751 million. Measured against time, the presets and these cases run at 18 to 85 ms a million (bodies that fall asleep, less), so a compile within the budget takes about half a minute at most and a match a few minutes. The message names the faces and `subpixels` among what to lower.
 - `pixelbolt sequence` writes a bodies match a frame at a time, simulating, drawing and writing each frame before the next and holding only the one a repeated video frame shows, so a long match is no longer capped by memory: 2,200 frames at 1080×1920, refused before, write in 85 seconds at a peak of 255 MB, and 6,000 frames at about 300 MB (2,000 frames made whole first took 306 MB). Its files are byte for byte what MCP writes. MCP still makes a sequence whole, within its size and time limits, and its refusal names the command. An export that fails part-way removes the files it had written, unless `--force` replaced earlier ones.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.12.1 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
 ### Studio labels
 

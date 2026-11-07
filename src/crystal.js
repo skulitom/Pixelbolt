@@ -13,6 +13,7 @@ import { atan2Deg } from './shapes.js';
 
 export const CRYSTAL_HABITS = ['prism', 'cube', 'octahedron', 'snowflake'];
 const LIMITS = { crystals: 32, total: 256, looks: 8, colors: 6 };
+const MIN_LIGHT = 0.001; // the shortest light direction read: a shorter one has too little length to divide by
 const fail = (path, message) => { throw new PixelError(path, message); };
 const num = (v, path, min, max) => {
   if (typeof v !== 'number' || !Number.isFinite(v) || v < min || v > max) fail(path, `expected a number from ${min} to ${max}`);
@@ -144,7 +145,9 @@ function readEffect(effect, path, source, looks) {
   const duration = int(effect.duration ?? 80, `${path}.duration`, 20, 1000);
   const seed = int(effect.seed ?? 0, `${path}.seed`, 0, 2147483647);
   const light = effect.light === undefined ? [-1, -1] : pair(effect.light, `${path}.light`, -1, 1);
-  if (!light[0] && !light[1]) fail(`${path}.light`, 'expected a direction toward the light, such as [-1, -1] for the upper left');
+  // A direction, so it must have a length to divide by: [0, 0], or one so short its square rounds to nothing, points
+  // nowhere.
+  if (!(Math.sqrt(light[0] * light[0] + light[1] * light[1]) >= MIN_LIGHT)) fail(`${path}.light`, `expected a direction toward the light, such as [-1, -1] for the upper left, at least ${MIN_LIGHT} long`);
   if (!Array.isArray(effect.crystals) || !effect.crystals.length || effect.crystals.length > LIMITS.crystals) fail(`${path}.crystals`, `expected 1–${LIMITS.crystals} crystals`);
   const context = { frames, seed };
   const crystals = effect.crystals.flatMap((entry, i) => readEntry(entry, `${path}.crystals[${i}]`, context, looks, i));
@@ -242,14 +245,16 @@ function inside(polygon, x, y) {
   return least;
 }
 
-// A crystal's pixels this frame, each with the band of the face it shows (pixel x, y is sampled at its centre, x, y),
-// and its lit ridge: the edge between the two faces that together catch the most light, from its end nearer the seed.
+// A crystal's pixels this frame, as their places on the canvas (y × width + x) each with the band of the face it shows
+// (pixel x, y is sampled at its centre, x, y), and its lit ridge: the edge between the two faces that together catch
+// the most light, from its end nearer the seed.
 function paintSolid(crystal, scale, light, bands, width, height, work) {
-  const { faces, world, axis } = place(crystal, scale), cells = [];
-  if (!faces.length) return { cells, ridge: null };
+  const { faces, world, axis } = place(crystal, scale), at = [], band = [];
+  if (!faces.length) return { at, band, ridge: null };
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const face of faces) for (const [x, y] of face.points) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-  work.spent += (Math.min(width, x1 + 2) - Math.max(0, x0 - 1)) * (Math.min(height, y1 + 2) - Math.max(0, y0 - 1)) * faces.length;
+  // A crystal wholly off one side of the canvas tests nothing (and must not count a negative box).
+  work.spent += Math.max(0, Math.min(width, x1 + 2) - Math.max(0, x0 - 1)) * Math.max(0, Math.min(height, y1 + 2) - Math.max(0, y0 - 1)) * faces.length;
   const lit = faces.map(face => face.normal[0] * light[0] + face.normal[1] * light[1] + face.normal[2] * light[2]);
   const shade = lit.map(d => Math.max(0, Math.min(bands - 1, Math.floor((d - SHADE_LOW) / (SHADE_HIGH - SHADE_LOW) * bands))));
   for (let y = Math.max(0, Math.ceil(y0 - 1e-6)); y <= Math.min(height - 1, Math.floor(y1 + 1e-6)); y++) {
@@ -258,9 +263,9 @@ function paintSolid(crystal, scale, light, bands, width, height, work) {
       // crystal lit from the other side is drawn as the exact mirror.
       const depth = faces.map(face => inside(face.points, x, y)), best = Math.max(...depth);
       if (best < -1e-6) continue;
-      let band = -1;
-      depth.forEach((d, i) => { if (d >= best - 1e-6 && shade[i] > band) band = shade[i]; });
-      cells.push([x, y, band]);
+      let brightest = -1;
+      depth.forEach((d, i) => { if (d >= best - 1e-6 && shade[i] > brightest) brightest = shade[i]; });
+      at.push(y * width + x); band.push(brightest);
     }
   }
   const edges = new Map();
@@ -288,15 +293,17 @@ function paintSolid(crystal, scale, light, bands, width, height, work) {
     }
     ridge = [ridge[0], tip];
   }
-  return { cells, ridge };
+  return { at, band, ridge };
 }
 // SHADE_LOW to SHADE_HIGH: how squarely a face meets the light (its normal on the light's direction), spread evenly over
 // the look's bands, so a prism lit from the side shows three. NUB: pixels a faceted crystal is long the frame after it
 // seeds. GLINT.run: frames its glint takes up the ridge, before the star.
 const SHADE_LOW = -0.3, SHADE_HIGH = 1, NUB = 2.5, GLINT = { run: 4 };
 // Pixel-face tests a compile may spend painting faceted crystals (a cluster of 64 grown over 60 frames takes a few
-// million).
+// million), and drawing every crystal into every frame: a cell or outline pixel written counts DRAWN of a test, about
+// what it costs beside a cube's pixel test. On a desktop the whole allowance takes about a dozen seconds.
 export const CRYSTAL_WORK = 200_000_000;
+const DRAWN = 1 / 32;
 
 // ---- Snowflakes --------------------------------------------------------------------------------------------------
 // Six directions 60° apart, the four slanted ones drawn as clean two-to-one pixel lines: in angle order from the
@@ -436,9 +443,37 @@ export function compileCrystals(source) {
   const total = effects.reduce((n, [, e]) => n + e.frames, 0);
   if (total > 256 || total * width * height > 4194304) fail('crystal.effects', 'the effects exceed 256 frames or 4,194,304 source pixels');
   const frames = [], animations = Object.create(null), summaries = Object.create(null), warnings = [];
-  const work = { spent: 0 };
+  const work = { spent: 0 }, area = width * height, Places = area > 65536 ? Uint32Array : Uint16Array;
+  // The outline round some cells (places on the canvas): the pixels beside them, left, right, above and below, that
+  // none of them covers, each once. A pixel stamped `mark` is one of the cells, `mark + 1` already on the outline.
+  const stamp = new Uint32Array(area);
+  let mark = 0;
+  const rim = cells => {
+    mark += 2;
+    for (let k = 0; k < cells.length; k++) stamp[cells[k]] = mark;
+    const edge = [];
+    const beside = p => { if (stamp[p] < mark) { stamp[p] = mark + 1; edge.push(p); } };
+    for (let k = 0; k < cells.length; k++) {
+      const p = cells[k], x = p % width;
+      if (x + 1 < width) beside(p + 1);
+      if (x > 0) beside(p - 1);
+      if (p + width < area) beside(p + width);
+      if (p >= width) beside(p - width);
+    }
+    return Places.from(edge);
+  };
+  // The canvas pixels a crystal can cover with its outline at its largest: what drawing it costs each frame.
+  const reachable = c => {
+    let x0, y0, x1, y1;
+    if (c.habit === 'snowflake') { [x0, y0] = c.at.map(v => Math.round(v) - c.radius); [x1, y1] = c.at.map(v => Math.round(v) + c.radius); } else {
+      const { world } = place(c, c.ease === 'overshoot' ? 1.1 : 1);
+      [x0, y0, x1, y1] = [Math.min(...world.map(p => p[0])), Math.min(...world.map(p => p[1])), Math.max(...world.map(p => p[0])), Math.max(...world.map(p => p[1]))];
+    }
+    const cols = Math.min(width - 1, Math.ceil(x1) + 1) - Math.max(0, Math.floor(x0) - 1) + 1, rows = Math.min(height - 1, Math.ceil(y1) + 1) - Math.max(0, Math.floor(y0) - 1) + 1;
+    return Math.max(0, cols) * Math.max(0, rows);
+  };
   for (const [name, e] of effects) {
-    const area = width * height, names = [], visiblePixels = [];
+    const names = [], visiblePixels = [];
     const reach = Math.sqrt(e.light[0] * e.light[0] + e.light[1] * e.light[1]);
     // The light comes from `light` in the picture and from in front, a little more from the side than the front, so
     // a prism's three faces take three bands.
@@ -446,42 +481,45 @@ export function compileCrystals(source) {
     e.crystals.forEach((c, i) => {
       if (c.at[0] < 0 || c.at[1] < 0 || c.at[0] > width - 1 || c.at[1] > height - 1) warnings.push(`crystal.effects.${name}: crystal ${i + 1} (${c.habit}) grows from [${c.at.map(v => Math.round(v * 100) / 100).join(', ')}], outside the canvas.`);
     });
-    // What painting will cost at most, refused before any of it is spent: each growing frame of a faceted crystal tests
-    // the pixels of its full-size box against the faces it shows (about half of them).
+    // What painting and drawing will cost at most, refused before any of it is spent: each growing frame of a faceted
+    // crystal tests the pixels of its full-size box against the faces it shows (about half of them), and every frame
+    // from its seed on, grown or not, writes the cells and outline of every crystal, each at most its box on the canvas.
     const estimate = e.crystals.reduce((sum, c) => {
-      if (c.habit === 'snowflake') return sum;
+      const drawing = (e.frames - c.start) * reachable(c) * DRAWN;
+      if (c.habit === 'snowflake') return sum + drawing;
       const reach = c.habit === 'prism' ? c.length + c.width : c.size * 1.8, faces = c.habit === 'prism' ? (c.double ? 18 : 13) : c.habit === 'cube' ? 6 : 8;
-      return sum + Math.min(c.grow, e.frames - c.start) * (reach + 3) * (reach + 3) * Math.ceil(faces / 2);
+      return sum + Math.min(c.grow, e.frames - c.start) * (reach + 3) * (reach + 3) * Math.ceil(faces / 2) + drawing;
     }, work.spent);
-    if (estimate > CRYSTAL_WORK) fail(`crystal.effects.${name}.crystals`, `painting these crystals would take about ${Math.ceil(estimate / 1e6)} million pixel tests, more than ${CRYSTAL_WORK / 1e6} million; use fewer or smaller crystals, or shorter grow times`);
+    if (estimate > CRYSTAL_WORK) fail(`crystal.effects.${name}.crystals`, `painting and drawing these crystals would take about ${Math.ceil(estimate / 1e6)} million pixel tests, more than ${CRYSTAL_WORK / 1e6} million; use fewer or smaller crystals, shorter grow times or fewer frames`);
     const flakes = e.crystals.map(c => (c.habit === 'snowflake' ? growSnowflake(c, e.frames, e.seed) : null));
-    // A finished crystal draws the same pixels every frame, so each is painted again only while its size changes.
-    const painted = e.crystals.map(() => ({ scale: -1, cells: null, ridge: null }));
+    // A finished crystal draws the same pixels every frame, so each is painted and outlined again only while its size
+    // changes: its cells' places and keys, and its outline's places.
+    const painted = e.crystals.map(() => ({ scale: -1, fill: null, keys: null, edge: null, ridge: null }));
     let previous = null, settled = 0;
     for (let f = 0; f < e.frames; f++) {
       const codes = new Uint16Array(area), sparkles = [];
-      const outline = (cells, key) => {
-        const mine = new Set(cells.map(([x, y]) => y * width + x)), code = key.charCodeAt(0);
-        for (const [x, y] of cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const px = x + dx, py = y + dy;
-          if (px >= 0 && py >= 0 && px < width && py < height && !mine.has(py * width + px)) codes[py * width + px] = code;
-        }
+      const stroke = (edge, key) => { const code = key.charCodeAt(0); for (let k = 0; k < edge.length; k++) codes[edge[k]] = code; };
+      const spend = cells => {
+        work.spent += cells * DRAWN;
+        if (work.spent > CRYSTAL_WORK) fail(`crystal.effects.${name}.crystals`, 'drawing the crystals takes too much work; use fewer, smaller crystals, shorter grow times or fewer frames');
       };
       e.crystals.forEach((c, i) => {
         const look = looks[c.look], n = look.colors.length;
         if (c.habit === 'snowflake') {
-          const { pixels, plate } = flakes[i][f], cx = Math.round(c.at[0]), cy = Math.round(c.at[1]), swap = c.arms === 'horizontal', cells = [];
-          const add = (x, y, key) => { const px = cx + (swap ? y : x), py = cy + (swap ? x : y); if (px >= 0 && py >= 0 && px < width && py < height) cells.push([px, py, key]); };
+          const { pixels, plate } = flakes[i][f], cx = Math.round(c.at[0]), cy = Math.round(c.at[1]), swap = c.arms === 'horizontal', cells = [], keys = [];
+          const add = (x, y, key) => { const px = cx + (swap ? y : x), py = cy + (swap ? x : y); if (px >= 0 && py >= 0 && px < width && py < height) { cells.push(py * width + px); keys.push(key.charCodeAt(0)); } };
           // The plate: a hexagon of the darkest band rimmed with the branches' band, under the arms, which are its ribs.
           if (plate >= 1) for (let y = -Math.ceil(plate); y <= Math.ceil(plate); y++) for (let x = -Math.ceil(plate); x <= Math.ceil(plate); x++) {
             if (!inHex(x, y, plate)) continue;
-            const rim = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !inHex(x + dx, y + dy, plate));
-            add(x, y, look.colors[rim ? n - 2 : Math.max(0, n - 3)]);
+            const rimmed = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !inHex(x + dx, y + dy, plate));
+            add(x, y, look.colors[rimmed ? n - 2 : Math.max(0, n - 3)]);
           }
           // Arms in the brightest band, side branches one darker; what grew this frame catches the glint.
           for (const [x, y, g, b] of pixels) add(x, y, look.glint && f === b ? look.glint : look.colors[g ? n - 2 : n - 1]);
-          if (look.outline) outline(cells, look.outline);
-          for (const [x, y, key] of cells) codes[y * width + x] = key.charCodeAt(0);
+          const edge = look.outline ? rim(cells) : [];
+          spend(cells.length + edge.length);
+          if (look.outline) stroke(edge, look.outline);
+          for (let k = 0; k < cells.length; k++) codes[cells[k]] = keys[k];
           return;
         }
         if (f < c.start) return;
@@ -495,12 +533,14 @@ export function compileCrystals(source) {
         const nub = Math.min(1, NUB / (c.length ?? c.size)), scale = nub + (1 - nub) * ease(c.ease, (f - c.start) / c.grow);
         const memo = painted[i];
         if (memo.scale !== scale) {
-          Object.assign(memo, { scale }, paintSolid(c, scale, light, n, width, height, work));
-          if (work.spent > CRYSTAL_WORK) fail(`crystal.effects.${name}.crystals`, 'drawing the crystals takes too much work; use fewer, smaller crystals or shorter grow times');
+          const { at, band, ridge } = paintSolid(c, scale, light, n, width, height, work), fill = Places.from(at);
+          if (work.spent > CRYSTAL_WORK) fail(`crystal.effects.${name}.crystals`, 'drawing the crystals takes too much work; use fewer, smaller crystals, shorter grow times or fewer frames');
+          Object.assign(memo, { scale, fill, keys: Uint16Array.from(band, b => look.colors[b].charCodeAt(0)), edge: look.outline ? rim(fill) : new Places(0), ridge });
         }
-        const { cells, ridge } = memo;
-        if (look.outline) outline(cells, look.outline);
-        for (const [x, y, band] of cells) codes[y * width + x] = look.colors[band].charCodeAt(0);
+        const { fill, keys, edge, ridge } = memo;
+        spend(fill.length + edge.length);
+        if (look.outline) stroke(edge, look.outline);
+        for (let k = 0; k < fill.length; k++) codes[fill[k]] = keys[k];
         // Once grown, a glint runs up the lit ridge and twinkles at its end, a four-pointed star that shrinks and goes
         // out: the beat that says the crystal is done.
         const after = f - (c.start + c.grow);

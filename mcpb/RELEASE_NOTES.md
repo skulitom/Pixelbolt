@@ -1,13 +1,49 @@
-# 0.12.1
+# 0.13.0
 
-Fixes from a review of 0.12.0: bodies in crowds, long matches, memory and budgets.
+Characters that move as if animated: walks, runs and jumps that read, tails that follow through, four-legged creatures and drafted turned drawings for small parts; crystals that grow; bodies that break; a parts view and motion arcs for reviewing figures.
 
-- **Bodies in liquids:** a crowd of bodies that seals a liquid into one-cell pockets no longer crashes the fluid compiler, and a moving hoop no longer fills memory for every pixel it moves. The live fluid runner draws its bodies with every step, so a page's pixels don't depend on how often it renders.
-- **Long matches:** a match too long for a sequence (about 2,070 frames at 1080×1920) is refused before it is simulated, and over MCP one too long to draw within the call's time limit is refused at once with the `pixelbolt sequence` command to run instead. `sequence` replies carry a summary of the match's figures; every frame's figures stay in `sequence.json`. The territory preset's frames last 34 ms, a whole video frame at 30 frames a second.
-- **Checks before work:** sources the renderer would refuse (too many frame pixels, a heads-up display too large drawn finer) are refused before simulating; a warp or magnet target checks y against the height; the `subpixels` error names a value that fits; `bodies.schema.json` matches the runtime.
-- **Budgets:** a looping spell whose looks hold no longer has half its painting budget; a presets listing on a busy machine always measures at least one preset, so its cache fills.
-- **CLI:** a command that writes several files refuses two outputs that are one file on disk under different names, even with `--force`.
-- **Docs:** `bodies` is listed in the help topics, the README, the agent guide and the MCP descriptions.
+- **Walks, runs and jumps that read:**
+  - Arms swing against the legs, legs are long at contact, the body dips after each step, and the lifted foot leaves behind and lands in front.
+  - The jump tucks its legs at the apex and reaches down to land.
+  - Feet drawn with `views` roll heel to toe.
+  - A far hand never floats free of its arm.
+  - A figure keeps one outline round its silhouette.
+  - The hero example is redrawn from a brief.
+  - The motion review checks the gait (`armSwing`, `contactLegs`, `kneeLift`), so a walk that slides nowhere but still looks wrong now fails.
+- **Tails that follow through:** `rig.tail` hangs on damped springs that the body's own motion drives. The tail trails in a run, lifts as the body falls, whips after a strike and settles after landing. Each motion's `follow` (0–2) sets how far it swings.
+- **Four-legged creatures:**
+  - `rig.fore` and `rig.hind`, with optional `rig.chest` and `rig.neck`.
+  - Gaits: a lateral-sequence `walk`, a new `trot` template and a gallop `run` whose spine curls and stretches.
+  - Idle, jump and hurt for four legs.
+  - A new red fox example and preset, `fox`.
+- **Draft views:** `pixelbolt compile x.poses.json --draft-views boot:15,345` (MCP `pixel_compile` `draftViews`) drafts small grid parts turned by pixel-art rules, for you to correct and paste into `views`. `--preview` draws each draft beside the flat drawing and today's turn.
+- **Seeing motion and parts:** the motion review draws one cycle's path of each foot, hand and the head. A new `parts` view (also in the studio's review menu) paints each pixel by the part that drew it.
+- **Crystal growth:** a new source format, `pixelforge-crystal` (`pixel_help` topic `crystal`, `pixelbolt/crystal`). Faceted prisms, cubes and octahedra, clusters and geodes, and snowflakes all grow from a seed and come to rest. New presets: geode, quartz cluster, pyrite and snowflakes.
+- **Rigid bodies:**
+  - Breaking bodies: `breaks` and the `break` power. A knocked body breaks into convex pieces that carry its picture. New preset: crate smash.
+  - Blade bloom: strikes, cuts, pivots, smears and crowds of thousands. New preset: blade bloom.
+  - Heavy loads rest on light bodies, and touching bodies are drawn side by side.
+  - Bodies in a liquid share its pressure solve, so a light plank lands on a pool instead of erupting it.
+- **For agents:**
+  - The presets listing is a line per preset, 9 KB instead of 21 KB.
+  - A held prop turns with the hand.
+  - A cut-down expanded poses source compiles.
+  - `pixelbolt` exits quietly when piped to `head`.
+- **Fixes from a review of this release:**
+  - The crate smash preset no longer crashes as video frames (`pixelbolt sequence`, `pixel_compile` `sequence`).
+  - Breaks no longer stop silently at the crowd limit: there is room for every body with `breaks` by default, and a compile warns when a break is cut short.
+  - Fixed bodies that events break count toward the work limit.
+  - Figures facing left bend their knees and lean the way they face.
+  - Quick or many-framed four-legged gaits compile.
+  - A tail can't also be a leg or arm bone, the chest or the neck.
+  - The schemas refuse what the compilers refuse.
+- **Docs:** README in Korean and Spanish.
+
+Known issues:
+- Tails of five or more short links can thrash.
+- A far elbow can snap between frames in walks of 32 or more frames.
+- Left-facing jumps, attacks and hurts aren't mirrored.
+- A plank nearly as wide as its pool, thrown in fast, can be launched out of it.
 
 The full list of changes is in `CHANGELOG.md`.
 

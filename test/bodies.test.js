@@ -504,14 +504,46 @@ test('a break power breaks a body on cue, a fixed one too, and a blade that cuts
   assert.equal(blade.broken.length, 2, JSON.stringify(blade.broken));
 });
 
+test('a match drawn frame by frame breaks a symbol body as the compiled recipe does', async () => {
+  // bodiesFrames (pixelbolt sequence, pixel_compile's sequence) once built its world without the symbols, so the
+  // crate-smash preset crashed when a crate broke.
+  const source = JSON.parse(await readFile(path.join(root, 'examples', 'crate-smash.bodies.json'), 'utf8'));
+  const frames = bodiesFrames(source), { recipe, metadata } = compileBodies(source), project = renderProject(recipe);
+  assert.ok(metadata.effects['crate-smash'].broken.length > 1, 'crates break in the preset');
+  for (let f = 0; f < frames.frames; f++) assert.ok(Buffer.from(frames.image(f)).equals(Buffer.from(project.frames[f].data)), `frame ${f}`);
+});
+
 test('breaking is read strictly', () => {
   const box = { name: 'box', shape: 'box', size: [8, 8], at: [24, 16], fill: 'w' };
   refused(scene({ bodies: [{ ...box, fixed: true, breaks: {} }] }), 'bodies.effects.e.bodies[0].breaks', /event whose power is break/);
   refused(scene({ bodies: [{ shape: 'hoop', fixed: true, radius: 10, at: [24, 16], fill: 'w', breaks: {} }] }), 'bodies.effects.e.bodies[0].breaks', /does not break/);
+  refused(scene({ bodies: [{ name: 'ring', shape: 'hoop', fixed: true, radius: 10, at: [24, 16], fill: 'w' }], events: [{ frame: 3, body: 'ring', power: 'break' }] }), 'bodies.effects.e.events[0].power', /hoop.*does not break/);
   refused(scene({ bodies: [{ ...box, size: [1, 2], breaks: {} }] }), 'bodies.effects.e.bodies[0].breaks', /too small/);
   refused(scene({ bodies: [{ ...box, breaks: { pieces: 1 } }] }), 'bodies.effects.e.bodies[0].breaks.pieces', /from 2 to 16/);
   refused(scene({ bodies: [{ ...box, breaks: { at: 3, chips: 4 } }] }), 'bodies.effects.e.bodies[0].breaks.chips', /unknown/);
   refused(scene({ bodies: [box], events: [{ frame: 3, body: 'box', power: 'break', count: 9 }] }), 'bodies.effects.e.events[0].count', /from 2 to 8/);
+});
+
+test('by default every body that breaks has room for its pieces, and a crowd at most says what it cut short', () => {
+  const rain = most => ({ format: 'pixelforge-bodies', version: 1, name: 'b', width: 128, height: 64, palette: { w: '#ffffff', k: '#000000' }, effects: { e: { frames: 40, gravity: [0, 0.6], walls: ['left', 'right', 'bottom'], ...(most && { most }), bodies: [{ shape: 'box', size: [6, 6], at: [8, 4], velocity: [0, 4], fill: 'w', outline: 'k', grid: { count: [16, 4], step: [7, 8] }, breaks: { at: 0.5, pieces: 6 } }] } } });
+  const free = compileBodies(rain());
+  assert.equal(free.metadata.effects.e.broken.length, 64);
+  assert.equal(free.warnings, undefined);
+  const capped = compileBodies(rain(200));
+  assert.ok(capped.metadata.effects.e.broken.length < 64);
+  assert.ok(capped.warnings.some(warning => /^bodies\.effects\.e\.most: \d+ bodies broke into fewer pieces than asked, or not at all, because the effect holds at most 200 bodies; raise most$/.test(warning)), capped.warnings.join('\n'));
+});
+
+test('the work estimate charges fixed bodies that events break as the free pieces they become', () => {
+  // 64 fixed slabs, each broken by an event into 8 pieces that bounce for 255 frames: the pieces were free of charge,
+  // so this ran for a minute, past MCP's time limit, instead of being refused up front.
+  const bodies = [], events = [];
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) {
+    bodies.push({ name: `s${i}_${j}`, shape: 'box', size: [15, 15], at: [8 + i * 16, 8 + j * 16], fixed: true, fill: 'w', outline: 'k', bounce: 1, friction: 0 });
+    events.push({ frame: 1, body: `s${i}_${j}`, power: 'break', count: 8 });
+  }
+  const source = { format: 'pixelforge-bodies', version: 1, name: 'fb', width: 128, height: 128, palette: { k: '#000000', w: '#ffffff' }, effects: { e: { frames: 256, substeps: 16, iterations: 16, gravity: [0, 0], walls: ['left', 'right', 'top', 'bottom'], most: 4096, bodies, events } } };
+  assert.throws(() => compileBodies(source), error => error instanceof PixelError && /the simulations need about \d+ million updates, more than 400 million/.test(error.message));
 });
 
 test('the work estimate charges the crowd a strike can make and a smear\'s sweep', () => {

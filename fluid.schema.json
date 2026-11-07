@@ -1636,32 +1636,6 @@
                   "additionalProperties": false,
                   "description": "The shape swept over its last frames, drawn under it, banded from the first colour behind it to the last: a blade's swish. Not for a hoop."
                 },
-                "breaks": {
-                  "type": "object",
-                  "properties": {
-                    "at": {
-                      "type": "number",
-                      "minimum": 0.1,
-                      "maximum": 16,
-                      "description": "How hard a knock breaks it: the speed it is hit at where it is hit (with the bounce), in pixels a frame, shared with what hits it by how easily each gives there. Default 3."
-                    },
-                    "pieces": {
-                      "type": "integer",
-                      "minimum": 2,
-                      "maximum": 16,
-                      "description": "Pieces it breaks into, fewer where a piece would be too small to read. Default 6."
-                    },
-                    "speed": {
-                      "type": "number",
-                      "minimum": 0,
-                      "maximum": 8,
-                      "description": "Pixels a frame the pieces fly apart at, away from where it was hit, on top of its own motion. Default 0.5."
-                    }
-                  },
-                  "required": [],
-                  "additionalProperties": false,
-                  "description": "A free body that breaks when knocked hard enough, in a pixelforge-bodies source: into convex pieces cut through its shape about where it was hit, smaller there, each a body of its own carrying its part of the picture. Pieces do not break again."
-                },
                 "ring": {
                   "type": "object",
                   "properties": {

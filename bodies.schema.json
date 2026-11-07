@@ -688,7 +688,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 4096,
-            "description": "The most bodies split powers may make in all, copies included: at least the bodies listed. Default 256."
+            "description": "The most bodies split powers and breaks may make in all, copies and pieces included: at least the bodies listed. Default 256, or room for every body with breaks to break into all its pieces (up to 4096)."
           },
           "pickups": {
             "type": "array",

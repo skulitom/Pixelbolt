@@ -1,7 +1,7 @@
 // Browser-compatible, deterministic rasterizer. No I/O and no dependencies.
 import { patternProblem, ditherThreshold, traceLine, pixelId, colorOf, idsOf, cleanupIds, ruleVariants, rewriteIds } from './craft.js';
 import { AUTOTILE_MODES, tilePieces, templatePiece, expandTilemap, isoLayout } from './autotile.js';
-import { layoutText, FONT_HEIGHT } from './font.js';
+import { layoutText, FONT_HEIGHT, FONT_CHARACTERS } from './font.js';
 export class PixelError extends Error {
   constructor(path, message) { super(`${path}: ${message}`); this.name = 'PixelError'; this.path = path; }
 }
@@ -1353,22 +1353,30 @@ function drawPartLegend(sheet, legend) {
 // each column and a label left of each row, in the built-in font. Every picture is enlarged `scale` times (at most 16;
 // lowered so a cell stays within 256 pixels) and placed so its anchor pixel sits at one spot in its column and on one
 // row across its row, so pictures compare pixel for pixel. The anchor pixel is outlined in magenta and named points in
-// cyan, around the pixel, never over it. `rows` are [{ label, cells: [{ rows, anchor, points } | null] }].
+// cyan, around the pixel, never over it; a cell is wide enough for every picture's pixels, anchor and points. A
+// character of a label or heading that the font cannot draw is drawn as ?.
+// `rows` are [{ label, cells: [{ rows, anchor, points } | null] }].
 const ANCHOR_MARK = [255, 64, 224, 255], POINT_MARK = [64, 224, 255, 255], LABEL_INK = [230, 234, 238, 255];
+const FONT_GLYPHS = new Set(FONT_CHARACTERS), inFont = text => [...String(text).normalize('NFC')].map(c => FONT_GLYPHS.has(c) ? c : '?').join('');
 export function pictureSheet({ palette = {}, headings = [], rows: lines, scale = 6 }) {
-  const cells = lines.flatMap(line => line.cells.filter(Boolean));
-  const left = Math.max(0, ...cells.map(c => c.anchor[0])), right = Math.max(1, ...cells.map(c => c.rows[0].length - c.anchor[0]));
+  // How far a picture reaches from its anchor pixel, in its own pixels: left and up before it, right and down from it.
+  const reach = c => {
+    const marks = Object.values(c.points ?? {}), xs = [0, c.rows[0].length - 1, ...marks.map(p => p[0])], ys = [0, c.rows.length - 1, ...marks.map(p => p[1])];
+    return { left: c.anchor[0] - Math.min(...xs), right: Math.max(...xs) + 1 - c.anchor[0], up: c.anchor[1] - Math.min(...ys), down: Math.max(...ys) + 1 - c.anchor[1] };
+  };
+  const cells = lines.flatMap(line => line.cells.filter(Boolean).map(reach));
+  const left = Math.max(0, ...cells.map(c => c.left)), right = Math.max(1, ...cells.map(c => c.right));
   const across = left + right + 2, heights = lines.map(line => {
-    const shown = line.cells.filter(Boolean);
-    return { up: Math.max(0, ...shown.map(c => c.anchor[1])) + 1, down: Math.max(1, ...shown.map(c => c.rows.length - c.anchor[1])) + 1 };
+    const shown = line.cells.filter(Boolean).map(reach);
+    return { up: Math.max(0, ...shown.map(c => c.up)) + 1, down: Math.max(1, ...shown.map(c => c.down)) + 1 };
   });
   const s = Math.max(1, Math.min(integer(scale, 'scale', 1, 16), Math.floor(256 / Math.max(across, ...heights.map(h => h.up + h.down))))), t = Math.max(1, Math.min(2, Math.floor(s / 3)));
-  const pad = 3 * t, gap = Math.max(2, s), labels = lines.map(line => layoutText(line.label)), heads = headings.map(text => layoutText(text));
+  const pad = 3 * t, gap = Math.max(2, s), labels = lines.map(line => layoutText(inFont(line.label))), heads = headings.map(text => layoutText(inFont(text)));
   const labelWidth = Math.max(0, ...labels.map(text => text.width)) * t + 2 * pad, headHeight = heads.length ? (FONT_HEIGHT + 2) * t + 2 * pad : gap;
   const columns = Math.max(heads.length, ...lines.map(line => line.cells.length)), cellWidth = Math.max(across * s, Math.max(0, ...heads.map(text => text.width)) * t + 2 * pad);
   const width = labelWidth + columns * (cellWidth + gap) + gap, rowHeights = heights.map(h => Math.max((h.up + h.down) * s, (FONT_HEIGHT + 2) * t + 2 * pad));
   const height = headHeight + rowHeights.reduce((sum, h) => sum + h + gap, 0);
-  if (width > SHEET_SIDE || height > SHEET_SIDE) fail('sheet', `the picture sheet would be ${width}×${height} pixels, above the 4096-pixel limit; show fewer or smaller pictures`);
+  if (width > SHEET_SIDE || height > SHEET_SIDE) fail('sheet', `the picture sheet would be ${width}×${height} pixels, above the 4096-pixel limit; show fewer or smaller pictures (every cell spans each picture's pixels, anchor and points, so an anchor or point far from its pixels widens them all)`);
   const data = new Uint8ClampedArray(width * height * 4);
   data.set(gutterColor, 0);
   for (let filled = 4; filled < data.length; filled *= 2) data.copyWithin(filled, 0, Math.min(filled, data.length - filled));

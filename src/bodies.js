@@ -376,8 +376,10 @@ function readEffect(effect, path, context) {
   const pickups = readPickups(effect.pickups, `${path}.pickups`, context), events = readEvents(effect.events, `${path}.events`, context, bodies);
   const strikes = readStrikes(effect.strikes, `${path}.strikes`, context, bodies);
   const hud = readHud(effect.hud, `${path}.hud`, context, territory ? territory.teams : null);
-  // The most bodies there may be once split powers have made copies: 256 by default, up to CROWD.
-  const crowd = integer(effect.most ?? Math.max(LIMITS.bodies, bodies.length), `${path}.most`, bodies.length, CROWD);
+  // The most bodies there may be once split powers have made copies and broken bodies their pieces: by default 256, or
+  // room for every body with breaks to break into all its pieces, up to CROWD.
+  const pieces = bodies.reduce((sum, b) => sum + (b.breaks ? b.breaks.pieces : 0), 0);
+  const crowd = integer(effect.most ?? Math.min(CROWD, Math.max(LIMITS.bodies, bodies.length + pieces)), `${path}.most`, bodies.length, CROWD);
   return { frames, duration, substeps, iterations, gravity, background, walls: Object.fromEntries(BODY_WALLS.map(edge => [edge, walls.includes(edge)])), obstacles, territory, bodies, most: crowd, pickups, events, strikes, hud };
 }
 
@@ -686,8 +688,11 @@ export function createBodyWorld(effect, context) {
   // pixel of the picture is dust and is dropped. The body is gone and what rested on it wakes; pieces never break again.
   // Returns the number of pieces (none when it can't break into two).
   const shatter = (b, at, count, kick) => {
+    if (b.gone || b.piece || b.shape === 'hoop') return 0;
+    // A crowd at the effect's most breaks into fewer pieces, or none; the compile warns.
+    if (most - bodies.length < count) stats.crowded.add(b);
     count = Math.min(count, most - bodies.length);
-    if (b.gone || b.piece || b.shape === 'hoop' || count < 2) return 0;
+    if (count < 2) return 0;
     const outline = outlineOf(b), c = b.c, s = b.s;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (const [x, y] of outline) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
@@ -779,7 +784,7 @@ export function createBodyWorld(effect, context) {
   const moving = b => b.fixed ? (b.vx !== 0 || b.vy !== 0 || b.spin !== 0) : !b.gone && !b.asleep;
   const awake = b => !b.fixed && !b.gone && !b.asleep;
   let warm = new Map();
-  const stats = { hits: 0, escaped: [], rest: null, overlaps: [], paths: {}, broken: [] };
+  const stats = { hits: 0, escaped: [], rest: null, overlaps: [], paths: {}, broken: [], crowded: new Set() };
   // Bodies that break when knocked (see shatter); their pieces don't.
   const breakable = bodies.some(b => b.breaks);
   const round = v => Math.round(v * 100) / 100;
@@ -1694,10 +1699,14 @@ export const scaleAnchor = (anchor, n) => (n > 1 && Array.isArray(anchor) && anc
 // presets run at 18 to 85 ms a million.
 const FACE_WORK = 1, PIXEL_WORK = 0.25;
 function work(effect, { width, height, n = 1, symbols = {} }) {
-  const count = effect.bodies.length, moving = effect.bodies.filter(b => !b.fixed), margin = MAX_SPEED / effect.substeps + 0.1;
-  // Splits and break powers may fill the crowd up to `most`; bodies that break when knocked add their pieces.
-  const splits = [effect.pickups, effect.events, effect.strikes].some(list => (list ?? []).some(p => p.power === 'split' || p.power === 'break'));
-  const pieces = effect.bodies.reduce((sum, b) => sum + (b.breaks ? b.breaks.pieces : 0), 0), room = Math.max(0, (effect.most ?? count) - count);
+  const count = effect.bodies.length, margin = MAX_SPEED / effect.substeps + 0.1;
+  // A fixed body an event breaks falls as pieces, so it is priced as a free body would be.
+  const broken = (effect.events ?? []).filter(e => e.power === 'break' && effect.bodies[e.body].fixed);
+  const freed = new Set(broken.map(e => effect.bodies[e.body])), moving = effect.bodies.filter(b => !b.fixed || freed.has(b));
+  // Splits and break powers may fill the crowd up to `most`; bodies that break when knocked or by an event add their pieces.
+  const splits = [effect.pickups, effect.events, effect.strikes].some(list => (list ?? []).some(p => (p.power === 'split' || p.power === 'break') && !broken.includes(p)));
+  const pieces = effect.bodies.reduce((sum, b) => sum + (b.breaks ? b.breaks.pieces : 0), 0) + broken.reduce((sum, e) => sum + e.count, 0);
+  const room = Math.max(0, (effect.most ?? count) - count);
   const added = splits && moving.length ? room : Math.min(pieces, room), crowd = count + added;
   const smallest = moving.length ? Math.max(0.5, Math.min(...moving.map(shapeArea))) : 1;
   const span = b => Math.max(b.size[0], b.size[1]) * Math.SQRT2;
@@ -1721,7 +1730,7 @@ function work(effect, { width, height, n = 1, symbols = {} }) {
     if (b.trail) { const d = Math.max(1, Math.min(b.size[0], b.size[1]) - 1) * n; cost += b.trail.length * (MAX_SPEED * n + 1) * d * d; }
     if (b.smear) { const sweep = (b.fixed ? Math.sqrt(b.vx * b.vx + b.vy * b.vy) : MAX_SPEED) + Math.abs(b.spin) * RADIANS * 2 * reach; cost += b.smear.frames * Math.ceil(2 * n * sweep + 1) * across * across; }
     frame += cost;
-    if (!b.fixed) drawn = Math.max(drawn, cost);
+    if (!b.fixed || freed.has(b)) drawn = Math.max(drawn, cost);
   }
   step += added * costliest; frame += added * drawn;
   return effect.frames * (effect.substeps * step + frame * PIXEL_WORK);
@@ -1909,6 +1918,8 @@ export function compileBodies(source) {
     animations[name] = { frames: names, loop: false };
     const effectWarnings = run.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`);
     if (!run.drawn.some(frame => frame.pixels)) effectWarnings.push(`${path}: no body is ever on the canvas; check at against width and height`);
+    const crowded = run.stats.crowded.size;
+    if (crowded) effectWarnings.push(`${path}.most: ${crowded} ${crowded === 1 ? 'body' : 'bodies'} broke into fewer pieces than asked, or not at all, because the effect holds at most ${effect.most} bodies; raise most`);
     warnings.push(...effectWarnings);
     const played = territoryFigures(run.turf, effect.territory);
     metadata.effects[name] = {
@@ -1932,7 +1943,8 @@ export function bodiesFrames(source, effectName) {
   const { name, path, effect } = chosen;
   const needs = work(effect, { width, height, n, symbols });
   if (needs > MATCH_WORK) fail(path, `the match needs about ${Math.round(needs / 1e6)} million updates, more than ${MATCH_WORK / 1e6} million; lower frames, substeps, iterations, the number or size of the bodies, the obstacle faces near them (a checkerboard has one on every pixel edge) or subpixels`);
-  const world = createBodyWorld(effect, { width, height }), context = { width, height, symbols, subpixels: n };
+  // The world gets the symbols too: a symbol body that breaks cuts its picture into the pieces.
+  const context = { width, height, symbols, subpixels: n }, world = createBodyWorld(effect, context);
   let at = -1, image = null;
   return {
     name: source.name, effect: name, width: width * n, height: height * n, palette, frames: effect.frames, duration: effect.duration,

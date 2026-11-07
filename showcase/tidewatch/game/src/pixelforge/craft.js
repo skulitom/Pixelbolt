@@ -388,7 +388,8 @@ export function turnRows(rows, degrees) {
 // - A compact part (a hand, a head) keeps its area: the pixels the turned picture covers most, as many as it had, its
 //   outline ring coloured from the picture's outline ring and its inside from its inside, and every pixel whose colour
 //   none of its neighbours share (an eye, a rivet) drawn once, where it turns to.
-// The anchor and named points move with the pixels under them. Returns { rows, anchor, points, how } with how one of
+// The anchor and named points move with the pixels under them (a point on a dropped column with the kept column beside
+// it, toward the anchor). Returns { rows, anchor, points, how } with how one of
 // flat, quarter, shear (with slope, and shortened, closed, nubs when they happened) or cover.
 const DRAFT_SLOPES = [[0, 1, 0], [1, 6, 9.462322208025617], [1, 4, 14.036243467926479], [1, 3, 18.43494882292201],
   [1, 2, 26.56505117707799], [2, 3, 33.690067525979785], [1, 1, 45]];
@@ -499,7 +500,9 @@ function shearDraft(rows, phi, anchor, points) {
     if (closed) result.closed = closed;
     if (nubs) result.nubs = nubs;
   }
-  return { ...trimDraft(pixels, Object.fromEntries(Object.entries(points).map(([key, [x, y]]) => [key, place(x, y)]))), ...result };
+  // A point on a dropped column moves to the kept column beside it on the anchor's side, which held the same pixels.
+  const onKept = x => { while (dropped.has(x)) x += x > anchor[0] ? -1 : 1; return x; };
+  return { ...trimDraft(pixels, Object.fromEntries(Object.entries(points).map(([key, [x, y]]) => [key, place(onKept(x), y)]))), ...result };
 }
 function coverDraft(rows, phi, anchor, points) {
   const h = rows.length, w = rows[0].length, drawn = (x, y) => x >= 0 && y >= 0 && x < w && y < h && !blank(rows[y][x]);

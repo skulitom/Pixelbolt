@@ -140,6 +140,7 @@ export function readEvents(list, path, context, bodies) {
     const index = bodies.findIndex(b => b.name !== null && b.name.toLowerCase() === String(entry.body).toLowerCase());
     if (index < 0) fail(`${p}.body`, `no body is named ${JSON.stringify(entry.body)}`);
     if (bodies[index].fixed && entry.power !== 'vanish' && entry.power !== 'break') fail(`${p}.body`, `${entry.body} is fixed; powers go to bodies that move freely (a fixed body can only vanish or break)`);
+    if (bodies[index].shape === 'hoop' && entry.power === 'break') fail(`${p}.power`, `${entry.body} is a hoop, a container, and does not break; it can vanish`);
     return { frame: integer(entry.frame, `${p}.frame`, 1, 18000), body: index, path: p, ...readPower(entry, p, context) };
   });
 }

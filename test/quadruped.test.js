@@ -145,3 +145,14 @@ test('a rig with fore and hind legs leaves the biped figures as they were', () =
   const { recipe } = compilePoses(plainRig());
   assert.deepEqual(recipe.animations.walk.frames, ['walk-contact-a', 'walk-down-a', 'walk-passing-a', 'walk-up-a', 'walk-contact-b', 'walk-down-b', 'walk-passing-b', 'walk-up-b']);
 });
+
+test('a quick or many-framed four-legged gait keys each flight once, so every pose name is its own', () => {
+  // A cycle that leaves the ground more than once after the same feet named each flight alike, and the compile
+  // refused the duplicate pose.
+  for (const [animation, change] of [['walk', { speed: 72 }], ['walk', { frames: 32 }], ['walk', { stride: 1 }], ['run', { frames: 12, speed: 128 }], ['run', { frames: 40 }]]) {
+    const source = structuredClone(fox);
+    Object.assign(source.motions[animation], change);
+    const compiled = compilePoses(source), names = compiled.recipe.animations[animation].frames;
+    assert.equal(names.length, source.motions[animation].frames ?? names.length, `${animation} ${JSON.stringify(change)}`);
+  }
+});
