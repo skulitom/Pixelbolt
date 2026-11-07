@@ -1,7 +1,7 @@
 -- Puts a bake into Aseprite: a new sprite at the effect's own size, or a new layer in the active sprite. Everything
 -- happens in one app.transaction, so one undo removes the whole bake.
 --
--- `host` carries Aseprite's globals (app, Sprite, Image, ImageSpec, Point, ColorMode), so the checks can run this
+-- `host` carries Aseprite's globals (app, Sprite, Image, ImageSpec, Point, ColorMode, Color), so the checks can run this
 -- module against a stand-in API outside Aseprite.
 local use = ...
 local engine = use("engine")
@@ -24,7 +24,7 @@ M.rgb = rgb
 function M.indexedPlan(sprite, preset, result)
   local palette = sprite.palettes[1]
   local size, transparent = #palette, sprite.transparentColor
-  local index, additions = {}, {}
+  local index, additions, nextIndex = {}, {}, size
   for _, key in ipairs(engine.usedKeys(preset, result)) do
     local r, g, b = rgb(preset.source.palette[key])
     for i = 0, size - 1 do
@@ -37,10 +37,10 @@ function M.indexedPlan(sprite, preset, result)
       -- An added colour may repeat an earlier addition's: reuse it.
       for _, add in ipairs(additions) do if add.hex == preset.source.palette[key] then index[key] = add.index end end
       if index[key] == nil then
-        local at = size + #additions
-        if at == transparent then at = at + 1 end
-        additions[#additions + 1] = { index = at, hex = preset.source.palette[key], r = r, g = g, b = b }
-        index[key] = at
+        if nextIndex == transparent then nextIndex = nextIndex + 1 end
+        additions[#additions + 1] = { index = nextIndex, hex = preset.source.palette[key], r = r, g = g, b = b }
+        index[key] = nextIndex
+        nextIndex = nextIndex + 1
       end
     end
   end
@@ -100,7 +100,14 @@ function M.apply(host, preset, result, options)
       if plan and #plan.additions > 0 then
         local palette = sprite.palettes[1]
         if #palette < plan.size then palette:resize(plan.size) end
-        for _, add in ipairs(plan.additions) do palette:setColor(add.index, app.pixelColor.rgba(add.r, add.g, add.b, 255)) end
+        -- A Color, not a pixel value: in an Indexed sprite Aseprite reads a bare integer as a palette index.
+        for _, add in ipairs(plan.additions) do palette:setColor(add.index, host.Color{ r = add.r, g = add.g, b = add.b, a = 255 }) end
+      end
+      -- Aseprite stretches a tag that ends on the last frame over frames added after it; the user's tags keep
+      -- their length, so note them now and put them back below.
+      local lastBefore, stretched = #sprite.frames, {}
+      for _, tag in ipairs(sprite.tags) do
+        if tag.toFrame and tag.toFrame.frameNumber == lastBefore then stretched[#stretched + 1] = tag end
       end
       local layer = sprite:newLayer()
       layer.name = title
@@ -108,10 +115,13 @@ function M.apply(host, preset, result, options)
         local number = start + k - 1
         if number > #sprite.frames then
           local frame = sprite:newEmptyFrame(number)
-          frame.duration = result.durations[k] / 1000
+          frame.duration = M.seconds(result.durations[k])
         end
         local image = frameImage(host, result.frames[k], W, H, mode, pixelOf, transparent)
         if image then sprite:newCel(layer, number, image, host.Point(x, y)) end
+      end
+      if #sprite.frames > lastBefore then
+        for _, tag in ipairs(stretched) do tag.toFrame = lastBefore end
       end
       local tag = sprite:newTag(start, start + n - 1)
       tag.name = title
@@ -128,10 +138,10 @@ function M.apply(host, preset, result, options)
   app.transaction("Pixelbolt Fluids: " .. title, function()
     local layer = sprite.layers[1]
     layer.name = title
-    sprite.frames[1].duration = result.durations[1] / 1000
+    sprite.frames[1].duration = M.seconds(result.durations[1])
     for k = 2, n do
       local frame = sprite:newEmptyFrame(k)
-      frame.duration = result.durations[k] / 1000
+      frame.duration = M.seconds(result.durations[k])
     end
     for k = 1, n do
       local image = frameImage(host, result.frames[k], W, H, ColorMode.RGB, pixelOf, 0)
@@ -142,6 +152,9 @@ function M.apply(host, preset, result, options)
   end)
   return sprite
 end
+
+-- A frame duration for Aseprite, which keeps whole milliseconds and truncates: half a millisecond more lands on `ms`.
+function M.seconds(ms) return (ms + 0.5) / 1000 end
 
 -- Where a layer bake goes by default: the effect centred on the sprite.
 function M.centre(sprite, W, H)

@@ -41,7 +41,7 @@ You need Aseprite 1.3 or newer. The extension reads and writes no files and asks
   - **New sprite**: a new RGB sprite at the preset's size, with its frame durations;
   - **New layer in the active sprite**: a layer placed at Position X, Y (Centre puts it in the middle), starting at
     the active frame. Frames are added at the end when the effect needs more; existing frames keep their durations.
-- **Preview** plays the effect in the dialog. The first preview or bake of new settings shows "baking…" while it
+- **Preview** plays the effect in the dialog. The first preview or bake of new settings shows "baking..." while it
   simulates: about a second for most presets, a few seconds for the explosion.
 - **Bake** adds the frames. A frame tag named after the preset spans the effect, and one **Undo** removes the whole
   bake.

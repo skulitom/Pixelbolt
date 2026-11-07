@@ -8,7 +8,7 @@ local M = {}
 
 function M.new(options)
   options = options or {}
-  local env = { alerts = {}, launched = {}, timers = {}, dialogs = {} }
+  local env = { alerts = {}, alertLines = {}, launched = {}, timers = {}, dialogs = {} }
   local open = {}         -- sprites, in creation order
   local transaction = nil -- the set of sprites changed by the running transaction
 
@@ -78,10 +78,14 @@ function M.new(options)
   Palette.__index = Palette
   function Palette.__len(self) return #self.colors end
   function Palette:getColor(i) assert(i >= 0 and i < #self.colors, "palette index out of range"); return Color(self.colors[i + 1]) end
+  -- As in Aseprite (color_class.cpp), a bare integer is read by the sprite's colour mode: in an Indexed sprite it is a
+  -- palette index (out of range reads as transparent black), not an RGBA value.
   function Palette:setColor(i, v)
     assert(i >= 0 and i < #self.colors, "palette index out of range")
     touch(self.sprite)
-    self.colors[i + 1] = type(v) == "table" and pixelColor.rgba(v.red, v.green, v.blue, v.alpha) or v
+    if type(v) == "table" then self.colors[i + 1] = pixelColor.rgba(v.red, v.green, v.blue, v.alpha)
+    elseif self.sprite.colorMode == ColorMode.INDEXED then self.colors[i + 1] = self.colors[v + 1] or pixelColor.rgba(0, 0, 0, 0)
+    else self.colors[i + 1] = v end
   end
   function Palette:resize(n)
     touch(self.sprite)
@@ -94,11 +98,15 @@ function M.new(options)
   local function frameList(sprite)
     for i, f in ipairs(sprite.frames) do rawget(f, "_data").frameNumber = i end
   end
+  -- Durations are kept in whole milliseconds, truncated, as Aseprite keeps them.
   local function newFrame(sprite, duration)
-    local data = { duration = duration or 0.1, frameNumber = 0 }
+    local data = { ms = math.floor((duration or 0.1) * 1000), frameNumber = 0 }
     local frame = setmetatable({ _data = data }, {
-      __index = function(t, k) return data[k] end,
-      __newindex = function(_, k, v) touch(sprite); data[k] = v end,
+      __index = function(t, k) if k == "duration" then return data.ms / 1000 end return data[k] end,
+      __newindex = function(_, k, v)
+        touch(sprite)
+        if k == "duration" then data.ms = math.floor(v * 1000) else data[k] = v end
+      end,
     })
     return frame
   end
@@ -113,7 +121,15 @@ function M.new(options)
     n = n or (#self.frames + 1)
     assert(n >= 1 and n <= #self.frames + 1, "newEmptyFrame: frame number out of range")
     local frame = newFrame(self, 0.1)
+    local last = #self.frames
     table.insert(self.frames, n, frame)
+    -- As in Aseprite (doc_api.cpp), a tag that ends on the last frame grows over a frame added after it, and tags
+    -- after the insertion point move on.
+    for _, tag in ipairs(self.tags) do
+      local t = rawget(tag, "_data")
+      if t.to >= n or (t.to == last and n == last + 1) then t.to = t.to + 1 end
+      if t.from >= n and n <= last then t.from = t.from + 1 end
+    end
     -- Cels and tags after the insertion point move on by one frame.
     for _, cel in ipairs(self.cels) do if cel.frameNumber >= n then cel.frameNumber = cel.frameNumber + 1 end end
     frameList(self)
@@ -134,7 +150,20 @@ function M.new(options)
   function Sprite:newTag(from, to)
     touch(self)
     assert(from >= 1 and to <= #self.frames and from <= to, "newTag: frames out of range")
-    local tag = tracked(self, { name = "Tag", fromFrame = from, toFrame = to })
+    local sprite, data = self, { name = "Tag", from = from, to = to }
+    -- Like Aseprite's Tag: fromFrame and toFrame are Frame objects; setting them takes a number or a Frame.
+    local tag = setmetatable({ _data = data }, {
+      __index = function(_, k)
+        if k == "fromFrame" then return sprite.frames[data.from] end
+        if k == "toFrame" then return sprite.frames[data.to] end
+        return data[k]
+      end,
+      __newindex = function(_, k, v)
+        touch(sprite)
+        local number = type(v) == "table" and v.frameNumber or v
+        if k == "fromFrame" then data.from = number elseif k == "toFrame" then data.to = number else data[k] = v end
+      end,
+    })
     self.tags[#self.tags + 1] = tag
     return tag
   end
@@ -166,7 +195,11 @@ function M.new(options)
     version = options.version or "1.3.17",
     pixelColor = pixelColor,
     activeSprite = nil, activeFrame = nil, -- API 21 names only: app.sprite and app.frame came in API 23
-    alert = function(t) env.alerts[#env.alerts + 1] = type(t) == "table" and t.text or t end,
+    alert = function(t)
+      local text = type(t) == "table" and t.text or t
+      if type(text) == "table" then env.alertLines[#env.alertLines + 1] = text; text = table.concat(text, " ") end
+      env.alerts[#env.alerts + 1] = text
+    end,
     refresh = function() end,
     transaction = function(label, fn)
       if fn == nil then fn = label end

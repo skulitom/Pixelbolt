@@ -46,11 +46,15 @@ local function colourOf(env, preset, key)
   return env.app.pixelColor.rgba(tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16), 255)
 end
 
+local function hostOf(env)
+  return { app = env.app, Sprite = env.Sprite, Image = env.Image, ImageSpec = env.ImageSpec, Point = env.Point, ColorMode = env.ColorMode, Color = env.Color }
+end
+
 check("new sprite, RGB: size, frames, durations, layer, cels, pixels, tag, one undo step", function()
   local env, use = fresh()
   local bake, preset = use("bake"), presetNamed(use, "torch")
   local result = sample(preset)
-  local sprite = assert(use("bake").apply({ app = env.app, Sprite = env.Sprite, Image = env.Image, ImageSpec = env.ImageSpec, Point = env.Point, ColorMode = env.ColorMode }, preset, result, { target = "sprite" }))
+  local sprite = assert(use("bake").apply(hostOf(env), preset, result, { target = "sprite" }))
   eq(sprite.width, 4, "width"); eq(sprite.height, 3, "height"); eq(sprite.colorMode, env.ColorMode.RGB, "colour mode")
   eq(#sprite.frames, 3, "frames")
   for i = 1, 3 do eq(sprite.frames[i].duration, 0.07, "duration of frame " .. i) end
@@ -60,12 +64,11 @@ check("new sprite, RGB: size, frames, durations, layer, cels, pixels, tag, one u
   eq(cel.image:getPixel(0, 0), colourOf(env, preset, preset.order[1]), "pixel 0,0")
   eq(cel.image:getPixel(1, 0), 0, "transparent pixel")
   eq(cel.image:getPixel(3, 0), colourOf(env, preset, preset.order[2]), "pixel 3,0")
-  eq(#sprite.tags, 1, "tags"); eq(sprite.tags[1].fromFrame, 1, "tag start"); eq(sprite.tags[1].toFrame, 3, "tag end"); eq(sprite.tags[1].name, "Torch", "tag name")
+  eq(#sprite.tags, 1, "tags"); eq(sprite.tags[1].fromFrame.frameNumber, 1, "tag start"); eq(sprite.tags[1].toFrame.frameNumber, 3, "tag end"); eq(sprite.tags[1].name, "Torch", "tag name")
   eq(sprite.undoHistory.undoSteps, 1, "undo steps")
   local _ = bake
 end)
 
-local function hostOf(env) return { app = env.app, Sprite = env.Sprite, Image = env.Image, ImageSpec = env.ImageSpec, Point = env.Point, ColorMode = env.ColorMode } end
 
 check("new layer, RGB: placed at x,y from the active frame, frames added, old durations kept, one undo step", function()
   local env, use = fresh()
@@ -86,7 +89,7 @@ check("new layer, RGB: placed at x,y from the active frame, frames added, old du
   eq(sprite:celAt(sprite.layers[2], 3), nil, "no cel for the empty frame")
   assert(sprite:celAt(sprite.layers[2], 4), "cel on frame 4")
   eq(sprite:celAt(sprite.layers[1], 2), nil, "the old layer is untouched")
-  eq(sprite.tags[1].fromFrame, 2, "tag start"); eq(sprite.tags[1].toFrame, 4, "tag end")
+  eq(sprite.tags[1].fromFrame.frameNumber, 2, "tag start"); eq(sprite.tags[1].toFrame.frameNumber, 4, "tag end")
   eq(sprite.undoHistory.undoSteps, 1, "undo steps")
 end)
 
@@ -191,7 +194,7 @@ check("pre-baked preset: seeds only, frames unpacked", function()
   eq(select(1, pcall(engine.run, preset, { strength = 1, buoyancy = 0, vorticity = 0, dissipation = 0 }, 6)), false, "unknown seed fails")
 end)
 
-check("dialog: menu command, credit and link, preview with 'baking…', bake into a new sprite in one undo step", function()
+check("dialog: menu command, credit and link, preview with 'baking...', bake into a new sprite in one undo step", function()
   local env, use = fresh()
   local plugin = use("plugin")
   local commands = {}
@@ -200,17 +203,17 @@ check("dialog: menu command, credit and link, preview with 'baking…', bake int
   commands[1].onclick()
   local dlg = assert(env.dialogs[#env.dialogs], "dialog opened")
   eq(dlg.shown, true, "shown")
-  eq(dlg.widgets.credit.text, "Made with Pixelbolt (MIT)", "credit")
+  eq(dlg.widgets.link.label, "Made with Pixelbolt (MIT)", "credit beside the link")
   dlg.widgets.link.onclick()
   eq(env.launched[1].command, "Launch", "link command"); eq(env.launched[1].params.type, "url", "link type")
   eq(env.launched[1].params.path, "https://github.com/skulitom/Pixelbolt", "link url")
   -- Pick the torch, move Strength, preview.
   dlg.widgets.preset.option = "Torch"; dlg.widgets.preset.onchange()
-  has(dlg.widgets.note.text, "Gas", "note")
+  eq(dlg.widgets.note.text, "Gas, loop, simulated live", "note")
   dlg.widgets.strength.value = 25; dlg.widgets.strength.onchange()
-  eq(dlg.widgets.strength_value.text, "x 1.50", "strength label")
+  eq(dlg.widgets.strength.label, "Strength  x 1.50", "strength label")
   dlg.widgets.preview.onclick()
-  eq(dlg.widgets.status.text, "baking…", "status while baking")
+  eq(dlg.widgets.status.text, "baking...", "status while baking")
   env.tick()
   has(dlg.widgets.status.text, "16 frames", "status after preview")
   -- Bake into a new sprite: the cached frames, no second simulation.
@@ -224,7 +227,7 @@ check("dialog: menu command, credit and link, preview with 'baking…', bake int
   local seed = tonumber(dlg.widgets.seed.text)
   assert(seed >= 0 and seed <= 2147483647, "seed in range")
   dlg.widgets.reset.onclick()
-  eq(dlg.widgets.seed.text, "4", "reset seed"); eq(dlg.widgets.strength_value.text, "x 1.00", "reset strength")
+  eq(dlg.widgets.seed.text, "4", "reset seed"); eq(dlg.widgets.strength.label, "Strength  x 1.00", "reset strength")
   dlg:close()
   eq(plugin.dialog, nil, "closed")
 end)
@@ -262,10 +265,54 @@ check("dialog: closing it while a bake waits does nothing", function()
   local dlg = plugin.open()
   dlg.widgets.preset.option = "Smoke puff"; dlg.widgets.preset.onchange()
   dlg.widgets.bake.onclick()
-  eq(dlg.widgets.status.text, "baking…", "waiting")
+  eq(dlg.widgets.status.text, "baking...", "waiting")
   dlg:close()
   env.tick()
   eq(#env.alerts, 0, "alerts"); eq(#env.sprites, 0, "no sprite made")
+end)
+
+check("new layer: tags that end on the last frame keep their length when frames are added", function()
+  local env, use = fresh()
+  local preset = presetNamed(use, "torch")
+  local sprite = env.newSprite(16, 16, env.ColorMode.RGB)
+  sprite:newEmptyFrame(2)
+  local walk = sprite:newTag(1, 2); walk.name = "walk"
+  sprite.undoHistory.undoSteps = 0
+  env.app.activeFrame = sprite.frames[2]
+  assert(use("bake").apply(hostOf(env), preset, sample(preset), { target = "layer", x = 0, y = 0 }))
+  eq(#sprite.frames, 4, "frames")
+  eq(walk.toFrame.frameNumber, 2, "the user's tag still ends on frame 2")
+  eq(sprite.tags[2].fromFrame.frameNumber, 2, "effect tag start"); eq(sprite.tags[2].toFrame.frameNumber, 4, "effect tag end")
+  eq(sprite.undoHistory.undoSteps, 1, "undo steps")
+end)
+
+check("Indexed: new colours get distinct entries when the transparent entry sits past the palette's end", function()
+  local env, use = fresh()
+  local preset = presetNamed(use, "torch")
+  local sprite = env.newSprite(8, 8, env.ColorMode.INDEXED, 8)
+  sprite.transparentColor = 8
+  assert(use("bake").apply(hostOf(env), preset, sample(preset), { target = "layer", x = 0, y = 0 }))
+  local palette, cel = sprite.palettes[1], sprite:celAt(sprite.layers[2], 1)
+  local ia, ib = cel.image:getPixel(0, 0), cel.image:getPixel(3, 0)
+  assert(ia ~= ib, "two colours share entry " .. tostring(ia))
+  assert(ia ~= 8 and ib ~= 8, "a colour landed on the transparent entry")
+  eq(palette.colors[ia + 1], colourOf(env, preset, preset.order[1]), "colour a")
+  eq(palette.colors[ib + 1], colourOf(env, preset, preset.order[2]), "colour b")
+end)
+
+check("alerts: the long palette message comes as short lines that fit a small screen", function()
+  local env, use = fresh()
+  local plugin = use("plugin")
+  local sprite = env.newSprite(8, 8, env.ColorMode.INDEXED, 256)
+  for i = 1, 256 do sprite.palettes[1].colors[i] = env.app.pixelColor.rgba(i - 1, 1, 2, 255) end
+  local dlg = plugin.open()
+  dlg.widgets.preset.option = "Torch"; dlg.widgets.preset.onchange()
+  dlg:modify{ id = "to_layer", selected = true }
+  dlg.widgets.bake.onclick(); env.tick()
+  local lines = assert(env.alertLines[#env.alertLines], "the alert came as lines")
+  assert(#lines >= 2, "more than one line")
+  for _, line in ipairs(lines) do assert(#line <= 72, "line too long: " .. line) end
+  has(env.alerts[#env.alerts], "palette is full", "message")
 end)
 
 print(string.format("%d passed, %d failed", passed, failed))

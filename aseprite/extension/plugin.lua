@@ -23,10 +23,22 @@ function M.versionProblem(theApp)
 end
 
 local function host()
-  return { app = app, Sprite = Sprite, Image = Image, ImageSpec = ImageSpec, Point = Point, ColorMode = ColorMode }
+  return { app = app, Sprite = Sprite, Image = Image, ImageSpec = ImageSpec, Point = Point, ColorMode = ColorMode, Color = Color }
 end
 
-local function alert(text) app.alert{ title = "Pixelbolt Fluids", text = text } end
+-- An alert's text doesn't wrap in Aseprite, so a long message goes as short lines.
+local function lines(text)
+  local out, line = {}, ""
+  for word in tostring(text):gmatch("%S+") do
+    if line ~= "" and #line + #word + 1 > 64 then out[#out + 1] = line; line = word
+    else line = line == "" and word or line .. " " .. word end
+  end
+  if line ~= "" then out[#out + 1] = line end
+  return out
+end
+M.lines = lines
+
+local function alert(text) app.alert{ title = "Pixelbolt Fluids", text = lines(text) } end
 
 -- Runs `work` on the next tick of a one-shot timer, so a status set just before is painted first.
 local function later(work)
@@ -52,13 +64,16 @@ function M.open()
   end
 
   local function noteOf(preset)
-    if engine.isPrebaked(preset) then return preset.note .. " · pre-baked (Seed picks one of " .. #engine.seeds(preset) .. " takes)" end
-    return preset.note .. " · simulated live"
+    local note = preset.note:gsub("%s*\u{b7}%s*", ", ")
+    if engine.isPrebaked(preset) then return note .. ", pre-baked (Seed picks one of " .. #engine.seeds(preset) .. " takes)" end
+    return note .. ", simulated live"
   end
+
+  local function sliderLabel(slider) return slider.label .. "  " .. format(slider, state.values[slider.key]) end
 
   local function showValues()
     for _, slider in ipairs(controls.SLIDERS) do
-      dlg:modify{ id = slider.key .. "_value", text = format(slider, state.values[slider.key]) }
+      dlg:modify{ id = slider.key, label = sliderLabel(slider) }
     end
     dlg:modify{ id = "seed", text = tostring(state.seed) }
   end
@@ -114,14 +129,14 @@ function M.open()
     state.timer:start()
   end
 
-  -- The settings' frames, from the cache or simulated now (showing "baking…" first).
+  -- The settings' frames, from the cache or simulated now (showing "baking..." first).
   local function withResult(then_)
     local preset, values, seed = state.preset, state.values, state.seed
     local hit = engine.cached(preset, values, seed)
     if hit then return then_(hit) end
     if state.busy then return end
     state.busy = true
-    dlg:modify{ id = "status", text = "baking…" }
+    dlg:modify{ id = "status", text = "baking..." }
     dlg:modify{ id = "bake", enabled = false }
     dlg:modify{ id = "preview", enabled = false }
     later(function()
@@ -169,7 +184,11 @@ function M.open()
       local ok, sprite, message = pcall(bake.apply, host(), state.preset, result, options)
       if not ok then alert("The bake failed: " .. tostring(sprite)); return end
       if not sprite then alert(message); return end
-      dlg:modify{ id = "status", text = string.format("Baked %d frames (%s). Undo removes it in one step.", #result.frames, state.preset.title) }
+      if options.target == "layer" then
+        dlg:modify{ id = "status", text = string.format("Baked %d frames. Undo removes them.", #result.frames) }
+      else
+        dlg:modify{ id = "status", text = string.format("Baked %d frames into a new sprite.", #result.frames) }
+      end
       app.refresh()
     end)
   end
@@ -210,10 +229,9 @@ function M.open()
   for _, slider in ipairs(controls.SLIDERS) do
     dlg:slider{ id = slider.key, label = slider.label, min = 0, max = controls.positions(slider), value = 0, onchange = function()
       state.values[slider.key] = controls.valueAt(slider, dlg.data[slider.key])
-      dlg:modify{ id = slider.key .. "_value", text = format(slider, state.values[slider.key]) }
+      dlg:modify{ id = slider.key, label = sliderLabel(slider) }
       stale()
     end }
-    dlg:label{ id = slider.key .. "_value", text = "" }
   end
   dlg:number{ id = "seed", label = "Seed", text = "1", decimals = 0, onchange = function()
     local value = math.tointeger(math.floor(tonumber(dlg.data.seed) or 0))
@@ -238,16 +256,15 @@ function M.open()
   dlg:number{ id = "x", label = "Layer at X, Y", text = "0", decimals = 0 }
   dlg:number{ id = "y", text = "0", decimals = 0 }
   dlg:button{ id = "centre", text = "Centre", onclick = centre }
-  dlg:canvas{ id = "canvas", label = "Preview", width = PREVIEW, height = PREVIEW, onpaint = paint }
+  -- Both expand flags, or 1.3-rc1's reading of them stretches the canvas.
+  dlg:canvas{ id = "canvas", label = "Preview", width = PREVIEW, height = PREVIEW, hexpand = false, vexpand = false, onpaint = paint }
   dlg:newrow()
   dlg:label{ id = "status", text = "" }
   dlg:newrow()
   dlg:button{ id = "preview", text = "Preview", onclick = onPreview }
   dlg:button{ id = "bake", text = "Bake", focus = true, onclick = onBake }
   dlg:button{ id = "close", text = "Close", onclick = function() dlg:close() end }
-  dlg:newrow()
-  dlg:label{ id = "credit", text = M.CREDIT }
-  dlg:button{ id = "link", text = "Pixelbolt on GitHub", onclick = function()
+  dlg:button{ id = "link", label = M.CREDIT, text = "Pixelbolt on GitHub", onclick = function()
     app.command.Launch{ type = "url", path = M.URL }
   end }
   M.dialog = dlg
@@ -264,7 +281,7 @@ function M.init(plugin)
     group = "edit_fx",
     onclick = function()
       local problem = M.versionProblem(app)
-      if problem then app.alert{ title = "Pixelbolt Fluids", text = problem }; return end
+      if problem then alert(problem); return end
       M.open()
     end,
   }
