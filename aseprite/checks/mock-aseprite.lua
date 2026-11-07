@@ -89,6 +89,8 @@ function M.new(options)
   end
   function Palette:resize(n)
     touch(self.sprite)
+    -- As Aseprite's SetPalette does: a transparent index past the new end moves onto the last entry.
+    if self.sprite.colorMode == ColorMode.INDEXED and self.sprite.transparentColor >= n then self.sprite.transparentColor = n - 1 end
     for i = #self.colors + 1, n do self.colors[i] = pixelColor.rgba(0, 0, 0, 255) end
     for i = #self.colors, n + 1, -1 do self.colors[i] = nil end
   end
@@ -266,7 +268,7 @@ function M.new(options)
         local data = {}
         for id, w in pairs(self.widgets) do
           if w.kind == "slider" then data[id] = w.value
-          elseif w.kind == "number" then data[id] = tonumber(w.text)
+          elseif w.kind == "number" then data[id] = math.tointeger(math.floor(tonumber(w.text) or 0)) -- textInt(): empty reads as 0
           elseif w.kind == "combobox" then data[id] = w.option
           elseif w.kind == "radio" or w.kind == "check" then data[id] = w.selected or false
           else data[id] = w.text end

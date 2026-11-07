@@ -243,20 +243,52 @@ check("dialog: Grayscale active sprite shows the message as an alert", function(
   has(env.alerts[#env.alerts], "Convert it to RGB first", "alert")
 end)
 
-check("dialog: an empty position field centres that axis; a bake into a layer is one undo step", function()
+check("dialog: Centre places a layer bake in the middle; unticked, X and Y apply", function()
   local env, use = fresh()
   local plugin = use("plugin")
   local sprite = env.newSprite(40, 60, env.ColorMode.RGB)
   local dlg = plugin.open()
   dlg.widgets.preset.option = "Torch"; dlg.widgets.preset.onchange()
   dlg:modify{ id = "to_layer", selected = true }
-  dlg:modify{ id = "x", text = "" }
-  dlg:modify{ id = "y", text = "3" }
+  eq(dlg.widgets.centred.selected, true, "Centre is the default")
+  eq(dlg.widgets.x.enabled, false, "X is off while centred")
+  dlg:modify{ id = "x", text = "" } -- reads as 0 in Aseprite, which Centre ignores
   dlg.widgets.bake.onclick(); env.tick()
   eq(#env.alerts, 0, "alerts")
   local cel = assert(sprite:celAt(sprite.layers[2], 1), "a cel on the new layer")
-  eq(cel.position.x, 12, "x centred (40 - 16) / 2"); eq(cel.position.y, 3, "y as typed")
+  eq(cel.position.x, 12, "x centred (40 - 16) / 2"); eq(cel.position.y, 14, "y centred (60 - 32) / 2")
   eq(#sprite.frames, 16, "frames added"); eq(sprite.undoHistory.undoSteps, 1, "undo steps")
+  -- Untick Centre: the fields start at the centred place and then apply as typed.
+  dlg:modify{ id = "centred", selected = false }; dlg.widgets.centred.onclick()
+  eq(dlg.widgets.x.text, "12", "x starts centred"); eq(dlg.widgets.x.enabled, true, "X is on")
+  dlg:modify{ id = "x", text = "5" }; dlg:modify{ id = "y", text = "3" }
+  env.app.activeFrame = sprite.frames[1]
+  dlg.widgets.bake.onclick()
+  local placed = assert(sprite:celAt(sprite.layers[3], 1), "a cel on the second layer")
+  eq(placed.position.x, 5, "x as typed"); eq(placed.position.y, 3, "y as typed")
+end)
+
+check("Indexed: a transparent entry past the palette's end stays where it is", function()
+  local env, use = fresh()
+  local preset = presetNamed(use, "torch")
+  local sprite = env.newSprite(8, 8, env.ColorMode.INDEXED, 8)
+  sprite.transparentColor = 250
+  assert(use("bake").apply(hostOf(env), preset, sample(preset), { target = "layer", x = 0, y = 0 }))
+  eq(sprite.transparentColor, 250, "transparent entry")
+  eq(#sprite.palettes[1], 251, "the palette reaches it")
+  local cel = sprite:celAt(sprite.layers[2], 1)
+  eq(cel.image:getPixel(1, 0), 250, "transparent pixels use it")
+  eq(sprite.palettes[1].colors[cel.image:getPixel(0, 0) + 1], colourOf(env, preset, preset.order[1]), "added colour")
+end)
+
+check("Indexed: a sprite with several palettes stops with a clear message and changes nothing", function()
+  local env, use = fresh()
+  local preset = presetNamed(use, "torch")
+  local sprite = env.newSprite(8, 8, env.ColorMode.INDEXED, 8)
+  sprite.palettes[2] = sprite.palettes[1]
+  local done, message = use("bake").apply(hostOf(env), preset, sample(preset), { target = "layer", x = 0, y = 0 })
+  eq(done, nil, "result"); has(message, "changes palettes", "message")
+  eq(#sprite.layers, 1, "layers"); eq(sprite.undoHistory.undoSteps, 0, "undo steps")
 end)
 
 check("dialog: closing it while a bake waits does nothing", function()

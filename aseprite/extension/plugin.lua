@@ -175,11 +175,8 @@ function M.open()
       if not current(result) then return end
       local data = dlg.data
       local options = { target = data.to_layer and "layer" or "sprite", title = state.preset.title }
-      if options.target == "layer" then
-        -- An empty position field means centred on that axis.
-        local x, y = tonumber(data.x), tonumber(data.y)
-        options.x = x and math.floor(x) or nil
-        options.y = y and math.floor(y) or nil
+      if options.target == "layer" and not data.centred then
+        options.x, options.y = math.floor(tonumber(data.x) or 0), math.floor(tonumber(data.y) or 0)
       end
       local ok, sprite, message = pcall(bake.apply, host(), state.preset, result, options)
       if not ok then alert("The bake failed: " .. tostring(sprite)); return end
@@ -193,13 +190,19 @@ function M.open()
     end)
   end
 
-  local function centre()
-    local sprite = app.activeSprite
-    local W, H = state.preset.source.width, state.preset.source.height
-    local x, y = 0, 0
-    if sprite then x, y = bake.centre(sprite, W, H) end
-    dlg:modify{ id = "x", text = tostring(x) }
-    dlg:modify{ id = "y", text = tostring(y) }
+  -- Centre (the default) places a layer bake in the middle of the sprite at bake time. Unticked, X and Y apply,
+  -- starting from the centred position.
+  local function onCentre()
+    local centred = dlg.data.centred
+    if not centred then
+      local sprite = app.activeSprite
+      local x, y = 0, 0
+      if sprite then x, y = bake.centre(sprite, state.preset.source.width, state.preset.source.height) end
+      dlg:modify{ id = "x", text = tostring(x) }
+      dlg:modify{ id = "y", text = tostring(y) }
+    end
+    dlg:modify{ id = "x", enabled = not centred }
+    dlg:modify{ id = "y", enabled = not centred }
   end
 
   local function paint(ev)
@@ -253,23 +256,24 @@ function M.open()
   dlg:button{ id = "reset", text = "Reset", onclick = function() selectPreset(state.preset) end }
   dlg:radio{ id = "to_sprite", label = "Bake into", text = "New sprite", selected = true }
   dlg:radio{ id = "to_layer", text = "New layer" }
-  dlg:number{ id = "x", label = "Layer at X, Y", text = "0", decimals = 0 }
+  dlg:check{ id = "centred", label = "Layer position", text = "Centre", selected = true, onclick = onCentre }
+  dlg:number{ id = "x", label = "X, Y", text = "0", decimals = 0 }
   dlg:number{ id = "y", text = "0", decimals = 0 }
-  dlg:button{ id = "centre", text = "Centre", onclick = centre }
   -- Both expand flags, or 1.3-rc1's reading of them stretches the canvas.
   dlg:canvas{ id = "canvas", label = "Preview", width = PREVIEW, height = PREVIEW, hexpand = false, vexpand = false, onpaint = paint }
   dlg:newrow()
   dlg:label{ id = "status", text = "" }
   dlg:newrow()
-  dlg:button{ id = "preview", text = "Preview", onclick = onPreview }
-  dlg:button{ id = "bake", text = "Bake", focus = true, onclick = onBake }
+  -- Enter presses the focused button, so Preview (harmless) is the default rather than Bake.
+  dlg:button{ id = "preview", text = "Preview", focus = true, onclick = onPreview }
+  dlg:button{ id = "bake", text = "Bake", onclick = onBake }
   dlg:button{ id = "close", text = "Close", onclick = function() dlg:close() end }
   dlg:button{ id = "link", label = M.CREDIT, text = "Pixelbolt on GitHub", onclick = function()
     app.command.Launch{ type = "url", path = M.URL }
   end }
   M.dialog = dlg
   selectPreset(presets[1])
-  centre()
+  onCentre()
   dlg:show{ wait = false, autoscrollbars = true }
   return dlg
 end

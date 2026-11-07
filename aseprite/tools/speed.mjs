@@ -1,7 +1,9 @@
-// The speed gate: each live preset baked by the standalone Lua port at its defaults, three separate runs, median.
-// The explosion must bake in 15 s or less and every other preset in 5 s or less.
+// Bake times: each live preset baked by the standalone Lua port at its defaults, three separate runs, median.
+// The budgets are 15 s for the explosion and 5 s for every other preset. They are advisory, as Pixelbolt's speed
+// budgets are: an overrun is reported and the exit code stays 0, unless --strict (for the release check on a quiet
+// machine) makes it 1.
 //
-//   node aseprite/tools/speed.mjs [--preset explosion] [--runs 3] [--lua aseprite/.tools/lua.exe] [--live a,b]
+//   node aseprite/tools/speed.mjs [--preset explosion] [--runs 3] [--lua aseprite/.tools/lua.exe] [--live a,b] [--strict]
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -37,7 +39,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const { times, median } = timeLua({ lua, name: preset.name, presetsFile, runs });
     const ok = median <= limit;
     if (!ok) failed = true;
-    console.log(`${ok ? 'PASS' : 'FAIL'} ${preset.name}: median ${median.toFixed(2)} s (runs ${times.map(t => t.toFixed(2)).join(', ')}; limit ${limit} s)`);
+    console.log(`${ok ? 'PASS' : 'OVER'} ${preset.name}: median ${median.toFixed(2)} s (runs ${times.map(t => t.toFixed(2)).join(', ')}; limit ${limit} s)`);
   }
-  process.exit(failed ? 1 : 0);
+  process.exit(failed && process.argv.includes('--strict') ? 1 : 0);
 }

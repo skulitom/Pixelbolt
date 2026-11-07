@@ -21,7 +21,8 @@ All seven simulate live in Aseprite.
 
 ## Install
 
-1. Download `pixelbolt-fluids-1.0.0.aseprite-extension`.
+1. Get `pixelbolt-fluids-1.0.0.aseprite-extension`, or build it from this folder (see
+   [Building from source](#building-from-source)).
 2. Double-click it, or in Aseprite open **Edit > Preferences > Extensions > Add Extension** and pick the file.
 
 You need Aseprite 1.3 or newer. The extension reads and writes no files and asks for no permissions.
@@ -39,12 +40,13 @@ You need Aseprite 1.3 or newer. The extension reads and writes no files and asks
   - **Seed**, with **Randomize**, for another take of the same effect. **Reset** puts the preset back.
 - **Bake into**:
   - **New sprite**: a new RGB sprite at the preset's size, with its frame durations;
-  - **New layer in the active sprite**: a layer placed at Position X, Y (Centre puts it in the middle), starting at
-    the active frame. Frames are added at the end when the effect needs more; existing frames keep their durations.
+  - **New layer**: a new layer in the active sprite, starting at the active frame. **Layer position** is **Centre**
+    by default (the middle of the sprite); untick it to type X and Y. Frames are added at the end when the effect
+    needs more; existing frames keep their durations, and your tags keep their length.
 - **Preview** plays the effect in the dialog. The first preview or bake of new settings shows "baking..." while it
-  simulates: about a second for most presets, a few seconds for the explosion.
-- **Bake** adds the frames. A frame tag named after the preset spans the effect, and one **Undo** removes the whole
-  bake.
+  simulates: under two seconds for every preset on a desktop PC.
+- **Bake** adds the frames. A frame tag named after the preset spans the effect. In an existing sprite, one **Undo**
+  removes the whole bake; a new sprite can simply be closed.
 
 Colour modes:
 - **RGB**: everything works.
@@ -59,7 +61,8 @@ as these gases), effects, crystals and more, all from small text recipes:
 - [Poke the pixels](https://skulitom.github.io/Pixelbolt/playground/fluids/): a live campfire and liquids in your
   browser, nothing to install.
 - [The gallery](https://skulitom.github.io/Pixelbolt/gallery/) and the [playground](https://skulitom.github.io/Pixelbolt/playground/).
-- The Fluid lab on your own computer: `npx -y pixelbolt@latest preview --open`, then **Fluid lab**.
+- The Fluid lab on your own computer: `npx -y pixelbolt@latest preview --open`, then open `/fluid.html` (the Fluid
+  lab) in the studio it starts.
 
 ## Credit and licence
 
@@ -76,9 +79,10 @@ node aseprite/build.mjs
 ```
 
 The build reads the seven presets from `examples/` and refuses any field the Lua port doesn't implement, naming it.
-Then it bakes every preset with the port at three settings and compares each frame with Pixelbolt's own output from
-the same checkout, runs the checks against a stand-in for Aseprite's API, bundles the modules and presets into one
-script, and writes `aseprite/dist/pixelbolt-fluids-1.0.0.aseprite-extension` with its SHA-256.
+Then it checks the controls against the Fluid lab's sliders, bakes every preset with the port at three settings and
+compares every pixel of every frame with Pixelbolt's own output from the same checkout, runs the checks against a
+stand-in for Aseprite's API, bundles the modules and presets into one script, and writes
+`aseprite/dist/pixelbolt-fluids-1.0.0.aseprite-extension` with its SHA-256.
 
 | File | What it is |
 |---|---|

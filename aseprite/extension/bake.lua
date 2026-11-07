@@ -12,6 +12,8 @@ M.MESSAGES = {
   grayscale = "This sprite is in Grayscale mode. Convert it to RGB first (Sprite > Color Mode > RGB Color), "
     .. "or bake into a new sprite.",
   noSprite = "There is no open sprite to add a layer to. Open one, or bake into a new sprite.",
+  palettes = "This sprite changes palettes between frames, and the effect's colours can't be added to all of them. "
+    .. "Convert it to RGB first, or bake into a new sprite.",
 }
 
 local function rgb(hex)
@@ -51,7 +53,11 @@ function M.indexedPlan(sprite, preset, result)
       .. "but an Indexed palette holds 256. Free some palette entries, convert the sprite to RGB, or bake into a "
       .. "new sprite.", size, #additions)
   end
-  return { index = index, additions = additions, size = last + 1 }
+  -- Aseprite moves a transparent entry that sits past the palette's end onto its new last entry when the palette
+  -- changes size, so a palette that grows reaches it, and the transparent entry stays where the images expect it.
+  local planned = last + 1
+  if #additions > 0 and transparent >= planned then planned = transparent + 1 end
+  return { index = index, additions = additions, size = planned }
 end
 
 -- One frame's cells as an image, or nil when the frame draws nothing.
@@ -82,6 +88,7 @@ function M.apply(host, preset, result, options)
     if not sprite then return nil, M.MESSAGES.noSprite end
     local mode = sprite.colorMode
     if mode == ColorMode.GRAYSCALE then return nil, M.MESSAGES.grayscale end
+    if mode == ColorMode.INDEXED and #sprite.palettes > 1 then return nil, M.MESSAGES.palettes end
     local pixelOf, plan, transparent = {}, nil, 0
     if mode == ColorMode.INDEXED then
       local message

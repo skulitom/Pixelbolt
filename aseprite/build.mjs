@@ -124,8 +124,24 @@ function prebakedModule(presets, prebaked) {
   return text;
 }
 
+// The Lua controls must be the Fluid lab's: same sliders in the same order, labels, ranges, steps and each preset's
+// starting values (studio/fluid-controls.js FLUID_SLIDERS.gas).
+export async function checkControls(exe, presets) {
+  const { FLUID_SLIDERS, fluidEffect } = await import(pathToFileURL(join(ROOT, 'studio', 'fluid-controls.js')).href);
+  const out = execFileSync(exe, [join(HERE, 'checks', 'controls-dump.lua'), join(DIST, 'presets.lua')], { encoding: 'utf8' });
+  const lua = out.trim().split(/\r?\n/).map(line => line.split('\t'));
+  const want = [];
+  for (const s of FLUID_SLIDERS.gas) want.push(['slider', s.key, s.label, String(s.min), String(s.max), String(s.step)]);
+  for (const p of presets) for (const s of FLUID_SLIDERS.gas) want.push(['initial', p.name, s.key, String(s.initial(fluidEffect(p.source)))]);
+  const text = rows => rows.map(r => r.join('\t')).join('\n');
+  if (text(lua) !== text(want)) {
+    const at = want.findIndex((r, i) => r.join('\t') !== (lua[i] ?? []).join('\t'));
+    throw new Error(`extension/controls.lua differs from the Fluid lab's sliders: expected "${want[at]?.join(' ')}", got "${lua[at]?.join(' ')}"`);
+  }
+}
+
 function commitOf() {
-  try { return execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim(); } catch { return 'unknown'; }
+  try { return execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return 'unknown'; }
 }
 
 export async function build({ luaPath, skipGates = false, log = console.log } = {}) {
@@ -142,6 +158,7 @@ export async function build({ luaPath, skipGates = false, log = console.log } = 
   const plainPresets = presetsModule(presets);
   writeFileSync(join(DIST, 'presets.lua'), plainPresets);
   if (!skipGates) {
+    await checkControls(exe, presets);
     if (live.length) {
       log(`parity gate for ${live.length} live presets: ${live.join(', ')}`);
       execFileSync(process.execPath, [join(HERE, 'tools', 'parity.mjs'), '--lua', exe, '--min', '100', '--live', live.join(',')], { stdio: 'inherit' });
