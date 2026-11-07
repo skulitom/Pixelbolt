@@ -1,5 +1,6 @@
 -- Prints the Lua controls for build.mjs to compare with studio/fluid-controls.js: each slider (key, label, min, max,
--- step), then each preset's starting value for each slider, one tab-separated line each.
+-- step), the value at every slider position, then each preset's starting value for each slider, one tab-separated
+-- line each.
 --   aseprite/.tools/lua.exe aseprite/checks/controls-dump.lua aseprite/dist/presets.lua
 local here = (arg[0]:match("^(.*)[/\\][^/\\]*$") or ".")
 local use = dofile(here .. "/../tools/loader.lua")(here .. "/../extension", { presets = assert(arg[1], "usage: controls-dump.lua <presets.lua>") })
@@ -16,6 +17,9 @@ end
 
 for _, s in ipairs(controls.SLIDERS) do
   print(table.concat({ "slider", s.key, s.label, js(s.min), js(s.max), js(s.step) }, "\t"))
+end
+for _, s in ipairs(controls.SLIDERS) do
+  for position = 0, controls.positions(s) do print(table.concat({ "value", s.key, position, js(controls.valueAt(s, position)) }, "\t")) end
 end
 for _, p in ipairs(presets) do
   local effect = controls.effectOf(p.source)

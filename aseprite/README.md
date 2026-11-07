@@ -44,7 +44,7 @@ You need Aseprite 1.3 or newer. The extension reads and writes no files and asks
     by default (the middle of the sprite); untick it to type X and Y. Frames are added at the end when the effect
     needs more; existing frames keep their durations, and your tags keep their length.
 - **Preview** plays the effect in the dialog. The first preview or bake of new settings shows "baking..." while it
-  simulates: under two seconds for every preset on a desktop PC.
+  simulates: about two seconds or less for every preset on a desktop PC.
 - **Bake** adds the frames. A frame tag named after the preset spans the effect. In an existing sprite, one **Undo**
   removes the whole bake; a new sprite can simply be closed.
 

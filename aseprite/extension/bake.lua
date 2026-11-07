@@ -49,9 +49,9 @@ function M.indexedPlan(sprite, preset, result)
   local last = size - 1
   for _, add in ipairs(additions) do if add.index > last then last = add.index end end
   if last >= 256 then
-    return nil, string.format("The sprite's palette is full: it has %d colours and this effect needs %d more, "
-      .. "but an Indexed palette holds 256. Free some palette entries, convert the sprite to RGB, or bake into a "
-      .. "new sprite.", size, #additions)
+    return nil, string.format("The sprite's palette is full: it has %d entries, this effect needs %d more colours, "
+      .. "and an Indexed palette holds 256 (the transparent entry can't hold a colour). Free some palette entries, "
+      .. "convert the sprite to RGB, or bake into a new sprite.", size, #additions)
   end
   -- Aseprite moves a transparent entry that sits past the palette's end onto its new last entry when the palette
   -- changes size, so a palette that grows reaches it, and the transparent entry stays where the images expect it.

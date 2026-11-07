@@ -124,14 +124,19 @@ function prebakedModule(presets, prebaked) {
   return text;
 }
 
-// The Lua controls must be the Fluid lab's: same sliders in the same order, labels, ranges, steps and each preset's
-// starting values (studio/fluid-controls.js FLUID_SLIDERS.gas).
+// The Lua controls must be the Fluid lab's: same sliders in the same order, labels, ranges, steps, the value at every
+// slider position (as a range input snaps it, sliderValue) and each preset's starting values
+// (studio/fluid-controls.js FLUID_SLIDERS.gas).
 export async function checkControls(exe, presets) {
-  const { FLUID_SLIDERS, fluidEffect } = await import(pathToFileURL(join(ROOT, 'studio', 'fluid-controls.js')).href);
+  const { FLUID_SLIDERS, fluidEffect, sliderValue } = await import(pathToFileURL(join(ROOT, 'studio', 'fluid-controls.js')).href);
   const out = execFileSync(exe, [join(HERE, 'checks', 'controls-dump.lua'), join(DIST, 'presets.lua')], { encoding: 'utf8' });
   const lua = out.trim().split(/\r?\n/).map(line => line.split('\t'));
   const want = [];
   for (const s of FLUID_SLIDERS.gas) want.push(['slider', s.key, s.label, String(s.min), String(s.max), String(s.step)]);
+  for (const s of FLUID_SLIDERS.gas) {
+    const positions = Math.round((s.max - s.min) / s.step);
+    for (let i = 0; i <= positions; i++) want.push(['value', s.key, String(i), String(sliderValue(s, s.min + i * s.step))]);
+  }
   for (const p of presets) for (const s of FLUID_SLIDERS.gas) want.push(['initial', p.name, s.key, String(s.initial(fluidEffect(p.source)))]);
   const text = rows => rows.map(r => r.join('\t')).join('\n');
   if (text(lua) !== text(want)) {
