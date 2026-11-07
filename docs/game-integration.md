@@ -88,6 +88,10 @@ $BuffFront.play("buff-front")
 
 Any engine does the same: draw the back part, then the character, then the front part, at the same place and frame. The whole `<effect>` is for previews and sharing; when the source draws a stand-in figure (`depth: "between"`), only the whole effect shows it.
 
+## Unreal Engine (Paper2D)
+
+Paper2D's own sprite sheet importer reads the atlas JSON with every rectangle, trim and pivot. [Pixel art sprite sheets in Unreal Engine 5 Paper2D](https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/) walks through the import, tested in Unreal Engine 5.8.4 on seven sheets, with a free script that sets NoMipmaps and makes one Flipbook per animation with exact frame times.
+
 ## Unity and other grid importers
 
 Keep the default untrimmed layout and set `sheet.padding` to `0`. Cell dimensions are `project.width × sheet.scale` and `project.height × sheet.scale`. Set your importer to multiple sprites or a frame grid and use `sheet.columns` horizontal cells. A partially filled last row contains transparent unused cells; use only the number of frames in the JSON.
