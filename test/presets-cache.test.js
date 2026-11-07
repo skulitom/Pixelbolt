@@ -4,7 +4,7 @@ import { mkdtemp, rm, readFile, writeFile, readdir, cp, utimes, appendFile } fro
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { listPresets } from '../src/presets.js';
+import { presetEntries, loadPreset } from '../src/presets.js';
 
 // The presets listing compiles every shipped preset to measure it (P-066: about 14 s here for 58 presets, more on CI
 // runners). With a cache folder each preset is measured once per engine and source. A 1.5 s budget keeps each listing
@@ -15,6 +15,20 @@ const temp = async t => {
   t.after(async () => { assert.ok(dir.startsWith(base + path.sep)); await rm(dir, { recursive: true, force: true }); });
   return dir;
 };
+// The cache needs some presets measured, not every shipped one: with the shipped folder each listing here waited 10 to
+// 30 s for its in-flight presets (blade-bloom alone takes 7 s). So each test lists a copy of the package that holds a
+// small preset of each kind, one with more than 12 animations (holy-spells) and the files they name; presets.test.js
+// measures every shipped preset. A kind left without one of these names gets its first preset.
+const SMALL = ['bouncing-pixel', 'coin', 'holy-spells', 'interference', 'smoke-puff', 'snowflakes', 'swing', 'swing-trail'];
+const smallPackage = async dir => {
+  const pkg = path.join(dir, 'pkg'), entries = await presetEntries(), picked = entries.filter(entry => SMALL.includes(entry.name));
+  for (const kind of new Set(entries.map(entry => entry.kind))) if (!picked.some(entry => entry.kind === kind)) picked.push(entries.find(entry => entry.kind === kind));
+  for (const part of ['src', 'package.json', 'studio/effects-controls.js', 'studio/fluid-controls.js']) await cp(path.join(root, part), path.join(pkg, part), { recursive: true });
+  for (const entry of picked) for (const file of [`examples/${entry.file}`, ...(await loadPreset(entry)).inlined]) await cp(path.join(root, file), path.join(pkg, file));
+  return { pkg, ...await import(pathToFileURL(path.join(pkg, 'src', 'presets.js')).href) };
+};
+// In a folder of its own, so the folders a test lists into hold only what the listing wrote.
+const small = async t => smallPackage(await temp(t));
 const engineFiles = async dir => (await readdir(dir).catch(() => [])).filter(name => /^[0-9a-f]{64}\.json$/.test(name));
 const cacheFile = async dir => {
   const names = await engineFiles(dir);
@@ -25,6 +39,7 @@ const measured = listing => listing.presets.filter(entry => !entry.unmeasured &&
 const factsOf = ({ name, kind, file: _, ...rest }) => rest;
 
 test('a listing keeps each measured preset\'s facts, and the next listing reads them instead of compiling', async t => {
+  const { pkg, listPresets, presetEntries: copied } = await small(t);
   const dir = path.join(await temp(t), '.presets'), first = await listPresets({ budget: BUDGET, cache: dir });
   const done = measured(first);
   assert.ok(done.length > 0, 'at least one preset is measured within the budget');
@@ -37,15 +52,19 @@ test('a listing keeps each measured preset\'s facts, and the next listing reads 
   const second = await listPresets({ budget: BUDGET, cache: dir }), byName = new Map(second.presets.map(entry => [entry.name, entry]));
   for (const entry of done) assert.equal(byName.get(entry.name).colors, 99999, entry.name);
   assert.ok(measured(second).length >= done.length, 'a later listing measures at least as many');
-  // Past the budget, cached presets are still listed with their facts; only the rest are unmeasured.
+  // Past the budget, cached presets are still listed with their facts; only the rest are unmeasured, such as a preset
+  // added since.
+  const [extra] = await copied(), added = `late-${extra.file}`;
+  await cp(path.join(pkg, 'examples', extra.file), path.join(pkg, 'examples', added));
   const late = await listPresets({ budget: -1, cache: dir });
   assert.equal(measured(late).length, measured(second).length);
+  assert.equal(late.presets.find(entry => entry.file === `examples/${added}`)?.unmeasured, true, 'a preset no listing measured is listed unmeasured');
   assert.ok(measured(late).every(entry => entry.colors === 99999 || measured(second).some(other => other.name === entry.name && other.colors === entry.colors)));
   assert.equal(Object.keys(JSON.parse(await readFile(file, 'utf8'))).length, measured(second).length, 'nothing cached is dropped past the budget');
 });
 
 test('a damaged cache, a malformed entry and presets no longer listed are measured again or dropped', async t => {
-  const dir = path.join(await temp(t), '.presets'), first = await listPresets({ budget: BUDGET, cache: dir }), done = measured(first);
+  const { listPresets } = await small(t), dir = path.join(await temp(t), '.presets'), first = await listPresets({ budget: BUDGET, cache: dir }), done = measured(first);
   const file = await cacheFile(dir), cached = JSON.parse(await readFile(file, 'utf8'));
   // A malformed entry (a missing fact, or a key that isn't a fact) is measured again; a key no preset has is dropped.
   const [key, second] = Object.keys(cached), original = cached[key];
@@ -68,7 +87,7 @@ test('a damaged cache, a malformed entry and presets no longer listed are measur
 });
 
 test('the folder keeps the newest three engines\' files and sweeps temp files a killed call left', async t => {
-  const dir = path.join(await temp(t), '.presets');
+  const { listPresets } = await small(t), dir = path.join(await temp(t), '.presets');
   await listPresets({ budget: BUDGET, cache: dir });
   const file = await cacheFile(dir), hour = 3600, now = Date.now() / 1000;
   const others = ['a', 'b', 'c'].map((digit, i) => ({ file: path.join(dir, `${digit.repeat(64)}.json`), age: (i + 1) * 60 }));
@@ -89,9 +108,7 @@ test('the folder keeps the newest three engines\' files and sweeps temp files a 
 
 test('a server whose engine files changed after it loaded neither reads nor writes the cache', async t => {
   // A copy of the package stands in for a server's checkout, updated under it after it started.
-  const dir = await temp(t), pkg = path.join(dir, 'pkg');
-  for (const part of ['src', 'examples', 'package.json', 'studio/effects-controls.js', 'studio/fluid-controls.js']) await cp(path.join(root, part), path.join(pkg, part), { recursive: true });
-  const { listPresets: running } = await import(pathToFileURL(path.join(pkg, 'src/presets.js')).href);
+  const dir = await temp(t), { pkg, listPresets: running } = await smallPackage(dir);
   const before = path.join(dir, 'before'), after = path.join(dir, 'after');
   await running({ budget: BUDGET, cache: before });
   assert.equal((await engineFiles(before)).length, 1, 'unchanged files: the cache works');
@@ -102,7 +119,7 @@ test('a server whose engine files changed after it loaded neither reads nor writ
 });
 
 test('a cache folder that can\'t be written costs only speed', async t => {
-  const dir = await temp(t), blocker = path.join(dir, 'file');
+  const { listPresets } = await small(t), dir = await temp(t), blocker = path.join(dir, 'file');
   await writeFile(blocker, 'not a folder');
   const listing = await listPresets({ budget: BUDGET, cache: path.join(blocker, '.presets') });
   assert.ok(measured(listing).length > 0);
@@ -110,7 +127,7 @@ test('a cache folder that can\'t be written costs only speed', async t => {
 });
 
 test('a listing never creates the export directory: pixel_help writes only into one something else made', async t => {
-  const dir = await temp(t), out = path.join(dir, 'output');
+  const { listPresets } = await small(t), dir = await temp(t), out = path.join(dir, 'output');
   const listing = await listPresets({ budget: BUDGET, cache: path.join(out, '.presets') });
   assert.ok(measured(listing).length > 0);
   assert.deepEqual(await readdir(dir), [], 'no output folder made');
@@ -119,6 +136,7 @@ test('a listing never creates the export directory: pixel_help writes only into 
 test('a listing past its budget still measures one preset, with worker threads as without, so every listing makes progress', async t => {
   // Workers that start slowly on a busy machine (a CI runner) once measured nothing within the budget, so the cache never
   // filled. Whatever the clock does, the first preset handed out is measured, as the serial listing measures its first.
+  const { listPresets } = await small(t);
   for (const concurrency of [1, 4]) {
     const dir = path.join(await temp(t), '.presets'), listing = await listPresets({ budget: 1, cache: dir, concurrency });
     assert.equal(measured(listing).length >= 1, true, `concurrency ${concurrency}`);
