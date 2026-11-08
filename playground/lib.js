@@ -20,6 +20,20 @@ export function engineOverride(pageURL) {
   } catch { return refused; }
 }
 
+// Whether the worker may load an engine (and that version's examples) from `base`. A page's meta CSP doesn't reach a
+// worker, which takes CSP only from response headers (GitHub Pages sends none), so the worker checks every engine
+// itself: jsDelivr's pixelbolt package, or what engineOverride lets a page ask for (the worker's own origin, or
+// loopback on both URLs), with no credentials, query or fragment.
+export function engineAllowed(base, workerURL) {
+  try {
+    const url = new URL(base), here = new URL(workerURL), loopback = host => ['localhost', '127.0.0.1', '[::1]'].includes(host);
+    if (url.username || url.password || url.search || url.hash) return false;
+    if (url.origin === 'https://cdn.jsdelivr.net') return /^\/npm\/pixelbolt@[0-9A-Za-z.+-]+\/src\/$/.test(url.pathname);
+    if (!['http:', 'https:'].includes(url.protocol) || !['http:', 'https:'].includes(here.protocol)) return false;
+    return url.origin === here.origin || (loopback(url.hostname) && loopback(here.hostname));
+  } catch { return false; }
+}
+
 // Moves a playing animation on to time `now`. `nextAt` is when the shown step ends; overshoot carries over, so short
 // frames play at their real speed however often the screen repaints. A one-shot animation holds its last step for
 // `hold` ms before playing again. Returns the new position, the new end time and whether the step changed.

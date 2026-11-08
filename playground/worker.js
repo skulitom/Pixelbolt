@@ -1,7 +1,7 @@
 import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
 import { encodePNG } from './png.js';
 import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
-import { engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
+import { engineAllowed, engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
 
 let loadedBase, loadedEngine, cached;
 const encoder = new TextEncoder();
@@ -35,9 +35,17 @@ function parse(text) {
     throw Object.assign(new Error(`${location.line ? `Line ${location.line}${location.column ? `, column ${location.column}` : ''}: ` : ''}${text}`), { line: location.line });
   }
 }
+// Running as a worker, the engine's address is checked again here (see engineAllowed); Node tests call handleRequest
+// directly with file: engines, and have no worker address to check against.
+const workerURL = typeof self !== 'undefined' && self.location ? self.location.href : null;
+function checkedBase(version, override) {
+  const base = engineBase(version, override);
+  if (workerURL && !engineAllowed(base, workerURL)) throw new Error('This engine address is refused: use jsDelivr, this page’s origin, or loopback on both URLs.');
+  return base;
+}
 async function engineFor(version, override) {
   checkVersion(version);
-  const base = engineBase(version, override);
+  const base = checkedBase(version, override);
   if (loadedBase !== base) {
     loadedEngine = null; loadedBase = null;
     try { loadedEngine = await loadEngine(base); loadedBase = base; }
@@ -70,7 +78,7 @@ export async function handleRequest(request, onSource = () => {}) {
       text = sourceText(opened.recipe, EDITOR_LINES); version = opened.version;
     } else { parse(text); }
   } else if (type === 'example') {
-    const base = new URL('../examples/', engineBase(version, override)), reads = new Map();
+    const base = new URL('../examples/', checkedBase(version, override)), reads = new Map();
     const read = async file => {
       examplePath(file);
       if (!reads.has(file)) reads.set(file, (async () => {
