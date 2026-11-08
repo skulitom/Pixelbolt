@@ -41,7 +41,7 @@ export class World {
   }
   // Attack reach comes from the atlas: the blade tip (`hit` point) of each strike frame, relative to its anchor.
   attackBox() {
-    const p = this.player, frame = this.keeper.frames[`attack-${p.dir}-2`], tip = frame.points.hit, anchor = frame.anchor;
+    const p = this.player, frame = this.keeper.frames[`attack-${p.dir}-2`], tip = frame.points.hit, anchor = frame.anchorPx;
     const tx = p.x + tip.x - anchor.x, ty = p.y + tip.y - anchor.y, cx = p.x, cy = p.y - 9;
     const left = Math.min(tx, cx) - 7, top = Math.min(ty, cy) - 7, right = Math.max(tx, cx) + 7, bottom = Math.max(ty, cy) + 7;
     return [left, top, right - left, bottom - top];

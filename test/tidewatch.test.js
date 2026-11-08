@@ -77,14 +77,14 @@ test('Tidewatch: Pixelbolt blob masks give every sand and grass cell a compiled 
 test('Tidewatch: the game places sprites from atlas anchors and reads reach, held items and glyph advances from points', () => {
   const atlas = name => JSON.parse(readFileSync(new URL(`../showcase/tidewatch/game/assets/${name}.json`, import.meta.url), 'utf8'));
   const keeper = atlas('keeper'), props = atlas('props'), font = atlas('font');
-  assert.deepEqual(keeper.frames['idle-d'].anchor, { x: 20, y: 31 });
+  assert.deepEqual(keeper.frames['idle-d'].anchorPx, { x: 20, y: 31 });
   assert.equal(keeper.frames['idle-d'].trimmed, true);
   // Mirrored left-facing strikes carry mirrored blade tips.
   const right = keeper.frames['attack-r-2'].points.hit, left = keeper.frames['attack-l-2'].points.hit;
   // Pixels reflect around the anchor corner x = 20: column c becomes 39 - c, as drawFrame flips.
   assert.equal(right.x + left.x, 2 * 20 - 1); assert.equal(right.y, left.y);
   assert.ok(keeper.frames['hold-up'].points.item);
-  assert.deepEqual([props.frames.pot.anchor, props.frames['flower-red'].anchor, props.frames.chest.anchor], [{ x: 8, y: 13 }, { x: 8, y: 11 }, { x: 8, y: 12 }]);
+  assert.deepEqual([props.frames.pot.anchorPx, props.frames['flower-red'].anchorPx, props.frames.chest.anchorPx], [{ x: 8, y: 13 }, { x: 8, y: 11 }, { x: 8, y: 12 }]);
   assert.deepEqual([font.frames.uM.points.advance.x, font.frames.period.points.advance.x], [6, 2]);
 });
 

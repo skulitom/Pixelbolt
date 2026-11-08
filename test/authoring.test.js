@@ -50,7 +50,7 @@ test('pose origins become recipe or frame anchors and markers become atlas point
   assert.equal(varying.recipe.anchor, undefined);
   assert.deepEqual(varying.recipe.frames.map(f => f.anchor), [[4, 6], [4, 5]]);
   const atlas = buildAtlas(renderProject(varying.recipe)).metadata.frames;
-  assert.deepEqual([atlas.low.anchor, atlas.low.points, atlas.high.points], [{ x: 4, y: 6 }, { hand: { x: 6, y: 5 } }, undefined]);
+  assert.deepEqual([atlas.low.anchorPx, atlas.low.points, atlas.high.points], [{ x: 4, y: 6 }, { hand: { x: 6, y: 5 } }, undefined]);
   assert.throws(() => compilePoses(actor([{ name: 'p', parts: [{ name: 'torso', part: 'body' }], markers: [{ name: 'm', part: 'torso', point: 'hand' }, { name: 'm', part: 'torso', point: 'hand' }] }])), /unique within a pose/);
 });
 
