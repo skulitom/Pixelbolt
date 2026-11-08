@@ -1,0 +1,6769 @@
+{
+  "frames": {
+    "ground-0-a": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-0-b": {
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-0-stones": {
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-1-a": {
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-1-b": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-1-stones": {
+      "frame": {
+        "x": 80,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-4-a": {
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-4-b": {
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-4-stones": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-5-a": {
+      "frame": {
+        "x": 144,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-5-b": {
+      "frame": {
+        "x": 160,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-5-stones": {
+      "frame": {
+        "x": 176,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-7-a": {
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-7-b": {
+      "frame": {
+        "x": 208,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-7-stones": {
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 1,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-16-a": {
+      "frame": {
+        "x": 240,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-16-b": {
+      "frame": {
+        "x": 0,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-16-stones": {
+      "frame": {
+        "x": 16,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-17-a": {
+      "frame": {
+        "x": 32,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-17-b": {
+      "frame": {
+        "x": 48,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-17-stones": {
+      "frame": {
+        "x": 64,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-20-a": {
+      "frame": {
+        "x": 80,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-20-b": {
+      "frame": {
+        "x": 96,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-20-stones": {
+      "frame": {
+        "x": 112,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-21-a": {
+      "frame": {
+        "x": 128,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-21-b": {
+      "frame": {
+        "x": 144,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-21-stones": {
+      "frame": {
+        "x": 160,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-23-a": {
+      "frame": {
+        "x": 176,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-23-b": {
+      "frame": {
+        "x": 192,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-23-stones": {
+      "frame": {
+        "x": 208,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-28-a": {
+      "frame": {
+        "x": 224,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-28-b": {
+      "frame": {
+        "x": 240,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-28-stones": {
+      "frame": {
+        "x": 0,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-29-a": {
+      "frame": {
+        "x": 16,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-29-b": {
+      "frame": {
+        "x": 32,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-29-stones": {
+      "frame": {
+        "x": 48,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-31-a": {
+      "frame": {
+        "x": 64,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-31-b": {
+      "frame": {
+        "x": 80,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-31-stones": {
+      "frame": {
+        "x": 96,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 1,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 1,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-64-a": {
+      "frame": {
+        "x": 112,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-64-b": {
+      "frame": {
+        "x": 128,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-64-stones": {
+      "frame": {
+        "x": 144,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-65-a": {
+      "frame": {
+        "x": 160,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-65-b": {
+      "frame": {
+        "x": 176,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-65-stones": {
+      "frame": {
+        "x": 192,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-68-a": {
+      "frame": {
+        "x": 208,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-68-b": {
+      "frame": {
+        "x": 224,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-68-stones": {
+      "frame": {
+        "x": 240,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-69-a": {
+      "frame": {
+        "x": 0,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-69-b": {
+      "frame": {
+        "x": 16,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-69-stones": {
+      "frame": {
+        "x": 32,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-71-a": {
+      "frame": {
+        "x": 48,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-71-b": {
+      "frame": {
+        "x": 64,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-71-stones": {
+      "frame": {
+        "x": 80,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-80-a": {
+      "frame": {
+        "x": 96,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-80-b": {
+      "frame": {
+        "x": 112,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-80-stones": {
+      "frame": {
+        "x": 128,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-81-a": {
+      "frame": {
+        "x": 144,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-81-b": {
+      "frame": {
+        "x": 160,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-81-stones": {
+      "frame": {
+        "x": 176,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-84-a": {
+      "frame": {
+        "x": 192,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-84-b": {
+      "frame": {
+        "x": 208,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-84-stones": {
+      "frame": {
+        "x": 224,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-85-a": {
+      "frame": {
+        "x": 240,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-85-b": {
+      "frame": {
+        "x": 0,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-85-stones": {
+      "frame": {
+        "x": 16,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-87-a": {
+      "frame": {
+        "x": 32,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-87-b": {
+      "frame": {
+        "x": 48,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-87-stones": {
+      "frame": {
+        "x": 64,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-92-a": {
+      "frame": {
+        "x": 80,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-92-b": {
+      "frame": {
+        "x": 96,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-92-stones": {
+      "frame": {
+        "x": 112,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-93-a": {
+      "frame": {
+        "x": 128,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-93-b": {
+      "frame": {
+        "x": 144,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-93-stones": {
+      "frame": {
+        "x": 160,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-95-a": {
+      "frame": {
+        "x": 176,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-95-b": {
+      "frame": {
+        "x": 192,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-95-stones": {
+      "frame": {
+        "x": 208,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-112-a": {
+      "frame": {
+        "x": 224,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-112-b": {
+      "frame": {
+        "x": 240,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-112-stones": {
+      "frame": {
+        "x": 0,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 3
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-113-a": {
+      "frame": {
+        "x": 16,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-113-b": {
+      "frame": {
+        "x": 32,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-113-stones": {
+      "frame": {
+        "x": 48,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-116-a": {
+      "frame": {
+        "x": 64,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-116-b": {
+      "frame": {
+        "x": 80,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-116-stones": {
+      "frame": {
+        "x": 96,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-117-a": {
+      "frame": {
+        "x": 112,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-117-b": {
+      "frame": {
+        "x": 128,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-117-stones": {
+      "frame": {
+        "x": 144,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-119-a": {
+      "frame": {
+        "x": 160,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-119-b": {
+      "frame": {
+        "x": 176,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-119-stones": {
+      "frame": {
+        "x": 192,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-124-a": {
+      "frame": {
+        "x": 208,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-124-b": {
+      "frame": {
+        "x": 224,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-124-stones": {
+      "frame": {
+        "x": 240,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-125-a": {
+      "frame": {
+        "x": 0,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-125-b": {
+      "frame": {
+        "x": 16,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-125-stones": {
+      "frame": {
+        "x": 32,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-127-a": {
+      "frame": {
+        "x": 48,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-127-b": {
+      "frame": {
+        "x": 64,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-127-stones": {
+      "frame": {
+        "x": 80,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-193-a": {
+      "frame": {
+        "x": 96,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-193-b": {
+      "frame": {
+        "x": 112,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-193-stones": {
+      "frame": {
+        "x": 128,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-197-a": {
+      "frame": {
+        "x": 144,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-197-b": {
+      "frame": {
+        "x": 160,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-197-stones": {
+      "frame": {
+        "x": 176,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-199-a": {
+      "frame": {
+        "x": 192,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-199-b": {
+      "frame": {
+        "x": 208,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-199-stones": {
+      "frame": {
+        "x": 224,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 14
+            },
+            {
+              "x": 0,
+              "y": 14
+            }
+          ]
+        ]
+      }
+    },
+    "ground-209-a": {
+      "frame": {
+        "x": 240,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-209-b": {
+      "frame": {
+        "x": 0,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-209-stones": {
+      "frame": {
+        "x": 16,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-213-a": {
+      "frame": {
+        "x": 32,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-213-b": {
+      "frame": {
+        "x": 48,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-213-stones": {
+      "frame": {
+        "x": 64,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-215-a": {
+      "frame": {
+        "x": 80,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-215-b": {
+      "frame": {
+        "x": 96,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-215-stones": {
+      "frame": {
+        "x": 112,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-221-a": {
+      "frame": {
+        "x": 128,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-221-b": {
+      "frame": {
+        "x": 144,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-221-stones": {
+      "frame": {
+        "x": 160,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-223-a": {
+      "frame": {
+        "x": 176,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-223-b": {
+      "frame": {
+        "x": 192,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-223-stones": {
+      "frame": {
+        "x": 208,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-241-a": {
+      "frame": {
+        "x": 224,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-241-b": {
+      "frame": {
+        "x": 240,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-241-stones": {
+      "frame": {
+        "x": 0,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 0
+            },
+            {
+              "x": 15,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-245-a": {
+      "frame": {
+        "x": 16,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-245-b": {
+      "frame": {
+        "x": 32,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-245-stones": {
+      "frame": {
+        "x": 48,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-247-a": {
+      "frame": {
+        "x": 64,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-247-b": {
+      "frame": {
+        "x": 80,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-247-stones": {
+      "frame": {
+        "x": 96,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-253-a": {
+      "frame": {
+        "x": 112,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-253-b": {
+      "frame": {
+        "x": 128,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-253-stones": {
+      "frame": {
+        "x": 144,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-255-a": {
+      "frame": {
+        "x": 160,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-255-b": {
+      "frame": {
+        "x": 176,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 3,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-255-stones": {
+      "frame": {
+        "x": 192,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-up": {
+      "frame": {
+        "x": 208,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 3,
+              "y": 16
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-up-foot": {
+      "frame": {
+        "x": 224,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 3,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-down": {
+      "frame": {
+        "x": 240,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 13,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-down-foot": {
+      "frame": {
+        "x": 0,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 13,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 0
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-up-low": {
+      "frame": {
+        "x": 16,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 16,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-up-low-foot": {
+      "frame": {
+        "x": 32,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-up-high": {
+      "frame": {
+        "x": 48,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 11
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-down-high": {
+      "frame": {
+        "x": 64,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-down-low": {
+      "frame": {
+        "x": 80,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "ground-gentle-down-low-foot": {
+      "frame": {
+        "x": 96,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "collision": [
+          [
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 3
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 0
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "animations": {
+    "default": {
+      "frames": [
+        "ground-0-a",
+        "ground-0-b",
+        "ground-0-stones",
+        "ground-1-a",
+        "ground-1-b",
+        "ground-1-stones",
+        "ground-4-a",
+        "ground-4-b",
+        "ground-4-stones",
+        "ground-5-a",
+        "ground-5-b",
+        "ground-5-stones",
+        "ground-7-a",
+        "ground-7-b",
+        "ground-7-stones",
+        "ground-16-a",
+        "ground-16-b",
+        "ground-16-stones",
+        "ground-17-a",
+        "ground-17-b",
+        "ground-17-stones",
+        "ground-20-a",
+        "ground-20-b",
+        "ground-20-stones",
+        "ground-21-a",
+        "ground-21-b",
+        "ground-21-stones",
+        "ground-23-a",
+        "ground-23-b",
+        "ground-23-stones",
+        "ground-28-a",
+        "ground-28-b",
+        "ground-28-stones",
+        "ground-29-a",
+        "ground-29-b",
+        "ground-29-stones",
+        "ground-31-a",
+        "ground-31-b",
+        "ground-31-stones",
+        "ground-64-a",
+        "ground-64-b",
+        "ground-64-stones",
+        "ground-65-a",
+        "ground-65-b",
+        "ground-65-stones",
+        "ground-68-a",
+        "ground-68-b",
+        "ground-68-stones",
+        "ground-69-a",
+        "ground-69-b",
+        "ground-69-stones",
+        "ground-71-a",
+        "ground-71-b",
+        "ground-71-stones",
+        "ground-80-a",
+        "ground-80-b",
+        "ground-80-stones",
+        "ground-81-a",
+        "ground-81-b",
+        "ground-81-stones",
+        "ground-84-a",
+        "ground-84-b",
+        "ground-84-stones",
+        "ground-85-a",
+        "ground-85-b",
+        "ground-85-stones",
+        "ground-87-a",
+        "ground-87-b",
+        "ground-87-stones",
+        "ground-92-a",
+        "ground-92-b",
+        "ground-92-stones",
+        "ground-93-a",
+        "ground-93-b",
+        "ground-93-stones",
+        "ground-95-a",
+        "ground-95-b",
+        "ground-95-stones",
+        "ground-112-a",
+        "ground-112-b",
+        "ground-112-stones",
+        "ground-113-a",
+        "ground-113-b",
+        "ground-113-stones",
+        "ground-116-a",
+        "ground-116-b",
+        "ground-116-stones",
+        "ground-117-a",
+        "ground-117-b",
+        "ground-117-stones",
+        "ground-119-a",
+        "ground-119-b",
+        "ground-119-stones",
+        "ground-124-a",
+        "ground-124-b",
+        "ground-124-stones",
+        "ground-125-a",
+        "ground-125-b",
+        "ground-125-stones",
+        "ground-127-a",
+        "ground-127-b",
+        "ground-127-stones",
+        "ground-193-a",
+        "ground-193-b",
+        "ground-193-stones",
+        "ground-197-a",
+        "ground-197-b",
+        "ground-197-stones",
+        "ground-199-a",
+        "ground-199-b",
+        "ground-199-stones",
+        "ground-209-a",
+        "ground-209-b",
+        "ground-209-stones",
+        "ground-213-a",
+        "ground-213-b",
+        "ground-213-stones",
+        "ground-215-a",
+        "ground-215-b",
+        "ground-215-stones",
+        "ground-221-a",
+        "ground-221-b",
+        "ground-221-stones",
+        "ground-223-a",
+        "ground-223-b",
+        "ground-223-stones",
+        "ground-241-a",
+        "ground-241-b",
+        "ground-241-stones",
+        "ground-245-a",
+        "ground-245-b",
+        "ground-245-stones",
+        "ground-247-a",
+        "ground-247-b",
+        "ground-247-stones",
+        "ground-253-a",
+        "ground-253-b",
+        "ground-253-stones",
+        "ground-255-a",
+        "ground-255-b",
+        "ground-255-stones",
+        "ground-up",
+        "ground-up-foot",
+        "ground-down",
+        "ground-down-foot",
+        "ground-gentle-up-low",
+        "ground-gentle-up-low-foot",
+        "ground-gentle-up-high",
+        "ground-gentle-down-high",
+        "ground-gentle-down-low",
+        "ground-gentle-down-low-foot"
+      ],
+      "loop": true,
+      "duration": 15100
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "ground.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 256,
+      "h": 160
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "default",
+        "from": 0,
+        "to": 150,
+        "direction": "forward"
+      }
+    ]
+  }
+}

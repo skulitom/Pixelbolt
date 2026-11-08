@@ -1,0 +1,4590 @@
+{
+  "frames": {
+    "snow-0-a": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-0-b": {
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-0-c": {
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-0-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-1-a": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-1-b": {
+      "frame": {
+        "x": 80,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-1-c": {
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-1-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-4-a": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-4-b": {
+      "frame": {
+        "x": 144,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-4-c": {
+      "frame": {
+        "x": 160,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-4-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-5-a": {
+      "frame": {
+        "x": 192,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-5-b": {
+      "frame": {
+        "x": 208,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-5-c": {
+      "frame": {
+        "x": 224,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-5-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-7-a": {
+      "frame": {
+        "x": 0,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-7-b": {
+      "frame": {
+        "x": 16,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-7-c": {
+      "frame": {
+        "x": 32,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-7-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-16-a": {
+      "frame": {
+        "x": 64,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-16-b": {
+      "frame": {
+        "x": 80,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-16-c": {
+      "frame": {
+        "x": 96,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-16-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-17-a": {
+      "frame": {
+        "x": 128,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-17-b": {
+      "frame": {
+        "x": 144,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-17-c": {
+      "frame": {
+        "x": 160,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-17-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-20-a": {
+      "frame": {
+        "x": 192,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-20-b": {
+      "frame": {
+        "x": 208,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-20-c": {
+      "frame": {
+        "x": 224,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-20-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-21-a": {
+      "frame": {
+        "x": 0,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-21-b": {
+      "frame": {
+        "x": 16,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-21-c": {
+      "frame": {
+        "x": 32,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-21-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-23-a": {
+      "frame": {
+        "x": 64,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-23-b": {
+      "frame": {
+        "x": 80,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-23-c": {
+      "frame": {
+        "x": 96,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-23-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-28-a": {
+      "frame": {
+        "x": 128,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-28-b": {
+      "frame": {
+        "x": 144,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-28-c": {
+      "frame": {
+        "x": 160,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-28-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-29-a": {
+      "frame": {
+        "x": 192,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-29-b": {
+      "frame": {
+        "x": 208,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-29-c": {
+      "frame": {
+        "x": 224,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-29-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-31-a": {
+      "frame": {
+        "x": 0,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-31-b": {
+      "frame": {
+        "x": 16,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-31-c": {
+      "frame": {
+        "x": 32,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-31-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-64-a": {
+      "frame": {
+        "x": 64,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-64-b": {
+      "frame": {
+        "x": 80,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-64-c": {
+      "frame": {
+        "x": 96,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-64-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-65-a": {
+      "frame": {
+        "x": 128,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-65-b": {
+      "frame": {
+        "x": 144,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-65-c": {
+      "frame": {
+        "x": 160,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-65-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-68-a": {
+      "frame": {
+        "x": 192,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-68-b": {
+      "frame": {
+        "x": 208,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-68-c": {
+      "frame": {
+        "x": 224,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-68-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-69-a": {
+      "frame": {
+        "x": 0,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-69-b": {
+      "frame": {
+        "x": 16,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-69-c": {
+      "frame": {
+        "x": 32,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-69-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-71-a": {
+      "frame": {
+        "x": 64,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-71-b": {
+      "frame": {
+        "x": 80,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-71-c": {
+      "frame": {
+        "x": 96,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-71-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-80-a": {
+      "frame": {
+        "x": 128,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-80-b": {
+      "frame": {
+        "x": 144,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-80-c": {
+      "frame": {
+        "x": 160,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-80-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-81-a": {
+      "frame": {
+        "x": 192,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-81-b": {
+      "frame": {
+        "x": 208,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-81-c": {
+      "frame": {
+        "x": 224,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-81-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-84-a": {
+      "frame": {
+        "x": 0,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-84-b": {
+      "frame": {
+        "x": 16,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-84-c": {
+      "frame": {
+        "x": 32,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-84-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-85-a": {
+      "frame": {
+        "x": 64,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-85-b": {
+      "frame": {
+        "x": 80,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-85-c": {
+      "frame": {
+        "x": 96,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-85-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-87-a": {
+      "frame": {
+        "x": 128,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-87-b": {
+      "frame": {
+        "x": 144,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-87-c": {
+      "frame": {
+        "x": 160,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-87-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-92-a": {
+      "frame": {
+        "x": 192,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-92-b": {
+      "frame": {
+        "x": 208,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-92-c": {
+      "frame": {
+        "x": 224,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-92-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-93-a": {
+      "frame": {
+        "x": 0,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-93-b": {
+      "frame": {
+        "x": 16,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-93-c": {
+      "frame": {
+        "x": 32,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-93-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-95-a": {
+      "frame": {
+        "x": 64,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-95-b": {
+      "frame": {
+        "x": 80,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-95-c": {
+      "frame": {
+        "x": 96,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-95-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-112-a": {
+      "frame": {
+        "x": 128,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-112-b": {
+      "frame": {
+        "x": 144,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-112-c": {
+      "frame": {
+        "x": 160,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-112-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-113-a": {
+      "frame": {
+        "x": 192,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-113-b": {
+      "frame": {
+        "x": 208,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-113-c": {
+      "frame": {
+        "x": 224,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-113-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-116-a": {
+      "frame": {
+        "x": 0,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-116-b": {
+      "frame": {
+        "x": 16,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-116-c": {
+      "frame": {
+        "x": 32,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-116-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-117-a": {
+      "frame": {
+        "x": 64,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-117-b": {
+      "frame": {
+        "x": 80,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-117-c": {
+      "frame": {
+        "x": 96,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-117-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-119-a": {
+      "frame": {
+        "x": 128,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-119-b": {
+      "frame": {
+        "x": 144,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-119-c": {
+      "frame": {
+        "x": 160,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-119-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-124-a": {
+      "frame": {
+        "x": 192,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-124-b": {
+      "frame": {
+        "x": 208,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-124-c": {
+      "frame": {
+        "x": 224,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-124-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-125-a": {
+      "frame": {
+        "x": 0,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-125-b": {
+      "frame": {
+        "x": 16,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-125-c": {
+      "frame": {
+        "x": 32,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-125-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-127-a": {
+      "frame": {
+        "x": 64,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-127-b": {
+      "frame": {
+        "x": 80,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-127-c": {
+      "frame": {
+        "x": 96,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-127-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-193-a": {
+      "frame": {
+        "x": 128,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-193-b": {
+      "frame": {
+        "x": 144,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-193-c": {
+      "frame": {
+        "x": 160,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-193-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-197-a": {
+      "frame": {
+        "x": 192,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-197-b": {
+      "frame": {
+        "x": 208,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-197-c": {
+      "frame": {
+        "x": 224,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-197-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-199-a": {
+      "frame": {
+        "x": 0,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-199-b": {
+      "frame": {
+        "x": 16,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-199-c": {
+      "frame": {
+        "x": 32,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-199-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-209-a": {
+      "frame": {
+        "x": 64,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-209-b": {
+      "frame": {
+        "x": 80,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-209-c": {
+      "frame": {
+        "x": 96,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-209-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-213-a": {
+      "frame": {
+        "x": 128,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-213-b": {
+      "frame": {
+        "x": 144,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-213-c": {
+      "frame": {
+        "x": 160,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-213-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-215-a": {
+      "frame": {
+        "x": 192,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-215-b": {
+      "frame": {
+        "x": 208,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-215-c": {
+      "frame": {
+        "x": 224,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-215-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-221-a": {
+      "frame": {
+        "x": 0,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-221-b": {
+      "frame": {
+        "x": 16,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-221-c": {
+      "frame": {
+        "x": 32,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-221-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-223-a": {
+      "frame": {
+        "x": 64,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-223-b": {
+      "frame": {
+        "x": 80,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-223-c": {
+      "frame": {
+        "x": 96,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-223-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-241-a": {
+      "frame": {
+        "x": 128,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-241-b": {
+      "frame": {
+        "x": 144,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-241-c": {
+      "frame": {
+        "x": 160,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-241-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-245-a": {
+      "frame": {
+        "x": 192,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-245-b": {
+      "frame": {
+        "x": 208,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-245-c": {
+      "frame": {
+        "x": 224,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-245-rocks": {
+      "frame": {
+        "x": 240,
+        "y": 160,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-247-a": {
+      "frame": {
+        "x": 0,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-247-b": {
+      "frame": {
+        "x": 16,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-247-c": {
+      "frame": {
+        "x": 32,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-247-rocks": {
+      "frame": {
+        "x": 48,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-253-a": {
+      "frame": {
+        "x": 64,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-253-b": {
+      "frame": {
+        "x": 80,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-253-c": {
+      "frame": {
+        "x": 96,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-253-rocks": {
+      "frame": {
+        "x": 112,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    },
+    "snow-255-a": {
+      "frame": {
+        "x": 128,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-255-b": {
+      "frame": {
+        "x": 144,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-255-c": {
+      "frame": {
+        "x": 160,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "weight": 4
+      }
+    },
+    "snow-255-rocks": {
+      "frame": {
+        "x": 176,
+        "y": 176,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100
+    }
+  },
+  "animations": {
+    "default": {
+      "frames": [
+        "snow-0-a",
+        "snow-0-b",
+        "snow-0-c",
+        "snow-0-rocks",
+        "snow-1-a",
+        "snow-1-b",
+        "snow-1-c",
+        "snow-1-rocks",
+        "snow-4-a",
+        "snow-4-b",
+        "snow-4-c",
+        "snow-4-rocks",
+        "snow-5-a",
+        "snow-5-b",
+        "snow-5-c",
+        "snow-5-rocks",
+        "snow-7-a",
+        "snow-7-b",
+        "snow-7-c",
+        "snow-7-rocks",
+        "snow-16-a",
+        "snow-16-b",
+        "snow-16-c",
+        "snow-16-rocks",
+        "snow-17-a",
+        "snow-17-b",
+        "snow-17-c",
+        "snow-17-rocks",
+        "snow-20-a",
+        "snow-20-b",
+        "snow-20-c",
+        "snow-20-rocks",
+        "snow-21-a",
+        "snow-21-b",
+        "snow-21-c",
+        "snow-21-rocks",
+        "snow-23-a",
+        "snow-23-b",
+        "snow-23-c",
+        "snow-23-rocks",
+        "snow-28-a",
+        "snow-28-b",
+        "snow-28-c",
+        "snow-28-rocks",
+        "snow-29-a",
+        "snow-29-b",
+        "snow-29-c",
+        "snow-29-rocks",
+        "snow-31-a",
+        "snow-31-b",
+        "snow-31-c",
+        "snow-31-rocks",
+        "snow-64-a",
+        "snow-64-b",
+        "snow-64-c",
+        "snow-64-rocks",
+        "snow-65-a",
+        "snow-65-b",
+        "snow-65-c",
+        "snow-65-rocks",
+        "snow-68-a",
+        "snow-68-b",
+        "snow-68-c",
+        "snow-68-rocks",
+        "snow-69-a",
+        "snow-69-b",
+        "snow-69-c",
+        "snow-69-rocks",
+        "snow-71-a",
+        "snow-71-b",
+        "snow-71-c",
+        "snow-71-rocks",
+        "snow-80-a",
+        "snow-80-b",
+        "snow-80-c",
+        "snow-80-rocks",
+        "snow-81-a",
+        "snow-81-b",
+        "snow-81-c",
+        "snow-81-rocks",
+        "snow-84-a",
+        "snow-84-b",
+        "snow-84-c",
+        "snow-84-rocks",
+        "snow-85-a",
+        "snow-85-b",
+        "snow-85-c",
+        "snow-85-rocks",
+        "snow-87-a",
+        "snow-87-b",
+        "snow-87-c",
+        "snow-87-rocks",
+        "snow-92-a",
+        "snow-92-b",
+        "snow-92-c",
+        "snow-92-rocks",
+        "snow-93-a",
+        "snow-93-b",
+        "snow-93-c",
+        "snow-93-rocks",
+        "snow-95-a",
+        "snow-95-b",
+        "snow-95-c",
+        "snow-95-rocks",
+        "snow-112-a",
+        "snow-112-b",
+        "snow-112-c",
+        "snow-112-rocks",
+        "snow-113-a",
+        "snow-113-b",
+        "snow-113-c",
+        "snow-113-rocks",
+        "snow-116-a",
+        "snow-116-b",
+        "snow-116-c",
+        "snow-116-rocks",
+        "snow-117-a",
+        "snow-117-b",
+        "snow-117-c",
+        "snow-117-rocks",
+        "snow-119-a",
+        "snow-119-b",
+        "snow-119-c",
+        "snow-119-rocks",
+        "snow-124-a",
+        "snow-124-b",
+        "snow-124-c",
+        "snow-124-rocks",
+        "snow-125-a",
+        "snow-125-b",
+        "snow-125-c",
+        "snow-125-rocks",
+        "snow-127-a",
+        "snow-127-b",
+        "snow-127-c",
+        "snow-127-rocks",
+        "snow-193-a",
+        "snow-193-b",
+        "snow-193-c",
+        "snow-193-rocks",
+        "snow-197-a",
+        "snow-197-b",
+        "snow-197-c",
+        "snow-197-rocks",
+        "snow-199-a",
+        "snow-199-b",
+        "snow-199-c",
+        "snow-199-rocks",
+        "snow-209-a",
+        "snow-209-b",
+        "snow-209-c",
+        "snow-209-rocks",
+        "snow-213-a",
+        "snow-213-b",
+        "snow-213-c",
+        "snow-213-rocks",
+        "snow-215-a",
+        "snow-215-b",
+        "snow-215-c",
+        "snow-215-rocks",
+        "snow-221-a",
+        "snow-221-b",
+        "snow-221-c",
+        "snow-221-rocks",
+        "snow-223-a",
+        "snow-223-b",
+        "snow-223-c",
+        "snow-223-rocks",
+        "snow-241-a",
+        "snow-241-b",
+        "snow-241-c",
+        "snow-241-rocks",
+        "snow-245-a",
+        "snow-245-b",
+        "snow-245-c",
+        "snow-245-rocks",
+        "snow-247-a",
+        "snow-247-b",
+        "snow-247-c",
+        "snow-247-rocks",
+        "snow-253-a",
+        "snow-253-b",
+        "snow-253-c",
+        "snow-253-rocks",
+        "snow-255-a",
+        "snow-255-b",
+        "snow-255-c",
+        "snow-255-rocks"
+      ],
+      "loop": true,
+      "duration": 18800
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "snow.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 256,
+      "h": 192
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "default",
+        "from": 0,
+        "to": 187,
+        "direction": "forward"
+      }
+    ]
+  }
+}

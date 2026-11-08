@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Free Godot 4 and Tiled autotile tile sets from a terrain description</title>
+<meta name="description" content="Tested 8 Nov 2026 in Godot 4.7.2 and Tiled 1.12.2: four free 16 × 16 autotile sets, and two Pixelbolt commands that draw your own from a JSON terrain description, with a Godot 4 TileSet and a Tiled tileset. Godot chose Pixelbolt's tile shape in all 1,915 painted cells; Tiled in every cell but lone ones.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Free autotile tile sets for Godot 4 and Tiled from a terrain description">
+<meta property="og:description" content="Four free 16 × 16 sets (snow, meadow, platformer ground with slopes, a water–sand–grass shore) with Godot 4 TileSets and Tiled tilesets, and the two commands that make your own. Tested in Godot 4.7.2 and Tiled 1.12.2.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Pixel art tile sets over their test maps: grass on sand on water, platformer ground with slopes, and snow">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Free Godot 4 and Tiled autotile tile sets from a terrain description",
+  "description": "Tested 8 Nov 2026 in Godot 4.7.2 and Tiled 1.12.2: four free 16 × 16 autotile sets, and two Pixelbolt commands that draw your own from a JSON terrain description, with a Godot 4 TileSet and a Tiled tileset. Godot chose Pixelbolt's tile shape in all 1,915 painted cells; Tiled in every cell but lone ones.",
+  "image": "https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/preview.png",
+  "datePublished": "2026-11-08",
+  "dateModified": "2026-11-08",
+  "inLanguage": "en",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/",
+  "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/",
+  "proficiencyLevel": "Beginner",
+  "dependencies": "Node.js 20 or newer; Pixelbolt 0.13.0; Godot 4.3 or newer (tested 4.7.2) or Tiled (tested 1.12.2)",
+  "author": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Pixelbolt maintainers",
+    "url": "https://github.com/skulitom/Pixelbolt"
+  },
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Pixelbolt",
+    "url": "https://skulitom.github.io/Pixelbolt/"
+  },
+  "about": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Pixelbolt",
+      "url": "https://github.com/skulitom/Pixelbolt",
+      "applicationCategory": "MultimediaApplication",
+      "softwareVersion": "0.13.0",
+      "license": "https://opensource.org/licenses/MIT"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Godot Engine",
+      "softwareVersion": "4.7.2",
+      "applicationCategory": "DeveloperApplication"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Tiled",
+      "softwareVersion": "1.12.2",
+      "applicationCategory": "DeveloperApplication"
+    }
+  ]
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --pass: #1a7f37; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --pass: #6fd08c; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 4rem; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure { margin: 1rem 0; }
+.stage { background: var(--stage); border-radius: 6px; padding: 16px; display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; align-items: center; }
+.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+figcaption { color: var(--muted); font-size: 0.92rem; margin-top: 0.5rem; }
+.table { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { border-bottom: 1px solid var(--rule); padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+th { background: var(--head); font-weight: 600; }
+td.num { text-align: right; white-space: nowrap; }
+.pass { color: var(--pass); font-weight: 600; }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Pixelbolt</a> › <a href="../">Guides</a></nav>
+<h1>Free tile sets for Godot 4 and Tiled, drawn from a terrain description</h1>
+<p class="lead">To make a free autotile tile set for Godot 4 and Tiled, describe the terrain in a short JSON file (its fill, each edge's outline and highlight, a few variants) and run two Pixelbolt commands: they draw a 47-tile set, a test map of every tile, a Godot 4 TileSet with its terrain and a Tiled tileset for the Terrain Brush. On 8 November 2026, with Pixelbolt 0.13.0, Godot 4.7.2's terrain painter chose Pixelbolt's tile shape in all 1,915 cells it painted across six test maps for each of the four sets below, and Tiled 1.12.2 placed Pixelbolt's tile shape in every cell but lone ones (a cell with no terrain on any side has no terrain tile in Tiled, so you place it by hand). Each set took about 0.6 seconds to build (<a href="#how-we-tested">method and data</a>).</p>
+<p><strong>We make Pixelbolt</strong>, a free, MIT-licensed pixel art toolkit for game makers and AI agents. No image model or online service draws these tiles: Pixelbolt's own code draws them from the description, offline, and the same description gives the same pixels every time with the same Pixelbolt version (our repeated builds were byte-identical).</p>
+<p class="muted">Pixelbolt 0.13.0 · Godot 4.7.2 · Tiled 1.12.2 · Published 8 November 2026 · Last checked 8 November 2026 · On this page: <a href="#sets">Four free sets</a> · <a href="#make">Make your own</a> · <a href="#godot">Godot 4</a> · <a href="#tiled">Tiled</a> · <a href="#results">What the engines did</a> · <a href="#compare">Other tools</a> · <a href="#alternatives">When to use something else</a> · <a href="#how-we-tested">How we tested</a></p>
+
+<figure>
+<div class="stage"><img src="snow-test-map.png" width="644" height="452" alt="A pixel art snow tile set over its test map: a snow field with holes, strips, a lone tile, L and T shapes, on a brown preview background" decoding="async"></div>
+<figcaption>The snow set, written for this guide, over the test map Pixelbolt draws with it: all 47 tile shapes in one map of 20 × 14 cells (holes, inner corners, strips and their ends, a lone tile, cells that touch only at a corner), on the description's preview background. Shown at 2×.</figcaption>
+</figure>
+
+<section id="sets">
+<h2>Four free sets to download</h2>
+<p>All four are 16 × 16 pixel tiles. Each zip holds the folder Pixelbolt's <code>render</code> command writes: the tile sheet (<code>.png</code>), the Godot 4 TileSet (<code>.tileset.tres</code>), the Tiled tileset (<code>.tsx</code>), a TexturePacker-style atlas (<code>.atlas.json</code>, with each tile's weight, and its collision where the set has it), one PNG per tile, the editable recipe, a preview page and a README; plus the description it was made from (<code>.autotile.json</code>) and the licence (MIT). The tiles are transparent outside the terrain: put a ground layer or a background colour under them. The background colours of the snow, meadow and ground test maps are only previews.</p>
+<div class="table"><table>
+<thead><tr><th>Set</th><th>What it is</th><th>Tiles</th><th>Download</th></tr></thead>
+<tbody>
+<tr><td><strong>Snow</strong> (written for this guide)</td><td>Top-down snow with a dark outline, a lit top edge and a see-through shadow under the bottom edge. 47 shapes × 4 variants; one variant, with a rock and a twig, comes up a quarter as often as each plain one.</td><td class="num">188</td><td><a href="sets/snow.zip" download>snow.zip</a> (78 KB) · <a href="sets/snow/snow.png">sheet</a> · <a href="sets/snow/snow.tileset.tres">.tres</a> · <a href="sets/snow/snow.tsx">.tsx</a> · <a href="sets/snow/snow.autotile.json">description</a></td></tr>
+<tr><td><strong>Meadow</strong> (Pixelbolt's example)</td><td>Top-down grass with tufts on the top edge and a see-through shadow under the bottom edge. 47 shapes × 4 variants, one with flowers.</td><td class="num">188</td><td><a href="sets/meadow.zip" download>meadow.zip</a> (79 KB) · <a href="sets/meadow/meadow.png">sheet</a> · <a href="sets/meadow/meadow.tileset.tres">.tres</a> · <a href="sets/meadow/meadow.tsx">.tsx</a> · <a href="sets/meadow/meadow.autotile.json">description</a></td></tr>
+<tr><td><strong>Ground</strong> (Pixelbolt's example)</td><td>Side-view platformer ground: a grass cap, a lit wall, roots underneath. 47 shapes × 3 variants plus 10 slope tiles (45° and gentle, with the tiles under their low ends). Every tile has a collision shape, set under the drawn grass rather than the tufts above it.</td><td class="num">151</td><td><a href="sets/ground.zip" download>ground.zip</a> (71 KB) · <a href="sets/ground/ground.png">sheet</a> · <a href="sets/ground/ground.tileset.tres">.tres</a> · <a href="sets/ground/ground.tsx">.tsx</a> · <a href="sets/ground/ground.autotile.json">description</a></td></tr>
+<tr><td><strong>Shore</strong> (Pixelbolt's example)</td><td>Water, sand and grass as three terrains in one set: 81 tiles for every mix of them at a tile's four corners, plus 9 variants of the plain tiles (two refills of each terrain, a lily pad, a shell and daisies). A transition shows only where two terrains meet in your map, so grass painted straight onto water gets no sand. The water is solid.</td><td class="num">90</td><td><a href="sets/shore.zip" download>shore.zip</a> (49 KB) · <a href="sets/shore/shore.png">sheet</a> · <a href="sets/shore/shore.tileset.tres">.tres</a> · <a href="sets/shore/shore.tsx">.tsx</a> · <a href="sets/shore/shore.autotile.json">description</a></td></tr>
+</tbody>
+</table></div>
+<figure>
+<div class="stage"><img src="meadow-test-map.png" width="644" height="452" alt="The meadow set's test map: grass with flowers over dirt" loading="lazy" decoding="async"></div>
+<figcaption>Meadow over its test map, at 2×.</figcaption>
+</figure>
+<figure>
+<div class="stage"><img src="ground-test-map.png" width="772" height="612" alt="The ground set's test map: platformer ground with a grass cap, and hills of 45° and gentle slopes below" loading="lazy" decoding="async"></div>
+<figcaption>Ground over its test map, with the slopes' hills below it, at 2×.</figcaption>
+</figure>
+<figure>
+<div class="stage"><img src="shore-test-map.png" width="708" height="676" alt="The shore set's test map: a grass island ringed by sand in water, grass shapes in water and a strip of sand" loading="lazy" decoding="async"></div>
+<figcaption>Shore over its test map, at 2×: grass shapes straight onto water draw no sand between them. Tiled paints a map like this one; in Godot each terrain ends half a cell inside what you paint (see <a href="#godot">Godot 4</a>).</figcaption>
+</figure>
+</section>
+
+<section id="make">
+<h2>Make your own in two commands</h2>
+<ol>
+<li><strong>Write the description.</strong> Here is the whole snow set (<a href="sets/snow/snow.autotile.json">snow.autotile.json</a>):
+<pre><code>{
+  "format": "pixelforge-autotile",
+  "version": 1,
+  "name": "snow",
+  "tile": 16,
+  "palette": {
+    "k": "#1b2433", "b": "#6f87a8", "S": "#a9bfd6", "s": "#d3e1ee", "w": "#f4f8fc",
+    "i": "#bfe6f7", "r": "#4a4f5c", "R": "#7b8090", "u": "#4f4038", "c": "#0e162659"
+  },
+  "symbols": {
+    "rock": [".rr.", "rRRr", ".rr."],
+    "twig": ["r..", ".r.", ".rr"]
+  },
+  "terrain": {
+    "seed": 6,
+    "fill": {
+      "color": "s",
+      "speckle": [
+        { "color": "w", "amount": 0.24, "size": 5 },
+        { "color": "S", "amount": 0.12, "size": 4 },
+        { "color": "i", "amount": 0.03, "size": 2 }
+      ]
+    },
+    "edges": {
+      "all": { "depth": 2, "jitter": 1, "size": 6, "bands": ["k", "S"] },
+      "n": { "bands": ["k", "w"] },
+      "s": { "depth": 3, "bands": ["k", "b"], "outside": ["c"] }
+    },
+    "round": 2,
+    "inner": 1
+  },
+  "frame": "snow-{mask}-{variant}",
+  "variants": [
+    { "name": "a", "weight": 4 },
+    { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+    { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
+    { "name": "rocks", "weight": 1, "terrain": { "fill": { "seed": 37 } },
+      "ops": [
+        { "op": "stamp", "symbol": "rock", "x": 10, "y": 27 },
+        { "op": "stamp", "symbol": "twig", "x": 19, "y": 35 }
+      ] }
+  ],
+  "preview": { "background": "u" },
+  "sheet": { "columns": 16 }
+}</code></pre>
+<ul>
+<li><code>palette</code> names each colour with one character; <code>c</code> has an alpha byte (<code>59</code>), so the shadow is see-through.</li>
+<li><code>fill</code> is the inside of the terrain: a base colour and seeded speckle layers, each covering its <code>amount</code> of the tile in clumps about <code>size</code> pixels across.</li>
+<li><code>edges</code> describes each side (<code>n</code>, <code>e</code>, <code>s</code>, <code>w</code>, or <code>all</code>): <code>depth</code> is the margin between the tile border and the terrain, <code>jitter</code> lets the edge wander, <code>bands</code> colour it from the edge inward (an outline, then a highlight), and <code>outside</code> colours the margin beyond that edge (here, the shadow under the bottom edge). Grass sets add <code>tufts</code>.</li>
+<li><code>round</code> and <code>inner</code> round the outer and inner corners. <code>variants</code> redraw the fill with another <code>seed</code> or stamp details on it, and <code>weight</code> sets how often each turns up.</li>
+</ul>
+Pixelbolt's <a href="https://github.com/skulitom/Pixelbolt/blob/v0.13.0/docs/art-workflow.md#autotile-templates">art workflow notes</a> list every field, including <code>"mode": "cardinal"</code> (16 tiles, sides only), <code>"mode": "corner"</code> (16 tiles for a dual grid), <code>layers</code> for transitions between two and four terrains, <code>slopes</code> and <code>collision</code>. This guide tested the 47-tile mode and a three-terrain set only.</li>
+<li><strong>Run two commands</strong> with Node.js 20 or newer, in the folder holding the description:
+<pre><code>npx -y pixelbolt@0.13.0 autotile snow.autotile.json --out snow.recipe.json --preview snow-test-map.png
+npx -y pixelbolt@0.13.0 render snow.recipe.json --out snow</code></pre>
+<code>autotile</code> draws the set into an editable recipe and the test map into <code>snow-test-map.png</code>. <code>render</code> writes a new folder <code>snow/</code> with <code>snow.png</code>, <code>snow.tileset.tres</code>, <code>snow.tsx</code>, <code>snow.atlas.json</code>, the editable recipe <code>snow.pixel.json</code>, one PNG per tile in <code>frames/</code>, a README and a preview page. Neither command overwrites its earlier output: after editing the description, add <code>--force</code> to both. Both commands together took about 0.6 seconds for each of the four sets on our PC (a Ryzen 9 7950X3D, Node.js 24.19.0), once npx had the package.</li>
+<li><strong>Look at the test map</strong> for stray pixels and repetition. A terrain's own edges can't seam, so the compiler checks the joins that stamps and variants change and names pixels that break an outline with a <code>Seam</code> warning: there were none in the four sets.</li>
+</ol>
+<p>Have your own drawing instead? Pixelbolt also builds a set from a small template you write as rows of characters, one per pixel (same notes; not tested for this guide). AI agents can do all of this through Pixelbolt's MCP server (<code>pixel_compile</code>, then <code>pixel_render</code>); see the <a href="https://github.com/skulitom/Pixelbolt#readme">README</a>.</p>
+</section>
+
+<section id="godot">
+<h2>Use it in Godot 4</h2>
+<p>These steps use the TileMapLayer node, which needs Godot 4.3 or newer; we tested 4.7.2.</p>
+<ol>
+<li>Copy <code>snow.png</code> and <code>snow.tileset.tres</code> into one folder of your project. The TileSet finds the sheet by its file name, so keep the two together (move them in Godot's FileSystem dock, which updates the path).</li>
+<li>Add a <strong>TileMapLayer</strong> node and set its <strong>Tile Set</strong> to <code>snow.tileset.tres</code>. Set its <strong>Texture Filter</strong> to Nearest (or make Nearest the project's default texture filter) so the pixels stay sharp.</li>
+<li>In the <strong>TileMap</strong> panel, open the <strong>Terrains</strong> tab, pick the terrain <strong>snow</strong> and paint. Godot picks each cell's tile from its neighbours, and between a shape's four variants at random, by each tile's probability (the rock variant has 0.25).</li>
+</ol>
+<p>Or paint from code, as our test did:</p>
+<pre><code>var cells: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)]
+$Ground.tile_set = preload("res://tiles/snow.tileset.tres")
+$Ground.set_cells_terrain_connect(cells, 0, 0) # terrain set 0, terrain 0 (snow)</code></pre>
+<ul>
+<li><strong>Collision.</strong> The ground set's TileSet has a physics layer with a polygon on every tile, set under the drawn grass rather than the tufts (we checked the polygons against the atlas; we didn't simulate a body). For the 45° slopes, give your <code>CharacterBody2D</code> a <strong>Floor Max Angle</strong> a little above 45°, as Pixelbolt's notes advise. Godot's terrain painter doesn't place slopes: paint the terrain, then place each slope tile, and the tile under its low end, by hand, as the test map's hills show.</li>
+<li><strong>Transitions (shore).</strong> The shore's three terrains are one terrain set: water is terrain 0, sand 1 and grass 2. Paint bottom-up: water over the whole area, then sand over the sand cells and the grass cells, then grass over the grass cells, as our test did:
+<pre><code># all_cells, sand_and_grass_cells and grass_cells: each an Array[Vector2i], like cells above
+$Shore.set_cells_terrain_connect(all_cells, 0, 0)            # water
+$Shore.set_cells_terrain_connect(sand_and_grass_cells, 0, 1) # sand
+$Shore.set_cells_terrain_connect(grass_cells, 0, 2)          # grass</code></pre>
+Godot puts each terrain on the points where four cells painted with it meet, so a terrain ends half a cell inside the cells you paint: 3 × 3 grass cells show 2 × 2 cells of grass, centred on them, and a single cell or a one-cell-wide strip shows none. Paint one row and one column more than the shape you want. Our check compared Godot with Pixelbolt's map of those points, which it matched in every cell; it is not the figure above, which Tiled paints as shown. Painting sand only on the sand cells would leave water between the sand and the grass. The three blob sets have no such offset: Godot paints them cell by cell.</li>
+</ul>
+<p>Pixelbolt's <a href="https://github.com/skulitom/Pixelbolt/blob/v0.13.0/docs/game-integration.md#tile-sets">game integration notes</a> cover several sets in one TileSet, padding and scale.</p>
+</section>
+
+<section id="tiled">
+<h2>Use it in Tiled</h2>
+<ol>
+<li>In a map of 16 × 16 tiles, <strong>Map → Add External Tileset</strong> and pick <code>snow.tsx</code> (with <code>snow.png</code> beside it).</li>
+<li>In the <strong>Terrain Sets</strong> view, pick <strong>snow</strong> and paint with the <strong>Terrain Brush</strong>. Tiles with the same sides and corners (the same Wang id) are alternatives that Tiled picks between at random by their probability.</li>
+</ol>
+<ul>
+<li><strong>A lone cell.</strong> Tiled paints the sides and corners between cells, so a single cell with its terrain on no side has no terrain tile: place its tile by hand (the first tile of the sheet, <code>snow-0-a</code>, or its variants just after it).</li>
+<li><strong>Shore.</strong> The three terrains are one corner set with a colour each, painted on the points where four cells meet: each point of Tiled's map is a cell of Pixelbolt's, so paint each terrain where you want its cells, as in the shore figure. Every mix of the three has a tile, so the order doesn't matter.</li>
+<li><strong>Slopes.</strong> The ground set's slopes are plain tiles with their collision objects, outside the terrain: paint the terrain, then place them by hand.</li>
+</ul>
+</section>
+
+<section id="results">
+<h2>What the engines did with the four sets</h2>
+<div class="table"><table>
+<thead><tr><th>Set</th><th>Tiles</th><th>Godot 4.7.2: cells painted, all with Pixelbolt's tile shape</th><th>Tiled 1.12.2: tiles placed, all Pixelbolt's shape</th><th>Files on this page = files tested</th></tr></thead>
+<tbody>
+<tr><td>Snow</td><td class="num">188</td><td class="pass">393 in 6 maps</td><td class="pass">365 in 6 maps; 28 lone cells left empty</td><td class="pass">byte-identical</td></tr>
+<tr><td>Meadow</td><td class="num">188</td><td class="pass">393 in 6 maps</td><td class="pass">365 in 6 maps; 28 lone cells left empty</td><td class="pass">byte-identical</td></tr>
+<tr><td>Ground</td><td class="num">151</td><td class="pass">393 in 6 maps</td><td class="pass">365 in 6 maps; 28 lone cells left empty</td><td class="pass">byte-identical</td></tr>
+<tr><td>Shore</td><td class="num">90</td><td class="pass">736 in 6 maps</td><td class="pass">855 in 6 maps</td><td class="pass">byte-identical</td></tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>The maps.</strong> For the three blob sets: each set's 20 × 14 test map (for ground, without the slope hills, which aren't terrain) and the five maps of Pixelbolt's engine checks: islands, single cells and one-cell strips, inner corners, a ring, cells that touch only at a corner, and a seeded scatter. For shore: its 22 × 21 test map and Pixelbolt's five layered maps; Tiled paints a corner map one cell wider and taller (the test map is 23 × 22 there), so its six shore maps hold 855 cells to Godot's 736 (an island ring, grass in water, a band of sand and grass, a checkerboard and a scatter). The blob maps have 393 terrain cells, 28 of them lone cells; the empty cells around them stayed empty in both engines.</li>
+<li><strong>Godot.</strong> It loaded each TileSet with no error or warning; every tile had the right terrain, peering bits, probability, collision polygon and pixels, and <code>set_cells_terrain_connect</code> put Pixelbolt's tile shape in every painted cell (for a variant, any of that shape's variants counts). For shore, Pixelbolt's tile is the one its map of the corner points draws, half a cell in from the painted cells (see <a href="#godot">Godot 4</a>).</li>
+<li><strong>Tiled.</strong> Each <code>.tsx</code> loaded with the right grid, probabilities, collision objects and a Wang set whose ids match the tiles. Each cell was then given all its sides' and corners' terrain colours from Pixelbolt's map through Tiled's scripting interface for terrain edits (<code>TileLayerWangEdit</code>, which picks tiles that match the requested colours), and every tile Tiled chose was one Pixelbolt's tilemap draws there. That checks the tileset's Wang ids and Tiled's tile lookup, not strokes painted by hand. A lone cell gets no tile in Tiled (above). Tiled's <code>tmxrasterizer</code> drew every tile with its exported pixels, except that the half-transparent shadow pixels of snow and meadow (1,824 of them) came back at most one colour step off in each channel, most likely rounding as it blends a partly transparent pixel; Godot read the same pixels exactly.</li>
+<li>Both engines ran without a window. Painting by hand in the editors was not tested.</li>
+</ul>
+</section>
+
+<section id="compare">
+<h2>Other ways to get a tile set into Godot or Tiled</h2>
+<p>Every row but Pixelbolt's is from the tool's own page, read on 8 November 2026, not run by us.</p>
+<div class="table"><table>
+<thead><tr><th>Tool</th><th>You give it</th><th>It makes</th><th>Godot 4 and Tiled files</th><th>Price and terms</th></tr></thead>
+<tbody>
+<tr><td><strong>Pixelbolt</strong> (ours; its 47-tile and three-terrain sets tested above)</td><td>A terrain description in JSON, or a small template written as text</td><td>47-tile, 16-tile and corner sets, transitions between two and four terrains, slopes</td><td>Godot 4 TileSet with terrain; Tiled <code>.tsx</code> with a Wang set</td><td>Free, MIT</td></tr>
+<tr><td><a href="https://www.spritecook.ai/ai-tileset-generator">SpriteCook</a></td><td>A text prompt, to a hosted AI model</td><td>A 15- or 17-piece set, and platformer and isometric sets; on paid plans the 17-piece base expands to 47 tiles</td><td>On paid plans: a Godot <code>.tres</code> with terrain (isometric sets: atlas only) and a Tiled <code>.tsx</code> (terrain with the 17-piece base) (<a href="https://www.spritecook.ai/docs/tileset">its docs</a>)</td><td>Free plan: 40 credits every 30 days, and a tile set costs 12 with the default model; engine exports from the $8-a-month plan, before VAT; commercial use of what you generate on every plan (<a href="https://www.spritecook.ai/pricing">pricing</a>)</td></tr>
+<tr><td><a href="https://blobsmith.itch.io/blobsmith">Blobsmith</a></td><td>Six base tiles you draw, or an RPG Maker A2 block</td><td>A 47-tile set, or a 16-tile sides-only set</td><td>Godot 4 <code>.tres</code> with terrain and Tiled <code>.tsx</code> in the paid version</td><td>$9.95 or more, with a commercial licence for your exports; a free browser Lite version that exports PNG only</td></tr>
+<tr><td><a href="https://deforestpeg.itch.io/terrainforge">TerrainForge</a></td><td>A finished tile sheet, in one of four layouts</td><td>No art: it sets each tile's terrain bits and collision</td><td>Godot 4 <code>.tres</code> with terrain and collision; Tiled <code>.tsx</code> with Wang sets</td><td>$5 or more; a free browser demo that exports up to 64 tiles; the page states no licence</td></tr>
+<tr><td><a href="https://github.com/itsjavi/autotiler">Autotiler</a></td><td>A 13-tile template you draw, or an RPG Maker A2 block</td><td>A 47-tile set or a 16-tile dual grid</td><td>Godot 4 <code>.tres</code> with terrain and collision; Tiled <code>.tsx</code> with a Wang set</td><td>Free, MIT (desktop apps and a web version)</td></tr>
+<tr><td><a href="https://github.com/aleksandrbazhin/TilePipe">TilePipe</a></td><td>Tile parts you draw, and a ruleset</td><td>47-tile (and 16 or 256) sets</td><td>A plain PNG or a Godot 3 tileset; no Godot 4 file; Tiled export planned</td><td>Free, MIT (last commit February 2023)</td></tr>
+</tbody>
+</table></div>
+<p>A selection: tools that make or wire a whole set and write Godot or Tiled files. <a href="data/searches-2026-11-08.txt">Our searches</a> also turned up other AI tile generators, and tools that, by the search summaries, wire or assemble tiles you draw, among them Blobsmith Autotile Wirer and TileBitTools (on the Godot Asset Library), better-terrain, Pentatile and Blobator; we didn't open their pages. SpriteCook also has a free Tileset Base Generator for blank 15- and 17-piece templates.</p>
+</section>
+
+<section id="alternatives">
+<h2>When to use something else</h2>
+<ul>
+<li><strong>You have a finished tile sheet</strong>, such as a bought pack in a 47-tile or Wang layout: TerrainForge wires it into a Godot TileSet and a Tiled tileset.</li>
+<li><strong>You'd rather draw the tiles:</strong> Autotiler (free, MIT) builds the 47-tile set from a 13-tile template or an RPG Maker A2 block, and Blobsmith from six base tiles. Pixelbolt's own template route takes your drawing as rows of text characters, which is slower than a paint program for detailed tiles.</li>
+<li><strong>You want painted detail from a written prompt</strong> and don't mind a hosted AI service with credits: SpriteCook. Pixelbolt draws flat pixel-art fills, speckle, outlines, highlights and stamped details from the description; it doesn't paint textures from a sentence.</li>
+<li><strong>Godot 3:</strong> Pixelbolt writes Godot 4 TileSets only. TilePipe exports Godot 3 tilesets, and Autotiler's page lists a Godot 3 export too.</li>
+<li><strong>Isometric tiles:</strong> SpriteCook's page lists isometric sets. Pixelbolt's autotile sets are square tiles of an even size from 2 to 84 pixels (its notes).</li>
+<li><strong>A jam that bans AI-made art:</strong> no image model is involved here, but rules differ on tools and on what you write with an AI assistant; check with the organisers.</li>
+</ul>
+</section>
+
+<section id="how-we-tested">
+<h2>How we tested</h2>
+<ul>
+<li><strong>Builds.</strong> Pixelbolt 0.13.0 from npm (its source byte-identical to the v0.13.0 tag) built the four sets with the two commands above, in a new folder through npx and again with a local install; both gave byte-identical files, and three timed runs of each set took 555 to 666 ms each, both commands included. <a href="data/make-sets.sh">make-sets.sh</a> rebuilds them byte for byte.</li>
+<li><strong>Engines.</strong> Godot 4.7.2 stable (the official Windows build, its SHA-512 checked against the release's sums), run headless; Tiled 1.12.2 (the Windows installer build), run with <code>--evaluate</code> and <code>tmxrasterizer</code>. No window and no GPU.</li>
+<li><strong>The checks.</strong> Pixelbolt's repository has two independent engine checks, <code>scripts/verify-godot.mjs</code> and <code>scripts/verify-tiled.mjs</code>; both passed at the v0.13.0 tag as they are (<a href="data/stock-godot.txt">Godot output</a>, <a href="data/stock-tiled.txt">Tiled output</a>). <a href="data/check-page-sets.mjs">check-page-sets.mjs</a> then ran them on this guide's four sets and their test maps, and compared the CLI's files on this page, byte for byte, with a build of the same descriptions made in the same run as the files the engines loaded (<a href="data/check-results.json">results</a>). For Tiled it uses <a href="data/verify-tiled-onestep.mjs">a copy of the Tiled check</a> that allows a partly transparent pixel to come back one colour step off in <code>tmxrasterizer</code>'s render, as the stock check already allows where partly transparent pixels blend in its scene step; opaque pixels and alpha must still match exactly. The copies published here were run from a v0.13.0 checkout's <code>scripts/</code> folder and gave the same results.</li>
+<li><strong>Not tested:</strong> painting by hand in either editor; other Godot or Tiled versions; macOS and Linux; a game body walking on the collision shapes (the polygons were checked against the atlas); the 16-tile cardinal and single-terrain corner modes.</li>
+</ul>
+<p>To repeat it: <a href="data/README.txt">data/README.txt</a> has the commands. The searches this page answers, and what ranked for them on 8 November 2026, are in <a href="data/searches-2026-11-08.txt">searches-2026-11-08.txt</a>.</p>
+</section>
+
+<h2>Licence</h2>
+<p>Pixelbolt is free and open source under the MIT licence. The snow set and its description were made for this guide and are MIT-licensed, with the same licence text as Pixelbolt (<code>LICENSE.txt</code> in each zip). Meadow, ground and shore are examples that ship in Pixelbolt's MIT-licensed npm package. Godot is MIT-licensed; Tiled is free software under the GPL.</p>
+
+<h2>More from Pixelbolt</h2>
+<ul>
+<li><a href="../unreal-paper2d-sprite-sheets/">Import a pixel art JSON sprite sheet into Unreal Engine 5 Paper2D, with flipbooks</a></li>
+<li><a href="../pixel-art-fire-animation/">Fire: a campfire, a torch and a hand-drawn flame</a></li>
+<li><a href="../pixel-art-water-animation/">Water: a waterfall, a splash, a drip and a dam break</a></li>
+<li><a href="../pixel-art-explosion/">Explosions: a fireball with smoke and sparks, and small particle bursts</a></li>
+</ul>
+<p><a href="../">All guides</a> · <a href="../../playground/">The playground</a> · <a href="../../gallery/">The gallery</a> · <a href="../../compare/">All comparisons</a> · <a href="../../">Pixelbolt home</a></p>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</main>
+</body>
+</html>

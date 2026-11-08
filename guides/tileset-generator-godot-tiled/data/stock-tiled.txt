@@ -1,0 +1,3 @@
+Tiled 1.12.2: 10 tilesets loaded; 762 tiles match their probability, 483 collision polygons, oneWay and 47 animations; 617 Wang tiles match their Wang ids; Tiled's terrain filler chose Pixelbolt's tile in all 3033 painted cells; tmxrasterizer drew all 71040 pixels as exported.
+Tiled scene map: Tiled read scene.tmx with 4 tile layers and 16 tile objects over 6 tilesets; tmxrasterizer drew the unlit scene exactly in 6867 of 6912 pixels and within one step in the other 45, where partly transparent pixels blend.
+exit 0
