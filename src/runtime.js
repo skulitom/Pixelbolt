@@ -27,16 +27,9 @@ export function frameAt(atlas, animation, time) {
   }
   return sequence.frames.at(-1);
 }
-// The pixel a frame's anchor names, in the source canvas: `anchorPx`; or, in an atlas written before `anchorPx` or
-// by hand, `anchor` in pixels (it differs from the 0-1 `pivot`, or is above 1); or a 0-1 `anchor` or `pivot` times
-// the source size.
-function anchorPixels(entry, source) {
-  if (entry.anchorPx) return entry.anchorPx;
-  const { anchor, pivot } = entry;
-  if (anchor && (pivot ? anchor.x !== pivot.x || anchor.y !== pivot.y : anchor.x > 1 || anchor.y > 1)) return anchor;
-  const share = anchor ?? pivot;
-  return share ? { x: Math.round(share.x * source.w), y: Math.round(share.y * source.h) } : { x: 0, y: 0 };
-}
+// The pixel a frame's anchor names, in the source canvas. Atlases write it as `anchorPx` beside the 0-1 `anchor`;
+// one without `anchorPx` (written before it, or by hand) keeps its `anchor` in pixels, read as it always was.
+const anchorPixels = entry => entry.anchorPx ?? entry.anchor ?? { x: 0, y: 0 };
 /**
  * Draws one atlas frame into any 2D context, for games that draw many sprites into one canvas.
  * (x, y) is the frame's anchor when the atlas has one (pass anchor: false to ignore it), otherwise the top-left of
@@ -49,7 +42,7 @@ export function drawFrame(context, sheet, name, x, y, { scale = 1, flipX = false
   if (!Object.hasOwn(sheet.atlas.frames, name)) throw new Error(`Unknown frame: ${name}`);
   const entry = sheet.atlas.frames[name], { frame } = entry;
   const source = entry.sourceSize ?? { w: frame.w, h: frame.h }, offset = entry.spriteSourceSize ?? { x: 0, y: 0, w: frame.w, h: frame.h };
-  const origin = anchor ? anchorPixels(entry, source) : { x: 0, y: 0 };
+  const origin = anchor ? anchorPixels(entry) : { x: 0, y: 0 };
   const left = Math.round(x) - (flipX ? source.w - origin.x : origin.x) * scale, top = Math.round(y) - origin.y * scale;
   const dx = flipX ? source.w - offset.x - offset.w : offset.x;
   context.imageSmoothingEnabled = false;

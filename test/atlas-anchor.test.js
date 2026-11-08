@@ -32,7 +32,7 @@ test('P-086: Phaser and PixiJS read an exported atlas anchor as the 0-1 origin',
   assert.equal(atlas.frames.a.trimmed, true);
 });
 
-test('P-086: drawFrame lands the anchor pixel on (x, y) from new atlases, older pixel anchors and 0-1 anchors alike', async () => {
+test('P-086: drawFrame lands the anchor pixel on (x, y) from new atlases, and reads older and hand-written atlases as before', async () => {
   const atlas = (await createBundle(recipe)).atlas.metadata;
   const draws = [];
   const context = { set imageSmoothingEnabled(value) {}, drawImage: (...args) => draws.push(args.slice(5)), save() {}, restore() {}, translate() {}, scale() {} };
@@ -43,13 +43,13 @@ test('P-086: drawFrame lands the anchor pixel on (x, y) from new atlases, older 
   const { anchorPx, ...rest } = entry;
   // An atlas written before anchorPx kept the pixel point under `anchor`, beside the 0-1 `pivot`.
   assert.deepEqual(place({ a: { ...rest, anchor: anchorPx } }), expected);
-  // A hand-written atlas with only a pixel anchor keeps working.
-  const { pivot, ...noPivot } = rest;
-  assert.deepEqual(place({ a: { ...noPivot, anchor: anchorPx } }), expected);
-  // An atlas with only a 0-1 anchor or pivot (TexturePacker's own) scales it by the source size.
-  assert.deepEqual(place({ a: { ...rest } }), expected);
-  const { anchor, ...pivotOnly } = rest;
-  assert.deepEqual(place({ a: pivotOnly }), expected);
+  // A hand-written atlas with no anchorPx keeps its anchor in pixels, small and negative ones included.
+  const { pivot, anchor, ...bare } = rest, { x: left, y: top } = entry.spriteSourceSize;
+  for (const pixel of [{ x: 1, y: 1 }, { x: 0, y: 1 }, { x: -2, y: -3 }, { x: 4, y: 6 }]) {
+    assert.deepEqual(place({ a: { ...bare, anchor: pixel } }).slice(0, 2), [100 - pixel.x + left, 100 - pixel.y + top], JSON.stringify(pixel));
+  }
+  // With no anchor at all, a pivot alone places nothing, as before: the source canvas's top-left is at (x, y).
+  assert.deepEqual(place({ a: { ...bare, pivot } }).slice(0, 2), [100 + left, 100 + top]);
   // anchor: false still draws the source canvas's top-left at (x, y).
   draws.length = 0; drawFrame(context, { image: {}, atlas }, 'a', 100, 100, { anchor: false });
   assert.deepEqual(draws[0].slice(0, 2), [100 + entry.spriteSourceSize.x, 100 + entry.spriteSourceSize.y]);
