@@ -1,0 +1,4548 @@
+{
+  "frames": {
+    "shore-wwww": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "water"
+        ],
+        "weight": 4,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swww": {
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwww": {
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsww": {
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssww": {
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gsww": {
+      "frame": {
+        "x": 80,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wgww": {
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgww": {
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ggww": {
+      "frame": {
+        "x": 128,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwsw": {
+      "frame": {
+        "x": 0,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swsw": {
+      "frame": {
+        "x": 16,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwsw": {
+      "frame": {
+        "x": 32,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wssw": {
+      "frame": {
+        "x": 48,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sssw": {
+      "frame": {
+        "x": 64,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gssw": {
+      "frame": {
+        "x": 80,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wgsw": {
+      "frame": {
+        "x": 96,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgsw": {
+      "frame": {
+        "x": 112,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ggsw": {
+      "frame": {
+        "x": 128,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "sand",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwgw": {
+      "frame": {
+        "x": 0,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swgw": {
+      "frame": {
+        "x": 16,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwgw": {
+      "frame": {
+        "x": 32,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsgw": {
+      "frame": {
+        "x": 48,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssgw": {
+      "frame": {
+        "x": 64,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gsgw": {
+      "frame": {
+        "x": 80,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wggw": {
+      "frame": {
+        "x": 96,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sggw": {
+      "frame": {
+        "x": 112,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 6
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gggw": {
+      "frame": {
+        "x": 128,
+        "y": 32,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 5
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 16
+            },
+            {
+              "x": 6,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwws": {
+      "frame": {
+        "x": 0,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swws": {
+      "frame": {
+        "x": 16,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwws": {
+      "frame": {
+        "x": 32,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsws": {
+      "frame": {
+        "x": 48,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssws": {
+      "frame": {
+        "x": 64,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gsws": {
+      "frame": {
+        "x": 80,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wgws": {
+      "frame": {
+        "x": 96,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgws": {
+      "frame": {
+        "x": 112,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ggws": {
+      "frame": {
+        "x": 128,
+        "y": 48,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "water",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwss": {
+      "frame": {
+        "x": 0,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "sand",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swss": {
+      "frame": {
+        "x": 16,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "sand",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwss": {
+      "frame": {
+        "x": 32,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "sand",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsss": {
+      "frame": {
+        "x": 48,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "sand",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssss": {
+      "frame": {
+        "x": 64,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "sand"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-gsss": {
+      "frame": {
+        "x": 80,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "sand",
+          "sand"
+        ]
+      }
+    },
+    "shore-wgss": {
+      "frame": {
+        "x": 96,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "sand",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgss": {
+      "frame": {
+        "x": 112,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "sand",
+          "sand"
+        ]
+      }
+    },
+    "shore-ggss": {
+      "frame": {
+        "x": 128,
+        "y": 64,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "sand",
+          "sand"
+        ]
+      }
+    },
+    "shore-wwgs": {
+      "frame": {
+        "x": 0,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "grass",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swgs": {
+      "frame": {
+        "x": 16,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "grass",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwgs": {
+      "frame": {
+        "x": 32,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "grass",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsgs": {
+      "frame": {
+        "x": 48,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "grass",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssgs": {
+      "frame": {
+        "x": 64,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "grass",
+          "sand"
+        ]
+      }
+    },
+    "shore-gsgs": {
+      "frame": {
+        "x": 80,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "grass",
+          "sand"
+        ]
+      }
+    },
+    "shore-wggs": {
+      "frame": {
+        "x": 96,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "grass",
+          "sand"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sggs": {
+      "frame": {
+        "x": 112,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "grass",
+          "sand"
+        ]
+      }
+    },
+    "shore-gggs": {
+      "frame": {
+        "x": 128,
+        "y": 80,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "sand"
+        ]
+      }
+    },
+    "shore-wwwg": {
+      "frame": {
+        "x": 0,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swwg": {
+      "frame": {
+        "x": 16,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 6,
+              "y": 6
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwwg": {
+      "frame": {
+        "x": 32,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 11
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 5
+            },
+            {
+              "x": 6,
+              "y": 5
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wswg": {
+      "frame": {
+        "x": 48,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sswg": {
+      "frame": {
+        "x": 64,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gswg": {
+      "frame": {
+        "x": 80,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wgwg": {
+      "frame": {
+        "x": 96,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgwg": {
+      "frame": {
+        "x": 112,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 6
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ggwg": {
+      "frame": {
+        "x": 128,
+        "y": 96,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "water",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 5
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 10,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwsg": {
+      "frame": {
+        "x": 0,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "sand",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swsg": {
+      "frame": {
+        "x": 16,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "sand",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwsg": {
+      "frame": {
+        "x": 32,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "sand",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wssg": {
+      "frame": {
+        "x": 48,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "sand",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sssg": {
+      "frame": {
+        "x": 64,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "grass"
+        ]
+      }
+    },
+    "shore-gssg": {
+      "frame": {
+        "x": 80,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "sand",
+          "grass"
+        ]
+      }
+    },
+    "shore-wgsg": {
+      "frame": {
+        "x": 96,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "sand",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sgsg": {
+      "frame": {
+        "x": 112,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "sand",
+          "grass"
+        ]
+      }
+    },
+    "shore-ggsg": {
+      "frame": {
+        "x": 128,
+        "y": 112,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "sand",
+          "grass"
+        ]
+      }
+    },
+    "shore-wwgg": {
+      "frame": {
+        "x": 0,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "grass",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-swgg": {
+      "frame": {
+        "x": 16,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "water",
+          "grass",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-gwgg": {
+      "frame": {
+        "x": 32,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "water",
+          "grass",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 6,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 6,
+              "y": 8
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wsgg": {
+      "frame": {
+        "x": 48,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "sand",
+          "grass",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssgg": {
+      "frame": {
+        "x": 64,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "grass",
+          "grass"
+        ]
+      }
+    },
+    "shore-gsgg": {
+      "frame": {
+        "x": 80,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "sand",
+          "grass",
+          "grass"
+        ]
+      }
+    },
+    "shore-wggg": {
+      "frame": {
+        "x": 96,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "grass",
+          "grass",
+          "grass"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 0
+            },
+            {
+              "x": 10,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 8
+            },
+            {
+              "x": 8,
+              "y": 11
+            },
+            {
+              "x": 0,
+              "y": 11
+            }
+          ]
+        ]
+      }
+    },
+    "shore-sggg": {
+      "frame": {
+        "x": 112,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "grass",
+          "grass",
+          "grass"
+        ]
+      }
+    },
+    "shore-gggg": {
+      "frame": {
+        "x": 128,
+        "y": 128,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "grass"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-wwww-b": {
+      "frame": {
+        "x": 0,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "water"
+        ],
+        "weight": 4,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwww-c": {
+      "frame": {
+        "x": 16,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "water"
+        ],
+        "weight": 4,
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-wwww-lily": {
+      "frame": {
+        "x": 32,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "water",
+          "water",
+          "water",
+          "water"
+        ],
+        "collision": [
+          [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 0
+            },
+            {
+              "x": 16,
+              "y": 16
+            },
+            {
+              "x": 0,
+              "y": 16
+            }
+          ]
+        ]
+      }
+    },
+    "shore-ssss-b": {
+      "frame": {
+        "x": 48,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "sand"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-ssss-c": {
+      "frame": {
+        "x": 64,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "sand"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-ssss-shell": {
+      "frame": {
+        "x": 80,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "sand",
+          "sand",
+          "sand",
+          "sand"
+        ]
+      }
+    },
+    "shore-gggg-b": {
+      "frame": {
+        "x": 96,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "grass"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-gggg-c": {
+      "frame": {
+        "x": 112,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "grass"
+        ],
+        "weight": 4
+      }
+    },
+    "shore-gggg-daisies": {
+      "frame": {
+        "x": 128,
+        "y": 144,
+        "w": 16,
+        "h": 16
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "sourceSize": {
+        "w": 16,
+        "h": 16
+      },
+      "duration": 100,
+      "tile": {
+        "corners": [
+          "grass",
+          "grass",
+          "grass",
+          "grass"
+        ]
+      }
+    }
+  },
+  "animations": {
+    "default": {
+      "frames": [
+        "shore-wwww",
+        "shore-swww",
+        "shore-gwww",
+        "shore-wsww",
+        "shore-ssww",
+        "shore-gsww",
+        "shore-wgww",
+        "shore-sgww",
+        "shore-ggww",
+        "shore-wwsw",
+        "shore-swsw",
+        "shore-gwsw",
+        "shore-wssw",
+        "shore-sssw",
+        "shore-gssw",
+        "shore-wgsw",
+        "shore-sgsw",
+        "shore-ggsw",
+        "shore-wwgw",
+        "shore-swgw",
+        "shore-gwgw",
+        "shore-wsgw",
+        "shore-ssgw",
+        "shore-gsgw",
+        "shore-wggw",
+        "shore-sggw",
+        "shore-gggw",
+        "shore-wwws",
+        "shore-swws",
+        "shore-gwws",
+        "shore-wsws",
+        "shore-ssws",
+        "shore-gsws",
+        "shore-wgws",
+        "shore-sgws",
+        "shore-ggws",
+        "shore-wwss",
+        "shore-swss",
+        "shore-gwss",
+        "shore-wsss",
+        "shore-ssss",
+        "shore-gsss",
+        "shore-wgss",
+        "shore-sgss",
+        "shore-ggss",
+        "shore-wwgs",
+        "shore-swgs",
+        "shore-gwgs",
+        "shore-wsgs",
+        "shore-ssgs",
+        "shore-gsgs",
+        "shore-wggs",
+        "shore-sggs",
+        "shore-gggs",
+        "shore-wwwg",
+        "shore-swwg",
+        "shore-gwwg",
+        "shore-wswg",
+        "shore-sswg",
+        "shore-gswg",
+        "shore-wgwg",
+        "shore-sgwg",
+        "shore-ggwg",
+        "shore-wwsg",
+        "shore-swsg",
+        "shore-gwsg",
+        "shore-wssg",
+        "shore-sssg",
+        "shore-gssg",
+        "shore-wgsg",
+        "shore-sgsg",
+        "shore-ggsg",
+        "shore-wwgg",
+        "shore-swgg",
+        "shore-gwgg",
+        "shore-wsgg",
+        "shore-ssgg",
+        "shore-gsgg",
+        "shore-wggg",
+        "shore-sggg",
+        "shore-gggg",
+        "shore-wwww-b",
+        "shore-wwww-c",
+        "shore-wwww-lily",
+        "shore-ssss-b",
+        "shore-ssss-c",
+        "shore-ssss-shell",
+        "shore-gggg-b",
+        "shore-gggg-c",
+        "shore-gggg-daisies"
+      ],
+      "loop": true,
+      "duration": 9000
+    }
+  },
+  "meta": {
+    "app": "Pixelbolt",
+    "version": "1",
+    "image": "shore.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 144,
+      "h": 160
+    },
+    "scale": "1",
+    "frameTags": [
+      {
+        "name": "default",
+        "from": 0,
+        "to": 89,
+        "direction": "forward"
+      }
+    ]
+  }
+}

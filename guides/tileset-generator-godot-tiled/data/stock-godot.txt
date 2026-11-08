@@ -1,0 +1,5 @@
+4.7.2.stable.official.ed1daf0bf: 2 SpriteFrames loaded; 31 frames match their regions, margins, sizes, pixels and times; 57 playback events match a replay of AnimatedSprite2D as Godot 4.6 and 4.7 run it (the rest of a step after a frame change at the previous frame's speed, godotengine/godot#123572).
+AnimatedSprite2D moves frame changes away from the recipe's times in godot-trim.strobe 19 ms, godot-trim.back 2 ms (1 ms process steps); the SpriteFrames' times are exact.
+4.7.2.stable.official.ed1daf0bf: 8 TileSets loaded; 646 tiles match their terrain, peering bits, probability, 483 collision polygons, regions and 740 frames of pixels and timing; Godot's terrain painter chose Pixelbolt's tile in all 2052 painted cells.
+4.7.2.stable.official.ed1daf0bf: the lit asset's SpriteFrames draws all 2 frames through canvas_texture.tres (nearest filtering), whose normal map is normal.png with green flipped in all 312 visible pixels.
+exit 0

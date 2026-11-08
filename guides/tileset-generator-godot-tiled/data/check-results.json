@@ -1,0 +1,292 @@
+{
+  "pixelbolt": "0.13.0",
+  "stock": {
+    "sources": 6,
+    "maps": 5,
+    "layeredMaps": 5
+  },
+  "sets": {
+    "snow": {
+      "godot": {
+        "tiles": 188,
+        "terrainSets": [
+          {
+            "mode": 0,
+            "terrains": [
+              "snow"
+            ]
+          }
+        ],
+        "paintedPerMap": [
+          23,
+          21,
+          14,
+          13,
+          183,
+          139
+        ],
+        "testMapCells": 139,
+        "allCells": 393
+      },
+      "tiled": {
+        "wangSets": [
+          [
+            "snow",
+            "mixed",
+            [
+              "snow"
+            ]
+          ]
+        ],
+        "paintedPerMap": [
+          40,
+          35,
+          25,
+          25,
+          308,
+          280
+        ],
+        "testMapCells": 280,
+        "allCells": 713,
+        "tilesPlaced": 365,
+        "loneCellsLeftEmpty": 28
+      },
+      "downloads": {
+        "snow.png": {
+          "identical": true,
+          "sha256": "8f1601a1eda2a2fa71ac22fd6b8bfe9e4d9ba411b092d98d251468e964b9a338"
+        },
+        "snow.tileset.tres": {
+          "identical": true,
+          "sha256": "a4f31f2845ae04e170cc60e95196f4f47044f656837f29331d1c9ae84dba5d09"
+        },
+        "snow.tsx": {
+          "identical": true,
+          "sha256": "8cf18fcb98da60cde06f05a1f2ce9b6fa43f51891e018509a9ce7cfcd486eb94"
+        },
+        "snow.atlas.json": {
+          "identical": true,
+          "sha256": "6440b8ea305d13f7699c3c7459bce6e66c34a994e24585f848412698346e2bee"
+        }
+      },
+      "frames": 188
+    },
+    "meadow": {
+      "godot": {
+        "tiles": 188,
+        "terrainSets": [
+          {
+            "mode": 0,
+            "terrains": [
+              "meadow"
+            ]
+          }
+        ],
+        "paintedPerMap": [
+          23,
+          21,
+          14,
+          13,
+          183,
+          139
+        ],
+        "testMapCells": 139,
+        "allCells": 393
+      },
+      "tiled": {
+        "wangSets": [
+          [
+            "meadow",
+            "mixed",
+            [
+              "meadow"
+            ]
+          ]
+        ],
+        "paintedPerMap": [
+          40,
+          35,
+          25,
+          25,
+          308,
+          280
+        ],
+        "testMapCells": 280,
+        "allCells": 713,
+        "tilesPlaced": 365,
+        "loneCellsLeftEmpty": 28
+      },
+      "downloads": {
+        "meadow.png": {
+          "identical": true,
+          "sha256": "98697ec9504d1da71dc60200f87b7aa0845c50098b279abd7807b5e5f6867926"
+        },
+        "meadow.tileset.tres": {
+          "identical": true,
+          "sha256": "8e8d7fddde4372d125022e27d527432ca69d230c6611d4e86c2c2a20a45a9599"
+        },
+        "meadow.tsx": {
+          "identical": true,
+          "sha256": "eaa157372e56f4f8dd073203541517d5c7837eda0ec0e0eb6959e4bab44e4494"
+        },
+        "meadow.atlas.json": {
+          "identical": true,
+          "sha256": "891b75d13394d6cfddd54b7e9609806116a2d1c46ee8202336c6ee73b13ae881"
+        }
+      },
+      "frames": 188
+    },
+    "ground": {
+      "godot": {
+        "tiles": 151,
+        "terrainSets": [
+          {
+            "mode": 0,
+            "terrains": [
+              "ground"
+            ]
+          }
+        ],
+        "paintedPerMap": [
+          23,
+          21,
+          14,
+          13,
+          183,
+          139
+        ],
+        "testMapCells": 139,
+        "allCells": 393
+      },
+      "tiled": {
+        "wangSets": [
+          [
+            "ground",
+            "mixed",
+            [
+              "ground"
+            ]
+          ]
+        ],
+        "paintedPerMap": [
+          40,
+          35,
+          25,
+          25,
+          308,
+          280
+        ],
+        "testMapCells": 280,
+        "allCells": 713,
+        "tilesPlaced": 365,
+        "loneCellsLeftEmpty": 28
+      },
+      "downloads": {
+        "ground.png": {
+          "identical": true,
+          "sha256": "e09aa19093b74bd1920d07e37f277d0889e82e4558b8d0777c9490f8df782ca9"
+        },
+        "ground.tileset.tres": {
+          "identical": true,
+          "sha256": "426ed259426b829ef0335675f518ca0bb4b93947440916503e9fd1cd18ed8a27"
+        },
+        "ground.tsx": {
+          "identical": true,
+          "sha256": "496e01f1c88dc917a1fa86afa521a2419879eabff435014d2b4ce1e087921e33"
+        },
+        "ground.atlas.json": {
+          "identical": true,
+          "sha256": "bb4e626c0e120e7d86767bb39964c984b428cd9c134cbf4ca72614d70ef5a6ae"
+        }
+      },
+      "frames": 151
+    },
+    "shore": {
+      "godot": {
+        "tiles": 90,
+        "terrainSets": [
+          {
+            "mode": 1,
+            "terrains": [
+              "water",
+              "sand",
+              "grass"
+            ]
+          }
+        ],
+        "paintedPerMap": [
+          48,
+          42,
+          28,
+          16,
+          140,
+          462
+        ],
+        "testMapCells": 462,
+        "allCells": 736
+      },
+      "tiled": {
+        "wangSets": [
+          [
+            "shore",
+            "corner",
+            [
+              "water",
+              "sand",
+              "grass"
+            ]
+          ]
+        ],
+        "paintedPerMap": [
+          63,
+          56,
+          40,
+          25,
+          165,
+          506
+        ],
+        "testMapCells": 506,
+        "allCells": 855,
+        "tilesPlaced": 855
+      },
+      "downloads": {
+        "shore.png": {
+          "identical": true,
+          "sha256": "25252eff198a655dbb6d9e366aac76f766a57762519d48f5ac313a9e6c4643c2"
+        },
+        "shore.tileset.tres": {
+          "identical": true,
+          "sha256": "77ed51ce4957aa91bf800cd7df805d74174f07074a74ee58382ff53e7f525faa"
+        },
+        "shore.tsx": {
+          "identical": true,
+          "sha256": "0c45ac6a955462d74608595b0173172a8190b673d86ab795cde851691cb15179"
+        },
+        "shore.atlas.json": {
+          "identical": true,
+          "sha256": "5b7007b6e30d1454eb14ee5529903f0735c41c303915cba2c5936602f41d0f3d"
+        }
+      },
+      "frames": 90
+    }
+  },
+  "godot": {
+    "version": "4.7.2.stable.official.ed1daf0bf",
+    "summary": "4.7.2.stable.official.ed1daf0bf: 11 TileSets loaded; 1180 tiles match their terrain, peering bits, probability, 628 collision polygons, regions and 1274 frames of pixels and timing; Godot's terrain painter chose Pixelbolt's tile in all 4666 painted cells."
+  },
+  "tiled": {
+    "summary": "Tiled 1.12.2: 13 tilesets loaded; 1306 tiles match their probability, 628 collision polygons, oneWay and 47 animations; 1130 Wang tiles match their Wang ids; Tiled's terrain filler chose Pixelbolt's tile in all 7393 painted cells; tmxrasterizer drew all 227584 pixels as exported, 1824 of the 1824 partly transparent ones at most one colour step off in each channel.",
+    "oneStep": 1824,
+    "partial": 1824,
+    "perKeyOneStep": {
+      "snow": 944,
+      "meadow": 880
+    },
+    "perKeyPartial": {
+      "snow": 944,
+      "meadow": 880
+    },
+    "version": "1.12.2"
+  },
+  "note": "Tiled allCells and the summary lines count every cell of the maps, empty ones included (the stock checks' wording); tilesPlaced counts the cells where Tiled placed a tile, each one Pixelbolt draws there."
+}

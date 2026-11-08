@@ -1,0 +1,36 @@
+Searches this guide answers, run 8 November 2026 at about 15:00 London time (Claude's web search, standard mode).
+Our pages appeared in none of them. "Ranked" lists the result links in the order returned; "Summary" is what the
+search tool's own summary said, which is what an AI agent reads.
+
+1. "free tileset generator for Godot 4 terrain autotile from description"
+   Ranked: TerrainForge (itch.io), Blobsmith (itch.io), TileSnap (itch.io), Forge starter tilesets (itch.io), a Godot
+   forum post (a free 27-tile interior tileset), ProcGen World (itch.io), Blobsmith Autotile Wirer (Godot Asset
+   Library), better-terrain (GitHub), TilePipe2 (itch.io), verdant playground (itch.io), Godot TileMap Bootstrapper
+   (itch.io), ziva.sh autotile template generator, TileBitTools (Godot Asset Library), SpriteCook (two pages).
+   Summary: found no free tool that builds a Godot 4 terrain tileset from a text description; named SpriteCook's
+   paid tileset mode, and template or wiring tools that need your own art.
+
+2. "AI tileset generator Tiled tsx export free"
+   Ranked: SpriteCook (five pages), TerrainForge, Sorceress (three posts), Smart Tileset Generator (itch.io),
+   Cloudinary, MapGen (itch.io), Ludo.ai, ZSky, LlamaGen, pixl, Sprite AI.
+   Summary: SpriteCook's Tiled export isn't free; the free tools found make templates or wire existing art.
+
+3. "generate 47 tile blob autotile set Godot TileSet terrain open source"
+   Ranked: Blobsmith (itch.io and Godot Asset Library), Forge starter tilesets, TilePipe (GitHub), verdant
+   playground, Pentatile, AutoBlob (itch.io and Aseprite forum), TerrainForge, Autotiler (itsjavi), a Fab listing,
+   ziva.sh, Blobator (GitHub), SpriteCook.
+   Summary: open-source tools (Autotiler, Blobsmith Autotile Wirer, Pentatile, TilePipe, Blobator) assemble or wire
+   sets from tiles you draw.
+
+4. "seamless pixel art tileset generator game jam free open source"
+   Ranked: Pixel Tileset Pattern Maker, TileSnap, Space Generator, Procedural Tile Generator, Procedural Tileset
+   Generator (Donitz), itch.io tag and "games like" pages, SpriteCook's base generator, 80.lv on Instatileset,
+   Sorceress (two posts), pixel creator, Sprite AI, Summer Engine.
+   Summary: no result was clearly an open-source tileset generator; most list no licence.
+
+5. "MCP server tileset generator Godot Tiled AI agent"
+   Ranked: Glama (Vollkorn-Games godot-mcp create_tileset), LobeHub (djinnfoundry godot-map-cli,
+   ekaitzsegurola godot-tilemap-mcp), godot-mcp (hybridindie), SpriteCook MCP (mcpservers.org), Godot Asset Library
+   (Godot MCP - Tilemap), ComfyAI-MCP-GameAssets generate_tileset (Glama), Better Godot MCP, ai-game.dev.
+   Summary: several MCP servers edit Godot TileSets and TileMaps from art you supply; SpriteCook's and ComfyAI's
+   generate tile images through an AI backend; none connects to Tiled.

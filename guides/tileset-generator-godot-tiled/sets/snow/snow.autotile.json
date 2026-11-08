@@ -1,0 +1,65 @@
+{
+  "format": "pixelforge-autotile",
+  "version": 1,
+  "name": "snow",
+  "tile": 16,
+  "palette": {
+    "k": "#1b2433",
+    "b": "#6f87a8",
+    "S": "#a9bfd6",
+    "s": "#d3e1ee",
+    "w": "#f4f8fc",
+    "i": "#bfe6f7",
+    "r": "#4a4f5c",
+    "R": "#7b8090",
+    "u": "#4f4038",
+    "c": "#0e162659"
+  },
+  "symbols": {
+    "rock": [
+      ".rr.",
+      "rRRr",
+      ".rr."
+    ],
+    "twig": [
+      "r..",
+      ".r.",
+      ".rr"
+    ]
+  },
+  "terrain": {
+    "seed": 6,
+    "fill": {
+      "color": "s",
+      "speckle": [
+        { "color": "w", "amount": 0.24, "size": 5 },
+        { "color": "S", "amount": 0.12, "size": 4 },
+        { "color": "i", "amount": 0.03, "size": 2 }
+      ]
+    },
+    "edges": {
+      "all": { "depth": 2, "jitter": 1, "size": 6, "bands": ["k", "S"] },
+      "n": { "bands": ["k", "w"] },
+      "s": { "depth": 3, "bands": ["k", "b"], "outside": ["c"] }
+    },
+    "round": 2,
+    "inner": 1
+  },
+  "frame": "snow-{mask}-{variant}",
+  "variants": [
+    { "name": "a", "weight": 4 },
+    { "name": "b", "weight": 4, "terrain": { "fill": { "seed": 11 } } },
+    { "name": "c", "weight": 4, "terrain": { "fill": { "seed": 23 } } },
+    {
+      "name": "rocks",
+      "weight": 1,
+      "terrain": { "fill": { "seed": 37 } },
+      "ops": [
+        { "op": "stamp", "symbol": "rock", "x": 10, "y": 27 },
+        { "op": "stamp", "symbol": "twig", "x": 19, "y": 35 }
+      ]
+    }
+  ],
+  "preview": { "background": "u" },
+  "sheet": { "columns": 16 }
+}

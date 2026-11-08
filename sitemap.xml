@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-08</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/</loc>
@@ -23,7 +23,11 @@
   <url><loc>https://skulitom.github.io/Pixelbolt/playground/</loc><lastmod>2026-10-25</lastmod></url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/</loc>
-    <lastmod>2026-11-07</lastmod>
+    <lastmod>2026-11-08</lastmod>
+  </url>
+  <url>
+    <loc>https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/</loc>
+    <lastmod>2026-11-08</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/</loc>
