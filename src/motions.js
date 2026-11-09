@@ -79,12 +79,15 @@ export function expandMotions(input, compileRest, probeJoints) {
   if (!rest?.parts || rest.mirror || rest.tween) fail('poses.rig.rest', 'must name an authored pose with parts and an origin');
   if (source.poses.filter(p => p.name === rest.name).length !== 1) fail('poses.rig.rest', 'rest pose must have a unique name');
   if (!source.motions || typeof source.motions !== 'object' || Array.isArray(source.motions) || Object.keys(source.motions).length > 16) fail('poses.motions', 'expected up to sixteen named motions');
+  if (source.animations !== undefined && (!source.animations || typeof source.animations !== 'object' || Array.isArray(source.animations))) fail('poses.animations', 'expected an object of named animations');
   const restSource = { ...source, poses: [rest], animations: { rest: { frames: [rest.name], loop: false } } };
   delete restSource.motions;
   // Generated poses are checked one at a time for planted-foot reach; that needs joints, not the rig.
   const checkSource = { ...restSource }; delete checkSource.rig;
   const restData = compileRest(restSource).metadata.poses[rest.name], instances = new Map(rest.parts.map(p => [p.name, p])), rig = source.rig;
-  const restAngle = name => (restData.parts[name].rotate ?? 0) - (restData.parts[instances.get(name).attach?.part]?.rotate ?? 0);
+  // What an instance hangs from, turned at rest; a root instance hangs from nothing (never looked up under "undefined").
+  const parentAngle = name => instances.get(name).attach ? restData.parts[instances.get(name).attach.part]?.rotate ?? 0 : 0;
+  const restAngle = name => (restData.parts[name].rotate ?? 0) - parentAngle(name);
   const requireInstance = (name, path) => { if (!instances.has(name)) fail(path, `unknown rest-pose instance ${name}`); return instances.get(name); };
   const body = requireInstance(rig.body, 'poses.rig.body');
   if (!source.parts[body.part]?.mass) fail('poses.rig.body', 'motion templates need a mass body');
@@ -372,7 +375,7 @@ export function expandMotions(input, compileRest, probeJoints) {
       // windup and strike are angles in the body's frame. An arm that hangs from another part (a chest standing up from
       // the hips) takes them less that part's turn from the body at rest, so the blow goes the same way on either rig.
       if (template === 'attack') {
-        const shoulder = rig.arms[arm][0], frame = (restData.parts[instances.get(shoulder).attach?.part]?.rotate ?? 0) - (restData.parts[rig.body].rotate ?? 0);
+        const shoulder = rig.arms[arm][0], frame = parentAngle(shoulder) - (restData.parts[rig.body].rotate ?? 0);
         setAngle(parts.get(shoulder), i < 3 ? [windup, strike, strike + 45][i] - frame : restAngle(shoulder)); bodySquash = [.9, 1.05, .95, 1][i]; setAngle(torso, restAngle(rig.body) + [-8, 8, 14, 0][i]);
       }
       // A four-legged body flinches back with its back curled and its head pulled up, rather than tipping over.
@@ -593,7 +596,7 @@ function tailRig(rig, { instances, restData, restAngle, source, owners, rest, ta
     const instance = instances.get(name), placed = restData.parts[name], host = instance.attach?.part ?? null, parent = set.has(host) ? host : null;
     return { name, host, parent: parent ? order.indexOf(parent) : -1, rel: restAngle(name), world: placed.rotate ?? 0, length: Math.max(1, reach(source.parts[instance.part])),
       offset: parent && [placed.anchor[0] - restData.parts[parent].anchor[0], placed.anchor[1] - restData.parts[parent].anchor[1]],
-      restAnchor: placed.anchor, restHost: restData.parts[host]?.rotate ?? 0 };
+      restAnchor: placed.anchor, restHost: host === null ? 0 : restData.parts[host]?.rotate ?? 0 };
   });
   // Which way each link hung from the figure turns toward it: the way that lays more of the tail on it.
   for (const link of links.filter(l => l.parent < 0)) {
@@ -629,7 +632,7 @@ function followTails({ links, gravity, cover, restCover }, poses, { playback, lo
   if (!follow) { for (const pose of poses) setAngles(pose, links.map(l => wrapDegrees(Math.round(l.rel)))); return; }
   const keyOf = new Map(poses.map(pose => {
     const placed = probeParts(pose, roots.map(l => l.name));
-    return [pose.name, roots.map(l => ({ at: placed[l.name].anchor, host: placed[l.host]?.rotate ?? 0 }))];
+    return [pose.name, roots.map(l => ({ at: placed[l.name].anchor, host: l.host === null ? 0 : placed[l.host]?.rotate ?? 0 }))];
   }));
   const restKey = roots.map(l => ({ at: [l.restAnchor[0], l.restAnchor[1] + lowered], host: l.restHost }));
   // What a root link hangs from turns from key to key the short way, never round past 0°.
