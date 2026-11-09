@@ -1,4 +1,4 @@
-export { PixelError, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, compareProjects, analyzeProject, briefDiagnostics, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport, readGuides, drawGuides, pictureSheet } from './core.js';
+export { PixelError, errorReply, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, compareProjects, analyzeProject, briefDiagnostics, briefCells, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport, readGuides, drawGuides, pictureSheet } from './core.js';
 export { patchRecipe } from './patch.js';
 export { encodePNG, encodeAPNG } from './png.js';
 export { measureText, layoutText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';

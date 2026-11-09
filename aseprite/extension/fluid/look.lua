@@ -31,14 +31,22 @@ function look.render(effect, base, W, H, before)
     if layer.field == 'light' or layer.field == 'shadow' then
       lit, shade = zeros(N), zeros(N)
       local lx, ly = effect.light[1], effect.light[2]
+      -- src/fluid.js renderFields.inside (d2904c0): a sample past an open canvas edge reads the edge itself, so
+      -- smoke leaving the picture gets no bright line along it; a closed edge is a wall and samples as before.
+      local walls = effect.walls
+      local function inside(fx, fy)
+        if fx < 0 and not walls.left then fx = 0 elseif fx > W - 1 and not walls.right then fx = W - 1 end
+        if fy < 0 and not walls.top then fy = 0 elseif fy > H - 1 and not walls.bottom then fy = H - 1 end
+        return grid.bilinearZero(density, W, H, fx, fy)
+      end
       for j = 0, H - 1 do
         for i = 0, W - 1 do
           local c = j * W + i + 1
           local here = density[c]
           local x, y = i + 0.5, j + 0.5
           if here > 0 then
-            lit[c] = max(0, 1 - grid.bilinearZero(density, W, H, x + 2 * lx - 0.5, y + 2 * ly - 0.5) / here)
-            shade[c] = max(0, 1 - grid.bilinearZero(density, W, H, x - 2 * lx - 0.5, y - 2 * ly - 0.5) / here)
+            lit[c] = max(0, 1 - inside(x + 2 * lx - 0.5, y + 2 * ly - 0.5) / here)
+            shade[c] = max(0, 1 - inside(x - 2 * lx - 0.5, y - 2 * ly - 0.5) / here)
           end
         end
       end

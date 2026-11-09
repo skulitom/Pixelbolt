@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { renderProject } from '../src/core.js';
 import { hash } from '../src/craft.js';
 import { findPreset, loadPreset, compilePreset } from '../src/presets.js';
-import { readSize, resizeRecipe, resizeWarning } from '../src/resize.js';
+import { readSize, resizeRecipe, resizeWarning, keepFrames } from '../src/resize.js';
 import { startMCP } from '../src/mcp.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -275,7 +275,7 @@ test('compile --size and pixel_compile size put a preset on the canvas asked for
   for (const [args, pattern] of [
     [['--preset', 'campfire', '--size', 'small'], /--size: expected a canvas size such as \\"32x32\\"/],
     [['--preset', 'shrine', '--size', '32x32'], /--size: .* is \\"dither\\", which reads the whole canvas/],
-    [['--preset', 'swing', '--size', '32x32', '--expand'], /--size goes with a compile that writes a recipe/]
+    [['--preset', 'swing', '--size', '32x32', '--expand'], /--size and --frames go with a compile that writes a recipe/]
   ]) {
     const refused = cli('compile', ...args, '--out', path.join(dir, 'refused.json'));
     assert.equal(refused.status, 1);
@@ -299,4 +299,69 @@ test('compile --size and pixel_compile size put a preset on the canvas asked for
   assert.equal(refused.isError, true);
   assert.match(refused.content[0].text, /which reads the whole canvas/);
   assert.match((await compile({ preset: 'ring-escape', size: '32x32', sequence: { fps: 30 } })).content[0].text, /size goes with a compile that returns a recipe/);
+
+  // frames thins the preset the same way from both, before the canvas moves.
+  const thin = JSON.parse((await compile({ preset: 'campfire', size: '32x32', frames: 8, metadata: true })).content[0].text);
+  assert.deepEqual([thin.frames, thin.kept, thin.metadata.kept, thin.animationFps, thin.resized.offset], [8, { campfire: '8 of 24' }, { campfire: '8 of 24' }, { campfire: 4.76 }, [0, 16]]);
+  const thinOut = path.join(dir, 'thin.json'), shell = JSON.parse(cli('compile', '--preset', 'campfire', '--size', '32x32', '--frames', '8', '--out', thinOut).stdout);
+  assert.deepEqual(shell.kept, thin.kept);
+  assert.deepEqual(JSON.parse(await readFile(thinOut, 'utf8')), resizeRecipe(keepFrames(await preset('campfire'), 8).recipe, '32x32').recipe);
+  const gif = JSON.parse(cli('gif', '--preset', 'fire-explosion', '--frames', '6', '--out', path.join(dir, 'boom.gif')).stdout);
+  assert.deepEqual([gif.frames, gif.kept, gif.duration], [6, { 'fire-explosion': '6 of 16' }, 960]);
+  for (const [args, pattern] of [
+    [['compile', '--preset', 'campfire', '--frames', 'few'], /--frames expects how many frames each animation keeps, such as --frames 8/],
+    [['compile', '--preset', 'campfire', '--frames', '0'], /--frames: expected how many frames each animation keeps, a whole number from 1 to 256/],
+    [['compile', path.join(root, 'examples/meadow.autotile.json'), '--frames', '4'], /--frames thins animations, and the frames of a tile set are its tiles/],
+    [['compile', '--preset', 'swing', '--frames', '4', '--expand'], /--size and --frames go with a compile that writes a recipe/]
+  ]) {
+    const refusal = cli(...args, '--out', path.join(dir, 'refused.json'));
+    assert.equal(refusal.status, 1);
+    assert.match(refusal.stdout + refusal.stderr, pattern);
+  }
+  assert.match((await compile({ preset: 'campfire', frames: 0 })).content[0].text, /frames: expected how many frames each animation keeps/);
+  assert.match((await compile({ preset: 'ring-escape', frames: 8, sequence: { fps: 30 } })).content[0].text, /frames goes with a compile that returns a recipe/);
+});
+
+const strip = (count, more = {}, animations) => ({ version: 1, name: 'strip', width: 4, height: 4, palette: { a: '#ff0000' }, frames: Array.from({ length: count }, (_, i) => ({ name: `f${i}`, duration: 10 * (i + 1), ops: [dot(i % 4, 0)], ...more[i] })), ...(animations && { animations }) });
+const plays = recipe => Object.fromEntries(Object.entries(renderProject(recipe).animations).map(([key, a]) => [key, a.frames.map(i => recipe.frames[i].name).join(' ')]));
+const lengths = recipe => Object.fromEntries(Object.entries(renderProject(recipe).animations).map(([key, a]) => [key, a.duration]));
+
+test('fewer frames are evenly spaced ones, lasting as long as the frames they stand for', async () => {
+  // A loop steps evenly round its seam; a one-shot keeps its first and last frame.
+  const loop = keepFrames(strip(8), 3);
+  assert.deepEqual([loop.kept, plays(loop.recipe), loop.notes], [{ default: '3 of 8' }, { default: 'f0 f2 f5' }, []]);
+  assert.deepEqual(loop.recipe.frames.map(frame => frame.duration), [10 + 20, 30 + 40 + 50, 60 + 70 + 80]);
+  assert.equal(loop.recipe.animations, undefined);
+  const once = keepFrames(strip(8, {}, { burst: { frames: ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7'], loop: false } }), 3);
+  assert.deepEqual([plays(once.recipe), lengths(once.recipe)], [{ burst: 'f0 f4 f7' }, { burst: 360 }]);
+  assert.deepEqual(once.recipe.animations.burst.loop, false);
+  // One that fades to nothing ends on its last frame with a picture, which lasts through the empty ones.
+  const fades = keepFrames(strip(8, { 6: { ops: [] }, 7: { ops: [] } }, { burst: { frames: ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7'], loop: false } }), 3);
+  assert.deepEqual([plays(fades.recipe), lengths(fades.recipe), fades.recipe.frames.at(-1).duration], [{ burst: 'f0 f3 f5' }, { burst: 360 }, 60 + 70 + 80]);
+  // A pingpong plays its inner frames twice, so it lists fewer; an animation that already fits is left as it is.
+  const mixed = strip(8, {}, { sway: { frames: ['f0', 'f1', 'f2', 'f3', 'f4'], direction: 'pingpong' }, blink: { frames: ['f5', 'f6'] }, hold: { frames: ['f7', 'f7', 'f7', 'f6', 'f7'], loop: false } });
+  const thinned = keepFrames(mixed, 4);
+  assert.deepEqual(thinned.kept, { sway: '3 of 5', hold: '4 of 5' });
+  assert.deepEqual(plays(thinned.recipe), { sway: 'f0 f2 f4 f2', blink: 'f5 f6', hold: 'f7 f7 f6 f7' });
+  // f7 is played three times at lengths that differ, so it keeps its own and says so.
+  assert.equal(thinned.recipe.frames.find(frame => frame.name === 'f7').duration, 80);
+  assert.match(thinned.notes.join(' '), /^Frame "f7" is played more than once, so it keeps its 80 ms/);
+  assert.deepEqual(thinned.recipe.frames.map(frame => frame.name), ['f0', 'f2', 'f4', 'f5', 'f6', 'f7']);
+  // A frame another is drawn from stays, unplayed, and the animation that played every frame is spelled out.
+  const derived = keepFrames(strip(6, { 3: { from: 'f1' }, 5: { ops: [{ op: 'copy', from: 'f4', x: 0, y: 0 }] } }), 2);
+  assert.deepEqual(derived.recipe.frames.map(frame => frame.name), ['f0', 'f1', 'f3']);
+  assert.deepEqual(derived.recipe.animations, { default: { frames: ['f0', 'f3'] } });
+  assert.deepEqual(lengths(derived.recipe), { default: 210 });
+  // Nothing to remove changes nothing.
+  const same = strip(4), untouched = keepFrames(same, 4);
+  assert.equal(untouched.recipe, same);
+  assert.deepEqual([untouched.kept, untouched.notes], [{}, ['Every animation already plays 4 frames or fewer, so none was removed.']]);
+  for (const bad of [0, 257, 2.5, '8', undefined]) assert.throws(() => keepFrames(same, bad), /frames: expected how many frames each animation keeps, a whole number from 1 to 256/);
+  // Presets keep their length and every kept frame its picture.
+  for (const [name, count] of [['smoke-puff', 8], ['fire-spells', 6], ['knight', 4], ['coin', 3]]) {
+    const recipe = await preset(name), before = renderProject(recipe), { recipe: fewer } = keepFrames(recipe, count), after = renderProject(fewer);
+    assert.deepEqual(lengths(fewer), lengths(recipe), name);
+    for (const frame of after.frames) assert.deepEqual(frame.data, before.frames.find(each => each.name === frame.name).data, `${name} ${frame.name}`);
+    for (const animation of Object.values(after.animations)) assert.ok(animation.frames.length <= count, name);
+  }
 });

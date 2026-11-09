@@ -4,6 +4,20 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Fix: the Aseprite extension draws smoke at an open edge as Pixelbolt does
+
+- The extension's Lua port lit smoke past an open canvas edge the old way, so after the bright-line fix it no longer matched Pixelbolt pixel for pixel: four of its 21 parity cases failed (the steam vent at its defaults, and the explosion, smoke puff and steam vent with changed settings). The port now reads the edge itself there, as `src/fluid.js` does, and all 21 cases match again.
+
+### Replies that say each thing once
+
+- A reply's `cells` (and `pixel_validate`'s `frames`) is a line per run of frames that last the same, with a run of numbered names as its ends: `"campfire-0 … campfire-23: 70 ms each"` where there were 24 `{frame, duration}` objects. Compiling the campfire preset over MCP replies with 650 characters, not 1,500; a 240-frame match saves about 9 KB a call. `pixel_validate` gives each animation's frame count, not the index of every frame it plays.
+- Several errors are each said once: `errors` is a list of messages that start with their paths, and `error` counts them. Before, the combined message said them all and `errors` said them again with the path twice.
+- The CLI prints every reply one way: an object or list that fits a line is on one line, longer lists of names wrap, and a path inside the working directory is written from it with forward slashes (`"recipe": "out/hero.json"`). `validate` and `render` no longer print one long line, and `patch`, `gif` and `compile` no longer print a line per number.
+- A frames mismatch in a render's `check` gives the per-animation hint once, with the first animation, not on every one.
+
+### Fewer frames in one option
+
+- `compile --frames 8` and `gif --frames 8` (MCP `pixel_compile` `frames`) keep that many evenly spaced frames of each animation that has more, and each kept frame lasts as long as the frames it stands for, so the animation plays as long as before. A loop steps evenly round its seam; a one-shot keeps its first and last frame. The reply's `kept` says what each animation went from and to. Before, the way to an 8-frame smoke puff was a hand-built patch that removed eleven frames by name, with the arithmetic explained in the quick start, the preset listing and the server instructions.
 ### Removed: the Tesla coil preset
 
 - `examples/tesla-coil.fluid.json` (preset `tesla-coil`) is gone, with its GIF and its Fluid lab entry: a thin arc on a small coil that the plasma globe and lightning show better. `compile --preset tesla-coil` now reports no such preset. Thirty-seven fluid presets remain, three of them electric.

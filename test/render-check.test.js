@@ -241,7 +241,7 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   assert.equal(check(spirit, { expect: { frames: 2046 }, animation: 'bob' }).problems[0].fix, '"bob" is pingpong, which plays 2n-2 frames for n names: list 1024 names in animations.bob.frames');
   // More frames than an animation plays are new poses; a repeated name is offered only as a hold.
   assert.match(check(spirit, { expect: { frames: 9 }, animation: 'idle' }).problems[0].fix, /^make "idle" play 9 frames: draw the 2 more poses it needs \(pixel_patch insert under frames.*list all 9 names in animations\.idle\.frames; repeat a name only for a deliberate hold, then render again$/);
-  assert.equal(check(spirit, { expect: { frames: 5 }, animation: 'idle' }).problems[0].fix, 'make "idle" play 5 frames: list 5 names in animations.idle.frames, keeping evenly spaced poses, then render again');
+  assert.equal(check(spirit, { expect: { frames: 5 }, animation: 'idle' }).problems[0].fix, 'make "idle" play 5 frames: compile its preset or source again with frames: 5 (--frames 5), or list 5 names in animations.idle.frames, keeping evenly spaced poses, then render again');
   // expect.frames reaches the longest pingpong: 514 names play 1,026 frames.
   assert.equal(check({ ...bare, animations: { default: { frames: Array(514).fill('a'), direction: 'pingpong' } } }, { expect: { frames: 1026 } }).ok, true);
   assert.deepEqual(readExpect({ frames: 2046 }), { frames: 2046 });

@@ -16,8 +16,14 @@ export function joinErrors(all, stopped = false) {
   const [first, ...rest] = all;
   const combined = new PixelError(first.path, `${first.message.slice(first.path.length + 2)}; ${rest.length} more error${rest.length === 1 ? '' : 's'}${stopped ? ' (checking stopped at 10)' : ''}: ${rest.map(error => error.message).join('; ')}`);
   combined.errors = all.map(error => ({ path: error.path, error: error.message }));
+  if (stopped) combined.stopped = true;
   return combined;
 }
+// An error as a reply carries it. One error has its message and path. Several are each said once, in `errors`, a
+// message each (which starts with its path): the combined message would say them all a second time.
+export const errorReply = error => error.errors
+  ? { error: `${error.errors.length} errors${error.stopped ? ' (checking stopped at 10, so there may be more)' : ''}: fix every one in errors, then try again`, errors: error.errors.map(each => each.error) }
+  : { error: error.message, ...(error.path && { path: error.path }) };
 
 const own = (obj, key) => Object.hasOwn(obj, key);
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -1680,6 +1686,27 @@ export function briefDiagnostics(diagnostics) {
   const range = key => [Math.min(...frames.map(row => row[key])), Math.max(...frames.map(row => row[key]))], sum = key => frames.reduce((total, row) => total + row[key], 0);
   const most = frames.map((row, index) => ({ row, index, count: row.corners + row.strays })).filter(entry => entry.count).sort((a, b) => b.count - a.count || a.index - b.index).slice(0, 3).map(entry => entry.row);
   return { advisory: rest.advisory, frameTotals: { frames: frames.length, visible: range('visible'), colors: range('colors'), corners: sum('corners'), strays: sum('strays') }, frames: most, omitted: frames.length - most.length, animations: rest.animations, findings: rest.findings };
+}
+
+// Cells (or frames) as a reply carries them: in order, a line per run that lasts the same, and a run of three or more
+// numbered names as its ends. Nineteen cells of a smoke puff read ["smoke-puff-0 … smoke-puff-18: 60 ms each"], where
+// a `{frame, duration}` object each was most of a reply. Cells that carry more than a name and a duration (a motion
+// review's) are returned as they are.
+export function briefCells(cells) {
+  if (!cells.every(cell => Object.keys(cell).every(key => key === 'frame' || key === 'name' || key === 'duration'))) return cells;
+  const label = cell => cell.frame ?? cell.name, numbered = cell => /^(.*?)(\d+)$/.exec(label(cell)), lines = [];
+  for (let start = 0, end; start < cells.length; start = end) {
+    for (end = start + 1; end < cells.length && cells[end].duration === cells[start].duration; end++);
+    const names = [];
+    for (let a = start, b; a < end; a = b) {
+      const first = numbered(cells[a]);
+      for (b = a + 1; first && b < end; b++) { const next = numbered(cells[b]); if (!next || next[1] !== first[1] || Number(next[2]) !== Number(first[2]) + b - a) break; }
+      if (b - a > 2) names.push(`${label(cells[a])} … ${label(cells[b - 1])}`);
+      else { names.push(label(cells[a])); b = a + 1; }
+    }
+    lines.push(`${names.join(', ')}: ${cells[start].duration} ms${end - start > 1 ? ' each' : ''}`);
+  }
+  return lines;
 }
 
 // Two names make one number: the first times NAME_PAIRS (2 to the 26th, more names than a frame has pixels) plus the second.

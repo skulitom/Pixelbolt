@@ -174,7 +174,7 @@ function framesFix(key, want, named, direction, project, recipe, total) {
     ? `one animation lists at most ${NAMES} names: set animations.${key}.direction to "pingpong" and list ${pingpong} names, which play ${want}`
     : want > count
       ? `make "${key}" play ${want} frames: draw the ${want - count} more poses it needs (pixel_patch insert under frames, or more frames in the source it was compiled from) and list all ${want} names in animations.${key}.frames; repeat a name only for a deliberate hold, then render again`
-      : `make "${key}" play ${want} frames: list ${want} names in animations.${key}.frames, keeping evenly spaced poses, then render again`;
+      : `make "${key}" play ${want} frames: compile its preset or source again with frames: ${want} (--frames ${want}), or list ${want} names in animations.${key}.frames, keeping evenly spaced poses, then render again`;
 }
 
 // Motion: the silhouettes of loops that look wrong in play: a body that leaves its ground row, frames that hop
@@ -476,9 +476,9 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
       problems.push({ file: 'animations/', asked: want, got: counts,
         fix: `expect.frames counts the frames each animation plays, and none plays ${want}, but the ${names.length} animations ${distinct === want ? `hold ${want} different frames` : `play ${want} frames between them`}. If the user asked for ${want} frames in all, check each animation instead${names.length <= 16 ? `: "expect": { "frames": ${JSON.stringify(counts)} }` : ' with frames per animation name'}. If they asked for one animation of ${want} frames, give that animation more poses (pixel_patch insert under frames, or more frames in its source) and list them in it, then render again` });
     } else {
-      // Animations that already play the count suggest the request was about them alone.
+      // Animations that already play the count suggest the request was about them alone: said once, with the first.
       const only = matching.length ? `; or, if the request was ${want} frames for ${list(matching)} only, check per animation: "frames": ${JSON.stringify(Object.fromEntries(matching.slice(0, 8).map(key => [key, want])))}` : '';
-      for (const key of misses) { const problem = framesProblem(key, want); problems.push(only ? { ...problem, fix: problem.fix + only } : problem); }
+      misses.forEach((key, index) => { const problem = framesProblem(key, want); problems.push(only && !index ? { ...problem, fix: problem.fix + only } : problem); });
     }
   }
   if (expect.colors !== undefined && colors.size > expect.colors) problems.push({ file: frameFiles, asked: `at most ${expect.colors} colours`, got: colors.size, fix: 'merge similar colours with pixel_patch recolor (or fewer palette entries), check with pixel_inspect diagnostics, then render again' });

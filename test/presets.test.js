@@ -149,22 +149,23 @@ test('pixel_compile with a preset is byte-identical to compiling its file', asyn
   await mcp.close();
 });
 
-test('a preset cut with the quick start\'s pixel_patch call keeps the documented frames and passes the effect checks', async t => {
+test('a preset compiled with frames keeps evenly spaced frames and passes the effect checks', async t => {
   if (!compiled.has('smoke-puff.fluid.json')) { t.skip('no smoke-puff preset'); return; }
+  // The quick start names the option, in both spellings.
   const quick = await readFile(path.join(root, 'docs/agent-quick-start.md'), 'utf8');
-  const call = JSON.parse(/`(\{"revision": "[^`]*smoke-puff-1\][^`]*\})`/.exec(quick)[1]);
-  // The call is the documented rule for the preset as it is now: of F frames keep floor(i × F / N).
-  const { recipe, project, colors } = compiled.get('smoke-puff.fluid.json'), order = recipe.animations['smoke-puff'].frames, F = order.length, N = 8;
-  const kept = Array.from({ length: N }, (_, i) => order[Math.floor(i * F / N)]);
-  assert.deepEqual(call.changes, [...order.filter(name => !kept.includes(name)).map(name => ({ remove: `frames[${name}]` })), { set: 'animations.smoke-puff.frames', value: kept }]);
+  assert.match(quick, /compile it with `frames` \(`"frames": 8`, `--frames 8` in a shell\)/);
+  // A one-shot keeps its first frame and the last that draws anything, evenly spaced between.
+  const { recipe, project, colors } = compiled.get('smoke-puff.fluid.json'), order = recipe.animations['smoke-puff'].frames, N = 8;
+  const drawn = order.filter(name => project.frames.find(frame => frame.name === name).data.some((value, i) => i % 4 === 3 && value)).length;
+  const kept = Array.from({ length: N }, (_, i) => order[Math.round(i * (drawn - 1) / (N - 1))]);
   const dir = await temp(t, 'smoke-cut'), mcp = session({ directory: dir, root: dir });
   await mcp.init();
-  const start = reply(await mcp.call('pixel_compile', { preset: 'smoke-puff' }));
-  const patched = await mcp.call('pixel_patch', { ...call, revision: start.revision });
-  assert.notEqual(patched.isError, true, patched.content[0].text);
-  const { width, height } = project, rendered = reply(await mcp.call('pixel_render', { revision: reply(patched).revision, gif: {}, expect: { width, height, frames: N, colors, transparent: true } }));
+  const start = reply(await mcp.call('pixel_compile', { preset: 'smoke-puff', frames: N }));
+  const { width, height } = project, rendered = reply(await mcp.call('pixel_render', { revision: start.revision, gif: {}, expect: { width, height, frames: N, colors, transparent: true } }));
   await mcp.close();
+  assert.deepEqual([start.frames, start.kept], [N, { 'smoke-puff': `${N} of ${order.length}` }]);
   assert.equal(rendered.check.ok, true, JSON.stringify(rendered.check.problems));
+  assert.deepEqual(JSON.parse(await readFile(path.join(rendered.directory, `${start.name}.atlas.json`), 'utf8')).animations['smoke-puff'].frames, kept);
   // The checks of a one-shot effect task, on the files as written. Today's preset is the task's own size: 32x32, at
   // most 6 colours.
   if (width === 32 && height === 32 && colors <= 6) t.diagnostic('smoke-puff meets a 32x32, 6-colour, 8-frame effect task');

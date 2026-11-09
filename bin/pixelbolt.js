@@ -8,11 +8,11 @@ import { compileCrystals } from '../src/crystal.js';
 import { compilePowder } from '../src/powder.js';
 import { compileBodies } from '../src/bodies.js';
 import { readExpect, checkDelivery } from '../src/check.js';
-import { resizeRecipe, resizeWarning } from '../src/resize.js';
+import { resizeRecipe, resizeWarning, keepFrames } from '../src/resize.js';
 import { embedBundleRecipe, sameFiles, outputSummary, withRates } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
 import { PRESET_FOLDER, listPresets, briefListing, findListing, namedLike, presetWords, presetEntries, findPreset, loadPreset, compilePreset, presetNext } from '../src/presets.js';
-import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, createBodiesSequence, figuresSummary, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, briefDiagnostics, compareProjects, patchRecipe, encodePNG, compilePoses, draftViews, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference, testMapScale } from '../src/index.js';
+import { renderProject, animationGIF, createSequence, frameGrid, createSceneSequence, createBodiesSequence, figuresSummary, prepareScene, renderScene, sceneImage, createBundle, writeBundle, inspectProject, briefDiagnostics, briefCells, errorReply, compareProjects, patchRecipe, encodePNG, compilePoses, draftViews, compileAutotile, compileEffects, compileFluid, compileNormals, formatJSON, createSceneBundle, createOverlay, applyOverlay, importPNG, resolveReferences, restorePaletteReference, testMapScale } from '../src/index.js';
 
 // A reader that stops early (`| head -1`) closes the pipe: stop quietly, as other command-line tools do. Commands print
 // their reply after writing their files, so only the rest of the reply is lost.
@@ -40,10 +40,10 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt share <file.json|->           Print a playground link for the resolved recipe
   pixelbolt gif <file.json|-> --out anim.gif [--animation name] [--scale 1-16] [--background color]
                                            Share one animation as a GIF; writes only --out
-  pixelbolt gif --preset <name> --out anim.gif [--size 32x32] [--scale 8] [--sheet frames.png]
-                                           A shipped preset straight to its GIF, in one call: --size as in compile,
-                                           --sheet also writes the frames as a contact sheet to look at (both work
-                                           with a recipe file too)
+  pixelbolt gif --preset <name> --out anim.gif [--size 32x32] [--frames 8] [--scale 8] [--sheet frames.png]
+                                           A shipped preset straight to its GIF, in one call: --size and --frames as
+                                           in compile, --sheet also writes the frames as a contact sheet to look at
+                                           (all three work with a recipe file too)
   pixelbolt gif-frames <folder> --fps 25 --out loop.gif [--loops 0] [--background color] [--prefix name_]
                                            A GIF from numbered PNG frames (name_0001.png ...); writes only --out
   pixelbolt sequence <recipe|source|scene.json> --out folder --fps 30 [--size 1080p|WxH] [--scale n]
@@ -61,12 +61,15 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt compile <source.json> --draft-views boot:30,330[,hand:45] [--preview drafts.png] [--out drafts.json]
                                            Draft turned views of small grid parts to correct and paste into
                                            parts.<name>.views; --preview draws flat, today's turn, draft and drawn
-  pixelbolt compile --preset <name> --out recipe.json [--metadata meta.json] [--size 32x32]
+  pixelbolt compile --preset <name> --out recipe.json [--metadata meta.json] [--size 32x32] [--frames 8]
                                            Compile a shipped preset (smoke-puff, campfire, fire-spells, hero...) as
                                            its examples/ file compiles; --expand for a poses preset. --size (any
                                            compile) puts the drawing on a canvas of that size: cut to the window
                                            holding the most of it or given margins, never scaled; the reply says
                                            where the window starts and what share of the drawing it cuts
+                                           --frames (any compile) keeps that many evenly spaced frames of each
+                                           animation that has more, playing as long as before: the way to fewer
+                                           frames (lowering frames in a source cuts the effect short instead)
   pixelbolt presets [name] [--full]        List the presets, a line each (size, frames, loop, colours, what each is
                                            for; --full adds every animation and file), or print one preset's source
   pixelbolt presets --find "water splash"  Only the presets those words match: by name, else by description
@@ -127,17 +130,43 @@ Command results except help and the preview server are JSON. Errors exit with co
 Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (Windows) or ./pixelbolt (macOS/Linux).
 `;
 
+// The options each command takes: the one place an option is listed. One named in FLAGS takes no value; every other
+// takes the argument after it.
+const FLAGS = new Set(['force', 'grid', 'native', 'diagnostics', 'open', 'expand', 'embed-recipe', 'embedded', 'project', 'list-files', 'full']);
+const OPTIONS = {
+  init: ['force'],
+  validate: ['fps'],
+  inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'full', 'max-cells', 'step', 'offset', 'every', 'layers', 'reference', 'guides', 'motion', 'speed', 'ground', 'metadata'],
+  patch: ['changes', 'out', 'image', 'force'],
+  render: ['out', 'force', 'expect', 'animation', 'list-files', 'embed-recipe'],
+  gif: ['out', 'animation', 'scale', 'background', 'force', 'preset', 'size', 'frames', 'sheet'],
+  'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'],
+  sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'],
+  preview: ['port', 'open'],
+  mcp: ['out', 'root', 'time-limit'],
+  schema: [],
+  compile: ['out', 'metadata', 'preview', 'force', 'expand', 'preset', 'draft-views', 'size', 'frames'],
+  autotile: ['out', 'metadata', 'preview', 'force'],
+  scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files', 'embed-recipe'],
+  overlay: ['changes', 'selections', 'out', 'force'],
+  import: ['out', 'name', 'atlas', 'metadata', 'force', 'embedded'],
+  presets: ['full', 'find'],
+  share: [],
+  skill: ['project', 'dir', 'force']
+};
+const KNOWN = new Set(Object.values(OPTIONS).flat());
 function parseArgs(args) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
-    if (['--force', '--grid', '--native', '--diagnostics', '--open', '--expand', '--embed-recipe', '--embedded', '--project', '--list-files', '--full'].includes(args[i])) options[args[i].slice(2)] = true;
-    else if (['--preset', '--sheet', '--find', '--out', '--dir', '--port', '--frames', '--animation', '--region', '--scale', '--background', '--changes', '--image', '--view', '--max-cells', '--metadata', '--selections', '--atlas', '--name', '--layers', '--reference', '--root', '--time-limit', '--fps', '--size', '--align', '--offset', '--loops', '--seconds', '--step', '--fit', '--prefix', '--motion', '--speed', '--ground', '--expect', '--guides', '--time', '--preview', '--draft-views', '--every'].includes(args[i])) {
-      const key = args[i].slice(2);
+    const key = args[i].startsWith('--') ? args[i].slice(2) : null;
+    if (key === null) positional.push(args[i]);
+    else if (FLAGS.has(key)) options[key] = true;
+    else if (key === 'gif') throw new Error('--gif is not an option; the gif command makes one: pixelbolt gif <recipe.json> --out <new.gif>');
+    else if (!KNOWN.has(key)) throw new Error(`Unknown option: ${args[i]}`);
+    else {
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`--${key} requires a value`);
       options[key] = args[++i];
-    } else if (args[i] === '--gif') throw new Error('--gif is not an option; the gif command makes one: pixelbolt gif <recipe.json> --out <new.gif>');
-    else if (args[i].startsWith('--')) throw new Error(`Unknown option: ${args[i]}`);
-    else positional.push(args[i]);
+    }
   }
   return { positional, options };
 }
@@ -165,7 +194,6 @@ async function readJSONOption(value, key = 'expect', example = '{"width":32,"hei
     throw Object.assign(new Error(`--${key}: expected JSON such as ${example}: ${error.message}${stripped ? '. Windows PowerShell 5.1 drops the double quotes inside arguments: put the JSON in a .json file and pass its name, or use PowerShell 7, cmd or bash' : ''}`), { path: key });
   }
 }
-const readExpectOption = value => readJSONOption(value);
 const readGuidesOption = value => readJSONOption(value, 'guides', '{"horizon":40,"vanish":[[64,40]]}');
 async function readProject(file) {
   if (!file) throw new Error('Provide a project JSON filename or - for stdin');
@@ -182,10 +210,9 @@ async function readResolved(file) {
 }
 // Every file an export was made from: the recipe itself and the palette and asset files it references.
 const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.file)]), ...input.resolution.files];
-const removedBy = files => (files.removed ? { removed: files.removed } : {});
 // A bundle's files relative to its folder, leaving out each frame (frames/<name>.png) and, past 16, each animation
 // unless --list-files: the reply already names the frames and animations.
-const bundleFiles = (directory, files, options) => { const { files: listed, removed } = outputSummary(directory, files, options['list-files'] === true); return { directory, files: listed, ...(removed && { removed }) }; };
+const bundleFiles = (directory, files, options) => { const { files: listed, removed } = outputSummary(directory, files, options['list-files'] === true); return { directory: shown(directory), files: listed, ...(removed && { removed }) }; };
 // The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
 // and a scene's assets do not).
 const LINKED_SOURCES = ['poses', 'autotile', 'fx', 'fluid', 'wave', 'crystal', 'powder', 'project'];
@@ -232,26 +259,36 @@ async function writeOutputs(targets, force, inputs = []) {
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, data, { flag: force ? 'w' : 'wx' });
   }
-  return Object.fromEntries(entries.map(([label, target]) => [label, target]));
+  return Object.fromEntries(entries.map(([label, target]) => [label, shown(target)]));
 }
 // Sidecar sources compile by their format; `autotile` remains a dedicated command for templates.
 const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-powder': compilePowder, 'pixelforge-bodies': compileBodies, 'pixelforge-normals': compileNormals };
-// JSON a row to a line: like JSON.stringify(value, null, 2), but an object or array that fits in ROW characters is
-// written on one line. Grid rows (`rows`, strings that must line up under each other) are always a line each.
+// Every reply is printed one way: like JSON.stringify(value, null, 2), but an object or array that fits in ROW
+// characters is written on one line, and a longer list of names or numbers is wrapped to lines of that length rather
+// than a line an item. Grid rows (`rows`, strings that must line up under each other) are always a line each.
 const ROW = 140;
 function rowsJSON(value, indent = '', key) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   const list = Array.isArray(value), entries = list ? value.map(item => [null, item === undefined ? null : item]) : Object.entries(value).filter(([, item]) => item !== undefined && typeof item !== 'function');
   const open = list ? '[' : '{', close = list ? ']' : '}';
   if (!entries.length) return open + close;
-  const flat = JSON.stringify(value);
-  if (key !== 'rows' && key !== 'grids' && flat.length <= ROW && !/"(rows|grids)":/.test(flat)) return flat;
+  const flat = JSON.stringify(value), aligned = list && (key === 'rows' || key === 'grids');
+  if (!aligned && flat.length <= ROW && !/"(rows|grids)":\[/.test(flat)) return flat;
   const inner = indent + '  ';
-  const lines = entries.map(([name, item]) => `${inner}${name === null ? '' : `${JSON.stringify(name)}: `}${rowsJSON(item, inner, name ?? key)}`);
-  return [open, lines.join(',\n'), indent + close].join('\n');
+  let lines = entries.map(([name, item]) => `${name === null ? '' : `${JSON.stringify(name)}: `}${rowsJSON(item, inner, name ?? key)}`);
+  if (list && !aligned && value.every(item => typeof item !== 'object' && String(item).length < 40)) {
+    lines = lines.reduce((wrapped, item) => { const last = wrapped.at(-1); if (last !== undefined && last.length + item.length + 2 <= ROW - inner.length) wrapped[wrapped.length - 1] = `${last}, ${item}`; else wrapped.push(item); return wrapped; }, []);
+  }
+  return [open, lines.map(line => inner + line).join(',\n'), indent + close].join('\n');
 }
+const print = value => console.log(rowsJSON(value));
+// A path as a reply names it: from the working directory when it is inside it, as the caller wrote it, with forward
+// slashes; anywhere else, in full.
+const shown = file => { const from = path.relative(process.cwd(), file); return from && !from.startsWith('..') && !path.isAbsolute(from) ? from.split(path.sep).join('/') : file; };
+// --frames 8: how many frames each animation keeps.
+const frameCount = value => { if (!/^\d{1,3}$/.test(value)) throw new Error('--frames expects how many frames each animation keeps, such as --frames 8'); return Number(value); };
 const summary = (project, recipe) => ({ name: project.name, width: project.width, height: project.height, frames: project.frames.length, animations: Object.keys(project.animations), ...withRates(project, recipe), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(project.clippingOmitted && { clippingOmitted: project.clippingOmitted }) });
-const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files } : {};
+const referenced = input => input.resolution.files.length ? { resolved: input.resolution.files.map(shown) } : {};
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 // `presets [name] [--full]`, and `help presets [--full]` or `help preset <name>`: every preset, a line each or in full,
 // or one preset's source. A shell has no time limit, so every preset is measured.
@@ -260,12 +297,12 @@ async function presetsText(name, full = false, find) {
     if (name !== undefined || full) throw new Error('--find goes on its own: pixelbolt presets --find "water splash" lists the presets those words match');
     // Names are known without compiling anything, so a name match measures only the presets it lists.
     const named = new Set(namedLike(await presetEntries(), presetWords(find, '--find')).map(entry => entry.name));
-    return JSON.stringify(findListing(await listPresets({ budget: Infinity, ...(named.size && { only: entry => named.has(entry.name) }) }), find, '--find'), null, 2);
+    return rowsJSON(findListing(await listPresets({ budget: Infinity, ...(named.size && { only: entry => named.has(entry.name) }) }), find, '--find'));
   }
-  if (name === undefined) { const listing = await listPresets({ budget: Infinity }); return JSON.stringify(full ? listing : briefListing(listing), null, 2); }
+  if (name === undefined) { const listing = await listPresets({ budget: Infinity }); return rowsJSON(full ? listing : briefListing(listing)); }
   if (full) throw new Error('--full goes with the listing (pixelbolt presets --full); pixelbolt presets <name> prints one preset\'s source');
   const entry = await findPreset(name, 'name'), { source, inlined } = await loadPreset(entry);
-  return JSON.stringify({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source }, null, 2);
+  return rowsJSON({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source });
 }
 // `help <topic> [section]`: what MCP pixel_help returns for the topic, so a shell reads one section of a long guide
 // instead of the whole file. A section name may be quoted or not.
@@ -294,16 +331,8 @@ try {
   else {
     const { positional, options } = parseArgs(rest);
     if (positional.length > 1) throw new Error('Too many positional arguments');
-    const allowed = { init: ['force'], validate: ['fps'], inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'full', 'max-cells', 'step', 'offset', 'every', 'layers', 'reference', 'guides'], patch: ['changes', 'out', 'image', 'force'], render: ['out', 'force', 'expect', 'animation', 'list-files'], gif: ['out', 'animation', 'scale', 'background', 'force'], 'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'], sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'], preview: ['port', 'open'], mcp: ['out', 'root', 'time-limit'], schema: [], compile: ['out', 'metadata', 'preview', 'force'], autotile: ['out', 'metadata', 'preview', 'force'], scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files'], overlay: ['changes', 'selections', 'out', 'force'], import: ['out', 'name', 'atlas', 'metadata', 'force'] };
-    allowed.inspect.push('motion', 'speed', 'ground', 'metadata');
-    allowed.compile.push('expand', 'preset', 'draft-views', 'size');
-    allowed.gif.push('preset', 'size', 'sheet');
-    allowed.presets = ['full', 'find'];
-    allowed.share = [];
-    allowed.skill = ['project', 'dir', 'force'];
-    allowed.render.push('embed-recipe'); allowed.scene.push('embed-recipe'); allowed.import.push('embedded');
-    if (!Object.hasOwn(allowed, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
-    for (const key of Object.keys(options)) if (!allowed[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
+    if (!Object.hasOwn(OPTIONS, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
+    for (const key of Object.keys(options)) if (!OPTIONS[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     // A preset compiles exactly as its file in examples/ does, so the compile command reads that file.
     if ((command === 'compile' || command === 'gif') && options.preset !== undefined) {
@@ -319,14 +348,14 @@ try {
         if (error.code === 'EEXIST') throw new Error(`Output already exists: ${path.resolve(file)}. Choose a new file or pass --force.`);
         throw error;
       }
-      console.log(JSON.stringify({ ok: true, file }));
+      print({ ok: true, file });
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
     else if (command === 'presets') {
       console.log(await presetsText(positional[0], options.full === true, options.find));
     } else if (command === 'skill') {
       if (positional[0] !== 'install') throw new Error('Usage: pixelbolt skill install [--project | --dir <skills folder>] [--force]');
       const { installSkill } = await import('../src/skill.js');
-      console.log(JSON.stringify({ ok: true, ...await installSkill({ version: await engineVersion(), force: options.force, project: options.project, dir: options.dir }) }, null, 2));
+      print({ ok: true, ...await installSkill({ version: await engineVersion(), force: options.force, project: options.project, dir: options.dir }) });
     } else if (command === 'mcp') {
       const { startMCP } = await import('../src/mcp.js');
       // A tool call that runs longer is stopped and answered with an error; the default is 50 seconds.
@@ -352,8 +381,8 @@ try {
       // A port you name is used or refused; the usual one gives way to any free port when something else has it.
       const server = await startStudio({ port, project, source, sharedPalette, fallback: options.port === undefined });
       if (options.open && !await openBrowser(`http://127.0.0.1:${server.address().port}/`)) console.log('No browser was opened. Copy the address above into your browser.');
-    } else if (command === 'compile' && options.size !== undefined && (options['draft-views'] !== undefined || options.expand)) {
-      throw new Error('--size goes with a compile that writes a recipe; leave out --draft-views and --expand');
+    } else if (command === 'compile' && (options.size !== undefined || options.frames !== undefined) && (options['draft-views'] !== undefined || options.expand)) {
+      throw new Error('--size and --frames go with a compile that writes a recipe; leave out --draft-views and --expand');
     } else if (command === 'compile' && options['draft-views'] !== undefined) {
       // Drafts are printed (or saved with --out) for the author to correct and paste; the source is never touched.
       for (const key of ['metadata', 'expand']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --draft-views`);
@@ -364,13 +393,13 @@ try {
       const reply = { ok: true, drafts, next: DRAFT_NEXT };
       const written = await writeOutputs({ ...(options.out && { drafts: [options.out, formatJSON(reply)] }), ...(sheet && { preview: [options.preview, encodePNG(sheet.data, sheet.width, sheet.height)] }) }, options.force, inputsOf(input));
       const unwritten = noSheet && { preview: `not written: ${noSheet}` };
-      if (options.out) console.log(JSON.stringify({ ok: true, ...written, ...unwritten, parts: Object.keys(drafts), next: DRAFT_NEXT, ...referenced(input) }, null, 2));
+      if (options.out) print({ ok: true, ...written, ...unwritten, parts: Object.keys(drafts), next: DRAFT_NEXT, ...referenced(input) });
       else process.stdout.write(formatJSON({ ...reply, ...written, ...unwritten, ...(options.preview === undefined && { hint: 'Pass --preview <new.png> to see each draft beside the flat drawing, the turn the compiler draws today and any drawn view.' }), ...referenced(input) }));
     } else if (command === 'compile' && options.expand) {
       if (options.metadata) throw new Error('--expand prints source annotations; omit --metadata');
       if (options.out && !/\.json$/i.test(options.out)) throw new Error('--out must name a .json file');
       const input = await readResolved(positional[0]), expanded = expandPoses(input.document);
-      if (options.out) console.log(JSON.stringify({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force, inputsOf(input)), ...referenced(input) }));
+      if (options.out) print({ ok: true, ...await writeOutputs({ source: [options.out, formatJSON(linkPalette(expanded, input, options.out))] }, options.force, inputsOf(input)), ...referenced(input) });
       else process.stdout.write(formatJSON(expanded));
     } else if (command === 'share') {
       const input = await readResolved(positional[0]), version = await engineVersion();
@@ -379,7 +408,7 @@ try {
       const compile = { 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-powder': compilePowder, 'pixelforge-bodies': compileBodies }[input.document?.format];
       const document = compile ? compile(input.document).recipe : input.document;
       const link = await shareLink(document, version);
-      console.log(JSON.stringify({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(compile && { compiledFrom: input.document.format }) }));
+      print({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(compile && { compiledFrom: input.document.format }) });
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
@@ -387,10 +416,10 @@ try {
       const embedded = await readEmbeddedRecipe(await readFile(positional[0]));
       if (!embedded) throw new Error('This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.');
       const { version, kind, recipe } = embedded;
-      console.log(JSON.stringify({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force, filesRead(positional[0])), embedded: { version, kind } }));
+      print({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe)] }, options.force, filesRead(positional[0])), embedded: { version, kind } });
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
-      let value, metadata, input, warnings, preview, resized;
+      let value, metadata, input, warnings, preview, resized, kept;
       if (command === 'compile' || command === 'autotile') {
         input = await readResolved(positional[0]);
         // A preset may be a plain recipe, which compiles to itself.
@@ -399,6 +428,13 @@ try {
         // A plain recipe preset compiles to itself and has no metadata to save.
         if (options.metadata && compiled.metadata === undefined) throw new Error(`${options.preset} is a plain recipe preset, which has no metadata; omit --metadata`);
         metadata = compiled.metadata; warnings = compiled.warnings ?? []; preview = compiled.preview;
+        // --frames: each animation down to that many evenly spaced frames, playing as long as before.
+        if (options.frames !== undefined) {
+          if (compile === compileAutotile) throw new Error('--frames thins animations, and the frames of a tile set are its tiles');
+          const thinned = keepFrames(compiled.recipe, frameCount(options.frames), '--frames');
+          compiled.recipe = thinned.recipe; kept = thinned.kept; warnings.push(...thinned.notes);
+          if (metadata) metadata = { ...metadata, kept };
+        }
         // --size: the compiled drawing on a canvas of another size (cut or given margins, never scaled).
         if (options.size !== undefined) {
           if (command === 'autotile') throw new Error('--size goes with compile: a tile set\'s size is its tile, set in the source');
@@ -428,7 +464,7 @@ try {
       const reads = command === 'import' ? filesRead(positional[0], options.atlas) : [...inputsOf(input), ...filesRead(options.changes, options.selections)];
       const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }), ...(testMap && { preview: [options.preview, encodePNG(testMap.data, testMap.width, testMap.height)] }) }, options.force, reads);
       // The metadata goes to a file or nowhere: a rig's runs to a hundred kilobytes, which no reply should carry.
-      console.log(JSON.stringify({ ok: true, ...written, ...(resized && { width: value.width, height: value.height, resized }), ...(warnings && { warnings }), ...(((metadata && !options.metadata) || (preview && !options.preview)) && { hint: [metadata && !options.metadata && `The metadata${warnings ? ' (what review tools and engines read: loop seams, pose contacts, tile masks)' : ''} was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) }, null, 2));
+      print({ ok: true, ...written, ...(kept && { kept }), ...(resized && { width: value.width, height: value.height, resized }), ...(warnings && { warnings }), ...(((metadata && !options.metadata) || (preview && !options.preview)) && { hint: [metadata && !options.metadata && `The metadata${warnings ? ' (what review tools and engines read: loop seams, pose contacts, tile masks)' : ''} was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
     } else if (command === 'scene' && options.image !== undefined) {
       // One image at one time, as MCP pixel_scene returns it: color, grayscale or depth, with optional guides.
       if (options.out !== undefined || options['embed-recipe']) throw new Error('scene --image writes one image; export a bundle with --out instead');
@@ -439,7 +475,7 @@ try {
       const scale = options.scale === undefined ? Math.max(1, Math.min(8, Math.floor(768 / Math.max(frame.width, frame.height)))) : Number(options.scale);
       const image = sceneImage(frame, { mode, scale, ...(options.guides !== undefined && { guides: await readGuidesOption(options.guides) }) });
       const written = await writeOutputs({ image: [options.image, encodePNG(image.data, image.width, image.height)] }, options.force, [...inputsOf(input), ...filesRead(options.guides?.trimStart().startsWith('{') ? undefined : options.guides)]);
-      console.log(JSON.stringify({ ok: true, name: input.document.name, width: frame.width, height: frame.height, duration: scene.duration, time, scale, view: mode, placements: frame.placements.length, ...(frame.depth && { depth: frame.depth }), ...(image.guides && { guides: image.guides }), ...(frame.lights && { lights: frame.lights }), ...(frame.shadows && { shadows: frame.shadows }), ...(frame.camera && { camera: frame.camera }), ...(frame.haze && { haze: frame.haze }), warnings: frame.warnings, ...written, ...referenced(input) }, null, 2));
+      print({ ok: true, name: input.document.name, width: frame.width, height: frame.height, duration: scene.duration, time, scale, view: mode, placements: frame.placements.length, ...(frame.depth && { depth: frame.depth }), ...(image.guides && { guides: image.guides }), ...(frame.lights && { lights: frame.lights }), ...(frame.shadows && { shadows: frame.shadows }), ...(frame.camera && { camera: frame.camera }), ...(frame.haze && { haze: frame.haze }), warnings: frame.warnings, ...written, ...referenced(input) });
     } else if (command === 'scene') {
       if (!options.out) throw new Error('scene requires --out <directory>, or --image <file.png> for one view');
       folderOut('scene', options.out, 'for one image of the scene use --image <file.png>; --out writes a bundle folder');
@@ -447,7 +483,7 @@ try {
       const input = await readResolved(positional[0]), bundle = await createSceneBundle(input.document);
       if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
       const files = await writeBundle(bundle, options.out, { force: options.force, inputs: inputsOf(input) });
-      console.log(JSON.stringify({ ok: true, ...bundleFiles(path.resolve(options.out), files, options), warnings: bundle.warnings, ...referenced(input) }));
+      print({ ok: true, ...bundleFiles(path.resolve(options.out), files, options), warnings: bundle.warnings, ...referenced(input) });
     } else if (command === 'inspect') {
       const layerOptions = options.layers === undefined ? {} : { layers: options.layers.split(',') };
       if ([positional[0], options.reference, options.metadata].filter(file => file === '-').length > 1) throw new Error('Only one inspection input can use stdin');
@@ -467,7 +503,7 @@ try {
       const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height)], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height)] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height)] }) } : {}, options.force, [...inputsOf(input), ...filesRead(options.reference, options.metadata)]);
       if (view.diagnostics && !options.full) view.diagnostics = briefDiagnostics(view.diagnostics);
       // Grid rows line up for reading; a short row of a table (a cell, a frame's counts, a box) stays on one line.
-      console.log(rowsJSON({ ok: true, ...summary(project, recipe), ...view, warnings: [...(compiled?.warnings ?? []), ...project.warnings], sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(comparison && { comparison: comparisonReport }), ...written, ...referenced(input) }));
+      print({ ok: true, ...summary(project, recipe), ...view, cells: briefCells(view.cells), warnings: [...(compiled?.warnings ?? []), ...project.warnings], sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(comparison && { comparison: comparisonReport }), ...written, ...referenced(input) });
     } else if (command === 'patch') {
       if (!options.changes) throw new Error('patch requires --changes <file.json|->');
       if (positional[0] === '-' && options.changes === '-') throw new Error('Only one of the project and --changes can be read from stdin');
@@ -484,7 +520,7 @@ try {
         ...(options.image && image && { image: [options.image, encodePNG(image.sheet.data, image.sheet.width, image.sheet.height)] })
       }, options.force, [...input.resolution.files, ...filesRead(options.changes)]);
       const { sheet, ...drawn } = image ?? {};
-      console.log(JSON.stringify({ ok: true, name: after.name, edits, ...(applied.rebased && { rebased: true }), ...report, ...(written.image && { image: { ...drawn, scale: sheet.scale, file: written.image } }), ...(written.recipe && { recipe: written.recipe }), warnings: after.warnings, ...(after.clipping && { clipping: after.clipping }), ...(after.clippingOmitted && { clippingOmitted: after.clippingOmitted }) }, null, 2));
+      print({ ok: true, name: after.name, edits, ...(applied.rebased && { rebased: true }), ...report, ...(written.image && { image: { ...drawn, scale: sheet.scale, file: written.image } }), ...(written.recipe && { recipe: written.recipe }), warnings: after.warnings, ...(after.clipping && { clipping: after.clipping }), ...(after.clippingOmitted && { clippingOmitted: after.clippingOmitted }) });
     } else if (command === 'sequence') {
       if (!options.out) throw new Error('sequence requires --out <new folder>');
       folderOut('sequence', options.out, 'name a new folder for the numbered frames; for one GIF use pixelbolt gif --out <new.gif>');
@@ -500,13 +536,17 @@ try {
       const sequence = bodies ? createBodiesSequence(document, settings, { stream: true }) : document?.format === 'pixelforge-scene' ? createSceneSequence(prepareScene(document), document.name, settings) : createSequence(renderProject(document), settings);
       const files = await writeBundle(sequence, options.out, { force: options.force, inputs: inputsOf(input) }), { timing, figures, ...info } = sequence.info;
       // A match's every-frame figures stay in sequence.json; the reply carries their summary, after where the files went.
-      console.log(JSON.stringify({ ok: true, ...info, directory: path.resolve(options.out), files: files.length, ...removedBy(files), ...referenced(input), ...(figures && { figures: figuresSummary(figures) }) }, null, 2));
+      print({ ok: true, ...info, directory: shown(path.resolve(options.out)), files: files.length, ...(files.removed && { removed: files.removed }), ...referenced(input), ...(figures && { figures: figuresSummary(figures) }) });
     } else if (command === 'gif') {
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
-      if (options.sheet !== undefined && !/.png$/i.test(options.sheet)) throw new Error('--sheet must name a new .png file');
+      if (options.sheet !== undefined && !/\.png$/i.test(options.sheet)) throw new Error('--sheet must name a new .png file');
       // --preset: a shipped preset straight to its GIF, compiled as compile --preset compiles it.
       const input = await readResolved(positional[0]), compiled = options.preset !== undefined ? compilePreset(input.document) : null, warnings = [...(compiled?.warnings ?? [])];
-      let recipe = compiled ? compiled.recipe : input.document, resized;
+      let recipe = compiled ? compiled.recipe : input.document, resized, kept;
+      if (options.frames !== undefined) {
+        const thinned = keepFrames(recipe, frameCount(options.frames), '--frames');
+        ({ recipe, kept } = thinned); warnings.push(...thinned.notes);
+      }
       if (options.size !== undefined) {
         ({ recipe, resized } = resizeRecipe(recipe, options.size, '--size'));
         const cut = resizeWarning(resized, [recipe.width, recipe.height]);
@@ -518,7 +558,7 @@ try {
       // --sheet: the frames of that animation as a contact sheet, to look at before delivering.
       const sheet = options.sheet !== undefined ? inspectProject(project, { animation: gif.animation }).sheet : null;
       const written = await writeOutputs({ file: [options.out, data], ...(sheet && { sheet: [options.sheet, encodePNG(sheet.data, sheet.width, sheet.height)] }) }, options.force, inputsOf(input));
-      console.log(JSON.stringify({ ok: true, name: project.name, ...gif, ...(names.length > 1 && { animations: names }), ...(resized && { resized }), ...written, warnings: [...warnings, ...project.warnings.filter(text => !(resized?.cut && text.startsWith('Some drawing falls outside the canvas')))], ...(options.preset === undefined && referenced(input)) }, null, 2));
+      print({ ok: true, name: project.name, ...gif, ...(names.length > 1 && { animations: names }), ...(kept && { kept }), ...(resized && { resized }), ...written, warnings: [...warnings, ...project.warnings.filter(text => !(resized?.cut && text.startsWith('Some drawing falls outside the canvas')))], ...(options.preset === undefined && referenced(input)) });
     } else if (command === 'gif-frames') {
       if (!positional[0] || positional[0] === '-') throw new Error('gif-frames requires a folder of numbered PNG frames');
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif-frames requires --out <new.gif>');
@@ -526,24 +566,24 @@ try {
       const { folderGIF } = await import('../src/frame-folder.js');
       const { data, ...gif } = folderGIF(positional[0], { fps: options.fps, ...(options.loops !== undefined && { loops: Number(options.loops) }), ...(options.background !== undefined && { background: options.background }), ...(options.prefix !== undefined && { prefix: options.prefix }) });
       const written = await writeOutputs({ file: [options.out, data] }, options.force);
-      console.log(JSON.stringify({ ok: true, ...gif, bytes: data.length, ...written }, null, 2));
+      print({ ok: true, ...gif, bytes: data.length, ...written });
     } else {
       const input = await readResolved(positional[0]);
-      if (command === 'validate') { const project = renderProject(input.document); console.log(JSON.stringify({ ok: true, ...summary(project, input.document), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }), ...referenced(input) })); }
+      if (command === 'validate') { const project = renderProject(input.document); print({ ok: true, ...summary(project, input.document), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }), ...referenced(input) }); }
       else {
         if (!options.out) throw new Error('render requires --out <directory>');
         folderOut('render', options.out, 'name a new folder: the sheet, atlas and animations are written inside it (the sheet as <name>.png); for one GIF use pixelbolt gif --out <new.gif>');
         if (positional[0] === '-' && options.expect === '-') throw new Error('Only one input can use stdin');
-        const expect = options.expect === undefined ? undefined : readExpect(await readExpectOption(options.expect));
+        const expect = options.expect === undefined ? undefined : readExpect(await readJSONOption(options.expect));
         // The check runs before anything is written, so an unknown --animation writes nothing. render writes no GIFs.
         const bundle = await createBundle(input.document), check = checkDelivery(bundle.project, { recipe: input.document, expect, animation: options.animation });
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
         const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
         const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile] });
-        console.log(JSON.stringify({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), check, ...referenced(input) }));
+        print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), check, ...referenced(input) });
       }
     }
   }
 } catch (error) {
-  console.error(JSON.stringify({ ok: false, error: error.message, ...(error.path ? { path: error.path } : {}), ...(error.errors && { errors: error.errors }) })); process.exitCode = 1;
+  console.error(rowsJSON({ ok: false, ...errorReply(error) })); process.exitCode = 1;
 }

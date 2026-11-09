@@ -1,7 +1,8 @@
 // A recipe on a canvas of another size: the same drawing, cut to a window or given margins, never scaled. The window
 // is chosen from what the frames draw (the one holding the most drawn pixels), every operation moves by one whole
 // offset (a layer's by its own x and y as well), and the result renders exactly as that window of the original does:
-// a margin shows the background, or nothing. Browser-compatible.
+// a margin shows the background, or nothing. With fewer frames (`keepFrames`): evenly spaced frames of each
+// animation, playing as long as before. Browser-compatible.
 import { PixelError, CANVAS_SIDE, FRAME_AREA, parseColor, renderProject } from './core.js';
 
 const fail = (path, message) => { throw new PixelError(path, message); };
@@ -140,4 +141,45 @@ export function resizeWarning({ from, cut }, [width, height]) {
   if (!cut) return null;
   const share = cut < 0.01 ? 'under 1%' : `${Math.round(cut * 100)}%`;
   return `The ${width}×${height} canvas leaves out ${share} of what the ${from[0]}×${from[1]} drawing draws (cut, not scaled): inspect it before delivering, and say so if it shows.`;
+}
+
+// A recipe whose animations play at most `count` frames: of an animation that lists more, evenly spaced ones are kept
+// and the rest removed. A loop keeps frame floor(i × F / count), so the step across its seam is as even as the others;
+// a one-shot or a pingpong keeps its first and last, where a one-shot's last is the last that draws anything, so an
+// effect that fades to nothing keeps a picture in every frame. A kept frame lasts as long as the frames it stands
+// for, so the animation plays as long as before. Returns { recipe, kept: { <animation>: "8 of 19" }, notes }.
+export function keepFrames(recipe, count, path = 'frames') {
+  if (!Number.isInteger(count) || count < 1 || count > 256) fail(path, 'expected how many frames each animation keeps, a whole number from 1 to 256');
+  const project = renderProject(recipe), names = recipe.frames.map(frame => frame.name), index = new Map(names.map((name, i) => [name, i]));
+  const animations = recipe.animations ?? { default: { frames: names } }, kept = {}, next = {}, wanted = new Map(), dropped = new Set();
+  const draws = frame => { const { data } = project.frames[frame]; for (let i = 3; i < data.length; i += 4) if (data[i]) return true; return false; };
+  for (const [key, animation] of Object.entries(animations)) {
+    const listed = animation.frames.map(name => index.get(name)), F = listed.length, pingpong = animation.direction === 'pingpong';
+    // A pingpong plays its inner frames twice: 2 × listed − 2 frames.
+    const N = pingpong ? Math.max(2, Math.floor((count + 2) / 2)) : count, ends = pingpong || animation.loop === false;
+    let last = F - 1;
+    if (!pingpong) while (last >= N && !draws(listed[last])) last--;
+    const picks = F <= N ? listed.map((_, i) => i) : Array.from({ length: N }, (_, i) => ends ? (N === 1 ? 0 : Math.round(i * last / (N - 1))) : Math.floor(i * F / N));
+    picks.forEach((at, i) => {
+      const frame = listed[at], lasts = listed.slice(at, picks[i + 1] ?? F).reduce((sum, each) => sum + project.frames[each].duration, 0);
+      wanted.set(frame, (wanted.get(frame) ?? new Set()).add(lasts));
+    });
+    next[key] = { ...animation, frames: picks.map(at => names[listed[at]]) };
+    if (F > N) { kept[key] = `${N} of ${F}`; for (const frame of listed) dropped.add(frame); }
+  }
+  if (!Object.keys(kept).length) return { recipe, kept, notes: [`Every animation already plays ${count} frame${count === 1 ? '' : 's'} or fewer, so none was removed.`] };
+  // A frame still played, or one a remaining frame is drawn from (`from`, a copy), stays.
+  const stays = new Set(wanted.keys()), sources = frame => [frame.from, ...[...(frame.ops ?? []), ...(frame.layers ?? []).flatMap(layer => layer.ops ?? [])].filter(op => op.op === 'copy').map(op => op.from)].filter(name => index.has(name)).map(name => index.get(name));
+  for (let i = recipe.frames.length - 1; i >= 0; i--) if (stays.has(i) || !dropped.has(i)) for (const source of sources(recipe.frames[i])) stays.add(source);
+  const remains = (_, i) => stays.has(i) || !dropped.has(i), notes = [];
+  // A duration is the frame's own: one played at two lengths keeps the length it had.
+  const frames = recipe.frames.map((frame, i) => {
+    const lasts = wanted.get(i);
+    if (!lasts || (lasts.size === 1 && lasts.has(project.frames[i].duration))) return frame;
+    if (lasts.size > 1) { notes.push(`Frame "${frame.name}" is played more than once, so it keeps its ${project.frames[i].duration} ms and its animations no longer play exactly as long as before.`); return frame; }
+    return { ...frame, duration: [...lasts][0] };
+  }).filter(remains);
+  // Frames kept only to draw others from are no longer played, so the animation that played every frame is spelled out.
+  const explicit = recipe.animations !== undefined || frames.length > next.default.frames.length;
+  return { recipe: { ...recipe, frames, ...(explicit && { animations: next }) }, kept, notes };
 }

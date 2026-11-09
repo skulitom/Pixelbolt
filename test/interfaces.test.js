@@ -146,11 +146,12 @@ test('CLI consumes stdin, emits machine-readable diagnostics and handles unknown
   assert.equal(bad.status, 1); assert.equal(JSON.parse(bad.stderr).ok, false);
   const flags = quietCLI('pixelbolt', ['validate', '-', '--typo']);
   assert.equal(flags.status, 1); assert.match(JSON.parse(flags.stderr).error, /Unknown option/);
-  // Several broken operations come back together, each with its path.
+  // Several broken operations come back together, each said once and starting with its path.
   const broken = { ...tiny, frames: [{ name: 'a', ops: [{ op: 'circle' }, { op: 'pixel', x: 0, y: 0, color: 'nope' }] }], animations: undefined };
   const both = quietCLI('pixelbolt', ['validate', '-'], JSON.stringify(broken)), reply = JSON.parse(both.stderr);
-  assert.equal(both.status, 1); assert.equal(reply.path, 'project.frames[0].ops[0].op');
-  assert.deepEqual(reply.errors.map(item => item.path), ['project.frames[0].ops[0].op', 'project.frames[0].ops[1].color']);
+  assert.equal(both.status, 1); assert.equal(reply.error, '2 errors: fix every one in errors, then try again');
+  assert.deepEqual(reply.errors.map(item => item.split(': ')[0]), ['project.frames[0].ops[0].op', 'project.frames[0].ops[1].color']);
+  assert.equal(both.stderr.split('unknown color').length, 2);
 });
 
 test('CLI init protects an existing recipe with an actionable JSON error and honours --force', async t => {
@@ -218,7 +219,7 @@ test('MCP pixel_inspect returns a contact sheet and ruled grids, saving only its
   input.end(); await running;
   const [, inspect, extra, missing] = text.trim().split('\n').map(line => JSON.parse(line));
   const [summary, image, grids] = inspect.result.content, info = JSON.parse(summary.text);
-  assert.deepEqual(info.cells, [{ frame: 'a', duration: 100 }, { frame: 'b', duration: 100 }]);
+  assert.deepEqual(info.cells, ['a, b: 100 ms each']);
   assert.equal(image.mimeType, 'image/png');
   assert.equal(Buffer.from(image.data, 'base64').readUInt32BE(16), info.sheet.width);
   assert.match(grids.text, /^ {13}11$/m); assert.match(grids.text, /^ {3}012345678901$/m); assert.match(grids.text, /^1 {2}\.{11}k$/m);
@@ -274,7 +275,7 @@ test('MCP revisions from validate, inspect and paint survive process restarts be
   restarted.forEach((result, i) => { assert.ok(!result.isError, JSON.stringify(result)); assert.equal(JSON.parse(result.content[0].text).revision, ids[Math.min(i, 2)]); });
   const rendered = JSON.parse(restarted[3].content[0].text), saved = JSON.parse(await readFile(path.join(rendered.directory, rendered.files.find(file => file.endsWith('.pixel.json'))), 'utf8'));
   assert.deepEqual(saved.frames[0].pixels, changes[0].value);
-  assert.deepEqual(rendered.preview.cells, [{ frame: 'a', duration: 100 }, { frame: 'b', duration: 100 }]);
+  assert.deepEqual(rendered.preview.cells, ['a, b: 100 ms each']);
   assert.match(restarted[2].content[2].text, /k\.$/m);
   const third = runMCP(dir, [['pixel_validate', { revision: rendered.revision }], ['pixel_validate', { revision: ids[1] }]]);
   assert.ok(third.every(result => !result.isError));
@@ -288,8 +289,7 @@ test('MCP render previews every frame or an animation in playback order, with ex
   for (const [i, result] of results.entries()) {
     assert.ok(!result.isError, JSON.stringify(result));
     const info = JSON.parse(result.content[0].text), view = inspectProject(renderProject(project), i ? { animation: 'idle' } : {});
-    assert.deepEqual(info.preview.cells.map(c => c.frame), i ? ['pose0', 'pose1', 'pose2', 'pose1'] : ['pose0', 'pose1', 'pose2']);
-    assert.deepEqual(info.preview.cells.map(c => c.duration), i ? [70, 100, 130, 100] : [70, 100, 130]);
+    assert.deepEqual(info.preview.cells, ['pose0: 70 ms', 'pose1: 100 ms', 'pose2: 130 ms', ...(i ? ['pose1: 100 ms'] : [])]);
     assert.deepEqual(Buffer.from(result.content[1].data, 'base64'), encodePNG(view.sheet.data, view.sheet.width, view.sheet.height));
     assert.equal(info.preview.sheet.width, view.sheet.width);
     assert.ok(info.files.includes('animations/idle.png'));
@@ -398,10 +398,11 @@ test('CLI replies stay small: render names its folder once, compile keeps metada
   const cli = (...args) => spawnSync(process.execPath, [path.join(root, 'bin', 'pixelbolt.js'), ...args], { cwd: dir, encoding: 'utf8' });
   const coin = path.join(root, 'examples', 'coin.json');
   const short = JSON.parse(cli('render', coin, '--out', 'short').stdout), every = JSON.parse(cli('render', coin, '--out', 'every', '--list-files').stdout);
-  assert.ok(path.isAbsolute(short.directory)); assert.equal(await realpath(short.directory), await realpath(path.join(dir, 'short')));
+  // A folder inside the working directory is named from it, as it was asked for.
+  assert.equal(short.directory, 'short');
   assert.ok(!short.files.some(file => file.startsWith('frames/') || path.isAbsolute(file)) && short.files.includes('coin.png'));
   assert.equal(every.files.filter(file => file.startsWith('frames/')).length, short.frames);
-  for (const file of every.files) await access(path.join(every.directory, file));
+  for (const file of every.files) await access(path.join(dir, every.directory, file));
   // A rig's metadata runs to a hundred kilobytes: it goes to --metadata or nowhere.
   await writeFile(path.join(dir, 'hero.poses.json'), await readFile(path.join(root, 'examples', 'hero.poses.json')));
   const compiled = cli('compile', 'hero.poses.json', '--out', 'hero.json');
@@ -424,7 +425,8 @@ test('CLI inspect prints a row to a line and sums a long sheet\'s diagnostics un
   assert.deepEqual(reply.diagnostics.frames, [{ frame: 'f3', visible: 5, colors: 1, corners: 0, strays: 1 }]);
   assert.equal(reply.diagnostics.omitted, 9);
   // One line per cell and per frame row, not one per field.
-  assert.match(brief.stdout, /^    \{"frame":"f0","duration":100\},$/m);
+  assert.match(brief.stdout, /^  "cells": \["f0 … f9: 100 ms each"\],$/m);
+  assert.match(brief.stdout, /^  "sheet": \{"columns":5,"rows":2,[^\n]*\},$/m);
   assert.match(brief.stdout, /^    "frames": \[\{"frame":"f3","visible":5,"colors":1,"corners":0,"strays":1\}\],$/m);
   const full = run('--diagnostics', '--full'), every = JSON.parse(full.stdout).diagnostics;
   assert.equal(every.frames.length, 10); assert.equal(every.frameTotals, undefined);

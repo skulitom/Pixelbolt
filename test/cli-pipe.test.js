@@ -22,5 +22,5 @@ test('the CLI stops quietly when the reader of its output goes away', async () =
   // An error still goes to stderr with exit code 1.
   const failed = await closedReader('validate', 'examples/no-such-file.json');
   assert.equal(failed.code, 1);
-  assert.match(failed.stderr, /"ok":false/);
+  assert.equal(JSON.parse(failed.stderr).ok, false);
 });
