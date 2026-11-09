@@ -1,0 +1,316 @@
+{
+  "format": "pixelforge-bodies",
+  "version": 1,
+  "name": "comeback",
+  "width": 135,
+  "height": 240,
+  "palette": {
+    "R": "#e8323c",
+    "B": "#2d6be0",
+    "r": "#fff1d6",
+    "b": "#fff1d6",
+    "k": "#11131c",
+    "w": "#ffffff",
+    "y": "#ffd23f"
+  },
+  "symbols": {
+    "roof": [
+      "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+    ]
+  },
+  "effects": {
+    "match": {
+      "frames": 960,
+      "duration": 33,
+      "gravity": [
+        0,
+        0
+      ],
+      "background": "k",
+      "walls": [
+        "left",
+        "right",
+        "bottom"
+      ],
+      "obstacles": [
+        {
+          "symbol": "roof",
+          "x": 0,
+          "y": 59,
+          "draw": "none"
+        }
+      ],
+      "territory": {
+        "cell": 9,
+        "at": [
+          0,
+          60
+        ],
+        "teams": [
+          {
+            "name": "red",
+            "color": "R"
+          },
+          {
+            "name": "blue",
+            "color": "B"
+          }
+        ],
+        "rows": [
+          "RRRRRRRRRRRRRRR",
+          "RRRRRRRRRRRRRRR",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB",
+          "BBBBBBBBBBBBBBB"
+        ]
+      },
+      "bodies": [
+        {
+          "name": "red1",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            33.75,
+            69
+          ],
+          "velocity": [
+            0.786,
+            1.839
+          ],
+          "speed": 7,
+          "team": "red",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "r"
+        },
+        {
+          "name": "blue1",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            33.75,
+            159
+          ],
+          "velocity": [
+            -0.283,
+            -1.98
+          ],
+          "speed": 7,
+          "team": "blue",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "b"
+        },
+        {
+          "name": "red2",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            67.5,
+            69
+          ],
+          "velocity": [
+            -1.73,
+            -1.004
+          ],
+          "speed": 7,
+          "team": "red",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "r"
+        },
+        {
+          "name": "blue2",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            67.5,
+            159
+          ],
+          "velocity": [
+            1.411,
+            1.417
+          ],
+          "speed": 7,
+          "team": "blue",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "b"
+        },
+        {
+          "name": "red3",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            101.25,
+            69
+          ],
+          "velocity": [
+            -1.551,
+            1.262
+          ],
+          "speed": 7,
+          "team": "red",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "r"
+        },
+        {
+          "name": "blue3",
+          "shape": "circle",
+          "radius": 3,
+          "at": [
+            101.25,
+            159
+          ],
+          "velocity": [
+            1.825,
+            -0.818
+          ],
+          "speed": 7,
+          "team": "blue",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "b"
+        }
+      ],
+      "hud": [
+        {
+          "text": "Red starts with 10%.",
+          "at": [
+            4,
+            6
+          ],
+          "color": "w",
+          "until": 959
+        },
+        {
+          "text": "Can it come back?",
+          "at": [
+            4,
+            18
+          ],
+          "color": "w",
+          "until": 959
+        },
+        {
+          "text": "Not quite!",
+          "at": [
+            4,
+            6
+          ],
+          "color": "y",
+          "from": 959
+        },
+        {
+          "text": "Red ends on 49%.",
+          "at": [
+            4,
+            18
+          ],
+          "color": "w",
+          "from": 959
+        },
+        {
+          "bar": {
+            "at": [
+              4,
+              32
+            ],
+            "size": [
+              127,
+              4
+            ]
+          }
+        },
+        {
+          "text": "RED {red%}",
+          "at": [
+            4,
+            42
+          ],
+          "color": "w"
+        },
+        {
+          "text": "{blue%} BLUE",
+          "at": [
+            113,
+            42
+          ],
+          "color": "w",
+          "align": "right"
+        },
+        {
+          "text": "5s",
+          "at": [
+            55,
+            42
+          ],
+          "color": "y",
+          "align": "center",
+          "from": 808,
+          "until": 838
+        },
+        {
+          "text": "4s",
+          "at": [
+            55,
+            42
+          ],
+          "color": "y",
+          "align": "center",
+          "from": 838,
+          "until": 869
+        },
+        {
+          "text": "3s",
+          "at": [
+            55,
+            42
+          ],
+          "color": "y",
+          "align": "center",
+          "from": 869,
+          "until": 899
+        },
+        {
+          "text": "2s",
+          "at": [
+            55,
+            42
+          ],
+          "color": "y",
+          "align": "center",
+          "from": 899,
+          "until": 929
+        },
+        {
+          "text": "1s",
+          "at": [
+            55,
+            42
+          ],
+          "color": "y",
+          "align": "center",
+          "from": 929,
+          "until": 959
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "format": "pixelforge-bodies",
+  "version": 1,
+  "name": "ring-hits",
+  "width": 108,
+  "height": 192,
+  "palette": {
+    "k": "#151a2b",
+    "h": "#151a2b",
+    "r": "#d9823b",
+    "s": "#b8612a",
+    "o": "#7df0ff",
+    "t": "#2e6f86",
+    "w": "#f4f1ea",
+    "y": "#ffd23f"
+  },
+  "effects": {
+    "ring-hits": {
+      "frames": 745,
+      "duration": 34,
+      "gravity": [
+        0,
+        0
+      ],
+      "background": "k",
+      "territory": {
+        "cell": 6,
+        "rows": [
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          "......rsrsrs......",
+          "....srsrsrsrsr....",
+          "...srsrsrsrsrsr...",
+          "..srsr......srsr..",
+          "..rsr........srs..",
+          "..srs........rsr..",
+          ".srs..........rsr.",
+          ".rsr..........srs.",
+          ".srs..........rsr.",
+          "..srs........rsr..",
+          "..rsrs......rsrs..",
+          "...rsrs....rsrs...",
+          "...srsrsrsrsrsr...",
+          "....srsrsrsrsr....",
+          "......rsrsrs......",
+          "..................",
+          "..................",
+          "..................",
+          "..................",
+          ".................."
+        ],
+        "teams": [
+          {
+            "name": "hits",
+            "color": "h",
+            "label": "BALL"
+          },
+          {
+            "name": "bricks",
+            "color": "r",
+            "label": "BRICKS"
+          },
+          {
+            "name": "bricks2",
+            "color": "s",
+            "label": "BRICKS"
+          }
+        ]
+      },
+      "bodies": [
+        {
+          "name": "ball",
+          "shape": "circle",
+          "radius": 2.5,
+          "at": [
+            54,
+            116
+          ],
+          "velocity": [
+            2.4148,
+            0.647
+          ],
+          "speed": 2.5,
+          "team": "hits",
+          "bounce": 1,
+          "friction": 0,
+          "fill": "o",
+          "trail": {
+            "color": "t",
+            "length": 3
+          }
+        }
+      ],
+      "hud": [
+        {
+          "text": "How many hits",
+          "at": [
+            8,
+            7
+          ],
+          "color": "w",
+          "until": 670
+        },
+        {
+          "text": "to break out?",
+          "at": [
+            8,
+            17
+          ],
+          "color": "w",
+          "until": 670
+        },
+        {
+          "text": "HITS: {hits}",
+          "at": [
+            8,
+            31
+          ],
+          "color": "y",
+          "scale": 2
+        },
+        {
+          "text": "It broke out",
+          "at": [
+            8,
+            7
+          ],
+          "color": "w",
+          "from": 670
+        },
+        {
+          "text": "after 53 hits!",
+          "at": [
+            8,
+            17
+          ],
+          "color": "w",
+          "from": 670
+        }
+      ]
+    }
+  }
+}
