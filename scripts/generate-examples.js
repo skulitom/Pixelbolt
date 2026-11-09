@@ -504,7 +504,7 @@ const steamVent = fluidSource('steam-vent', 32, 48, { q: '#7d8ca3', Q: '#b4c2d6'
   // at the nozzle, with a shaded underside and a lit top. Dithered, the thin steam broke into loose specks.
   look: [{ field: 'density', colors: ['q', 'Q', 'w'], thresholds: [0.035, 0.11, 0.6], dither: 0 },
     { field: 'shadow', colors: ['q'], thresholds: [0.55], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.7], dither: 0 }],
-  cleanup: { strays: true, corners: true }
+  cleanup: { strays: true }
 }, { pipe: ['kkkkkkkkkk', 'kPhhhhhhPk', 'kpPPPPPPpk', '.kpPPPPpk.', '.kpPPPPpk.', '.kpPPPPpk.'] });
 // Two comets circle the rim: a hot head (cyan, with a white glint) over a thin, pulsing trail of dye, laid along their
 // path so it stays unbroken. The swirl turns slower than the comets and pulls inward, so each trail lags and winds into

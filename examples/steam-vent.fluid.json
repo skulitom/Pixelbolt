@@ -154,7 +154,7 @@
         { "field": "shadow", "colors": ["q"], "thresholds": [0.55], "dither": 0 },
         { "field": "light", "colors": ["w"], "thresholds": [0.7], "dither": 0 }
       ],
-      "cleanup": { "strays": true, "corners": true }
+      "cleanup": { "strays": true }
     }
   }
 }

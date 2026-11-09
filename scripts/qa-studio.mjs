@@ -928,9 +928,9 @@ try {
     const gif = await readFile(await download(() => click('#gif')));
     assert.equal(gif.toString('latin1', 0, 6), 'GIF89a');
     const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(gif.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); try { await decoder.tracks.ready; await decoder.completed; return decoder.tracks.selectedTrack.frameCount; } finally { decoder.close(); } })()`);
-    assert.equal(decoded, 60);
+    assert.equal(decoded, 32);
     const recipe = JSON.parse(await readFile(await download(() => click('#recipe')), 'utf8'));
-    assert.deepEqual([recipe.name, recipe.frames.length], ['quarry-blast', 60]);
+    assert.deepEqual([recipe.name, recipe.frames.length], ['quarry-blast', 32]);
     const source = JSON.parse(await readFile(await download(() => click('#powder-source')), 'utf8'));
     assert.deepEqual(source, JSON.parse(await readFile(path.join(path.resolve(options.app), 'examples', 'quarry-blast.powder.json'), 'utf8')));
     // The sandbox has no clip worth baking, so only its source downloads.

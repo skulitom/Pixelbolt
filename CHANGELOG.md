@@ -4,6 +4,11 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Removed: the Tesla coil preset
+
+- `examples/tesla-coil.fluid.json` (preset `tesla-coil`) is gone, with its GIF and its Fluid lab entry: a thin arc on a small coil that the plasma globe and lightning show better. `compile --preset tesla-coil` now reports no such preset. Thirty-seven fluid presets remain, three of them electric.
+- The steam vent no longer cleans corners (`cleanup.corners`), which the Aseprite extension's Lua port does not implement: with it, the extension could not be packaged from the shipped presets.
+
 ### Presets: drawn props and no dead tails
 
 - The floating bodies in `water-wheel`, `crate-splash` and `sand-slide` are drawn as things: a paddle wheel of boards on spokes with a hub (it was a grey cross), a rubber duck, crates of planks with a brace, a rounded stone and a ball with a highlight. Each is a `symbol` on the body; the shapes that collide are the same, so the water moves as it did.

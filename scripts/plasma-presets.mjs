@@ -65,27 +65,6 @@ const lightning = fluidSource('lightning', 64, 96, { ...arc, k: '#1d2030', g: '#
   ground: shapeRows(64, 4, (x, y) => (y === 0 ? 's' : 'S'))
 });
 
-// Tesla coil: the top load is pulsed, so streamers fork out from it into the air on every pulse and die between them;
-// those near the grounded rod reach it and strike, bright, along the path the last strike left.
-const teslaCoil = fluidSource('tesla-coil', 96, 64, { ...arc, m: '#c06cf0', p: '#7a44c9', G: '#c4c8cf', g: '#6f7889', h: '#9aa3b3', k: '#262a33' }, {
-  frames: 24, duration: 60, loop: true, warmup: 1, blend: 1, seed: 5, buoyancy: 0.3, vorticity: 0.2, cooling: 0.3,
-  obstacles: [
-    { symbol: 'top', x: 29, y: 25, voltage: pulses(2, 1, 24, 90), resistance: 30 },
-    { symbol: 'coil', x: 33, y: 31 },
-    { symbol: 'rod', x: 60, y: 38, voltage: 0 }
-  ],
-  emitters: [],
-  electric: { breakdown: 3, focus: 1.2, growth: 40, recombine: 0.9, sustain: 0.4, memory: 2, heating: 0.05, ground: ['left', 'right', 'bottom'] },
-  look: [
-    { field: 'ionization', colors: ['p', 'm'], thresholds: [0.06, 0.45], dither: 0.4 },
-    { field: 'current', colors: ['c', 'W'], thresholds: [0.4, 1.2], dither: 0, halo: { color: 'p', width: 1 } }
-  ]
-}, {
-  top: shapeRows(15, 6, (x, y) => ((x - 7) * (x - 7) / 42 + (y - 2.5) * (y - 2.5) / 9 <= 1 ? 'G' : null)),
-  coil: shapeRows(7, 33, (x, y) => (y >= 27 ? 'k' : x === 0 || x === 6 ? 'g' : y % 2 ? 'h' : 'g')),
-  rod: shapeRows(5, 26, (x, y) => ((x - 2) * (x - 2) + (y - 2) * (y - 2) <= 5 ? 'G' : y > 2 && (x === 1 || x === 2) ? 'G' : null))
-});
-
 // Plasma globe: the ball at the centre is driven in pulses (a globe runs on alternating current), so filaments run from
 // it to the glass on every pulse, flicker between white and violet, and drift on the warm gas; each pulse takes the
 // paths the last one left.
@@ -146,4 +125,4 @@ const lightningPond = fluidSource('lightning-pond', 64, 72, { ...arc, k: '#1d203
   bed: shapeRows(64, 20, (x, y) => { const Y = y + surface - 2; return Y >= surface + 3 && bowl(x, Y) >= 1 && bowl(x, Y) < 1.12 ? 'M' : null; })
 });
 
-export const plasmaPresets = { 'jacobs-ladder': jacobsLadder, lightning, 'tesla-coil': teslaCoil, 'plasma-globe': plasmaGlobe, 'lightning-pond': lightningPond };
+export const plasmaPresets = { 'jacobs-ladder': jacobsLadder, lightning, 'plasma-globe': plasmaGlobe, 'lightning-pond': lightningPond };
