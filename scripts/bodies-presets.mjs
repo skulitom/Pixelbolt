@@ -150,7 +150,7 @@ const bladeBloom = bodiesSource('blade-bloom', 80, 80,
 // breaks where it lands. Everything settles into a heap of whole crates, planks and glass.
 const SMASH_FLOOR = 56;
 const pane = ['wwwww', 'wpppw', 'wpqpw', 'wpppw', 'wppqw', 'wpppw', 'wqppw', 'wpppw', 'wpqpw', 'wpppw', 'wppqw', 'wpppw', 'wpppw', 'wqppw', 'wpppw', 'wwwww'];
-const smashCrate = (at, extra = {}) => ({ shape: 'box', size: [8, 8], at, asleep: true, density: 0.6, friction: 0.6, bounce: 0.1, symbol: 'crate', breaks: { at: 1.5, pieces: 4 }, ...extra });
+const smashCrate = (at, extra) => ({ shape: 'box', size: [8, 8], at, asleep: true, density: 0.6, friction: 0.6, bounce: 0.1, symbol: 'crate', breaks: { at: 1.5, pieces: 4 }, ...extra });
 const crateSmash = bodiesSource('crate-smash', 112, 64,
   { o: '#3b2414', h: '#c98c4f', c: '#a5683a', d: '#6e4223', m: '#b4bdd8', k: '#14141c', s: '#4a5068', b: '#1b1d2a', g: '#2c3047', w: '#e8f4ff', p: '#6fc3e6', q: '#b9e6f7' },
   {

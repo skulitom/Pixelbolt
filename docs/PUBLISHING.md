@@ -20,7 +20,7 @@ Rights stay with the jobs that need them, and those jobs run only this repositor
 
 ## Release
 
-1. Bump `package.json`, the metadata-only `server.json` and the Claude Code plugin's `.claude-plugin/plugin.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
+1. Bump `package.json`, the metadata-only `server.json`, the Claude Code plugin's `.claude-plugin/plugin.json` and the Gemini CLI extension's `gemini-extension.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
 2. Tag that commit and push the tag (substitute the version):
 
    ```sh
@@ -64,13 +64,19 @@ The publish workflow requires the release, verifies the bundle's Release-workflo
 
 Check the listing at <https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.skulitom/pixelbolt> and read the workflow's step summary.
 
+## Gemini CLI extension gallery
+
+The [Gemini CLI gallery](https://geminicli.com/extensions/) lists public repositories that carry the `gemini-cli-extension` topic by itself: it crawls tagged repositories daily and reads `gemini-extension.json` at the root of the repository or the release archive. Its `version` should match the tag, as Gemini's docs ask, since Gemini CLI shows it; the tag check enforces that. `gemini extensions install https://github.com/skulitom/Pixelbolt` installs the latest release. Gemini CLI uses a release asset only when its name starts with the user's platform (`win32.`, `darwin.`, `linux.`) or when it is the release's only asset; otherwise it unpacks the tag's source archive, which carries `bin/pixelbolt.js`, the skill and the manifest. Keep two or more assets with no platform prefix: a lone `pixelbolt.mcpb` can't be unpacked, and Gemini CLI then installs a clone of `main` instead of the release. `gemini extensions validate .` checks the manifest in a checkout (checked with Gemini CLI 0.67.0 in November 2026).
+
+The first release that carries the manifest is the one after 0.14.0. Until it is Latest, an install reads 0.14.0's archive, which has none, and fails. So add the `gemini-cli-extension` topic only once that release is Latest, then add the install line to README.md and llms.txt.
+
 ## Local build
 
 ```sh
 node scripts/build-mcpb.mjs --check
 node scripts/verify-mcpb.mjs dist/mcpb/pixelbolt.mcpb
 npx --yes @anthropic-ai/mcpb@2.1.2 validate dist/mcpb/manifest.json
-node scripts/build-mcpb.mjs --registry-entry --tag v0.13.0 --bundle dist/mcpb/pixelbolt.mcpb  # v + package.json's version
+node scripts/build-mcpb.mjs --registry-entry --tag v0.14.0 --bundle dist/mcpb/pixelbolt.mcpb  # v + package.json's version
 ```
 
 The dependency-free builder reads an explicit set of runtime inputs from disk, normalizes UTF-8 text from CRLF to LF, sorts ZIP entries and uses a fixed date. Use a clean checkout and the same Node/zlib version to reproduce bytes. `--check` builds twice and compares; differing existing artifacts require a fresh `--out` folder. No version agreement with `server.json` is required for ordinary tests or builds; release and registry entry creation enforce it.

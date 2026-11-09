@@ -43,7 +43,8 @@ test('registry source is metadata-only with a short description', async () => {
   assert.equal(pkg.name, 'pixelbolt');
   // Every file a release names its version in agrees, as the release workflow's tag check requires.
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  assert.equal(JSON.parse(await readFile(path.join(root, '.claude-plugin', 'plugin.json'))).version, pkg.version);
+  assert.equal(JSON.parse(await readFile(path.join(root, '.claude-plugin', 'plugin.json'))).version, pkg.version, '.claude-plugin/plugin.json version');
+  assert.equal(JSON.parse(await readFile(path.join(root, 'gemini-extension.json'))).version, pkg.version, 'gemini-extension.json version');
   assert.equal((await readFile(path.join(root, 'mcpb', 'RELEASE_NOTES.md'), 'utf8')).split('\n')[0].trim(), `# ${pkg.version}`);
   assert.deepEqual(pkg.bin, { pixelbolt: './bin/pixelbolt.js', pixelforge: './bin/pixelforge.js' });
   assert.equal(pkg.homepage, 'https://github.com/skulitom/Pixelbolt#readme');
@@ -62,6 +63,22 @@ test('registry source is metadata-only with a short description', async () => {
   assert.equal(Object.hasOwn(server, 'packages'), false);
   assert.ok(server.description.length <= 100);
   assert.equal(Object.hasOwn(template, 'version'), false);
+});
+
+test('the Gemini CLI extension runs its own copy of the server in the user\'s folder, beside the skill', async () => {
+  // Gemini CLI's gallery lists the repository from this manifest at the root of each tagged release's source archive,
+  // and `gemini extensions install` unpacks that archive; the name is the installed folder's and the one users type.
+  const gemini = JSON.parse(await readFile(path.join(root, 'gemini-extension.json')));
+  assert.equal(gemini.name, 'pixelbolt');
+  assert.ok(gemini.description.length > 0);
+  // No cwd: the server then starts in the folder Gemini CLI was opened in, so exports go to that project's output/,
+  // as with the Claude Code plugin, and never into the installed extension.
+  const server = gemini.mcpServers.pixelbolt;
+  assert.equal(server.command, 'node');
+  assert.deepEqual(server.args.slice(0, 2), ['${extensionPath}${/}bin${/}pixelbolt.js', 'mcp']);
+  assert.equal(Object.hasOwn(server, 'cwd'), false);
+  // Gemini CLI loads skills from skills/<name>/SKILL.md beside the manifest.
+  assert.match(await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8'), /^---\nname: /);
 });
 
 test('release workflow guards and assets use the renamed repository', async () => {
@@ -99,7 +116,7 @@ test('release rights stay in jobs that run only this repository\'s code, after t
   // is recorded before npx runs.
   assert.match(jobs.release, /node scripts\/build-mcpb\.mjs\n[\s\S]*"\$actual" != "\$VERIFIED_SHA256"[\s\S]*attest-build-provenance/);
   assert.ok(jobs.build.indexOf('id: bundle') < jobs.build.indexOf('npx --yes'));
-  for (const file of ['package.json', 'server.json', '.claude-plugin/plugin.json', 'mcpb/RELEASE_NOTES.md']) assert.ok(jobs.build.includes(`'${file}'`), `the tag check reads ${file}`);
+  for (const file of ['package.json', 'server.json', '.claude-plugin/plugin.json', 'gemini-extension.json', 'mcpb/RELEASE_NOTES.md']) assert.ok(jobs.build.includes(`'${file}'`), `the tag check reads ${file}`);
 });
 
 test('MCPB builds are byte-identical, including across CRLF and LF checkouts', async () => {

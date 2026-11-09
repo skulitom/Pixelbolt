@@ -1100,7 +1100,9 @@ export function drawGuides(target, targetWidth, box, scale, region, guides) {
 }
 
 // Packs frames into one RGBA sheet. `trim: false` forces the uniform grid even for a trimmed recipe (aligned
-// material passes need identical rectangles). Anchors and points are exported pixels; pivot is anchor/source size.
+// material passes need identical rectangles). Points and `anchorPx` are exported pixels; `pivot` and `anchor` are
+// both the anchor as a share of the source size (0-1), TexturePacker's convention, which Phaser and PixiJS read as
+// a sprite's origin.
 export function buildAtlas(project, { trim } = {}) {
   const { width, height, frames, sheet } = project, s = sheet.scale;
   const trimmed = Boolean(sheet.trim) && trim !== false;
@@ -1110,7 +1112,7 @@ export function buildAtlas(project, { trim } = {}) {
   const data = new Uint8ClampedArray(atlasWidth * atlasHeight * 4);
   const entries = Object.create(null);
   const extras = frame => ({
-    ...(frame.anchor && { pivot: { x: round6(frame.anchor[0] / width), y: round6(frame.anchor[1] / height) }, anchor: { x: frame.anchor[0] * s, y: frame.anchor[1] * s } }),
+    ...(frame.anchor && { pivot: { x: round6(frame.anchor[0] / width), y: round6(frame.anchor[1] / height) }, anchor: { x: round6(frame.anchor[0] / width), y: round6(frame.anchor[1] / height) }, anchorPx: { x: frame.anchor[0] * s, y: frame.anchor[1] * s } }),
     ...(frame.points && { points: Object.fromEntries(Object.entries(frame.points).map(([key, [x, y]]) => [key, { x: x * s, y: y * s }])) }),
     ...(frame.tile && { tile: { ...frame.tile, ...(frame.tile.collision && { collision: frame.tile.collision.map(polygon => polygon.map(([x, y]) => ({ x: x * s, y: y * s }))) }) } })
   });

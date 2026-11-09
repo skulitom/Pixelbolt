@@ -1,45 +1,48 @@
-# 0.13.0
+# 0.14.0
 
-Characters that move as if animated: walks, runs and jumps that read, tails that follow through, four-legged creatures and drafted turned drawings for small parts; crystals that grow; bodies that break; a parts view and motion arcs for reviewing figures.
+Falling sand, for agents and for games: a material grid of sand, water, fire, smoke, lava and more that runs live in a game loop and compiles to one-shot clips. A Powder lab to play with it in the studio. Parallax planes and haze that survive export to Tiled and Godot.
 
-- **Walks, runs and jumps that read:**
-  - Arms swing against the legs, legs are long at contact, the body dips after each step, and the lifted foot leaves behind and lands in front.
-  - The jump tucks its legs at the apex and reaches down to land.
-  - Feet drawn with `views` roll heel to toe.
-  - A far hand never floats free of its arm.
-  - A figure keeps one outline round its silhouette.
-  - The hero example is redrawn from a brief.
-  - The motion review checks the gait (`armSwing`, `contactLegs`, `kneeLift`), so a walk that slides nowhere but still looks wrong now fails.
-- **Tails that follow through:** `rig.tail` hangs on damped springs that the body's own motion drives. The tail trails in a run, lifts as the body falls, whips after a strike and settles after landing. Each motion's `follow` (0–2) sets how far it swings.
-- **Four-legged creatures:**
-  - `rig.fore` and `rig.hind`, with optional `rig.chest` and `rig.neck`.
-  - Gaits: a lateral-sequence `walk`, a new `trot` template and a gallop `run` whose spine curls and stretches.
-  - Idle, jump and hurt for four legs.
-  - A new red fox example and preset, `fox`.
-- **Draft views:** `pixelbolt compile x.poses.json --draft-views boot:15,345` (MCP `pixel_compile` `draftViews`) drafts small grid parts turned by pixel-art rules, for you to correct and paste into `views`. `--preview` draws each draft beside the flat drawing and today's turn.
-- **Seeing motion and parts:** the motion review draws one cycle's path of each foot, hand and the head. A new `parts` view (also in the studio's review menu) paints each pixel by the part that drew it.
-- **Crystal growth:** a new source format, `pixelforge-crystal` (`pixel_help` topic `crystal`, `pixelbolt/crystal`). Faceted prisms, cubes and octahedra, clusters and geodes, and snowflakes all grow from a seed and come to rest. New presets: geode, quartz cluster, pyrite and snowflakes.
-- **Rigid bodies:**
-  - Breaking bodies: `breaks` and the `break` power. A knocked body breaks into convex pieces that carry its picture. New preset: crate smash.
-  - Blade bloom: strikes, cuts, pivots, smears and crowds of thousands. New preset: blade bloom.
-  - Heavy loads rest on light bodies, and touching bodies are drawn side by side.
-  - Bodies in a liquid share its pressure solve, so a light plank lands on a pool instead of erupting it.
-- **For agents:**
-  - The presets listing is a line per preset, 9 KB instead of 21 KB.
-  - A held prop turns with the hand.
-  - A cut-down expanded poses source compiles.
-  - `pixelbolt` exits quietly when piped to `head`.
+- **Falling sand:** a new source format, `pixelforge-powder` (`pixel_help` topic `powder`, `pixelbolt/powder`).
+  - Every pixel holds one material from a table: powders, liquids, gases, fire, fixed solids and solids that fall. `base: "sandbox"` starts from sand, water, stone, wood, fire, smoke, steam, oil, lava, ice, ash, moss and wall, with their reactions.
+  - Motion that reads:
+    - falls speed up, landings splash and liquids pour in arcs;
+    - pools level and come to rest;
+    - heat, phase changes, burning and reactions between neighbours;
+    - moving air lifts smoke into plumes, a wind blows and a blast opens a crater.
+  - Structures collapse when what holds them up burns away. With `pieces: "tumble"` they topple and tumble as rigid bodies, float and come to rest.
+  - Live: `createLivePowder` steps it every frame with paint, erase, wall, heat, push and burst from the pointer. Recorded strokes pack into a few bytes and replay exactly. A busy 320 × 180 sandbox takes a few milliseconds a frame, and settled regions cost almost nothing.
+  - Compiled: `pixel_compile` and `pixelbolt compile` sample one-shot clips of palette grids from one run, with scripted inputs. The same source draws the same pixels everywhere.
+  - New presets: hut fire, lava falls, quarry blast, rain on fire and stilt hut.
+- **Powder lab** (`/powder.html` in the studio): a falling-sand sandbox in the browser.
+  - Paint any material, or erase, wall, heat, cool, wind or blast, and pause or step through frames.
+  - Open the presets, and download a GIF, recipe or source next to the matching CLI and MCP calls.
+  - Copy a replay link that reopens the scene on the same frame with the same pixels.
+- **Parallax and haze in game engines:**
+  - `scene.tmx` layers carry each plane's parallax, and hazed placements draw from hazed copies of their tilesets.
+  - Each plane is also exported as an image with its haze baked in.
+  - A Godot `scene.tscn` scrolls the planes with `Parallax2D`. With the camera on whole pixels and pixel snapping on, every plane lands where Pixelbolt draws it.
 - **Fixes from a review of this release:**
-  - The crate smash preset no longer crashes as video frames (`pixelbolt sequence`, `pixel_compile` `sequence`).
-  - Breaks no longer stop silently at the crowd limit: there is room for every body with `breaks` by default, and a compile warns when a break is cut short.
-  - Fixed bodies that events break count toward the work limit.
-  - Figures facing left bend their knees and lean the way they face.
-  - Quick or many-framed four-legged gaits compile.
-  - A tail can't also be a leg or arm bone, the chest or the neck.
-  - The schemas refuse what the compilers refuse.
-- **Docs:** README in Korean and Spanish.
+  - Falling sand no longer stops partway down through water.
+  - A puddle drains into a hole dug beside it.
+  - Thick pools come to rest.
+  - A piece thrown off the top comes back down.
+  - Cutting one piece into many keeps to the piece cap.
+  - The compile's work limit counts scripted inputs and tumbling pieces.
+  - Clearer errors for colours, sizes and scene fills.
+  - The Powder lab says when a link is damaged or a recording is full, and a replay can be stopped.
+  - Scene planes round half a pixel as Godot does.
+  - `--force` re-exports remove stale planes.
+  - MCP scene exports return their warnings.
+- **Other fixes:**
+  - Bodies matches drawn as video frames match the compile.
+  - Tiled maps keep tiles above or left of the map.
+  - Long tile-set names draw their test map.
 
 Known issues:
+- Thin smoke in falling sand still reads as dark blobs.
+- Compiled falling-sand recipes are large (0.2–2.5 MB), because flames and heat glow touch most pixels.
+- `base: "sandbox"` uses 76 of the 89 colours a source may have, so custom materials over it must share colours.
+- With Godot's pixel snapping, a camera between whole pixels can put a parallax plane a pixel from where Pixelbolt draws it.
 - Tails of five or more short links can thrash.
 - A far elbow can snap between frames in walks of 32 or more frames.
 - Left-facing jumps, attacks and hurts aren't mirrored.

@@ -2,7 +2,7 @@
 
 Exports a pose-compiled character with sheet.trim, padding and scale 2 through the CLI, then uses Pillow to
 confirm that every trimmed rectangle, pasted at its spriteSourceSize offset into a sourceSize canvas, equals the
-full-canvas frame PNG; that no two rectangles overlap; and that each pivot equals anchor / sourceSize.
+full-canvas frame PNG; that no two rectangles overlap; and that each pivot and anchor equal anchorPx / sourceSize.
 """
 from pathlib import Path
 import json
@@ -37,7 +37,8 @@ with tempfile.TemporaryDirectory() as temporary:
         full = Image.open(out / 'frames' / f'{name}.png').convert('RGBA')
         assert full.size == (source['w'], source['h']), name
         assert rebuilt.tobytes() == full.tobytes(), name
-        assert entry['pivot']['x'] * source['w'] == entry['anchor']['x'] and entry['pivot']['y'] * source['h'] == entry['anchor']['y'], name
+        assert entry['pivot']['x'] * source['w'] == entry['anchorPx']['x'] and entry['pivot']['y'] * source['h'] == entry['anchorPx']['y'], name
+        assert entry['anchor'] == entry['pivot'], name
         rects.append((name, rect))
     for i, (a, ra) in enumerate(rects):
         for b, rb in rects[i + 1:]:

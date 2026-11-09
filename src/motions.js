@@ -250,7 +250,7 @@ export function expandMotions(input, compileRest, probeJoints) {
     if (grounded && rig.head === rig.body) fail('poses.rig.head', `the grounded idle "${name}" keeps the body on rig.ground, so the body can't also be the head, whose bob would lift it; name another instance or leave head out`);
     if (grounded) (rig.tail ?? []).forEach((tail, i) => { if (tail === rig.body) fail(`poses.rig.tail[${i}]`, `the grounded idle "${name}" keeps the body on rig.ground, so the body can't also be part of the tail, whose swing would turn it off the ground`); });
     const crouch = template === 'jump' ? p('crouch', .8, .5, 1) : 1, stretch = template === 'jump' ? p('stretch', 1.15, 1, 2) : 1, apex = template === 'jump' ? p('apex', 4, 1, 32, true) : 0;
-    const arm = template === 'attack' ? p('arm', 0, 0, (rig.arms?.length ?? 0) - 1, true) : 0;
+    const arm = template === 'attack' ? p('arm', 0, 0, rig.arms.length - 1, true) : 0;
     const windup = template === 'attack' ? p('windup', -130, -360, 360, true) : 0, strike = template === 'attack' ? p('strike', 50, -360, 360, true) : 0;
     const hold = template === 'attack' ? p('hold', 2, 1, 16, true) : 1;
     const recoil = template === 'hurt' ? p('recoil', -20, -90, 90, true) : 0, hurtSquash = template === 'hurt' ? p('squash', .85, .5, 2) : 1;
@@ -365,7 +365,7 @@ export function expandMotions(input, compileRest, probeJoints) {
         setAngle(torso, restAngle(rig.body) + [8, 4, 0, 0, 0, 8, 0][i]);
         for (const [j, chain] of (rig.arms ?? []).entries()) {
           setAngle(parts.get(chain[0]), restAngle(chain[0]) + Math.round([35, -70, -55, -25, -10, -35, 0][i] * (j % 2 ? .85 : 1)));
-          if (chain.length > 1) setAngle(parts.get(chain[1]), restAngle(chain[1]) - [10, 30, 35, 45, 50, 20, 0][i]);
+          setAngle(parts.get(chain[1]), restAngle(chain[1]) - [10, 30, 35, 45, 50, 20, 0][i]);
         }
       }
       // Follow-through carries the swing well past the strike and settles the body, so it reads as its own key pose.
@@ -394,7 +394,7 @@ export function expandMotions(input, compileRest, probeJoints) {
       if (locomotion) for (const [j, chain] of (rig.arms ?? []).entries()) {
         const swing = legCycle[0] * cosDeg(angle + j % 2 * 180) + legCycle[1] * sinDeg(angle + j % 2 * 180);
         setAngle(parts.get(chain[0]), restAngle(chain[0]) + direction * (template === 'run' ? 35 : 25) * swing);
-        if (chain.length > 1) setAngle(parts.get(chain[1]), restAngle(chain[1]) - direction * ((template === 'run' ? 40 : 0) + 20 * Math.max(0, -swing)));
+        setAngle(parts.get(chain[1]), restAngle(chain[1]) - direction * ((template === 'run' ? 40 : 0) + 20 * Math.max(0, -swing)));
       }
       for (const [j, leg] of legs.entries()) {
         const last = parts.get(leg.last);
@@ -433,12 +433,7 @@ export function expandMotions(input, compileRest, probeJoints) {
         // too would put a darker far arm or leg in front of the body for half of every cycle.
         // Swap whole limb subtrees in their original paint slots; the attachment graph is unchanged.
         for (const chains of [rig.legs ?? [], rig.hind ?? [], rig.fore ?? [], rig.arms ?? []]) for (let j = 0; j + 1 < chains.length; j += 2) {
-          const subtree = root => {
-            const found = new Set([root]); let changed = true;
-            while (changed) { changed = false; for (const p of pose.parts) if (p.attach && found.has(p.attach.part) && !found.has(p.name)) { found.add(p.name); changed = true; } }
-            return found;
-          };
-          const a = subtree(chains[j][0]), b = subtree(chains[j + 1][0]);
+          const a = subtree([chains[j][0]]), b = subtree([chains[j + 1][0]]);
           const aParts = pose.parts.filter(p => a.has(p.name)), bParts = pose.parts.filter(p => b.has(p.name));
           pose.parts = pose.parts.flatMap(p => a.has(p.name) ? p === aParts[0] ? bParts : [] : b.has(p.name) ? p === bParts[0] ? aParts : [] : [p]);
         }

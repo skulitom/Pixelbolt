@@ -4,6 +4,21 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.14.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
+
+### Breaking fix: atlas anchors that Phaser and PixiJS place
+
+- An anchored frame's atlas entry wrote its anchor in pixels under `anchor`, which TexturePacker-style loaders read as a 0-1 origin (Phaser 3's JSONHash parser takes `anchor` before `pivot`, and PixiJS's spritesheet uses `anchor`), so a Phaser or PixiJS game put an anchored sprite far off screen. `anchor` is now the same 0-1 point as `pivot`, and the pixel point is `anchorPx`. Code that read `anchor` as pixels reads `anchorPx` instead. The runtime's `drawFrame` reads `anchorPx`, and still places atlases written before this change.
+
+### Gemini CLI extension
+
+- `gemini-extension.json` makes the repository a Gemini CLI extension: `gemini extensions install https://github.com/skulitom/Pixelbolt` adds the MCP server, which runs the release's own `bin/pixelbolt.js` with your Node.js (20 or later) in the folder Gemini CLI was opened in, so exports go to its `output/` folder, and the pixel art skill. The release's tag check now reads its version with the others.
+
+## 0.14.0 (2026-11-08)
+
 ### Fixes from a review before release
 
 - **Falling sand, motion:**
@@ -60,11 +75,6 @@ A scene's parallax planes and haze used to exist only in Pixelbolt's own renders
 - **Planes as images:** a scene export writes each plane, a run of draws on one plane, as an image with its haze baked in (`planes/<k>.png`). `alignment.json` lists each plane with its `parallax` and scene position, so any engine can scroll it (in Phaser, a scroll factor).
 - **Godot:** `scene.tscn`, a Godot 4.3+ scene with a top-left `Camera2D` at the camera's start, the background colour and one `Parallax2D` per plane, its scroll scale the plane's parallax, over a `Sprite2D` of the plane's image.
 - `node scripts/verify-tiled.mjs` and `node scripts/verify-godot.mjs` check a three-plane scene: a sky at 0, hills at 0.5 standing 0.6 into the haze, and the ground at 1. Tiled must read each layer's parallax and draw the hills from their hazed tileset. Its layers, rendered by `tmxrasterizer` and scrolled by those factors, must draw what Pixelbolt draws with the camera at its start, halfway and its end. Godot must put every plane there too, and with `--render` it draws the same pixels in a window.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.13.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
 ## 0.13.0 (2026-11-07)
 

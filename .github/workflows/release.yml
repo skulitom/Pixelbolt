@@ -69,6 +69,9 @@ jobs:
           // The Claude Code plugin carries the version too, and the release notes become the GitHub release's body.
           const plugin = JSON.parse(readFileSync('.claude-plugin/plugin.json'));
           if (plugin.version !== pkg.version) throw new Error(`.claude-plugin/plugin.json says ${plugin.version}; set it to ${pkg.version}.`);
+          // So does the Gemini CLI extension: Gemini CLI shows its version, and its docs ask that it match the tag.
+          const gemini = JSON.parse(readFileSync('gemini-extension.json'));
+          if (gemini.version !== pkg.version) throw new Error(`gemini-extension.json says ${gemini.version}; set it to ${pkg.version}.`);
           const heading = readFileSync('mcpb/RELEASE_NOTES.md', 'utf8').split('\n')[0].trim();
           if (heading !== `# ${pkg.version}`) throw new Error(`mcpb/RELEASE_NOTES.md starts with "${heading}"; write the notes for ${pkg.version} under "# ${pkg.version}".`);
           NODE

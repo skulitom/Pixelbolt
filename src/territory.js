@@ -125,7 +125,7 @@ export function readPickups(list, path, context) {
     if (entry.symbol !== undefined && (typeof entry.symbol !== 'string' || !Object.hasOwn(context.symbols, entry.symbol))) fail(`${p}.symbol`, `unknown symbol ${JSON.stringify(entry.symbol)}`);
     const symbol = entry.symbol ?? null, size = integer(entry.size ?? (symbol ? Math.max(context.symbols[symbol].length, context.symbols[symbol][0].length) : 5), `${p}.size`, 1, 64);
     const from = integer(entry.from ?? 0, `${p}.from`, 0, 18000), until = entry.until === undefined ? null : integer(entry.until, `${p}.until`, from + 1, 18001);
-    return { at: pair(entry.at, `${p}.at`, 0, 4096), size, from, until, symbol, color: entry.color === undefined ? null : key(entry.color, `${p}.color`, context.palette), path: p, ...readPower(entry, p, context) };
+    return { at: pair(entry.at, `${p}.at`, 0, 4096), size, from, until, symbol, color: entry.color === undefined ? null : key(entry.color, `${p}.color`, context.palette), ...readPower(entry, p, context) };
   });
 }
 
@@ -141,7 +141,7 @@ export function readEvents(list, path, context, bodies) {
     if (index < 0) fail(`${p}.body`, `no body is named ${JSON.stringify(entry.body)}`);
     if (bodies[index].fixed && entry.power !== 'vanish' && entry.power !== 'break') fail(`${p}.body`, `${entry.body} is fixed; powers go to bodies that move freely (a fixed body can only vanish or break)`);
     if (bodies[index].shape === 'hoop' && entry.power === 'break') fail(`${p}.power`, `${entry.body} is a hoop, a container, and does not break; it can vanish`);
-    return { frame: integer(entry.frame, `${p}.frame`, 1, 18000), body: index, path: p, ...readPower(entry, p, context) };
+    return { frame: integer(entry.frame, `${p}.frame`, 1, 18000), body: index, ...readPower(entry, p, context) };
   });
 }
 
@@ -159,7 +159,7 @@ export function readStrikes(list, path, context, bodies) {
     const from = integer(entry.from ?? 0, `${p}.from`, 0, 18000), until = entry.until === undefined ? null : integer(entry.until, `${p}.until`, from + 1, 18001);
     // A cut: the strike's body passes through what it strikes, which leaves behind it at this speed (pixels a frame).
     const cut = entry.cut === undefined ? null : number(entry.cut, `${p}.cut`, 0.1, 8);
-    return { by: index, rest: integer(entry.rest ?? 10, `${p}.rest`, 1, 18000), from, until, cut, path: p, ...readPower(entry, p, context) };
+    return { by: index, rest: integer(entry.rest ?? 10, `${p}.rest`, 1, 18000), from, until, cut, ...readPower(entry, p, context) };
   });
 }
 
@@ -197,7 +197,7 @@ export function readHud(list, path, context, teams) {
 /** The territory's state while a world runs. `trace(at, material, columns, rows, scale, x, y)` is bodies.js's face tracer;
  * `scale(b, k)` grows a body's shape by k; `copy(b)` adds a copy of a body to the world and returns it; `fastest` is the
  * bodies' speed limit. */
-export function createTerritory(effect, { trace, scale, copy, shatter, width, height, fastest = Infinity }) {
+export function createTerritory(effect, { trace, scale, copy, shatter, width, height, fastest }) {
   // Powers work without a territory too: then there are no cells and no teams.
   const t = effect.territory ?? { cell: 1, x: 0, y: 0, columns: 0, rows: 0, teams: [], start: new Int8Array(0), bounce: 1, friction: 0 };
   const { columns, rows, cell, teams } = t, owner = Int8Array.from(t.start);

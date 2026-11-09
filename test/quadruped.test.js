@@ -17,10 +17,6 @@ const landings = animation => {
   const list = frames(animation);
   return Object.fromEntries(LEGS.map(leg => [leg, list.findIndex((name, i) => down(name).includes(leg) && !down(list.at(i - 1)).includes(leg))]));
 };
-const review = (source, animation) => {
-  const { recipe, metadata } = compilePoses(source);
-  return inspectMotion(renderProject(recipe), { animation, metadata, scale: 1 }).motion;
-};
 
 test('the fox example compiles without warnings, and each gait passes its motion review with all four feet measured', () => {
   assert.equal(warnings, undefined);

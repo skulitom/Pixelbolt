@@ -457,7 +457,7 @@ function shearDraft(rows, phi, anchor, points) {
       let end = i;
       while (end + 1 < kept.length && column(kept[end + 1]) === column(kept[i])) end++;
       const live = kept.slice(i, end + 1), far = live.filter(c => c !== anchor[0]).sort((a, b) => Math.abs(b - anchor[0]) - Math.abs(a - anchor[0]) || b - a)[0];
-      if (live.length > 1 && far !== undefined && (live.length > run || (live.length === run && Math.abs(far - anchor[0]) > Math.abs(pick - anchor[0])))) { pick = far; run = live.length; }
+      if (live.length > 1 && (live.length > run || (live.length === run && Math.abs(far - anchor[0]) > Math.abs(pick - anchor[0])))) { pick = far; run = live.length; }
       i = end + 1;
     }
     if (pick < 0) break;

@@ -500,7 +500,7 @@ export function compilePoses(source, mode) {
   else if (dropped.length) warnings.push({ path: 'poses.motionInfo', message: `There are no animations ${nameList(dropped.map(name => `"${name}"`), 6)}, so their entries were skipped: delete them, or rename them to match renamed animations.` });
   for (const [name, animation] of Object.entries(project.animations)) {
     let start = 0;
-    metadata.animations[name] = { duration: animation.duration, loop: animation.loop, ...(motionInfo[name] && motionInfo[name]), entries: animation.frames.map((index, position) => {
+    metadata.animations[name] = { duration: animation.duration, loop: animation.loop, ...motionInfo[name], entries: animation.frames.map((index, position) => {
       const frame = project.frames[index], pose = metadata.poses[frame.name], entry = { position, frame: frame.name, start, duration: frame.duration, markers: pose.markers, ...(pose.contacts !== undefined && { contacts: pose.contacts }) };
       start += frame.duration; return entry;
     }) };

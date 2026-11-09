@@ -83,7 +83,7 @@ function drawWorld(time) {
     shadow(p.x, p.y, 12);
     if (p.inv > 0 && p.state !== 'hurt' && Math.floor(p.inv / 70) % 2) return;
     place('keeper', playerFrame(p), p.x, p.y);
-    if (p.state === 'hold' && p.held) { const pose = atlases.keeper.frames['hold-up'], item = pose.points.item; place('pickups', frameAt(atlases.pickups, p.held, p.t), p.x - pose.anchor.x + item.x, p.y - pose.anchor.y + item.y); }
+    if (p.state === 'hold' && p.held) { const pose = atlases.keeper.frames['hold-up'], item = pose.points.item; place('pickups', frameAt(atlases.pickups, p.held, p.t), p.x - pose.anchorPx.x + item.x, p.y - pose.anchorPx.y + item.y); }
   } });
   list.sort((a, b) => a.y - b.y).forEach(item => item.draw());
   for (const e of world.effects) place(e.atlas, frameAt(atlases[e.atlas], e.anim, e.t), e.x, e.y, { lightPasses: e.atlas !== 'slash' });

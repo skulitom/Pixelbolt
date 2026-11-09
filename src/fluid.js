@@ -312,7 +312,7 @@ const layoutKey = places => places.map(p => (p.show ? `${p.x},${p.y}${p.shape ??
 // A body's turning is given to a liquid (a paddle stirs water) but not to sand: dragged round with it, sand turned at the
 // body's own rate, nothing damped the turning, and a crate rolled down a heap.
 // `mass` is a free, awake body's inverse mass and inertia, for a liquid's pressure solve to move it (see couplingOf).
-function bodyPlace(cells, b, turns = true) {
+function bodyPlace(cells, b, turns) {
   if (!cells.length) return { rows: ['.'], live: { x: 0, y: 0, show: false, jump: false, vx: 0, vy: 0, w: 0, dx: 0, dy: 0, shape: '', cx: b.x, cy: b.y, mass: null } };
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const [x, y] of cells) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
@@ -1110,7 +1110,7 @@ function sealedBodies(g, solve, diag, ax, ay, div) {
     for (let at = 0; at < end; at++) div[order[at]] -= mean;
   }
 }
-function projectLiquid(g, active, iterations, target, coupling = null) {
+function projectLiquid(g, active, iterations, target, coupling) {
   const { W, H, N, u, v, p, div, geo, uFixed, vFixed, airP, pockets } = g, X = W + 1, steps = Math.ceil(iterations / 3), m = pockets ? pockets.Pn.length : 0;
   if (!g.cg) g.cg = { diag: new Float64Array(N), ax: new Float64Array(N), ay: new Float64Array(N), solve: new Uint8Array(N), prec: new Float64Array(N), r: new Float64Array(N), z: new Float64Array(N), s: new Float64Array(N), q: new Float64Array(N) };
   const { diag, ax, ay, solve, prec, r, z, s, q } = g.cg;
@@ -4472,7 +4472,6 @@ function measureFrame(chars, base, solid, width, height, particles) {
 // The per-frame figures as one list per figure, which keeps the metadata compact.
 const columns = list => Object.fromEntries(Object.keys(list[0]).map(key => [key, list.map(figure => figure[key])]));
 
-// Runs one effect and returns its frames' operations plus figures for the metadata.
 // ---- Bodies in a liquid ----------------------------------------------------------------------------------------------
 // A free body in a liquid is three more unknowns of the liquid's pressure solve, its velocity and its turning
 // (docs/physics-model.md, section 13): the pressure on its faces moves it as its faces move the liquid, so the two share
@@ -4804,6 +4803,7 @@ function bodiesFigures(crowd, hitsAt, effect, begin) {
     ...(notes.length && { notes })
   };
 }
+// Runs one effect and returns its frames' operations plus figures for the metadata.
 function simulate(effect, context) {
   // Bodies move their obstacles each frame, so a run works on its own copies of them.
   if (effect.bodies) effect = { ...effect, obstacles: effect.obstacles.map(o => (o.body === undefined ? o : { ...o })) };

@@ -25,7 +25,7 @@ export class Renderer {
   draw(atlas, name, x, y, { flip = false, alpha = 1, lightPasses = true } = {}) {
     const entry = atlas.frames[name];
     if (!entry) throw new Error(`${atlas.name}: unknown frame ${name}`);
-    const sx = Math.round(x - this.cam.x), sy = Math.round(y - this.cam.y), source = entry.sourceSize, anchor = entry.anchor ?? { x: 0, y: 0 };
+    const sx = Math.round(x - this.cam.x), sy = Math.round(y - this.cam.y), source = entry.sourceSize, anchor = entry.anchorPx ?? { x: 0, y: 0 };
     const left = sx - (flip ? source.w - anchor.x : anchor.x), top = sy - anchor.y;
     if (left + source.w < 0 || top + source.h < 0 || left >= VIEW_W || top >= VIEW_H) return;
     this.draws++;

@@ -81,9 +81,9 @@ function reviewMotion() {
     ground: `${Math.max(0, ...report.groundErrors.map(p => Math.abs(p.pixels)))} px from ground`,
     poseSpread: `${Math.round(Math.min(1, ...report.poseSpread.map(p => p.share)) * 100)}% minimum`,
     loopSeam: `${report.loopSeam.maximum}° maximum`,
-    armSwing: `${report.gait?.arms.degreesFromOpposite}° from opposite`,
-    contactLegs: `${report.gait?.contact.largest?.degrees}° more bent than at rest`,
-    kneeLift: `${report.gait?.lift.largest?.degrees}° from rest`
+    armSwing: `${report.gait.arms.degreesFromOpposite}° from opposite`,
+    contactLegs: `${report.gait.contact.largest?.degrees}° more bent than at rest`,
+    kneeLift: `${report.gait.lift.largest?.degrees}° from rest`
   };
   $('motion-summary').textContent = Object.entries(report.checks).map(([key, pass]) => `${names[key] ?? key}: ${pass === null ? 'unavailable' : `${pass ? 'pass' : 'check'} (${details[key]})`}`).join(' · ');
   return motionReview;

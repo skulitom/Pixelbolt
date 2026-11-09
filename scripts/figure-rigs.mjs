@@ -1,4 +1,4 @@
-// Reproducible figure fixtures used by the quality lab, performance checks and visual evidence.
+// Reproducible figure fixtures used by tests, performance checks and visual evidence.
 import { expandPoses } from '../src/authoring.js';
 export function skinkRig() {
   const rows = lines => lines.map(line => line.padEnd(Math.max(...lines.map(s => s.length)), '.'));

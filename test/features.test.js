@@ -117,11 +117,11 @@ test('wrapping translation scrolls pixels around the canvas without clipping', (
   assert.equal(project.clipping, undefined);
 });
 
-test('anchors and named points reach the atlas in exported pixels with a normalized pivot', () => {
+test('anchors and named points reach the atlas: anchorPx and points in exported pixels, anchor and pivot as 0-1 shares', () => {
   const project = renderProject(make([{ name: 'a' }, { name: 'b', anchor: [0, 0], points: { hand: [5, 1] } }], { anchor: [3, 4], sheet: { scale: 2 } }));
   assert.deepEqual(project.frames.map(f => f.anchor), [[3, 4], [0, 0]]);
   const { frames } = buildAtlas(project).metadata;
-  assert.deepEqual([frames.a.anchor, frames.a.pivot], [{ x: 6, y: 8 }, { x: 0.5, y: 1 }]);
+  assert.deepEqual([frames.a.anchorPx, frames.a.anchor, frames.a.pivot], [{ x: 6, y: 8 }, { x: 0.5, y: 1 }, { x: 0.5, y: 1 }]);
   assert.deepEqual(frames.b.points, { hand: { x: 10, y: 2 } });
   assert.equal(buildAtlas(renderProject(make([{ name: 'a' }]))).metadata.frames.a.pivot, undefined);
   assert.throws(() => renderProject(make([{ name: 'a', points: { '1st': [0, 0] } }])), /points\.1st/);
