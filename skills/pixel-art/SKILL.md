@@ -38,7 +38,7 @@ In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixel
 2. **Start.** Begin from an `examples/` file when one is close (see the table below), or create an editable example with `node bin/pixelbolt.js init <recipe.json>`. A pose, effect or other source is not a recipe: compile it first.
 3. **Validate.** `node bin/pixelbolt.js validate <recipe>`
 4. **Inspect.** `node bin/pixelbolt.js inspect <recipe> --out <frames.png> --native --diagnostics`. Then check `--view silhouette` and `--view grayscale`, use `--animation <name> --view onion` for the poses either side of each frame, and read exact pixels with `--grid --region x,y,w,h` before you change them. Diagnostics are advice: intentional eyes, sparks and holds are fine. Record what reads and what fails, so the next change is deliberate.
-5. **Patch.** Put the edits in a file and preview them: `node bin/pixelbolt.js patch <recipe> --changes <changes.json> [--out <new recipe>]`. To set one pixel, the file holds `[{"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}]`; `"transparent"` erases. On grid, move or recolor changes, add `"scope": "frame"` when other frames must keep their pixels.
+5. **Patch.** Put the edits in a file and preview them: `node bin/pixelbolt.js patch <recipe> --changes <changes.json> [--out <new recipe>]`. To set one pixel, the file holds `[{"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}]`; `"transparent"` erases. On paint, grid, move, recolor or cleanup changes, add `"scope": "frame"` when other frames must keep their pixels.
 6. **Render.** `node bin/pixelbolt.js render <recipe> --out <directory> --expect '{"width":24,"height":24,"frames":6}'`. Put in `--expect` what the user asked for. Read the `check`, fix every mismatch it lists, and render again. For frame counts per animation, use `{"idle": 4, "walk": 8}`.
 7. **Other formats, when asked.**
    - To post or embed: `node bin/pixelbolt.js gif <recipe> --out <new.gif>`. Options include `--animation <name>`, `--scale <1-16>` (use it only to enlarge for posting) and `--background "#17191d"`, which blends transparent pixels onto a colour.
@@ -60,10 +60,10 @@ In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixel
 | A small icon or hand-drawn sprite | `examples/coin.json`, `examples/shrine.json`, `examples/forest-spirit.json` |
 | Looping interference or a portal | `examples/interference.wave.json`, `examples/portal.wave.json` |
 | Crystals that grow | `examples/quartz-cluster.crystal.json`, `examples/geode.crystal.json`, `examples/pyrite.crystal.json`, `examples/snowflakes.crystal.json` |
-| Falling sand (fire, lava, blasts, rain) | `examples/hut-fire.powder.json`, `examples/lava-falls.powder.json`, `examples/quarry-blast.powder.json`, `examples/rain-on-fire.powder.json`, or `examples/stilt-hut.powder.json` for pieces that topple (`pieces: "tumble"`). `base: "sandbox"` gives the starter materials. |
+| Falling sand (fire, lava, blasts, rain) | `examples/hut-fire.powder.json`, `examples/lava-falls.powder.json`, `examples/quarry-blast.powder.json`, `examples/rain-on-fire.powder.json`, or `examples/stilt-hut.powder.json` for pieces that topple (`pieces: "tumble"`). `base: "sandbox"` gives the starter materials (`help workflow "Falling sand"`). |
 | A lit scene | `examples/forest-spirit-lit.scene.json`, with normals from `examples/forest-spirit.normals.json` |
 | A caption | `examples/caption.json` |
-| An existing PNG to edit | `node bin/pixelbolt.js import <image.png> --out <recipe.json>` (8-bit RGB or RGBA, non-interlaced) |
+| An existing PNG to edit | `node bin/pixelbolt.js import <image.png> --out <recipe.json>` (any PNG colour type up to 8 bits per channel, indexed and greyscale included; not 16-bit, interlaced or animated) |
 
 ## Characters
 
@@ -85,6 +85,8 @@ In the portable Pixelbolt Studio build, run `.\pixelbolt` on Windows or `./pixel
 - Judge motion in playback. A still sheet can't show weight.
 
 ## Effects, tiles and scenes
+
+Each `help workflow "<section>"` below runs as `node bin/pixelbolt.js help workflow "<section>"` (MCP: `pixel_help` with `topic: "workflow"` and `name`).
 
 - **Fluids** (`examples/*.fluid.json`): tune `viscosity` and `yield`; the `look` decides the colours. Check one-shots at 1× and that they end empty, and keep the loop boundary quiet (`help workflow "Fluid effects"`).
 - **Particle effects** (`pixelforge-fx`): fix every edge warning the compile gives unless the effect lists that side in `edges`. Make gas and mist see-through, not outlined. For an effect round a character, give what belongs behind it a `depth`, so the game draws `<effect>-back`, the character, then `<effect>-front` (`help workflow "Particle effects"`).
@@ -110,7 +112,7 @@ With MCP, send the recipe once as `project`. Each reply includes a `revision` id
 
 ## Where the details are
 
-Read only the part you need.
+Read only the part you need. Run `help` as `node bin/pixelbolt.js help <topic> [section]`, or over MCP as `pixel_help` with `topic` and `name`.
 
 - `help quickstart` (MCP `pixel_help`): the recipe format, the operations and the working loop. Read it first.
 - `help guide`: every field, operation, inspection option and export. Print one section with `help guide "<heading>"`.
@@ -121,7 +123,7 @@ To let the user play an animation, run `node bin/pixelbolt.js preview <recipe> -
 
 ## Limits
 
-- Imports: 8-bit RGB or RGBA non-interlaced PNG only. GIF import, Aseprite files and automatic colour reduction are not supported.
+- Imports: PNG of any colour type up to 8 bits per channel (RGB, RGBA, greyscale, indexed); 16-bit, interlaced and animated PNGs are refused. GIF import, Aseprite files and automatic colour reduction are not supported.
 - Animation frames are at most 256 × 256 pixels, a project has at most 256 frames, and its frames together hold at most 4,194,304 pixels. A backdrop or mural rendered on its own, outside a scene, may be a single-frame still up to 4096 pixels a side; draw it at one pixel per screen pixel, with no enlarged stamps or text. Scene assets are at most 256 pixels a side, so tile a panning backdrop with `repeat` or a `tilemap`.
 - Pixelbolt does not encode video. `sequence` writes the PNG frames and the command.
 - Advisory diagnostics and review notes are prompts to look, not commands to delete pixels. Keep the original assets and any failed comparisons.
