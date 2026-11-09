@@ -71,7 +71,7 @@ export function relatedTests(targets, { root = ROOT, graph = importGraph(root) }
       const file = queue.shift();
       for (const target of hit(file)) if (!reaches.has(target)) {
         const via = [];
-        for (let step = from.get(file); step !== null && step !== undefined; step = from.get(step)) via.unshift(step);
+        for (let step = from.get(file); step !== null; step = from.get(step)) via.unshift(step);
         reaches.set(target, { target, via: via.slice(1) });
       }
       for (const next of graph.edges.get(file) ?? []) if (!from.has(next)) { from.set(next, file); queue.push(next); }
