@@ -13,6 +13,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - An anchored frame's atlas entry wrote its anchor in pixels under `anchor`, which TexturePacker-style loaders read as a 0-1 origin (Phaser 3's JSONHash parser takes `anchor` before `pivot`, and PixiJS's spritesheet uses `anchor`), so a Phaser or PixiJS game put an anchored sprite far off screen. `anchor` is now the same 0-1 point as `pivot`, and the pixel point is `anchorPx`. Code that read `anchor` as pixels reads `anchorPx` instead. The runtime's `drawFrame` reads `anchorPx`, and still places atlases written before this change.
 
+### Gemini CLI extension
+
+- `gemini-extension.json` makes the repository a Gemini CLI extension: `gemini extensions install https://github.com/skulitom/Pixelbolt` adds the MCP server, which runs the release's own `bin/pixelbolt.js` with your Node.js (20 or later) in the folder Gemini CLI was opened in, so exports go to its `output/` folder, and the pixel art skill. The release's tag check now reads its version with the others.
+
 ## 0.14.0 (2026-11-08)
 
 ### Fixes from a review before release

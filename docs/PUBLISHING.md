@@ -20,7 +20,7 @@ Rights stay with the jobs that need them, and those jobs run only this repositor
 
 ## Release
 
-1. Bump `package.json`, the metadata-only `server.json` and the Claude Code plugin's `.claude-plugin/plugin.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
+1. Bump `package.json`, the metadata-only `server.json`, the Claude Code plugin's `.claude-plugin/plugin.json` and the Gemini CLI extension's `gemini-extension.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
 2. Tag that commit and push the tag (substitute the version):
 
    ```sh
@@ -63,6 +63,10 @@ gh workflow run publish-registry.yml -R skulitom/Pixelbolt -f tag=vX.Y.Z
 The publish workflow requires the release, verifies the bundle's Release-workflow attestation, checks the tag and all versions, hashes the downloaded bytes, validates the entry with the pinned publisher, and reads back its published checksum. If a release lacks its bundle, rerun Release to attach it before publishing. Use the dispatch form's `metadata_only` checkbox only when deliberately accepting the permanent loss of installation for that version; an attached bundle always takes precedence.
 
 Check the listing at <https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.skulitom/pixelbolt> and read the workflow's step summary.
+
+## Gemini CLI extension gallery
+
+The [Gemini CLI gallery](https://geminicli.com/extensions/) lists public repositories that carry the `gemini-cli-extension` topic by itself: it crawls tagged repositories daily and reads `gemini-extension.json` at the root of the release's source archive, whose `version` must match the tag (the tag check enforces it). `gemini extensions install https://github.com/skulitom/Pixelbolt` installs the latest release. Gemini CLI takes a release asset only when its name starts with a platform (`win32.`, `darwin.`, `linux.`) or when it is the release's only asset; otherwise it unpacks the tag's source archive, which carries `bin/pixelbolt.js`, the skill and the manifest. Keep it that way: a release with a single asset, or one named for a platform, would install that file instead. `gemini extensions validate .` checks the manifest in a checkout (checked with Gemini CLI 0.67.0 in November 2026).
 
 ## Local build
 

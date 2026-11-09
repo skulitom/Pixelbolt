@@ -1,0 +1,11 @@
+{
+  "name": "pixelbolt",
+  "version": "0.14.0",
+  "description": "Pixel art and sprite animation for agents: sprites, sprite sheets, tiles, icons, effects and short animations from editable JSON recipes, exported as PNG, GIF, APNG or video frames. Local, no account, no API key.",
+  "mcpServers": {
+    "pixelbolt": {
+      "command": "node",
+      "args": ["${extensionPath}${/}bin${/}pixelbolt.js", "mcp"]
+    }
+  }
+}
