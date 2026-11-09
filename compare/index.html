@@ -23,10 +23,10 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "name": "Pixelbolt comparisons: pixel art MCP servers and pixel-art effect tools",
-  "description": "Pixelbolt's comparison pages: pixel art and sprite MCP servers for AI agents, alternatives to Pixel FX Designer for fire, smoke, explosion and water effects, and a benchmark of Claude's pixel art with and without Pixelbolt.",
+  "description": "Pixelbolt's comparison pages: pixel art and sprite MCP servers for AI agents, alternatives to Pixel FX Designer for fire, smoke, explosion and water effects, a benchmark of Claude's pixel art with and without Pixelbolt, and free and paid generators for ring-escape and territory battle Shorts.",
   "url": "https://skulitom.github.io/Pixelbolt/compare/",
   "inLanguage": "en",
-  "dateModified": "2026-11-04",
+  "dateModified": "2026-11-09",
   "isPartOf": {
     "@type": "WebSite",
     "name": "Pixelbolt",
@@ -57,6 +57,12 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
         "position": 3,
         "url": "https://skulitom.github.io/Pixelbolt/compare/claude-pixel-art-with-and-without-pixelbolt/",
         "name": "Does a pixel-art MCP server help Claude? Pixelbolt tested with and without"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://skulitom.github.io/Pixelbolt/compare/ring-escape-and-territory-battle-shorts/",
+        "name": "Ring escape and territory battle Shorts with a free, open-source simulator: Pixelbolt and 9 generators compared"
       }
     ]
   }
@@ -73,6 +79,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p>Checked 19 October 2026; Pixel VFX Forge added 27 October. The eight are Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt. Of the seven alternatives to Pixel FX Designer, all but BlastFX and Pixel VFX Forge run a fluid or material simulation for smoke, fire or liquids, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as slashes, beams and shockwaves instead. Pixelbolt is the only one of the eight with an MCP server that makes the effects. Measured on one Windows PC, its 0.9.0 release compiled each of its 10 effect presets three times to byte-identical files. We read the other seven tools&#x27; pages and docs without running them, so the only measured numbers are Pixelbolt&#x27;s.</p>
 <h2><a href="claude-pixel-art-with-and-without-pixelbolt/">Does a pixel-art MCP server help Claude? Pixelbolt tested with and without</a></h2>
 <p>Run 23 October to 3 November 2026. A benchmark we planned in advance: 12 pixel-art requests on Claude Haiku, Sonnet and Opus 5.5 in Claude Code, with Pixelbolt connected as an MCP server and with nothing installed, scored by one script and a blind judge. On Pixelbolt 0.11.0, valid 32 vs 31 of 36 and pairs 18 to 13 (one by default; p = 0.47) at 1.47 times the cost, so no model and no total met our rule for saying Pixelbolt helps; animations and effects, which 0.11.0 was built for, went 9 of 15 (p = 0.61), exactly the 60% bar we set for that release, and a same-day repeat would have failed it. Earlier versions showed no measurable help. Every number is published, losses included.</p>
+<h2><a href="ring-escape-and-territory-battle-shorts/">Ring escape and territory battle Shorts with a free, open-source simulator: Pixelbolt and 9 generators compared</a></h2>
+<p>Checked 9 November 2026. BallTok, Satisfying Labs, BounceMatch, ReelBall, BallSimulator, BallEngine and Korpi charge US$9.99&#x2013;29 a month at regular price for their cheapest month-to-month paid plan, WaveSpeed&#x27;s browser maker is free, and none of them, nor the MIT-licensed Python library physim, lists a grid territory battle. Pixelbolt wrote every frame of the page&#x27;s pixel-art ring break-out and territory battle clips with one command each, the same bytes on every run on one Windows PC. It makes no sound and has no live preview for long matches or search for a well-paced run: every other tool in the table makes sound, and most have a live preview. We ran Pixelbolt and physim and read the other eight from their own pages.</p>
 <h2>Comparisons for our other tools</h2>
 <ul>
 <li><a href="https://skulitom.github.io/Anode/compare/windows-desktop-automation-for-ai-agents/">Windows desktop automation for AI agents</a> (Anode, checked 16 October 2026, refreshed 24 October)</li>

@@ -1,0 +1,45 @@
+Searches, 2026-11-09 about 15:05-15:15 GMT, Claude Code's WebSearch tool (standard mode, US results).
+Question: what does a creator of ring-escape / bouncing-ball / territory-battle Shorts find when looking for a tool?
+Our pages (skulitom.github.io) appeared in none of these.
+
+1. "ball escape ring simulation video generator"
+   Ranked: wavespeed.ai/free-tools/bouncing-ball-video-maker; simulations77.itch.io/ultimate-bouncing-ball-app;
+   wavespeed.ai/de/free-tools/bouncing-ball-simulator; korpi.ai/best-ai/ball-escape-ring; demos.physics.rutgers.edu;
+   funcirclegames.pages.dev (escape mode help, tutorials); korpi.ai blog; bouncehaven.gumroad.com/l/oknvz;
+   wavespeed.ai/free-tools/ball-physics-simulator; physics demo pages.
+   Summary: browser and app tools (WaveSpeed free, Korpi template, FunCircleGames Studio escape mode, itch.io app).
+
+2. "free open source bouncing ball simulation video maker for Shorts and TikTok"
+   Ranked: funcirclegames.pages.dev; simulations77.itch.io; producthunt (fun-circle-games); tellter.com/projects/balltok;
+   jimmylol.itch.io (The bouncing ball project); pythonic-bounce.beehiiv.com; jf-development-01.itch.io/bouncyball-creator;
+   fiverr gig; awesome.ecosyste.ms (maxwick456/balls).
+   Summary, quoted: "No free and open-source bouncing-ball video maker for Shorts/TikTok clearly turned up."
+   Closest: maxwick456/balls (1 star, licence not shown). Free plan of Fun Circle Games requires crediting BallEngine.
+
+3. "territory battle simulation video maker"
+   Ranked: github.com/pixer415/State-Royale; Ages of Conflict (App Store, itch.io); mootion.com article; dancingdots.itch.io;
+   magichour.ai template; vice.com; summerengine asset store; r/AnimatedBattleMaps mirror.
+   Summary: State-Royale (map-region battle royale video generator, CLI) is "the closest match"; others are games or
+   AI text-to-video.
+
+4. "how to make satisfying ball simulation videos for YouTube Shorts"
+   Ranked: pythonic-bounce.beehiiv.com (two posts); simulations77.itch.io; funcirclegames.pages.dev (shorts generator,
+   tutorials); korpi.ai (two); recapio.com digest; classcentral (Blender tutorial); r/Simulated mirror.
+   Summary: vendor tutorials; DIY route = ask ChatGPT for a Pygame script, screen-record it with OBS, edit in CapCut.
+
+5. "bouncing ball video generator"
+   Ranked: wavespeed.ai/free-tools/bouncing-ball-video-maker; flexclip.com/create/bouncing-ball-video.html;
+   wavespeed.ai/free-tools/bouncing-ball-simulator; simulations77.itch.io; funcirclegames.pages.dev (rhythmic mode);
+   awesome.ecosyste.ms (kavishkafx/bouncing-ball-inside-a-circle); tutorials (O'Reilly, codepal, UVic, Processing, iD Tech).
+   Summary: browser simulators (WaveSpeed: free, no sign-up, no watermark, on-device), template editors (FlexClip),
+   desktop/music-sync tools (Ultimate Bouncing Ball APP, BallEngine), DIY Pygame + MoviePy.
+
+6. (rival check) "open source GitHub ring escape bouncing ball simulation video render command line"
+   Ranked: pypi.org/project/physim; QuantumZain/chaotic-system; AnasALD/chaotic-system; awesome.ecosyste.ms entries;
+   docs.rs simular; funcirclegames how-it-works; wavespeed; clawdbytes article; ninivert/chaotic-billiard; minimaxir/ballin.
+   Summary: physim (PyPI, MIT, renders scene files to MP4, has an escape-ring example) is "the closest match".
+
+Dropped: "BallTok alternative free" returned only TikTok alternatives (no tool results); not used.
+
+GitHub repo search (gh search repos, 15:16): "ball escape simulation" -> 0 results; "bouncing ball tiktok" ->
+shidec/Boucing-Ball-TikTok (1 star, no licence); "territory war simulation video" -> 0 results.

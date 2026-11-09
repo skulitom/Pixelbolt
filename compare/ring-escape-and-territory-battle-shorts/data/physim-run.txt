@@ -1,0 +1,38 @@
+physim, run by the Pixelbolt maintainers on 2026-11-09 (about 15:00-15:35 UK time) for the comparison page
+"Ring escape and territory battle Shorts with a free, open-source simulator".
+
+What: physim 0.1.5 (MIT, https://github.com/TRC-Loop/physim, https://pypi.org/project/physim/0.1.5/) and
+physim-examples 0.1.0, from PyPI.
+  physim-0.1.5-py3-none-any.whl           SHA-256 24fa3c680a8273ec19769525a5fa6aed0a97d7b00177fe57a0b1ddd7f852f26c
+  physim_examples-0.1.0-py3-none-any.whl  SHA-256 84cbe726976a6128495005d55812e6e15e0d6cce759035615c28f9dec038f399
+Read before running: no network code; the GPU path needs the optional glfw extra, which was not installed, so every
+render below used the CPU.
+
+Machine: Windows 11 Pro, AMD Ryzen 9 7950X3D, Python 3.13.9.
+
+Install (in a new, empty folder):
+  python -m venv .venv
+  .venv\Scripts\python.exe -m pip install "physim[cli,examples]==0.1.5"
+  (installed skia-python 144.1, av 19.0.2, numpy 2.5.4; no glfw)
+
+1. physim's escape-ring example, four times:
+  set PYTHONIOENCODING=utf-8
+  .venv\Scripts\python.exe -m physim_examples.escape_ring --resolution 1080x1920 --fps 30 -o out1.mp4
+  (and out2, out3, out4; out3 without PYTHONIOENCODING, see the note)
+  Result: "rendered 293 frames (9.8s), 6 collisions, 3 objects left"; "audio: no sounds were triggered, writing
+  video only". H.264 High, yuv420p, 1080x1920, 30 fps, 293 frames, 5,170,569 bytes.
+  Render time by physim's own progress bar: 19.1 s, 17.5 s and 20.7 s (out1, out2, out4; out4 ran while other
+  renders were using the CPU). Wall time measured by the shell: 22.0 s and 21.8 s for out3 and out4 (kept);
+  20.0 s and 18.3 s for out1 and out2 (read off the console, not kept).
+  All four files byte-identical: SHA-256 dc0cf8325b0aa6301850fcf0fa11354923992521a0d3eaed5c6d7aafbe00db26
+  (physim's scenes take a seed, 42 by default).
+  Note: with its output redirected to a file on Windows and no PYTHONIOENCODING, a run ends with exit code 1 on a
+  UnicodeEncodeError from its progress display (cp1252 console encoding), after writing the video (out3, the same bytes
+  as the others) but before any sound track would be added, so a scene with sound would end up silent. PYTHONIOENCODING=utf-8 avoids it. In an ordinary terminal this may not happen; we did
+  not test that.
+
+2. physim's melody example (one note of a tune per bounce):
+  .venv\Scripts\python.exe -m physim_examples.melody_bounce --resolution 1080x1920 --fps 30 -o melody.mp4
+  Result: 360 frames (12 s) of H.264 plus a 12 s AAC 48 kHz audio track; 25.9 s by its progress bar.
+
+We did not run physim's preview window (it opens a window) or its GPU backend. Its video is not shown on our page.
