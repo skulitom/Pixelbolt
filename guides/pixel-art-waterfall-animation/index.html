@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pixel art waterfall animation: free sprite sheets and recipe</title>
+<meta name="description" content="Six free pixel art waterfall sprite sheets (48 × 64 px, 8 to 24 frames, 9 colours, MIT): strips, GIFs, atlases and Godot 4 files, made with Pixelbolt 0.15.0.">
+<link rel="canonical" href="https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Pixelbolt">
+<meta property="og:title" content="Pixel art waterfall animation: six free sprite sheets and the recipe behind them">
+<meta property="og:description" content="Six free pixel art waterfall sprite sheets (48 × 64 px, 8 to 24 frames, 9 colours, MIT): strips, GIFs, atlases and Godot 4 files, made with Pixelbolt 0.15.0.">
+<meta property="og:url" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/">
+<meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/preview.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Four pixel art waterfalls side by side: moonlit, lava, stone and slime">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Pixel art waterfall animation: six free sprite sheets and the recipe behind them",
+  "description": "Six free pixel art waterfall sprite sheets (48 × 64 px, 8 to 24 frames, 9 colours, MIT): strips, GIFs, atlases and Godot 4 files, made with Pixelbolt 0.15.0.",
+  "datePublished": "2026-11-10",
+  "dateModified": "2026-11-10",
+  "inLanguage": "en-GB",
+  "url": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/",
+  "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/",
+  "image": "https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/preview.png",
+  "author": {"@type": "Organization", "name": "Pixelbolt maintainers", "url": "https://github.com/skulitom/Pixelbolt"},
+  "publisher": {"@type": "Organization", "name": "Pixelbolt maintainers", "url": "https://github.com/skulitom/Pixelbolt"},
+  "isPartOf": {"@type": "WebSite", "name": "Pixelbolt", "url": "https://skulitom.github.io/Pixelbolt/"},
+  "about": {"@type": "SoftwareApplication", "name": "Pixelbolt", "url": "https://github.com/skulitom/Pixelbolt", "applicationCategory": "MultimediaApplication", "softwareVersion": "0.15.0", "license": "https://opensource.org/licenses/MIT"}
+}
+</script>
+<style>
+:root { --bg: #ffffff; --fg: #1d1d1f; --muted: #5b5b66; --link: #0b57d0; --rule: #d9d9e0; --head: #f3f3f6; --stage: #1b1d2a; --button: #0b57d0; --button-fg: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --bg: #16171a; --fg: #e8e8ec; --muted: #a2a2ad; --link: #8ab4f8; --rule: #33343a; --head: #202126; --stage: #0e0f15; --button: #8ab4f8; --button-fg: #10131a; } }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+main, footer { max-width: 46rem; margin: 0 auto; padding: 1.5rem 16px 0; }
+a { color: var(--link); }
+h1 { font-size: 1.7rem; line-height: 1.25; margin: 0.5rem 0 1rem; }
+h2 { font-size: 1.3rem; line-height: 1.3; margin: 2.4rem 0 0.6rem; }
+h3 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+li { margin: 0.3rem 0; }
+.lead { font-size: 1.05rem; }
+.muted, .crumbs { color: var(--muted); font-size: 0.92rem; }
+.nw { white-space: nowrap; }
+code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.88em; overflow-wrap: anywhere; }
+pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; }
+pre code { overflow-wrap: normal; }
+figure.stage { background: var(--stage); border-radius: 6px; margin: 1rem 0; padding: 16px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+figure.stage img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+figure.stage figure { margin: 0; }
+figure.stage figcaption { color: #c9c9d6; font-size: 0.88rem; text-align: center; margin-top: 6px; }
+.size { color: var(--muted); font-size: 0.92rem; }
+a.open { display: inline-block; background: var(--button); color: var(--button-fg); font-weight: 600; text-decoration: none; padding: 0.55rem 0.95rem; border-radius: 6px; }
+a.open:hover, a.open:focus-visible { text-decoration: underline; }
+.wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
+table { border-collapse: collapse; font-size: 0.86rem; min-width: 40rem; }
+caption { text-align: left; color: var(--muted); font-size: 0.92rem; padding-bottom: 0.4rem; }
+th, td { border: 1px solid var(--rule); padding: 0.4rem 0.55rem; text-align: left; vertical-align: top; }
+thead th, tbody th { background: var(--head); }
+footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; padding-bottom: 4rem; }
+</style>
+</head>
+<body>
+<main>
+<nav class="crumbs" aria-label="Breadcrumb"><a href="../../">Pixelbolt</a> › <a href="../">Guides</a></nav>
+<h1>Pixel art waterfall animation: six free sprite sheets and the recipe behind them</h1>
+<p class="lead">Six free sprite sheets of one simulated pixel art waterfall, a side view with its own stone ledge and basin: the original, three recolours (lava, slime and moonlit), and the original again in 12 and 8 frames. Made with Pixelbolt 0.15.0 on 10 November 2026: 48 × 64 pixels, 9 colours, hard-edged pixels on a transparent background, each with a one-row strip, a GIF, a JSON atlas and a Godot 4 SpriteFrames file, under the MIT licence.</p>
+<p><strong>Download</strong> (zips, 50 KB to 128 KB): <a href="downloads/waterfall.zip" download>stone</a> · <a href="downloads/lavafall.zip" download>lava</a> · <a href="downloads/slimefall.zip" download>slime</a> · <a href="downloads/moonlit-waterfall.zip" download>moonlit</a> · <a href="downloads/waterfall-12f.zip" download>stone in 12 frames</a> · <a href="downloads/waterfall-8f.zip" download>stone in 8 frames</a></p>
+<p>In every sheet the step from the last frame back to the first stays inside the range of the other steps: 99 pixels in the 24-frame stone waterfall, where the others change 84 to 133 (<a href="#numbers">the table</a> has all six). All six Godot files load in Godot 4.7.2 with the right frames, frame time and loop flag.</p>
+<p class="muted">We make Pixelbolt, the free, open-source tool that simulated these. This page and its files were made by AI agents working for its maintainers. Last checked 10 November 2026. The previews loop for ever; if your system asks for reduced motion, you get stills. On this page: <a href="#waterfall">Stone</a> · <a href="#lavafall">Lava</a> · <a href="#slimefall">Slime</a> · <a href="#moonlit-waterfall">Moonlit</a> · <a href="#fewer">12 and 8 frames</a> · <a href="#engine">Use it in your engine</a> · <a href="#own">Make your own</a> · <a href="#others">Other free waterfalls</a></p>
+
+<section id="waterfall">
+<h2>Stone waterfall</h2>
+<figure class="stage"><picture><source srcset="waterfall-still.png" media="(prefers-reduced-motion: reduce)"><img src="waterfall.gif" width="192" height="256" alt="Pixel art waterfall pouring off a mossy stone ledge into a basin" decoding="async"></picture></figure>
+<p>Water pours off a mossy ledge in a foaming arc, splashes into a stone basin and spills over its lip. This is the waterfall recipe (a short JSON file that describes the simulation) that ships with Pixelbolt, unchanged.</p>
+<p class="size">48 × 64 pixels, 24 frames of 60 ms (1.44 s a loop), 9 colours, transparent background. Shown at 4×.</p>
+<p><span class="nw"><a class="open" href="downloads/waterfall.zip" download>Download waterfall.zip (127 KB)</a> ·</span> <span class="nw"><a href="waterfall-strip.png" download aria-label="Strip PNG of the stone waterfall">Strip PNG</a> (1152 × 64, 7.5 KB) ·</span> <span class="nw"><a href="waterfall.gif" download aria-label="GIF at 4× of the stone waterfall">GIF at 4×</a> (65 KB) ·</span> <span class="nw"><a href="downloads/waterfall.fluid.json" download aria-label="Recipe JSON of the stone waterfall">Recipe JSON</a></span></p>
+<p><a href="https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&amp;r=7VfLjts6DP0X3i1r-B2Pll3PKtsgC9mWYiHy40py0yDwv19QjjPJzUyboJ2uKiCwRVGHPCRlMSeQvWm5AwaD-i607M1OfJF6VDUgfBPGqr4DFiF0vBXA4MCdMJJrDQgHVbsGWFogNELtGgcsTxEGroVzAtgJvgKDf6I6kSsOCCXNYpnLKgSEimaZLFNREBbNailzKQHB-LUyy3JaW9MsTRKR0b69RynjVZIBwivNVuUqe6G1dsZ84SmHCcEe27LXljyptJIS2Aba-0EmzHksL6_7B6Wv-yAIPpbejEV6C-qVf4t0fW9u1r127l3plWcPS9_n9lR0rqVe-APpnbG7OPy69Od5-8WYPRLJJW__q77fJ_2oSv7W5Cec7lm6RSi5VR19gYInBuDD6q_GmGfU18-pP4n-tPr6M9HXn-n7nwjk-olxLsH1TR1-_Hir7ocesJ0QhJSicv5ifWsI2An2qquBgVb_zg2ENLwVFlicItSj4c53E3mIoPt-AObMKBCsEDWwDOHATTsOwFIEO5bWicECS0iu6RbfgBbS0VmSWg3AwiBHqA3f0WuYI_SldbzSZHFzOt_-wM53P8J3YCHCEVgUT3i1Pp_Mq_X0ZSIjikhtTiSPivOC71TiGKHxMFsE0SrnhJltnrsk24-mEoBAndVmFWQYhVsEbgQHtokyTLcIhlOTFFGbpftKuSMtBRGS5jBq6zso3g5aubEWxDFDGIRRfQ0sn4jCYm4w_LhYiwtMcw9fq5Fif2WpFp31hkIEO3Czn3ujfuwc4RcIWkkBbJPhyxah6nXvicHBN2xEodtpUojjEJOYXLWDT9-GtkcBWd4Z_m2mE2IYxBnFste6PwALb9wWYrh4vcK0CLKrIBWYbN9z_UsYhNkVyk6rztkFJ8rnUC_sIwraY_yjC_uowDi_47_8fByc4UovBbywiy7RCC-FOVGNHBrlhD8pc2XOSglC1fCu8rkNMwTXGA8TxARkBK-BRdnFrQKj9L2s-GKeIaMgvQFNL5sTvGfkmVycJ0d13--9i1IJTUd5idj11tIHoDHCNr2urc89Za5WriGGITn0BjC4Bu4t098BhK93UBHGmGLxEdzM89abJSU3MEGOSZDewBB_LXhHn5gTWGf40c4pnKZp-g8">Open the stone waterfall recipe in the playground</a> to change it in your browser.</p>
+</section>
+
+<section id="lavafall">
+<h2>Lavafall</h2>
+<figure class="stage"><picture><source srcset="lavafall-still.png" media="(prefers-reduced-motion: reduce)"><img src="lavafall.gif" width="192" height="256" alt="Pixel art lavafall pouring off a dark stone ledge into an orange pool" decoding="async" loading="lazy"></picture></figure>
+<p>The same simulation with nine palette colours changed: orange and yellow over dark stone. It moves like water, not like thick lava.</p>
+<p class="size">48 × 64 pixels, 24 frames of 60 ms (1.44 s a loop), 9 colours, transparent background. Shown at 4×.</p>
+<p><span class="nw"><a class="open" href="downloads/lavafall.zip" download>Download lavafall.zip (127 KB)</a> ·</span> <span class="nw"><a href="lavafall-strip.png" download aria-label="Strip PNG of the lavafall">Strip PNG</a> (1152 × 64, 7.4 KB) ·</span> <span class="nw"><a href="lavafall.gif" download aria-label="GIF at 4× of the lavafall">GIF at 4×</a> (65 KB) ·</span> <span class="nw"><a href="downloads/lavafall.fluid.json" download aria-label="Recipe JSON of the lavafall">Recipe JSON</a></span></p>
+<p><a href="https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&amp;r=7VdLj-M2DP4v7JVrWH6NR8c9zynXIAfFlmIh8qOSPNkg8H8vKMfZpJlpE-xOTxUQ2KKoj_xIymJOoHrbCg8cBv1DGtXbnfymzKhrQHiX1um-A84QOtFK4GDEu1DCGEA46No3wLMSoZF613jgRYYwCCO9l8BP8B04_PEiWB0LQNjSrFKpYhkgVDRTeSmYIqwwUzIuSdPSLNtmLCsBYUWz9CVRaQ4Ie5oxxeZ9bzQrirzMJSC0NEuqJE9eYUJwx3bbG0eeVEYrBXwN7f0gE_Y8lpe3_YPSt30URZ9Lb8YivQUNyr9Furo3N-teO_eh9Mqzh6Ufc3sqOtfSIPwH6Z2xuzj8uvTf8_aLMXskkkve_lZ9v0_6WZX8X5NfcLpn6QZhK5zu6AsUPTEAH1Z_s9Y-o756Tv1J9KfVV1-JvvpK3_-LQK6eGOcSXN3U4eePn9X90AM2E4JUSlY-XKyXfoCfYK-7mloE_efcPigrWumAJxlCPVrhQy9RxAim7wfg3o4SwUlZA88RDsK24wA8Q3Dj1nk5OOApyQ1d4mswUnk6SsroAXgcFQi1FTt6jQuEfuu8qAxZXJ_Olz_w89WP8AN4jHAEzpIJr9bng3m1nr1OZEQTqfWJ5Kw8L4RGJUkQmgCzQZCt9l7a2ea5R3L9aCvqR6ivWr9EObJ4gyCsFMDXLMdsg2AF9UiMmizTV9ofaSliSJrDaFxooEQ7GO3HWhLHHGGQVvc18GIiCou5wYrjYi0pMSsCfK1Hiv2VpVp2LhiKEdwg7H5ujfqx84RfIhitJPB1jq8bhKo3fSAGh9CvEYVuZ0ghSWJME3LVDSF9a9rOIrK8s-J9phNjHCU5xbI3pj8Aj2_clnK4eP2CWRnlV0EqMd185Pq3OIrzK5Sd0Z13Cw4r5lAv7BkF7TH-7MKelZgUd_yXX4iDt0KbpYAXduwSjfhSmBPVyKHRXh6El3auzFkpRaga0VUht3GO4BsbYKKEgKwUNXCWX9wqkWUfZSUU8wzJouwGNLtsTvGeUWBycZ4cNX2_Dy4qLQ0d5SVi11u3IQCNla7pTe1C7ilztfYNMYzJoZ8Ag2_g3jL9G0D4fgfFMMEMy8_gZp633iwpuYGJCkyj7AaG-BspOvrEnMB5K45uTuE0TdNf">Open the lavafall recipe in the playground</a> to change it in your browser.</p>
+</section>
+
+<section id="slimefall">
+<h2>Slimefall</h2>
+<figure class="stage"><picture><source srcset="slimefall-still.png" media="(prefers-reduced-motion: reduce)"><img src="slimefall.gif" width="192" height="256" alt="Pixel art green slimefall pouring into a stone basin" decoding="async" loading="lazy"></picture></figure>
+<p>Five palette colours changed: toxic green over the grey stone, with a tan strip where the moss was. It moves like water, not like thick slime.</p>
+<p class="size">48 × 64 pixels, 24 frames of 60 ms (1.44 s a loop), 9 colours, transparent background. Shown at 4×.</p>
+<p><span class="nw"><a class="open" href="downloads/slimefall.zip" download>Download slimefall.zip (127 KB)</a> ·</span> <span class="nw"><a href="slimefall-strip.png" download aria-label="Strip PNG of the slimefall">Strip PNG</a> (1152 × 64, 7.5 KB) ·</span> <span class="nw"><a href="slimefall.gif" download aria-label="GIF at 4× of the slimefall">GIF at 4×</a> (65 KB) ·</span> <span class="nw"><a href="downloads/slimefall.fluid.json" download aria-label="Recipe JSON of the slimefall">Recipe JSON</a></span></p>
+<p><a href="https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&amp;r=7VdNk-I4DP0vb6-aVL5J-zjnPnGlOJjEIS5MknXMMBSV_74lp0PD0r0LNdN7WldRiWTlSU-SE3FG3dm9dBDo9U9l6s5u1bfaHHQFwg9lB921EBGhlXsFgcHovaqlMSAcdeUaiLQgNEpvGweRp4ReGuWcgjjjOwT-iFQm4xKEDUtJ-SITCULJUpFXacrSkSWV17Vkx5albJNleQHCkqU0SVQWgrBjKd7EiyQD4ZWlxWaRvfDe3mPKhcxijIThtN90ZuBISqPrGmKF_f1iF_ZtzTevuwe1r7sgCD7X3qxZewvqjX-LdnnvbrK9Du5D7VVkD2s_5vZUdq61XvkP2jtnd3n4de2_1-0Xc_ZIJue6_a37fp_2sy75vye_4HRP2jVhIwfd8hsoeGKBHjZ_tdY-Y758zvxJ9KfNl1-JvvzK2P-LRC6fWG8tuLzpw88v79390AXrkaDqWpXOf1jfBwJxxk63FQSM_nMaIGor92qAiFNCdbDS-WkiDwmm63oIZw-KMChVQWSEo7T7Qw-REobDZnCqHyAS1hv-iq9gVO34LNVG9xBhkBMqK7d8G-aEbjM4WRr2uDq_ff0h3r79hJ8QIeEEEcUjXe1PJ_NqP30Z2YlmUqsz66PibcNPKnFMaDzMmqD22jllJ5_zlNQdbKlA4MlqtQgyisI1QVolIVZRRumaYCUPSRGPWaYrtTvxVhARW_YHM_gJSu57o92hUswxI_TK6q6CyEemMLvrrTzN3uKC0tzDV_rAub_yVKl28I5CwtBLu5tmo-7QOsYvCEbXCmKV0cuaUHam88Rw9AMbU2i3hg3iOKQk5lCH3pdvxY9HAXveWvljohNSGMQZ57IzpjtChDdhK9Vfol5QWgTZVZIKStYfhf4tDMLsCmVrdOuGGSfKp1TP7CNO2mP8owv7qKA4v-M__3wenJXazA08s4su2QgvjTlyjxwb7dRROmWnzpyMEkLZyLb0tQ0zgmushwliBrJKVhBRdgmroCj9qCq-mSfIKEhvQNPLwwndM_JMLsFzoKbrdj7EWivDR3nO2PWjG5-Axqqh6Uw1-Npz5SrtGmYYckDvAL1rcO-Z_w4Qvt9BRRRTSsVncBPP22jmktzABDklQXoDw_yNki2_Ys4YnJWnYSrhOI7jXw">Open the slimefall recipe in the playground</a> to change it in your browser.</p>
+</section>
+
+<section id="moonlit-waterfall">
+<h2>Moonlit waterfall</h2>
+<figure class="stage"><picture><source srcset="moonlit-waterfall-still.png" media="(prefers-reduced-motion: reduce)"><img src="moonlit-waterfall.gif" width="192" height="256" alt="Pixel art waterfall at night in dark blue with pale highlights" decoding="async" loading="lazy"></picture></figure>
+<p>Nine palette colours changed for a night scene: navy water, pale highlights and blue-grey stone.</p>
+<p class="size">48 × 64 pixels, 24 frames of 60 ms (1.44 s a loop), 9 colours, transparent background. Shown at 4×.</p>
+<p><span class="nw"><a class="open" href="downloads/moonlit-waterfall.zip" download>Download moonlit-waterfall.zip (128 KB)</a> ·</span> <span class="nw"><a href="moonlit-waterfall-strip.png" download aria-label="Strip PNG of the moonlit waterfall">Strip PNG</a> (1152 × 64, 7.5 KB) ·</span> <span class="nw"><a href="moonlit-waterfall.gif" download aria-label="GIF at 4× of the moonlit waterfall">GIF at 4×</a> (65 KB) ·</span> <span class="nw"><a href="downloads/moonlit-waterfall.fluid.json" download aria-label="Recipe JSON of the moonlit waterfall">Recipe JSON</a></span></p>
+<p><a href="https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&amp;r=7VdNk6M4DP0vb69qCgjQtI9z7lOuqRwcMMEV87HGmUwqxX_fkgmZZNO9m9RM72ldlQLJ4klPkkE5oepsIx0Eev1DmaqzW_VSmb0uQfiu7KC7FiIitLJREGi6rjXavRykU7aSxoBw0KWrIZKcUCu9rR1ElhB6aZRzCuKEbxD4I9rEWRaCsGEpLhZVXoBQsJRWr1nB0oGlMimLqgLBspTI5PWVn1uytHhbZClb7jxKFi-SCIR3lrIsi98kCI3fqzKZphgJw7HZdGbgSAqjqwpiheZ-sQt7XvPN--5B7fsuCILPtTdr1t6CeuPfol3eu5tsr4P7UHsV2cPaj7k9lZ1rrVf-g_bO2V0efl3773X7xZw9ksm5bn_rvt-n_axL_u_JLzjdk3ZN2MhBt_wGCp5YoIfN3621z5gvnzN_Ev1p8-VXoi-_Mvb_IpHLJ9a5BZc3ffj55Wd3P3TBeiSoqlKF8x_W-8FAnLDTbQkBo_-cBorKykYNEHFCKPdWOj9dZCHBdF0P4exeEQalSoiUcJC22fcQCWHYbwan-gFiwXrDX_MVjKocn6nK6B4iDDJCaeWWb8OM0G0GJwvDHlen8xQAcZ4BCD8gQsIRIopHutqfTujVfvI2shPNpFYn1kf5ecNPLHFMqD3MmqAa7Zyyk8_z1DR0e1soEHjSWr0GKUXhmiCtkhCrKKVkTbCSh6WIxy7TFdodeSuIiC37vRn8JCWb3mi3LxVzTAm9srorIbKRKczueiuPs7c4pyTz8KXec-6vPJWqHbyjkDD00u6mGanbt47xc4LRlYJYpfS2JhSd6TwxHPzgxhTarWGDOA5pEXOoQ-_Lt-LHo4A9b638PtEJKQzilHPZGdMdIMKbsJXqL1G_UpIH6VWSclqsPwr9JQzC9Apla3TrhhknyqZUz-wjTtpj_KML-yinOLvjP_98HpyV2swNPLOLLtkIL405co8cau2UPylTZ05GC0JRy7bwtQ1TgquthwliBrJKlhBRegkrpyj5qCq-mSfIKEhuQJPLwwu6Z-SZXILnQE3X7XyIlVaGj_KcsetHNz4BtVVD3Zly8LXnypXa1cww5IB-AvSuxr1n_ltA-HYHFVFMCeWfwU08b6OZS3IDE2S0CJIbGOZvlGz5FXPC4Kw8DlMJx3Ec_wI">Open the moonlit waterfall recipe in the playground</a> to change it in your browser.</p>
+</section>
+
+<section id="fewer">
+<h2>The stone waterfall in 12 and 8 frames</h2>
+<figure class="stage">
+<figure><picture><source srcset="waterfall-12f-still.png" media="(prefers-reduced-motion: reduce)"><img src="waterfall-12f.gif" width="192" height="256" alt="The stone waterfall as a 12-frame loop" decoding="async" loading="lazy"></picture><figcaption>12 frames of 120 ms</figcaption></figure>
+<figure><picture><source srcset="waterfall-8f-still.png" media="(prefers-reduced-motion: reduce)"><img src="waterfall-8f.gif" width="192" height="256" alt="The stone waterfall as an 8-frame loop" decoding="async" loading="lazy"></picture><figcaption>8 frames of 180 ms</figcaption></figure>
+</figure>
+<p>For a smaller sheet: every second frame of the 24-frame loop (12 frames of 120 ms) or every third (8 frames of 180 ms). The loop still lasts 1.44 s and the water steps more coarsely. The step from the last frame back to the first stays inside the range of the other steps: 159 pixels against 110 to 167, and 176 against 140 to 187.</p>
+<p>12 frames: <span class="nw"><a class="open" href="downloads/waterfall-12f.zip" download>Download waterfall-12f.zip (70 KB)</a> ·</span> <span class="nw"><a href="waterfall-12f-strip.png" download aria-label="Strip PNG of the 12-frame stone waterfall">Strip PNG</a> (576 × 64, 4.4 KB) ·</span> <span class="nw"><a href="waterfall-12f.gif" download aria-label="GIF at 4× of the 12-frame stone waterfall">GIF at 4×</a> (32 KB)</span></p>
+<p>8 frames: <span class="nw"><a class="open" href="downloads/waterfall-8f.zip" download>Download waterfall-8f.zip (50 KB)</a> ·</span> <span class="nw"><a href="waterfall-8f-strip.png" download aria-label="Strip PNG of the 8-frame stone waterfall">Strip PNG</a> (384 × 64, 3.3 KB) ·</span> <span class="nw"><a href="waterfall-8f.gif" download aria-label="GIF at 4× of the 8-frame stone waterfall">GIF at 4×</a> (22 KB)</span></p>
+</section>
+
+<h2 id="numbers">The six sheets in numbers</h2>
+<div class="wrap" tabindex="0" role="region" aria-labelledby="numbers"><table>
+<caption>Counted from each sheet's frame PNGs. Scroll sideways on a narrow screen.</caption>
+<thead><tr><th scope="col">Download</th><th scope="col">Frame, px</th><th scope="col">Frames</th><th scope="col">Colours</th><th scope="col">Strip, px</th><th scope="col">Pixels changed per step: median (range)</th><th scope="col">Pixels changed from the last frame back to the first</th><th scope="col">Zip</th></tr></thead>
+<tbody>
+<tr><th scope="row"><a href="downloads/waterfall.zip" download>waterfall.zip</a></th><td>48 × 64</td><td>24 × 60 ms</td><td>9</td><td>1152 × 64</td><td>110 (84 to 133)</td><td>99</td><td>127 KB</td></tr>
+<tr><th scope="row"><a href="downloads/waterfall-12f.zip" download>waterfall-12f.zip</a></th><td>48 × 64</td><td>12 × 120 ms</td><td>9</td><td>576 × 64</td><td>143 (110 to 167)</td><td>159</td><td>70 KB</td></tr>
+<tr><th scope="row"><a href="downloads/waterfall-8f.zip" download>waterfall-8f.zip</a></th><td>48 × 64</td><td>8 × 180 ms</td><td>9</td><td>384 × 64</td><td>163 (140 to 187)</td><td>176</td><td>50 KB</td></tr>
+<tr><th scope="row"><a href="downloads/lavafall.zip" download>lavafall.zip</a></th><td>48 × 64</td><td>24 × 60 ms</td><td>9</td><td>1152 × 64</td><td>110 (84 to 133)</td><td>99</td><td>127 KB</td></tr>
+<tr><th scope="row"><a href="downloads/slimefall.zip" download>slimefall.zip</a></th><td>48 × 64</td><td>24 × 60 ms</td><td>9</td><td>1152 × 64</td><td>110 (84 to 133)</td><td>99</td><td>127 KB</td></tr>
+<tr><th scope="row"><a href="downloads/moonlit-waterfall.zip" download>moonlit-waterfall.zip</a></th><td>48 × 64</td><td>24 × 60 ms</td><td>9</td><td>1152 × 64</td><td>110 (84 to 133)</td><td>99</td><td>128 KB</td></tr>
+</tbody>
+</table></div>
+<p class="muted">Counted by <a href="data/package.py">package.py</a>; the full figures, with a SHA-256 for each strip and zip, are in <a href="data/measured.json">measured.json</a>. Every pixel is fully opaque or fully transparent. The three recolours move exactly as the stone waterfall does, so their counts are the same. Compiling a recipe took about a second on our PC, and compiling it twice with Pixelbolt 0.15.0 gave the same bytes each time.</p>
+<p>Each zip holds the strip, the same frames as a grid sheet with its atlas JSON and Godot file, the GIF at 1× and 4×, every frame as a PNG (named in playing order), an animated PNG, the recipe, the compiled frames as Pixelbolt's editable <code>.pixel.json</code> (the largest file in each zip: about 97 KB unzipped at 24 frames, 50 KB at 12 and 34 KB at 8), Pixelbolt's other export files (CSS classes, a small Canvas player, a preview page), a README and the licence.</p>
+
+<h2 id="engine">Use it in your engine</h2>
+<ul>
+<li><strong>Godot 4:</strong> copy the grid sheet and its <code>.tres</code> (for example <code>waterfall.png</code> and <code>waterfall.tres</code>) into one folder of your project, give an AnimatedSprite2D that SpriteFrames file and play the animation. Set the node's texture filter to Nearest. We loaded all six files in Godot 4.7.2, run headless: each came in as SpriteFrames with the frame count, frame time, loop flag and frame rectangles its atlas gives (<a href="data/godot-check.json">godot-check.json</a>, made by <a href="data/check.gd">check.gd</a>). We did not look at them playing in the editor.</li>
+<li><strong>Unity, GameMaker and other engines that slice grids:</strong> the strip is one row of equal cells, 48 × 64 pixels, with no padding. Play it at the frame time above, with point (nearest-neighbour) filtering and no compression. Not tested by us in those engines.</li>
+<li><strong>Phaser and other atlas loaders:</strong> the zip's <code>.atlas.json</code> is a TexturePacker-style JSON hash with each frame's rectangle and duration, plus Aseprite-style frame tags. Pixelbolt's <a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/docs/game-integration.md">game integration notes</a> go through it.</li>
+<li><strong>Unreal Engine 5:</strong> see <a href="../unreal-paper2d-sprite-sheets/">importing Pixelbolt sheets into Paper2D, with flipbooks</a>.</li>
+</ul>
+
+<h2 id="own">Make your own</h2>
+<p>A recipe is a short JSON file that describes the simulation: the palette, the stone, where the water enters and how it moves. Each <strong>Recipe JSON</strong> link above is one.</p>
+<p>In the browser: each playground link above carries its whole recipe. Change a value and the preview renders again; then download a sheet, an atlas or a GIF. Nothing to install, no account. The link names Pixelbolt 0.15.0, so the playground renders it with that version; we opened all four on 10 November and each rendered its 24 frames (<a href="data/playground-check.json">playground-check.json</a>).</p>
+<p>From the command line, with Node.js 20 or newer:</p>
+<pre><code>npx -y pixelbolt@0.15.0 compile --preset waterfall --out waterfall.json
+npx -y pixelbolt@0.15.0 render waterfall.json --out waterfall --gif</code></pre>
+<p>The first command runs the simulation and writes every frame into <code>waterfall.json</code>; the second writes the export folder our zips start from. To that folder we add the strip, the 4× GIF, the recipe and the licence, move the 1× GIF out of <code>gifs/</code>, rename the frame PNGs into playing order and replace <code>README.txt</code>. We ran both commands as written: the sheet came out byte for byte the one in <code>waterfall.zip</code>. For fewer frames add <code>--frames 8</code> (or 12) to <code>compile</code>. To start from one of our recolours, download its Recipe JSON and compile that instead:</p>
+<pre><code>npx -y pixelbolt@0.15.0 compile lavafall.fluid.json --out lavafall.json
+npx -y pixelbolt@0.15.0 gif lavafall.json --scale 4 --out lavafall.gif</code></pre>
+<h3>What to change in the recipe</h3>
+<ul>
+<li><strong>Colours:</strong> the nine entries of <code>palette</code>. <code>B</code>, <code>b</code>, <code>c</code> and <code>w</code> are the liquid from deep to foam; <code>r</code>, <code>R</code>, <code>k</code> and <code>L</code> are the stone; <code>m</code> is the moss on the ledge. The lava, slime and moonlit sheets change only these (and the recipe's name).</li>
+<li><strong>How far the arc reaches:</strong> <code>velocity</code> on the emitter named <code>source</code> ([1.1, 0]), where the water enters.</li>
+<li><strong>Surges:</strong> <code>pulse</code> on <code>source</code> (<code>amplitude</code> 0.5, <code>period</code> 6). In a loop, <code>period</code> must divide the number of frames (24).</li>
+<li><strong>Foam and spray:</strong> the two <code>whitewater</code> layers throw foam off fast water (<code>chance</code> sets how much), and the emitter named <code>spray</code> draws the splash where the stream lands.</li>
+</ul>
+<p>The <a href="../pixel-art-water-animation/">water guide</a> explains the same recipe field by field, next to a splash, a drip and a dam break. Its pictures and commands use Pixelbolt 0.9.1, whose frames for this recipe differ from 0.15.0's in all 24 frames: with one Pixelbolt version the same recipe gives the same bytes (we compiled each twice), and another version can give other frames. That is why the commands and links here name 0.15.0.</p>
+
+<h2 id="others">Other free pixel art waterfalls, and when to use them instead</h2>
+<p>These sheets are one side-view scene with its own ledge and basin, in one art style and nine colours. They are not tiles: they don't stack, widen or join a tile set without editing the recipe. The lava and the slime move like water. The overflow runs off the bottom-right of the frame, so it needs water or a drain under it. There is no top-down view. If that isn't what you need, three packs and one set of files are free elsewhere, and one tutorial shows how to draw your own (from each page as read on 10 November 2026; we did not download or open the files):</p>
+<ul>
+<li><a href="https://heosphorus.itch.io/animated-waterfalls">Animated Waterfalls by Heosphorus</a> (itch.io, name your own price): 20 animations of 8 frames (the first ten at 8 fps), ten at 48 × 48 and ten at 64 × 64 pixels, as transparent PNGs. Its page says the 48 × 48 size is easy to fit into tile sets and lists commercial games among its uses; it shows no licence text. Take it for variety, and for falls sized to sit in a tile set.</li>
+<li><a href="https://jomi13.itch.io/waterfall-animated">WaterFall by JoMI</a> (itch.io, name your own price), 128 × 128 by its description: a GIF, sprite sheets and the Aseprite source file. The author answered "Yes you can" to a commenter asking about a commercial game. Take it if you want to edit the drawing itself in Aseprite.</li>
+<li><a href="https://nyknck.itch.io/waterfall-sprite">Waterfall Sprite by NYKNCK</a> (itch.io, name your own price): PNG with a transparent background, in a 30 kB zip; the page is marked "In development" and gives no size or frame count. The author says in the comments that it is completely free, in reply to a question about commercial use. Take it if you want a waterfall sprite that is already drawn.</li>
+<li><a href="https://opengameart.org/content/waterfall-0">WaterFall by ElectDraw</a> (OpenGameArt, 24 July 2025): four PNG files under CC0, so there is no licence text to carry. Take it if you need public-domain art.</li>
+<li><a href="https://www.slynyrd.com/blog/2018/10/12/pixelblog-10-water-in-motion">Pixelblog 10, Water in Motion, by Raymond Schlitter</a> (16 October 2018), a tutorial, not a download: how to draw a waterfall by hand, as a mouth, a flow and a splash. Read it if you want to animate your own.</li>
+</ul>
+<p class="muted">All three itch.io pages say no generative AI was used.</p>
+<p>What a simulated sheet gives you instead: the colours, the frame count and the flow are settings, so one recipe makes a 24-frame or an 8-frame loop, or a lavafall, and you can keep changing it.</p>
+
+<h2>Licence</h2>
+<p>The sheets, GIFs, recipes and scripts on this page are under the MIT licence: free for any use, commercial too, as long as the licence text stays with copies of the files. Each zip has it as <code>LICENSE.txt</code>; if you take a single file, take <a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/LICENSE">the licence text</a> too. It names the copyright holder as "PixelForge contributors": PixelForge is Pixelbolt's earlier name. The stone waterfall is the example recipe in Pixelbolt's MIT-licensed npm package, whose README says the included artwork is original and covered by the same licence; the recolours are that recipe with only palette colours and the name changed.</p>
+
+<h2>How this page was made</h2>
+<p>Three scripts, run on 10 November 2026 with Pixelbolt 0.15.0 from npm: <a href="data/build.py">build.py</a> writes the four recipes and compiles and renders them, <a href="data/package.py">package.py</a> counts the pixels and builds the strips and zips, and <a href="data/make_page.py">make_page.py</a> writes this page from the counts. <a href="data/README.txt">README.txt</a> says how to run them. The searches this page answers, and what ranked for them that day, are in <a href="data/searches-2026-11-10.txt">searches-2026-11-10.txt</a>.</p>
+
+<h2>More pixel art effect guides</h2>
+<ul>
+<li><a href="../pixel-art-water-animation/">Water: the waterfall recipe explained, a splash, a drip and a dam break</a></li>
+<li><a href="../pixel-art-fire-animation/">Fire: a campfire, a torch and a hand-drawn flame</a></li>
+<li><a href="../pixel-art-explosion/">Explosions: a fireball with smoke and sparks, and small particle bursts</a></li>
+<li><a href="../pixel-art-smoke-and-steam/">Smoke and steam: a cartoon smoke puff, a steam vent and a dust wave</a></li>
+<li><a href="../pixel-art-slime-and-honey/">Slime and honey: a squashing slime, a bursting slime, pouring honey and a honey drop</a></li>
+<li><a href="../pixel-art-magic-effects/">Magic: a spell swirl and a bubbling potion</a></li>
+<li><a href="../tileset-generator-godot-tiled/">Free tile sets for Godot 4 and Tiled, drawn from a terrain description</a></li>
+</ul>
+<p><a href="../">All guides</a> · <a href="../../playground/">The playground</a> · <a href="../../gallery/">The gallery</a> · <a href="../../compare/">All comparisons</a> · <a href="../../">Pixelbolt home</a></p>
+<p class="muted">Comparing effect tools? See <a href="../../compare/pixel-fx-designer-alternatives/">Pixel FX Designer alternatives: 7 pixel-art effect tools compared</a>. For agents: <a href="../../compare/pixel-art-mcp-servers-for-ai-agents/">pixel art MCP servers compared</a>.</p>
+</main>
+<footer class="muted"><p>Plain static page: no JavaScript, trackers or cookies. Made by AI agents working for the Pixelbolt maintainers. <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> · <a href="https://github.com/skulitom/Pixelbolt/issues/new">Report a mistake</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,272 @@
+[
+ {
+  "tag": "waterfall",
+  "name": "waterfall",
+  "width": 48,
+  "height": 64,
+  "frames": 24,
+  "frame_ms": [
+   60
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 0.96,
+  "same_twice": true,
+  "step_px_median": 110,
+  "step_px_min": 84,
+  "step_px_max": 133,
+  "seam_px": 99,
+  "seam_ratio": 0.9,
+  "strip": {
+   "file": "waterfall-strip.png",
+   "size": [
+    1152,
+    64
+   ],
+   "bytes": 7697,
+   "sha256": "2a7f75f8e53c6b3dfaa2ff05811940e6dbf6abf871e98044a4ead9297c75d9bc"
+  },
+  "gif": {
+   "file": "waterfall.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 66360
+  },
+  "zip": {
+   "file": "downloads/waterfall.zip",
+   "bytes": 129981,
+   "sha256": "60fec79d82c33e83be56da6070e0483c8dc0e00476336910c38ca951d824f064"
+  }
+ },
+ {
+  "tag": "waterfall-12f",
+  "name": "waterfall",
+  "width": 48,
+  "height": 64,
+  "frames": 12,
+  "frame_ms": [
+   120
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 1.0,
+  "same_twice": true,
+  "step_px_median": 143,
+  "step_px_min": 110,
+  "step_px_max": 167,
+  "seam_px": 159,
+  "seam_ratio": 1.11,
+  "strip": {
+   "file": "waterfall-12f-strip.png",
+   "size": [
+    576,
+    64
+   ],
+   "bytes": 4544,
+   "sha256": "94fe08000d5be8ccb66a38e16df65246937dc6b691b73bc3061e14b94e7e8f23"
+  },
+  "gif": {
+   "file": "waterfall-12f.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 33217
+  },
+  "zip": {
+   "file": "downloads/waterfall-12f.zip",
+   "bytes": 71615,
+   "sha256": "bd4146a16ac851a127d06d1e250450639a8728b545f8ca3c8f850214b3543538"
+  }
+ },
+ {
+  "tag": "waterfall-8f",
+  "name": "waterfall",
+  "width": 48,
+  "height": 64,
+  "frames": 8,
+  "frame_ms": [
+   180
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 0.96,
+  "same_twice": true,
+  "step_px_median": 163,
+  "step_px_min": 140,
+  "step_px_max": 187,
+  "seam_px": 176,
+  "seam_ratio": 1.08,
+  "strip": {
+   "file": "waterfall-8f-strip.png",
+   "size": [
+    384,
+    64
+   ],
+   "bytes": 3353,
+   "sha256": "4896dd4b193f9dd7f9c55e7a79bbdf684af4315bd6c0b948eb4382418b4da2ae"
+  },
+  "gif": {
+   "file": "waterfall-8f.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 22168
+  },
+  "zip": {
+   "file": "downloads/waterfall-8f.zip",
+   "bytes": 51181,
+   "sha256": "481336c2d139865a2ef947d097b5d6826d97dd3fed2a66493971d5849605c9f7"
+  }
+ },
+ {
+  "tag": "lavafall",
+  "name": "lavafall",
+  "width": 48,
+  "height": 64,
+  "frames": 24,
+  "frame_ms": [
+   60
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 0.98,
+  "same_twice": true,
+  "step_px_median": 110,
+  "step_px_min": 84,
+  "step_px_max": 133,
+  "seam_px": 99,
+  "seam_ratio": 0.9,
+  "strip": {
+   "file": "lavafall-strip.png",
+   "size": [
+    1152,
+    64
+   ],
+   "bytes": 7591,
+   "sha256": "3180f23bd3e3b8bc0e8c44ad54d923a44022ba7d8d9dab23fb14f4569d2682eb"
+  },
+  "gif": {
+   "file": "lavafall.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 66360
+  },
+  "zip": {
+   "file": "downloads/lavafall.zip",
+   "bytes": 129758,
+   "sha256": "195ba473649ad386715a1a2f25d5d4b008a6ed48d9c333daae70c12a3a4a6239"
+  }
+ },
+ {
+  "tag": "slimefall",
+  "name": "slimefall",
+  "width": 48,
+  "height": 64,
+  "frames": 24,
+  "frame_ms": [
+   60
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 0.94,
+  "same_twice": true,
+  "step_px_median": 110,
+  "step_px_min": 84,
+  "step_px_max": 133,
+  "seam_px": 99,
+  "seam_ratio": 0.9,
+  "strip": {
+   "file": "slimefall-strip.png",
+   "size": [
+    1152,
+    64
+   ],
+   "bytes": 7704,
+   "sha256": "6f3c66bf31ccd8d641b75f1c7e23eb3b58129d1a96d540e8394bf85ee971e321"
+  },
+  "gif": {
+   "file": "slimefall.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 66360
+  },
+  "zip": {
+   "file": "downloads/slimefall.zip",
+   "bytes": 129917,
+   "sha256": "3b4c6085375ce8e597f22f18013bb8f28646766ec4c88d848b3a2e4db18a7dbb"
+  }
+ },
+ {
+  "tag": "moonlit-waterfall",
+  "name": "moonlit-waterfall",
+  "width": 48,
+  "height": 64,
+  "frames": 24,
+  "frame_ms": [
+   60
+  ],
+  "loop_ms": 1440,
+  "colours": 9,
+  "alpha_values": [
+   0,
+   255
+  ],
+  "compile_s": 0.98,
+  "same_twice": true,
+  "step_px_median": 110,
+  "step_px_min": 84,
+  "step_px_max": 133,
+  "seam_px": 99,
+  "seam_ratio": 0.9,
+  "strip": {
+   "file": "moonlit-waterfall-strip.png",
+   "size": [
+    1152,
+    64
+   ],
+   "bytes": 7697,
+   "sha256": "605cb1393e93a1ebfc91ce0c161c1cbf501081ffd29677385a56277a7ad0c851"
+  },
+  "gif": {
+   "file": "moonlit-waterfall.gif",
+   "size": [
+    192,
+    256
+   ],
+   "bytes": 66360
+  },
+  "zip": {
+   "file": "downloads/moonlit-waterfall.zip",
+   "bytes": 131329,
+   "sha256": "af03c867af8016e1b2577b85071523fbccb5ffc999c5d687884833f33574014a"
+  }
+ }
+]
