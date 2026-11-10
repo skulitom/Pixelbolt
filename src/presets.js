@@ -146,7 +146,10 @@ function about(entry, source, animations) {
     const parts = [...counts].filter(([shape]) => typeof shape === 'string').map(([shape, n]) => `${n} ${shape}${n === 1 ? '' : shape === 'box' ? 'es' : 's'}`);
     return `Simulated rigid bodies: ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0] ?? 'none'}.`;
   }
-  return `A hand-drawn recipe: ${listNames(names)}.`;
+  // Frames no animation plays are pictures of their own: the tiles of a set beside its one animated tile.
+  const played = new Set(Object.values(source.animations ?? {}).flatMap(item => (Array.isArray(item?.frames) ? item.frames : []).map(frame => frame?.frame ?? frame)));
+  const stills = (Array.isArray(source.frames) ? source.frames : []).map(frame => frame?.name).filter(name => typeof name === 'string' && !played.has(name));
+  return `A hand-drawn recipe: ${listNames(names)}${stills.length ? `; stills ${listNames(stills)}` : ''}.`;
 }
 
 // One line of facts per preset, from compiling it: what an agent compares with the request before picking one.

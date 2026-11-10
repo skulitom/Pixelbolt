@@ -121,3 +121,80 @@ test('the schemas offer box and the iso layout', () => {
   assert.deepEqual(recipe.$defs.op.oneOf.find(op => op.properties.op.const === 'tilemap').properties.layout.enum, ['square', 'iso']);
   assert.deepEqual(schema('scene.schema.json').properties.instances.items.properties.tilemap.properties.layout.enum, ['square', 'iso']);
 });
+
+test('the isometric examples: a tile set on 32x16 diamonds, and a scene that lays it out, shades it, sorts it and hovers a coin over a cell', async () => {
+  const { resolveReferences } = await import('../src/resolve.js');
+  const { fileURLToPath } = await import('node:url');
+  const examples = fileURLToPath(new URL('../examples/', import.meta.url));
+  const read = name => JSON.parse(readFileSync(new URL(`../examples/${name}`, import.meta.url), 'utf8'));
+  const tiles = read('iso-tiles.json'), set = renderProject(tiles);
+  assert.deepEqual([tiles.width, tiles.height], [32, 64]);
+  // The opaque pixels in each row of a frame, and its first drawn row.
+  const widths = name => {
+    const frame = set.frames[tiles.frames.findIndex(item => item.name === name)];
+    return Array.from({ length: 64 }, (_, y) => Array.from({ length: 32 }, (_, x) => frame.data[(y * 32 + x) * 4 + 3] > 0).filter(Boolean).length);
+  };
+  const first = name => widths(name).findIndex(Boolean);
+  const far = [2, 6, 10, 14, 18, 22, 26, 30], near = [...far].reverse();
+  // A frame's last 16 rows are its cell. A ground tile is that diamond 10 pixels up over 10 pixels of earth, so its foot
+  // is the near half of its cell and the tile in front covers its sides.
+  const turf = widths('turf');
+  assert.deepEqual(turf, [...Array(38).fill(0), ...far, ...Array(10).fill(32), ...near]);
+  // Every other ground tile is drawn over the turf and stays inside it: nothing crosses a seam or hangs off the map's edge.
+  for (const name of ['grass', 'grass-tufts', 'grass-flowers', 'paver', 'paver-worn']) {
+    assert.equal(tiles.frames.find(item => item.name === name).from, 'turf', `${name} starts from the turf`);
+    assert.deepEqual(widths(name), turf, `${name} keeps the turf's silhouette`);
+  }
+  for (const name of tiles.animations.water.frames) assert.deepEqual(widths(name), [...Array(41).fill(0), ...far, ...Array(7).fill(32), ...near], `${name} lies 3 pixels below the turf`);
+  // Proportions, from the centre row of the cell: a wall block rises 12 pixels and a step 6, a pine stands four blocks
+  // tall and a sapling more than two.
+  assert.deepEqual([48 - first('block'), 48 - first('step')], [12, 6]);
+  assert.ok(56 - first('pine') >= 4 * 12 && 56 - first('sapling') >= 2 * 12, 'trees are several blocks tall');
+
+  const source = read('iso-glade.scene.json');
+  const prepare = async document => prepareScene((await resolveReferences(document, { baseDir: examples })).document);
+  const scene = await prepare(source), view = renderScene(scene);
+  assert.deepEqual(view.warnings ?? [], []);
+  const hex = (image, x, y) => `#${[0, 1, 2].map(c => image.data[(y * image.width + x) * 4 + c].toString(16).padStart(2, '0')).join('')}`;
+  assert.deepEqual(source.instances.map(item => item.name), ['ground', 'shadows', 'coin-shadow', 'things', 'coin']);
+  const [ground, shadows, coinShadow, things, coin] = source.instances, rows = things.tilemap.rows.length;
+  // What stands on the ground is mapped 10 pixels above the ground, the thickness of a ground tile, so the centre of a
+  // cell of that map is the middle of the ground tile's top.
+  assert.deepEqual([ground.at[0] - things.at[0], ground.at[1] - things.at[1]], [0, 10]);
+  assert.deepEqual(shadows.at, things.at);
+  const centre = (x, y) => [things.at[0] + (x - y + rows) * 16, things.at[1] + (x + y + 1) * 8];
+  assert.equal(hex(view, ...centre(1, 1)), tiles.palette.G, 'open grass at the centre of cell [1, 1]');
+  const [bx, by] = centre(4, 0), [sx, sy] = centre(5, 0);
+  assert.deepEqual([hex(view, bx, by - 12), hex(view, sx, sy - 6)], [tiles.palette.S, tiles.palette.S], 'the tops of the block and the step, 12 and 6 pixels over their cells');
+
+  // The coin stands at the centre of cell [0, 3], on the middle of its bottom row, and is lifted clear of the paver;
+  // its shadow is placed by the centre of the shadow frame's cell.
+  const [cx, cy] = centre(0, 3), coinSet = renderProject(read('coin.json')), box = { left: 99, right: -1, bottom: -1 };
+  for (let y = 0; y < coinSet.height; y++) for (let x = 0; x < coinSet.width; x++) if (coinSet.frames[0].data[(y * coinSet.width + x) * 4 + 3]) { box.left = Math.min(box.left, x); box.right = Math.max(box.right, x); box.bottom = Math.max(box.bottom, y); }
+  assert.deepEqual([coin.at, coinShadow.at], [[cx, cy], [cx, cy]]);
+  assert.deepEqual(coin.anchor, [(box.left + box.right + 1) / 2, box.bottom], 'the coin is anchored at the middle of its bottom row');
+  assert.deepEqual(coinShadow.anchor, [16, 56], 'a shadow frame placed alone is anchored at the centre of its cell');
+  assert.ok(coin.lift > 6, 'the coin hovers above the far rim of its paver');
+
+  // Shadows draw no colour: they move the ground under a thing one step down its ramp and touch nothing else.
+  const bare = renderScene(await prepare({ ...source, instances: source.instances.filter(item => item.shade === undefined) }));
+  const darker = new Map(tiles.ramps.flatMap(ramp => ramp.slice(1).map((key, i) => [tiles.palette[key], tiles.palette[ramp[i]]])));
+  let shaded = 0;
+  for (let y = 0; y < view.height; y++) for (let x = 0; x < view.width; x++) if (hex(view, x, y) !== hex(bare, x, y)) { assert.equal(hex(view, x, y), darker.get(hex(bare, x, y)), `a shaded pixel at [${x}, ${y}]`); shaded++; }
+  assert.ok(shaded > 300, `${shaded} shaded pixels`);
+  assert.deepEqual([hex(bare, cx, cy), hex(view, cx, cy)], [tiles.palette.S, tiles.palette.s], 'the coin\'s shadow lies on its paver');
+
+  // The scene's loop is a whole number of every loop it plays, so nothing jumps where it repeats: the water turns once
+  // while the coin spins twice.
+  const length = (recipe, name) => recipe.animations[name].frames.reduce((sum, frame) => sum + recipe.frames.find(item => item.name === frame).duration, 0);
+  const loops = [length(tiles, 'water'), length(tiles, 'water-late'), length(read('coin.json'), coin.animation)];
+  assert.deepEqual(loops, [1320, 1320, 660]);
+  for (const loop of loops) assert.equal(source.duration % loop, 0);
+  const same = (a, b) => a.data.every((value, i) => value === b.data[i]);
+  assert.ok(same(renderScene(scene, { time: source.duration }), view) && !same(renderScene(scene, { time: 330 }), view), 'the scene moves and comes back to its first frame');
+
+  for (const doc of ['skills/pixel-art/SKILL.md', 'docs/agent-craft.md', 'docs/art-workflow.md', 'llms.txt']) {
+    const text = readFileSync(new URL(`../${doc}`, import.meta.url), 'utf8');
+    for (const file of ['examples/iso-tiles.json', 'examples/iso-glade.scene.json']) assert.ok(text.includes(file), `${doc} cites ${file}`);
+  }
+});

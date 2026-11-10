@@ -866,9 +866,151 @@ const dryIce = fluidSource('dry-ice', 56, 40, { ...iceColours, T: '#a8794e', t: 
 }, { table: dryTable, floor: shapeRows(56, 2, () => 'k') });
 const fluids = { campfire, 'smoke-puff': smokePuff, explosion, 'steam-vent': steamVent, 'magic-swirl': magicSwirl, torch, splash, waterfall, drip, potion, honey, slime, 'roof-snow': roofSnow, 'dam-break': damBreak, 'dust-wave': dustWave, 'slime-burst': slimeBurst, 'honey-drop': honeyDrop, aquarium, 'honey-dipper': honeyDipper, glug, 'ice-melt': iceMelt, 'pond-freeze': pondFreeze, 'boiling-pot': boilingPot, 'frost-window': frostWindow, 'dry-ice': dryIce };
 
+// Isometric art to start from: a tile set drawn with `box` and a scene that lays it out on a 2:1 grid with
+// `layout: "iso"`. Every frame is 32x64 and its last 16 rows are its cell, a 32x16 diamond. A ground tile is that
+// diamond 10 pixels up, over 10 pixels of earth, so the map of what stands on the ground is placed 10 pixels above the
+// ground's. Ground and walls join their neighbours, so they have no outline; what stands alone has one in a dark tone
+// of its own material.
+const isoH = 64, isoT = 10, isoTop = isoH - 16 - isoT;
+const isoSlab = (y, h, top, left, right, edge) => ({ op: 'box', x: 0, y, w: 16, d: 16, h, top, left, right, ...(edge && { edge }) });
+// The first row of a full-width box's side faces, by column, counted from the box's top.
+const isoUnder = i => 8 + (i < 16 ? (i + 1) >> 1 : (32 - i) >> 1);
+const isoStamps = (symbol, list) => list.map(([x, y]) => ({ op: 'stamp', x, y, symbol }));
+const isoDots = (color, list) => list.map(([x, y]) => ({ op: 'pixel', x, y, color }));
+// The island's rim: turf hanging in a ragged fringe under the cap, and stones in the earth.
+const isoRim = (() => {
+  const rows = Array.from({ length: 13 }, () => Array(32).fill('.'));
+  const set = (i, row, key) => { rows[isoUnder(i) + row - 11][i] = key; };
+  for (const [i, deep] of [[1, 1], [2, 2], [6, 1], [9, 2], [10, 1], [13, 1]]) for (let r = 0; r < deep; r++) set(i, 3 + r, 'g');
+  for (const [i, deep] of [[18, 1], [21, 1], [22, 2], [26, 1], [29, 2], [30, 1]]) for (let r = 0; r < deep; r++) set(i, 3 + r, 'f');
+  for (const [i, row] of [[4, 6], [5, 6], [12, 5], [14, 7]]) set(i, row, 'E');
+  for (const [i, row] of [[19, 6], [24, 5], [25, 5], [28, 7]]) set(i, row, 'k');
+  return rows.map(row => row.join(''));
+})();
+// A pine in skirts of needles, lowest first as [top row, hem row, half width at the top, half width at the hem]: each
+// a cone lit from the left, its hem ragged and drooping at the middle, the skirt above shading the one below.
+const isoConifer = (wide, tall, trunk, skirts) => {
+  const cx = wide >> 1, rows = Array.from({ length: tall }, () => Array(wide).fill('.'));
+  const darker = { A: 'B', B: 'C', C: 'D', D: 'D' }, half = trunk.length >> 1, shaded = skirts[0][1] + 4;
+  for (let r = skirts[0][1] - 4; r < tall; r++) trunk.forEach((key, i) => { rows[r][cx - half + i] = r < shaded ? (i < half ? 'd' : 'k') : key; });
+  rows[tall - 1][cx - half - 1] = trunk[0];
+  rows[tall - 1][cx + half] = trunk[trunk.length - 1];
+  for (const [top, hem, from, to] of skirts) {
+    const hemAt = x => { const dx = Math.abs(x - cx); return hem - Math.floor(dx * dx * 4 / (to * to)) - (x % 4 < 2 ? 0 : 1); };
+    for (let x = cx - to; x <= cx + to; x++) {
+      let drawn = false;
+      for (let r = top; r <= hemAt(x); r++) {
+        const reach = from + Math.floor((to - from) * (r - top) / (hem - top)), dx = x - cx;
+        if (Math.abs(dx) > reach) continue;
+        const t = Math.floor(dx * 100 / (reach + 1));
+        let tone = t < -30 ? 'A' : t < 25 ? 'B' : 'C';
+        if (r >= hemAt(x) - 1) tone = darker[tone];
+        rows[r][x] = tone; drawn = true;
+      }
+      if (drawn) for (let r = hemAt(x) + 1; r <= hemAt(x) + 2; r++) if (rows[r] && 'ABC'.includes(rows[r][x])) rows[r][x] = 'D';
+    }
+  }
+  return rows.map(row => row.join(''));
+};
+const isoBush = [3, 5, 6, 7, 8, 8, 8, 8, 7, 6, 4].map((half, r) => Array.from({ length: 17 }, (_, x) => {
+  const dx = x - 8;
+  if (Math.abs(dx) > half) return '.';
+  const t = Math.floor(dx * 100 / (half + 1)) + (r - 5) * 12;
+  return t < -35 ? 'A' : t < 30 ? 'B' : t < 75 ? 'C' : 'D';
+}).join(''));
+// A boulder in three planes: a lit top with a bright ridge, a left face and a darker right face meeting at a corner.
+const isoRock = [
+  '.......hhhh......',
+  '.....hhSSSSh.....',
+  '...hhSSSSSSSs....',
+  '..hSSSSSSSSSsx...',
+  '.hSSSSSSSSSsxxx..',
+  '.ssSSSSSSssxxxxx.',
+  'sssssSSsssxxxxxx.',
+  'sssssssssxxxxxxxx',
+  'ssssqssssxxxxxxxq',
+  '.sssqsssxxxxxxqq.',
+  '..sssssxxxxqqqq..'
+];
+// Boxes of one footprint drawn over each other leave lines that follow the faces exactly: here a dark foot under the
+// earth and a cap of turf over it. Every other ground tile starts `from` this one.
+const isoTurf = [isoSlab(isoTop, isoT, 'G', 'k', 'k'), isoSlab(isoTop, isoT - 1, 'G', 'e', 'd'), isoSlab(isoTop, 3, 'G', 'g', 'f'), { op: 'stamp', x: 0, y: isoTop + 11, symbol: 'rim' }];
+const isoGround = (name, ...ops) => ({ name, from: 'turf', ops });
+// A flagstone: a circle on the ground is an ellipse twice as wide as tall; a dark one a pixel lower is its thickness,
+// a bright one its lit rim, and the top a pixel down and right of that.
+const isoFlag = (x, y, w, h) => [{ op: 'ellipse', x, y: y + 1, w, h, color: 'x' }, { op: 'ellipse', x, y, w, h, color: 'h' }, { op: 'ellipse', x: x + 1, y: y + 1, w: w - 1, h: h - 1, color: 'S' }];
+// Water sunk 3 pixels, so its far bank shows; glints drift one way and dark ripples the other over four frames.
+const isoWater = f => ({ name: `water-${f}`, duration: 330, ops: [isoSlab(isoTop + 3, isoT - 3, 'W', 'u', 'v'),
+  ...[[7, 49, 0], [17, 45, 1], [19, 52, 2], [12, 54, 3]].map(([x, y, phase]) => { const k = (f + phase) % 4; return { op: 'rect', x: x + k, y, w: [1, 3, 4, 2][k], h: 1, color: 'w' }; }),
+  ...[[11, 47, 2], [20, 49, 0], [14, 51, 1]].map(([x, y, phase]) => { const k = (f + phase) % 4; return { op: 'rect', x: x - k, y, w: [3, 4, 2, 2][k], h: 1, color: 'u' }; })] });
+// A wall in courses 6 pixels high, by the same layering: a dark foot, a mortar line between the courses, and upright
+// joints staggered from one course to the next.
+const isoWall = (h, ...extra) => {
+  const y = isoH - 16 - h, joint = (i, row, color) => ({ op: 'rect', x: i, y: y + isoUnder(i) + row, w: 1, h: 5, color });
+  return [isoSlab(y, h, 'S', 'q', 'q'), isoSlab(y, h - 1, 'S', 's', 'x', 'h'),
+    ...(h > 6 ? [isoSlab(y, 6, 'S', 'x', 'q'), isoSlab(y, 5, 'S', 's', 'x', 'h'), ...[2, 8, 13].map(i => joint(i, 6, 'x')), ...[18, 23, 29].map(i => joint(i, 6, 'q'))] : []),
+    ...[5, 11].map(i => joint(i, 0, 'x')), ...[20, 26].map(i => joint(i, 0, 'q')), ...extra];
+};
+const isoCrate = (() => {
+  const box = (h, left, right, edge) => ({ op: 'box', x: 6, y: 41, w: 10, d: 10, h, top: 'O', left, right, ...(edge && { edge }) });
+  return [box(10, 'k', 'k'), box(9, 'n', 'e', 'Y'), box(5, 'e', 'd'), box(4, 'n', 'e', 'Y'), { op: 'box', x: 10, y: 43, w: 6, d: 6, h: 0, top: 'n' }, { op: 'outline', color: 'k' }];
+})();
+const isoTiles = { version: 1, name: 'iso-tiles', width: 32, height: isoH,
+  palette: { G: '#6fb352', l: '#96d468', g: '#4a9148', f: '#32694a', E: '#b07e52', e: '#8a5a3c', d: '#63402f', k: '#432a24',
+    h: '#e4e6ec', S: '#b9bdc9', s: '#8e93a6', x: '#666a82', q: '#45485f', K: '#2b2d44',
+    w: '#a5e0f2', W: '#4fa6dc', u: '#3379bf', v: '#285593',
+    A: '#6dbb5c', B: '#3f9455', C: '#2b6f50', D: '#1d4c45', o: '#152d33',
+    Y: '#f3d597', O: '#e0b572', n: '#bd8a4c', y: '#f6dc5a', r: '#e8634f', i: '#f4f1e4' },
+  // What a `shade` on a scene placement steps colours along: the shadows under the trees are the ground a step darker.
+  ramps: [['f', 'g', 'G', 'l'], ['k', 'd', 'e', 'E'], ['K', 'q', 'x', 's', 'S', 'h'], ['v', 'u', 'W', 'w'], ['o', 'D', 'C', 'B', 'A'], ['n', 'O', 'Y']],
+  symbols: { rim: isoRim, tuft: ['l.l', '.g.'], blade: ['l', 'g'],
+    pine: isoConifer(27, 49, ['e', 'e', 'd', 'd'], [[20, 40, 4, 13], [9, 27, 2, 10], [0, 15, 0, 7]]),
+    sapling: isoConifer(19, 30, ['e', 'd'], [[9, 23, 2, 9], [0, 13, 0, 6]]), bush: isoBush, rock: isoRock },
+  frames: [
+    { name: 'turf', ops: isoTurf },
+    isoGround('grass', ...isoStamps('tuft', [[8, 45]]), ...isoStamps('blade', [[21, 47], [15, 42]])),
+    isoGround('grass-tufts', ...isoStamps('tuft', [[13, 41], [6, 46], [19, 44], [14, 49]]), ...isoStamps('blade', [[24, 46], [10, 44]])),
+    isoGround('grass-flowers', ...isoStamps('tuft', [[10, 47]]), ...isoDots('y', [[15, 42], [21, 46]]), ...isoDots('i', [[12, 44]]), ...isoDots('g', [[15, 43], [21, 47], [12, 45]])),
+    isoGround('paver', ...isoFlag(6, 41, 20, 10), ...isoDots('s', [[13, 45], [14, 46], [15, 46], [20, 44]])),
+    isoGround('paver-worn', ...isoFlag(5, 42, 14, 7), ...isoFlag(16, 45, 11, 6), ...isoDots('s', [[10, 45], [11, 45], [21, 48]]), ...isoStamps('blade', [[20, 42]])),
+    ...[0, 1, 2, 3].map(isoWater),
+    { name: 'block', ops: isoWall(12, ...isoDots('s', [[12, 42], [13, 42], [20, 46]])) },
+    { name: 'step', ops: isoWall(6, ...isoDots('g', [[10, 49], [11, 49], [11, 50], [22, 47]]), ...isoDots('s', [[17, 51], [18, 51]])) },
+    { name: 'crate', ops: isoCrate },
+    { name: 'pine', ops: [{ op: 'stamp', x: 2, y: 9, symbol: 'pine' }, { op: 'outline', color: 'o' }] },
+    { name: 'sapling', ops: [{ op: 'stamp', x: 6, y: 28, symbol: 'sapling' }, { op: 'outline', color: 'o' }] },
+    { name: 'bush', ops: [{ op: 'stamp', x: 7, y: 47, symbol: 'bush' }, ...isoDots('r', [[11, 51], [17, 50], [14, 54]]), { op: 'outline', color: 'o' }] },
+    { name: 'rock', ops: [{ op: 'stamp', x: 8, y: 48, symbol: 'rock' }, { op: 'outline', color: 'K' }] },
+    { name: 'shadow', ops: [{ op: 'ellipse', x: 7, y: 51, w: 22, h: 10, color: 'k' }] },
+    { name: 'shadow-small', ops: [{ op: 'ellipse', x: 9, y: 54, w: 18, h: 7, color: 'k' }] }
+  ],
+  animations: { water: { frames: ['water-0', 'water-1', 'water-2', 'water-3'] }, 'water-late': { frames: ['water-2', 'water-3', 'water-0', 'water-1'] } },
+  sheet: { columns: 6 } };
+// A 6x6 island: the ground, then shadows that darken it (`shade: -1`), then what stands on it, sorted by depth. The low
+// wall stands in front of the tall one, since a low thing behind a tall one looks the same height, and nothing lines up
+// along the map's diagonal, where cells stack in a column on screen. The water's loop (4 x 330 ms) is two turns of the
+// coin (6 x 110 ms), so the scene loops every 1320 ms with no jump.
+const isoThings = ['TtT.BS', 'T.r...', 't....b', '......', '....cr', 'Tb....'], isoAt = [8, 44];
+// The centre of cell [x, y] of a six-row map placed at isoAt, where something in that cell stands. The coin hovers over
+// the path's first paver, anchored at the middle of its bottom row and lifted, so its shadow falls inside the stone.
+const isoCell = (x, y) => [isoAt[0] + (x - y + 6) * 16, isoAt[1] + (x + y + 1) * 8], isoCoin = isoCell(0, 3);
+const isoMap = (rows, legend, extra) => ({ asset: 'tiles', tilemap: { layout: 'iso', tile: [32, 16], rows, legend, ...extra } });
+const isoGlade = { format: 'pixelforge-scene', version: 1, name: 'iso-glade', width: 208, height: 164, duration: 1320, background: '#1e2233',
+  assets: { tiles: { recipe: 'iso-tiles.json' }, coin: { recipe: 'coin.json' } },
+  instances: [
+    { name: 'ground', at: [isoAt[0], isoAt[1] + isoT], ...isoMap(['gggggg', 'gggwwg', 'gggwwg', 'ssssgg', 'gggsgg', 'gggsgg'],
+      { g: { frames: ['turf', 'grass', 'grass-tufts', 'grass-flowers'], weights: [5, 3, 1, 1] }, s: { frames: ['paver', 'paver-worn'] }, w: { animations: ['water', 'water-late'] } }, { seed: 7 }) },
+    { name: 'shadows', at: isoAt, shade: -1, ...isoMap(isoThings.map(row => row.replace(/[BS]/g, '.')),
+      { T: { frame: 'shadow' }, c: { frame: 'shadow' }, t: { frame: 'shadow-small' }, b: { frame: 'shadow-small' }, r: { frame: 'shadow-small' } }) },
+    { name: 'coin-shadow', asset: 'tiles', frame: 'shadow-small', at: isoCoin, anchor: [16, 56], shade: -1 },
+    { name: 'things', at: isoAt, sort: 'ground', ...isoMap(isoThings,
+      { T: { frame: 'pine' }, t: { frame: 'sapling' }, b: { frame: 'bush' }, r: { frame: 'rock' }, c: { frame: 'crate' }, B: { frame: 'block' }, S: { frame: 'step' } }) },
+    { name: 'coin', asset: 'coin', at: isoCoin, anchor: [12, 19], lift: 9, sort: 'ground', animation: 'spin' }
+  ] };
+
 await mkdir(new URL('../examples/', import.meta.url), { recursive: true });
 // Authored sources are pretty-printed; compiled recipes use the CLI's compact formatting.
-const authored = { 'forest-spirit': forest, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'hero-sword.poses': heroSword, 'knight.poses': knight, 'fox.poses': fox, 'slime-idle.poses': slimeIdle, 'hermit-chest.poses': hermitChest, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])), ...Object.fromEntries(Object.entries(spellLibrary).map(([element, source]) => [`${element}-spells.fx`, source])) };
+const authored = { 'forest-spirit': forest, 'iso-tiles': isoTiles, 'iso-glade.scene': isoGlade, ember, coin, shrine, caption, 'effects.fx': effects, 'hero-magic.fx': heroMagic, 'swing-trail.fx': swingTrail, 'fluid-blast.fx': fluidBlast, 'swing.poses': swing, 'hero.poses': hero, 'hero-sword.poses': heroSword, 'knight.poses': knight, 'fox.poses': fox, 'slime-idle.poses': slimeIdle, 'hermit-chest.poses': hermitChest, 'forest-spirit.normals': spiritNormals, 'forest-spirit-lit.scene': litSpirit, ...Object.fromEntries(Object.entries(fluids).map(([name, source]) => [`${name}.fluid`, source])), ...Object.fromEntries(Object.entries(wavePresets).map(([name, source]) => [`${name}.wave`, source])), ...Object.fromEntries(Object.entries(spellPresets).map(([name, source]) => [`${name}.fx`, source])), ...Object.fromEntries(Object.entries(spellLibrary).map(([element, source]) => [`${element}-spells.fx`, source])) };
 // Autotile sets drawn from terrain descriptions (scripts/terrain-presets.mjs).
 Object.assign(authored, terrainPresets);
 // Electric gases: arcs, lightning and plasma (scripts/plasma-presets.mjs).

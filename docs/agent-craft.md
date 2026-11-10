@@ -60,8 +60,20 @@ Short checklists by subject, for the pixel art skill: read the one section the j
 ## Tiles and scenes
 
 - **Tiles:** review `--view tile` (a 3×3 repeat) and set `wrap` on frames whose drawing crosses the edges. An autotile `terrain` compiles into 47 blob, 16 cardinal or 16 corner (dual-grid) tiles with `pixelbolt autotile <template.json> --out <recipe.json>`; check its test map and seam warnings. A side-view set takes `slopes`, and tilemap legends take `rules`, `weights` and variants (`help workflow "Autotile templates"`).
-- **Scenes:** put things that stand on the ground in one layer or group with `sort: "ground"`, and give scene placements `anchor: "frame"`. Use `lift` for jumps, `shadow: true` with a light or a `sun`, `haze` for far planes, `box` and `layout: "iso"` for isometric art, and a `camera` with `parallax` to pan. Inspect a 2–4× `region` where different things meet, and check who covers whom with `pixel_scene` `view: "depth"` and `guides` (`help workflow "Depth and perspective"`, `help workflow "Scene and tile review"`).
+- **Scenes:** put things that stand on the ground in one layer or group with `sort: "ground"`, and give scene placements `anchor: "frame"`. Use `lift` for jumps, `shadow: true` with a light or a `sun`, `haze` for far planes, `box` and `layout: "iso"` for isometric art (`help craft "Isometric"`), and a `camera` with `parallax` to pan. Inspect a 2–4× `region` where different things meet, and check who covers whom with `pixel_scene` `view: "depth"` and `guides` (`help workflow "Depth and perspective"`, `help workflow "Scene and tile review"`).
 - **Lit scenes:** derive normal passes with a `pixelforge-normals` source rather than painting them, light the result from both sides, and tell the user Godot and Unity read +Y up (`help workflow "Aligned material passes"`).
+
+## Isometric
+
+Start from `examples/iso-tiles.json` (the tile set) and `examples/iso-glade.scene.json` (the scene that lays it out), and change them.
+
+- **Frames:** one canvas for the whole set, 32×64 on a `tile: [32, 16]` grid, each frame's cell in its last 16 rows. A ground tile is the cell's diamond 10 pixels up, over 10 pixels of earth. Draw one base tile and start the others `from` it, with every detail inside the diamond, so nothing crosses a seam or hangs off the map's edge.
+- **Proportions first:** set heights against each other before any detail. In the example a wall block is 12 pixels high, a step 6, a sapling 29 and a pine 48, and stone is an accent on the grass, not the ground.
+- **Drawing:** `box` operations of one footprint drawn over each other, each with a smaller `h`, leave exact 2:1 lines (a dark foot, a cap, mortar). Terrain that joins its neighbours has no outline; a prop that stands alone has one in a dark tone of its own material.
+- **Layers:** the ground map, then a map of shadow ellipses with `shade: -1` (the recipe needs `ramps`), then a map of what stands on the ground, placed 10 pixels higher than the ground map, with `sort: "ground"`. Without the shadows, props float.
+- **Placing:** something in cell [x, y] stands at `[(x - y + rows) * 16, (x + y + 1) * 8]` from that map's point. Anchor it at the middle of its drawn bottom row, measured in its canvas (a canvas has padding round the drawing), give it the same `sort`, and `lift` it to hover.
+- **Layout:** a low block behind a tall one looks the same height, so put the low one in front. Cells on the x = y diagonal stack in a column on screen, so spread props off it. Make every loop's length divide the scene's `duration`, or the scene jumps where it repeats.
+- **Legends:** variants, `weights`, `rules` and blob or cardinal masks work in iso; only `autotile: "corner"` is refused (`help workflow "Scene and tile review"`).
 
 ## Exports and delivery
 

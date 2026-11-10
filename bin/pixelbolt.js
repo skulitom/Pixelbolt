@@ -7,7 +7,7 @@ import { compileWaves } from '../src/wave.js';
 import { compileCrystals } from '../src/crystal.js';
 import { compilePowder } from '../src/powder.js';
 import { compileBodies } from '../src/bodies.js';
-import { readExpect, checkDelivery } from '../src/check.js';
+import { readExpect, checkDelivery, briefCheck } from '../src/check.js';
 import { resizeRecipe, resizeWarning, keepFrames } from '../src/resize.js';
 import { embedBundleRecipe, sameFiles, outputSummary, withRates } from '../src/export.js';
 import { shareLink, readEmbeddedRecipe, recipeKind } from '../src/share.js';
@@ -463,8 +463,10 @@ try {
       // Generated files use compact formatting: one line per frame, operation or short grid when it fits.
       const reads = command === 'import' ? filesRead(positional[0], options.atlas) : [...inputsOf(input), ...filesRead(options.changes, options.selections)];
       const written = await writeOutputs({ recipe: [options.out, formatJSON(value)], ...(options.metadata && { metadata: [options.metadata, formatJSON(metadata)] }), ...(testMap && { preview: [options.preview, encodePNG(testMap.data, testMap.width, testMap.height)] }) }, options.force, reads);
-      // The metadata goes to a file or nowhere: a rig's runs to a hundred kilobytes, which no reply should carry.
-      print({ ok: true, ...written, ...(kept && { kept }), ...(resized && { width: value.width, height: value.height, resized }), ...(warnings && { warnings }), ...(((metadata && !options.metadata) || (preview && !options.preview)) && { hint: [metadata && !options.metadata && `The metadata${warnings ? ' (what review tools and engines read: loop seams, pose contacts, tile masks)' : ''} was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
+      // The metadata goes to a file or nowhere: a rig's runs to a hundred kilobytes, which no reply should carry. The
+      // hint to save it comes only where a next step reads it: a rig's motion review, a tile set's masks, an import.
+      const reviewed = command !== 'compile' || ['pixelforge-poses', 'pixelforge-autotile', undefined].includes(input.document?.format);
+      print({ ok: true, ...written, ...(kept && { kept }), ...(resized && { width: value.width, height: value.height, resized }), ...(warnings && { warnings }), ...(((metadata && !options.metadata && reviewed) || (preview && !options.preview)) && { hint: [metadata && !options.metadata && reviewed && `The metadata${warnings ? ' (what review tools and engines read: loop seams, pose contacts, tile masks)' : ''} was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
     } else if (command === 'scene' && options.image !== undefined) {
       // One image at one time, as MCP pixel_scene returns it: color, grayscale or depth, with optional guides.
       if (options.out !== undefined || options['embed-recipe']) throw new Error('scene --image writes one image; export a bundle with --out instead');
@@ -580,7 +582,7 @@ try {
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
         const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
         const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile] });
-        print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), check, ...referenced(input) });
+        print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), check: briefCheck(check), ...referenced(input) });
       }
     }
   }

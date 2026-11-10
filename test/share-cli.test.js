@@ -14,7 +14,7 @@ import { createSceneBundle } from '../src/scene-export.js';
 import { decodePNG, importPNG } from '../src/import.js';
 import { resolveReferences } from '../src/resolve.js';
 import { startMCP } from '../src/mcp.js';
-import { checkDelivery } from '../src/check.js';
+import { checkDelivery, briefCheck } from '../src/check.js';
 import { LINK_LIMIT, PLAYGROUND_URL, RECIPE_KEYWORD, embedRecipe, readEmbeddedRecipe, readShareLink, shareLink } from '../src/share.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -97,7 +97,7 @@ test('CLI render embeds source in every PNG only on request, preserving every ot
     const input = source === '-' ? JSON.stringify(recipe) : undefined;
     const old = cli(['render', source, '--out', plain], { input });
     // The folder once, and its files relative to it without each frame, which the summary already names.
-    assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, ...summary(bundle.project, recipe), directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), check: checkDelivery(bundle.project, { recipe }) })));
+    assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, ...summary(bundle.project, recipe), directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/')), check: briefCheck(checkDelivery(bundle.project, { recipe })) })));
     await checkBundle(plain, bundle);
     const carried = cli(['render', source, '--out', embedded, '--embed-recipe'], { input });
     assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);

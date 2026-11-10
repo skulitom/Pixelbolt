@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { renderProject } from '../src/core.js';
 import { compileAutotile } from '../src/authoring.js';
-import { checkDelivery } from '../src/check.js';
+import { checkDelivery, briefCheck } from '../src/check.js';
 import { startMCP } from '../src/mcp.js';
 
 const check = (recipe, options = {}) => checkDelivery(renderProject(recipe), { recipe, ...options });
@@ -30,6 +30,12 @@ const coin = ellipses('coin', 16, [14, 13, 4, 3, 4, 13].map(w => { const x = Mat
 
 test('a hopping slime gets lift, uneven-step and nearly-the-same notes', () => {
   const result = check(slime);
+  // A reply keeps the boxes of an animation its notes are about, and drops those of one with nothing to say.
+  assert.deepEqual(briefCheck(result).motion, result.motion);
+  const clean = { ok: true, delivered: {}, motion: { ...result.motion, spin: { box: [], lowest: [] } }, notes: result.notes };
+  assert.deepEqual(Object.keys(briefCheck(clean).motion), ['idle']);
+  assert.deepEqual(briefCheck({ ok: true, delivered: {}, motion: result.motion }), { ok: true, delivered: {} });
+  assert.deepEqual(briefCheck({ ok: true }), { ok: true });
   assert.deepEqual(result.motion, { idle: { box: asBoxes(slimeBoxes), lowest: [27, 27, 27, 21, 18, 23, 27, 27] } });
   assert.deepEqual(steps(result.motion.idle.box), [4, 8, 6, 3, 5, 9, 2, 1]);
   assert.deepEqual(kinds(result.notes), ['lift', 'uneven', 'nearly']);

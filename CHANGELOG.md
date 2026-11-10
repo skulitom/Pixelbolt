@@ -4,6 +4,12 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Isometric art to start from
+
+- `examples/iso-tiles.json` is an isometric tile set on a 32×16 diamond: grass in four variants, stepping stones, a pond with moving glints, a wall block and a step, a crate, pines and saplings, bushes, boulders and contact shadows, all 32×64 frames with the cell in the last 16 rows. `examples/iso-glade.scene.json` lays them out as a small island: the ground, shadows that darken it one ramp step, what stands on it sorted by depth, and a coin hovering over a paver. The set is listed as a preset (`presets --find iso`), and both ship with the skill.
+- The craft notes have an `Isometric` section (`help craft "Isometric"`): the frame convention, proportions before detail, the three layers, where something in a cell stands and how to anchor it, and which legend options work in iso.
+- A preset's listing names the frames no animation plays (`stills`), so a tile set reads as more than its two water loops.
+
 ### Fix: the Aseprite extension draws smoke at an open edge as Pixelbolt does
 
 - The extension's Lua port lit smoke past an open canvas edge the old way, so after the bright-line fix it no longer matched Pixelbolt pixel for pixel: four of its 21 parity cases failed (the steam vent at its defaults, and the explosion, smoke puff and steam vent with changed settings). The port now reads the edge itself there, as `src/fluid.js` does, and all 21 cases match again.
@@ -14,6 +20,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - Several errors are each said once: `errors` is a list of messages that start with their paths, and `error` counts them. Before, the combined message said them all and `errors` said them again with the path twice.
 - The CLI prints every reply one way: an object or list that fits a line is on one line, longer lists of names wrap, and a path inside the working directory is written from it with forward slashes (`"recipe": "out/hero.json"`). `validate` and `render` no longer print one long line, and `patch`, `gif` and `compile` no longer print a line per number.
 - A frames mismatch in a render's `check` gives the per-animation hint once, with the first animation, not on every one.
+- A render's `check` carries the silhouette boxes (`motion`) only of the animations one of its notes is about. Beside a clean animation they were rows of numbers with nothing to say.
+- `compile` suggests `--metadata` only for a rig or a tile set, whose metadata a motion review or a game engine reads. An effect's compile reply is one line.
+- The skill says that `gif --sheet` writes a contact sheet to look at, and that a game's sprite sheet and atlas come from `render`.
+
+### A smaller package
+
+- The npm package ships the eight documents the tools and contributors read, not the whole `docs/` folder: 52 fewer files and about 400 KB less to download (reports, bug reports, tutorial images and publishing notes stay in the repository).
 
 ### Fewer frames in one option
 

@@ -340,6 +340,16 @@ function reviewMotion(project, names, boxes, drawn, recipe) {
 // project: the rendered project; recipe: its source (for animation directions and whether it names animations);
 // gifs: the animationGIF results written beside it, or undefined when the command writes no GIFs (the CLI's render);
 // animation: check only that animation and its frames.
+// A check as a reply carries it: the silhouette boxes only of the animations a note is about. The boxes are a note's
+// evidence, and beside an animation with nothing to say they are rows of numbers to read past.
+export function briefCheck(check) {
+  if (!check.motion) return check;
+  const cited = Object.entries(check.motion).filter(([key]) => check.notes?.some(note => note.includes(JSON.stringify(key))));
+  if (cited.length) return { ...check, motion: Object.fromEntries(cited) };
+  const { motion, ...rest } = check;
+  return rest;
+}
+
 export function checkDelivery(project, { recipe, gifs, expect, animation } = {}) {
   const { name, width, height, sheet, animations } = project, scale = sheet.scale;
   if (animation !== undefined && !Object.hasOwn(animations, animation)) throw new PixelError('animation', `no animation named "${animation}"; choose one of: ${Object.keys(animations).join(', ')}`);
