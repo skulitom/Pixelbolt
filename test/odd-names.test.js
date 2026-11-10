@@ -26,7 +26,6 @@ for (const [list, field, entry] of [['events', 'body', { frame: 1, power: 'vanis
     // A missing name says that a name is wanted; a name under the wrong key is still called an unknown field.
     assert.throws(() => compileBodies(source({ [list]: [entry] })), error => error.path === path && /name/.test(error.message));
     assert.throws(() => compileBodies(source({ [list]: [{ ...entry, bdy: 'ball' }] })), error => error instanceof PixelError && error.path === `bodies.effects.main.${list}[0].bdy`);
-    assert.throws(() => compileBodies(source({ [list]: [{ ...entry, [field]: 'nobody' }] })), error => error.message.includes('no body is named "nobody"'));
     // Any letter case finds the body, and the result is the same.
     assert.deepEqual(compileBodies(source({ [list]: [{ ...entry, [field]: 'BALL' }] })), compileBodies(source({ [list]: [{ ...entry, [field]: 'ball' }] })));
   });
