@@ -37,9 +37,17 @@ test('a sheet asked for as a size or a one-row strip fails on the default 8-colu
   assert.equal(unsaid.ok, true);
   assert.deepEqual(unsaid.delivered.sheet, { size: [512, 128], columns: 8, rows: 2 });
   assert.match(checkDelivery(renderProject(recipe), { recipe }).hint, /, sheet\)/);
-  // A sheet in one row says nothing about it.
+  // A sheet in one row, a grid the recipe chose, and a sheet expect checks (its problem says what came out) say nothing.
   assert.equal(check(strip(8), { frames: 8 }).delivered.sheet, undefined);
   assert.equal(check(strip(10, { sheet: { columns: 10 } }), { frames: 10 }).delivered.sheet, undefined);
+  assert.equal(check(strip(12, { sheet: { columns: 4 } }), { sheet: { columns: 4, rows: 3 } }).delivered.sheet, undefined);
+  assert.equal(check(strip(12, { sheet: { columns: 4 } }), {}).delivered.sheet, undefined);
+  assert.equal(check(recipe, { sheet: { rows: 1 } }).delivered.sheet, undefined);
+  // The sheet is the whole file, so checking one animation checks the same sheet.
+  const named = strip(10, { animations: { a: { frames: ['f0', 'f1'] }, b: { frames: ['f2', 'f3', 'f4'] } } });
+  const one = checkDelivery(renderProject(named), { recipe: named, expect: readExpect({ sheet: { rows: 1 } }), animation: 'a' });
+  assert.deepEqual([one.problems[0].got, one.problems[0].fix], [{ width: 512, height: 128, columns: 8, rows: 2 }, check(named, { sheet: { rows: 1 } }).problems[0].fix]);
+  assert.match(one.problems[0].fix, /^10 columns by 1 row/);
 });
 
 test('the sheet fix picks the fewest empty cells, keeps a recipe\'s own sheet fields, and agrees with the frame-size fix', () => {
@@ -83,8 +91,17 @@ test('a trimmed atlas, an impossible size and a frame size no scale makes each g
   const none = check(strip(10), { sheet: { width: 600, height: 64 } }).problems[0].fix;
   assert.match(none, /^no grid of these 10 frames makes that sheet: with 64x64 cells/);
   assert.doesNotMatch(none, /pixel_patch/);
-  // Frames of 50 px from a 64 px canvas: no whole scale, so the frame size comes first.
-  assert.match(check(strip(10), { width: 50, sheet: { rows: 1 } }).problems[1].fix, /^no whole sheet.scale makes the frame size asked for yet/);
+  // Frames of 50 px from a 64 px canvas: no whole scale, so a sheet asked by its size waits for the frame size, while
+  // one asked by columns or rows is fixed at the cells it has.
+  assert.match(check(strip(10), { width: 50, sheet: { width: 500, height: 50 } }).problems[1].fix, /^no whole sheet.scale makes the frame size asked for yet/);
+  assert.ok(check(strip(10), { width: 50, sheet: { rows: 1 } }).problems[1].fix.startsWith('10 columns by 1 row of 64x64 cells, a 640x64 sheet: pixel_patch {"set":"sheet","value":{"columns":10}}'));
+  // A frame size the export refuses at its scale (1,024 played frames at 320x320 pass its pixels): the sheet's fix
+  // never carries that scale.
+  const long = strip(10, { animations: { run: { frames: Array.from({ length: 1024 }, (_, i) => `f${i % 10}`) } } });
+  const refused = check(long, { width: 320, height: 320, sheet: { width: 3200, height: 320 } }).problems;
+  assert.match(refused[0].fix, /animation pixels/);
+  assert.equal(refused[1].fix, 'the frame size asked for is refused at sheet.scale 5 (its own problem says why): settle the frame size first, then render and check the sheet again');
+  assert.ok(check(long, { width: 320, height: 320, sheet: { rows: 1 } }).problems[1].fix.startsWith('10 columns by 1 row of 64x64 cells, a 640x64 sheet: pixel_patch {"set":"sheet","value":{"columns":10}}'));
   // A sheet past the atlas's pixels is refused, not offered.
   const huge = { ...strip(40), width: 256, height: 256, sheet: { scale: 2 } };
   assert.match(check(huge, { sheet: { columns: 256 } }).problems[0].fix, /^a 131072x512 sheet passes the 16,777,216 pixels an atlas holds: ask for fewer frames or a smaller size$/);
@@ -112,7 +129,7 @@ test('MCP pixel_render and CLI render check the sheet, and the fixed recipe writ
   assert.equal(result.status, 0, result.stderr);
   const [, wrapped, strip10, refused] = result.stdout.trim().split('\n').map(line => JSON.parse(line).result);
   const missed = JSON.parse(wrapped.content[0].text), passed = JSON.parse(strip10.content[0].text);
-  assert.deepEqual([missed.check.ok, missed.check.problems.map(problem => problem.file), missed.check.delivered.sheet], [false, ['blast.png'], { size: [512, 128], columns: 8, rows: 2 }]);
+  assert.deepEqual([missed.check.ok, missed.check.problems.map(problem => [problem.file, problem.got]), missed.check.delivered.sheet], [false, [['blast.png', { width: 512, height: 128, columns: 8, rows: 2 }]], undefined]);
   assert.equal(passed.check.ok, true);
   assert.deepEqual(pngSize(await readFile(path.join(passed.directory, 'blast.png'))), [640, 64]);
   assert.deepEqual([refused.isError, JSON.parse(refused.content[0].text).path], [true, 'expect.sheet.rows']);

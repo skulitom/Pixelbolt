@@ -71,8 +71,13 @@ function sheetProblem(project, expect, recipe) {
   const got = sheet.trim ? { width: sheet.width, height: sheet.height, trimmed: true } : { width: sheet.width, height: sheet.height, columns: sheet.columns, rows: rows(sheet.columns) };
   if (Object.entries(want).every(([key, value]) => got[key] === value)) return null;
   const problem = fix => ({ file: `${name}.png`, asked: want, got, fix });
-  const k = expect.width !== undefined || expect.height !== undefined ? wholeScale([[expect.width, width], [expect.height, height]], SCALE) : sheet.scale;
-  if (k === null) return problem('no whole sheet.scale makes the frame size asked for yet: fix the frame size first (its own problem), then render and check the sheet again');
+  let k = expect.width !== undefined || expect.height !== undefined ? wholeScale([[expect.width, width], [expect.height, height]], SCALE) : sheet.scale;
+  // A frame size no whole scale makes, or one the export refuses: a sheet asked by its size waits for it, while a
+  // grid asked by columns or rows alone doesn't depend on the cells' size.
+  if (k === null || (k !== sheet.scale && exportBudget(project, width, height, k, recipe))) {
+    if (want.width !== undefined || want.height !== undefined) return problem(k === null ? 'no whole sheet.scale makes the frame size asked for yet: fix the frame size first (its own problem), then render and check the sheet again' : `the frame size asked for is refused at sheet.scale ${k} (its own problem says why): settle the frame size first, then render and check the sheet again`);
+    k = sheet.scale;
+  }
   const cellW = (width + sheet.padding * 2) * k, cellH = (height + sheet.padding * 2) * k;
   const cells = `${cellW}x${cellH} cells${sheet.padding ? ` (each frame with ${sheet.padding * k} px of padding a side)` : ''}`;
   const fits = c => (want.width === undefined || c * cellW === want.width) && (want.height === undefined || rows(c) * cellH === want.height) && (want.columns === undefined || c === want.columns) && (want.rows === undefined || rows(c) === want.rows);
@@ -433,8 +438,9 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     colors: colors.size, transparent: clearOpen.length === open.length ? true : clearOpen.length ? 'some frames' : false,
     ...(seeThrough.length && { partlyTransparent: seeThrough.length === frames.length ? true : 'some frames' }),
     ...(gifs?.length && { gifs: [gifs[0].width, gifs[0].height] }),
-    // A grid that wraps into more rows is said, since a one-row strip is what a sheet of frames often means.
-    ...(!sheet.trim && project.frames.length > sheet.columns && { sheet: { size: [sheet.width, sheet.height], columns: sheet.columns, rows: Math.ceil(project.frames.length / sheet.columns) } })
+    // A default grid that wraps into more rows is said, since a one-row strip is what a sheet of frames often means;
+    // not when the recipe chose its columns, or when expect.sheet checks the sheet (its problem says what came out).
+    ...(!sheet.trim && project.frames.length > sheet.columns && recipe?.sheet?.columns === undefined && expect?.sheet === undefined && { sheet: { size: [sheet.width, sheet.height], columns: sheet.columns, rows: Math.ceil(project.frames.length / sheet.columns) } })
   };
   const frameFiles = `${name}.png, frames/ and animations/`;
   // Nothing visible at all is never a delivery, whatever was asked: it is a problem even without expect. A few empty
