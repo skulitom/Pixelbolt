@@ -1,0 +1,28 @@
+Searches this page answers, run 2026-11-10 at about 15:23 GMT with Claude's web search (standard mode, US results).
+No page of ours appeared in any of them.
+
+1. "pixel art waterfall animation"
+   Ranked: slynyrd.com Pixelblog 10 "Water in Motion"; opengameart.org "animated water tiles"; heosphorus.itch.io
+   "Animated Waterfalls"; flibblypibbles.itch.io "Animated Water Fall - Green"; pixie.haus (five scene pages);
+   sylvainhb.blogspot.com (2015); opengameart.org comments and "waterfall 0"; budgetpixel.com (rain in 4 frames);
+   jomi13.itch.io "waterfall animated"; summerengine.com "pixel waterfall loop sprite sheet".
+   Summary: "Most results are asset listings and reference galleries. I found few step-by-step guides specific to
+   waterfalls."
+2. "free pixel art waterfall sprite sheet"
+   Ranked: flibblypibbles.itch.io; jomi13.itch.io; summerengine.com (two languages); phxxxxx.itch.io "pixel art
+   waterfall assets sheets pack"; gandalfhardcore.itch.io devlog; seliel-the-shaper.itch.io devlog; creativemarket.com
+   (two); assetstore.unity.com; construct.net; ivan-nogueirra.itch.io; zedpixel.itch.io; nyknck.itch.io "waterfall
+   sprite"; opengameart.org "animated water tiles"; magnific.com (two); captainskolot.itch.io; pixie.haus.
+   Summary: named NYKNCK, GandalfHardcore, Seliel, OpenGameArt and JoMI as free options. "Check each license before
+   using the art commercially."
+3. "waterfall pixel art gif sprite sheet download CC0"
+   Ranked: jomi13.itch.io; flibblypibbles.itch.io; summerengine.com (three); heosphorus.itch.io; opengameart.org
+   "waterfall 0", "animated water platformer 16x16", "animated flowing water 2d 16x16", "animated water tiles",
+   "animated ocean water tile"; nyknck.itch.io; zedpixel.itch.io; ivan-nogueirra.itch.io; creativemarket.com;
+   captainskolot.itch.io; pixie.haus (three).
+   Summary: "No result matched exactly (a CC0 waterfall set with both a GIF and a sprite sheet)."
+4. "how to make a pixel art waterfall animation loop"
+   Ranked: slynyrd.com Pixelblog 10; budgetpixel.com; taylorfrancis.com (a book chapter); krita-artists.org (two);
+   creativebloq.com; magichour.ai; schoolofmotion.com (two); itch.io blog and forum posts; heosphorus.itch.io;
+   design.tutsplus.com; sylvainhb.blogspot.com; pixnote.net and others.
+   Summary: "The search didn't turn up a step-by-step guide for a looping pixel-art waterfall."

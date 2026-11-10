@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/</loc>
-    <lastmod>2026-11-09</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/</loc>
@@ -27,7 +27,11 @@
   <url><loc>https://skulitom.github.io/Pixelbolt/playground/</loc><lastmod>2026-10-25</lastmod></url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/</loc>
-    <lastmod>2026-11-08</lastmod>
+    <lastmod>2026-11-10</lastmod>
+  </url>
+  <url>
+    <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/</loc>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/</loc>
@@ -43,27 +47,27 @@
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-fire-animation/</loc>
-    <lastmod>2026-10-28</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-explosion/</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-smoke-and-steam/</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-water-animation/</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-slime-and-honey/</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-magic-effects/</loc>
-    <lastmod>2026-10-25</lastmod>
+    <lastmod>2026-11-10</lastmod>
   </url>
   <url><loc>https://skulitom.github.io/Pixelbolt/playground/fluids/</loc><lastmod>2026-10-28</lastmod></url>
 </urlset>
