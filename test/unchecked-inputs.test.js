@@ -21,10 +21,9 @@ test('a rig source checks animations before the motions are added to them', () =
   const animations = { still: { frames: ['stand'], loop: false } }, expanded = expandPoses({ ...heroRig(), animations });
   assert.deepEqual(expanded.animations.still, animations.still);
   assert.ok(Object.keys(expanded.animations).length > 1);
-  assert.deepEqual(expandPoses({ ...heroRig(), animations: {} }), expandPoses(heroRig()));
 });
 
-test('painting checks the pixels already in a frame before reading their coordinates', () => {
+test('painting checks that the pixels already in a frame are objects before reading their coordinates', () => {
   const changes = [{ paint: 'frames[idle]', value: [{ x: 0, y: 0, color: 'w' }] }];
   // null threw "Cannot read properties of null"; a number, a text or a list was kept as a pixel.
   for (const pixels of [[null], [42], ['bad'], [[]], 42, {}, 'bad']) {

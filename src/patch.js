@@ -177,7 +177,7 @@ export function patchRecipe(recipe, changes) {
       if (!Array.isArray(entries) || (verb === 'paint' && !entries.length) || entries.length > 131072) fail(`${where}.value`, verb === 'paint' ? 'paint needs 1–65,536 pixels with x, y and color' : 'expected a bounded pixel list');
       if (verb === 'paint' && entries.length > 65536) fail(`${where}.value`, 'paint needs 1–65,536 pixels with x, y and color');
       const frame = parent[slot];
-      if (frame.pixels !== undefined && (!Array.isArray(frame.pixels) || frame.pixels.some(pixel => !isObject(pixel)))) fail(target, `${path}.pixels must be a list of pixels with x, y and color`);
+      if (frame.pixels !== undefined && (!Array.isArray(frame.pixels) || frame.pixels.some(pixel => !isObject(pixel)))) fail(target, `${path}.pixels must be a list of pixel objects`);
       // Keep one correction per coordinate. Later paint replaces an earlier correction, without touching layers.
       const pixels = new Map((frame.pixels ?? []).map(pixel => [`${pixel.x},${pixel.y}`, pixel]));
       entries.forEach((pixel, j) => {

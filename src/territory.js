@@ -136,8 +136,8 @@ export function readEvents(list, path, context, bodies) {
   return list.map((entry, i) => {
     const p = `${path}[${i}]`;
     if (!isObject(entry)) fail(p, 'expected { frame, body, power, … }');
-    if (typeof entry.body !== 'string') fail(`${p}.body`, "expected a body's name");
     fields(entry, ['frame', 'body', ...POWER_FIELDS], p);
+    if (typeof entry.body !== 'string') fail(`${p}.body`, 'expected a body\'s name');
     const index = bodies.findIndex(b => b.name !== null && b.name.toLowerCase() === entry.body.toLowerCase());
     if (index < 0) fail(`${p}.body`, `no body is named ${JSON.stringify(entry.body)}`);
     if (bodies[index].fixed && entry.power !== 'vanish' && entry.power !== 'break') fail(`${p}.body`, `${entry.body} is fixed; powers go to bodies that move freely (a fixed body can only vanish or break)`);
@@ -154,8 +154,8 @@ export function readStrikes(list, path, context, bodies) {
   return list.map((entry, i) => {
     const p = `${path}[${i}]`;
     if (!isObject(entry)) fail(p, 'expected { by, power, … }');
-    if (typeof entry.by !== 'string') fail(`${p}.by`, "expected a body's name");
     fields(entry, ['by', 'rest', 'from', 'until', 'cut', ...POWER_FIELDS], p);
+    if (typeof entry.by !== 'string') fail(`${p}.by`, 'expected a body\'s name');
     const index = bodies.findIndex(b => b.name !== null && b.name.toLowerCase() === entry.by.toLowerCase());
     if (index < 0) fail(`${p}.by`, `no body is named ${JSON.stringify(entry.by)}; a strike names the body whose pushes give the power`);
     const from = integer(entry.from ?? 0, `${p}.from`, 0, 18000), until = entry.until === undefined ? null : integer(entry.until, `${p}.until`, from + 1, 18001);
