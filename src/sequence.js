@@ -263,18 +263,19 @@ export function createSequence(project, options = {}) {
 // frame and drawn straight to video frames, never kept as a recipe, so it may run past a recipe's 256 frames (up to
 // MATCH_FRAMES). It plays once and holds its last frame. info.figures carries the match's metadata (hits, the score).
 // `budget`, for a caller with a time limit (MCP), is the most pixels of different frames it may write; past it the call
-// is refused before simulating, naming the command line, which has no limit. With `stream` (the command line), each
+// is refused before simulating, naming the command line, which has no limit: `command`, the CLI as the caller runs it
+// (MCP names its own version, so the line runs the same release). With `stream` (the command line), each
 // frame is simulated, drawn and encoded as writeBundle writes it, and only one is held at a time, so a match is bounded
 // by its frames alone; without it, every frame's PNG is kept until the call returns, up to MAX_UNIQUE_PIXELS.
-export function createBodiesSequence(source, options = {}, { budget = Infinity, stream = false } = {}) {
+export function createBodiesSequence(source, options = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
   const rate = common(options, KEYS.filter(key => key !== 'loops' && key !== 'step')), match = bodiesFrames(source, options.animation);
   const plan = planSequence(new Array(match.frames).fill(match.duration), { fps: rate, loop: false, seconds: options.seconds });
   // Every frame of a match differs, and a sequence made in memory keeps each different frame's PNG: say so before
   // simulating, not a minute in.
   const place = placeSprite(match.width, match.height, options), different = new Set(plan.poses).size, fits = Math.floor(MAX_UNIQUE_PIXELS / (place.width * place.height));
-  if (!stream && different > fits) fail('sequence', `the match shows ${different} different frames at ${place.width}×${place.height}; a sequence made in one call holds at most ${fits} at that size (about ${Math.floor(fits * rate.denominator / rate.numerator)} seconds at ${rate.label} frames a second). Run it on the command line, which writes each frame as it is made: npx -y pixelbolt sequence <source.json> --out <new folder> --fps ${rate.label}${options.size ? ` --size ${options.size}` : ''}; or use a smaller size, a lower frame rate or fewer frames`);
+  if (!stream && different > fits) fail('sequence', `the match shows ${different} different frames at ${place.width}×${place.height}; a sequence made in one call holds at most ${fits} at that size (about ${Math.floor(fits * rate.denominator / rate.numerator)} seconds at ${rate.label} frames a second). Run it on the command line, which writes each frame as it is made: ${command} sequence <source.json> --out <new folder> --fps ${rate.label}${options.size ? ` --size ${options.size}` : ''}; or use a smaller size, a lower frame rate or fewer frames`);
   const most = Math.floor(budget / (place.width * place.height));
-  if (different > most) fail('sequence', `the match shows ${different} different frames at ${place.width}×${place.height}, more than one call draws in its time (about ${most} at that size). Run it on the command line, which has no time limit: npx -y pixelbolt sequence <source.json> --out <new folder> --fps ${rate.label}${options.size ? ` --size ${options.size}` : ''}; or use a smaller size, a lower frame rate or fewer frames`);
+  if (different > most) fail('sequence', `the match shows ${different} different frames at ${place.width}×${place.height}, more than one call draws in its time (about ${most} at that size). Run it on the command line, which has no time limit: ${command} sequence <source.json> --out <new folder> --fps ${rate.label}${options.size ? ` --size ${options.size}` : ''}; or use a smaller size, a lower frame rate or fewer frames`);
   let shown = -1, picture = null;
   const built = build(`${match.name}-${match.effect}`, match.width, match.height, plan.count, frame => {
     const pose = plan.poses[frame];
