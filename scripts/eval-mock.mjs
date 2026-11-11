@@ -41,10 +41,21 @@ export async function mockServer(text) {
   const presets = await presetEntries(), kinds = new Map();
   for (const { name, kind } of presets) kinds.set(kind, [...(kinds.get(kind) ?? []), name]);
   const facts = await withServer(async request => {
-    const reply = async (name, args) => (await request('tools/call', { name, arguments: args })).content[0].text;
+    // Each probe is a wrong call, so its reply must be a tool error.
+    const reply = async (name, args) => {
+      const result = await request('tools/call', { name, arguments: args });
+      if (!result.isError) throw new Error(`${name} ${JSON.stringify(args)} is no longer refused: update the facts in scripts/eval-mock.mjs`);
+      return result.content[0].text;
+    };
+    // A list the error ends with, after `lead`.
+    const listed = (text, lead) => {
+      const at = text.indexOf(lead);
+      if (at < 0) throw new Error(`the error ${text} no longer ends with "${lead}<list>": update the facts in scripts/eval-mock.mjs`);
+      return text.slice(at + lead.length).split(', ');
+    };
     const op = async value => JSON.parse(await reply('pixel_validate', { project: { version: 1, name: 'probe', width: 4, height: 4, palette: { k: '#000' }, frames: [{ name: 'a', ops: [{ op: value, x: 1, y: 1 }] }] } }));
-    const ops = (await op(5)).error.split('operations: ')[1].split(', ');
-    const topics = JSON.parse(await reply('pixel_help', { topic: 'unknown' })).error.split('expected one of ')[1].split(', ');
+    const ops = listed((await op(5)).error, 'operations: ');
+    const topics = listed(JSON.parse(await reply('pixel_help', { topic: 'unknown' })).error, 'expected one of ');
     const code = value => `\`${value}\``;
     return [
       `- The ops are exactly these ${ops.length}: ${ops.map(code).join(', ')}. Any other \`op\` is an error that suggests the nearest one, for example ${code(JSON.stringify(await op('circle')))}.`,
