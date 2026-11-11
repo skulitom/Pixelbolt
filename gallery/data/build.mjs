@@ -11,33 +11,41 @@ import { createHash } from 'node:crypto';
 const gallery = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const root = path.dirname(gallery);
 const work = path.join(root, '_work', 'gallery-build');
-const VERSION = '0.11.0', DATE = '2026-11-04';
+const VERSION = '0.15.0', DATE = '2026-11-11';
 const SITE = 'https://skulitom.github.io/Pixelbolt/';
 const REPO = 'https://github.com/skulitom/Pixelbolt';
 const RAW = `https://raw.githubusercontent.com/skulitom/Pixelbolt/v${VERSION}/`;
 const NPX = `npx -y pixelbolt@${VERSION}`;
 const BG = [27, 29, 42, 255];
 const groups = [
-  ['phase-changes', 'Phase changes', 'ice-melt pond-freeze boiling-pot frost-window dry-ice'],
-  ['electricity', 'Electricity', 'jacobs-ladder lightning tesla-coil plasma-globe lightning-pond'],
-  ['fire-smoke-gas', 'Fire, smoke and gas', 'campfire torch steam-vent magic-swirl explosion smoke-puff dust-wave'],
-  ['liquids', 'Liquids', 'waterfall drip potion splash honey slime roof-snow dam-break slime-burst honey-drop aquarium honey-dipper glug'],
+  ['falling-sand', 'Falling sand', 'hut-fire lava-falls stilt-hut rain-on-fire quarry-blast'],
+  ['phase-changes', 'Phase changes', 'ice-melt pond-freeze boiling-pot frost-window dry-ice', true],
+  ['electricity', 'Electricity', 'jacobs-ladder lightning plasma-globe lightning-pond', true],
+  ['fire-smoke-gas', 'Fire, smoke and gas', 'campfire torch steam-vent magic-swirl explosion smoke-puff dust-wave', true],
+  ['liquids', 'Liquids', 'waterfall drip potion splash honey slime roof-snow dam-break slime-burst honey-drop aquarium honey-dipper glug', true],
+  ['sand-grains', 'Sand grains', 'hourglass sand-gate sand-plough', true],
+  ['bodies-in-fluid', 'Bodies in a fluid', 'crate-splash sand-slide water-wheel hot-stone plank-tip', true],
+  ['rigid-bodies', 'Rigid bodies, ropes and cloth', 'ring-escape bouncing-pixel spinning-hoop crate-topple crate-smash territory blade-bloom rope-bridge wrecking-ball ragdoll flag cape'],
+  ['crystal-growth', 'Crystal growth', 'geode quartz-cluster pyrite snowflakes'],
   ['particle-spell-effects', 'Particle and spell effects', 'effects fire-explosion fire-spells fireball fluid-blast healing-circle hero-magic holy-spells ice-spells lightning-spells lightning-strike meteor poison-spells shadow-spells shield slash-hit swing-trail vortex water water-spells'],
   ['waves', 'Waves', 'interference portal'],
-  ['characters-motion', 'Characters and motion', 'hero slime-idle swing'],
+  ['characters-motion', 'Characters and motion', 'hero knight hero-sword fox hermit-chest slime-idle swing'],
   ['hand-drawn-sprites', 'Hand-drawn sprites', 'coin ember shrine forest-spirit'],
-  ['tile-sets', 'Tile sets', 'ground meadow shore'],
-  ['scenes', 'Scenes', 'forest-spirit-lit room room-night wave-scene']
-].map(([id, name, names], i) => ({ id, name, names: names.split(' '), fluid: i < 4 }));
+  ['tile-sets', 'Tile sets', 'ground meadow shore iso-tiles'],
+  ['scenes', 'Scenes', 'forest-spirit-lit iso-glade room room-night wave-scene']
+].map(([id, name, names, fluid = false]) => ({ id, name, names: names.split(' '), fluid }));
+// The fluid groups are adjacent and sit under one "Fluid simulations" heading.
+const fluidGroups = groups.filter(g => g.fluid).map(g => g.id);
 const extras = [
   { name: 'forest-spirit', kind: 'recipe', file: 'examples/forest-spirit.json', for: 'A hand-drawn forest spirit: idle, bob and blink.' },
   ...['ground', 'meadow', 'shore'].map(name => ({ name, kind: 'autotile', file: `examples/${name}.autotile.json`, for: ({ ground: 'Side-view platformer ground with slopes, stones and collision boxes, on its test map.', meadow: 'A top-down meadow over dirt with rare flowers, on its test map.', shore: 'A layered shore of water, sand and grass, on its test map.' })[name] })),
   { name: 'forest-spirit-lit', kind: 'scene', file: 'examples/forest-spirit-lit.scene.json', for: 'A forest spirit lit through its normal pass.' },
+  { name: 'iso-glade', title: 'Isometric glade', kind: 'scene', file: 'examples/iso-glade.scene.json', for: 'An isometric glade laid out on a 2:1 diamond grid from the iso tile set, with a coin hovering over one cell.' },
   { name: 'room', title: 'Diorama room', kind: 'scene', file: 'showcase/diorama/art/room.scene.json', copyGif: 'docs/images/diorama/room.gif', copyStill: 'docs/images/diorama/room.png', for: 'A dungeon diorama with a waterfall, torches and a hero breaking a pot.' },
   { name: 'room-night', title: 'Diorama by torchlight', kind: 'scene', file: 'showcase/diorama/art/room-night.scene.json', copyGif: 'docs/images/diorama/room-night.gif', copyStill: 'docs/images/diorama/room-night.png', for: 'Torches and candles flicker; the room flashes when the hero breaks a pot.' },
   { name: 'wave-scene', title: 'Wave scene', kind: 'scene', file: 'showcase/waves/scene.scene.json', copyGif: 'showcase/waves/scene.gif', copyStill: 'showcase/waves/scene.png', for: 'Paired cyan waves and a violet portal in a small game scene.' }
 ];
-const candidates = 'campfire torch steam-vent magic-swirl waterfall potion honey drip plasma-globe jacobs-ladder tesla-coil boiling-pot aquarium vortex shield portal'.split(' ');
+const candidates = 'campfire torch steam-vent magic-swirl waterfall potion honey drip plasma-globe jacobs-ladder boiling-pot aquarium vortex shield portal'.split(' ');
 const omitted = [
   { file: 'examples/quality/', reason: 'not shown' },
   { file: 'examples/caption.json', reason: 'old caption' },
@@ -45,6 +53,8 @@ const omitted = [
   { file: 'examples/swing.json', reason: 'compiled copy of swing.poses.json' },
   { file: 'examples/forest-spirit-normal.json', reason: 'lighting pass used by the lit scene' },
   { file: 'examples/forest-spirit.normals.json', reason: 'lighting normal source for the lit scene' },
+  { file: 'examples/fix-one-frame/', reason: 'inputs of the fix-one-frame walk-through', url: `${REPO}/blob/v${VERSION}/docs/fix-one-frame.md` },
+  { file: 'examples/*.brief.md', reason: 'design briefs for the fox, hero and knight rigs' },
   { file: 'showcase/gallery/', reason: 'room generator scripts are not in the repository', url: `${REPO}/tree/v${VERSION}/showcase/gallery` }
 ];
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -57,7 +67,7 @@ const title = name => TITLES[name] ?? name.split('-').map(s => s[0].toUpperCase(
 const scaleFor = (w, h) => Math.max(1, Math.min(4, Math.ceil(128 / Math.max(w, h))));
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
 const lcm = (a, b) => a / gcd(a, b) * b;
-let engine, cli, api, commandCount = 0;
+let engine, cli, api, playground, commandCount = 0;
 const warnings = [], projects = new Map();
 
 async function filesUnder(directory) {
@@ -241,7 +251,7 @@ async function makePiece(input, readmeAlts) {
   // People read the card: the README's own sentence where there is one, else the preset text without its agent-facing
   // tail (the facts line already says loop or one-shot).
   piece.description = readmeAlts.has(piece.name) ? `${readmeAlts.get(piece.name)}.` : piece.for.replace(/ A simulated (liquid, not a character|gas)\.$/, '').replace(/ · (loop|one-shot)\.$/, '.');
-  piece.altSource = piece.kind === 'fluid' && readmeAlts.has(piece.name) ? 'README.md: first matching fluid image' : 'description';
+  piece.altSource = readmeAlts.has(piece.name) ? 'README.md: first matching showcase image' : 'description';
   if (piece.kind === 'fluid' && !readmeAlts.has(piece.name)) warnings.push(`${piece.name}: README has no matching fluid image; alt text uses the preset description.`);
   const shared = run(['share', source], directory, true);
   piece.playground = shared.link ?? null;
@@ -249,7 +259,11 @@ async function makePiece(input, readmeAlts) {
   piece.playgroundReason = shared.tooLong ? `${shared.characters} characters exceeds the 16384-character playground limit` : null;
   if (shared.tooLong) {
     piece.download = `data/recipes/${piece.name}.json`;
-    await writeJSON(path.join(gallery, piece.download), (await resolved(source)).document);
+    const document = (await resolved(source)).document;
+    await writeJSON(path.join(gallery, piece.download), document);
+    // The playground's own check: it opens fluid, fx, poses, scene, autotile and normals sources, but not every
+    // source format (falling sand and rigid bodies compile only with the CLI or MCP).
+    try { playground.recipeKind(document); piece.playgroundOpens = true; } catch { piece.playgroundOpens = false; }
   }
   piece.images = [];
   if (piece.kind === 'scene') {
@@ -391,7 +405,7 @@ async function makeMontage() {
 function page(manifest) {
   const count = manifest.pieces.length, heading = `${count} pixel art effects, sprites and scenes, every one a recipe`;
   const pageTitle = `Pixel art effects gallery: ${count} animated recipes made with Pixelbolt`;
-  const description = `Explore ${count} Pixelbolt ${VERSION} effects, sprites, tile sets and scenes, with animated previews, editable JSON recipes, browser playground links and tested export commands.`;
+  const description = `Explore ${count} Pixelbolt ${VERSION} pixel art effects, from falling sand, fluids, rigid bodies and crystals to sprites, tile sets and scenes, with animated previews, editable JSON recipes, browser playground links and tested export commands.`;
   const montageAlt = `Looping pixel art: ${manifest.montage.pieces.map(p => title(p.name)).join(', ')}.`;
   const schema = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: pageTitle, description, url: `${SITE}gallery/`, inLanguage: 'en', dateModified: DATE,
     isPartOf: { '@type': 'WebSite', name: 'Pixelbolt', url: SITE }, about: { '@type': 'SoftwareApplication', name: 'Pixelbolt', url: REPO, applicationCategory: 'MultimediaApplication', softwareVersion: VERSION, license: 'https://opensource.org/licenses/MIT' },
@@ -399,7 +413,9 @@ function page(manifest) {
   let imageIndex = 1; // The montage is the first image; defer everything after the first six.
   function card(p, level) {
     const images = p.images.map(i => `<figure class="stage">${i.still ? `<picture><source srcset="${esc(i.still)}" media="(prefers-reduced-motion: reduce)">` : ''}<img src="${esc(i.path)}" width="${i.width * 2}" height="${i.height * 2}" alt="${esc(p.alt + (p.images.length > 1 ? ` Animation: ${i.animation}.` : ''))}"${imageIndex++ >= 6 ? ' loading="lazy"' : ''} decoding="async">${i.still ? '</picture>' : ''}<figcaption>${p.images.length > 1 ? `${esc(i.animation)} · ` : ''}${esc(i.plays)}</figcaption></figure>`).join('\n');
-    const open = p.playground ? `<a class="open" href="${esc(p.playground)}">Open in the playground</a>` : `Too long for a link: <a href="${esc(p.download)}" download>download the recipe</a> and use Open file in the <a href="${SITE}playground/">playground</a>.`;
+    const open = p.playground ? `<a class="open" href="${esc(p.playground)}">Open in the playground</a>`
+      : p.playgroundOpens ? `Too long for a link: <a href="${esc(p.download)}" download>download the recipe</a> and use Open file in the <a href="${SITE}playground/">playground</a>.`
+      : `Too long for a playground link: <a href="${esc(p.download)}" download>download the source</a> to edit, or run the export commands below.`;
     return `<article class="card" id="${esc(p.name)}">
 <h${level}>${esc(p.title)}</h${level}>
 <p>${esc(p.description)}</p>
@@ -412,8 +428,9 @@ ${p.factsNote ? `<p class="muted">${esc(p.factsNote)}</p>` : ''}
 <details><summary>Export commands</summary><pre><code>${esc(p.commands.join('\n'))}</code></pre></details>
 </article>`;
   }
-  const sections = groups.map((g, i) => `${i === 0 ? '<section aria-labelledby="fluid-simulations"><h2 id="fluid-simulations">Fluid simulations</h2>\n<p>A deterministic simulation on your CPU bakes gases, FLIP liquids, heat and phase change, and electric gas into palette pixels.</p>\n' : ''}<section aria-labelledby="${g.id}"><h${g.fluid ? 3 : 2} id="${g.id}">${esc(g.name)} <span class="count">(${manifest.groups.find(row => row.id === g.id).count})</span></h${g.fluid ? 3 : 2}>
-<div class="cards">${manifest.pieces.filter(p => p.groupId === g.id).map(p => card(p, g.fluid ? 4 : 3)).join('\n')}</div></section>${i === 3 ? '\n</section>' : ''}`).join('\n');
+  const firstFluid = fluidGroups[0], lastFluid = fluidGroups.at(-1);
+  const sections = groups.map(g => `${g.id === firstFluid ? '<section aria-labelledby="fluid-simulations"><h2 id="fluid-simulations">Fluid simulations</h2>\n<p>A deterministic simulation on your CPU bakes gases, FLIP liquids and sand grains, heat and phase change, electric gas, and bodies that float, sink or ride the flow into palette pixels.</p>\n' : ''}<section aria-labelledby="${g.id}"><h${g.fluid ? 3 : 2} id="${g.id}">${esc(g.name)} <span class="count">(${manifest.groups.find(row => row.id === g.id).count})</span></h${g.fluid ? 3 : 2}>
+<div class="cards">${manifest.pieces.filter(p => p.groupId === g.id).map(p => card(p, g.fluid ? 4 : 3)).join('\n')}</div></section>${g.id === lastFluid ? '\n</section>' : ''}`).join('\n');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -482,8 +499,8 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <p class="muted">One-shot effects play once in a game; here their previews loop, with a 0.8 s pause before each replay. Each card shows up to four animations; the recipe includes those listed under “also”. Export commands write sprite sheets, atlases, Godot files and frames; tile sets include terrain exports, and scenes include asset bundles and numbered scene frames.</p>
 ${sections}
 <footer class="muted">
-<p>Plain static page: no JavaScript, trackers or cookies. Rendered with Pixelbolt ${VERSION} on 4 November 2026 by <a href="data/build.mjs">gallery/data/build.mjs</a>. <a href="data/pieces.json">Gallery manifest</a>.</p>
-<p>Not shown: <code>examples/quality/</code>, old <code>caption.json</code>, compiled copies <code>effects.json</code> and <code>swing.json</code>, the two forest-spirit lighting passes, and the <a href="${REPO}/tree/v${VERSION}/showcase/gallery">showcase/gallery rooms</a> (their generator scripts are not in the repository).</p>
+<p>Plain static page: no JavaScript, trackers or cookies. Rendered with Pixelbolt ${VERSION} on ${new Date(`${DATE}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })} by <a href="data/build.mjs">gallery/data/build.mjs</a>. <a href="data/pieces.json">Gallery manifest</a>.</p>
+<p>Not shown: <code>examples/quality/</code>, old <code>caption.json</code>, compiled copies <code>effects.json</code> and <code>swing.json</code>, the two forest-spirit lighting passes, the inputs of the <a href="${REPO}/blob/v${VERSION}/docs/fix-one-frame.md">fix-one-frame walk-through</a>, the rigs' design briefs, and the <a href="${REPO}/tree/v${VERSION}/showcase/gallery">showcase/gallery rooms</a> (their generator scripts are not in the repository).</p>
 <p><a href="${REPO}">GitHub</a> · <a href="${REPO}/issues/new">Report a mistake</a></p>
 </footer>
 </main>
@@ -521,11 +538,12 @@ async function report() {
 }
 async function main() {
   const args = process.argv.slice(2);
-  assert(args.length === 2 && args[0] === '--engine', 'Usage: node gallery/data/build.mjs --engine <Pixelbolt-0.11.0-folder>');
+  assert(args.length === 2 && args[0] === '--engine', `Usage: node gallery/data/build.mjs --engine <Pixelbolt-${VERSION}-folder>`);
   engine = await fs.realpath(path.resolve(args[1])); cli = path.join(engine, 'bin', 'pixelbolt.js');
   assert((await json(path.join(engine, 'package.json'))).version === VERSION, `Expected Pixelbolt ${VERSION}`);
   const modules = await Promise.all(['core', 'resolve', 'png', 'gif', 'import', 'presets'].map(name => import(pathToFileURL(path.join(engine, 'src', `${name}.js`)))));
   api = Object.assign({}, ...modules);
+  playground = await import(pathToFileURL(path.join(root, 'playground', 'share.js')));
   await resetDirectory(work, path.dirname(work));
   console.log('Measuring shipped presets and checking group coverage…');
   // Unlike the CLI's time-budgeted listing, this always measures every preset.
@@ -536,11 +554,13 @@ async function main() {
   assert(new Set(assigned).size === assigned.length, 'A piece is assigned to more than one group');
   for (const p of inputs) assert(assigned.includes(p.name), `Unassigned ${p.preset ? 'preset' : 'piece'}: ${p.name}`);
   for (const name of assigned) assert(names.has(name), `Group names a piece that does not exist: ${name}`);
+  const fluidAt = groups.flatMap((g, i) => g.fluid ? [i] : []);
+  assert(fluidAt.length && fluidAt.every((at, i) => !i || at === fluidAt[i - 1] + 1), 'The fluid groups must be adjacent');
   for (const p of inputs) assert((await fs.stat(path.join(engine, p.file))).isFile(), `Missing source: ${p.file}`);
   await resetDirectory(path.join(gallery, 'gifs'), gallery);
   await resetDirectory(path.join(gallery, 'data', 'recipes'), path.join(gallery, 'data'));
   const readme = await fs.readFile(path.join(engine, 'README.md'), 'utf8'), readmeAlts = new Map();
-  for (const match of readme.matchAll(/!\[([^\]]*)\]\([^\s)]*showcase\/fluid\/([^/()]+)\.gif\)/g)) if (!readmeAlts.has(match[2])) readmeAlts.set(match[2], match[1]);
+  for (const match of readme.matchAll(/!\[([^\]]*)\]\([^\s)]*showcase\/(?:fluid|powder|bodies|crystals)\/([^/()]+)\.gif\)/g)) if (!readmeAlts.has(match[2])) readmeAlts.set(match[2], match[1]);
   const pieces = [];
   for (const name of assigned) {
     console.log(`[${pieces.length + 1}/${inputs.length}] ${name}: verify exports, share and render previews`);
