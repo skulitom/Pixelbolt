@@ -103,8 +103,7 @@ export function tiledTileset(source, { oneShots = true } = {}) {
       else animated.set(animation.frames[0], animation.frames);
     }
   } else for (const [key, animation] of Object.entries(atlas.animations ?? {})) {
-    // Frames an earlier animation passes through don't hold this one back (in either order, both play), so its later
-    // frames are covered whether or not they start or pass through another.
+    // Frames an earlier animation passes through don't hold this one back: in either order, both play.
     const sequence = animation.frames, start = kind(sequence[0]);
     if (sequence.length < 2 || start === null || sequence.some(frame => kind(frame) !== start)) continue;
     if (!animation.loop) stopping.push(key);
