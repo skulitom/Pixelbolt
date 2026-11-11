@@ -11,7 +11,7 @@ import { MAX_REQUEST_BYTES } from '../src/core.js';
 import { encodePNG } from '../src/png.js';
 import { createOverlay } from '../src/overlays.js';
 import { skinkRig, heroRig } from '../scripts/figure-rigs.mjs';
-import { MOCK_TOOLS, mockTools } from '../scripts/eval-mock.mjs';
+import { MOCK_TOOLS, MOCK_SERVER, mockTools, mockServer } from '../scripts/eval-mock.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const temp = async (t, label) => {
@@ -38,6 +38,10 @@ test('MCP keeps what an agent reads small: brief tool schemas, a quick start, an
     assert.ok(listed.every(tool => !JSON.stringify(tool.inputSchema).includes('$defs')));
     // The plugin evals' mock server answers with this same listing.
     assert.equal(await readFile(MOCK_TOOLS, 'utf8'), await mockTools(), 'evals/mocks/pixelbolt/_tools.json is behind the server: run node scripts/eval-mock.mjs');
+    // And its instructions name the real operations, help topics and presets, and quote the real errors (P-130: they
+    // still described 0.14.0, 17 operations and half the presets).
+    const instructions = await readFile(MOCK_SERVER, 'utf8');
+    assert.equal(instructions, await mockServer(instructions), 'evals/mocks/pixelbolt/_server.md is behind the server: run node scripts/eval-mock.mjs');
     const help = async topic => (await mcp.request('tools/call', { name: 'pixel_help', arguments: topic ? { topic } : {} })).result.content.map(block => block.text);
     const [quick, ...more] = await help();
     assert.equal(more.length, 0);
