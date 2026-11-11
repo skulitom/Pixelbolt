@@ -31,7 +31,7 @@ Simulated and drawn output is pinned by golden hashes in `test/goldens/<set>.jso
 | a `.tres`, a `.tscn`, the atlas, normal passes, autotile masks, scene planes | `node scripts/verify-godot.mjs` (a real headless Godot 4) |
 | a `.tsx`, a `.tmx`, the atlas, autotile masks, scene drawing | `node scripts/verify-tiled.mjs` (a real headless Tiled) |
 | `studio/` | `node scripts/qa-studio.mjs` (an installed Edge or Chrome, headless) |
-| an MCP tool's description or options | `node scripts/eval-mock.mjs` (the plugin evals' copy of the listing; a test compares them) |
+| an MCP tool's description or options, an operation, a help topic or a preset | `node scripts/eval-mock.mjs` (the plugin evals' copy of the listing, and the facts in their mock's instructions; a test compares them) |
 | `packaging/`, the portable build scripts | `node scripts/build-studio.mjs`, then `node scripts/verify-studio.mjs` on the built archive |
 | binary exports (PNG, APNG, GIF, ZIP) | also check with an independent image decoder |
 
