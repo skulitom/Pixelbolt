@@ -114,6 +114,8 @@ export function tiledTileset(source, { oneShots = true } = {}) {
       for (const frame of sequence.slice(1)) if (frame !== sequence[0]) covered.add(frame);
     }
   }
+  // Here a frame that plays an animation is a tile of its own, weighed as one, whatever passes through it.
+  if (!brushed) for (const start of animated.keys()) covered.delete(start);
   const named = keys => `animation${keys.length === 1 ? '' : 's'} ${keys.slice(0, 8).join(', ')}${keys.length > 8 ? ', …' : ''} became still tiles of ${keys.length === 1 ? 'its' : 'their'} first frame`;
   if (stopping.length && oneShots) warnings.push(`${named(stopping)}: Tiled loops every tile animation`);
   if (second.length && oneShots) warnings.push(`${named(second)}: ${second.length === 1 ? 'its first frame already plays' : 'their first frames already play'} an earlier animation, and a Tiled tile plays one`);
