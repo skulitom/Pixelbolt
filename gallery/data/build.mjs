@@ -18,7 +18,7 @@ const RAW = `https://raw.githubusercontent.com/skulitom/Pixelbolt/v${VERSION}/`;
 const NPX = `npx -y pixelbolt@${VERSION}`;
 const BG = [27, 29, 42, 255];
 const groups = [
-  ['falling-sand', 'Falling sand', 'hut-fire lava-falls stilt-hut rain-on-fire quarry-blast'],
+  ['falling-sand', 'Falling sand', 'hut-fire lava-falls stilt-hut rain-on-fire quarry-blast', false, 'A falling-sand grid holds sand, water, stone, wood, fire, smoke, steam, oil, lava and more, one material per pixel, and steps 60 times a second: heat boils, melts and lights things, and burnt-through structures collapse or topple. Compile these with the CLI or MCP, or run them live in Pixelbolt Studio’s Powder lab. Sand grains, under Fluid simulations below, are different: sand as a granular liquid in the fluid solver.'],
   ['phase-changes', 'Phase changes', 'ice-melt pond-freeze boiling-pot frost-window dry-ice', true],
   ['electricity', 'Electricity', 'jacobs-ladder lightning plasma-globe lightning-pond', true],
   ['fire-smoke-gas', 'Fire, smoke and gas', 'campfire torch steam-vent magic-swirl explosion smoke-puff dust-wave', true],
@@ -33,7 +33,7 @@ const groups = [
   ['hand-drawn-sprites', 'Hand-drawn sprites', 'coin ember shrine forest-spirit'],
   ['tile-sets', 'Tile sets', 'ground meadow shore iso-tiles'],
   ['scenes', 'Scenes', 'forest-spirit-lit iso-glade room room-night wave-scene']
-].map(([id, name, names, fluid = false]) => ({ id, name, names: names.split(' '), fluid }));
+].map(([id, name, names, fluid = false, intro = null]) => ({ id, name, names: names.split(' '), fluid, intro }));
 // The fluid groups are adjacent and sit under one "Fluid simulations" heading.
 const fluidGroups = groups.filter(g => g.fluid).map(g => g.id);
 const extras = [
@@ -62,7 +62,21 @@ const json = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const writeJSON = (file, value) => fs.writeFile(file, JSON.stringify(value, null, 2) + '\n');
 const slash = value => value.split(path.sep).join('/');
 const esc = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const TITLES = { 'jacobs-ladder': "Jacob's Ladder" };
+const TITLES = { 'jacobs-ladder': "Jacob's Ladder", 'rain-on-fire': 'Rain on Fire', 'iso-tiles': 'Isometric Tiles' };
+// Card text for pieces whose README image has no sentence (or an outdated one), from the 0.15.0 docs and changelog.
+const DESCRIPTIONS = {
+  'stilt-hut': 'A stilt burns through at the waterline, and the tall hut on it leans, topples into the pool with a splash and lies there burning.',
+  'rain-on-fire': 'A campfire leans in a breeze until rain hisses it out in steam.',
+  'quarry-blast': 'A blast throws sand and water in arcs that rain back down and settle.',
+  'wrecking-ball': 'A heavy ball on a rope swings through a pyramid of crates.',
+  ragdoll: 'A ragdoll of six hinged blocks falls into a heap.',
+  'water-wheel': 'A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current.',
+  knight: 'A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt.',
+  'hermit-chest': 'A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides.',
+  'iso-tiles': 'An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out.'
+};
+// The README folder whose image sentences describe each kind of preset.
+const README_FOLDER = { fluid: 'fluid', powder: 'powder', bodies: 'bodies', crystal: 'crystals' };
 const title = name => TITLES[name] ?? name.split('-').map(s => s[0].toUpperCase() + s.slice(1)).join(' ');
 const scaleFor = (w, h) => Math.max(1, Math.min(4, Math.ceil(128 / Math.max(w, h))));
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -247,23 +261,26 @@ async function makePiece(input, readmeAlts) {
   const directory = path.join(work, piece.name);
   await fs.mkdir(directory, { recursive: true });
   piece.commands = await executeCommands(piece, directory, original);
-  piece.alt = readmeAlts.get(piece.name) ?? piece.for;
-  // People read the card: the README's own sentence where there is one, else the preset text without its agent-facing
-  // tail (the facts line already says loop or one-shot).
-  piece.description = readmeAlts.has(piece.name) ? `${readmeAlts.get(piece.name)}.` : piece.for.replace(/ A simulated (liquid, not a character|gas)\.$/, '').replace(/ · (loop|one-shot)\.$/, '.');
-  piece.altSource = readmeAlts.has(piece.name) ? 'README.md: first matching showcase image' : 'description';
-  if (piece.kind === 'fluid' && !readmeAlts.has(piece.name)) warnings.push(`${piece.name}: README has no matching fluid image; alt text uses the preset description.`);
+  const readmeAlt = readmeAlts.get(`${README_FOLDER[piece.kind] ?? '-'}/${piece.name}`), own = DESCRIPTIONS[piece.name];
+  piece.alt = own ?? readmeAlt ?? piece.for;
+  // People read the card: our sentence from the docs, else the README's own sentence where there is one, else the
+  // preset text without its agent-facing tail (the facts line already says loop or one-shot).
+  piece.description = own ?? (readmeAlt ? `${readmeAlt}.` : piece.for.replace(/ A simulated (liquid, not a character|gas)\.$/, '').replace(/ · (loop|one-shot)\.$/, '.'));
+  piece.altSource = own ? 'gallery builder, from the docs' : readmeAlt ? 'README.md: first matching showcase image' : 'description';
+  if (piece.kind === 'fluid' && !readmeAlt && !own) warnings.push(`${piece.name}: README has no matching fluid image; alt text uses the preset description.`);
   const shared = run(['share', source], directory, true);
   piece.playground = shared.link ?? null;
   piece.playgroundCharacters = shared.characters;
   piece.playgroundReason = shared.tooLong ? `${shared.characters} characters exceeds the 16384-character playground limit` : null;
   if (shared.tooLong) {
-    piece.download = `data/recipes/${piece.name}.json`;
     const document = (await resolved(source)).document;
+    // The live playground's own check: it opens fluid, fx, poses, scene, autotile and normals sources, but not falling
+    // sand, rigid bodies, crystals or waves, which compile with the CLI, MCP or Studio. Only its refusal is caught.
+    try { playground.recipeKind(document); piece.playgroundOpens = true; }
+    catch (error) { if (error?.name !== 'ShareError') throw error; piece.playgroundOpens = false; }
+    // A source keeps its own file name (hut-fire.powder.json), so compiling it to <name>.json never overwrites it.
+    piece.download = `data/recipes/${piece.playgroundOpens ? `${piece.name}.json` : path.basename(piece.file)}`;
     await writeJSON(path.join(gallery, piece.download), document);
-    // The playground's own check: it opens fluid, fx, poses, scene, autotile and normals sources, but not every
-    // source format (falling sand and rigid bodies compile only with the CLI or MCP).
-    try { playground.recipeKind(document); piece.playgroundOpens = true; } catch { piece.playgroundOpens = false; }
   }
   piece.images = [];
   if (piece.kind === 'scene') {
@@ -415,7 +432,7 @@ function page(manifest) {
     const images = p.images.map(i => `<figure class="stage">${i.still ? `<picture><source srcset="${esc(i.still)}" media="(prefers-reduced-motion: reduce)">` : ''}<img src="${esc(i.path)}" width="${i.width * 2}" height="${i.height * 2}" alt="${esc(p.alt + (p.images.length > 1 ? ` Animation: ${i.animation}.` : ''))}"${imageIndex++ >= 6 ? ' loading="lazy"' : ''} decoding="async">${i.still ? '</picture>' : ''}<figcaption>${p.images.length > 1 ? `${esc(i.animation)} · ` : ''}${esc(i.plays)}</figcaption></figure>`).join('\n');
     const open = p.playground ? `<a class="open" href="${esc(p.playground)}">Open in the playground</a>`
       : p.playgroundOpens ? `Too long for a link: <a href="${esc(p.download)}" download>download the recipe</a> and use Open file in the <a href="${SITE}playground/">playground</a>.`
-      : `Too long for a playground link: <a href="${esc(p.download)}" download>download the source</a> to edit, or run the export commands below.`;
+      : `Too long for a playground link: <a href="${esc(p.download)}" download>download the source</a>, run <code>${esc(`${NPX} compile ${path.basename(p.download)} --out ${p.name}.json`)}</code> and use Open file in the <a href="${SITE}playground/">playground</a> on <code>${esc(p.name)}.json</code>.`;
     return `<article class="card" id="${esc(p.name)}">
 <h${level}>${esc(p.title)}</h${level}>
 <p>${esc(p.description)}</p>
@@ -429,8 +446,8 @@ ${p.factsNote ? `<p class="muted">${esc(p.factsNote)}</p>` : ''}
 </article>`;
   }
   const firstFluid = fluidGroups[0], lastFluid = fluidGroups.at(-1);
-  const sections = groups.map(g => `${g.id === firstFluid ? '<section aria-labelledby="fluid-simulations"><h2 id="fluid-simulations">Fluid simulations</h2>\n<p>A deterministic simulation on your CPU bakes gases, FLIP liquids and sand grains, heat and phase change, electric gas, and bodies that float, sink or ride the flow into palette pixels.</p>\n' : ''}<section aria-labelledby="${g.id}"><h${g.fluid ? 3 : 2} id="${g.id}">${esc(g.name)} <span class="count">(${manifest.groups.find(row => row.id === g.id).count})</span></h${g.fluid ? 3 : 2}>
-<div class="cards">${manifest.pieces.filter(p => p.groupId === g.id).map(p => card(p, g.fluid ? 4 : 3)).join('\n')}</div></section>${g.id === lastFluid ? '\n</section>' : ''}`).join('\n');
+  const sections = groups.map(g => `${g.id === firstFluid ? '<section aria-labelledby="fluid-simulations"><h2 id="fluid-simulations">Fluid simulations</h2>\n<p>A deterministic simulation on your CPU bakes gases, FLIP liquids and sand grains, heat and phase change, electric gas, and bodies that float, sink or ride the flow, all into palette pixels.</p>\n' : ''}<section aria-labelledby="${g.id}"><h${g.fluid ? 3 : 2} id="${g.id}">${esc(g.name)} <span class="count">(${manifest.groups.find(row => row.id === g.id).count})</span></h${g.fluid ? 3 : 2}>
+${g.intro ? `<p>${esc(g.intro)}</p>\n` : ''}<div class="cards">${manifest.pieces.filter(p => p.groupId === g.id).map(p => card(p, g.fluid ? 4 : 3)).join('\n')}</div></section>${g.id === lastFluid ? '\n</section>' : ''}`).join('\n');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -494,7 +511,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Pixelbolt</a></nav>
 <h1>${esc(heading)}</h1>
 <figure class="montage"><picture><source srcset="${manifest.montage.still}" media="(prefers-reduced-motion: reduce)"><img src="montage.gif" width="1536" height="192" alt="${esc(montageAlt)}" decoding="async"></picture></figure>
-<p class="lead">These are JSON recipes rendered by Pixelbolt ${VERSION}. Open any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="${REPO}">source, setup and documentation</a>.</p>
+<p class="lead">These are JSON recipes rendered by Pixelbolt ${VERSION}. Open almost any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF; ${manifest.pieces.filter(p => !p.playground && !p.playgroundOpens).length} long ones need one compile command first, shown on their cards. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="${REPO}">source, setup and documentation</a>.</p>
 <nav aria-label="Gallery groups"><ul class="jump">${groups.map(g => `<li><a href="#${g.id}">${esc(g.name)}</a></li>`).join('')}</ul></nav>
 <p class="muted">One-shot effects play once in a game; here their previews loop, with a 0.8 s pause before each replay. Each card shows up to four animations; the recipe includes those listed under “also”. Export commands write sprite sheets, atlases, Godot files and frames; tile sets include terrain exports, and scenes include asset bundles and numbered scene frames.</p>
 ${sections}
@@ -543,7 +560,9 @@ async function main() {
   assert((await json(path.join(engine, 'package.json'))).version === VERSION, `Expected Pixelbolt ${VERSION}`);
   const modules = await Promise.all(['core', 'resolve', 'png', 'gif', 'import', 'presets'].map(name => import(pathToFileURL(path.join(engine, 'src', `${name}.js`)))));
   api = Object.assign({}, ...modules);
+  // The site's own playground module, not the engine tree's copy: the cards promise what the live playground opens.
   playground = await import(pathToFileURL(path.join(root, 'playground', 'share.js')));
+  assert(typeof playground.recipeKind === 'function', 'playground/share.js has no recipeKind');
   await resetDirectory(work, path.dirname(work));
   console.log('Measuring shipped presets and checking group coverage…');
   // Unlike the CLI's time-budgeted listing, this always measures every preset.
@@ -560,7 +579,8 @@ async function main() {
   await resetDirectory(path.join(gallery, 'gifs'), gallery);
   await resetDirectory(path.join(gallery, 'data', 'recipes'), path.join(gallery, 'data'));
   const readme = await fs.readFile(path.join(engine, 'README.md'), 'utf8'), readmeAlts = new Map();
-  for (const match of readme.matchAll(/!\[([^\]]*)\]\([^\s)]*showcase\/(?:fluid|powder|bodies|crystals)\/([^/()]+)\.gif\)/g)) if (!readmeAlts.has(match[2])) readmeAlts.set(match[2], match[1]);
+  // Keyed folder/name, so a piece only takes the sentence of an image in its own kind's folder.
+  for (const match of readme.matchAll(/!\[([^\]]*)\]\([^\s)]*showcase\/(fluid|powder|bodies|crystals)\/([^/()]+)\.gif\)/g)) if (!readmeAlts.has(`${match[2]}/${match[3]}`)) readmeAlts.set(`${match[2]}/${match[3]}`, match[1]);
   const pieces = [];
   for (const name of assigned) {
     console.log(`[${pieces.length + 1}/${inputs.length}] ${name}: verify exports, share and render previews`);

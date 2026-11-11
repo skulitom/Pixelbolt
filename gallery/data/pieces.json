@@ -216,8 +216,8 @@
       "playground": null,
       "playgroundCharacters": 148528,
       "playgroundReason": "148528 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/hut-fire.json",
       "playgroundOpens": false,
+      "download": "data/recipes/hut-fire.powder.json",
       "images": [
         {
           "animation": "hut-fire",
@@ -424,8 +424,8 @@
       "playground": null,
       "playgroundCharacters": 99999,
       "playgroundReason": "99999 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/lava-falls.json",
       "playgroundOpens": false,
+      "download": "data/recipes/lava-falls.powder.json",
       "images": [
         {
           "animation": "lava-falls",
@@ -596,14 +596,14 @@
         "npx -y pixelbolt@0.15.0 compile --preset stilt-hut --out stilt-hut.json",
         "npx -y pixelbolt@0.15.0 render stilt-hut.json --out stilt-hut"
       ],
-      "alt": "Stilt hut: tumbling pieces, a hut topples. Falling sand of stone, sand, water, moss, wood.",
-      "description": "Stilt hut: tumbling pieces, a hut topples. Falling sand of stone, sand, water, moss, wood.",
-      "altSource": "description",
+      "alt": "A stilt burns through at the waterline, and the tall hut on it leans, topples into the pool with a splash and lies there burning.",
+      "description": "A stilt burns through at the waterline, and the tall hut on it leans, topples into the pool with a splash and lies there burning.",
+      "altSource": "gallery builder, from the docs",
       "playground": null,
       "playgroundCharacters": 68704,
       "playgroundReason": "68704 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/stilt-hut.json",
       "playgroundOpens": false,
+      "download": "data/recipes/stilt-hut.powder.json",
       "images": [
         {
           "animation": "stilt-hut",
@@ -736,7 +736,7 @@
         }
       },
       "preset": true,
-      "title": "Rain On Fire",
+      "title": "Rain on Fire",
       "group": "Falling sand",
       "groupId": "falling-sand",
       "recipeUrl": "https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/rain-on-fire.powder.json",
@@ -744,14 +744,14 @@
         "npx -y pixelbolt@0.15.0 compile --preset rain-on-fire --out rain-on-fire.json",
         "npx -y pixelbolt@0.15.0 render rain-on-fire.json --out rain-on-fire"
       ],
-      "alt": "Rain on fire: wind, then rain on a campfire. Falling sand of stone, sand, wood.",
-      "description": "Rain on fire: wind, then rain on a campfire. Falling sand of stone, sand, wood.",
-      "altSource": "description",
+      "alt": "A campfire leans in a breeze until rain hisses it out in steam.",
+      "description": "A campfire leans in a breeze until rain hisses it out in steam.",
+      "altSource": "gallery builder, from the docs",
       "playground": null,
       "playgroundCharacters": 66654,
       "playgroundReason": "66654 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/rain-on-fire.json",
       "playgroundOpens": false,
+      "download": "data/recipes/rain-on-fire.powder.json",
       "images": [
         {
           "animation": "rain-on-fire",
@@ -922,9 +922,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset quarry-blast --out quarry-blast.json",
         "npx -y pixelbolt@0.15.0 render quarry-blast.json --out quarry-blast"
       ],
-      "alt": "Quarry blast: a blast throws sand and water. Falling sand of stone, sand, ash, water.",
-      "description": "Quarry blast: a blast throws sand and water. Falling sand of stone, sand, ash, water.",
-      "altSource": "description",
+      "alt": "A blast throws sand and water in arcs that rain back down and settle.",
+      "description": "A blast throws sand and water in arcs that rain back down and settle.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=7Z3Lctw4sobfheRSg7Bk60IvcSVXlrSd6IXclmc6xt3uY3vOnIkOv_uJTIAkSIDFS4F0yZXZbZUKVfqZAEES-TEB_pX97_OXr799_iN7e3mR_fH0-3P2Nvuffz99-fLfv73_9PT1W3aR_ee3D9_-mb29vLq7yP75_Ns__vkte3v36iJ7__Trv_7x5fO___iQvc3yy9vLm8uP2UX259On52_fnrO3f2UlfHD3_u7u7k12kXF49-Hu_aubp-wiE_Du149Pb66fs4tMwrvnq_cfbuEzhZ_dlE_X19lFpuHd1fPNh_evsovMwLvXl7ev399lF1mFn_16c_t0m11kNby7_lA-P8M33-G722u7hXt89_H615ub7CJ7gHc3Nzevbz5kF9kjvvtw83QLfubw7vbD7dMtaBbwrizLm7uP2feL7Ot_f3__-dNXqN3Xb799-pS9_XvGfrBlF-QCuUAukAvkArlALpAL5AK5QC6QC-QCuUAuHLbHx8fHh8eePTTvd3Sh3bRnP8CFdtv31h4eHx92dQE33HjwDgwK9uwLruJQ8wfrAdp-LjRbvX_03pybCw8_2gXbDzoXoGPs7MI99n7PBTg873d1oWv2--4k6XzY2wXPA3IBr1n7unCPJ2XYIF6a3HVi71OTq_R9d5Xa_ezYtDtcJTwHfoQLeHV8OHcX3GBlt2sEbsodiFjz-_v9XXDDM2_QtrMLD54LzeWpc2CXUxM0_ogLrSdn4cJgT_RPS3u40A6be51xTxceu6jFejLc_oYucM4F58odit3uH7QCFGzkAgcXhBReB3Au9Bpiw4BOKsGVElJt4gKf9SUplJRcdS601yd_T9huutQFMc9PIaSSivOHh86F-57ZEdQaF2b5wKVSXEjB-X3oQnNsNgOoZS5wxriasS8ktALnXAnvItnz4MH7fWkrwKE27YFUXHD49-CdEu9tzV0kFbgA39JGa20qxozRrNKMVY0m7Df3KygPNylk85vinDMp4XCUCtphgQtQpI02ujKMGVYxDaXgztAFKThjqueBEKp1QHEphZSCSyGa7vjQHBDtQdAbPDgX4CvGVLrSmhmmof7QFEErCDlsBagrtLmEA6AxpQSXSkp578UL77pBvB9P-S7oymhjmNFY86qKuYCnXc8HCbVWkiuh4HyMHQC3DidHznlvhBR34Z3nQmVgTzDsBtAUhhljfBfwhKMEh3a3jnDcsuDKNjtunWNnFHBQyIEL7f5vXXjXd0FX4ATTrhW0th3CjQDxmOQSHIBGlxKPfc65hP9hw-AhFAm8PuCL8l0IxnARFzQ0PnRIw8ARU5mBCxJrDOoStiA5djw4FQvF4SDgQkIpvIN9098RM1yo7DGpGRyY8GKazgBtZ_e8wAsQtrbgcBXg0nmhoKfCG_ANm0kJKeyB6McwPvoNXIBqw_FgbF_wDA4iOOgU7GZoa6ivwuNO2O1Bu-AOgf0jsWNK2wpt_Zsr5aPXGYIjwqAHtju604I1-Dacm1FYuOOOSwX7Xtr-CA4IoRQ4IKXtDXCCbqr_8NBdrTsf4LQApybXHu_8Ua13LfXGvg_NAHgA1ZtA5fEhHB-3Sq78oefDoz07ehSwN6QaDn7t3z3EPXDN242P-2PEth0avuBJHHTh3ToX7idduB9zYTi8DmKAFqYPt97-9EF_T6kBPW4E2_WGh8fsl-8X2ccvT78_f83e_v2vWM7o3yD78sO_vzx9w8TS61cX2ec_7bc__5m9zb5-e_r9z6zJpcQCyKS8yP4ve_vqIvtv9vbV9wv33X98-e2D_eTmDX50-foi-_L5P1-bxEt3eDQvv0T-8vrG_uVt_y-HNjIMoeL5xbHWf32FrQ8vh1p_mSWJYEiEREjkxYvETjqX13jSeXOX8qQT2fY2LIdkT0S2KAtWFixnZV6WRVHkLE8hywqWF3nO8jLPc1bCawrZEjRZib-CuzkrEsgWRVFaOfiZF_BvhSyHsAPCE8BTSCYgQhYIaYQNlTlGbUJx1f_Tg7LcStrIzwVeTdyJTBYjYtzCAm8hhocITWHYLDFWgv-VYwqgCzGWDDHQIVkIxxQHPIMbULZFAJpaUAJBK0TySi6ShbASVKVtTgj9oD0V_CaFDYy5LVgii_BEIsyDv1VQZ2hTgcE87kfbPir40-hJ2Y7tYRw_PCfXo-Y8kQxcFwqBi8DqcbeLMNDlFvQI7tUH8BHCk0pXVQVYz1RY4KJmbClmaRliEiC3CsWgciiHUXOkkVCjwlfgAqZqQnJoc4S0AmNs5D_YRaGrWigGn8pYywNkYYiYDKsMqxA9YfWhu1hRBlDRdnKl7Ab9zhKKWmAASohwtMNpSEgtTUZcJ-BgFCLKVQNRgzwOvatYhajQtSmAHte6woEHGQrGRQEuWa6DhAXxo3Ww-xJ2YD6mGfcU9g96anBXueqLmTw_FLXVbpoRSG3V7KjwQJgrCu7BfsIXu-9106ZjtZ0UNRYWaWasl3AsNKJrPTUMdovWFfakyvYoM_7nI6K_fMczRIweXBI9OM9iogckQiIksqsI0QOS3Uy28H8di5qX04MSo3CAEoAl8jF4sJwe5KCY5y7cTwAlihg9KOLCs2TT0gNnMjE9sCZS0wOLUNLSg4afJKcHyvq4Az2II4PGRA09AjrFbHqAChArV3DD3TKE_iaMhp1h4-d09ABxi3KB_ix64Nd1hB4IU4EGS0oPrC-2AyWjBxzgiQvKk9EDrrwwPxU9UEyyuUH5bHrAxew4fz49gF64VnSUHvD5RGI-PVDzicRBenBF9OA8i4kekAiJkMiuIkQPSHYzWaIHRA_S0QNb_dS5BzXcn0xKD2xMy2u5Dz3w-YHvALzUNbSQWEQPaivY0QMr7V5MXds9yZfRAz_QH6UH2PRsNj3ogZIxeoBEYgk98FXH6YFMTw9wN9jvJKQHXveaRQ-86o_SA0H0YJ3o9vTgNdGD8ywmekAiJEIiu4oQPSDZzWSJHhA9OHV6AAFT6tyDusuU2JgedNjAQwZ-DLicHtjgEyIbZAUOGUD2gctAWEMP6i3oQbsMBUtID3pIIhk9GMTkp0sPevvptOmB5-qJ04PW0-3pwRuiB-dZTPSAREiERHYVIXpAspvJEj0gepCUHrBN6MEWMxfqPegBRiVd0kEv8HVvVtADzDSw9KBuAYI1vZoe-K6logdmzsyFxbkHvqWiB_WLoQcvJ_egt_OT0YNONRk9qOt2hc3t6cE10YPzLCZ6QCIk8mNE2gF9OXhd6EnZBEmwmttyT0YirGi4ERdBhWZFJ2ZX-BFu4BBZ6SglPZCwsbxgwo7VWo8KNoxoDlVgYO2YQmIj8NKN2oRtFi6xlv4QYVJWuaFPwTiDEJErlrM8Z0IUApxFOTlsrYkApBlOFRCHsrJkRV7C77AEX15CxFu2Ya7wxl7ze3bBsVuBao7RLseiApcRbL7UOD0uy21jYRWlbQ0IcphgOeM5FnFcw17andYbKR3y1g7HMbSAga-w68YpHBgJOzSGcTsufA7RqBLt6lPjssL9g9XjMUaBaFQxCFY4juIUY_iUAXjmCHeb4ZOy1tVmFb5uFrNfXxsFYaTlwsrDsnbVf4nRPEaeGCjGviiVjXxdgDXlrWR2YX_F7X9j42GIibgYRqOhrHT_OGdupf4ZA_dZ9EBICaGFXfx_UtKdlQ7JYnd2sR8KY6fk8tBQWygVnOiG3uIXJCwnKGynxIcnHFC1wGNC1p5qOZ4ATbNKg2gW7Yup4nMiguJluQf4J3UgbB9GpDp6IPmB1d7gdCDbmQsOHFT91Q7wranMkB7I2Ap6TWNy20jVwtyDUUebJgJRP_VgBj2AdgiEpBe2WdFlMxcmo9Mw0J9BD-Jt2hftLXExix406GWJp6dLDzbIPahZ3fWpVPTA1HpHenBD9OA8i4kenIEIZ-XE-WxapIkK14uIorlEl2JFkIvxaXOhcyXhSHCGJ9IblgrnUTj2OyCi-q-NxrwZiLL5wSPh-chuio5Dx-N-O0if9GSGyaZS0WgjvKB5u9Wr3TAoTpx7MNoKMf5xKMJtRycH7lj3rR18LGnccAH8YumS-NFu0lS3jBdPhvmHTxH5CE_yLB7cxb9bDtUK1wzhRua0bdG8wM320vkLG4G78A1BkYfpQbT-HPMOSiQnhW3ckiFCKe1mczWPHqg2vGLt-l8WoTB8LkReygIZSgG3Pd1D9ybpAfbZGr-O8SJn7paucqekPj-xtGOMHvQOZ6B_SCTsPUllw31lQ2p8EB_-iXLPgus7NdoT7P12vBNrH3cHrlgyYwGacvzE3olnM2SttrSP0A0pil8pu8ngrNXJ-p21ZvgIzmZ9QxV5ZqcTtY-HnEUPQA2SNaSjB0hRRg48PgzExhuh4gbvRDe5B2ORht1pMSaxeN2DvjXTGKQWokcPYsFza4oJoZrcg_AxDlzVtYDXSvI-PYD8lLEqwv6Yk3vAh_SAT0GXVbkHMb2QHvifzqAHeAQeiPUDeDKLHvAw2ycQ9W0ePZCT9KC_n1LRA49zJKMHtfH2VCp6oLtAPx09qPakB7dED36-Yu6NiF4APTg-PkWbh5Cn_n6KRh8Mcv1rJsSWq4Jc1otPV3nSWenpxJp4MlIeGI_eUz4UmYX-zIiUZfDLPJtoEy9Ya0KtiDO-iF_bA7Fl4pg9IjK_IfyYnfsiCy4ZgY1WZySyjFKiI-gBX9wVrK0K8xfYMtnx-N7ZaJjPxw6bA51yVTw-G6Ask20t0l9mI5RDp8OQzHS_TtCDceucDfpzfogeRJMAelo56_1gFiXl-Xx6gAZfjzWfFS2QqpRFzg_Tg57Vjh60FSsL1Gi_UAAAKlkBMGAWPbDVb-iBwtzwsmCSqVI6MpOXpeQFx6RxHkbOMVmFV9yWHmD2ObguGEbled7jJyqWmO1k--WCqR494A1EkfbGPRcMa6AQBik-nXvg7lz26UGDUADsWDju8RNITRijB7UvWteyTw9Un6Io0d6Vd-n4QTsuogcu96B2LdU6UteaB_TAG_3Y4JxjMARzVWRLD1gzHaIapCDoWhvOA3rgJ6_0dpxHD-KrJkKwX4mqEiE9kKOn144e9KyhB0ANgB7IGD0IEz0CelBHcg-wb-lKaC6j9GBZoB_QAx6nB3Kcn6zMPZBdXuKop97zAxPRA-g57ftU9EDrDeiBefn04I7oweLiOcF52uJefD0S3PREgulVXb-2qb7H0wM4MXhB7sRpYlSib6vD7c7Gh5jb3vEfC7cXxeyj98EWxewLLC6yOmZfFeEd8mRgvUH8ocB_0F5bBf6tP4cC__V2WKRXqemkjkX7JkgbSFAdfkzuwTHog50KPThGNs5PRtMC_P5wWghl0qIIZfa4LGKH6cG4chGjBs3r3NyDdjOzuEyehh4MrJygB4OzZZ8ejObM5EvoQd3RAyvqeefpYrOO0IPIjuIePWiPjpDMlGVxgB4ErooePeDoYQHApNErSlxTAoL8efQA80369AAmvsAqFapEboQLazBEKOVBejDwNaAHkI1S4LyLIT-Rx9ODAT9waQP4Apse0gPegRfLbzDJRHKPHiACscjASMcNDCyEUCthKhHSAztxCEJzmFbUAhfu0wPf-vQApO1ouk8PeAdduL3tI92jF1t6MMg9EB494NrYu04DeuC6hrInYFzY48Du7HIPKqQHVTz3AJf3iHSwTjTMPahQHp6GKcwYPRg9EVrOUXmijh4YbFhmuJGj9GBsOI6BfhXSA47XeiNMJas19KAhGWghPeBEDxLSg_InpQf7R_gjxRsE_gc2GYb02UUWC9JT5x78qJg9iUicWfCFgX8KT0bthdCDoz05Aj-s82Qi92BHT0ZFwn1_gBtsnwUxZQc4xstZNXEmmeFJjp-l6x6stqjssVwmtbfpWQfSA7E09-DAfI2STc9cGNKeU6YHQ9U-PRhz9RA9CG_mDuhBNJ8DRIuZuQd2M0N6EG0MSJ44ih4M_SxKXKIS8wfm0oNh7oHgsAxKXthlUHJYsMSuc4khd5weNIsTtp7WLEIPOMANXDGzoQeSJ6EHzbIHMKmg9mPUumZVHaEHQnHAI5I39AAXm-zRA0i0R2RQaVNpf_UDY2pp4vQASQwu3In0gA_pQS_3QPv0ACIz7AdDetCkmDT0QAX0wDfIN_DogdIOGQzpgV1ZVPJRetDPPZDz6IEQsW7XifqBPui29IDDVIsxejC6ekjWX4zP0gPh0YPKzQZZSg9MhB4YG0pro4VboCIZPaiAndi9n4Ae6JYeaJ6MHnBmtNIVuLkBPeCp6cHlqx-CD_jYnagXkXwQL8ak7ugQJQACvfx2jxN0f9LnBP1E9pYTsN73gROE_sXGtyJF8kGIJEa-eGrB2GYio_NnF4ikyWBYYC9Z5CyQypE85bSQymnhg_jIZlGeygg-mLJxHuHsmOYeT4h5GckHK_HBYL_5S3FM4oMVB1mziPz-yQf-tWAePij3xwcR0QAfxEUX4YO6hw9GgE8-Cx94uIdvgg_qEB_AEz2W4IOIqtgRH3TZBlCbusbzi0tqjyYfzMAHFh1URlc27UALg49hwMcvrMUHvlUDfCBt_LwYH_RmGfA-PjDahqjL8YFv_eQDo410AeRCfDB86EKHDyA8d5H-MnxQe6vxWXxQdfhAq6pye2cRPqgCfFBJhw8qAZFuEnxgWnzAjdZNUH4cPhBDfIBqiZIPNCYfcCES4QNeaaOwSbmRifHB5U74gHdDrV2yD_YvXpJmwJsfIvj27E2KjipMJyX0y0SSlQ8mVxo4WAsWH7W93LkLhFQiRkhlZ5HTRiqnhQ8SWIgPjsc9LI23saPsR-ODWRH0OD6YdcUJknHyaXyw3EpMzU6FDzris0n2QVlsgg8WrXwQwwcR4gM7awE-YLG5C4Gjc7MP2i_08UFAJdbhA5YWH7jP612zDxw6cNMVcNFDd7Mb4chyfAB_XiE6qLSBleR0bTAHwdjZDGINPugvcWhcMoxhRlYQlkfnLizLPtAcg8gGH2gt1-CDus8kTB8fQPo6W4EP6mo0-8AAPFmFD3QPH_A-PtAuo-N4fKAbfGAMzGBhSfBBsxV44IZLEzk--0BbfKCZgg8TZB_AbpeID7hAfNC06TH4QPTxAZciLT64InxwSsWjDCLy7RY_RBhEmPAwFDmVhROHFGSVSAJPQsLyYzyR4baPRyqrPBkacZk0IimQShJPRtfGTOFJFO6cAT5IYwlkY4frj_V25jgo-eSFLfDB1NIHYV1nZB_A4zbT44OSL1o4cYAPDjzhRS7CB2xm9oGYxAd-z1aH8IGlMhCVQwQ7f_LCDHxQrsAHIooPiuOyDyBVYufsA_fDW__ATqOoluODus0-AHxgcLXEul1H0eh6FT7wls5z-MBmH6hK6srw5oGvi_BBb-F9uKFdQRjZ4YNVkxfcTAJnGI9jeF8xLWGagZsSsAgf1JWPDziyDlxQAPGBNvZhHwvxQaXD7APR4gNTuRkRx-CDaogPEi19MMAH-vjsA97DBxDvO3h0ND6oUM5UlYLsg1T4QGqj4CE6G-CD1y9m7YOTWc3g5yhOgw96uCNuu0R0A5RyhCdTJ4CXEKA6S_DwhuF8mpWezLEd4A7ly2wiMh_unDU-WICNfniawCK0lMBbf3M_BT4IbQY-yDfBB0wcgw9GDUPylfhgdERc5nwaH_RsOvsAonK-BB_gnIgePug3cbkSH0AfTIQPvKrYkHcHfNAuSmCbyBIEr834qskLkKqt3VwFuMddA0Po1j9YgQ_q3jz9Dh8IXDwO7sCz5fjAmFF8oCXTWkWfuzCBD6pxfKAg-8A0dV6CD0wVZB_YJxgAPoBQd83aB318oDHRvlv7AJIaWBp8wBt8IJt5BsfgA27FXKe3-MDu8mPwAU4y0aLFB5Kb1PgAsg_k8fiA9_ABPtAF90cyfPDmxeCDQTslLT5DNHEq2Qcksp0IwZ1VtgeXSeLJi4M7LwQfzM8AOsXsg627wtay6_DBAYb1YvABW4wPmI8P4nwKAtMN8AFE7MvwgeplH8QvS8vxAd8CH8CChB0-KPM0-KAe4AOZIvugVvtkH9Ssgwf4s0k96GqnFuMDyDnQ3uSFhhyYBh_wFfhA94PyBh9I0-ADewM2DT7QmumKaa0T4wOgB6JaM3lhFB8IhjG5i_ST4gOtjl_7wOKDyuEDVWktU01ecAWmahMFjsIHxmYfcIcPpOTusRtH4ANu8QHfBB-IzfDBNeGDkyreDWQQPiAREnnxIi-LEG2HDyav2z8--8DZHPZ0KnH-PD51EvjgAMM6SXwwsm7nMfhgJDcqOT4QGEKXx-GDmOV5UWyADzD8PA4fFKW3wxp8wBfiA7YFPmARfKD4BvjAt-Zva_9nvQIfmKrJPtDtMxcsO7BvRTp8YBp8oNPhg6rFBzwZPjAtPqiS4QNp28AA7tBJ8QEKG5Fs8kJlQUdVSa1VqskLHT6QRh6_9oHDB8bhAyPdYZUg-4AzDvgAO9_R-IBvjw9uCB-cZ_Ep4YPwKU8rRJJ4QiIkQiKbibyQ7IP5dorZBy9C9gD2Om7yQmS4eiw-GCx07ERPL_tgxJbjAxbDBz3slW-BDyCWXowPVAwf-NirEAUvluIDHuCDvGjb2eKDHKLBZfhAhvigKGWRe_hAYH2W4AMWwQelLEuxIT6o-6kH7tkL0ckLXMzFB82qB-7FvlXp8YFYs_bBFD6wIXtifKBTTV7QHj4wifBB5eEDzVPhA-2yD-xDFlkafOD-HPCBSokPRJN9kBAfmC3wAd8KH9wSPjjP4lPCByRCIoSZzkCE8MFMO2fZ81374KTxQc_W4AO2Hz5o3bR34ZfjAxXFB3nOOCvLUuWiLMRyfMBj-ABARAErRualKMQKfCCj-ECWolDb4YMGIfhPDhjDB2IuPoCAqjd3AaYvJMcH9iGDifGBwd2VGh8olh4fiC3wgdgCH_ANsg-S4QPIvtCJ8YEGfCAS4wO5JT64I3xwnsWED0iEREhkV5EXhg-mcRXhg_SyhA8IHww-OSS7Lz7IAR_gLIMV-ECN4IOi4IAPcBrCcnzAx_AB3xgf1AN8IFPgA93HBxtMXki49oGXfbDB5AXh5hkkxQcq1eSFHj5Qm-ADG-omxAeC8EFafFASPjjPYsIHJEIiJLKryAvDB9NG-CC9LOGDE8UHHk0jfED4wFsDwVoafGB6WzhnfKC3wAfmpeADsQE-UBvgA3HG-ODqFeGD8ywmfEAiJEIiu4oQPphp5yxL-OBE8YFnLwMflKvxARvFB-0ah2nxga3EKnwQPrhxR3zgEwSeCh9sPHkh3YMbPXxgmQHhg643ED44LPoz4INLwgfnWUz4gERIhER2FSF8MNPOWZbwAeGDwSc_CT5gPxs-qHv4IPrkheX4wPj4gG-AD-zzABOvffBisg_s6ZXwwUxJwgeH8MEV4YPzLCZ8QCIkQiK7ihA-mGnnLEv4gPDB4BPCB4dkfyA-qLfAB3rj7IMtJi9ssXSi1s69tNkHNtJPig-EchUkfDBf9GfAB68JH5xnMeEDEiEREtlVhPDBTDtnWcIHhA8GnxA-OFl80OMHqfCB2RQfbPHgxk2yD5p7-mnxga0z4YO5RvhgHB-8IXxwnsWED0iEREhkVxHCBzPtnGUJHxA-GHxC-IDwQTp8gJFganxQsQ2yDzZ4cKNRhA8IH6TCB9eED86zmPABiZAIiewqQvhgpp2zLOEDwgeDTwgfED4gfED4YMoIH-yMD24IH5xnMeEDEiEREtlVhPDBTDtnWcIHhA8GnxA-IHxA-IDwwZQRPtgZH9wSPjjPYsIHJEIiJLKrCOGDmXbOsoQPCB8MPiF8QPiA8AHhgykjfLAzPrgjfHCexYQPSIRESGRXEcIHM-2cZQkfED4YfEL4gPAB4QPCB1NG-GBnfFASPjjPYsIHJEIiJLKrCOGDmXbOsoQPCB8MPiF8QPiA8AHhgykjfLAvPnj9ivDBeRYTPiAREiGRXUUIH8y0c5YlfED4YPAJ4QPCB4QPCB9MGeGDnfHBJeGD8ywmfEAiJEIiu4oQPphp5yxL-IDwweATwgeEDwgfED6YMsIHG-GDXy6ypz9--x0xwdfs7V89igDvP355-v0ZTxQ9vgDZCb2Cy2HB1bDg9bDgzbDgelhwMyy4HRbcDQvKwLHQ1cDXy8DZy8Dby8Ddy8Dfy8Dhy8Djy8Dly8Dnq8Dnq7B9A5-vAp-vAp-vAp-vAp-vAp-vAp-vAp9fBz6_vsx-ucg-fYZL0MenT1-fv3___v8",
       "playgroundCharacters": 10263,
       "playgroundReason": null,
@@ -4565,9 +4565,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset water-wheel --out water-wheel.json",
         "npx -y pixelbolt@0.15.0 render water-wheel.json --out water-wheel"
       ],
-      "alt": "A paddle cross turns in a pool for ever and stirs it while a duck and a crate ride the current",
-      "description": "A paddle cross turns in a pool for ever and stirs it while a duck and a crate ride the current.",
-      "altSource": "README.md: first matching showcase image",
+      "alt": "A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current.",
+      "description": "A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=nVTbbtswDP0X7pUVbMdxMz32N4I8yJZUCbp5trLUC_zvA-WkTbcCA_YikBZ5eEgd-go6TUFk4DDaN-V1ml7Vk_ZnKwHhp5pmmyLwGiGKoIDDRWQ1PV2MUh4QLlZmA3zfIRhlX00G3rYI87kvaDPwFmEUXuWsgF_hBTh8q-VOPwtA6MlrdKeHChAG8va6b9WBkMmTWndaA0Igr297Kekukif23WFHKAt5WstmR5GuVGjrth4AwZA3fD8MLd0l8nZ909YtrAjzEvpEHK8wCim9An6ElBLlmfjlud2yyP44Qwh0uvBu_x3zb-QT3og8iWFK81z4GGNMYoyFEBhjm0vxxYgxBhdijB_fI3kf8cUlZHkeHAEy5hwrrNyyuJvhjKHZLcuyuEeDOecco_RhEvk-oK0TKhlvRrxxincSdzZb8GlFUFqrIZdpP2qIX8HZKIGDtz821elJBEXSqYj1JHKRYFch-JRG4Hk6K4SLmMJ5BL5DmJWSxbgI78vUvNIZEKYiSYQ-5ZwCtaG9HYFXrEOQk3gls9ohaOs98OMV3oBXRVJ1VzRYlA28OawnBBVszmqiCqdCxpUcbZWnBqSKs80LSTn5VMKgp6LZTGo2yUv6VLE9vYbNRk3AqxUfAcZsPqVfyl7QpiC8_AVVY4N7rKtPeCdqV1oa4PEKsxEjrW2f3gBhtr_oDRtsKIe2_tgcsHmmwdg3GuI223m0EXjL9vclod_DtiLE92vQCpv_BL3LnbBvv5miVnyvNNhp8IpeVEh7noE3BFNq1S3WLU3gNn1esfahQgF6AN50jF_30GF3b6FtsN59hq0fmW8462ld198",
       "playgroundCharacters": 891,
       "playgroundReason": null,
@@ -4999,8 +4999,8 @@
       "playground": null,
       "playgroundCharacters": 52110,
       "playgroundReason": "52110 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/ring-escape.json",
       "playgroundOpens": false,
+      "download": "data/recipes/ring-escape.bodies.json",
       "images": [
         {
           "animation": "ring-escape",
@@ -5589,8 +5589,8 @@
       "playground": null,
       "playgroundCharacters": 31840,
       "playgroundReason": "31840 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/spinning-hoop.json",
       "playgroundOpens": false,
+      "download": "data/recipes/spinning-hoop.bodies.json",
       "images": [
         {
           "animation": "spinning-hoop",
@@ -5887,8 +5887,8 @@
       "playground": null,
       "playgroundCharacters": 17870,
       "playgroundReason": "17870 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/crate-topple.json",
       "playgroundOpens": false,
+      "download": "data/recipes/crate-topple.bodies.json",
       "images": [
         {
           "animation": "crate-topple",
@@ -6085,8 +6085,8 @@
       "playground": null,
       "playgroundCharacters": 26936,
       "playgroundReason": "26936 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/crate-smash.json",
       "playgroundOpens": false,
+      "download": "data/recipes/crate-smash.bodies.json",
       "images": [
         {
           "animation": "crate-smash",
@@ -6295,8 +6295,8 @@
       "playground": null,
       "playgroundCharacters": 51118,
       "playgroundReason": "51118 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/territory.json",
       "playgroundOpens": false,
+      "download": "data/recipes/territory.bodies.json",
       "images": [
         {
           "animation": "territory",
@@ -6609,8 +6609,8 @@
       "playground": null,
       "playgroundCharacters": 111399,
       "playgroundReason": "111399 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/blade-bloom.json",
       "playgroundOpens": false,
+      "download": "data/recipes/blade-bloom.bodies.json",
       "images": [
         {
           "animation": "blade-bloom",
@@ -6907,8 +6907,8 @@
       "playground": null,
       "playgroundCharacters": 31091,
       "playgroundReason": "31091 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/rope-bridge.json",
       "playgroundOpens": false,
+      "download": "data/recipes/rope-bridge.bodies.json",
       "images": [
         {
           "animation": "rope-bridge",
@@ -7099,14 +7099,14 @@
         "npx -y pixelbolt@0.15.0 compile --preset wrecking-ball --out wrecking-ball.json",
         "npx -y pixelbolt@0.15.0 render wrecking-ball.json --out wrecking-ball"
       ],
-      "alt": "Simulated rigid bodies: 2 circles and 6 boxes, with 1 rope.",
-      "description": "Simulated rigid bodies: 2 circles and 6 boxes, with 1 rope.",
-      "altSource": "description",
+      "alt": "A heavy ball on a rope swings through a pyramid of crates.",
+      "description": "A heavy ball on a rope swings through a pyramid of crates.",
+      "altSource": "gallery builder, from the docs",
       "playground": null,
       "playgroundCharacters": 25803,
       "playgroundReason": "25803 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/wrecking-ball.json",
       "playgroundOpens": false,
+      "download": "data/recipes/wrecking-ball.bodies.json",
       "images": [
         {
           "animation": "wrecking-ball",
@@ -7317,9 +7317,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset ragdoll --out ragdoll.json",
         "npx -y pixelbolt@0.15.0 render ragdoll.json --out ragdoll"
       ],
-      "alt": "Simulated rigid bodies: 6 boxes, with 5 joints.",
-      "description": "Simulated rigid bodies: 6 boxes, with 5 joints.",
-      "altSource": "description",
+      "alt": "A ragdoll of six hinged blocks falls into a heap.",
+      "description": "A ragdoll of six hinged blocks falls into a heap.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=7Z3bcts4EobfhXurZVnH2H6VqVx4QudQSOIUndnsVMrvvkUSh78PACGbzoqZ1sWM5W6LIMXvYwNsKT-b_9z3j58evja3203z9e7LfXPb9HcfuofPn5tN8-NT9_1jc3tz2jQf7z99-Pi9uT0dNs23u8_337_fN7c_G9fcNv_aHraH7btm0zwOzw53x6vTdbNp3g_PTu_fXN-chtcant1f3x-6IfZueLa_O93fHZtN0w3Pdm8ON6eu2TT98Ozd1f5m92fztGke__7y58Pnx2FrH_qHv752ze0fzftXfgw788qP32QTb582zfv-7sv9Y3P7x092Dv37anh3_-rvvo_n2OFq0zx8mxIfvjW3zYf-0_CO_7e53e83zd_N7fZq0_QPP4aUpp0ezj_802YTAz_Gx6UFxHDhGeQMga5z6Q-GpOE3KfDOP37DwLS3GJgOiT8-ECBHNx9w9Lin94M9nh8Irx63EgN93zv4vwUKAXEQ3z5tvAwev999-dYE4Y92GHU_-uFq1MPp6mnMZ5bZVltmepntVlhGkstOCQb8OqKlPeLIsCgjrTrqXDHaOYj6TceTo-u6FHWdiMLfdl2HJ9ZoGvxbjE7JJDqGx6h_gqOiUddKhU3RsBUW7Vw7uU9Gpz8ZBej3jrwL499M241RYGU4eORd6HvnImLOsfdoCMQoeweH378k6tqXREl4meg05OdHia3YBd1H1SLEv0fksYjTdtVO2-adViScqeNiY_l9EArDGJdQTYzIS9iJ6Ide1rquCzFppk5oaz42PhPKisYqxRTVeVtJ0U02ysRCDde5VpSpoYzzjgsX9WS4NkgsWMpJR01YFmgP3NbH_G9dLkYlUBVT5EFiTB1qrGfnUl-IufAbJ2LJNuNR5ceF5Sxkov25c7jd7zeHo78Xs4xnTFj0gHPcP1EHXD7JE8w85b_QnBNLHV5BFQOqomJdxAuqqBI4iMkjY2AUxXj2j5uMhRDijgYRzM4FJJEswCcs6RWKgT4dXZCZqwmQQim81hhwEAi4o1fjKdkuBfqhGvTdBPpelhyFC3KOtkuI5FYPxl9q_ObJzkZybI-lRSKSFw8q3XkhUFzrIpRkcAJH-czIePREceLCrCYKox3riAnz8bwfai1QYt_H-YhzjHNKOvCsr0DABZfwiQFJrmA3oMvgnSIsEEKj6GggRYYf6TxiDEnggwzkZb8NBdYSLjieu6Ry-GctqeSnKkD-QksqJKo6ipmALLh0DGwWjX55p_6t-GOc8hQnRMIOhaiYFMm1HHBYC3ZxzFajR7xh-vFv4bI5PPPCSDJBP3twEWAsy_vpKiyL9inGKwI0CzUIt4ssAaItYp1PwpplUlgUFhD1TuG2ibOqWHXJMFtgolG3VBVyqjXP7mYyz1Ezj1QPG7vAfG3x8v7J1V0WF7o5I64tk5C4YgYal8slzEpypbc6ri-dEL_MxbXVYuIYuYxSjrMaaLCJf3v6-AKevFAKpfKFGjB6KomKeCxGnaN2ITZCVyVbpZcmtkpGYlGSEGsixUlY5XC3hISCeVJcfUAVlUsouWvJuulNtb2uJ3u9Ue2l4C12QBpi9SmzO61oTaRIcxVSsoUc8K-nKHUVm1SC5Rzk0BRFZEyVmqu4DWmKJkTNWKwiU25k8cKrlBKmdz2-AUyOw5XB310K9huvFk76CwWIRa9LCXHuR5eQMe4Xpom3MCW9_465MNwFI2cjvJBPkcJKW8sajUkv83CzXqtR25J2uz7XbtdmtzN2enG7qSl69ca8hAWcWgJ22sSSe0msUZEUpRJjAvQyKwgw6C5vtyhEeRM_gB6VKe_VQ4qTR5d1EoSb9Wi38VjGFJfslewGfRDoNmI3RV1BRI48w5R0KjmSNKlLnIyYNJm2lY9UIi6grtmU5dR1c6a6drITMey_qUum_Bp1kcJMr91cN1O7ucz0Me-lTlRdU83V5quuKCplHuhBV6UTfxtul2Wkk-7BxYkaOXQ-J1EclybT0U2tSg68FNXlO5KclE66hxYdUkgJ9oolVdwGVY6vl5QzDSq-0iQwLJcVjTJZeUY6wzFbpjGxuv9592ayjrx3HsctjovYDY3k3yip4hCoGhJJmmXOT6KdjrlCKlPg4GoOL5S4kaYM1hxJnZRSnGqc4JPOO0V1TkwK_YaadUI5VPJOvKuXOZjETumR9i68FtUGFRRqRCa16J8pdz4p1j34aKmBioaBsVU4ZjHLVPc_B8voS-ZVxU1NubDOnApxzBc5FVWOPNNpjhvXgEkRQ3zgXKA9V6JEGygrQwT0EXWmsZDlywunliA-i80SVMzjmPXjM9Zofmk4Ii2OoXOCcTiG8SEQn1I0wqkb2LwrLkUlnLkqmATAFDieRfCubgUOeGfWlK2I-HVFhDiRKelTlBPaUtQTxQrGlGNxBU3lQNqcGLhLecW9CzVK-apOWVa9EdIAZvFJsHjsKPHUmmmxtvG9clwLCqs4jxDMA9CpEaBtWzZnYZPR2DFEzhdxPrXKYxk3VDfnejfsM8sa5oYXuiGDGEvSYWVuyGEfN5EVCPyhy6oIq4MARisHHraQrs5Zop2DS7hGtM_KEx3H2YsLvYZ9vFkc8wrYwyqDkgNEk1tTKApRwCU3VGDPTpVFsK9u1Q3YK6261ef8ZcL6oiTWQq0fAqx-s9jrZTRL0utxLBRzhT3KoDBDyBDNL5pkc6kXQ7mQp8WHWP3SJA9Bwr4X6wrxIzoEVjqmyGFaEOHYA6xYX6nYc1inNJKT7qTAKUCwzxEdLvfsrq-8jOD_QtIi2Fd35QbsT78F9jjFzBINa2u5JCyds4eALJMJ7GNdqi648YumunQnLr8R_OKF3IXPxSD2WBJEWNkNXrbEoMPqdy4d8UCcmK_30HAQa2OSFLhnl1868RBEt5RouAJLohn2tI83vhjkZL4YwhHqc2dmOGFoZ1tmfe81sK9via3AXoxY4_DXucHnVCWxsfPVp3xSmlYPO6YmETdEPWhJPi8W1WIBAKbV_PJL9i5Qzy_keI0eYXaiB4ILZOppb_nmSEmQuZC3WIFINySknXBDK5FW3ACD6gOw3A1JDn0vk-LAWM5LrvZxPNmrva_ty1f71yzy63tJT2Xs67ivA7-O_LP88ByLnJHFa_1pL0VWKvbzaGO1n7_GknK_cLmGer9iCk8doBUR_r-lekSp-eHq75DdwtQgCcWzISbyPXzqJuYpM3ms6AOwMUs3ga6C2NfUkjymHSiVYh65ASAcDS_nwvEr1P7pXSBnziI6qG--9FVA7i6fuiCpECytkYNO0KQknX-H7hXriUqJDbYo-lA3BVsP1O8C8PVASOrIaYjXe5RJMhFbD1QtwdcDmSTU9UDuCK-huB7Y8t1LhyWt4im9BORg4sdVWJJLF3iYDhCLhLtzUYI-LSQlP9DVgzjZ4Lf-FImkD9LEkQqHhIUBaErITSPY7eNF3FDf3XiacYMmBznVUeSQLQGKkyYN16pi4llJdSqq2pwmB-1egXrOY5Iqh9SVp8kBksANM7cI1SR-i1BuTtwi1OVAbhEWbhYkgRRvFpAbCr1yswAPpnqzQBxx5WYB7jJfWRzTMn0BbXo5_0njTFKaOZWTiBxgTIt8kVh9D-IibnC8HsjCOtNoVOWGkFOVVORQe6FnFRftNMdY1g1akgIrJmFJ8CyBsCS-Od5QBAsc6AbaUYQnUbalCOvsfE8RNBDMWaaXi5QtWAYbCEpucFhezLuhn3eDq3EDtnAv7Ib6zsFZNyhy0OoGIQc1aW5OcVbd8GI31CX5wmGmKprSXt0N_nXgbFaSXL7TUKxQxCRQg1jsYAKJa2_qXVJiELEEA7sX0_ziauKXHAPoKsY78-K-ZUdvW04lOz-ajicV3eBYVqmfMG60hP2U-f91Q33boblhbW7IfQaULLSxuw7MDdr9C-aGzJ0Q1Q1d0Q30zm3WDV2FG8hycN4NqZyZdQMvi4gbaJNhxg2sE1F3g39R_5tpJDk3wPBfxQ31bYfLuKEV63B60jxi7oeYemTdkP_2nUVnJ37BYWa9YX7v0ptcSlrCDaIRQbjhRZ9rim7Ifa5JukH5XBNxQ_ZzTdQNuc81MTfkD2ZwAyKnqSH3UYUZNxAHZJOmkeQE8tpuqO9NnHeDlIMChpSDnlSHGJVDTiD5bwgkSS-3jCKH5-xdhRsyS2wEezpd0OcU_GqvuGFmTpHcID7TAHVDTGGLqIobJPasbtA_ac3coC9cEDdgO4q5QbqhvoGxwg1CDhoYgxxmk85wQzEpYl9wQ8S-JBBXI5C6MZkbzA2rcEN9l2ONG0QPhu6GWexbMXHPcliGtaZuSG74IcA4L6muTJkfuH-H2b0ac4O54Ze64exWyLIbeLum5gZeOOQEUnX5nXODvNwXiC5hr5QgzxzT_N5Z3WBuuAA31PdFzrVJwzHNnfMxZRb7Cjcok_sXXsjrkooCkYsgmZKgsHeGvWH_2tif3fKY-1YUPKb66QwpszNycaPveYuDvxT7CHQ-Cc6v3PqoEa0lGdHV_87g2Y2Kc0TzdnstgV7JVaKX4lDOtl-aNEN0uJKrSbPdQYJoBVaF6EhLmWj6DfQa0YngAtHwlyWi4xhmiHY1RKf2wiLRLXQs_UOJPveLCc-6RqtczPJcg_M5V9WlcnIoV5A8f7uewq5xLFiXGMtvdOcUxwtnDmK4tOYZTtfoLMJQE9QQXANwlt8afGvorYG3ht1fhO65Xzpo6Bq6hu5FoHv2dwIauoauoXsJ6J79vX6GrqFr6F4Cumd_N5-ha-gaupeA7tnfr2foGrqG7iWgW98YZugauobuBaF79vfZGbqGrqF7CejW914ZuoauoXs56B7O_RdpDV1D19C9CHStm8rQNXRXia51Uxm6hu4q0bVuKkPX0F0lutZNZegauqtE17qpDF1Dd5XoWjeVoWvorhJd66YydA3dVaJr3VSGrqG7SnStm8rQNXTXiO7RuqkMXUN3lehaN5Wha-iuEl3rpjJ0Dd1VomvdVIauobtKdK2bytA1dFeJrnVTGbqG7irRtW4qQ9fQXSW61k1l6Bq6q0TXuqkMXUN3lehaN5Wha-iuEd2TdVMZuobuKtG1bipD19BdJbrWTWXoGrqrRNe6qQxdQ_fy0X27ae6-fvoycvrY3P4MBA8_vu_vvtyPRAash2lw-HkLP-_g5z38fICfj_DzCX5-Az9fw883uC2yYdzyFje9xW1vceNb3PoWN7_F7W9xAFscwQ5HsCP7jiPY4Qh2OIIdjmCHI9jhCHY4gh2OYI8j2OMI9uTw4wj2OII9jmCPI9jjCPY4gj2O4IAjOOAIDjiCAzkDcAQHHMEBR3DAERxwBAccwRFHcMQRHHEERxzBkZyEOIIjjuCIIzjiCI44ghOO4IQjOOEITvvm7ab5_DCw-P7u8-P909PT_wA",
       "playgroundCharacters": 5455,
       "playgroundReason": null,
@@ -11295,9 +11295,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset knight --out knight.json",
         "npx -y pixelbolt@0.15.0 render knight.json --out knight"
       ],
-      "alt": "A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand.",
-      "description": "A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand.",
-      "altSource": "description",
+      "alt": "A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt.",
+      "description": "A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=rVhbk6o4EP4vva8Zi4s6Dm-CdZz3Pftk8RAhAgWCReK6u1P8963ucBeHcc5hqka7Q76-prvjB5yK8swVOHBJ_hHZqSgj8XIppJDA4G9RyqTIwTEZ5PwswIE0T6JYAYNbEqoYHNtiEAvi0fcLz4RSApwPSMGBP8yj-WotgcEWKVssX9c2MHCRWgevm7c1MPCQ4jYXAVI7pMRaHE8rYFAiteKmsA1gIOnNjW3ZAhgoetNam8sjMIiQ2vAVNwNgsEcqfOOWzYHBO1KndRi8IhUQZmBzC9-8NfvsACoGJT9fJDiHA2xJUVQPlfLZAUpSAQUjFZEYBPd9Bpl2gmWt0AulkuiDOLnQ55lL-pTJfwKcw4atfC2JfHvkUoBjMCiuKkty8jOqcimSvMUB52Aw02dw44lURL2YflUxCGKBjA84Fjl5PhN5hMFZtWE6vLLNvURzKJFBwMl0OGUcY1wW1zwEf6CJyENw6D8DGRfXLBQlOIclM3wGuQhScA4rIoKS1DqYNnuxSNFY8BAxyuJGYhaLFJ_FYgEMFqm32-28lIjU9XY7z3PTmsDHdVHFdOul-iGiXmqIFP802tZ1XVej9eT4DHgexIXWeUO2ZdezmHKf3bnPZtYT7pNFkIp5B1aN8J8Y3U_lWxT5p-WT1E_lqziJ4inhy074ktmtcGNWuLb5K7bLOMlnRNtToq1Zuyl_PxN94uXP71pu_LrlJ17--U3j54M-a_z1csEz-xsd_4TlRfnMWXsi5l_y-l_fNf03pPuJlz--af1vqTT8moVlkQ8KMJVFrJ1YbtO61lI1rZf69RKLkLbjnefhCEcX6roQb2uE4X5T7z8WhepvTj2vrfpYzgmiLvHT4t0xQlvp0y2W_RkEGSciG-uftq5439NDIHvsQl7z3ZOy-e5JpdrvnpTuXpu89zx3n9ZNZ7-Pmga0mOw_S1LnVpSjtrjAd_VTI6Vjuq_xLdjv9EPOG6_f7-_jDyNkU6PWA6Bz-GjGPqk4ZXl4LbmikdAysA6WSYRl7GCumY0dqh58uo3tmdNrQw5XigdUg-s1Pck0fcvpBowKlYwyAc6LZRgV6-PToerD14w79L4utQA6HB32ug-t49ICN-QUbKPCNOpypPC79mW3vWZ8FXmIpvtYH67h3OHRNNqB4VCJaio6Gobfavw2Uph6VV9CzZhSuFVn0hcjYDrIfeCaMQXcKPHAE3qKa7EacjbF9JTai5ZpGWNYnM-GyJpzB94qMWm83QduYjGIDG_mesvvvdqqPLRgLrz6ntCJt1778nNxlzrqG3nzYj5MHJQwzBz5IG0GuszmDb49TJzjg6zpa_AgbehK0oVBU7NJQ_ecPoxuKaNKd_2VMmcOfKnxR5XuQZkb6TJdkzb36IM4afoB9kxRaieN7sx0nCecUfkVjkJJpEem8N8uFfVNsolXpKcfx3pjoC-dbcPKRKQv8_0ca_MCb_G9mtVUGbzO8_KsN_a6RlOPcV3xJMNm3R75pixgSz8X2CRpCEvCjEY9Jc6XjOMvI5pV4UU-S0dLxGIgL0KgPQYDqcokFOBs8BeGk6JJ-FgcwTGr2pljjJqJ9-1rqUaLxNKXLyFoMSiy6xl13VTV_w",
       "playgroundCharacters": 1666,
       "playgroundReason": null,
@@ -11734,9 +11734,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset hermit-chest --out hermit-chest.json",
         "npx -y pixelbolt@0.15.0 render hermit-chest.json --out hermit-chest"
       ],
-      "alt": "Posed parts: idle, peek, rise, walk-right, walk-left, hide.",
-      "description": "Posed parts: idle, peek, rise, walk-right, walk-left, hide.",
-      "altSource": "description",
+      "alt": "A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides.",
+      "description": "A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=7VndbqM6EH6XObfG4jdJeQxuVlGVCxJMgoAQGXo4qMq7H40BYztJm2zbbHa3Vks8eMae-cY_4-EV0oqXcQMhHLL_WJFWfMusQ1WzGgj8y3idVXsIHQL7uGQQwo7xMmuszY7VDRBos6TZQejbBHYs2-4aCD2XwCEuWNMwCF8hhxD-cWMndn0gkCHl-PbGQSpBarb2UjfGvpB6ioPUWwCBAqlNsIh9BgQqpOLF3HdSINAhxdy1622AwBKpdM2CBfbyQ1CiAIESqUXqpmJ0jlTyFHjuGghEgjNYxEEABJig_NRmNhzRAt7UqH-RJfjDq7aG8BkopblRKKVAgOZ5USyXxVCwlufYkCPZyQZRa3NsaNu27ZbtUPrapYakb0jatquQFA1V2yZ9Q5IkSVclQ-lromHZmaWqclgdCazjmqmWyVGrJXasjjo0dHnenaqDEt0okSgSlTSgUrpKxobkOgMuNpwYJiwjYLqnL8LkbXzQLM7OFNHFjQ3YN-uYVbC0UQdgOHXz4TEy8X6ZGFws7x9CzSIrS8Y1nrFhr4n-EK8Ltq2tWJulUUQvlCjCSRlxys-3cxrxnoHSiEca10BLhgiZdQbav8fFVlLKS_xTe-9f8BLXJqW0FH9qGd6Uk2Vr1bLLhqFpo-KXGFAvekZzqbdYybwcKZUB_3kpGHpDNNMmemAo5UPaNTwmy-rmZW1sLm8Uofv7fr1k3OSVE9QHmvegb4q4tQqrOrC9hjzODTGGrHDsrUeMc64K17uXRp-QfLRgqFwU5icjU4pDClynChdziHPsRhU-GVm6daqYwrjfiyMvfH4dD7osKZhl4yH1wuOmPwV92yZQ8Wyb7SF8dm3i2St5VEyieGT0ryWBJ-yz5TjEcuarI5GsYhOWvAM1MT-tjiq30MnRdHq6v0YTb1FtcqvflKTESA4ipkSWvC0wI5YzO2O1a1j9AI7wNJX84CqV8AiaTBeEopKrDiJOFA0ncSqMAj6xHNvk5xf5PZP9bXAWHwTH18CZ_2J_HRjLzcXsfvtLAUffVZzZF4MzBUKjSHBOgusSIr5S8HGvxse1P4iPvv_4Xz15TGsfHR7vvmvrt5s-_v2nz-34aBJ3BijQAHKvOy_-jgnEs9qMRBff8Ojw_FRQzLa1opK8kMmxAmL56khv4-nfjOeJxDt4-tfj6dyAp-OcAdT9mQ39DKKxBufsejhnN8N5IvEOnLPr4fRvgdNTmfv78MSuXq6l1NwM4Pq7rCHFNakx6lPF2rjIe2DMYPfK-Puh_XdyPP3RDnQ-yYHrP8OB3mc7UOSJbnagKnXRgbjRPP4CPLlefO-fk_cefvXd03u_ydrbZYkZJ8-_A8EPBIICUH0lfHpe6MuyWkJ5PYr1fkkWckUg3mel0EF8Ucb8KP6mPC7FN4fpW4NM8Muct8w0D1lV_NKBF2a9A5nflLk8mbSS6RmZhxju2ysCRVUdIEzjomZHIuJ-vVt585R3rOFucCI7BS56D0ZEqsU3q1Fu_GxqiMljVN2WUQhdq_PLpS-n7OB-Q9EjgXrHmBit4VkJYcNfGDowSbL9FkLnePwf",
       "playgroundCharacters": 1624,
       "playgroundReason": null,
@@ -12398,7 +12398,7 @@
         }
       },
       "preset": true,
-      "title": "Iso Tiles",
+      "title": "Isometric Tiles",
       "group": "Tile sets",
       "groupId": "tile-sets",
       "recipeUrl": "https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/iso-tiles.json",
@@ -12406,9 +12406,9 @@
         "npx -y pixelbolt@0.15.0 compile --preset iso-tiles --out iso-tiles.json",
         "npx -y pixelbolt@0.15.0 render iso-tiles.json --out iso-tiles"
       ],
-      "alt": "A hand-drawn recipe: water, water-late; stills turf, grass, grass-tufts, grass-flowers, paver, paver-worn and 9 more.",
-      "description": "A hand-drawn recipe: water, water-late; stills turf, grass, grass-tufts, grass-flowers, paver, paver-worn and 9 more.",
-      "altSource": "description",
+      "alt": "An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out.",
+      "description": "An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out.",
+      "altSource": "gallery builder, from the docs",
       "playground": "https://skulitom.github.io/Pixelbolt/playground/#v=0.15.0&r=xVpJj5tKEP4vnSuD2G18Y4lyyCEHH56eojlg0xjL2NiAZxxF89-fqpulgAbakyfFlxlq-aq6Nrrb_k3eaFEe8wvZ6Aq5RGdKNuRY5i_VMaMlUcj7Ma5SsjENhaT0eEgrsnEshVyjjFYVJZvf5BvZkC9OsjNtgygkgyfXiS1nTRRygCcrcnULnhJ4Mg3HtSKikK_wtNNWlOmB3S_ryI7MPVFIzDBNSzMSopATQzGNyLCIQlJ4ohZ1KEhuGYq7i_cuUUjJUKhrRg5RyIOhOE60Bgs3hmJbaxswv8OTsTNiCzDf4SmyqZaA5D9MMomcGCzcmdfmyt2B3hvTW9u2axKFeMxCvNvZIOkzycS1bJsoJOAWnMTWiEJCeNJja28BL2dPthGbgPIvPCVmbLsropAfbH3azl6BLxe2vngdWWDhF5N04r0NESyY5NoxLfDsyHhWolOLfCikiM7Xkmx-_iQJS4RCvrH0vCo_yYmFGIIOaQDKdxYgCBkEEcIKgQbOGwsBBAXCBJScLQcWCEuGIAD1wlyHxby-KqT8dd7lWQn1URzPZPOTqAsfohD1cJjmJwkTUedEOAr7iMSS1pCEL6qqfmVACClJVPXUE2EyPVsJkzgJDB06HwaGms_XaV8Gn9OyyDzK2JQMyqtCqntSQT4zNWMpY8RdFsWUUVmtvSrkerzQUdr9WYN_wPX84LNcz_OD4HNcz_P9ALPluR5we2xprtdyQwHXn-f6fuD7Qdgxe3aZXhCGYm4Yhowp5Hph8wlEXM_zwhAMC7j1gpjt4P_kej1u8AzXa7mY3XB93--4YRNNxPW9IGiDGQ58DhvMsAtmyw3D0G_iPOZ6XZjDNsPY59Dzw9BnCAOf51c0y0XMmhvIcj0BN5DjshgPuVBdLdcfcFm8aq9YEuos-HWkMVdFmIIcqX6gxkFwUic6RVXj-DQzhP-ES2kc_wUuBS5mwxgvo2t2vBx6k9wX6j9BRfN4iYrn7wK1N2_nqf352lJ9AbWur2GF-KGPJmVD7U_IlurhZkZdEzKQYS_Vhan2ugTPuBmqP5xpXSfVVNQjvu_5ARr53YrrtuivWFUBcNwpcVfKn6TSWJqKK5htPO5l2hZnvXik0k2QNkRo5jQBwmMIogZ72sHoCRsaIjU0TKppPVLIbfRItS9dUoYJaOoFFlnk-xPqwDRN035c0nS73W5TROOU7XZbtrSGst2Wj5qGSY8Hp5VlTQHS4wG0Ej5A4aSOVrakx6Om3RDtxvEYrabcuC-t5u12u8EiPxSSFNGZwonld3MOre4FnF3yK6fmV7Ihu_zBT3YaOw2Za3Z40x12ZoQ_KdnomkIqJs2OPBQ2rOzMU_ADLDmRD-UJPFcARxFc_BycKYA7ILikgyur6HzFgJbbnK3Ihp2sPl5BuA7YoYhKOL0lRX6eiB9CXHNEGyGyzb3IuqFz4RUS5pt-kbRuc2ljLD1y9wVsyjutmxxal_Ha4bKOjKzucmFLStgaZ2M6dtbYjZnYaWM_JmOXZPk7LZ6InjZOY9_v6_FBs1EW93mWw23DL6FgUxzOkqButGtrBI-zps1O8DBrerUk2Ji2e4I4otfojRbzkaRZdryWtFdcButwQ2snTwP_6PwQ6elTeumE3grbg2rlk6lR24qXbY6WXYoFrVEOJwRtSUFDGyW7FET85T0vLk-EvauMd-51ykKzFHW7F72R2lTQnZ41k6k5wqD31PRu8oCePtSb8rLRsyf0ptzUVz17vKjsxeLQZItDlxRs2nEtFMQzUZN6Q7xHFS1e4P40vhdRxe6pTVOb3xPUrdV_6a6al-4_3Uv3jl66b52bBd1XvZZzOR7v1G5l7yIVfY0zaErp1FGzeXFacnZ4QdsWHyNSOm47K0Uqd6FrGg7BaDlCnXrm2Lp4OXdRivW_leL17PrEoXdxiuXSZRg4xXLpql9ZdYrlym_9fIqb5biT6Zp2TZ-0M06x8bdSPL8-cbo0nGLJdLk4xZLTwsQpliw_HedYsiV7ZS5ZF_rzOTb_Vo51bXaB4kCuei_bZwqjTrJkwiycZMnxruEkSzbl6hNJtnCSRcWEk7zL4CZi4UTuiE7kRpPUbZfUG0rqbfoILcTTBXglwgMIGh9of88kA-0IkB-f99T-lKOo4HB-9OG-7jH9Dui9NpZUmjm0ekZnPatzE67GnPVNrOPOhkCoY-PukVxOPe60J3SaaTChI16OM-sb0hGcXtFRfGKnbkoKNm-4_jEON3tZ0etCrzfHqcUGkmt1IdyfNlC9TzY_UQrOJ0phQmeuFKZ8myiF7k23cOOhPydoa0uC9SZW4rJl1bbsQrmuRYK4CvdFVNHJMuzdpUBk4vb0210C_5C_BJ7BcwVwFwRHuzr89zlkW4C8dL08A2f9maNNffGi5K3IO7EN6KVTy-9VBr_06PJ3GtzxcO7UhSSvKHyNyhRm8PPBlKq_oJw2wUNlrJGNRkneDPueadrGSnA7Dhpz7YZqvpjtIm1RsNtgCgQX11YINnXjrwlw_JjGjIHvgxylUZy_z97qrfA73jBGl6InEeJLeY6ybBbX7e031sNrPwb7qpDocjyzQwv7xRo7y8A_7VdS6CKqu6_ojrXN4Qe-xuL_ZxH_ceQQAUsrAtTXjw-FlCmlFWjv8-x-Bp-cj4__AA",
       "playgroundCharacters": 2706,
       "playgroundReason": null,
@@ -12878,8 +12878,8 @@
       "playground": null,
       "playgroundCharacters": 35531,
       "playgroundReason": "35531 characters exceeds the 16384-character playground limit",
-      "download": "data/recipes/wave-scene.json",
       "playgroundOpens": true,
+      "download": "data/recipes/wave-scene.json",
       "images": [
         {
           "animation": "scene",

@@ -65,7 +65,7 @@
       {
         "@type": "ListItem",
         "position": 4,
-        "name": "Rain On Fire",
+        "name": "Rain on Fire",
         "url": "https://skulitom.github.io/Pixelbolt/gallery/#rain-on-fire"
       },
       {
@@ -611,7 +611,7 @@
       {
         "@type": "ListItem",
         "position": 95,
-        "name": "Iso Tiles",
+        "name": "Isometric Tiles",
         "url": "https://skulitom.github.io/Pixelbolt/gallery/#iso-tiles"
       },
       {
@@ -688,10 +688,11 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Pixelbolt</a></nav>
 <h1>100 pixel art effects, sprites and scenes, every one a recipe</h1>
 <figure class="montage"><picture><source srcset="montage-still.png" media="(prefers-reduced-motion: reduce)"><img src="montage.gif" width="1536" height="192" alt="Looping pixel art: Campfire, Torch, Steam Vent, Potion, Honey, Drip, Plasma Globe, Boiling Pot." decoding="async"></picture></figure>
-<p class="lead">These are JSON recipes rendered by Pixelbolt 0.15.0. Open any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="https://github.com/skulitom/Pixelbolt">source, setup and documentation</a>.</p>
+<p class="lead">These are JSON recipes rendered by Pixelbolt 0.15.0. Open almost any in the playground in your browser with nothing installed, edit it and download a sprite sheet, atlas or GIF; 12 long ones need one compile command first, shown on their cards. Pixelbolt is free and MIT-licensed. Your agent can make new ones through the MCP server or the skill: <a href="https://github.com/skulitom/Pixelbolt">source, setup and documentation</a>.</p>
 <nav aria-label="Gallery groups"><ul class="jump"><li><a href="#falling-sand">Falling sand</a></li><li><a href="#phase-changes">Phase changes</a></li><li><a href="#electricity">Electricity</a></li><li><a href="#fire-smoke-gas">Fire, smoke and gas</a></li><li><a href="#liquids">Liquids</a></li><li><a href="#sand-grains">Sand grains</a></li><li><a href="#bodies-in-fluid">Bodies in a fluid</a></li><li><a href="#rigid-bodies">Rigid bodies, ropes and cloth</a></li><li><a href="#crystal-growth">Crystal growth</a></li><li><a href="#particle-spell-effects">Particle and spell effects</a></li><li><a href="#waves">Waves</a></li><li><a href="#characters-motion">Characters and motion</a></li><li><a href="#hand-drawn-sprites">Hand-drawn sprites</a></li><li><a href="#tile-sets">Tile sets</a></li><li><a href="#scenes">Scenes</a></li></ul></nav>
 <p class="muted">One-shot effects play once in a game; here their previews loop, with a 0.8 s pause before each replay. Each card shows up to four animations; the recipe includes those listed under “also”. Export commands write sprite sheets, atlases, Godot files and frames; tile sets include terrain exports, and scenes include asset bundles and numbered scene frames.</p>
 <section aria-labelledby="falling-sand"><h2 id="falling-sand">Falling sand <span class="count">(5)</span></h2>
+<p>A falling-sand grid holds sand, water, stone, wood, fire, smoke, steam, oil, lava and more, one material per pixel, and steps 60 times a second: heat boils, melts and lights things, and burnt-through structures collapse or topple. Compile these with the CLI or MCP, or run them live in Pixelbolt Studio’s Powder lab. Sand grains, under Fluid simulations below, are different: sand as a granular liquid in the fluid solver.</p>
 <div class="cards"><article class="card" id="hut-fire">
 <h3>Hut Fire</h3>
 <p>A hut on a pier burns, drops into its pool and floats there burning while lava pours off the far cliff into the water.</p>
@@ -699,7 +700,7 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 
 <p class="facts">192 × 108 px · 150 frames · one-shot · 64 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/hut-fire.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/hut-fire.powder.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile hut-fire.powder.json --out hut-fire.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>hut-fire.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/hut-fire.powder.json">Recipe</a>: <code>examples/hut-fire.powder.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset hut-fire --out hut-fire.json
 npx -y pixelbolt@0.15.0 render hut-fire.json --out hut-fire</code></pre></details>
@@ -711,39 +712,39 @@ npx -y pixelbolt@0.15.0 render hut-fire.json --out hut-fire</code></pre></detail
 
 <p class="facts">128 × 96 px · 120 frames · one-shot · 42 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/lava-falls.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/lava-falls.powder.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile lava-falls.powder.json --out lava-falls.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>lava-falls.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/lava-falls.powder.json">Recipe</a>: <code>examples/lava-falls.powder.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset lava-falls --out lava-falls.json
 npx -y pixelbolt@0.15.0 render lava-falls.json --out lava-falls</code></pre></details>
 </article>
 <article class="card" id="stilt-hut">
 <h3>Stilt Hut</h3>
-<p>Stilt hut: tumbling pieces, a hut topples. Falling sand of stone, sand, water, moss, wood.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/stilt-hut--stilt-hut-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/stilt-hut--stilt-hut.gif" width="256" height="160" alt="Stilt hut: tumbling pieces, a hut topples. Falling sand of stone, sand, water, moss, wood." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
+<p>A stilt burns through at the waterline, and the tall hut on it leans, topples into the pool with a splash and lies there burning.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/stilt-hut--stilt-hut-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/stilt-hut--stilt-hut.gif" width="256" height="160" alt="A stilt burns through at the waterline, and the tall hut on it leans, topples into the pool with a splash and lies there burning." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">128 × 80 px · 90 frames · one-shot · 48 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/stilt-hut.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/stilt-hut.powder.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile stilt-hut.powder.json --out stilt-hut.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>stilt-hut.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/stilt-hut.powder.json">Recipe</a>: <code>examples/stilt-hut.powder.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset stilt-hut --out stilt-hut.json
 npx -y pixelbolt@0.15.0 render stilt-hut.json --out stilt-hut</code></pre></details>
 </article>
 <article class="card" id="rain-on-fire">
-<h3>Rain On Fire</h3>
-<p>Rain on fire: wind, then rain on a campfire. Falling sand of stone, sand, wood.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/rain-on-fire--rain-on-fire-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/rain-on-fire--rain-on-fire.gif" width="448" height="288" alt="Rain on fire: wind, then rain on a campfire. Falling sand of stone, sand, wood." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
+<h3>Rain on Fire</h3>
+<p>A campfire leans in a breeze until rain hisses it out in steam.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/rain-on-fire--rain-on-fire-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/rain-on-fire--rain-on-fire.gif" width="448" height="288" alt="A campfire leans in a breeze until rain hisses it out in steam." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">112 × 72 px · 120 frames · one-shot · 46 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/rain-on-fire.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/rain-on-fire.powder.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile rain-on-fire.powder.json --out rain-on-fire.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>rain-on-fire.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/rain-on-fire.powder.json">Recipe</a>: <code>examples/rain-on-fire.powder.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset rain-on-fire --out rain-on-fire.json
 npx -y pixelbolt@0.15.0 render rain-on-fire.json --out rain-on-fire</code></pre></details>
 </article>
 <article class="card" id="quarry-blast">
 <h3>Quarry Blast</h3>
-<p>Quarry blast: a blast throws sand and water. Falling sand of stone, sand, ash, water.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/quarry-blast--quarry-blast-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/quarry-blast--quarry-blast.gif" width="256" height="160" alt="Quarry blast: a blast throws sand and water. Falling sand of stone, sand, ash, water." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
+<p>A blast throws sand and water in arcs that rain back down and settle.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/quarry-blast--quarry-blast-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/quarry-blast--quarry-blast.gif" width="256" height="160" alt="A blast throws sand and water in arcs that rain back down and settle." decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">128 × 80 px · 32 frames · one-shot · 16 colours</p>
 
@@ -753,7 +754,7 @@ npx -y pixelbolt@0.15.0 render rain-on-fire.json --out rain-on-fire</code></pre>
 npx -y pixelbolt@0.15.0 render quarry-blast.json --out quarry-blast</code></pre></details>
 </article></div></section>
 <section aria-labelledby="fluid-simulations"><h2 id="fluid-simulations">Fluid simulations</h2>
-<p>A deterministic simulation on your CPU bakes gases, FLIP liquids and sand grains, heat and phase change, electric gas, and bodies that float, sink or ride the flow into palette pixels.</p>
+<p>A deterministic simulation on your CPU bakes gases, FLIP liquids and sand grains, heat and phase change, electric gas, and bodies that float, sink or ride the flow, all into palette pixels.</p>
 <section aria-labelledby="phase-changes"><h3 id="phase-changes">Phase changes <span class="count">(5)</span></h3>
 <div class="cards"><article class="card" id="ice-melt">
 <h4>Ice Melt</h4>
@@ -1170,8 +1171,8 @@ npx -y pixelbolt@0.15.0 render sand-slide.json --out sand-slide</code></pre></de
 </article>
 <article class="card" id="water-wheel">
 <h4>Water Wheel</h4>
-<p>A paddle cross turns in a pool for ever and stirs it while a duck and a crate ride the current.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/water-wheel--water-wheel-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-wheel--water-wheel.gif" width="448" height="352" alt="A paddle cross turns in a pool for ever and stirs it while a duck and a crate ride the current" loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
+<p>A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/water-wheel--water-wheel-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/water-wheel--water-wheel.gif" width="448" height="352" alt="A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current." loading="lazy" decoding="async"></picture><figcaption>loop</figcaption></figure></div>
 
 <p class="facts">224 × 176 px · 40 frames · loop · 10 colours</p>
 
@@ -1213,7 +1214,7 @@ npx -y pixelbolt@0.15.0 render plank-tip.json --out plank-tip</code></pre></deta
 
 <p class="facts">96 × 96 px · 256 frames · one-shot · 8 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/ring-escape.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/ring-escape.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile ring-escape.bodies.json --out ring-escape.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>ring-escape.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/ring-escape.bodies.json">Recipe</a>: <code>examples/ring-escape.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset ring-escape --out ring-escape.json
 npx -y pixelbolt@0.15.0 render ring-escape.json --out ring-escape</code></pre></details>
@@ -1237,7 +1238,7 @@ npx -y pixelbolt@0.15.0 render bouncing-pixel.json --out bouncing-pixel</code></
 
 <p class="facts">72 × 72 px · 240 frames · one-shot · 7 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/spinning-hoop.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/spinning-hoop.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile spinning-hoop.bodies.json --out spinning-hoop.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>spinning-hoop.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/spinning-hoop.bodies.json">Recipe</a>: <code>examples/spinning-hoop.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset spinning-hoop --out spinning-hoop.json
 npx -y pixelbolt@0.15.0 render spinning-hoop.json --out spinning-hoop</code></pre></details>
@@ -1249,7 +1250,7 @@ npx -y pixelbolt@0.15.0 render spinning-hoop.json --out spinning-hoop</code></pr
 
 <p class="facts">224 × 96 px · 140 frames · one-shot · 8 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/crate-topple.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/crate-topple.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile crate-topple.bodies.json --out crate-topple.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>crate-topple.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/crate-topple.bodies.json">Recipe</a>: <code>examples/crate-topple.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset crate-topple --out crate-topple.json
 npx -y pixelbolt@0.15.0 render crate-topple.json --out crate-topple</code></pre></details>
@@ -1261,7 +1262,7 @@ npx -y pixelbolt@0.15.0 render crate-topple.json --out crate-topple</code></pre>
 
 <p class="facts">112 × 64 px · 152 frames · one-shot · 12 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/crate-smash.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/crate-smash.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile crate-smash.bodies.json --out crate-smash.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>crate-smash.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/crate-smash.bodies.json">Recipe</a>: <code>examples/crate-smash.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset crate-smash --out crate-smash.json
 npx -y pixelbolt@0.15.0 render crate-smash.json --out crate-smash</code></pre></details>
@@ -1273,7 +1274,7 @@ npx -y pixelbolt@0.15.0 render crate-smash.json --out crate-smash</code></pre></
 
 <p class="facts">72 × 128 px · 256 frames · one-shot · 8 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/territory.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/territory.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile territory.bodies.json --out territory.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>territory.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/territory.bodies.json">Recipe</a>: <code>examples/territory.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset territory --out territory.json
 npx -y pixelbolt@0.15.0 render territory.json --out territory</code></pre></details>
@@ -1285,7 +1286,7 @@ npx -y pixelbolt@0.15.0 render territory.json --out territory</code></pre></deta
 
 <p class="facts">80 × 80 px · 240 frames · one-shot · 17 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/blade-bloom.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/blade-bloom.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile blade-bloom.bodies.json --out blade-bloom.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>blade-bloom.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/blade-bloom.bodies.json">Recipe</a>: <code>examples/blade-bloom.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset blade-bloom --out blade-bloom.json
 npx -y pixelbolt@0.15.0 render blade-bloom.json --out blade-bloom</code></pre></details>
@@ -1297,27 +1298,27 @@ npx -y pixelbolt@0.15.0 render blade-bloom.json --out blade-bloom</code></pre></
 
 <p class="facts">128 × 64 px · 140 frames · one-shot · 6 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/rope-bridge.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/rope-bridge.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile rope-bridge.bodies.json --out rope-bridge.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>rope-bridge.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/rope-bridge.bodies.json">Recipe</a>: <code>examples/rope-bridge.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset rope-bridge --out rope-bridge.json
 npx -y pixelbolt@0.15.0 render rope-bridge.json --out rope-bridge</code></pre></details>
 </article>
 <article class="card" id="wrecking-ball">
 <h3>Wrecking Ball</h3>
-<p>Simulated rigid bodies: 2 circles and 6 boxes, with 1 rope.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/wrecking-ball--wrecking-ball-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/wrecking-ball--wrecking-ball.gif" width="384" height="256" alt="Simulated rigid bodies: 2 circles and 6 boxes, with 1 rope." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
+<p>A heavy ball on a rope swings through a pyramid of crates.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/wrecking-ball--wrecking-ball-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/wrecking-ball--wrecking-ball.gif" width="384" height="256" alt="A heavy ball on a rope swings through a pyramid of crates." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 64 px · 160 frames · one-shot · 7 colours</p>
 
-<p>Too long for a playground link: <a href="data/recipes/wrecking-ball.json" download>download the source</a> to edit, or run the export commands below.</p>
+<p>Too long for a playground link: <a href="data/recipes/wrecking-ball.bodies.json" download>download the source</a>, run <code>npx -y pixelbolt@0.15.0 compile wrecking-ball.bodies.json --out wrecking-ball.json</code> and use Open file in the <a href="https://skulitom.github.io/Pixelbolt/playground/">playground</a> on <code>wrecking-ball.json</code>.</p>
 <p><a href="https://github.com/skulitom/Pixelbolt/blob/v0.15.0/examples/wrecking-ball.bodies.json">Recipe</a>: <code>examples/wrecking-ball.bodies.json</code></p>
 <details><summary>Export commands</summary><pre><code>npx -y pixelbolt@0.15.0 compile --preset wrecking-ball --out wrecking-ball.json
 npx -y pixelbolt@0.15.0 render wrecking-ball.json --out wrecking-ball</code></pre></details>
 </article>
 <article class="card" id="ragdoll">
 <h3>Ragdoll</h3>
-<p>Simulated rigid bodies: 6 boxes, with 5 joints.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/ragdoll--ragdoll-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ragdoll--ragdoll.gif" width="384" height="256" alt="Simulated rigid bodies: 6 boxes, with 5 joints." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
+<p>A ragdoll of six hinged blocks falls into a heap.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/ragdoll--ragdoll-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/ragdoll--ragdoll.gif" width="384" height="256" alt="A ragdoll of six hinged blocks falls into a heap." loading="lazy" decoding="async"></picture><figcaption>one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">96 × 64 px · 64 frames · one-shot · 7 colours</p>
 
@@ -1711,11 +1712,11 @@ npx -y pixelbolt@0.15.0 render hero.json --out hero</code></pre></details>
 </article>
 <article class="card" id="knight">
 <h3>Knight</h3>
-<p>A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/knight--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--idle.gif" width="256" height="256" alt="A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/knight--walk-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--walk.gif" width="256" height="256" alt="A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand. Animation: walk." loading="lazy" decoding="async"></picture><figcaption>walk · loop</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/knight--attack-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--attack.gif" width="256" height="256" alt="A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand. Animation: attack." loading="lazy" decoding="async"></picture><figcaption>attack · one-shot, looped here</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/knight--hurt-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--hurt.gif" width="256" height="256" alt="A character rig whose motion templates make idle, walk, attack, hurt, with sword in hand. Animation: hurt." loading="lazy" decoding="async"></picture><figcaption>hurt · one-shot, looped here</figcaption></figure></div>
+<p>A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/knight--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--idle.gif" width="256" height="256" alt="A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/knight--walk-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--walk.gif" width="256" height="256" alt="A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt. Animation: walk." loading="lazy" decoding="async"></picture><figcaption>walk · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/knight--attack-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--attack.gif" width="256" height="256" alt="A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt. Animation: attack." loading="lazy" decoding="async"></picture><figcaption>attack · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/knight--hurt-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/knight--hurt.gif" width="256" height="256" alt="A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt. Animation: hurt." loading="lazy" decoding="async"></picture><figcaption>hurt · one-shot, looped here</figcaption></figure></div>
 
 <p class="facts">32 × 32 px · 18 frames · loops and one-shots · 10 colours</p>
 
@@ -1755,11 +1756,11 @@ npx -y pixelbolt@0.15.0 render fox.json --out fox</code></pre></details>
 </article>
 <article class="card" id="hermit-chest">
 <h3>Hermit Chest</h3>
-<p>Posed parts: idle, peek, rise, walk-right, walk-left, hide.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/hermit-chest--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--idle.gif" width="320" height="256" alt="Posed parts: idle, peek, rise, walk-right, walk-left, hide. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/hermit-chest--peek-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--peek.gif" width="320" height="256" alt="Posed parts: idle, peek, rise, walk-right, walk-left, hide. Animation: peek." loading="lazy" decoding="async"></picture><figcaption>peek · one-shot, looped here</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/hermit-chest--rise-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--rise.gif" width="320" height="256" alt="Posed parts: idle, peek, rise, walk-right, walk-left, hide. Animation: rise." loading="lazy" decoding="async"></picture><figcaption>rise · one-shot, looped here</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/hermit-chest--walk-right-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--walk-right.gif" width="320" height="256" alt="Posed parts: idle, peek, rise, walk-right, walk-left, hide. Animation: walk-right." loading="lazy" decoding="async"></picture><figcaption>walk-right · loop</figcaption></figure></div>
+<p>A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/hermit-chest--idle-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--idle.gif" width="320" height="256" alt="A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides. Animation: idle." loading="lazy" decoding="async"></picture><figcaption>idle · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hermit-chest--peek-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--peek.gif" width="320" height="256" alt="A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides. Animation: peek." loading="lazy" decoding="async"></picture><figcaption>peek · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hermit-chest--rise-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--rise.gif" width="320" height="256" alt="A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides. Animation: rise." loading="lazy" decoding="async"></picture><figcaption>rise · one-shot, looped here</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/hermit-chest--walk-right-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/hermit-chest--walk-right.gif" width="320" height="256" alt="A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides. Animation: walk-right." loading="lazy" decoding="async"></picture><figcaption>walk-right · loop</figcaption></figure></div>
 <p class="muted">also: walk-left, hide.</p>
 <p class="facts">40 × 32 px · 21 frames · loops and one-shots · 13 colours</p>
 
@@ -1884,10 +1885,10 @@ npx -y pixelbolt@0.15.0 autotile shore.autotile.json --out shore.json --preview 
 npx -y pixelbolt@0.15.0 render shore.json --out shore</code></pre></details>
 </article>
 <article class="card" id="iso-tiles">
-<h3>Iso Tiles</h3>
-<p>A hand-drawn recipe: water, water-late; stills turf, grass, grass-tufts, grass-flowers, paver, paver-worn and 9 more.</p>
-<div class="previews"><figure class="stage"><picture><source srcset="gifs/iso-tiles--water-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/iso-tiles--water.gif" width="128" height="256" alt="A hand-drawn recipe: water, water-late; stills turf, grass, grass-tufts, grass-flowers, paver, paver-worn and 9 more. Animation: water." loading="lazy" decoding="async"></picture><figcaption>water · loop</figcaption></figure>
-<figure class="stage"><picture><source srcset="gifs/iso-tiles--water-late-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/iso-tiles--water-late.gif" width="128" height="256" alt="A hand-drawn recipe: water, water-late; stills turf, grass, grass-tufts, grass-flowers, paver, paver-worn and 9 more. Animation: water-late." loading="lazy" decoding="async"></picture><figcaption>water-late · loop</figcaption></figure></div>
+<h3>Isometric Tiles</h3>
+<p>An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out.</p>
+<div class="previews"><figure class="stage"><picture><source srcset="gifs/iso-tiles--water-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/iso-tiles--water.gif" width="128" height="256" alt="An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out. Animation: water." loading="lazy" decoding="async"></picture><figcaption>water · loop</figcaption></figure>
+<figure class="stage"><picture><source srcset="gifs/iso-tiles--water-late-still.png" media="(prefers-reduced-motion: reduce)"><img src="gifs/iso-tiles--water-late.gif" width="128" height="256" alt="An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out. Animation: water-late." loading="lazy" decoding="async"></picture><figcaption>water-late · loop</figcaption></figure></div>
 
 <p class="facts">32 × 64 px · 19 frames · loop · 29 colours</p>
 
