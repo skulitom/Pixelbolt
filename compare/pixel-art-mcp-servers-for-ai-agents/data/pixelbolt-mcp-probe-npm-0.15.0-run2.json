@@ -1,0 +1,356 @@
+{
+ "commit": "npm pixelbolt@0.15.0",
+ "node": "v24.19.0",
+ "platform": "win32 x64 10.0.26200",
+ "cpu": "AMD Ryzen 9 7950X3D 16-Core Processor",
+ "startedAt": "2026-11-11T15:08:42.280Z",
+ "serverInfo": {
+  "name": "pixelbolt",
+  "version": "0.15.0"
+ },
+ "protocolVersion": "2025-06-18",
+ "tools": [
+  {
+   "name": "pixel_help",
+   "descriptionChars": 916,
+   "inputSchemaUtf8Bytes": 623,
+   "annotations": {
+    "title": "Pixelbolt guide and schema",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_validate",
+   "descriptionChars": 167,
+   "inputSchemaUtf8Bytes": 635,
+   "annotations": {
+    "title": "Validate a pixel art recipe",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_inspect",
+   "descriptionChars": 414,
+   "inputSchemaUtf8Bytes": 3708,
+   "annotations": {
+    "title": "Inspect pixel art frames",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_patch",
+   "descriptionChars": 571,
+   "inputSchemaUtf8Bytes": 1853,
+   "annotations": {
+    "title": "Patch pixel art",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_render",
+   "descriptionChars": 544,
+   "inputSchemaUtf8Bytes": 3758,
+   "annotations": {
+    "title": "Export pixel art files",
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_compile",
+   "descriptionChars": 1183,
+   "inputSchemaUtf8Bytes": 1739,
+   "annotations": {
+    "title": "Compile poses, tilesets, effects or fluids",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_scene",
+   "descriptionChars": 484,
+   "inputSchemaUtf8Bytes": 661,
+   "annotations": {
+    "title": "Compose a pixel art scene",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false
+   }
+  },
+  {
+   "name": "pixel_import",
+   "descriptionChars": 381,
+   "inputSchemaUtf8Bytes": 500,
+   "annotations": {
+    "title": "Import a PNG as a recipe",
+    "readOnlyHint": false,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+   }
+  }
+ ],
+ "toolsListMs": 0.5715,
+ "toolsListUtf8Bytes": 19754,
+ "validate": {
+  "ms": 94.5883,
+  "isError": false,
+  "revision": "873911c436cc",
+  "summary": {
+   "width": 24,
+   "height": 24,
+   "animations": {
+    "spin": {
+     "frames": 6,
+     "duration": 660,
+     "loop": true,
+     "fps": 9.09
+    }
+   }
+  }
+ },
+ "inspect": {
+  "ms": 6.7288,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 2132
+   }
+  ],
+  "keys": [
+   "ok",
+   "revision",
+   "name",
+   "width",
+   "height",
+   "frames",
+   "animations",
+   "cells",
+   "region",
+   "sheet",
+   "warnings"
+  ]
+ },
+ "patch": {
+  "ms": 7.7388,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 708
+   }
+  ],
+  "response": {
+   "ok": true,
+   "revision": "eaa54abd9f73",
+   "base": "873911c436cc",
+   "edits": [
+    {
+     "paint": "frames[turn-0]",
+     "at": "frames[0]",
+     "pixels": 1
+    }
+   ],
+   "frames": {
+    "changed": [
+     {
+      "frame": "turn-0",
+      "pixels": 1,
+      "box": {
+       "x": 12,
+       "y": 12,
+       "w": 1,
+       "h": 1
+      },
+      "changes": [
+       {
+        "x": 12,
+        "y": 12,
+        "from": "shade",
+        "to": "light"
+       }
+      ]
+     }
+    ],
+    "unchanged": [
+     "turn-1",
+     "turn-2",
+     "turn-3",
+     "turn-4",
+     "turn-5"
+    ]
+   },
+   "image": {
+    "region": {
+     "x": 10,
+     "y": 10,
+     "w": 5,
+     "h": 5
+    },
+    "frames": [
+     {
+      "frame": "turn-0",
+      "status": "changed"
+     }
+    ],
+    "scale": 16
+   },
+   "warnings": []
+  }
+ },
+ "render": {
+  "ms": 27.3731,
+  "isError": false,
+  "images": [
+   {
+    "mimeType": "image/png",
+    "base64Length": 12340
+   }
+  ],
+  "response": {
+   "ok": true,
+   "revision": "eaa54abd9f73",
+   "directory": "<fresh folder>\\probe2\\coin-6WKSQu",
+   "sheet": "coin.png",
+   "atlas": "coin.atlas.json",
+   "files": [
+    "coin.png",
+    "coin.atlas.json",
+    "coin.tres",
+    "coin.pixel.json",
+    "coin.css",
+    "frames/turn-0.png",
+    "frames/turn-1.png",
+    "frames/turn-2.png",
+    "frames/turn-3.png",
+    "frames/turn-4.png",
+    "frames/turn-5.png",
+    "animations/spin.png",
+    "player.js",
+    "preview.html",
+    "README.txt"
+   ],
+   "folders": {
+    "frames": 6,
+    "animations": 1
+   },
+   "frames": 6,
+   "animations": {
+    "spin": {
+     "frames": 6,
+     "duration": 660,
+     "loop": true,
+     "fps": 9.09
+    }
+   },
+   "playback": "<fresh folder>\\probe2\\coin-6WKSQu\\preview.html",
+   "check": {
+    "delivered": {
+     "size": [
+      24,
+      24
+     ],
+     "animations": {
+      "spin": {
+       "frames": 6,
+       "loop": true
+      }
+     },
+     "colors": 4,
+     "transparent": true
+    },
+    "hint": "Pass expect with what the user asked for (width, height, frames, colors, transparent, loop, gifScale) to check every file against it."
+   },
+   "preview": {
+    "cells": [
+     "turn-0 … turn-5: 110 ms each"
+    ],
+    "region": {
+     "x": 0,
+     "y": 0,
+     "w": 24,
+     "h": 24
+    },
+    "sheet": {
+     "columns": 3,
+     "rows": 2,
+     "scale": 10,
+     "gap": 10,
+     "width": 760,
+     "height": 510
+    }
+   },
+   "warnings": []
+  }
+ },
+ "renderBase": {
+  "ms": 22.3309,
+  "isError": false,
+  "directory": "<fresh folder>\\probe2\\coin-SOO4dP"
+ },
+ "frameDiff": [
+  {
+   "frame": "turn-0.png",
+   "size": "24x24",
+   "changedPixels": 1,
+   "changes": [
+    {
+     "x": 12,
+     "y": 12,
+     "from": "c78a43ff",
+     "to": "ffe4a0ff"
+    }
+   ]
+  },
+  {
+   "frame": "turn-1.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-2.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-3.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-4.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  },
+  {
+   "frame": "turn-5.png",
+   "size": "24x24",
+   "changedPixels": 0,
+   "changes": []
+  }
+ ],
+ "outFiles": 32,
+ "stderr": ""
+}

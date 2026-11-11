@@ -1,0 +1,32 @@
+Four searches run on 2026-11-11, between about 15:15 and 15:20 GMT, by the Pixelbolt maintainers with Claude Code's
+WebSearch tool (Brave's index), for the page "Pixel art and sprite tools for AI agents: 7 MCP servers compared".
+Our pages (skulitom.github.io/Pixelbolt/...) appeared in none of the four.
+
+1. "pixel art MCP server"
+   Results: mcpservers.org (comficker/pixel-art-mcp, pt-BR copy, diivi/aseprite-mcp), LobeHub (abobilly pixel-mcp-server
+   x2, pixellab-mcp, willibrandon aseprite-mcp, jerryscription mcp-pixel-paint), Glama (uncagedspirit/pixel-art-mcp,
+   diivi/aseprite-mcp, ssyubix-pixelart-mcp, three unnamed ids), npm pixellab-mcp, shyft.ai, a willibrandon/pixel-mcp
+   mirror, skillsplayground (airetrodiffusion-pixel-art).
+   Summary named: simplepixelart-mcp (image to pixel art, local, no key), uncagedspirit (Hugging Face text-to-image),
+   Aseprite servers ("104 tools across 17 categories"), PixelLab (hosted, token), pixelart-mcp, a LibreSprite server
+   over SSE, Retro Diffusion's server. "Most of these results come from directory aggregators".
+2. "which pixel art software works with AI agents over MCP?"
+   Results: Glama (Aseprite MCP Server, diivi, ssyubix, pixelsmith image, Aseprite integrations list, unnamed ids),
+   LobeHub (your-org aseprite-mcp), mcpservers.org (diivi), GitHub adrianoamaral/pixel-mcp, Enterprise DNA (diivi),
+   mcpmarket (Bigfoot's Cave, pixel art).
+   Summary named: Aseprite servers, Atelier, Pixelsmith, Bigfoot's Cave, pixscii, pixel-mcp, ssyubix, pixelforge-mcp.
+   "These come from directory listings and GitHub".
+3. "pixel art sprite generator tool for AI agents MCP" (also run on 2026-10-16)
+   Results: Glama (diivi, unnamed ids, ssyubix, Aseprite MCP Server), awesome.ecosyste.ms (willibrandon aseprite-mcp),
+   mcpservers.org (diivi, Retro Diffusion, comficker), LobeHub (abobilly, willibrandon aseprite-mcp-go x4), a
+   pixel-mcp mirror.
+   Summary named: Retro Diffusion (hosted, key, "90+ pixel art styles"), pixelforge-mcp, diivi aseprite-mcp
+   ("104 tools"), willibrandon, a LibreSprite server, simplepixelart-mcp, pixelart-mcp, pixscii, ssyubix.
+   "The listings don't show current maintenance status or pricing".
+4. "Pixel art and sprite tools for AI agents: MCP servers compared" (the new title's wording)
+   Results: LobeHub (willibrandon aseprite-mcp, abobilly x2), Glama (Aseprite MCP Server, MalloyTheDev/aseprite-mcp,
+   diivi, rxolve/pixscii, Aseprite integrations, unnamed ids), a pixel-mcp mirror.
+   Summary: "The search mostly returned directory listings and READMEs, not a true side-by-side comparison";
+   "The results don't include benchmarks, feature matrices, or maintenance comparisons."
+Note: the summaries' "104 tools across 17 categories" for diivi/aseprite-mcp is a stale directory copy; its README at
+4bcdb6f says 123 tools across 18 categories.

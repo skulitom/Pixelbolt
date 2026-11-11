@@ -1,0 +1,187 @@
+{
+ "what": "Which MCP clients list Pixelbolt 0.15.0's tools: the MCP TypeScript SDK v1 client 1.32.2, the v2 client @modelcontextprotocol/client 2.4.0 in its default ('legacy'), 'auto' and {pin: '2026-07-28'} modes, and Claude Code 2.1.322 (model calls pointed at http://127.0.0.1:9 with a dummy key, so nothing left the machine). Windows 11, Node 24.19.0, 2026-11-11.",
+ "sdk_runs": {
+  "when": "2026-11-11T15:00:48.645Z",
+  "node": "v24.19.0",
+  "results": [
+   {
+    "server": "pixelbolt-0.15.0 (node, npm package)",
+    "client": "v1-sdk-1.32.2",
+    "protocolVersion": "(v1 client: no getter)",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 206
+   },
+   {
+    "server": "pixelbolt-0.15.0 (node, npm package)",
+    "client": "v2-2.4.0-legacy(default)",
+    "protocolVersion": "2025-11-25",
+    "era": "legacy",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 193
+   },
+   {
+    "server": "pixelbolt-0.15.0 (node, npm package)",
+    "client": "v2-2.4.0-auto",
+    "protocolVersion": "2025-11-25",
+    "era": "legacy",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 365
+   },
+   {
+    "server": "pixelbolt-0.15.0 (node, npm package)",
+    "client": "v2-2.4.0-pin-2026-07-28",
+    "error": "SdkError: Version negotiation failed: the server did not offer pinned protocol version 2026-07-28 via server/discover (no fallback in pin mode)",
+    "toolCount": 0,
+    "ms": 162
+   },
+   {
+    "server": "pixelbolt-0.15.0 (cmd /c npx -y pixelbolt@0.15.0)",
+    "client": "v1-sdk-1.32.2",
+    "protocolVersion": "(v1 client: no getter)",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 5211
+   },
+   {
+    "server": "pixelbolt-0.15.0 (cmd /c npx -y pixelbolt@0.15.0)",
+    "client": "v2-2.4.0-legacy(default)",
+    "protocolVersion": "2025-11-25",
+    "era": "legacy",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 1965
+   },
+   {
+    "server": "pixelbolt-0.15.0 (cmd /c npx -y pixelbolt@0.15.0)",
+    "client": "v2-2.4.0-auto",
+    "protocolVersion": "2025-11-25",
+    "era": "legacy",
+    "serverInfo": {
+     "name": "pixelbolt",
+     "version": "0.15.0"
+    },
+    "toolCount": 8,
+    "tools": [
+     "pixel_compile",
+     "pixel_help",
+     "pixel_import",
+     "pixel_inspect",
+     "pixel_patch",
+     "pixel_render",
+     "pixel_scene",
+     "pixel_validate"
+    ],
+    "ms": 3998
+   },
+   {
+    "server": "pixelbolt-0.15.0 (cmd /c npx -y pixelbolt@0.15.0)",
+    "client": "v2-2.4.0-pin-2026-07-28",
+    "error": "SdkError: Version negotiation failed: the server did not offer pinned protocol version 2026-07-28 via server/discover (no fallback in pin mode)",
+    "toolCount": 0,
+    "ms": 1990
+   }
+  ]
+ },
+ "claude_code_2_1_322": {
+  "init_line_mcp_servers": [
+   {
+    "name": "pixelbolt",
+    "status": "connected",
+    "source": "dynamic"
+   }
+  ],
+  "init_line_pixelbolt_tools": [
+   "mcp__pixelbolt__pixel_compile",
+   "mcp__pixelbolt__pixel_help",
+   "mcp__pixelbolt__pixel_import",
+   "mcp__pixelbolt__pixel_inspect",
+   "mcp__pixelbolt__pixel_patch",
+   "mcp__pixelbolt__pixel_render",
+   "mcp__pixelbolt__pixel_scene",
+   "mcp__pixelbolt__pixel_validate"
+  ],
+  "handshake_trace_first_lines": [
+   "C>S {\"jsonrpc\":\"2.0\",\"id\":\"server-discover-probe-1\",\"method\":\"server/discover\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientInfo\":{\"name\":\"claude-code\",\"title\":\"Claude Code\",\"version\":\"2.1.322\",\"description\":\"Anthropic's agentic coding tool\",\"websiteUrl\":\"https://claude.com/claude-code\"},\"io.modelcontextprotocol/clientCapabilities\":{\"roots\":{\"listChanged\":true},\"elicitation\":{\"form\":{},\"url\":{}}}}}}",
+   "S>C {\"jsonrpc\":\"2.0\",\"id\":\"server-discover-probe-1\",\"error\":{\"code\":-32000,\"message\":\"Initialize the server first\"}}",
+   "C>S {\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"roots\":{\"listChanged\":true},\"elicitation\":{\"form\":{},\"url\":{}}},\"clientInfo\":{\"name\":\"claude-code\",\"title\":\"Claude Code\",\"version\":\"2.1.322\",\"description\":\"Anthropic's agentic coding tool\",\"websiteUrl\":\"https://claude.com/claude-code\"}},\"jsonrpc\":\"2.0\",\"id\":0}",
+   "S>C {\"jsonrpc\":\"2.0\",\"id\":0,\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"pixelbolt\",\"version\":\"0.15.0\"},\"instructions\":\"Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions,",
+   "C>S {\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
+   "C>S {\"method\":\"tools/list\",\"jsonrpc\":\"2.0\",\"id\":1}",
+   "S>C {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"tools\":[{\"name\":\"pixel_help\",\"description\":\"Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: presets "
+  ]
+ },
+ "raw_server_discover_reply": {
+  "stdout": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32000,\"message\":\"Initialize the server first\"}}\n",
+  "stderrHead": "",
+  "exitedBefore5s": false,
+  "exitCode": null
+ }
+}

@@ -1,0 +1,1067 @@
+{
+ "commit": "1b9cf2b71a89fe73c3315686af7787667a8ffc70",
+ "node": "v24.19.0",
+ "platform": "win32 x64 10.0.26200",
+ "cpu": "AMD Ryzen 9 7950X3D 16-Core Processor",
+ "renders": [
+  {
+   "recipe": "examples/caption.json",
+   "files": 18,
+   "identical": true,
+   "msA": 153,
+   "msB": 153
+  },
+  {
+   "recipe": "examples/coin.json",
+   "files": 15,
+   "identical": true,
+   "msA": 137,
+   "msB": 138
+  },
+  {
+   "recipe": "examples/effects.json",
+   "files": 73,
+   "identical": true,
+   "msA": 200,
+   "msB": 202
+  },
+  {
+   "recipe": "examples/ember.json",
+   "files": 13,
+   "identical": true,
+   "msA": 132,
+   "msB": 135
+  },
+  {
+   "recipe": "examples/forest-spirit-normal.json",
+   "files": 17,
+   "identical": true,
+   "msA": 142,
+   "msB": 142
+  },
+  {
+   "recipe": "examples/forest-spirit.json",
+   "files": 17,
+   "identical": true,
+   "msA": 136,
+   "msB": 136
+  },
+  {
+   "recipe": "examples/iso-tiles.json",
+   "files": 29,
+   "identical": true,
+   "msA": 156,
+   "msB": 155
+  },
+  {
+   "recipe": "examples/shrine.json",
+   "files": 11,
+   "identical": true,
+   "msA": 140,
+   "msB": 140
+  },
+  {
+   "recipe": "examples/swing.json",
+   "files": 14,
+   "identical": true,
+   "msA": 134,
+   "msB": 140
+  },
+  {
+   "recipe": "examples/fix-one-frame/mossling.json",
+   "files": 17,
+   "identical": true,
+   "msA": 141,
+   "msB": 142
+  },
+  {
+   "recipe": "examples/quality/crystal.json",
+   "files": 13,
+   "identical": true,
+   "msA": 138,
+   "msB": 140
+  },
+  {
+   "recipe": "examples/quality/fern-base.json",
+   "files": 11,
+   "identical": true,
+   "msA": 148,
+   "msB": 139
+  },
+  {
+   "recipe": "examples/quality/fern-before.json",
+   "files": 10,
+   "identical": true,
+   "msA": 134,
+   "msB": 135
+  },
+  {
+   "recipe": "examples/quality/fern.json",
+   "files": 11,
+   "identical": true,
+   "msA": 136,
+   "msB": 139
+  },
+  {
+   "recipe": "examples/quality/lantern-emissive.json",
+   "files": 11,
+   "identical": true,
+   "msA": 142,
+   "msB": 133
+  },
+  {
+   "recipe": "examples/quality/lantern-normal.json",
+   "files": 11,
+   "identical": true,
+   "msA": 136,
+   "msB": 141
+  },
+  {
+   "recipe": "examples/quality/lantern.json",
+   "files": 11,
+   "identical": true,
+   "msA": 137,
+   "msB": 137
+  },
+  {
+   "recipe": "examples/quality/root-bank.json",
+   "files": 10,
+   "identical": true,
+   "msA": 139,
+   "msB": 134
+  },
+  {
+   "recipe": "examples/quality/sedge.json",
+   "files": 10,
+   "identical": true,
+   "msA": 132,
+   "msB": 135
+  },
+  {
+   "recipe": "examples/quality/shale.json",
+   "files": 10,
+   "identical": true,
+   "msA": 135,
+   "msB": 137
+  },
+  {
+   "recipe": "examples/quality/skink.json",
+   "files": 23,
+   "identical": true,
+   "msA": 147,
+   "msB": 149
+  }
+ ],
+ "sources": [
+  {
+   "source": "examples/aquarium.fluid.json",
+   "kind": "fluid",
+   "frames": 48,
+   "size": "56x48",
+   "identical": true,
+   "msA": 1374,
+   "msB": 1366,
+   "recipeSha256": "b52cd3e51d7d62dee8b6ade740f4811bec364edc62b5fdfa747335c3a20d23b0"
+  },
+  {
+   "source": "examples/blade-bloom.bodies.json",
+   "kind": "bodies",
+   "frames": 240,
+   "size": "80x80",
+   "identical": true,
+   "msA": 7524,
+   "msB": 7644,
+   "recipeSha256": "7ea7f94f2fa22a8cb782d0c3387197e3de56e632f323adebbf38d7a4fe028977"
+  },
+  {
+   "source": "examples/boiling-pot.fluid.json",
+   "kind": "fluid",
+   "frames": 48,
+   "size": "40x48",
+   "identical": true,
+   "msA": 905,
+   "msB": 883,
+   "recipeSha256": "40d7c3cf4e98c378ba7588a6f04e5323ecb0f42d0586ca8da0bb67ea65e881ea"
+  },
+  {
+   "source": "examples/bouncing-pixel.bodies.json",
+   "kind": "bodies",
+   "frames": 220,
+   "size": "48x32",
+   "identical": true,
+   "msA": 173,
+   "msB": 170,
+   "recipeSha256": "830f2da64a2cfca4ec599aca609085348eae736bae0ecd051a2c454ac9739ee6"
+  },
+  {
+   "source": "examples/campfire.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "32x48",
+   "identical": true,
+   "msA": 286,
+   "msB": 290,
+   "recipeSha256": "4167e84af68e6e6ae5c0b9a4074c3e768dcf995088227ba9ab7adf87dcf7f63b"
+  },
+  {
+   "source": "examples/cape.bodies.json",
+   "kind": "bodies",
+   "frames": 120,
+   "size": "80x64",
+   "identical": true,
+   "msA": 248,
+   "msB": 244,
+   "recipeSha256": "d7f4c907b515c8370fb8684d34bbd28c9453b617fcf4457014b5546030c6ebb4"
+  },
+  {
+   "source": "examples/crate-smash.bodies.json",
+   "kind": "bodies",
+   "frames": 152,
+   "size": "112x64",
+   "identical": true,
+   "msA": 714,
+   "msB": 703,
+   "recipeSha256": "a935423a713a5b3ffcf53388f76474392d5b350c6cf011a23860b9c06ee353f6"
+  },
+  {
+   "source": "examples/crate-splash.fluid.json",
+   "kind": "fluid",
+   "frames": 120,
+   "size": "192x144",
+   "identical": true,
+   "msA": 1237,
+   "msB": 1236,
+   "recipeSha256": "f126116aa9c1c9747eaf6df180f8d7823b28197adfe192f9e194343dd2e9cd1f"
+  },
+  {
+   "source": "examples/crate-topple.bodies.json",
+   "kind": "bodies",
+   "frames": 140,
+   "size": "224x96",
+   "identical": true,
+   "msA": 310,
+   "msB": 313,
+   "recipeSha256": "d0f7675fec3757d04e50915908c77942d165ac2d558bbec807dd1a1492749240"
+  },
+  {
+   "source": "examples/dam-break.fluid.json",
+   "kind": "fluid",
+   "frames": 70,
+   "size": "64x36",
+   "identical": true,
+   "msA": 438,
+   "msB": 418,
+   "recipeSha256": "c01e9da1c305f004ca3fd28dcc3669a2f4280365480be85d2a531a13506862d3"
+  },
+  {
+   "source": "examples/drip.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "16x32",
+   "identical": true,
+   "msA": 240,
+   "msB": 239,
+   "recipeSha256": "975278e47e4a633ecb3358589e23d17ea9dffbe84eee50779518d0c236a976a4"
+  },
+  {
+   "source": "examples/dry-ice.fluid.json",
+   "kind": "fluid",
+   "frames": 64,
+   "size": "56x40",
+   "identical": true,
+   "msA": 402,
+   "msB": 392,
+   "recipeSha256": "12bb7f2ff16d593dff82ba918cb8204d54b1beb514cf3f012679c6a4cc366177"
+  },
+  {
+   "source": "examples/dust-wave.fluid.json",
+   "kind": "fluid",
+   "frames": 26,
+   "size": "64x32",
+   "identical": true,
+   "msA": 225,
+   "msB": 227,
+   "recipeSha256": "ca47764aac035dde6586a45874967689c7d399616b582828edbe367bd627b2ea"
+  },
+  {
+   "source": "examples/effects.fx.json",
+   "kind": "fx",
+   "frames": 60,
+   "size": "48x40",
+   "identical": true,
+   "msA": 147,
+   "msB": 148,
+   "recipeSha256": "b974911e428fab7bd1f4f3bb781e2b5fc76a002f78a423457ddd8266e8660d24"
+  },
+  {
+   "source": "examples/explosion.fluid.json",
+   "kind": "fluid",
+   "frames": 32,
+   "size": "64x64",
+   "identical": true,
+   "msA": 335,
+   "msB": 330,
+   "recipeSha256": "490c8b831c77049c05114927a4c9341e70a84044821b9c83740624d6072d003c"
+  },
+  {
+   "source": "examples/fire-explosion.fx.json",
+   "kind": "fx",
+   "frames": 16,
+   "size": "96x96",
+   "identical": true,
+   "msA": 218,
+   "msB": 220,
+   "recipeSha256": "b10d1e17494303caa1df847b4cc03ba4e3c519f9d7d2c9e13e66fb0906425061"
+  },
+  {
+   "source": "examples/fire-spells.fx.json",
+   "kind": "fx",
+   "frames": 107,
+   "size": "64x64",
+   "identical": true,
+   "msA": 368,
+   "msB": 381,
+   "recipeSha256": "910ac2ddb6dd2cec2aeddb6579d6be306890936489a7608250ff89cbc5942e25"
+  },
+  {
+   "source": "examples/fireball.fx.json",
+   "kind": "fx",
+   "frames": 64,
+   "size": "56x56",
+   "identical": true,
+   "msA": 285,
+   "msB": 273,
+   "recipeSha256": "548ba8e8f39ea1d33b31a02748ba4d53a85d5a957616d9f26c946851c31d2a42"
+  },
+  {
+   "source": "examples/flag.bodies.json",
+   "kind": "bodies",
+   "frames": 60,
+   "size": "64x48",
+   "identical": true,
+   "msA": 297,
+   "msB": 299,
+   "recipeSha256": "561da2045acce036f3b384d2049ced6debc90e0e7411053d488abdb84c5f994d"
+  },
+  {
+   "source": "examples/fluid-blast.fx.json",
+   "kind": "fx",
+   "frames": 32,
+   "size": "96x96",
+   "identical": true,
+   "msA": 416,
+   "msB": 400,
+   "recipeSha256": "4ab16ae7984a0699f6233a8256005ce33bc233013555542a7528e86f8650f297"
+  },
+  {
+   "source": "examples/forest-spirit.normals.json",
+   "kind": "normals",
+   "frames": 6,
+   "size": "24x24",
+   "identical": true,
+   "msA": 135,
+   "msB": 137,
+   "recipeSha256": "a933177223e7fb426ad627c6c2ad865515b8ef7e2b38589673c44942fdf38705"
+  },
+  {
+   "source": "examples/fox.poses.json",
+   "kind": "poses",
+   "frames": 45,
+   "size": "48x32",
+   "identical": true,
+   "msA": 239,
+   "msB": 239,
+   "recipeSha256": "95e73f2e8b371d0c2c3780b830af43ecfd3f5c45d8bcabe620a6f20b6d883006"
+  },
+  {
+   "source": "examples/frost-window.fluid.json",
+   "kind": "fluid",
+   "frames": 64,
+   "size": "40x40",
+   "identical": true,
+   "msA": 342,
+   "msB": 351,
+   "recipeSha256": "8d1d76eb89f5ca1ef23d7454c377ae95b2fad5e374453b714dd844f94daa75d8"
+  },
+  {
+   "source": "examples/geode.crystal.json",
+   "kind": "crystal",
+   "frames": 56,
+   "size": "76x58",
+   "identical": true,
+   "msA": 244,
+   "msB": 244,
+   "recipeSha256": "230cef47f8a4a4ee01b8b7d915864070140526f5ed1613bcd8ced73e634fb724"
+  },
+  {
+   "source": "examples/glug.fluid.json",
+   "kind": "fluid",
+   "frames": 110,
+   "size": "40x56",
+   "identical": true,
+   "msA": 509,
+   "msB": 510,
+   "recipeSha256": "1ae887a7a9a0e44eb67e14a93ca59b607f1d9668c450d8ebe555f12402741673"
+  },
+  {
+   "source": "examples/ground.autotile.json",
+   "kind": "autotile",
+   "frames": 151,
+   "size": "16x16",
+   "identical": true,
+   "msA": 226,
+   "msB": 230,
+   "recipeSha256": "12603c497bdfdb22383744ffa1d2ed8a0840e2a72c2dea36c519061202cbe8d5"
+  },
+  {
+   "source": "examples/healing-circle.fx.json",
+   "kind": "fx",
+   "frames": 18,
+   "size": "96x72",
+   "identical": true,
+   "msA": 225,
+   "msB": 220,
+   "recipeSha256": "079bece5df63a01517a9a566a6277ce3fad7b1eb80ae481c13d2b871c1d18bf7"
+  },
+  {
+   "source": "examples/hermit-chest.poses.json",
+   "kind": "poses",
+   "frames": 21,
+   "size": "40x32",
+   "identical": true,
+   "msA": 144,
+   "msB": 142,
+   "recipeSha256": "2f9c17d528051e0d57fdb2cf203e3cfd57fbb925a0f2d046878f59cea3092566"
+  },
+  {
+   "source": "examples/hero-magic.fx.json",
+   "kind": "fx",
+   "frames": 26,
+   "size": "40x52",
+   "identical": true,
+   "msA": 305,
+   "msB": 297,
+   "recipeSha256": "c64a08f9fab95457d0a6b2aa37bee9a290da642b9c98836a1cfe87e0b33200cf"
+  },
+  {
+   "source": "examples/hero-sword.poses.json",
+   "kind": "poses",
+   "frames": 16,
+   "size": "40x36",
+   "identical": true,
+   "msA": 204,
+   "msB": 213,
+   "recipeSha256": "9a4273296db41bf4f046bc2448d7ed8de233356679d39a91a554a9e76a5a5dc2"
+  },
+  {
+   "source": "examples/hero.poses.json",
+   "kind": "poses",
+   "frames": 35,
+   "size": "32x36",
+   "identical": true,
+   "msA": 255,
+   "msB": 257,
+   "recipeSha256": "e2fb9306b3122da5cc88635ff52b75aafeed47ff62ce09c6867ecab162fea940"
+  },
+  {
+   "source": "examples/holy-spells.fx.json",
+   "kind": "fx",
+   "frames": 124,
+   "size": "64x64",
+   "identical": true,
+   "msA": 352,
+   "msB": 334,
+   "recipeSha256": "dcd27741fa04929f582eda062bfa58ba99bb69b28b3f99522b173bc238d5088f"
+  },
+  {
+   "source": "examples/honey-dipper.fluid.json",
+   "kind": "fluid",
+   "frames": 56,
+   "size": "40x60",
+   "identical": true,
+   "msA": 542,
+   "msB": 524,
+   "recipeSha256": "fa94668db9fe59e523bf42ebbfc0701414013aa615f91c83234c8b07e8ec2903"
+  },
+  {
+   "source": "examples/honey-drop.fluid.json",
+   "kind": "fluid",
+   "frames": 44,
+   "size": "40x48",
+   "identical": true,
+   "msA": 381,
+   "msB": 392,
+   "recipeSha256": "456646ff703ae82d7c54f3817095b2a13bb404d883b45a69f61171b47c215866"
+  },
+  {
+   "source": "examples/honey.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "40x48",
+   "identical": true,
+   "msA": 569,
+   "msB": 567,
+   "recipeSha256": "b980d581823ada975120b0c094cb44be5a9e9f2f7fb616b747dad2ab91eb87ae"
+  },
+  {
+   "source": "examples/hot-stone.fluid.json",
+   "kind": "fluid",
+   "frames": 140,
+   "size": "160x160",
+   "identical": true,
+   "msA": 989,
+   "msB": 996,
+   "recipeSha256": "7529bcf1a00961038a0c89c7865e5a4f2a383e563c711c2d5be811b504a888c1"
+  },
+  {
+   "source": "examples/hourglass.fluid.json",
+   "kind": "fluid",
+   "frames": 120,
+   "size": "30x58",
+   "identical": true,
+   "msA": 1050,
+   "msB": 1039,
+   "recipeSha256": "ed0bf6f8c6879b5508c07ca118a2d2bed4061685c92beb15a29a943295909e8c"
+  },
+  {
+   "source": "examples/hut-fire.powder.json",
+   "kind": "powder",
+   "frames": 150,
+   "size": "192x108",
+   "identical": true,
+   "msA": 1178,
+   "msB": 1172,
+   "recipeSha256": "1244e035f611035530480aac5a65b79a682a89fe53c14837c0b974b551e68241"
+  },
+  {
+   "source": "examples/ice-melt.fluid.json",
+   "kind": "fluid",
+   "frames": 72,
+   "size": "48x40",
+   "identical": true,
+   "msA": 498,
+   "msB": 501,
+   "recipeSha256": "49bac0ba3677c7b4c1da1965b59d2c57f3fee07802f6129609e2a540192033e9"
+  },
+  {
+   "source": "examples/ice-spells.fx.json",
+   "kind": "fx",
+   "frames": 134,
+   "size": "64x64",
+   "identical": true,
+   "msA": 442,
+   "msB": 449,
+   "recipeSha256": "eba54ef31f0b591f934b1df6e21d3458bfe34dcb8d93d174eb7b71b310c3fb30"
+  },
+  {
+   "source": "examples/interference.wave.json",
+   "kind": "wave",
+   "frames": 40,
+   "size": "48x30",
+   "identical": true,
+   "msA": 163,
+   "msB": 169,
+   "recipeSha256": "9ca717f4c593f4446ef1fdaabf5c1fda1f435dc4f8cc34c81e4eb85f7b67efbf"
+  },
+  {
+   "source": "examples/jacobs-ladder.fluid.json",
+   "kind": "fluid",
+   "frames": 22,
+   "size": "40x64",
+   "identical": true,
+   "msA": 585,
+   "msB": 587,
+   "recipeSha256": "802b4bdc415f767094f7c7f1c0b8fa57ca12588df5b8e136ebc495f1c6b8a833"
+  },
+  {
+   "source": "examples/knight.poses.json",
+   "kind": "poses",
+   "frames": 18,
+   "size": "32x32",
+   "identical": true,
+   "msA": 256,
+   "msB": 253,
+   "recipeSha256": "f0195c9c030e83c696a887a86eafa29cd32a21da52d7fa91b4e54a3d7d5cd029"
+  },
+  {
+   "source": "examples/lava-falls.powder.json",
+   "kind": "powder",
+   "frames": 120,
+   "size": "128x96",
+   "identical": true,
+   "msA": 672,
+   "msB": 672,
+   "recipeSha256": "08e95919c9b6c8c6cc997415b0360f56fb3d481e9e024b039b864211322f83e7"
+  },
+  {
+   "source": "examples/lightning-pond.fluid.json",
+   "kind": "fluid",
+   "frames": 48,
+   "size": "64x72",
+   "identical": true,
+   "msA": 1307,
+   "msB": 1312,
+   "recipeSha256": "1bcd2447734a846cd3206e53219aa5efea91a3d303f0e4abefff3ba9fb83b8a7"
+  },
+  {
+   "source": "examples/lightning-spells.fx.json",
+   "kind": "fx",
+   "frames": 106,
+   "size": "64x64",
+   "identical": true,
+   "msA": 352,
+   "msB": 362,
+   "recipeSha256": "08bc53a34cc3368b2b6afabdea1a76bd6ffbbb18d248d5b826acdad21e0156cc"
+  },
+  {
+   "source": "examples/lightning-strike.fx.json",
+   "kind": "fx",
+   "frames": 12,
+   "size": "96x104",
+   "identical": true,
+   "msA": 195,
+   "msB": 192,
+   "recipeSha256": "483ac6e0ecdb1d505295867254c0cc9de751979e71d2b974759aa6da01732329"
+  },
+  {
+   "source": "examples/lightning.fluid.json",
+   "kind": "fluid",
+   "frames": 32,
+   "size": "64x96",
+   "identical": true,
+   "msA": 773,
+   "msB": 780,
+   "recipeSha256": "374480bf25f5f7155db03196dcc0a5dc02d3fdde3bd0359dbb203478d1656e39"
+  },
+  {
+   "source": "examples/magic-swirl.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "48x48",
+   "identical": true,
+   "msA": 316,
+   "msB": 309,
+   "recipeSha256": "48a65dc25c7d1ad26a8ae05f2f1f549f839afed9117a30372a4435c5a2e2d4fc"
+  },
+  {
+   "source": "examples/meadow.autotile.json",
+   "kind": "autotile",
+   "frames": 188,
+   "size": "16x16",
+   "identical": true,
+   "msA": 223,
+   "msB": 223,
+   "recipeSha256": "63f21571a8f3377217a8655f0cbdb4a88dec6b68d31a9c7f6c64757f471a09e6"
+  },
+  {
+   "source": "examples/meteor.fx.json",
+   "kind": "fx",
+   "frames": 22,
+   "size": "64x64",
+   "identical": true,
+   "msA": 187,
+   "msB": 184,
+   "recipeSha256": "914cd163031fc028596927caa5d8103a9a683fb280c823ecbd46bd437555871c"
+  },
+  {
+   "source": "examples/plank-tip.fluid.json",
+   "kind": "fluid",
+   "frames": 80,
+   "size": "192x120",
+   "identical": true,
+   "msA": 843,
+   "msB": 832,
+   "recipeSha256": "fa501896c0124ee10e07f387350917a6fcb94b0f3683410d4dd52a8184fdb321"
+  },
+  {
+   "source": "examples/plasma-globe.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "64x64",
+   "identical": true,
+   "msA": 736,
+   "msB": 731,
+   "recipeSha256": "10929b4b8803978d9fe6e99c8f65538f95b3c9cdcacb6197ad464c4522387cfc"
+  },
+  {
+   "source": "examples/poison-spells.fx.json",
+   "kind": "fx",
+   "frames": 110,
+   "size": "64x64",
+   "identical": true,
+   "msA": 363,
+   "msB": 353,
+   "recipeSha256": "790b8f171a7bc4ee3dc962f329cc7d1b934f99f69021a6b9e2f36f535c5d386f"
+  },
+  {
+   "source": "examples/pond-freeze.fluid.json",
+   "kind": "fluid",
+   "frames": 80,
+   "size": "56x36",
+   "identical": true,
+   "msA": 431,
+   "msB": 442,
+   "recipeSha256": "1ed60fea0017f80c6a8d9592a0342e16f5b4d947cd936d8b75fe1d9588746dbc"
+  },
+  {
+   "source": "examples/portal.wave.json",
+   "kind": "wave",
+   "frames": 40,
+   "size": "38x56",
+   "identical": true,
+   "msA": 188,
+   "msB": 190,
+   "recipeSha256": "a0587d19238c1750998001698034d4357d42069dfdd16074683bc4d15d54cfd5"
+  },
+  {
+   "source": "examples/potion.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "32x40",
+   "identical": true,
+   "msA": 352,
+   "msB": 350,
+   "recipeSha256": "d5666be299ca3dac2a9b44a89fd45b5d639096e744a6b5a1747409ef0971f3fc"
+  },
+  {
+   "source": "examples/pyrite.crystal.json",
+   "kind": "crystal",
+   "frames": 52,
+   "size": "56x44",
+   "identical": true,
+   "msA": 186,
+   "msB": 183,
+   "recipeSha256": "9fad4517ed9f91883e3ce5ad41a8571a254ff83be0d6439d186ef9187b79d769"
+  },
+  {
+   "source": "examples/quarry-blast.powder.json",
+   "kind": "powder",
+   "frames": 32,
+   "size": "128x80",
+   "identical": true,
+   "msA": 252,
+   "msB": 259,
+   "recipeSha256": "d29f7e27ff9752b50415701ef17518040ff03b0b6ff1a0f8f179a689768a220e"
+  },
+  {
+   "source": "examples/quartz-cluster.crystal.json",
+   "kind": "crystal",
+   "frames": 60,
+   "size": "64x58",
+   "identical": true,
+   "msA": 222,
+   "msB": 213,
+   "recipeSha256": "4f57d80fafd38e5152f4c3821e0d473aba66b53f5bf12f6cec221aabd28e6c42"
+  },
+  {
+   "source": "examples/ragdoll.bodies.json",
+   "kind": "bodies",
+   "frames": 64,
+   "size": "96x64",
+   "identical": true,
+   "msA": 208,
+   "msB": 214,
+   "recipeSha256": "a8dc88e0bed56d0b0b460853723be56a5487f684842242ebf0bde6545c38ce68"
+  },
+  {
+   "source": "examples/rain-on-fire.powder.json",
+   "kind": "powder",
+   "frames": 120,
+   "size": "112x72",
+   "identical": true,
+   "msA": 542,
+   "msB": 523,
+   "recipeSha256": "54ab6e4cdc79bb5e8e2f8ab9e8ef3c7265c18974d1b26922229d41758b5e13a8"
+  },
+  {
+   "source": "examples/ring-escape.bodies.json",
+   "kind": "bodies",
+   "frames": 256,
+   "size": "96x96",
+   "identical": true,
+   "msA": 595,
+   "msB": 595,
+   "recipeSha256": "e87fd981522e3d71bb742870b44bd97b4fb01673632b023e30c841be4b6c727f"
+  },
+  {
+   "source": "examples/roof-snow.fluid.json",
+   "kind": "fluid",
+   "frames": 48,
+   "size": "56x44",
+   "identical": true,
+   "msA": 517,
+   "msB": 517,
+   "recipeSha256": "40092087aa32a1e7d67f76ef336d3473391a8cf6164795eb7ae51264ba58d5f2"
+  },
+  {
+   "source": "examples/rope-bridge.bodies.json",
+   "kind": "bodies",
+   "frames": 140,
+   "size": "128x64",
+   "identical": true,
+   "msA": 327,
+   "msB": 328,
+   "recipeSha256": "33328d47a73c47b7711395685de82a571892052edaabaeb2e0b62689d55aad0a"
+  },
+  {
+   "source": "examples/sand-gate.fluid.json",
+   "kind": "fluid",
+   "frames": 64,
+   "size": "64x40",
+   "identical": true,
+   "msA": 710,
+   "msB": 715,
+   "recipeSha256": "abf68f41991181fb32651770a4c03b710e68314fc69ec67ca461dc5f61e7577f"
+  },
+  {
+   "source": "examples/sand-plough.fluid.json",
+   "kind": "fluid",
+   "frames": 80,
+   "size": "72x40",
+   "identical": true,
+   "msA": 824,
+   "msB": 813,
+   "recipeSha256": "d26ea2d17fa60b955a0dd630588cc3c05ec52299abfc53e8dc018b4112c209aa"
+  },
+  {
+   "source": "examples/sand-slide.fluid.json",
+   "kind": "fluid",
+   "frames": 56,
+   "size": "216x132",
+   "identical": true,
+   "msA": 960,
+   "msB": 968,
+   "recipeSha256": "9c2896ca2bdab7e15f4188bf3e5d9001db8b28802cc3dfcd82056f5b9ebaa6d5"
+  },
+  {
+   "source": "examples/shadow-spells.fx.json",
+   "kind": "fx",
+   "frames": 105,
+   "size": "64x64",
+   "identical": true,
+   "msA": 424,
+   "msB": 418,
+   "recipeSha256": "a65929ce1c73099622ab8cde6fad93b19f0670ef28747c4ca4dc3243f520d56e"
+  },
+  {
+   "source": "examples/shield.fx.json",
+   "kind": "fx",
+   "frames": 12,
+   "size": "48x48",
+   "identical": true,
+   "msA": 181,
+   "msB": 176,
+   "recipeSha256": "1aadfd595ebb948564d570183509a842d579462022beab79d56e066307074903"
+  },
+  {
+   "source": "examples/shore.autotile.json",
+   "kind": "autotile",
+   "frames": 90,
+   "size": "16x16",
+   "identical": true,
+   "msA": 186,
+   "msB": 180,
+   "recipeSha256": "ce5bdc837239ae9bb4e208134afb4022d65745814a0b46327b4a0ae1c3e996dd"
+  },
+  {
+   "source": "examples/slash-hit.fx.json",
+   "kind": "fx",
+   "frames": 9,
+   "size": "80x64",
+   "identical": true,
+   "msA": 182,
+   "msB": 181,
+   "recipeSha256": "85022687bc87dd8dc360e81a9bd228196fa3306251e71d026cec7350ee0818b9"
+  },
+  {
+   "source": "examples/slime-burst.fluid.json",
+   "kind": "fluid",
+   "frames": 40,
+   "size": "56x40",
+   "identical": true,
+   "msA": 586,
+   "msB": 585,
+   "recipeSha256": "732f13751177b79655fca566cf012a45ff1f9fcb76b4404f45bbf0bd0f50736a"
+  },
+  {
+   "source": "examples/slime-idle.poses.json",
+   "kind": "poses",
+   "frames": 8,
+   "size": "32x32",
+   "identical": true,
+   "msA": 142,
+   "msB": 147,
+   "recipeSha256": "93c250ed14db845a2736b4819675861007f1df7a0356298cf530d24650021216"
+  },
+  {
+   "source": "examples/slime.fluid.json",
+   "kind": "fluid",
+   "frames": 40,
+   "size": "32x32",
+   "identical": true,
+   "msA": 410,
+   "msB": 413,
+   "recipeSha256": "c6afc79bc51bccc442509119b4b7708854cf2c95e1e92e1fbb976a611b012244"
+  },
+  {
+   "source": "examples/smoke-puff.fluid.json",
+   "kind": "fluid",
+   "frames": 19,
+   "size": "32x32",
+   "identical": true,
+   "msA": 184,
+   "msB": 187,
+   "recipeSha256": "888d84ae0b76e044733c1da5ccd03ca2e4d028f4cf3ab8c836620aa18303b907"
+  },
+  {
+   "source": "examples/snowflakes.crystal.json",
+   "kind": "crystal",
+   "frames": 44,
+   "size": "96x52",
+   "identical": true,
+   "msA": 172,
+   "msB": 178,
+   "recipeSha256": "ad7cfe4262dedc5621b0e73290cdd0f2c9980522fac7fd43581b55f549f23ddc"
+  },
+  {
+   "source": "examples/spinning-hoop.bodies.json",
+   "kind": "bodies",
+   "frames": 240,
+   "size": "72x72",
+   "identical": true,
+   "msA": 319,
+   "msB": 307,
+   "recipeSha256": "d62ec2f6071a3ccdca1c5a653a9cd07ca5982d0ffebd92068f771e18ee483090"
+  },
+  {
+   "source": "examples/splash.fluid.json",
+   "kind": "fluid",
+   "frames": 40,
+   "size": "48x40",
+   "identical": true,
+   "msA": 307,
+   "msB": 317,
+   "recipeSha256": "c7aa63ca126d23cc9c3e850b4cb8db6a5cab58e03fd37e0edbbcfd859fba4df6"
+  },
+  {
+   "source": "examples/steam-vent.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "32x48",
+   "identical": true,
+   "msA": 305,
+   "msB": 301,
+   "recipeSha256": "d520941c71fabb8937b53520485a07ecb76ef5110615da4c47734c6f6ed8a17a"
+  },
+  {
+   "source": "examples/stilt-hut.powder.json",
+   "kind": "powder",
+   "frames": 90,
+   "size": "128x80",
+   "identical": true,
+   "msA": 1088,
+   "msB": 1087,
+   "recipeSha256": "639c51654bbaf3dde8d0463d79ba3872557ccf488737d30d2501a94b5e605a3b"
+  },
+  {
+   "source": "examples/swing-trail.fx.json",
+   "kind": "fx",
+   "frames": 7,
+   "size": "40x40",
+   "identical": true,
+   "msA": 167,
+   "msB": 162,
+   "recipeSha256": "b09bd02ee1bc9d4d45ec063864758f72359da06403c2f6db5b60cf90bfc7d96e"
+  },
+  {
+   "source": "examples/swing.poses.json",
+   "kind": "poses",
+   "frames": 5,
+   "size": "40x40",
+   "identical": true,
+   "msA": 145,
+   "msB": 141,
+   "recipeSha256": "8df3fab49e6d83acdcda92ace794ced9a61e6582c85de9bb4f93bf2d6d3840f1"
+  },
+  {
+   "source": "examples/territory.bodies.json",
+   "kind": "bodies",
+   "frames": 256,
+   "size": "72x128",
+   "identical": true,
+   "msA": 766,
+   "msB": 754,
+   "recipeSha256": "d2b7225b9f338c41e9059e4a6902538bd5b92dacb4f7725b83e3ddbf37386f9f"
+  },
+  {
+   "source": "examples/torch.fluid.json",
+   "kind": "fluid",
+   "frames": 16,
+   "size": "16x32",
+   "identical": true,
+   "msA": 184,
+   "msB": 181,
+   "recipeSha256": "d02e36067318c8b5be8644bacc643d9d36d5b13b26574a871418c5ddc09dab8e"
+  },
+  {
+   "source": "examples/vortex.fx.json",
+   "kind": "fx",
+   "frames": 16,
+   "size": "64x64",
+   "identical": true,
+   "msA": 213,
+   "msB": 216,
+   "recipeSha256": "3326b52459a5fc5dad7863667fe9bada9de74d91ffd33fd7af83e830aaf97312"
+  },
+  {
+   "source": "examples/water-spells.fx.json",
+   "kind": "fx",
+   "frames": 105,
+   "size": "64x64",
+   "identical": true,
+   "msA": 374,
+   "msB": 361,
+   "recipeSha256": "1ec9080e08db663f1107839d7cbd9d9b835eb20f285ba84491203d14a1182604"
+  },
+  {
+   "source": "examples/water-wheel.fluid.json",
+   "kind": "fluid",
+   "frames": 40,
+   "size": "224x176",
+   "identical": true,
+   "msA": 1476,
+   "msB": 1513,
+   "recipeSha256": "2f7b7cd85d977f5d7c6d9fa389c9531179f8442f2fd47a66a210784096a40eea"
+  },
+  {
+   "source": "examples/water.fx.json",
+   "kind": "fx",
+   "frames": 74,
+   "size": "64x68",
+   "identical": true,
+   "msA": 279,
+   "msB": 268,
+   "recipeSha256": "d46865969394b401746030aac75b9e88b75e9282e37ad804747fef18fd406f4f"
+  },
+  {
+   "source": "examples/waterfall.fluid.json",
+   "kind": "fluid",
+   "frames": 24,
+   "size": "48x64",
+   "identical": true,
+   "msA": 855,
+   "msB": 838,
+   "recipeSha256": "ca801be43745a9717a72248f80377d435766a779883edd040fa9abd0307d1f9c"
+  },
+  {
+   "source": "examples/wrecking-ball.bodies.json",
+   "kind": "bodies",
+   "frames": 160,
+   "size": "96x64",
+   "identical": true,
+   "msA": 341,
+   "msB": 343,
+   "recipeSha256": "4f5a1f75cc6300e417dc30f4e3f6605fe86ce84662e151d639327a4d2033aa7d"
+  }
+ ]
+}
