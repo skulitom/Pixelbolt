@@ -18,6 +18,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A bodies match too long for one call, and a `pixel_compile` with `sequence` stopped at the time or memory limit, now name the command line of the server that refused it, `npx -y pixelbolt@<its version> sequence …`, not an unpinned `npx -y pixelbolt`, which fetched whatever npm's latest was. `createBodiesSequence` takes the command as an option; library callers keep the plain one.
 - `pixel_help`'s description names the `powder` schema topic, which it served but never listed.
 
+### Tiled plays every looping animation of a sprite
+
+- A Tiled tileset of a sheet with no terrain (a sprite's `tileset.tsx` in a scene export) left out, without a word, any looping animation with a frame an earlier animation also used, though the second only had to start on a frame of its own: `walk` [a, b, c] then `idle` [c, d] animated `walk` alone, and `iso-tiles`' `water-late`, the water four frames out of step, played nowhere. Every looping animation now plays from its first frame, in whichever order they are listed; where two start on one frame, or one doesn't loop, a tile set's own `.tsx` says which it left still, as a sheet with terrain does.
+
 ## 0.15.0 (2026-11-10)
 
 ### Found by the review before this release

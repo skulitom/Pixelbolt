@@ -142,6 +142,23 @@ test('a sheet with no terrain plays every looping animation from its first frame
   assert.doesNotMatch(text, /<wangsets>/);
 });
 
+test('a sheet with no terrain plays a looping animation that starts on, or passes through, an earlier one\'s later frame', () => {
+  // P-132: an animation with any frame an earlier one passed through was left out, and said nothing.
+  const names = ['f0', 'f1', 'f2', 'f3', 'f4'];
+  const sheet = (animations, options) => tiledTileset({ atlas: stripAtlas(names, animations), tiles: [], layered: [], plain: names, colors: {}, name: 'sprite' }, options);
+  const plays = text => names.map((_, id) => [...(tileOf(text, id) ?? '').matchAll(/<frame tileid="(\d+)"/g)].map(match => Number(match[1])));
+  // An idle that starts on a walk's last frame: both play, whichever is listed first.
+  const walk = { frames: ['f0', 'f1', 'f2'], loop: true }, idle = { frames: ['f2', 'f3'], loop: true };
+  for (const animations of [{ walk, idle }, { idle, walk }]) assert.deepEqual(plays(sheet(animations, { oneShots: false }).text), [[0, 1, 2], [], [2, 3], [], []]);
+  // One that starts on a fresh frame and passes through a frame of the walk.
+  assert.deepEqual(plays(sheet({ step: { frames: ['f0', 'f1'], loop: true }, blink: { frames: ['f3', 'f1'], loop: true } }, { oneShots: false }).text), [[0, 1], [], [], [3, 1], []]);
+  // What still can't play in a tile is named when the sheet asks for warnings (a tile set's plain tiles): a loop from a
+  // frame that already plays one, and an animation that stops, though its frames are another's.
+  const { text, warnings } = sheet({ walk, again: { frames: ['f0', 'f4'], loop: true }, hit: { frames: ['f4', 'f1'], loop: false } });
+  assert.deepEqual(plays(text), [[0, 1, 2], [], [], [], []]);
+  assert.deepEqual(warnings, ['animation hit became still tiles of its first frame: Tiled loops every tile animation', 'animation again became still tiles of its first frame: its first frame already plays an earlier animation, and a Tiled tile plays one']);
+});
+
 test('a sheet without a grid, or a terrain matching two ways, is reported instead of guessed', async () => {
   const { recipe } = compileAutotile(GODOT_TILE_SOURCES[0]);
   const trimmed = await createBundle({ ...recipe, sheet: { ...recipe.sheet, trim: true } });
