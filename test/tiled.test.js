@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { compileAutotile } from '../src/authoring.js';
 import { createBundle } from '../src/export.js';
 import { createSceneBundle } from '../src/scene-export.js';
@@ -140,6 +141,37 @@ test('a sheet with no terrain plays every looping animation from its first frame
   assert.deepEqual([0, 1, 2, 3].map(plays), [[0, 1], [], [2, 0, 3], []]);
   assert.deepEqual(warnings, []);
   assert.doesNotMatch(text, /<wangsets>/);
+});
+
+test('a sheet with no terrain plays a looping animation that starts on, or passes through, an earlier one\'s later frame', () => {
+  // P-132: an animation with any frame an earlier one passed through was left out, and said nothing.
+  const names = ['f0', 'f1', 'f2', 'f3', 'f4'];
+  const sheet = (animations, options) => tiledTileset({ atlas: stripAtlas(names, animations), tiles: [], layered: [], plain: names, colors: {}, name: 'sprite' }, options);
+  const plays = text => names.map((_, id) => [...(tileOf(text, id) ?? '').matchAll(/<frame tileid="(\d+)"/g)].map(match => Number(match[1])));
+  // An idle that starts on a walk's last frame: both play, whichever is listed first.
+  const walk = { frames: ['f0', 'f1', 'f2'], loop: true }, idle = { frames: ['f2', 'f3'], loop: true };
+  for (const animations of [{ walk, idle }, { idle, walk }]) assert.deepEqual(plays(sheet(animations, { oneShots: false }).text), [[0, 1, 2], [], [2, 3], [], []]);
+  // One that starts on a fresh frame and passes through a frame of the walk.
+  assert.deepEqual(plays(sheet({ step: { frames: ['f0', 'f1'], loop: true }, blink: { frames: ['f3', 'f1'], loop: true } }, { oneShots: false }).text), [[0, 1], [], [], [3, 1], []]);
+  // What still can't play in a tile is named when the sheet asks for warnings (a tile set's plain tiles): a loop from a
+  // frame that already plays one, and an animation that stops, though its frames are another's.
+  const { text, warnings } = sheet({ walk, again: { frames: ['f0', 'f4'], loop: true }, hit: { frames: ['f4', 'f1'], loop: false } });
+  assert.deepEqual(plays(text), [[0, 1, 2], [], [], [], []]);
+  assert.deepEqual(warnings, ['animation hit became still tiles of its first frame: Tiled loops every tile animation', 'animation again became still tiles of its first frame: its first frame already plays an earlier animation, and a Tiled tile plays one']);
+  // A frame that plays an animation is a tile of its own, so its weight counts, though another animation passes through it.
+  const weighted = stripAtlas(names, { walk, idle });
+  weighted.frames.f0.tile = { weight: 2 }; weighted.frames.f2.tile = { weight: 4 };
+  const odds = tiledTileset({ atlas: weighted, tiles: [], layered: [], plain: names, colors: {}, name: 'sprite' }, { oneShots: false }).text;
+  assert.deepEqual([0, 2].map(id => tileOf(odds, id).match(/probability="([\d.]+)"/)?.[1]), ['0.5', undefined]);
+});
+
+test('the iso glade\'s Tiled tileset plays both of its waters, the second four frames out of step', async () => {
+  const { resolveReferences } = await import('../src/resolve.js');
+  const source = JSON.parse(await readFile(new URL('../examples/iso-glade.scene.json', import.meta.url), 'utf8'));
+  const { files } = await createSceneBundle((await resolveReferences(source, { baseDir: fileURLToPath(new URL('../examples/', import.meta.url)) })).document);
+  const tsx = [...files].find(([name, data]) => name.endsWith('/tileset.tsx') && !name.includes('/haze-') && data.toString().includes('name="tiles"'))[1].toString();
+  const plays = id => [...(tileOf(tsx, id) ?? '').matchAll(/<frame tileid="(\d+)"/g)].map(match => Number(match[1]));
+  assert.deepEqual([plays(6), plays(8)], [[6, 7, 8, 9], [8, 9, 6, 7]]);
 });
 
 test('a sheet without a grid, or a terrain matching two ways, is reported instead of guessed', async () => {
