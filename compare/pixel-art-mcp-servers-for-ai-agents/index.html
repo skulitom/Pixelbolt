@@ -256,8 +256,12 @@ render, with Node's start-up and the file writes). The release tag also holds th
 sources compiled twice to identical recipes: 37 fluids, 20 particle effects, 12 rigid-body scenes, 7 pose sets, 5
 falling-sand scenes, 4 crystals, 3 tile sets, 2 waves and 1 normal map, in 0.13 to 7.7 s each
 (<a href="data/pixelbolt-determinism-npm-0.15.0.json">npm package</a>,
-<a href="data/pixelbolt-determinism-tag-v0.15.0.json">tag</a>). We checked one machine only; Pixelbolt's own CI runs
-its tests on other systems, which we didn't repeat.</li>
+<a href="data/pixelbolt-determinism-tag-v0.15.0.json">tag</a>). We checked one machine only. Pixelbolt's own CI runs its
+tests on other systems. On one job, which tests its build for Intel Macs (darwin-x64) under Rosetta on an Apple
+silicon runner, two tests have found a preset differing from the same preset compiled directly: blade-bloom on 9
+November and hot-stone on 11 November, both on pull requests that changed only docs. It doesn't happen on every run,
+its cause is still open, and the other 11 jobs passed both times. So we claim the same bytes only on the machine we
+measured.</li>
 <li><strong>Footprint:</strong> no runtime dependencies. The Claude Desktop bundle (<code>pixelbolt.mcpb</code>, release
 0.15.0) is 1,089,924 bytes.</li>
 </ul>
