@@ -73,7 +73,7 @@ const DESCRIPTIONS = {
   'water-wheel': 'A paddle wheel of boards on spokes turns in a pool and stirs it while a duck and a crate ride the current.',
   knight: 'A stocky knight in plate, with a shield held still and a sword: idle, walk, attack and hurt.',
   'hermit-chest': 'A hermit crab that wears a treasure chest: it idles, peeks out, rises, walks left and right, and hides.',
-  'iso-tiles': 'An isometric tile set on a 2:1 diamond grid. Shown: its two animated water tiles; the recipe also holds the turf, grass and paver stills that the Isometric glade scene lays out.'
+  'iso-tiles': 'An isometric tile set on a 32 × 16 diamond: grass in four variants, stepping stones, a pond with moving glints, a wall block and a step, a crate, pines and saplings, bushes, boulders and contact shadows. Shown: the two animated pond tiles; the Isometric glade scene lays the set out.'
 };
 // The README folder whose image sentences describe each kind of preset.
 const README_FOLDER = { fluid: 'fluid', powder: 'powder', bodies: 'bodies', crystal: 'crystals' };
@@ -275,7 +275,8 @@ async function makePiece(input, readmeAlts) {
   if (shared.tooLong) {
     const document = (await resolved(source)).document;
     // The live playground's own check: it opens fluid, fx, poses, scene, autotile and normals sources, but not falling
-    // sand, rigid bodies, crystals or waves, which compile with the CLI, MCP or Studio. Only its refusal is caught.
+    // sand, rigid bodies, crystals or waves, which compile with the CLI or MCP (falling sand also runs in Studio's
+    // Powder lab). Only its refusal is caught.
     try { playground.recipeKind(document); piece.playgroundOpens = true; }
     catch (error) { if (error?.name !== 'ShareError') throw error; piece.playgroundOpens = false; }
     // A source keeps its own file name (hut-fire.powder.json), so compiling it to <name>.json never overwrites it.
@@ -432,7 +433,7 @@ function page(manifest) {
     const images = p.images.map(i => `<figure class="stage">${i.still ? `<picture><source srcset="${esc(i.still)}" media="(prefers-reduced-motion: reduce)">` : ''}<img src="${esc(i.path)}" width="${i.width * 2}" height="${i.height * 2}" alt="${esc(p.alt + (p.images.length > 1 ? ` Animation: ${i.animation}.` : ''))}"${imageIndex++ >= 6 ? ' loading="lazy"' : ''} decoding="async">${i.still ? '</picture>' : ''}<figcaption>${p.images.length > 1 ? `${esc(i.animation)} · ` : ''}${esc(i.plays)}</figcaption></figure>`).join('\n');
     const open = p.playground ? `<a class="open" href="${esc(p.playground)}">Open in the playground</a>`
       : p.playgroundOpens ? `Too long for a link: <a href="${esc(p.download)}" download>download the recipe</a> and use Open file in the <a href="${SITE}playground/">playground</a>.`
-      : `Too long for a playground link: <a href="${esc(p.download)}" download>download the source</a>, run <code>${esc(`${NPX} compile ${path.basename(p.download)} --out ${p.name}.json`)}</code> and use Open file in the <a href="${SITE}playground/">playground</a> on <code>${esc(p.name)}.json</code>.`;
+      : `Too long for a playground link: <a href="${esc(p.download)}" download>download the source</a>, run (with Node.js) <code>${esc(`${NPX} compile ${path.basename(p.download)} --out ${p.name}.json`)}</code> and use Open file in the <a href="${SITE}playground/">playground</a> on <code>${esc(p.name)}.json</code>.`;
     return `<article class="card" id="${esc(p.name)}">
 <h${level}>${esc(p.title)}</h${level}>
 <p>${esc(p.description)}</p>
