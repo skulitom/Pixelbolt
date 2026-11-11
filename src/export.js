@@ -383,9 +383,6 @@ async function respelled(bundle, root) {
   }
   return found;
 }
-// Writes a bundle into `directory`. Without `force`, any existing file stops the export before anything is written.
-// With `force`, existing files are replaced and the earlier export's leftovers are removed after the new files are in
-// place; the returned list of written paths then carries `removed`, the paths it deleted. `inputs` are never written.
 // What a written bundle holds, for a reply: its files relative to `out`, without each frame (and each animation when
 // there are more than 16) unless `listFiles`, and how many of those there are. Paths an export removed are relative too.
 export function outputSummary(out, files, listFiles) {
@@ -405,6 +402,9 @@ export function outputSummary(out, files, listFiles) {
   };
 }
 
+// Writes a bundle into `directory`. Without `force`, any existing file stops the export before anything is written.
+// With `force`, existing files are replaced and the earlier export's leftovers are removed after the new files are in
+// place; the returned list of written paths then carries `removed`, the paths it deleted. `inputs` are never written.
 export async function writeBundle(bundle, directory, { force = false, inputs = [] } = {}) {
   const root = path.resolve(directory);
   const collisions = inputCollisions(bundle, root, inputs);

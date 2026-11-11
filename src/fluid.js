@@ -13,7 +13,7 @@
 // trigonometry and seeded hash, a fixed timestep and fixed iteration counts.
 // createLiveFluid runs the same simulation a frame at a time for interactive pages, with pushes, puffs and boosts.
 import { renderProject, parseColor, fail, isObject, sameWidth } from './core.js';
-import { fields, number, integer, pair, pick, pickWhole } from './authoring.js';
+import { fields, number, integer, pair, range, pick, pickWhole } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, random, sinDeg, cosDeg } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { readElectric, readElectrode, createElectric, stepElectric, electricFields, electricWork, ELECTRODE_FIELDS, MATTER } from './electric.js';
@@ -57,18 +57,6 @@ const identifier = (value, path) => {
   return value;
 };
 const boolean = (value, path) => { if (typeof value !== 'boolean') fail(path, 'expected true or false'); return value; };
-// A number, or [min, max] sampled per spark.
-const range = (value, path, min, max, whole = false) => {
-  const check = whole ? integer : number;
-  if (Array.isArray(value)) {
-    if (value.length !== 2) fail(path, 'expected a number or [min, max]');
-    const [a, b] = [check(value[0], `${path}[0]`, min, max), check(value[1], `${path}[1]`, min, max)];
-    if (a > b) fail(path, 'min must not exceed max');
-    return [a, b];
-  }
-  const v = check(value, path, min, max);
-  return [v, v];
-};
 // Grid rows name colours by character, so every colour a fluid draws is a one-character palette key.
 const paletteKey = (value, path, palette) => {
   if (typeof value !== 'string' || value.length !== 1 || value === '.' || value === ' ' || !Object.hasOwn(palette, value)) fail(path, 'expected a one-character palette key; grid rows name colours by character');
@@ -159,9 +147,9 @@ function readFollow(value, path, listed) {
     index = found[0];
   } else index = integer(value, path, 0, listed.length - 1);
   const o = listed[index];
-  return { index, path: o.track ? o.track.map((place, f) => ({ x: place.x - o.x, y: place.y - o.y, cut: !f || place.jump })) : null };
+  return { path: o.track ? o.track.map((place, f) => ({ x: place.x - o.x, y: place.y - o.y, cut: !f || place.jump })) : null };
 }
-function readEmitter(emitter, path, context, listed = []) {
+function readEmitter(emitter, path, context, listed) {
   const { frames, loop, liquid } = context;
   fields(emitter, ['name', 'at', 'radius', 'area', 'burst', 'rate', 'start', 'end', 'density', 'temperature', 'falloff', 'velocity', 'expand', 'vortex', 'noise', 'flicker', 'pulse', 'orbit', 'follow', 'sparks', 'carry'], path);
   if (emitter.name !== undefined) identifier(emitter.name, `${path}.name`);
@@ -3361,7 +3349,7 @@ function heatFields(run) {
 }
 // A frame of a liquid with heat: vapour first, the water over it, then the ice, each through its own look, and the
 // outline round the water and ice.
-function renderHeat(run, width, height, drawn = null, hold = null) {
+function renderHeat(run, width, height, drawn, hold) {
   const { view, state } = run, P = state.heat, N = width * height, V = P.vapour, plain = { strays: false, corners: false };
   const iced = new Uint8Array(N);
   for (let c = 0; c < N; c++) iced[c] = view.solid[c] || P.ice[c] >= ICE_CELL ? 1 : 0;
@@ -3405,7 +3393,7 @@ function spawnSparks(list, e, index, cycle, here, seed, total, born) {
 // that leaves it pops: it is drawn as a ring for one frame and as two droplets the next.
 const sparkColor = p => p.s.colors[Math.min(p.s.colors.length - 1, Math.floor(p.age * p.s.colors.length / p.life))].charCodeAt(0);
 // `gravity` is a liquid's gravity this frame (keys change it), which whitewater and droplets without their own follow.
-function moveSparks(list, g, density, total, liquid, pops, gravity, ended = null, gather = null) {
+function moveSparks(list, g, density, total, liquid, pops, gravity, ended, gather) {
   const { W, H, u, v, pixels: solid } = g;
   let waiting = false;
   for (let k = list.length - 1; k >= 0; k--) {
@@ -3458,7 +3446,7 @@ function bubbleOf(s, r) {
 // caller's own, such as another amount of air (`vol` and `size`) or a boil's vapour. Every stage that makes bubbles goes
 // through it. Returns false, adding nothing, at the spark limit. When a bubble ends, moveSparks hands it to its `ended`
 // hook with `end` set: 'air' where it reached the air (above water, or in a pocket), 'life', 'solid' or 'edge'.
-function addBubble(list, total, s, x, y, r, extra = null) {
+function addBubble(list, total, s, x, y, r, extra) {
   if (total.alive >= LIMITS.sparks) return false;
   list.push({ s, x, y, vx: 0, vy: 0, age: 0, life: pickWhole(s.life, r(SALT.life)), ...bubbleOf(s, r), ...extra });
   total.alive++; total.spawned++;
@@ -3546,7 +3534,7 @@ function moveBubble(p, g, density, gravity, fx, fy, pops) {
 // become a pocket instead (`gather`, see gatherOf), and both end: under a flat ceiling no bubble of three pixels fits, so
 // bubbles there stop growing at six.
 const GATHER = 8;
-function mergeBubbles(list, g, total, gather = null) {
+function mergeBubbles(list, g, total, gather) {
   const waiting = list.filter(p => p.under);
   for (let a = 0; a < waiting.length; a++) {
     const p = waiting[a];
@@ -3578,7 +3566,7 @@ function mergeBubbles(list, g, total, gather = null) {
 // rest in the water there: air a plunging stream or a landing drop has driven in, which the flow carries and which rises.
 // `throws(layer)` says whether a layer throws this frame (a loop's warm-up makes only bubbles that push the water, see
 // pushesWater), and `born`, in a loop, tags those bubbles with their frame.
-function throwWhitewater(state, effect, density, list, cycle, total, throws = () => true, born = undefined) {
+function throwWhitewater(state, effect, density, list, cycle, total, throws, born) {
   const { W, H, pixels: solid, geo } = state.g, air = (i, j) => i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] && density[j * W + i] < LEVEL;
   const at = (i, j) => (i >= 0 && j >= 0 && i < W && j < H && !solid[j * W + i] ? density[j * W + i] : 0);
   const spray = effect.whitewater.some(w => w.rise === null && throws(w)), bubbles = effect.whitewater.some(w => w.rise !== null && throws(w));
@@ -4412,7 +4400,7 @@ function carvePocket(state, gravity, x, y, vol) {
 // of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
 // two frames a bubble lives on where the gap it came from has not closed yet. `born` tags a loop's bubbles with their frame.
 const POCKETS = 3000;
-function releaseAir(air, effect, list, cycle, total, born = undefined) {
+function releaseAir(air, effect, list, cycle, total, born) {
   const s = effect.air.bubbles, out = air.release;
   for (let k = 0, n = 0; k < out.length; k += 3) {
     let volume = out[k + 2];

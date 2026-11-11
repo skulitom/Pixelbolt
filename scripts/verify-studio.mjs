@@ -105,7 +105,7 @@ async function verify({ archive, dir, pinned = true, allowDev = false, keep = fa
     for (const tool of ['dirname', 'readlink']) await symlink(spawnSync('/bin/sh', ['-c', `command -v ${tool}`], { env: { PATH: '/usr/bin:/bin' }, encoding: 'utf8' }).stdout.trim(), path.join(toolbox, tool));
     env.PATH = toolbox;
   }
-  const ps = (script, extra = {}) => spawnSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', script], { env: { ...env, ...extra }, encoding: 'utf8', windowsHide: true, timeout: 120000 });
+  const ps = (script, extra) => spawnSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', script], { env: { ...env, ...extra }, encoding: 'utf8', windowsHide: true, timeout: 120000 });
   let workspace = null, modes = new Map();
 
   if (archive) {
@@ -205,7 +205,7 @@ async function verify({ archive, dir, pinned = true, allowDev = false, keep = fa
       ? spawnSync(comspec, ['/d', '/s', '/c', `"${line}"`], { cwd: dir, env: runEnv, encoding: 'utf8', windowsVerbatimArguments: true, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options })
       : spawnSync('/bin/sh', ['-c', line], { cwd: dir, env: runEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options });
     // Runs one of the build's own scripts with arguments, the way a terminal or a double-click starts it.
-    const script = (file, args = [], options = {}) => windows ? shell(`"${path.join(dir, file)}"${args.map(value => ` ${value}`).join('')}`, options) : spawnSync(path.join(dir, file), args, { cwd: dir, env: runEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options });
+    const script = (file, args, options = {}) => windows ? shell(`"${path.join(dir, file)}"${args.map(value => ` ${value}`).join('')}`, options) : spawnSync(path.join(dir, file), args, { cwd: dir, env: runEnv, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 120000, ...options });
     // What runs from the folder, as "pid program" lines. Windows asks Get-Process, which reads each program's path from the
     // process itself, not WMI: on a busy machine WMI's process queries (Get-CimInstance, and taskkill /t, which finds a
     // process's children through them) can stall for minutes and then give up.
