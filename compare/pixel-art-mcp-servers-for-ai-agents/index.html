@@ -59,14 +59,14 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 <h1>Pixel art and sprite tools for AI agents: Pixelbolt, aseprite-mcp, pixel-mcp, pixscii, pixelart-mcp, pixelforge-mcp and SpriteCook compared</h1>
 
 <p class="lead"><strong>Which pixel art and sprite tools can an AI agent call over MCP? We compare seven, checked on
-11 November 2026 by the makers of Pixelbolt, and list five more we found: aseprite-mcp and pixel-mcp drive the paid Aseprite editor, SpriteCook and
+11 November 2026 by the makers of Pixelbolt: aseprite-mcp and pixel-mcp drive the paid Aseprite editor, SpriteCook and
 pixelforge-mcp generate images with hosted AI models, pixscii and pixelart-mcp draw on canvases on your machine, and
 Pixelbolt renders editable JSON recipes on your machine with no paid app, account, API key or image model. We read the
 other six from their code and docs without running them, and measured Pixelbolt 0.15.0, as installed from npm, on one
 Windows machine: all 10 of its plain example recipes rendered twice to byte-identical files, all 91 of its example
 effect, simulation, pose, tile-set and normal-map sources compiled twice to identical recipes, and a one-pixel fix over MCP changed
-exactly 1 pixel in 1 of 6 frames when we decoded the frames before and after.</strong> Method, sources and data are
-below.</p>
+exactly 1 pixel in 1 of 6 frames when we decoded the frames before and after.</strong> Method, sources, data and the
+other servers we found are below.</p>
 
 <p class="note"><strong>We make Pixelbolt.</strong> Read this as a vendor's page: our own numbers come from runs you can
 repeat, and everything about the other tools links to where we read it. Pixelbolt was called PixelForge before version
@@ -235,8 +235,8 @@ Node, OS build and CPU.</p>
 result is 19,754 bytes of JSON.</li>
 <li><strong>Which clients see the tools:</strong> Pixelbolt speaks the 2025 MCP handshake (<code>initialize</code>),
 not yet the stateless one of the 2026-07-28 specification (<code>server/discover</code>). Claude Code 2.1.322 sent the
-new handshake first, got "Initialize the server first", fell back to <code>initialize</code> and listed all 8 tools; so did the official TypeScript SDK's v2 client (2.4.0) in its
-default and <code>auto</code> modes, and its v1 client (1.32.2). A v2 client pinned to 2026-07-28, which by design has
+new handshake first, got "Initialize the server first", fell back to <code>initialize</code> and listed all 8 tools. The official TypeScript SDK's v2 client (2.4.0) also
+listed all 8 in its default and <code>auto</code> modes, as did its v1 client (1.32.2). A v2 client pinned to 2026-07-28, which by design has
 no fallback, listed none (<a href="data/mcp-clients-2026-11-11.json">results</a>).</li>
 <li><strong>A round trip over MCP</strong> on the 24×24, 6-frame coin example, run twice: validate, the first call,
 took 110 and 95 ms, inspect 7 ms (it returned a PNG contact sheet), patch 8 ms and render 27 ms both times. The patch
@@ -384,8 +384,8 @@ only as good as the drawing; the inspection images and quality diagnostics help 
 pixels in all. A single still may be up to 4,096 pixels a side within that total.</li>
 <li>It imports PNGs only (RGB, RGBA, greyscale or indexed, up to 8 bits per channel), not GIFs or
 <code>.aseprite</code> files, and it doesn't write <code>.aseprite</code>.</li>
-<li>It speaks the 2025 MCP handshake, not yet the 2026-07-28 one. The clients we ran fall back to it and see all 8
-tools, but a client that accepts only the 2026 handshake sees none (measured above).</li>
+<li>It speaks the 2025 MCP handshake, not yet the 2026-07-28 one. The clients we ran use it, falling back where
+needed, and see all 8 tools, but a client that accepts only the 2026 handshake sees none (measured above).</li>
 <li>Its own benchmark hasn't shown that it helps Claude yet: on 0.11.0, 32 of 36 runs passed every check with
 Pixelbolt and 31 without, short of the rule we set in advance for saying it helps
 (<a href="../claude-pixel-art-with-and-without-pixelbolt/">the benchmark</a>).</li>

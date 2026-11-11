@@ -40,7 +40,7 @@ const recipes = folders.flatMap((d) => readdirSync(join(clone, d)).filter((f) =>
 const KINDS = /\.(fluid|bodies|powder|crystal|wave|fx|poses|autotile|normals)\.json$/;
 const fluids = readdirSync(join(clone, 'examples')).filter((f) => KINDS.test(f));
 const commit = sourceId(clone);
-const result = { commit, node: process.version, platform: `${process.platform} ${process.arch} ${release()}`, cpu: cpus()[0]?.model?.trim(), renders: [], fluids: [] };
+const result = { commit, node: process.version, platform: `${process.platform} ${process.arch} ${release()}`, cpu: cpus()[0]?.model?.trim(), renders: [], sources: [] };
 for (const rel of recipes) {
   const name = rel.replaceAll('\\', '/').replace(/\.json$/, '').replaceAll('/', '__');
   const a = join(work, 'render-a', name), b = join(work, 'render-b', name);
@@ -58,9 +58,9 @@ for (const f of fluids) {
   const msA = run(['compile', join(clone, 'examples', f), '--out', a]);
   const msB = run(['compile', join(clone, 'examples', f), '--out', b]);
   const recipe = JSON.parse(readFileSync(a, 'utf8'));
-  result.fluids.push({ source: `examples/${f}`, kind: f.match(KINDS)[1], frames: recipe.frames?.length ?? null, size: `${recipe.width}x${recipe.height}`, identical: hashFile(a) === hashFile(b), msA: Math.round(msA), msB: Math.round(msB), recipeSha256: hashFile(a) });
+  result.sources.push({ source: `examples/${f}`, kind: f.match(KINDS)[1], frames: recipe.frames?.length ?? null, size: `${recipe.width}x${recipe.height}`, identical: hashFile(a) === hashFile(b), msA: Math.round(msA), msB: Math.round(msB), recipeSha256: hashFile(a) });
 }
 writeFileSync(resultPath, JSON.stringify(result, null, 1));
-console.log(`${commit}: renders ${result.renders.length}, all identical: ${result.renders.every((r) => r.identical)}; fluids ${result.fluids.length}, all identical: ${result.fluids.every((r) => r.identical)}`);
+console.log(`${commit}: renders ${result.renders.length}, all identical: ${result.renders.every((r) => r.identical)}; sources ${result.sources.length}, all identical: ${result.sources.every((r) => r.identical)}`);
 for (const r of result.renders) console.log(`render ${r.recipe}: ${r.files} files, ${r.msA}/${r.msB} ms, identical=${r.identical}`);
-for (const r of result.fluids) console.log(`compile ${r.source}: ${r.frames} frames ${r.size}, ${r.msA}/${r.msB} ms, identical=${r.identical}`);
+for (const r of result.sources) console.log(`compile ${r.source}: ${r.frames} frames ${r.size}, ${r.msA}/${r.msB} ms, identical=${r.identical}`);

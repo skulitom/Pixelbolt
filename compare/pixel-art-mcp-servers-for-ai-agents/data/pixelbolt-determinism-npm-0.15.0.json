@@ -75,7 +75,7 @@
    "msB": 135
   }
  ],
- "fluids": [
+ "sources": [
   {
    "source": "examples/aquarium.fluid.json",
    "kind": "fluid",
