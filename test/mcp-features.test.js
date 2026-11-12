@@ -135,7 +135,7 @@ test('the instructions, the quick start and the skill ask the agent to look and 
   const dir = await temp(t, 'refine'), mcp = session({ directory: dir });
   t.after(async () => { mcp.input.end(); await mcp.running; });
   const { instructions } = (await mcp.init()).result;
-  assert.match(instructions, /Before you deliver, look and refine: compare the contact sheet a reply carries with what the request names \(the subject and where it is, how it moves, its size and colours\), fix the worst difference, and look again, at least twice for an effect or an animation\./);
+  assert.match(instructions, /Before you deliver, look and refine: compare the contact sheet from pixel_compile, pixel_inspect, pixel_patch or pixel_render with what the request names \(the subject and where it is, how it moves, its size and colours\), fix the worst difference, and look again, at least twice for an effect or an animation\./);
   assert.match(instructions, /A preset or first draft that passes expect has the right files, not yet the right picture\.$/);
   const quick = (await mcp.request('tools/call', { name: 'pixel_help', arguments: {} })).result.content[0].text;
   const shell = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'help', 'quickstart'], { cwd: dir, encoding: 'utf8' }).stdout;
@@ -145,6 +145,10 @@ test('the instructions, the quick start and the skill ask the agent to look and 
     assert.match(habits, /\n- Before you deliver, look and refine\. Write down what the request names: the subject and where it is, how it moves, its size and colours\./, reader);
     assert.match(habits, /for an effect or an animation, do at least two rounds\. A preset is a first draft/, reader);
   }
+  // The craft notes' Effects checklist, which the skill sends effects to, says the same.
+  const effects = (await mcp.request('tools/call', { name: 'pixel_help', arguments: { topic: 'craft', name: 'Effects' } })).result.content[0].text;
+  assert.ok(!effects.includes('Deliver the preset as shipped first'));
+  assert.match(effects, /A preset is a first draft: deliver it as it ships when it shows what was asked, or when the user named it; otherwise edit its source\./);
   const skill = await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8');
   assert.ok(!skill.includes('Deliver it as shipped first'));
   assert.match(skill, /A preset is a first draft: compare it with the request \(step 6 below\) and tune what differs before you deliver\./);
