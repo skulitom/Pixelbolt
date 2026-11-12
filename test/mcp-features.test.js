@@ -127,6 +127,30 @@ test('MCP keeps what an agent reads small: brief tool schemas, a quick start, an
   } finally { mcp.input.end(); await mcp.running; }
 });
 
+// C-147, P-128: told to use Pixelbolt, agents delivered a valid first draft or a nearby preset in about 9 turns, and a
+// blind judge preferred a rival whose guide has the agent look at its frames and fix the worst thing before delivering.
+// Each place an agent starts from asks for that loop: the server's instructions, the quick start (both readers) and
+// the skill, whose preset row no longer says to deliver a preset as it ships.
+test('the instructions, the quick start and the skill ask the agent to look and refine before it delivers', async t => {
+  const dir = await temp(t, 'refine'), mcp = session({ directory: dir });
+  t.after(async () => { mcp.input.end(); await mcp.running; });
+  const { instructions } = (await mcp.init()).result;
+  assert.match(instructions, /Before you deliver, look and refine: compare the contact sheet a reply carries with what the request names \(the subject and where it is, how it moves, its size and colours\), fix the worst difference, and look again, at least twice for an effect or an animation\./);
+  assert.match(instructions, /A preset or first draft that passes expect has the right files, not yet the right picture\.$/);
+  const quick = (await mcp.request('tools/call', { name: 'pixel_help', arguments: {} })).result.content[0].text;
+  const shell = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'help', 'quickstart'], { cwd: dir, encoding: 'utf8' }).stdout;
+  for (const [reader, text] of [['MCP', quick], ['shell', shell]]) {
+    const from = text.indexOf('\n## Working well\n'), habits = text.slice(from, text.indexOf('\n## ', from + 1));
+    assert.ok(from >= 0, reader);
+    assert.match(habits, /\n- Before you deliver, look and refine\. Write down what the request names: the subject and where it is, how it moves, its size and colours\./, reader);
+    assert.match(habits, /for an effect or an animation, do at least two rounds\. A preset is a first draft/, reader);
+  }
+  const skill = await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8');
+  assert.ok(!skill.includes('Deliver it as shipped first'));
+  assert.match(skill, /A preset is a first draft: compare it with the request \(step 6 below\) and tune what differs before you deliver\./);
+  assert.match(skill, /\n5\. \*\*GIF, when asked\.\*\*[^\n]*\n6\. \*\*Look and refine\.\*\* [^\n]*at least two rounds for an effect or an animation\.[^\n]*\n7\. \*\*Deliver\*\* /);
+});
+
 test('MCP compiles the full 39-frame hero with metadata and images below one MiB', async t => {
   const dir = await temp(t, 'hero-response'), mcp = session({ directory: dir }); await mcp.init();
   try {
