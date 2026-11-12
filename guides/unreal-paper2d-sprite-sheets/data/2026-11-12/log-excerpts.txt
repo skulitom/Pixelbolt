@@ -1,0 +1,27 @@
+﻿Log file open, 11/12/26 15:15:19
+LogInit: Build: ++UE5+Release-5.8-CL-58902052
+LogInit: Engine Version: 5.8.4-58902052+++UE5+Release-5.8
+LogInit: OS: Windows 11 (25H2) [10.0.26200.7462] […CPU and GPU omitted]
+[2026.11.12-15.15.26:702][  2]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit
+[2026.11.12-15.15.26:702][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit_blink
+[2026.11.12-15.15.26:872][  2]LogPython: Pixelbolt: 6 sprites and 3 flipbooks in /Game/T/forest-spirit-trim2x
+[2026.11.12-15.15.26:872][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): forest-spirit-trim2x_blink
+[2026.11.12-15.15.27:181][  2]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire
+[2026.11.12-15.15.27:728][  2]LogPython: Pixelbolt: 36 sprites and 6 flipbooks in /Game/T/hero
+[2026.11.12-15.15.27:728][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): hero_jump, hero_attack, hero_hurt
+[2026.11.12-15.15.29:457][  2]LogPython: Pixelbolt: 107 sprites and 11 flipbooks in /Game/T/fire-spells
+[2026.11.12-15.15.29:457][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): fire-spells_impact, fire-spells_area
+[2026.11.12-15.15.30:367][  2]LogPython: Pixelbolt: explosion Mip Gen Settings <TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP: 0> -> NoMipmaps
+[2026.11.12-15.15.30:613][  2]LogPython: Pixelbolt: 32 sprites and 1 flipbooks in /Game/T/explosion
+[2026.11.12-15.15.30:613][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): explosion_explosion
+[2026.11.12-15.15.31:071][  2]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/campfire-092
+[2026.11.12-15.15.31:785][  2]LogPython: Pixelbolt: 42 sprites and 4 flipbooks in /Game/T/fx-shield
+[2026.11.12-15.15.31:785][  2]LogPython: Play once (Set Looping off on the Paper Flipbook Component, then Play From Start): fx-shield_up, fx-shield_hit, fx-shield_pop
+[2026.11.12-15.15.32:345][  2]LogPython: Pixelbolt: 24 sprites and 1 flipbooks in /Game/T/fx-shift-arc
+[2026.11.12-15.15.32:501][  2]LogPython: Error: P2D check failed for bad-anim:
+[2026.11.12-15.15.32:501][  2]LogPython: Error: P2D check failed for bad-empty:
+[2026.11.12-15.15.32:501][  2]LogPython: Error: P2D check failed for bad-unknown:
+[2026.11.12-15.15.32:501][  2]LogPython: Error: P2D check failed for bad-duration:
+[2026.11.12-15.15.32:503][  2]LogPython: Error: P2D check failed for bad-nan:
+[2026.11.12-15.15.32:503][  2]LogPython: P2D check summary: […JSON omitted; the same outcomes as summary.json]
+[2026.11.12-15.15.34:083][  3]Log file closed, 11/12/26 15:15:34

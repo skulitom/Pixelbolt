@@ -28,7 +28,10 @@ by default. The animations the atlas marks "loop": false are listed at the end: 
 Looping (unticked) on the component in a Blueprint, then Play From Start.
 
 It expects a Pixelbolt atlas: "frames" as an object keyed by frame name, each with a "duration" in
-milliseconds, and "animations" listing frame names in playback order.
+milliseconds, and "animations" keyed by name. Each animation is either an object whose "frames" lists
+frame names in playback order, with "loop" (what Pixelbolt writes today), or a plain list of frame
+names, with "loop" in a separate "loops" object (older atlases). Any other animation layout, or a
+frame without a duration of 1 ms or more, stops with a message.
 
 Tested with Unreal Engine 5.8.4 and Pixelbolt 0.12.1:
 https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/
@@ -77,6 +80,16 @@ def sprites_by_frame(sheet):
     return found
 
 
+def frame_time(frames_by_name, frame):
+    """A frame's time in whole milliseconds, or None if the atlas doesn't give it one of 1 ms or more."""
+    entry = frames_by_name.get(frame) if isinstance(frame, str) else None
+    duration = entry.get("duration") if isinstance(entry, dict) else None
+    if (isinstance(duration, bool) or not isinstance(duration, (int, float)) or not math.isfinite(duration)
+            or int(duration) < 1):
+        return None
+    return int(duration)
+
+
 def no_mipmaps(texture):
     before = texture.get_editor_property("mip_gen_settings")
     if before != unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS:
@@ -115,13 +128,28 @@ def main(argv):
     name = base[: -len(".atlas.json")] if base.endswith(".atlas.json") else os.path.splitext(base)[0]
     folder = argv[2].rstrip("/") if len(argv) > 2 else "/Game/Pixelbolt/" + asset_name(name)
 
+    loops = atlas.get("loops")
+    loops = loops if isinstance(loops, dict) else {}
     plan = {}
     for animation, entry in animations.items():
+        if isinstance(entry, list):  # an older atlas: frame names here, "loop" in "loops"
+            names, loop = entry, loops.get(animation)
+        elif isinstance(entry, dict) and isinstance(entry.get("frames"), list):
+            names, loop = entry["frames"], entry.get("loop", loops.get(animation))
+        else:
+            raise RuntimeError("%s: animation %r should be a list of frame names or an object with \"frames\"."
+                               % (atlas_path, animation))
+        if not names:
+            raise RuntimeError("%s: animation %r has no frames." % (atlas_path, animation))
+        times = [(frame, frame_time(frames_by_name, frame)) for frame in names]
+        bad = [str(frame) for frame, time in times if time is None]
+        if bad:
+            raise RuntimeError("%s: animation %r names frames the atlas doesn't have, or frames without a duration "
+                               "of 1 ms or more: %s" % (atlas_path, animation, ", ".join(bad[:5])))
         flipbook_name = asset_name(name + "_" + animation)
         if flipbook_name in plan:
             raise RuntimeError("Animations %r and %r would both be named %s" % (plan[flipbook_name][0], animation, flipbook_name))
-        times = [(frame, int(frames_by_name[frame]["duration"])) for frame in entry["frames"]]
-        plan[flipbook_name] = (animation, times, entry.get("loop") is False)
+        plan[flipbook_name] = (animation, times, loop is False)
 
     assets = unreal.get_editor_subsystem(unreal.EditorAssetSubsystem)
     if assets.list_assets(folder, recursive=True, include_folder=False):
