@@ -135,7 +135,7 @@ test('the instructions, the quick start and the skill ask the agent to look and 
   const dir = await temp(t, 'refine'), mcp = session({ directory: dir });
   t.after(async () => { mcp.input.end(); await mcp.running; });
   const { instructions } = (await mcp.init()).result;
-  assert.match(instructions, /Before you deliver, look and refine: compare the contact sheet from pixel_compile, pixel_inspect, pixel_patch or pixel_render with what the request names \(the subject and where it is, how it moves, its size and colours\), fix the worst difference, and look again, at least twice for an effect or an animation\./);
+  assert.match(instructions, /Before you deliver, look and refine: compare the contact sheet from pixel_compile, pixel_inspect or pixel_render with what the request names \(the subject and where it is, how it moves, its size and colours\), fix the worst difference, and look again, at least twice for an effect or an animation; a preset the user named, as it ships, needs one look\./);
   assert.match(instructions, /A preset or first draft that passes expect has the right files, not yet the right picture\.$/);
   const quick = (await mcp.request('tools/call', { name: 'pixel_help', arguments: {} })).result.content[0].text;
   const shell = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'help', 'quickstart'], { cwd: dir, encoding: 'utf8' }).stdout;
