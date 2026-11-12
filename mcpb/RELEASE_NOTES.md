@@ -1,27 +1,10 @@
-# 0.15.0
+# 0.16.0
 
-Made to be read by an agent: help that answers with a page, replies that say each thing once, and fewer steps from a request to the files. Rigid bodies gain joints, ropes and cloth, contributed by alesisce. Eighteen calls an agent makes for help and routine work returned 848 KB in 0.14.0 and return 46 KB now.
+A check that knows the sprite sheet that was asked for, MCP replies that name the release that sent them, and Tiled tile sets that play every looping animation of a sprite.
 
-- **Joints, ropes and cloth** for `pixelforge-bodies` (#124, by alesisce):
-  - `joints`: distance, rope, spring, hinge and weld, between two bodies or a body and the world, with anchors, angle limits and a breaking impulse.
-  - `ropes`: a chain between two anchors, drawn as a rope or a chain, that sags, carries a load and can break.
-  - `cloths`: a grid pinned to points, keys over time or bodies, with wind, gusts, collisions and tearing.
-  - New presets: rope bridge, wrecking ball, ragdoll, flag and cape.
-- **Help that answers with a page:**
-  - `pixel_help` and `pixelbolt help` never return a whole guide unasked: a document is its opening and its sections, a long section its parts, and a word that starts no heading returns the paragraphs that mention it.
-  - A schema topic is an outline of its properties; a path such as `effects.bodies` returns that part as JSON.
-  - The pixel art skill is a short router to checklists by subject, among them characters, colour variants, effects, tiles and scenes.
-- **Fewer steps:**
-  - Presets on the canvas and frame count asked for: `compile --size 32x32 --frames 8 --animation <name>` (MCP `size`, `frames`, `animation`), and `gif --preset` in one call.
-  - `render --look` writes the frames enlarged to look at, and `--gif` or `--gif-scale` the GIFs, in the same call.
-  - A colour variant: `inspect --palette` says which keys colour which parts, a patch path takes `[*]` for every frame, and `inspect --beside` draws the versions in one labelled image.
-  - Tiles: a compiled set's reply carries the tilemap to paste, slopes included, and a template's `preview.rows` draws a level of your own. A scene's view may be 1024 pixels a side.
-  - `import --frame 24x24` cuts a sprite sheet whose atlas is lost into its frames.
-- **Replies that say each thing once:** frames in runs, a summary when a patch changes many frames, the check's motion boxes only where a note cites them, every error of a recipe at once, and an unknown MCP option named with the options the tool has.
-- **To start from:** a stocky knight beside the hero, a hermit-crab chest made of moving parts, an isometric tile set and glade, a two-layer snow-over-rock tile set and a lit camp scene in the craft notes.
-- **Looks:** steam and fog in flat bands without specks, no bright line where smoke leaves the picture, drawn props in the floating-body presets, and emitters that follow a moving obstacle.
-- **Breaking:** an anchored frame's atlas `anchor` is the 0-1 point Phaser and PixiJS read; the pixel point is `anchorPx`. The Tesla coil preset and the Emberfall demo are gone.
-- **Also:** a Gemini CLI extension manifest, a smaller npm package, and fixes from three reviews (hidden state, first-time agents, and this release).
+- **The check knows the sprite sheet:** `expect.sheet` checks the sheet the user named: its `width` and `height` in pixels, or its `columns` and `rows` (`{"rows": 1}` for a one-row strip). A grid wraps at 8 columns unless the recipe sets `sheet.columns`, so a sheet of 10 or 12 frames came out in two rows while every other check passed (5 of 8 such requests in one benchmark). A miss names the `sheet.columns` that makes the asked sheet with the fewest empty cells, and turns `sheet.trim` off for a trimmed atlas. When the default grid wraps and nothing asked about the sheet, `delivered.sheet` says so.
+- **MCP replies name this release:** a bodies match too long for one call, and a `pixel_compile` with `sequence` stopped at the time or memory limit, name `npx -y pixelbolt@<the server's version> sequence ...`, so the command line runs the same release as the server, not whatever npm's latest is. `pixel_help`'s description names the `powder` topic it already served.
+- **Tiled plays every looping animation:** a Tiled tileset of a sheet with no terrain (a sprite's `tileset.tsx` in a scene export) left out, without a word, any looping animation that shared a frame with an earlier one, so `iso-tiles`' `water-late` played nowhere. Every looping animation now plays from its first frame, in whichever order they are listed, unless an earlier one already starts on that frame, and that frame keeps its tile weight.
 
 Known issues:
 - A row of thin pieces standing on the floor (bowling pins) is shoved along by a ball rather than knocked flat; stacks of blocks fall as they should.
