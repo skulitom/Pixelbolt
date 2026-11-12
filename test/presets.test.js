@@ -154,9 +154,9 @@ test('every shipped preset draws something', () => {
   for (const [file, { colors }] of compiled) assert.ok(colors > 0, `${file} draws no pixel`);
 });
 
-// The kinds whose goldens pin what every example compiles to (fluid.test.js, bodies.test.js, powder.test.js,
-// crystal.test.js and wave.test.js), each with a small preset of its own. A renamed preset leaves the first of its kind.
-const PINNED = { bodies: 'bouncing-pixel', crystal: 'snowflakes', fluid: 'smoke-puff', powder: 'quarry-blast', wave: 'interference' };
+// The simulations whose goldens pin what each example compiles to (test/goldens/<kind>.json, checked by fluid.test.js,
+// bodies.test.js and powder.test.js), each with a small preset of its own. A renamed preset leaves the first of its kind.
+const PINNED = { bodies: 'bouncing-pixel', fluid: 'smoke-puff', powder: 'quarry-blast' };
 
 test('pixel_compile with a preset is byte-identical to compiling its file', async t => {
   const mcp = session(t, { directory: await temp(t, 'presets-compile'), root: examples });
@@ -166,16 +166,20 @@ test('pixel_compile with a preset is byte-identical to compiling its file', asyn
   // pixel_help's preset topic finds and loads a preset as pixel_compile's does, without compiling it. Both paths
   // compile with the same compiler.
   for (const entry of entries) {
-    const help = reply(await mcp.call('pixel_help', { topic: 'preset', name: entry.name }));
+    const result = await mcp.call('pixel_help', { topic: 'preset', name: entry.name });
+    assert.notEqual(result.isError, true, `${entry.name}: ${result.content[0].text}`);
+    const help = reply(result);
     assert.equal(help.file, `examples/${entry.file}`, entry.name);
-    assert.deepEqual(help.source, compiled.get(entry.file).document, entry.name);
+    // As JSON, so the order of keys counts too, as it does in a revision.
+    assert.equal(JSON.stringify(help.source), JSON.stringify(compiled.get(entry.file).document), entry.name);
   }
   for (const format of Object.keys(COMPILE)) assert.equal(COMPILERS[format], COMPILE[format], format);
-  // Compiled through the server, every preset gives the recipe its file compiles to. A simulation the goldens pin
-  // example by example is compiled here once for its kind, not once a preset: those compiles were most of this
-  // test's time on a slow runner.
+  // Compiled through the server, every preset gives the recipe its file compiles to. A simulation whose golden pins it
+  // is compiled here once for its kind, not once a preset: those compiles were most of this test's time on a slow
+  // runner. A preset with no golden case is compiled here, whatever its kind.
+  const goldenCases = new Map(await Promise.all(Object.keys(PINNED).map(async kind => [kind, Object.keys(JSON.parse(await readFile(path.join(root, 'test', 'goldens', `${kind}.json`), 'utf8')))])));
   const picks = new Set(Object.entries(PINNED).map(([kind, name]) => entries.find(entry => entry.kind === kind && entry.name === name) ?? entries.find(entry => entry.kind === kind)));
-  for (const entry of entries.filter(item => !Object.hasOwn(PINNED, item.kind) || picks.has(item))) {
+  for (const entry of entries.filter(item => !goldenCases.get(item.kind)?.includes(item.base) || picks.has(item))) {
     const result = await mcp.call('pixel_compile', { preset: entry.name });
     assert.notEqual(result.isError, true, `${entry.name}: ${result.content[0].text}`);
     assert.equal(reply(result).revision, revisionOf(compiled.get(entry.file).recipe), entry.name);
