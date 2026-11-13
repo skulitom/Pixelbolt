@@ -1,0 +1,80 @@
+Searches for the effects section, 13 November 2026 (UK), Claude's WebSearch tool (US results).
+Five run by a research helper between 15:05 and 15:10 UTC; two by us at about 15:10 UTC. Summaries are the search tool's own, shortened.
+
+### S1 "add effects to AI-generated sprites"
+1. Pixel Art VFX Generator: Effect Sprite Sheets: https://www.pixellab.ai/pixel-art-vfx-generator (PixelLab VFX tool)
+2. AI Sprite Generator: Animated Game Sprites: https://ludo.ai/features/sprite-generator (Ludo.ai sprite tool)
+3. AI VFX Sprite Generator - Explosion & Effect Sprite Sheets: https://ludo.ai/tools/vfx-sprite-generator (Ludo VFX tool)
+4. How to Make VFX Sprites for Explosions, Magic and Hits with AI: https://ludo.ai/docs/sprite-generator/vfx-sprite-sheets (Ludo docs)
+5. Sprite Generator - Docs & FAQ - Ludo.ai: https://ludo.ai/docs/sprite-generator (Ludo docs)
+6. Free Text to Sprite sheet Generator: https://cgdream.ai/features/ai-sprite-sheet-generator (CGDream tool)
+7. Video to Sprite Sheet: Turn AI Clips into Game VFX Fast: https://www.atlascloud.ai/blog/tips/video-to-sprite-sheet (Atlas Cloud blog)
+8. AI Sprite Generator - 10x Faster, Requires Zero Skills: https://www.godmodeai.co/ai-sprite-generator (GodMode AI tool)
+
+Tool summary: Several AI tools can add effects to sprites. PixelLab adds glows, auras and lighting that follow a sprite's animation, and makes standalone effects over chat, MCP or API. Ludo.ai's Edit Spritesheet adds effects to existing animations, and it makes VFX sheets of up to 64 frames. CGDream, GodMode AI and Sorceress also make effects. Atlas Cloud describes a manual FFmpeg-plus-Godot workflow.
+
+### S2 "AI sprite generator effects explosion slash MCP"
+1. AI VFX Sprite Generator - Explosion & Effect Sprite Sheets: https://ludo.ai/tools/vfx-sprite-generator (Ludo VFX)
+2. AI Sprite Generator: Animated Sprite Sheets: https://ludo.ai/features/sprite-generator (Ludo)
+3. generate_vfx - Voidless: https://glama.ai/mcp/connectors/dev.voidless/voidless/tools/generate_vfx (MCP directory listing for Voidless's VFX tool)
+4. Pixel Art VFX Generator: Effect Sprite Sheets: https://www.pixellab.ai/pixel-art-vfx-generator (PixelLab)
+5. Explosion Pixel Art VFX, open source - Sprite Fusion: https://www.spritefusion.com/pixel-art-vfx/explosion (open-source effect library)
+6. Sprite Generator - Docs & FAQ - Ludo.ai: https://ludo.ai/docs/sprite-generator (Ludo docs)
+7. How to Make VFX Sprites for Explosions, Magic and Hits with AI: https://ludo.ai/docs/sprite-generator/vfx-sprite-sheets (Ludo docs)
+8. AI Sprite Sheet Generator for 2D Games · SpriteCanvas: https://spritecanvas.com/ (SpriteCanvas, which has effects and MCP)
+
+Tool summary: Several AI tools make explosion and slash effect sprites and work over MCP:
+- Ludo.ai: VFX sheets of up to 64 frames, with an MCP server at mcp.ludo.ai.
+- Voidless: a procedural `generate_vfx` tool.
+- PixelLab: fire, explosions, spells and slashes, with MCP free for subscribers.
+- Sprite Fusion: 25 MIT-licensed effects, as code rather than AI.
+- SpriteCanvas: six-frame effects, with MCP.
+- Sprixen: a general generator with MCP, but no effect tools mentioned.
+
+### S3 "SpriteCook alternative effects"
+1. Ludo vs SpriteCook (2026): Which AI Game Art Tool?: https://ludo.ai/compare/ludo-vs-spritecook (competitor comparison by Ludo)
+2. Top SpriteCook Alternatives in 2026: https://slashdot.org/software/p/SpriteCook/alternatives (directory)
+3. Find best 15 SpriteCook Alternatives - Capterra Australia 2026: https://www.capterra.com.au/alternatives/1094876/SpriteCook (directory)
+4. Find best 15 SpriteCook Alternatives - Capterra Canada 2026: https://www.capterra.ca/alternatives/1094876/SpriteCook (directory)
+5. SpriteCook Alternative for Game Art (Pricing and Features Compared): https://sprixen.com/alternatives/spritecook (competitor comparison by Sprixen)
+6. SpriteCook: Free plan · From $8/mo, alternatives, who uses it: https://inite.ai/en/atlas/spritecook.ai (directory, with outdated $8 price)
+7. Best SpriteCook Alternatives in 2026: https://www.aikaptan.com/alternatives/spritecook (directory)
+8. SpriteCook Review (2026): Pricing & Alternatives: https://makeaigames.com/tools/spritecook (review site)
+
+Tool summary: No result describes a SpriteCook "effects" feature. The tool quoted SpriteCook prices as $8, $30 and $70, which differ from today's pricing page ($12, $30, $100). Alternatives that offer effects: Sprixen (VFX, music, maps for a flat $10), Ludo.ai (from $15/mo), Voidless, Ztronica and GrafX2 (non-AI). Also listed: Sprite-AI, PixelLab, Scenario, Layer and others.
+
+### S4 "pixel art VFX for AI generated characters"
+1. Pixel Art VFX Generator: Effect Sprite Sheets: https://www.pixellab.ai/pixel-art-vfx-generator (PixelLab)
+2. Pixel Art Sprite Generator - 8-Bit & 16-Bit AI Sprites: https://ludo.ai/tools/pixel-art-sprite-generator (Ludo)
+3. PixelLab - AI Generator for Pixel Art Game Assets: https://www.pixellab.ai/ (PixelLab home)
+4. I built an AI tool that lets you generate pixel-art VFX - DEV Community: https://dev.to/hoanglong256/i-built-an-ai-tool-that-lets-you-generate-pixel-art-vfx-458p (developer blog post)
+5. Open Source Pixel Art VFX for your game - Sprite Fusion: https://www.spritefusion.com/pixel-art-vfx (open-source effects)
+6. pixelfx: 244 pixel-art effects + effect-making skill: https://varg.ai/how-to/skills/pixelfx-pixel-effects (varg.ai skill page)
+7. Pixel Animation Maker: https://www.pixexact.com/pixel-animation-maker (Pixexact tool)
+8. AI Pixel Art Sprites & Animation for Game Devs: https://pixler.dev/ (Pixler tool)
+
+Tool summary:
+- Hosted generators: PixelLab is the best match for effects timed to a character, over chat, MCP or API. Ludo.ai and Pixexact also generate VFX.
+- Open-source and agent tools: spritefx (an MIT Claude Code skill that writes JSON specs), pixelfx (244 code-drawn effects) and Sprite Fusion (25 free effects).
+- Supporting animation tools: Pixel Engine and Pixler.
+- spritefx's own URL was not among the top results listed.
+
+### S5 "Retro Diffusion VFX animation"
+1. Best Retro Diffusion Animation Model for Sprite Generation: https://www.scenario.com/models/retro-diffusion-animation (Scenario, which resells the RD model)
+2. Retro Diffusion Models - The Essentials: https://help.scenario.com/articles/4202673551-retro-diffusion-models-the-essentials (Scenario help)
+3. Retro-Diffusion: https://docs.scenario.com/get-started/generation/third-party-model-generation/third-party-model-generation-retro-diffusion/ (Scenario docs)
+4. Astropulse on X ("awesome VFX animation generator..."): https://x.com/RealAstropulse/status/1939283039369957447 (post by RD's creator)
+5. Astropulse on X ("Generate amazing pixel art VFX animations from just a prompt..."): https://x.com/RealAstropulse/status/1938582524982091890 (launch post)
+6. Astropulse (@RealAstropulse) on X: https://x.com/realastropulse?lang=en (profile)
+7. Pixel Art API & MCP Server Docs: https://retrodiffusion.ai/app/guide/api (official RD API docs)
+8. Visual Effects Pixel Art Generator: https://retrodiffusion.ai/styles/visual-effects/ (RD style page; returned 404 when I fetched it)
+
+Tool summary: VFX animation is a style in RD Animation, available on retrodiffusion.ai, the API and Scenario. It was announced on X on 27 June 2025. The style page calls it "Visual Effects", for fire, explosions and lightning. The style ID is `rd_animation__vfx`, at 24–96 px, square only. Scenario lists styles four_angle_walking, walking_and_idle, small_sprites and vfx. The 9th result was an unrelated arXiv paper, "VFX Creator".
+
+### S6 "add effects to AI-generated pixel art sprites" (us, about 15:10 UTC)
+Results in order: producthunt.com pixelfx-piper (3 entries); pixa.com pixel art shading generator; pixl-site.vercel.app Sprite Generation docs; pixlr.com blog; shyft.ai patch-gg pixelfx skill; pixie.haus; morpheus-code.itch.io spritelab; ludo.ai pixel art sprite generator; ai-jus-sprite-generator.pages.dev; sorceress.games blog (2); seeles.ai blog; pixa.com aseprite-style sheet generator and animate pixel art; pixa.com pixel art slash effect generator; sorceress.games Pixel Snap.
+Tool summary: PixelFX Piper (browser effects on pixel art), Pixa (upload a sprite, describe the effect), the pixelfx skill (effects as code), Sorceress Pixel Snap (clean-up of AI images). No result from skulitom.github.io or mentioning Pixelbolt.
+
+### S7 "AI sprite generator MCP server effects explosion slash" (us, about 15:10 UTC)
+Results in order: Glama pixscii image; awesome.ecosyste.ms aseprite-mcp; piskel-mcp-server; glama.ai (3 listings); socket.dev pixelforge-mcp; mcpmarket pixelforge; glama aseprite-mcp schema; sprite-ai.art/docs/mcp; glama ComfyAI-MCP-GameAssets generate_sprite; claudemarket aseprite-mcp; mcpservers.org SpriteCook MCP; godmodeai mirror; lobehub aseprite-mcp-go; sprite-ai.art/api/mcp/docs; skillsplayground cogodmodeai-sprites; summerengine AI sprite sheet generator; skillsmp sprite-game-gen; sorceress.games VFX blog.
+Tool summary: no single MCP server clearly generates AI explosion and slash effects; pixscii lists slash/sparkle/explosion/heal effects; Piskel MCP shows an explosion example; God Mode AI has a separate web VFX generator. No result from skulitom.github.io or mentioning Pixelbolt.

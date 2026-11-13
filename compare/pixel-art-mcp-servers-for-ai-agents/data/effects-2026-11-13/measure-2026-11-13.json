@@ -1,0 +1,204 @@
+{
+  "pixelbolt": "0.16.0",
+  "node": "v24.19.0",
+  "inputs": {
+    "input/knight-attack.png": "30b1c62b8a10d74e8c26b303d6abc4cdc7a1adbe5170c2e56e4168b1ea6566e6",
+    "input/knight-idle.png": "1fef69a3584e18c9cbcf0942484adc501d772c5ebab174b99edf5b29e46139aa",
+    "add_animation.py": "1cab3b6393b0c7a59143690cc7fd50e1c3a96ff3f7793315358ae167647204b5",
+    "knight-effects.fx.json": "5336ecd38b2fa712332a21abff43fbf95d015ce3a15c306d4484c5e87c95f64c"
+  },
+  "pixel_check": {
+    "sprite_colours": 18,
+    "frames": [
+      {
+        "frame": 1,
+        "sprite_pixels": 216,
+        "unchanged": 216,
+        "drawn_over_by_effect": 0,
+        "drawn_over_matches_effect_alone": 0,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 2,
+        "sprite_pixels": 215,
+        "unchanged": 169,
+        "drawn_over_by_effect": 46,
+        "drawn_over_matches_effect_alone": 46,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 3,
+        "sprite_pixels": 215,
+        "unchanged": 175,
+        "drawn_over_by_effect": 40,
+        "drawn_over_matches_effect_alone": 40,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 4,
+        "sprite_pixels": 199,
+        "unchanged": 166,
+        "drawn_over_by_effect": 33,
+        "drawn_over_matches_effect_alone": 33,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 5,
+        "sprite_pixels": 199,
+        "unchanged": 197,
+        "drawn_over_by_effect": 2,
+        "drawn_over_matches_effect_alone": 2,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 6,
+        "sprite_pixels": 199,
+        "unchanged": 199,
+        "drawn_over_by_effect": 0,
+        "drawn_over_matches_effect_alone": 0,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 7,
+        "sprite_pixels": 199,
+        "unchanged": 199,
+        "drawn_over_by_effect": 0,
+        "drawn_over_matches_effect_alone": 0,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 8,
+        "sprite_pixels": 199,
+        "unchanged": 199,
+        "drawn_over_by_effect": 0,
+        "drawn_over_matches_effect_alone": 0,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      },
+      {
+        "frame": 9,
+        "sprite_pixels": 199,
+        "unchanged": 199,
+        "drawn_over_by_effect": 0,
+        "drawn_over_matches_effect_alone": 0,
+        "changed_without_effect": 0,
+        "outside_sprite_pixels_differing_from_effect_alone": 0,
+        "effect_alone_over_sprite_equals_hit": true
+      }
+    ],
+    "totals": {
+      "sprite_pixels": 1840,
+      "unchanged": 1719,
+      "drawn_over_by_effect": 121,
+      "drawn_over_matches_effect_alone": 121,
+      "changed_without_effect": 0,
+      "outside_sprite_pixels_differing_from_effect_alone": 0,
+      "effect_alone_over_sprite_equals_hit": "9 of 9 frames"
+    },
+    "attack_hit_colours": 24
+  },
+  "runs": [
+    {
+      "timings_ms": {
+        "import attack": 142,
+        "import idle": 140,
+        "name attack": 86,
+        "name idle": 80,
+        "compile": 248,
+        "render": 241
+      }
+    },
+    {
+      "timings_ms": {
+        "import attack": 142,
+        "import idle": 142,
+        "name attack": 86,
+        "name idle": 79,
+        "compile": 248,
+        "render": 240
+      }
+    }
+  ],
+  "files_written": 63,
+  "identical_across_runs": true,
+  "hashes_run1": {
+    "input/knight-attack.json": "67fa3bc0d1dc8c6df41159643b3e95b20758f83b72e1425be6242fb5a758368e",
+    "input/knight-idle.json": "e78ce44983c5b5b3a058785b93a1b936a92462fc014505920eb08b4fed81114e",
+    "knight-effects.json": "f6e48c5f30be484091f71276c8c0e5d71705ef5e9992e75bc9555397a62368f6",
+    "out/animations/attack-hit.png": "d4852b8bf945f490ca74ff8f7abd3010b3605f68a15924a425a0580248d32486",
+    "out/animations/hit-overlay.png": "9e5842df283e940a9f1fc881626c987f26e1ce3308d8eacbdb132ff8d6c260c8",
+    "out/animations/power-up.png": "8ff29befdf2ac07c2a6f50b219f5cc6c705e52cc813e54b2851a4326a35c0734",
+    "out/animations/teleport-out.png": "5a30e52b6e445115ff86563b4b713cf249c8e5c434e6c6102226d446e2fadc66",
+    "out/frames/attack-hit-0.png": "98826e2351b2bc682fd35d9fc05991583d60a4cb8f19b74948b55db6fa2170ea",
+    "out/frames/attack-hit-1.png": "58c9f2bed4e5eb4963d0bb5e6042ff3b21c571f5c72fc2fdcffe51a996788a25",
+    "out/frames/attack-hit-2.png": "198682b1bd500ad54e182a486893084a9c678737aa22093b9cfa99c60a876f85",
+    "out/frames/attack-hit-3.png": "f2b37734dfd7e94c82e3e9d3eff0a789ec282c687eeb09ddcea0049f1b3c0190",
+    "out/frames/attack-hit-4.png": "060b633aa3c68213d6fcee2584cea5431f6b77e5b6c40906548f2b2776e86cfa",
+    "out/frames/attack-hit-5.png": "7a6e62369fea7571f52f960849708b2310365174b9490bbc64fc86383e9c417a",
+    "out/frames/attack-hit-6.png": "bc258e6d9e732dcac8f8eae5268ea6ed897d2ea0fd0468b83fd52c2c7c566693",
+    "out/frames/attack-hit-7.png": "a5ca7e34af9ac118b85d8c32398f2f08b6e3b9d201d58ea32fd7dd8ec294570f",
+    "out/frames/attack-hit-8.png": "0a240d86d9838d00e4353f0d5a8b420689f8ffab2f0c8299848ed7c7363b9421",
+    "out/frames/hit-overlay-0.png": "c6ba0714c73924704cbaea9d400c5ef9431e592639beb75a80e86e29a3e2ce91",
+    "out/frames/hit-overlay-1.png": "0fea71f33e25aaa0ebf559a73f3d53116b78df40527a5f9b8eeb481cc2e365e7",
+    "out/frames/hit-overlay-2.png": "e7f00ff37848a7bdf5aa37cef98aa2b8f943051c18322e5ee3a2f79892a28bdf",
+    "out/frames/hit-overlay-3.png": "6fc96b804e0ff05de8862ca1d63fca583827326f22af59b61b3e18d4a4c264f8",
+    "out/frames/hit-overlay-4.png": "b4c85d90900f15f21b49ac287db12c3435c824b873ac49c3872b1e0bbb1f5c6f",
+    "out/frames/hit-overlay-5.png": "6670d3f59445d22c54470e2c7923c9c9422ea1fb4d10bdff80bcf3bb4a1ff101",
+    "out/frames/hit-overlay-6.png": "088d300e178c547c755fd477cc7e1a20d433ee4794e18ccaa4bb90a8ef5d64c9",
+    "out/frames/hit-overlay-7.png": "8f22e9b70bf827523f9b285e87b07c2ac37a129e60c11bbc4e24b139da07b58d",
+    "out/frames/hit-overlay-8.png": "c6ba0714c73924704cbaea9d400c5ef9431e592639beb75a80e86e29a3e2ce91",
+    "out/frames/power-up-0.png": "26feebe86a9601460f09cb6e145a742d38e3e99bc61bfc994a20e5779523dfa4",
+    "out/frames/power-up-1.png": "4ba7976f29fe2f5725cccb2de344f61f95c8277d640e1277cc76eb15ad4cef27",
+    "out/frames/power-up-10.png": "d0c12f9c51523e065c259395d29abc60a70ebc2ed00d0f098c8011a027e8e449",
+    "out/frames/power-up-11.png": "0d647ecf44528976a91343a1cd2a44e5f48aa3908e32e8b0ce7c651cd8724f00",
+    "out/frames/power-up-2.png": "54c27e87b7891e7261781cc10429ee9ce000709e0ae16b80479c3edcacab8844",
+    "out/frames/power-up-3.png": "a75e0414b60f471321a187e4332ebda02e3fd70c507541b44351b106c30ea0db",
+    "out/frames/power-up-4.png": "f4ea3def8e2d01788e4f09c6129947e5ebd88609e52d2dfddf8ef2d4491cbf0c",
+    "out/frames/power-up-5.png": "300d4c17fe2711d2a9e84d431d51f7c267942556e97cee6815d7ae31599844e3",
+    "out/frames/power-up-6.png": "c9167911bc512ff1b5e58ac6064527ad3306fbededa12753b3203d075338bb10",
+    "out/frames/power-up-7.png": "0cf6d86faa7ed8d5b2c61b58a3f59ed4ec5e554b3b0ddef1667d5f69deb6ad60",
+    "out/frames/power-up-8.png": "7dad2df2845219a5ec56a5574b6676aac624e3130e2f367e76b1fe42f0fe1845",
+    "out/frames/power-up-9.png": "6e5a90c3c3adaa9e6e8b1ace1761f478ba5b8fef9ef70c1cbfa6ccee7a2057a4",
+    "out/frames/teleport-out-0.png": "8ae572cb7e019255300f590a8dd44b85356311fef53f5155dd1560f66064fca1",
+    "out/frames/teleport-out-1.png": "cdf4c09d0fca2ef43747ebe73b1355109e8a543afa87c98ddd8030f35d8f496c",
+    "out/frames/teleport-out-10.png": "05852ae0f65c2b7c3efe5b8273307b078436ac2d867fd929306a026eaf0d6d02",
+    "out/frames/teleport-out-11.png": "1fbf304e539907bb092a84929ac3c6328e8a7e97dd4a0a4a86cfab3037672227",
+    "out/frames/teleport-out-12.png": "2a8876113c0470fc56e24b5ccf07ea8d3a7b218b03574398d4e9c734a32f44f1",
+    "out/frames/teleport-out-13.png": "de3f168e52e59b4d57afd9fa01b83ef22be3804ccb75bd25fc75e3fd15aed801",
+    "out/frames/teleport-out-2.png": "c473d2e9119b2ab3da89492d0bd650f8651dd04a7776ae2b55bf9d30662b694f",
+    "out/frames/teleport-out-3.png": "b14833d65633355bac281ce4d8f97a681ba1e50d88f75b83d1b7778c03e00940",
+    "out/frames/teleport-out-4.png": "ffd53693b1c84ff65812bef40dde6dcf57c23afaea59d39aebc7d038ead5d463",
+    "out/frames/teleport-out-5.png": "2d7b5eed0815f90e0d66ac5f493a5bd0f5fff8ac7677b6e701bad78dffa6a7b7",
+    "out/frames/teleport-out-6.png": "75cf66324b256fe5093d3ac30950037f6ab539a03aa16f78f4416cbfb088499e",
+    "out/frames/teleport-out-7.png": "d70958348057888a72c55d1bae0535996b68dc236991b0ba43a181815f7192e1",
+    "out/frames/teleport-out-8.png": "baa3be50b07579e539cdc4113c21d6f4b552790150120cadf34d51e79b3f0999",
+    "out/frames/teleport-out-9.png": "1cd345e1cd9b0b9d5b22f47d96ae12e66f680c05a821ce12c7f0c64f7836c565",
+    "out/gifs/attack-hit.gif": "958dcf3baeb39277f6d0abe55f2ac6730f0e52bce69a290f6acf3ce013fdbee7",
+    "out/gifs/hit-overlay.gif": "883c24b6bb8ee9aa8d8a49b36ff3a849b836b8889aa0a60156dba99f275e11ca",
+    "out/gifs/power-up.gif": "8985f56f3086363ce1f3322cf0a3777d0aa75b5f9a185720a80969591b79be06",
+    "out/gifs/teleport-out.gif": "5641743baca1627af0d1b6b28ef175e8239743684062280d4dfeedd2e81a7eef",
+    "out/knight-effects.atlas.json": "1e58d352e5d5f3e7fcd654995a7c8f8f8eec9da70943852b8c74635cee5f4abd",
+    "out/knight-effects.css": "e1c1698e4908b07eee0f03f7cedbe931222b1c479aede56259bd26187a496efd",
+    "out/knight-effects.pixel.json": "c36cc12340686f5e6876e675484fe366c12e5f1920d5058c96afe5603644e47a",
+    "out/knight-effects.png": "4a33f398212542b87ebd8f8b6c74feae275077eb03a53197875a030b2c9a8be8",
+    "out/knight-effects.tres": "e06ca364974f0abdd2e7aba5f80eeceb58bee34cef9fce3ad47842fd8661e1f3",
+    "out/player.js": "c3f8956c02c1d0546d366a94256678870590aae48f1f05dbac33fcf4a5cff384",
+    "out/preview.html": "4187c7c8436007e2f0df77b2d46075a6a3deb3514f104c2480e66bc6b4c67f5e",
+    "out/README.txt": "a834d08e4ae739ee84d2d4263574ce2fa28577fb141853c8e1df55e22497d3ed"
+  }
+}
