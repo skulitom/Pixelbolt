@@ -22,6 +22,15 @@ Reported from a published video: a monkey swinging on a rope was "extremely dist
 - **The bits of a weightless body can fall.** A shell built of `weightless` pieces holds its shape until it is hit, but the bits that broke off floated beside it. `breaks: { ..., "fall": true }` gives them weight.
 - The bodies guide says what was met by building: a box is at most 64 pixels a side, a polygon's `at` is its centroid, `spinDrag` is 0.02 unless set, an event's frame already shows its effect, and a starting `spin` does nothing to a box that stands on the floor.
 
+### What breaks a body goes through it
+
+Reported from a video that could not be made: a heavy ball dropped down a shaft of five crate floors stopped on the first, in each of 124 setups.
+
+- **A body breaks before its knock is solved.** It broke after, so a crate held on two ledges had already taken the whole of the ball's speed. What breaks a body now meets its pieces, and goes on through them as its weight allows.
+- **Fresh pieces grip nothing.** The pieces of a body fit each other exactly, so with friction the ones left on the ledges locked as an arch and held the ball up for good (a solve run to convergence gave the same). A piece has no friction for its first 12 frames and takes it back over the next 8.
+- **A knock passes through what can't break.** A ball that landed on a loose plank lying on the next crate passed no knock on, since the plank and the crate met at no speed. A body that can't break, pressed from one side, now knocks what it touches on the other with that weight behind it; a crate dropped on rubble breaks as it would on the floor under it.
+- The ball of the shaft now breaks all five floors. `crate-smash` is thrown a little lower: the ball goes through the pane without losing its line, ploughs through the bottom row and the pyramid comes down on it.
+
 ### Poke the pixels: a live fluid toy
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.

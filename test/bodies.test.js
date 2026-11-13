@@ -514,6 +514,30 @@ test('a knock breaks what it hits, as hard as it is hit, and not the row behind 
   assert.equal(throwAt(20, 0.8).broken, undefined);
 });
 
+test('what breaks a body goes on through its pieces, and a knock passes through a body that cannot break', () => {
+  const ledges = y => [9, 39].map(x => ({ shape: 'box', size: [18, 3], at: [x, y + 1.5], fixed: true, fill: 's' }));
+  const crate = (name, y, at = 1) => ({ name, shape: 'box', size: [18, 6], at: [24, y - 3], density: 0.8, friction: 0.6, bounce: 0.05, fill: 'r', breaks: { at, pieces: 6, speed: 1 } });
+  const ball = { name: 'ball', shape: 'circle', radius: 4, at: [24, 3], density: 4, bounce: 0.1, friction: 0.4, fill: 'w' };
+  const drop = bodies => run(scene({ frames: 90, gravity: [0, 0.12], walls: ['bottom'], bodies }, { height: 80 })).effect;
+  const names = effect => (effect.broken ?? []).map(entry => entry.body);
+  // A heavy ball dropped on a crate that bridges two ledges. Broken after the solve, the crate had already taken the
+  // ball's speed, and its pieces, which fit each other exactly, locked as an arch between the ledges: the ball sat on
+  // them at y 26 to the end of the run.
+  const one = drop([ball, crate('crate', 30, 1.4), ...ledges(30)]);
+  assert.deepEqual(names(one), ['crate']);
+  assert.ok(one.paths.ball[one.broken[0].frame + 16][1] > 40, `the ball is at ${one.paths.ball[one.broken[0].frame + 16]} 16 frames after the break`);
+  assert.ok(one.paths.ball[89][1] > 74, 'and comes to rest on the floor');
+  // Two floors: the pieces of the first fall ahead of the ball and lie on the second crate. The ball lands on them, and
+  // the knock passes through them (a plank met the crate it lay on at no speed, so the crate was never knocked).
+  assert.deepEqual(names(drop([ball, crate('crate', 30), ...ledges(30), crate('crate-two', 56), ...ledges(56)])), ['crate', 'crate-two']);
+  const plank = at => ({ name: 'plank', shape: 'box', size: [at[1] > 30 ? 12 : 8, 2], at, density: 0.8, friction: 0.6, fill: 'k' });
+  assert.deepEqual(names(drop([ball, crate('crate', 30, 1.4), plank([24, 23]), ...ledges(30)])), ['crate'], 'a ball that lands on a plank lying on the crate');
+  // A crate dropped on a plank that lies on the floor breaks as it does on the floor.
+  const fall = extra => run(scene({ frames: 60, gravity: [0, 0.2], walls: ['bottom'], bodies: [{ name: 'crate', shape: 'box', size: [8, 8], at: [24, 6], density: 0.6, fill: 'r', breaks: { at: 2, pieces: 4 } }, ...extra] })).effect;
+  assert.deepEqual(names(fall([])), ['crate']);
+  assert.deepEqual(names(fall([plank([24, 31])])), ['crate']);
+});
+
 test('a break power breaks a body on cue, a fixed one too, and a blade that cuts breaks what it touches', () => {
   // A fixed slab broken by an event at frame 10: its pieces fall to the floor.
   const slab = run(scene({ frames: 60, gravity: [0, 0.3], walls: ['bottom'], bodies: [{ name: 'slab', shape: 'box', size: [16, 6], at: [24, 10], fixed: true, fill: 'w', outline: 'k' }], events: [{ frame: 10, body: 'slab', power: 'break', count: 5 }] })).effect;
@@ -679,11 +703,12 @@ test('the pieces of a weightless body float unless they fall', () => {
   // P-139: an egg shell of weightless pieces left the bits that cracked off hanging in mid-air.
   const shell = fall => { const world = bodiesWorld(scene({ frames: 60, gravity: [0, 0.3], walls: ['bottom', 'right'], bodies: [
     { name: 'shell', shape: 'box', size: [8, 8], at: [24, 10], weightless: true, fill: 'w', breaks: { at: 1, pieces: 3, speed: 0, ...(fall && { fall: true }) } },
-    { name: 'stone', shape: 'circle', radius: 2, at: [10, 10], velocity: [3, 0], density: 4, weightless: true, fill: 'k' }] })); return world; };
+    { name: 'stone', shape: 'circle', radius: 2, at: [24, 26], velocity: [0, -3], density: 4, weightless: true, fill: 'k' }] })); return world; };
   for (const fall of [false, true]) {
     const figures = shell(fall), lowest = figures.lowest;
     assert.equal(figures.broken.length, 1, `fall ${fall}: the shell broke`);
-    // Knocked from the side: floating pieces drift along at the shell's height, falling ones land on the floor.
+    // Knocked from below (the stone meets the pieces, and sends each its own way): floating pieces stay up or drift
+    // off upward, falling ones land on the floor.
     assert.ok(fall ? lowest > 28 : lowest < 20, `fall ${fall}: the lowest piece is at ${lowest}`);
   }
   assert.throws(() => compileBodies(scene({ bodies: [{ shape: 'box', size: [8, 8], at: [24, 10], fill: 'w', breaks: { fall: true } }] })), error => error.path === 'bodies.effects.e.bodies[0].breaks.fall' && /this body has weight/.test(error.message));

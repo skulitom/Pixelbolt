@@ -145,9 +145,9 @@ const bladeBloom = bodiesSource('blade-bloom', 80, 80,
   { katana });
 
 // Crate smash: a heavy iron ball is thrown through a pane of glass into a pyramid of crates. The pane shatters and its
-// shards fly on into the crates; crates the ball or the flying pieces knock hard enough break apart, each piece carrying
-// its part of the crate (its boards and grain), while the far side of the pyramid stands; a crate that falls from the top
-// breaks where it lands. Everything settles into a heap of whole crates, planks and glass.
+// shards fly on into the crates; the ball ploughs through the bottom row, and the crates it or the flying pieces knock
+// hard enough break apart, each piece carrying its part of the crate (its boards and grain); the rest come down on it.
+// Everything settles into a heap of whole crates, planks and glass against the wall.
 const SMASH_FLOOR = 56;
 const pane = ['wwwww', 'wpppw', 'wpqpw', 'wpppw', 'wppqw', 'wpppw', 'wqppw', 'wpppw', 'wpqpw', 'wpppw', 'wppqw', 'wpppw', 'wpppw', 'wqppw', 'wpppw', 'wwwww'];
 const smashCrate = (at, extra) => ({ shape: 'box', size: [8, 8], at, asleep: true, density: 0.6, friction: 0.6, bounce: 0.1, symbol: 'crate', breaks: { at: 1.5, pieces: 4 }, ...extra });
@@ -157,7 +157,7 @@ const crateSmash = bodiesSource('crate-smash', 112, 64,
     frames: 152, duration: 40, gravity: [0, 0.2], background: 'b', walls: ['left', 'right'],
     obstacles: [{ symbol: 'ground', x: 0, y: SMASH_FLOOR }],
     bodies: [
-      { name: 'ball', shape: 'circle', radius: 4, at: [6, 46], velocity: [5.5, -0.8], density: 20, bounce: 0.2, friction: 0.6, fill: 'm', outline: 'k' },
+      { name: 'ball', shape: 'circle', radius: 4, at: [6, 46], velocity: [5.5, -0.4], density: 20, bounce: 0.2, friction: 0.6, fill: 'm', outline: 'k' },
       smashCrate([64, SMASH_FLOOR - 4], { name: 'crate', grid: { count: [4, 1], step: [8, 0] } }),
       smashCrate([68, SMASH_FLOOR - 12], { name: 'crate-two', grid: { count: [3, 1], step: [8, 0] } }),
       smashCrate([72, SMASH_FLOOR - 20], { name: 'crate-three', grid: { count: [2, 1], step: [8, 0] } }),

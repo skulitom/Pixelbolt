@@ -39,6 +39,11 @@ const PI = 3.141592653589793, RADIANS = PI / 180;
 const SLOP = 0.02, BIAS = 0.2, MAX_PUSH = 1;
 // The most times heavier than the other a body resting on (or under) another is solved as (see the substep).
 const HEAVIER = 10;
+// A knock passes through a body that can't break to what it touches: within this many pixels of it.
+const TOUCH = 0.05;
+// The pieces of a body that has just broken grip nothing for LOOSE_HOLD frames, and take their friction back over the
+// LOOSE_EASE frames after.
+const LOOSE_HOLD = 12, LOOSE_EASE = 8;
 // Impacts slower than this (pixels a frame) don't bounce, so a dropped ball settles; faster ones count as hits.
 const REST_SPEED = 0.3;
 // A body slower than SLEEP_SPEED (rim included) for SLEEP_FRAMES frames sleeps: it holds exactly still, as a solid,
@@ -808,6 +813,8 @@ export function createBodyWorld(effect, context) {
   // picture goes with the piece of the nearest site, so the picture breaks with it and none of it is lost. A piece moves as
   // its part of the body moved (velocity and turning), flung `kick` pixels a frame away from `at`; a sliver that holds no
   // pixel of the picture is dust and is dropped. The body is gone and what rested on it wakes; pieces never break again.
+  // Fresh pieces grip nothing (`fresh` counts their frames, see advance): they fit each other exactly, so with friction
+  // the ones left on two ledges locked as an arch, and held up for good the ball that had broken the crate.
   // Returns the number of pieces (none when it can't break into two).
   const shatter = (b, at, count, kick) => {
     if (b.gone || b.piece || b.shape === 'hoop') return 0;
@@ -886,7 +893,7 @@ export function createBodyWorld(effect, context) {
         ...b, name: null, shape: 'polygon', parts: [polygonPart(local)], size, extent: Math.max(size[0], size[1]) / 2, fixed: false, x, y, x0: x, y0: y,
         vx: b.vx - b.w * wy + (f > 1e-6 ? kick * fx / f : 0), vy: b.vy + b.w * wx + (f > 1e-6 ? kick * fy / f : 0), spin: 0,
         invMass: 1 / mass, invInertia: 1 / (mass * inertia), symbol: null, rows: picture.map(row => row.join('')), fills: null, fillEvery: null, outline: null, colour: 0,
-        trail: null, smear: null, speed: null, tireless: false, energy: undefined, breaks: null, piece: true, weightless: b.breaks?.fall ? false : b.weightless, pivot: null, anchor: null, drift: null, cuts: false,
+        trail: null, smear: null, speed: null, tireless: false, energy: undefined, breaks: null, piece: true, fresh: 0, grip: b.friction, friction: 0, weightless: b.breaks?.fall ? false : b.weightless, pivot: null, anchor: null, drift: null, cuts: false,
         gone: false, asleep: false, sleepy: 0, hit: false, struck: false, hits: 0, history: [], poses: [], held: undefined, rested: b.rested ? { ...b.rested } : undefined
       });
     });
@@ -1108,11 +1115,13 @@ export function createBodyWorld(effect, context) {
   const substep = () => {
     placeMoving();
     wakeJoints(joints);
-    let contacts = collide();
     // Bodies joined by a joint with collide: false pass through each other (the links of a rope, a ragdoll's neighbours).
     const skip = jointPairs(joints.filter(joint => !joint.broken));
-    if (skip.size) contacts = contacts.filter(contact => !(contact.b && skip.has(pairKey(contact.a.index, contact.b.index))));
-    if (cutters) contacts = cut(contacts);
+    const gather = () => {
+      const met = skip.size ? collide().filter(contact => !(contact.b && skip.has(pairKey(contact.a.index, contact.b.index)))) : collide();
+      return cutters ? cut(met) : met;
+    };
+    let contacts = gather();
     // A body moving into a sleeping one wakes it; so does anything moving that it rests on, and a fixed body that moves
     // at all (a platform sinking slowly from under a box, or one turning under it, would leave it asleep in the air).
     const woken = new Set();
@@ -1130,7 +1139,7 @@ export function createBodyWorld(effect, context) {
     rouse(woken);
     // Woken bodies meet what they touch this substep too: gathered while they slept, a stack knocked from the side had
     // no contacts among its crates or with the floor, and its crates sank half a pixel into each other.
-    if (woken.size) { contacts = collide(); if (cutters) contacts = cut(contacts); }
+    if (woken.size) contacts = gather();
     // Velocities: gravity, drag, and the speed limits.
     for (const b of bodies) {
       if (!dynamic(b) || b.asleep) continue;
@@ -1154,9 +1163,9 @@ export function createBodyWorld(effect, context) {
       if (b.w > spinLimit) b.w = spinLimit; else if (b.w < -spinLimit) b.w = -spinLimit;
     }
     // Prepare each point: its arms, the approach speed it bounces from, the masses it is solved with and the impulses it
-    // starts with.
+    // starts with (again, for the contacts gathered after a body breaks).
     const next = new Map();
-    for (const contact of contacts) {
+    const prepare = () => contacts.forEach(contact => {
       const { a, b, nx, ny } = contact, tx = ny, ty = -nx;
       let ma = solid(a) ? 0 : a.invMass, ia = solid(a) ? 0 : a.invInertia, mb = solid(b) ? 0 : b.invMass, ib = solid(b) ? 0 : b.invInertia;
       for (const point of contact.points) {
@@ -1186,6 +1195,54 @@ export function createBodyWorld(effect, context) {
         const saved = warm.get(`${contact.key}:${point.id}`), { face } = contact, kept = saved && (!face || (saved[2] === face.nx && saved[3] === face.ny)) ? saved : null;
         point.normal = kept ? kept[0] : 0; point.tangent = kept ? kept[1] : 0; point.most = 0;
       }
+    });
+    prepare();
+    // How hard each body that breaks is knocked this substep, and where: at each point where something meets it, the speed
+    // the two meet at (with its bounce), shared out as easily as each side gives there (its weight and its turning about
+    // its centre both resist, so a box landing on a corner is knocked as hard as one landing flat, and a pebble barely
+    // knocks a heavy vase). Measured from the speed they meet at, not the pushes the solve passes on, so a knock breaks what
+    // it hits and not every crate in the row behind it at once: those break, if they do, as the pieces hit them.
+    if (breakable) {
+      const knocks = new Map(), give = (body, rx, ry, nx, ny) => { const arm = rx * ny - ry * nx; return body.invMass + body.invInertia * arm * arm; };
+      // A knock passes through what can't break. A body that is pressed from one side (met there, or leant on) meets what
+      // it touches on the other with that weight behind it: `backs` holds, for each body that can't break, what presses
+      // it, which way, the speed that side's knock gives it and how easily the two give together.
+      const backs = new Map(), pressing = point => point.approach < impact && point.sep + Math.min(0, point.approach) * dt <= TOUCH;
+      for (const contact of contacts) {
+        const { a, b, nx, ny } = contact;
+        for (const point of contact.points) {
+          const ka = point.ka = solid(a) ? 0 : give(a, point.rax, point.ray, nx, ny), kb = point.kb = solid(b) ? 0 : give(b, point.rbx, point.rby, nx, ny);
+          if (!pressing(point)) continue;
+          for (const [body, k, by, other, way] of [[a, ka, b, kb, -1], [b, kb, a, ka, 1]]) {
+            if (!k || body.breaks) continue;
+            if (!backs.has(body)) backs.set(body, []);
+            backs.get(body).push({ by, nx: way * nx, ny: way * ny, speed: Math.max(0, -point.approach) * k / (k + other), give: k * other / (k + other) });
+          }
+        }
+      }
+      for (const contact of contacts) {
+        if (!contact.a.breaks && !(contact.b && contact.b.breaks)) continue;
+        const { a, b, nx, ny } = contact;
+        for (const point of contact.points) {
+          const closing = Math.max(0, -point.approach);
+          for (const [body, k, by, other, way] of [[a, point.ka, b, point.kb, -1], [b, point.kb, a, point.ka, 1]]) {
+            if (!body || !body.breaks || !k) continue;
+            let speed = closing * k / (k + other);
+            if (by && other && pressing(point)) for (const back of backs.get(by) ?? []) {
+              const along = way * (back.nx * nx + back.ny * ny);
+              if (back.by !== body && along > 0.5) speed = Math.max(speed, (closing + back.speed * along) * k / (k + back.give));
+            }
+            speed *= 1 + contact.bounce;
+            if (speed > (knocks.get(body)?.speed ?? 0)) knocks.set(body, { speed, at: [point.x, point.y] });
+          }
+        }
+      }
+      // Bodies knocked harder than they hold break, in body order, before the knock is solved: what broke one meets its
+      // pieces, and goes on through them as its weight allows. Broken after the solve, a crate held on two ledges had
+      // already taken the whole of a falling ball's speed, and the ball stopped dead on its pieces.
+      let broke = 0;
+      for (const [b, knock] of [...knocks].sort((p, q) => p[0].index - q[0].index)) if (knock.speed >= b.breaks.at) broke += shatter(b, knock.at, b.breaks.pieces, b.breaks.speed);
+      if (broke) { contacts = gather(); prepare(); }
     }
     for (const contact of contacts) for (const point of contact.points) {
       const { nx, ny } = contact;
@@ -1229,26 +1286,11 @@ export function createBodyWorld(effect, context) {
         apply(contact, point, nx * impulse, ny * impulse);
       }
     }
-    // How hard each body that breaks was knocked this substep, and where: at each point where something met it, the speed
-    // the two met at (with its bounce), shared out as easily as each side gives there (its weight and its turning about
-    // its centre both resist, so a box landing on a corner is knocked as hard as one landing flat, and a pebble barely
-    // knocks a heavy vase). Measured from the speed they met at, not the pushes the solve passed on, so a knock breaks what
-    // it hits and not every crate in the row behind it at once: those break, if they do, as the pieces hit them.
-    const knocks = breakable ? new Map() : null;
-    const give = (body, rx, ry, nx, ny) => { const arm = rx * ny - ry * nx; return body.invMass + body.invInertia * arm * arm; };
     for (const contact of contacts) for (const point of contact.points) {
       next.set(`${contact.key}:${point.id}`, contact.face ? [point.normal, point.tangent, contact.face.nx, contact.face.ny] : [point.normal, point.tangent]);
       if (point.approach < -impact && point.most > 0) { contact.a.hit = contact.a.struck = true; if (contact.b) contact.b.hit = contact.b.struck = true; }
       // A strike's body strikes what it pushes, a hit or not: a blade that sweeps a ball along a wall keeps striking it.
       if (turf && contact.b && point.most > 0) turf.strike(contact.a, contact.b);
-      if (knocks && point.approach < 0 && (contact.a.breaks || (contact.b && contact.b.breaks))) {
-        const { a, b, nx, ny } = contact, ka = solid(a) ? 0 : give(a, point.rax, point.ray, nx, ny), kb = solid(b) ? 0 : give(b, point.rbx, point.rby, nx, ny);
-        for (const [body, k] of [[a, ka], [b, kb]]) {
-          if (!body || !body.breaks || !k) continue;
-          const speed = -point.approach * (1 + contact.bounce) * k / (ka + kb);
-          if (speed > (knocks.get(body)?.speed ?? 0)) knocks.set(body, { speed, at: [point.x, point.y] });
-        }
-      }
     }
     // The cells hit change hands; a body with a held speed goes on at it, along its own heading.
     if (turf) { for (const contact of contacts) if (contact.cell) turf.hit(contact, contact.cell); turf.settle(bodies); }
@@ -1264,8 +1306,6 @@ export function createBodyWorld(effect, context) {
       const [gx, gy] = pull(b), want = 2 * (b.energy + gx * b.x + gy * b.y - spinEnergy(b)), has = b.vx * b.vx + b.vy * b.vy;
       if (want > 0 && has > 1e-12) { const k = Math.sqrt(want / has); b.vx *= k; b.vy *= k; }
     }
-    // Bodies knocked harder than they hold break, in body order, as they move after the knock.
-    if (knocks) for (const [b, knock] of [...knocks].sort((p, q) => p[0].index - q[0].index)) if (knock.speed >= b.breaks.at) shatter(b, knock.at, b.breaks.pieces, b.breaks.speed);
     if (joints.length) breakJoints(joints, current, stats.jointBreaks);
     warm = next;
     time += dt;
@@ -1278,6 +1318,12 @@ export function createBodyWorld(effect, context) {
   }
   const advance = f => {
     current = f;
+    // Fresh pieces take their grip back, slowly at first.
+    if (f > 0) for (const b of bodies) if (b.fresh !== undefined) {
+      const t = Math.min(1, Math.max(0, (++b.fresh - LOOSE_HOLD) / LOOSE_EASE));
+      b.friction = b.grip * t * t;
+      if (t === 1) b.fresh = undefined;
+    }
     if (f > 0) for (let k = 0; k < substeps; k++) substep();
     // Moving fixed bodies are drawn (and met by a fluid) where they are at the frame's end, not where its last substep
     // started: a paddle drawn a substep behind showed a gap before the box it pushed.
