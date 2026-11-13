@@ -489,8 +489,8 @@ const view = inspectProject(project, { grid: true }); // contact sheet RGBA, pal
 const { recipe: next, edits } = patchRecipe(recipe, [{ set: 'frames[idle].duration', value: 120 }]);
 const report = compareProjects(project, renderProject(next)); // changed pixels, timing, before/after RGBA
 const bundle = await createBundle(recipe);
-const check = checkDelivery(project, { recipe, expect: readExpect({ width: 32, height: 32, frames: 4 }) }); // what the CLI and MCP report as `check`: ok, or each problem and its fix
 await writeBundle(bundle, './output/my-sprite');
+const check = checkDelivery(bundle.project, { recipe, expect: readExpect({ width: 32, height: 32, frames: 8 }) }); // the CLI's and MCP's check: { ok, delivered, problems }, each problem with its fix
 const { recipe: effects } = compileEffects(fxSource); // seeded particles and spell shapes baked into an ordinary recipe
 const { recipe: fire, metadata } = compileFluid(fluidSource); // a fluid simulation baked into palette grids
 const { rgba, keys } = createLiveFluid(fluidSource).push({ x: 8, y: 20, vx: 2 }).step().render(); // the same simulation, live
