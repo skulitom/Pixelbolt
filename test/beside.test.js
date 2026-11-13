@@ -88,6 +88,9 @@ test('the palette report says which keys colour which layers, ramps together, fo
   // Two keys of one colour can't be told apart in the pixels: the first is counted, and `same` says so.
   const twin = paletteUse(renderProject({ ...figure, palette: { ...figure.palette, x: '#802020' } }, { owners: true }));
   assert.deepEqual([twin.same, twin.unused, twin.ramps], [['x is the colour of a, and counted there'], ['glass'], use.ramps]);
+  // A key may hold a space, and is still named once (it was listed under `same` and under `unused` too).
+  const spaced = paletteUse(renderProject({ ...figure, palette: { ...figure.palette, 'dark red': '#802020' } }, { owners: true }));
+  assert.deepEqual([spaced.same, spaced.unused], [['dark red is the colour of a, and counted there'], ['x', 'glass']]);
   // A recipe without ramps lists its keys under `keys`.
   assert.deepEqual(Object.keys(paletteUse(renderProject({ ...figure, ramps: undefined }, { owners: true }))), ['keys', 'unused', 'blended', 'layers', 'counted']);
   // inspect --palette and pixel_inspect palette carry it.

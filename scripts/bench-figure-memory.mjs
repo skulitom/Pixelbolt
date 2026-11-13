@@ -7,5 +7,8 @@ import { compilePoses } from '../src/authoring.js';
 const limit = getHeapStatistics().heap_size_limit;
 if (limit > 64 * 1048576) throw new Error('Run with --max-old-space-size=48 --max-semi-space-size=4 to bound the whole heap below 64 MiB.');
 const before = process.memoryUsage().heapUsed, source = bossRig(), compiled = compilePoses(source);
-if (compiled.recipe.frames.length !== 95 || compiled.metadata.warnings) throw new Error('R3 did not compile completely and cleanly.');
+// Every pose of every animation, and no warning. (It held the count itself, 96 and then 95: a pose sheet that
+// dropped a frame on purpose turned main red in CI, where alone this runs, with every test green.)
+const posed = new Set(Object.values(compiled.recipe.animations).flatMap(animation => animation.frames));
+if (!compiled.recipe.frames.length || compiled.recipe.frames.some(frame => !posed.has(frame.name)) || compiled.metadata.warnings) throw new Error('R3 did not compile completely and cleanly.');
 console.log(JSON.stringify({ peakHeapUpperBoundBytes: limit, beforeBytes: before, afterBytes: process.memoryUsage().heapUsed, frames: compiled.recipe.frames.length, note: 'Whole-process V8 heap ceiling, including fixture construction; typed-array backing stores are external memory, not JS heap.' }));

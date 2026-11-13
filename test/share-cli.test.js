@@ -155,6 +155,8 @@ test('CLI import --embedded recovers source, protects output and reports missing
   assert.match(cli(['import', carried, '--embedded', '--out', out], { status: 1 }).stderr, /already exists/);
   assert.equal(await readFile(out, 'utf8'), formatJSON(blink));
   const absent = path.join(dir, 'absent.json');
+  // Every option that reads pixels is refused beside it (--frame and --padding were taken and then ignored).
+  for (const option of [['--name', 'x'], ['--frame', '8x8'], ['--padding', '1']]) assert.match(cli(['import', carried, '--embedded', ...option, '--out', absent], { status: 1 }).stderr, new RegExp(`${option[0]} cannot be combined with --embedded`));
   assert.equal(cli(['import', plain, '--embedded', '--out', absent], { status: 1 }).stderr, JSON.stringify({ ok: false, error: 'This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.' }) + '\n');
   const damaged = await readFile(carried), chunk = chunks(damaged).find(chunk => chunk.type === 'iTXt');
   chunk.bytes[chunk.bytes.length - 1] ^= 1;

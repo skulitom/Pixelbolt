@@ -1490,11 +1490,11 @@ export function pictureSheet({ palette = {}, headings = [], rows: lines, scale =
 export function paletteUse(project) {
   if (!project.ownerNames) fail('inspect.palette', 'palette needs the project rendered with { owners: true }, which records the layer that drew each pixel');
   const pack = (r, g, b, a) => ((r * 256 + g) * 256 + b) * 256 + a, keyOf = new Map(), use = new Map();
-  const same = [];
+  const same = [], twins = new Set();
   for (const [key, value] of Object.entries(project.palette)) {
     const color = parseColor(value), id = pack(...color);
     if (!color[3]) continue;
-    if (keyOf.has(id)) same.push(`${key} is the colour of ${keyOf.get(id)}, and counted there`); else keyOf.set(id, key);
+    if (keyOf.has(id)) { twins.add(key); same.push(`${key} is the colour of ${keyOf.get(id)}, and counted there`); } else keyOf.set(id, key);
   }
   let blended = 0;
   for (const { data, owners } of project.frames) for (let i = 0; i < owners.length; i++) {
@@ -1510,7 +1510,7 @@ export function paletteUse(project) {
     return `${key} ${project.palette[key]}: ${pixels} px${parts.length ? ` on ${parts.slice(0, 4).join(', ')}${parts.length > 4 ? ` and ${parts.length - 4} more` : ''}` : ''}`;
   };
   const ramps = (project.ramps ?? []).map(ramp => ramp.filter(key => use.has(key))).filter(ramp => ramp.length), ramped = new Set(ramps.flat());
-  const others = [...use.keys()].filter(key => !ramped.has(key)).sort((a, b) => use.get(b).pixels - use.get(a).pixels), twins = new Set(same.map(text => text.split(' ')[0])), unused = Object.keys(project.palette).filter(key => !use.has(key) && !twins.has(key));
+  const others = [...use.keys()].filter(key => !ramped.has(key)).sort((a, b) => use.get(b).pixels - use.get(a).pixels), unused = Object.keys(project.palette).filter(key => !use.has(key) && !twins.has(key));
   return { ...(ramps.length && { ramps: ramps.map(ramp => ramp.map(line)) }), ...(others.length && { [ramps.length ? 'others' : 'keys']: others.map(line) }), ...(same.length && { same }), ...(unused.length && { unused }), ...(blended && { blended }), layers: project.ownerNames.join(', '), counted: `every pixel of ${project.frames.length === 1 ? 'the one frame' : `all ${project.frames.length} frames`}, whatever the view shows` };
 }
 

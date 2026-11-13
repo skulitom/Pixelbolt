@@ -169,6 +169,8 @@ export function compilePoses(source, within) {
   if (motions !== undefined) { const input = source; source = expandPoses(source); written = writtenPoses(input, source); }
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'innerLines', 'rig', 'motionInfo', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
+  // Before anything is sized by it: the pass that shades inner lines made its arrays from a width nothing had checked.
+  for (const side of ['width', 'height']) if (!Number.isInteger(source[side]) || source[side] < 1 || source[side] > 256) fail(`project.${side}`, `${source[side] === undefined ? 'missing; ' : ''}expected an integer from 1 to 256`);
   if (source.light !== undefined && (!Number.isInteger(source.light) || source.light < 0 || source.light > 359)) fail('poses.light', 'expected whole degrees from 0 to 359');
   if (source.innerLines !== undefined && !['shade', 'outline'].includes(source.innerLines)) fail('poses.innerLines', 'expected shade (the default) or outline');
   if (source.ramps !== undefined && (!Array.isArray(source.ramps) || source.ramps.length > 64)) fail('poses.ramps', 'expected at most 64 colour ramps');
@@ -409,7 +411,7 @@ export function compilePoses(source, within) {
         point(instance.reach, `${ip}.reach`);
         if (instance.rotate !== undefined || instance.angle !== undefined) fail(`${ip}.reach`, 'reach replaces the last bone angle');
         const parent = spec.parts[instances.get(instance.attach?.part)], first = source.parts[parent?.part], second = source.parts[instance.part];
-        if (!first?.bone || !second?.bone || first.points?.[instance.attach?.point] !== 'end') fail(`${ip}.reach`, 'reach needs a bone attached to the end point of another bone');
+        if (!instance.attach || !first?.bone || !second?.bone || first.points?.[instance.attach.point] !== 'end') fail(`${ip}.reach`, 'reach needs a bone attached to the end point of another bone');
         if (instance.at !== undefined && point(instance.at, `${ip}.at`).some(Boolean)) fail(`${ip}.at`, 'a reach chain must meet at its shared joint; omit at or use [0, 0]');
         if (owners.has(parent.name) || parent.reach !== undefined) fail(`${ip}.reach`, 'reach chains cannot overlap or share their first bone');
         owners.set(parent.name, instance);
@@ -860,8 +862,26 @@ export function compileAutotile(source) {
   const count = kind => report.seams.reduce((sum, seam) => sum + seam.pixels.filter(p => (kind === 'corner' ? seam.corner : !seam.corner && (kind === 'shape') === p.shape)).length, 0);
   // At 84 pixels a tile the test map is 1680 × 1176 (2016 × 1596 with slopes), inside the size of a still. It mixes
   // the templates the frames draw, each as often as the variants that draw it.
+  // A variant that only recolours draws the shared template in its own palette, which one frame of one palette can't
+  // do: there it is a copy of the template in spare keys that hold its colours. (Every variant was drawn in the base
+  // palette, so a red set with a blue variant showed a test map all red.) The frames of an animation stay one template.
+  const shown = { ...recipe, palette: { ...palette }, symbols: { ...symbols } };
+  let spare = 0x2460;
+  const drawnAs = variant => {
+    const base = symbolOf(variant);
+    if (variant.palette === undefined || source.animation !== undefined) return base;
+    const swap = new Map();
+    for (const [key, value] of Object.entries(variant.palette)) {
+      while (Object.hasOwn(shown.palette, String.fromCharCode(spare))) spare++;
+      const fresh = String.fromCharCode(spare++);
+      shown.palette[fresh] = Object.hasOwn(palette, value) ? palette[value] : value; swap.set(key, fresh);
+    }
+    const name = `${base}-as-${variant.name}`;
+    shown.symbols[name] = symbols[base].map(row => [...row].map(key => swap.get(key) ?? key).join(''));
+    return name;
+  };
   const share = new Map();
-  for (const variant of variants) share.set(symbolOf(variant), (share.get(symbolOf(variant)) ?? 0) + (variant.weight ?? 1));
+  for (const variant of variants) { const symbol = drawnAs(variant); share.set(symbol, (share.get(symbol) ?? 0) + (variant.weight ?? 1)); }
   const most = Math.max(...share.values()), weighted = variants.some(variant => (variant.weight ?? 1) !== 1);
   // preview.rows: a map of the caller's own drawn in place of the test map, so a level laid out in characters is one
   // picture from the template alone: # for the terrain, . for nothing, and the set's slope characters.
@@ -873,7 +893,7 @@ export function compileAutotile(source) {
     level.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (!known.includes(row[x])) fail(`autotile.preview.rows[${y}]`, `character ${JSON.stringify(row[x])} at column ${x} is not one this set draws: ${said}${slopes ? '' : ' (a set with slopes has a character for each)'}`); });
     if (level[0].length * tile > 4096 || level.length * tile > 4096 || level[0].length * level.length * tile * tile > 4194304) fail('autotile.preview.rows', `${level[0].length} by ${level.length} tiles of ${tile} pixels is more than one picture holds (4096 a side, 4,194,304 pixels)`);
   }
-  const preview = testMapRecipe(recipe, { ...(level && { rows: level }), templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background, ...(slopes && { slopes }) });
+  const preview = testMapRecipe(shown, { ...(level && { rows: level }), templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background, ...(slopes && { slopes }) });
   // For maps with slopes: a scene legend that draws the set (# its terrain, a foot under each slope that has one) and the
   // slopes by their characters, and a map holding every slope.
   const setEntry = source.variants === undefined ? { frame: source.frame } : { frames: variants.map(variant => source.frame.replaceAll('{variant}', variant.name)), ...(variants.some(variant => (variant.weight ?? 1) !== 1) && { weights: variants.map(variant => variant.weight ?? 1) }) };

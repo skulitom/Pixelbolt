@@ -153,6 +153,14 @@ test('autotile collision and weights are checked, and the test map mixes variant
   assert.deepEqual(ground.recipe.frames.find(frame => frame.name === 'ground-0-a').tile, { weight: 3, collision: [[1, 3], [15, 3], [15, 14], [1, 14]] });
   // Variants that draw one template share its weight in the test map.
   assert.deepEqual(ground.preview.frames[0].ops.find(op => op.op === 'tilemap').legend['#'], { templates: ['template', 'template-b', 'template-stones'], weights: [3, 3, 1], autotile: 'blob' });
-  const shared = compileAutotile({ ...ledgeSource }).preview.frames[0].ops.at(-1).legend['#'];
-  assert.deepEqual(shared, { template: 'template', autotile: 'blob' }, 'palette variants all draw the one template');
+  // A variant that only recolours is in the test map in its own colours: a copy of the template in spare palette keys.
+  // (Every variant was drawn in the base palette: a set with a blue variant showed a test map with no blue in it.)
+  const ledge = compileAutotile({ ...ledgeSource }).preview, colours = new Set(Object.values(ledge.palette));
+  assert.deepEqual(ledge.frames[0].ops.at(-1).legend['#'], { templates: ['template', 'template-as-b', 'template-as-c'], weights: [6, 2, 1], autotile: 'blob' });
+  assert.ok(colours.has('#78b850') && colours.has('#2c5878'), [...colours].join(' '));
+  const drawn = renderProject(ledge).frames[0].data, has = ([r, g, b]) => { for (let i = 0; i < drawn.length; i += 4) if (drawn[i] === r && drawn[i + 1] === g && drawn[i + 2] === b) return true; return false; };
+  assert.ok(has([0x78, 0xb8, 0x50]) && has([0x2c, 0x58, 0x78]) && has([0x58, 0xa0, 0x40]), 'each variant is drawn in its colours');
+  // The frames of an animation are one tile at different moments, so they stay one template.
+  const cycled = compileAutotile({ ...ledgeSource, animation: 'ledge-{mask}' }).preview.frames[0].ops.at(-1).legend['#'];
+  assert.deepEqual(cycled, { template: 'template', autotile: 'blob' });
 });

@@ -2,7 +2,7 @@
 // video's size. Editors read these directly and keep the alpha; nothing here encodes video. Timing is exact integer
 // arithmetic on the frame rate as a fraction, so 29.97 means 30000/1001 and a sequence is the same on every machine.
 import { parseColor, fail } from './core.js';
-import { renderScene } from './scene.js';
+import { renderScene, SCENE_SIDE, SCENE_AREA } from './scene.js';
 import { bodiesFrames } from './bodies.js';
 import { encodePNG } from './png.js';
 
@@ -276,7 +276,9 @@ export function createSequence(project, options = {}) {
 // (MCP names its own version, so the line runs the same release). With `stream` (the command line), each
 // frame is simulated, drawn and encoded as writeBundle writes it, and only one is held at a time, so a match is bounded
 // by its frames alone; without it, every frame's PNG is kept until the call returns, up to MAX_UNIQUE_PIXELS.
-export function createBodiesSequence(source, options = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
+export function createBodiesSequence(source, { loops, ...options } = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
+  // A match plays once, so one loop is what it does anyway (the help lists --loops for every sequence).
+  if (loops !== undefined && loops !== 1) fail('sequence.loops', 'a match plays once and does not repeat; leave loops out, and end it early with seconds');
   const rate = common(options, KEYS.filter(key => key !== 'loops' && key !== 'step'));
   let sized = null;
   const match = bodiesFrames(source, options.animation, { scale: (width, height) => { sized = [width, height]; return fineness(width, height, placeSprite(width, height, options).scale); } }), fine = match.scale;
@@ -346,7 +348,7 @@ export function createSceneSequence(scene, name, options = {}) {
   if (options.seconds === undefined && !plan.seamless) notes.push(`The scene lasts ${Math.round(plan.exactFrames / (options.loops ?? 1) * 1000) / 1000} video frames, so this clip does not end exactly where the scene repeats.${plan.loopsThatFit ? ` ${plan.loopsThatFit} loops fit the frame grid exactly (--loops ${plan.loopsThatFit}).` : ''}`);
   // A shot usually wants to fill the frame; say what scene size would, at this enlargement.
   const { width, height, placement } = built.info;
-  if (!placement.fit && (placement.width !== width || placement.height !== height)) notes.push(`The scene covers ${placement.width}×${placement.height} of the ${width}×${height} canvas${scene.background[3] === 255 && options.background === undefined ? '; the margins take the scene\'s background colour' : ''}. Use fit cover to fill the canvas and crop the overhang${width % placement.scale === 0 && height % placement.scale === 0 && width / placement.scale <= 256 && height / placement.scale <= 256 ? `, or author the scene at ${width / placement.scale}×${height / placement.scale} to fill it exactly at this scale` : ''}.`);
+  if (!placement.fit && (placement.width !== width || placement.height !== height)) notes.push(`The scene covers ${placement.width}×${placement.height} of the ${width}×${height} canvas${scene.background[3] === 255 && options.background === undefined ? '; the margins take the scene\'s background colour' : ''}. Use fit cover to fill the canvas and crop the overhang${width % placement.scale === 0 && height % placement.scale === 0 && width / placement.scale <= SCENE_SIDE && height / placement.scale <= SCENE_SIDE && width * height / (placement.scale * placement.scale) <= SCENE_AREA ? `, or author the scene at ${width / placement.scale}×${height / placement.scale} to fill it exactly at this scale` : ''}.`);
   if (placement.cropped) notes.push(cropNote('scene', built.info));
   Object.assign(built.info, { loop: { loops: options.loops ?? 1, plays: 'loops', passFrames: Math.round(plan.exactFrames / (options.loops ?? 1) * 1e6) / 1e6, seamless: plan.seamless && options.seconds === undefined }, sceneDuration: scene.duration });
   return finish(built, notes);
