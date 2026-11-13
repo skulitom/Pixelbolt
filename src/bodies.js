@@ -43,7 +43,7 @@ const HEAVIER = 10;
 const REST_SPEED = 0.3;
 // A body slower than SLEEP_SPEED (rim included) for SLEEP_FRAMES frames sleeps: it holds exactly still, as a solid,
 // until a body moving into it wakes it.
-const SLEEP_SPEED = 0.03, SLEEP_FRAMES = 12, WAKE_SPEED = 0.05;
+const SLEEP_SPEED = 0.03, SLEEP_FRAMES = 12, WAKE_SPEED = 0.05, GAINING = 6, GAIN = 0.0005;
 const MAX_SPEED = 8, MAX_SPIN = 45;
 // A body this far outside the canvas has left it for good.
 const GONE = 16;
@@ -1295,7 +1295,14 @@ export function createBodyWorld(effect, context) {
       if (dynamic(b) && !b.asleep) {
         const fast = Math.max(Math.sqrt(b.vx * b.vx + b.vy * b.vy), Math.abs(b.w) * b.extent);
         b.sleepy = fast < SLEEP_SPEED ? b.sleepy + 1 : 0;
-        if (b.sleepy >= SLEEP_FRAMES) { b.asleep = true; b.vx = 0; b.vy = 0; b.w = 0; }
+        // One that is still gaining speed, however slowly, is not coming to rest: a tower tipping off its last
+        // support turns under SLEEP_SPEED for more than SLEEP_FRAMES frames, and its crates fell asleep mid-tip and
+        // held it there, hanging over nothing. Gaining is a frame faster than the last by GAIN or more, GAINING times
+        // running: a body that rests jitters up and down or creeps up by rounding (a plank on three balls gained a
+        // ten-millionth of a pixel a frame for ever), and one that settles slows.
+        b.gaining = fast > (b.pace ?? 0) + GAIN ? (b.gaining ?? 0) + 1 : 0;
+        b.pace = fast;
+        if (b.sleepy >= SLEEP_FRAMES && b.gaining < GAINING) { b.asleep = true; b.vx = 0; b.vy = 0; b.w = 0; }
       }
       const [x0, y0, x1, y1] = b.box;
       // Far past an open edge a body has left, unless gravity is bringing it back: a ball thrown over the top falls into
@@ -1313,9 +1320,11 @@ export function createBodyWorld(effect, context) {
   };
   // New obstacles (a fluid's that move, or its resting sand) wake the sleeping bodies within a pixel of a hard pixel that
   // came or went, and those resting on them: a crate asleep on a shelf that slid away hung in the air, and one beside a
-  // shelf rising into it was passed through.
+  // shelf rising into it was passed through. Soft ground (ice, sand at rest) wakes them where it goes, not where it
+  // comes: a box asleep on a floe hung in the air once the ice under it had melted, while sand settling beside a
+  // sleeper is no reason to stir it.
   const retrace = obstacles => {
-    const before = world.hard;
+    const before = world.hard, ground = world.solid;
     world = traceObstacles({ obstacles, walls: effect.walls }, width, height);
     const woken = [];
     for (const b of bodies) {
@@ -1323,7 +1332,7 @@ export function createBodyWorld(effect, context) {
       const [x0, y0, x1, y1] = b.box;
       let moved = false;
       for (let y = Math.max(0, Math.floor(y0) - 1); y <= Math.min(height - 1, Math.floor(y1) + 1) && !moved; y++) {
-        for (let x = Math.max(0, Math.floor(x0) - 1); x <= Math.min(width - 1, Math.floor(x1) + 1); x++) if (before[y * width + x] !== world.hard[y * width + x]) { moved = true; break; }
+        for (let x = Math.max(0, Math.floor(x0) - 1); x <= Math.min(width - 1, Math.floor(x1) + 1); x++) if (before[y * width + x] !== world.hard[y * width + x] || (ground[y * width + x] && !world.solid[y * width + x])) { moved = true; break; }
       }
       if (moved) { b.asleep = false; b.sleepy = 0; woken.push(b); }
     }

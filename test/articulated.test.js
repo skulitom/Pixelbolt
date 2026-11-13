@@ -35,6 +35,16 @@ test('a distance joint holds a pendulum at its length and a hinge keeps its two 
   }
 });
 
+test('a weld or a hinge to the world with no anchor holds the body where it starts', () => {
+  // P-154: the world's end defaulted to the canvas corner (0, 0), so every bar of a cage welded to the world tore off
+  // on the first frame. Either end may be the world.
+  for (const joint of [{ type: 'weld', a: 'bar', b: 'world' }, { type: 'weld', a: 'world', b: 'bar', break: 40 }, { type: 'hinge', a: 'bar', b: 'world', anchorA: [0, -5] }]) {
+    const held = run(source({ frames: 60, gravity: [0, 0.3], bodies: [{ name: 'bar', shape: 'box', size: [3, 10], at: [30.5, 21], fill: 'w' }], joints: [joint] })).effect;
+    for (const [x, y] of held.paths.bar) assert.ok(Math.abs(x - 30.5) < 0.3 && Math.abs(y - 21) < 0.3, `${joint.type} with ${joint.a} first: the bar moved to ${x}, ${y}`);
+    assert.equal(held.brokenJoints, undefined);
+  }
+});
+
 test('a joint breaks above its impulse and the metadata names it', () => {
   const broken = run(source({ gravity: [0, 0.3], walls: ['bottom'], bodies: [
     { name: 'anchor', shape: 'circle', radius: 0.5, at: [32, 4], fixed: true, fill: 'k' },
@@ -105,6 +115,9 @@ test('joints, ropes and cloths are read strictly', () => {
   refused(base({ joints: [{ type: 'elastic', a: 'a', b: 'world' }] }), 'bodies.effects.e.joints[0].type', /distance, rope, spring, hinge, weld/);
   refused(base({ joints: [{ type: 'distance', a: 'nope', b: 'world' }] }), 'bodies.effects.e.joints[0].a', /unknown body/);
   refused(base({ joints: [{ type: 'distance', a: 'world', b: 'world' }] }), 'bodies.effects.e.joints[0].b', /at least one body/);
+  // The world's end of a joint with a length has no default place (it was the canvas corner).
+  refused(base({ joints: [{ type: 'rope', a: 'a', b: 'world', max: 8 }] }), 'bodies.effects.e.joints[0].anchorB', /a rope to the world needs the world point it is fixed at/);
+  refused(base({ joints: [{ type: 'spring', a: 'world', b: 'a' }] }), 'bodies.effects.e.joints[0].anchorA', /a spring to the world needs the world point/);
   refused(base({ ropes: [{ from: { at: [0, 0] }, to: { at: [10, 10] }, fill: 'z' }] }), 'bodies.effects.e.ropes[0].fill', /palette/);
   refused(base({ cloths: [{ at: [0, 0], size: [4, 4], fill: 'k', mask: ['###'] }] }), 'bodies.effects.e.cloths[0].mask', /4 rows of 4 characters/);
   refused(base({ cloths: [{ at: [0, 0], size: [4, 4], fill: 'k', pins: [{ at: [9, 9] }] }] }), 'bodies.effects.e.cloths[0].pins[0].at[0]', /from 0 to 3/);

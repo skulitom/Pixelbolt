@@ -729,7 +729,7 @@
                   },
                   "maxItems": 2,
                   "minItems": 2,
-                  "description": "Point on a in its own pixels. With a: \"world\", the world point."
+                  "description": "Point on a in its own pixels; default its centre. With a: \"world\", the canvas point: default, for a hinge or weld, where b's anchor starts."
                 },
                 "anchorB": {
                   "type": "array",
@@ -740,7 +740,7 @@
                   },
                   "maxItems": 2,
                   "minItems": 2,
-                  "description": "Point on b in its own pixels. With b: \"world\", the world point."
+                  "description": "Point on b in its own pixels; default its centre. With b: \"world\", the canvas point: default, for a hinge or weld, where a's anchor starts."
                 },
                 "length": {
                   "type": "number",

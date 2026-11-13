@@ -47,8 +47,18 @@ export function readJoints(list, path, { bodies, byName }) {
     const first = reference(entry.a, `${at}.a`), second = reference(entry.b, `${at}.b`);
     if (first.index < 0 && second.index < 0) fail(`${at}.b`, 'a joint needs at least one body; both ends are the world');
     if (first.index === second.index) fail(`${at}.b`, 'a joint joins two bodies, or a body and the world; both ends are the same body');
-    const la = entry.anchorA === undefined ? [0, 0] : pair(entry.anchorA, `${at}.anchorA`, -4096, 4096);
-    const lb = entry.anchorB === undefined ? [0, 0] : pair(entry.anchorB, `${at}.anchorB`, -4096, 4096);
+    // An anchor is a point on its body, its centre by default. The world's end has no centre: left out, a hinge or a
+    // weld holds the body where it starts (the world point under the body's own anchor), and a joint with a length
+    // must say where it is fixed. (It was the world point (0, 0): every bar of a cage welded to the canvas corner, and
+    // torn off on the first frame.)
+    const anchor = (end, key) => {
+      if (entry[key] !== undefined) return pair(entry[key], `${at}.${key}`, -4096, 4096);
+      if (end.body) return [0, 0];
+      if (entry.type !== 'hinge' && entry.type !== 'weld') fail(`${at}.${key}`, `a ${entry.type} to the world needs the world point it is fixed at, [x, y] in canvas pixels`);
+      return null;
+    };
+    let la = anchor(first, 'anchorA'), lb = anchor(second, 'anchorB');
+    la ??= readPoint(second.body, lb); lb ??= readPoint(first.body, la);
     const pa = readPoint(first.body, la), pb = readPoint(second.body, lb);
     const current = Math.sqrt((pb[0] - pa[0]) ** 2 + (pb[1] - pa[1]) ** 2);
     const type = entry.type;

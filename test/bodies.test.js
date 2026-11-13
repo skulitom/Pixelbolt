@@ -634,6 +634,45 @@ test('a ball at rest in a corner stays put when the obstacles are traced again',
   assert.deepEqual([ball.x, ball.y, ball.vx, ball.vy], [44, 44, 0, 0], 'it is not kicked along the floor');
 });
 
+test('a body asleep on soft ground falls when the ground goes, and sleeps on when more arrives beside it', () => {
+  // P-156: a box asleep on a floe hung in mid-air after the ice under it had melted. Only a hard pixel that came or
+  // went woke a sleeper; ice and resting sand are soft ground.
+  const ice = rows => ({ rows, x: 20, y: 30, solid: true, bounce: 0, friction: 0.8, soft: true });
+  const world = createBodyWorld({ substeps: 8, iterations: 6, gravity: [0, 0.3], walls: { left: true, right: true, top: true, bottom: true }, obstacles: [ice(['xxxxxxxx'])],
+    bodies: readBodies([{ shape: 'box', size: [6, 6], at: [24, 27], fill: 'w' }], 'bodies', { palette, symbols: {}, width: 48, height: 48 }) }, { width: 48, height: 48, symbols: {} });
+  const [box] = world.bodies;
+  let f = 0;
+  while (!box.asleep && f < 60) world.advance(++f);
+  assert.ok(box.asleep && Math.abs(box.y - 27) < 0.2, `asleep on the ice by frame ${f} at ${box.y}`);
+  // More soft ground beside it (sand settling): it sleeps on.
+  world.retrace([ice(['xxxxxxxx', '.......x'])]);
+  world.advance(++f);
+  assert.ok(box.asleep, 'ground arriving does not wake it');
+  // The ice melts: it wakes and falls to the floor.
+  world.retrace([]);
+  for (let k = 0; k < 40; k++) world.advance(++f);
+  assert.ok(box.y > 44, `fell to the floor: y ${box.y}`);
+});
+
+test('a tower whose weight is past its last support keeps tipping', () => {
+  // P-152: a column standing 2 px past the edge of the leg under its plank turns so slowly at first that every crate
+  // stayed under the sleep speed for 12 frames while still speeding up, fell asleep and held the tower half a degree
+  // over, for good. A body that gains speed frame after frame is not coming to rest.
+  const box = (name, w, h, x, y) => ({ name, shape: 'box', size: [w, h], at: [x, y], density: 0.5, friction: 0.7, bounce: 0.05, fill: 'r' });
+  const tower = { ...scene({ frames: 120, gravity: [0, 0.06], substeps: 8, iterations: 6, obstacles: [{ symbol: 'floor', x: 0, y: 129 }], bodies: [
+    box('near', 12, 10, 92, 124), box('far', 12, 10, 104, 124), box('plank', 60, 5, 80, 116.5), box('low', 32, 20, 84, 104), box('mid', 32, 20, 84, 84), box('top', 32, 20, 84, 64)] },
+  { symbols: { floor: ['k'.repeat(128)] } }), width: 128, height: 135 };
+  const { effect } = run(tower), top = effect.paths.top;
+  assert.ok(top[30][2] < 358 && top[30][2] > 300, `still turning at frame 30: ${top[30]}`);
+  assert.ok(top[119] === null || top[119][0] < 50, `the top crate fell: ${top[119]}`);
+  // What does come to rest still sleeps: the same column over the middle of its legs.
+  const steady = structuredClone(tower);
+  for (const b of steady.effects.e.bodies.slice(3)) b.at[0] = 98;
+  steady.effects.e.bodies[2].at[0] = 98;
+  const rested = run(steady).effect;
+  assert.ok(rested.rest !== null && rested.rest < 40 && Math.abs(rested.paths.top[119][0] - 98) < 0.2, `rest ${rested.rest}, top ${rested.paths.top[119]}`);
+});
+
 test('a match drawn frame by frame has no frame before its first', () => {
   const frames = bodiesFrames(scene({ frames: 4, duration: 50, bodies: [{ shape: 'circle', radius: 2, at: [10, 10], fill: 'w' }] }));
   // Frame -1 once passed as "not behind the frame it is on" and gave null.
