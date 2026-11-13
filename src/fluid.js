@@ -4636,7 +4636,7 @@ function fluidForces(run, crowd) {
       // A body that slept held up by the fluid, or under a load of it, wakes when none of it is left: asleep, a crate
       // afloat on a pool that drained away stayed where the water had held it.
       if (b.asleep && (b.restSub > 0 || b.restLoad > 0)) { b.asleep = false; b.sleepy = 0; }
-      b.restSub = undefined; b.restLoad = undefined; b.restLevel = undefined; b.push = null; b.float = null;
+      b.restSub = undefined; b.restLoad = undefined; b.restLevel = undefined; b.push = null; b.float = null; b.heft = undefined;
       return;
     }
     const m = 1 / b.invMass, added = ADDED_MASS * heavy * sub, fall = b.weightless ? 0 : 1, lift = heavy * sub;
@@ -4677,8 +4677,12 @@ function fluidForces(run, crowd) {
     }
     b.restSub = undefined; b.restLoad = undefined; b.restLevel = undefined;
     // Never hand the bodies a number that isn't one: a body keeps its own motion rather than vanish.
-    if (![vx, vy, w, ...push].every(Number.isFinite)) { b.push = null; b.float = null; return; }
-    b.vx = vx; b.vy = vy; b.w = w; b.push = push; b.float = float;
+    if (![vx, vy, w, ...push].every(Number.isFinite)) { b.push = null; b.float = null; b.heft = undefined; return; }
+    // The liquid that moves with the body is in its mass where it meets other bodies too (bodies.js solves a contact
+    // with it). Its lift and weight above are shared over both, so met with its own mass alone a raft held up a load
+    // with only that share of its lift: a raft 0.4 as dense as water, under it, with 0.44 of it, and a crate that a
+    // raft should carry pushed it under.
+    b.vx = vx; b.vy = vy; b.w = w; b.push = push; b.float = float; b.heft = (m + added) / m;
   });
 }
 // How much of a body is under the liquid, and the centre of that part: [area, x, y]. The level is read in the columns
@@ -4692,6 +4696,13 @@ function fluidForces(run, crowd) {
 // further out. The body's exact shape past that level is what is under, so the lift grows smoothly as it sinks; counted
 // in whole rows it jumped a row at a time and a light crate bobbed for ever. Liquid over a body with none beside it (in a
 // well) covers it all; none at all, none of it.
+// The liquid's top is looked for through any solid in that column (a crate lying over a sunken raft, a ledge): the
+// liquid goes on round it, and read as ending under it, the water over the body was a load that held a light raft on the
+// bottom after the crate that pushed it under had rolled off beside it. Where the liquid does end under a solid (a body
+// afloat beside this one, a lid), the other side's level is the one to go by, if it has one. And where a solid is beside
+// the body's lowest row (it stands on a raft wider than itself, or on the bottom), the level is read from the first
+// row up that is open: a crate on a raft read no level at all, so it was all under until its top came out and then not
+// in the water at all, and the pair bobbed under the surface for good.
 const SIDE = 3;
 function submerged(b, inside, lanes, run, across, sign) {
   const { base, state } = run, { W, H } = state.g, solid = run.view.solid, density = base[0];
@@ -4699,21 +4710,26 @@ function submerged(b, inside, lanes, run, across, sign) {
   for (const c of inside) { const i = c % W, j = (c - i) / W, a = across ? j : i, o = across ? i : j; if (a < low) low = a; if (a > high) high = a; if (o < near) near = o; if (o > far) far = o; }
   // What a cell holds, as a share of a full one: null off the canvas or in a solid.
   const held = (o, a) => { const i = across ? o : a, j = across ? a : o; if (i < 0 || j < 0 || i >= W || j >= H) return null; const c = j * W + i; return solid[c] ? null : density[c]; };
+  const blocked = (o, a) => { const i = across ? o : a, j = across ? a : o; return i >= 0 && j >= 0 && i < W && j < H && !!solid[j * W + i]; };
   // The row (column) of the body's lowest point, which may lie below its lowest cell: a plank whose cells are all over the
   // water can dip a third of a pixel into it.
   const edge = across ? (sign > 0 ? b.box[3] : b.box[1]) : (sign > 0 ? b.box[2] : b.box[0]);
   const deepest = sign > 0 ? Math.max(high, Math.ceil(edge) - 1) : Math.min(low, Math.floor(edge)), wet = (o, a) => { const d = held(o, a); return d !== null && d >= LEVEL ? d : 0; };
-  let levels = 0, count = 0;
+  const shallowest = sign > 0 ? low : high;
+  let levels = 0, count = 0, capped = 0, caps = 0;
   for (const [from, step] of [[near - 1, -1], [far + 1, 1]]) {
-    let o = from;
-    for (let n = 1; n < SIDE && !wet(o, deepest) && held(o, deepest) !== null; n++) o += step;
-    if (!wet(o, deepest)) continue;
-    let top = deepest;
-    while (wet(o, top - sign)) top -= sign;
+    let o = from, start = deepest;
+    while (start !== shallowest && blocked(o, start)) start -= sign;
+    for (let n = 1; n < SIDE && !wet(o, start) && held(o, start) !== null; n++) o += step;
+    if (!wet(o, start)) continue;
+    let top = start, end = start - sign;
+    for (; wet(o, end) || blocked(o, end); end -= sign) if (wet(o, end)) top = end;
     let full = Math.min(1, wet(o, top));
     for (let a = top - sign, n = 0; n < 2; a -= sign, n++) { const d = held(o, a); if (!(d > 0)) break; full += d; }
-    levels += sign > 0 ? top + 1 - full : top + full; count++;
+    const level = sign > 0 ? top + 1 - full : top + full;
+    if (top === end + sign) { levels += level; count++; } else { capped += level; caps++; }
   }
+  if (!count) { levels = capped; count = caps; }
   if (!count) {
     let covered = 0, cells = 0;
     for (const lane of lanes.values()) if (lane.wet) { covered += lane.n; }
