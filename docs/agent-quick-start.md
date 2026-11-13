@@ -83,6 +83,7 @@ A source is a document whose `format` names what compiles it: `pixelforge-fluid`
 - Inspect every frame, including at native size (`native: true`), and read a `grid` of a region before changing exact pixels. Check that each patch changed only what you meant.
 - A valid recipe can still look bad. Judge the image and the playback, not the absence of errors.
 - Work in a loop: inspect, patch, render with `expect`, then read the reply's `check` and fix every problem it lists before you hand the files on; its `notes` also point out loops that lift off the ground, jump unevenly or repeat a frame.
+- Before you deliver, look and refine. Write down what the request names: the subject and where it is, how it moves, its size and colours. Look at the frames (a reply's contact sheet, or `look.png`) beside that list, fix the worst difference and look again; for an effect or an animation, do at least two rounds. A preset is a first draft: if it shows something else (a round puff for a cannon's blast), edit its source. One the user named needs one look.
 ## Starting points
 
 - For a character that walks, runs, jumps or attacks, redraw the nearest rig, whose motion templates make the poses when compiled (`help craft "Characters"`): `examples/hero.poses.json` (slim), `examples/knight.poses.json` (stocky, shield), `examples/fox.poses.json` (four legs). A part without `attach` stands at the pose `origin` plus its `at`. For a sword or tool in hand, see `examples/hero-sword.poses.json`: the prop's relative `angle` turns it with the arm, where `rotate` keeps one angle.
