@@ -14,9 +14,9 @@
 // Same units as pixelforge-fluid (docs/physics-model.md, section 2): pixels, frames, pixels per frame and per frame².
 // Browser-compatible and deterministic: only + − × ÷ and sqrt, craft.js's polynomial trigonometry, fixed substeps
 // and iteration counts, and bodies, contacts and pixels visited in a fixed order.
-import { renderProject, fail, isObject, sameWidth } from './core.js';
+import { renderProject, parseColor, blend, fail, isObject, sameWidth, STILL_SIDE } from './core.js';
 import { fields, number, integer, boolean, pair } from './authoring.js';
-import { sinDeg, cosDeg, traceLine, turnRows, random } from './craft.js';
+import { sinDeg, cosDeg, traceLine, turnRows, rollRows, random } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { readTerritory, readPickups, readEvents, readStrikes, readHud, createTerritory } from './territory.js';
 import { readJoints, ropeJoint, jointPairs, pairKey, resetJoints, wakeJoints, solveJoints, correctJoints, breakJoints, paintRopes } from './constraints.js';
@@ -112,7 +112,7 @@ function readMaterial(value, path, fixed) {
   };
 }
 
-const BODY_FIELDS = ['temperature', 'team', 'speed', 'name', 'shape', 'radius', 'size', 'points', 'sides', 'gap', 'thickness', 'at', 'pivot', 'angle', 'velocity', 'spin', 'fixed', 'weightless', 'asleep', 'tireless', 'density', 'bounce', 'friction', 'drag', 'spinDrag', 'fill', 'fillEvery', 'outline', 'symbol', 'trail', 'smear', 'breaks', 'ring', 'grid'];
+const BODY_FIELDS = ['temperature', 'team', 'speed', 'name', 'shape', 'radius', 'size', 'points', 'sides', 'gap', 'thickness', 'at', 'pivot', 'angle', 'velocity', 'spin', 'fixed', 'weightless', 'asleep', 'tireless', 'density', 'bounce', 'friction', 'drag', 'spinDrag', 'fill', 'fillEvery', 'outline', 'symbol', 'rolls', 'trail', 'smear', 'breaks', 'ring', 'grid'];
 
 // One entry of `bodies`: a body, or copies of it laid out on a ring or a grid. Returns the bodies it makes.
 function readBody(entry, path, context) {
@@ -187,6 +187,7 @@ function readBody(entry, path, context) {
     if (typeof entry.symbol !== 'string' || !Object.hasOwn(symbols, entry.symbol)) fail(`${path}.symbol`, `unknown symbol ${JSON.stringify(entry.symbol)}`);
     if (shape === 'hoop') fail(`${path}.symbol`, 'a hoop is drawn as its outline; give it fill');
     symbol = entry.symbol;
+    if (entry.rolls !== undefined && shape !== 'circle') fail(`${path}.rolls`, `a ${shape}'s picture always turns with it; rolls is for a circle, whose picture stays upright without it`);
     // A picture is drawn with its middle on the body's centre, and a polygon's centre is its centroid, which a lopsided
     // outline has off the middle its points were written around. The picture belongs where the points were written, so
     // it is padded with empty columns and rows until its middle is the centroid: a triangle's picture then stands on
@@ -199,6 +200,7 @@ function readBody(entry, path, context) {
       }
     }
   } else {
+    if (entry.rolls !== undefined) fail(`${path}.rolls`, 'rolls turns a circle\'s symbol as it rolls; a plain disc looks the same at every angle, so give the body a symbol');
     if (entry.fill === undefined) fail(`${path}.fill`, 'expected a palette key, or a list of keys to change to at each hit');
     fills = Array.isArray(entry.fill) ? entry.fill : [entry.fill];
     if (!fills.length || fills.length > 16) fail(`${path}.fill`, 'expected 1–16 palette keys');
@@ -282,7 +284,7 @@ function readBody(entry, path, context) {
     invMass: fixed ? 0 : 1 / mass, invInertia: fixed || shape === 'hoop' ? 0 : 1 / (mass * inertia),
     bounce: material.bounce, friction: material.friction, drag: material.drag, spinDrag: material.spinDrag,
     weightless: material.weightless, asleep: material.asleep, tireless: material.tireless, temperature, team, speed, fills, fillEvery, outline, symbol, trail, smear, breaks,
-    ...(rows && { rows }), ...(pivot && pivoted(x, y, a, pivot, velocity, spin))
+    ...(rows && { rows }), ...(entry.rolls !== undefined && boolean(entry.rolls, `${path}.rolls`) && { rolls: true }), ...(pivot && pivoted(x, y, a, pivot, velocity, spin))
   }));
 }
 // A fixed body turning about a pivot: `at` (x, y) is the pivot, its velocity the pivot's; the body's centre and its
@@ -1588,11 +1590,12 @@ function uprightRows(b) {
 }
 
 // A picture turned (craft.js turnRows: its sides turned to whole pixel steps, so it stays crisp and keeps its shape, and
-// its outline and frame stay closed lines), cached by picture and angle.
+// its outline and frame stay closed lines), cached by picture and angle. A circle's picture rolls in place instead
+// (craft.js rollRows): its outline as drawn, the inside turned.
 const sprites = new Map();
-function sprite(rows, degrees) {
-  const key = `${rows.join('/')}@${degrees}`;
-  if (!sprites.has(key)) bounded(sprites).set(key, turnRows(rows, degrees));
+function sprite(rows, degrees, round = false) {
+  const key = `${rows.join('/')}@${degrees}${round ? 'o' : ''}`;
+  if (!sprites.has(key)) bounded(sprites).set(key, round ? { rows: rollRows(rows, degrees), origin: [0, 0] } : turnRows(rows, degrees));
   return sprites.get(key);
 }
 
@@ -1721,14 +1724,16 @@ function bodyPainter(grid, W, H, n) {
 }
 // Smears, under the bodies: each one's shape swept from where it was `smear.frames` frames ago to where it is, sampled
 // so its far end moves under half a (fine) pixel a sample, the oldest part first, so the colours run from the first,
-// just behind the body, to the last at the far end of the sweep, as a pixel artist draws a fast swing.
-function paintSmears(bodies, n, put) {
+// just behind the body, to the last at the far end of the sweep, as a pixel artist draws a fast swing. Drawn finer
+// still for a video (`n` above the source's own `sampled`), the sweep keeps the source's samples and each is filled
+// finer: sampled every half a video pixel, a sword's smear took half a second a frame for edges no smoother.
+function paintSmears(bodies, n, put, sampled = n) {
   for (const b of bodies) {
     if (b.gone || b.hidden || !b.smear || b.poses.length < 2) continue;
     const { colors, frames } = b.smear, codes = colors.map(key => key.charCodeAt(0)), poses = b.poses, spans = poses.length - 1;
     for (let k = 0; k < spans; k++) {
       const [ax, ay, ac, as] = poses[k], [bx, by, bc, bs] = poses[k + 1], from = atan2Deg(as, ac), turn = turnBetween(from, atan2Deg(bs, bc));
-      const reach = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)) + Math.abs(turn) * RADIANS * b.extent, steps = Math.max(1, Math.ceil(reach * n * 2));
+      const reach = Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay)) + Math.abs(turn) * RADIANS * b.extent, steps = Math.max(1, Math.ceil(reach * sampled * 2));
       for (let t = 0; t < steps; t++) {
         const u = t / steps, age = spans - k - u, a = from + turn * u, code = codes[Math.min(codes.length - 1, Math.floor(age / frames * codes.length))];
         const pose = { ...b, x: ax + (bx - ax) * u, y: ay + (by - ay) * u, c: cosDeg(a), s: sinDeg(a) };
@@ -1743,25 +1748,29 @@ function paintSmears(bodies, n, put) {
  * Draws the bodies `n` times finer than the world's pixels (a source's `subpixels`) into `grid` (character codes,
  * width × n by height × n): each body is its own picture, every pixel of it a square n fine pixels across, turned with
  * the body and placed where the body is to the fine pixel (held as heldTurn and heldFine say), so it turns and moves
- * smoothly and never changes shape. A circle's picture doesn't turn, as at whole pixels; a hoop is drawn as at whole
- * pixels, enlarged.
+ * smoothly and never changes shape. A circle's picture doesn't turn unless it `rolls`, as at whole pixels; a hoop is
+ * drawn as at whole pixels, enlarged. `sampled` is the source's own subpixels where `n` is finer still (a video's
+ * pixels): smears and trails are sampled along their sweep as the source's are.
  */
-export function paintBodiesFine(bodies, grid, width, height, symbols, n) {
+export function paintBodiesFine(bodies, grid, width, height, symbols, n, sampled = n) {
   const W = width * n, H = height * n;
   const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < W && y < H) grid[y * W + x] = code; };
   // Trails first, under every body: a disc a pixel narrower than the body, along where it was in recent frames.
   for (const b of bodies) {
     if (b.gone || b.hidden || !b.trail || b.history.length < 2) continue;
     const code = b.trail.color.charCodeAt(0), points = b.history.slice(-1 - b.trail.length), d = Math.max(1, Math.min(b.size[0], b.size[1]) - 1) * n, cells = disc(d);
+    // A disc each fine pixel along the way; finer than the source, as far apart as leaves the trail's edge within half
+    // a fine pixel of straight.
+    const every = n > sampled ? Math.max(1, Math.floor(Math.sqrt(2 * d))) : 1;
     for (let k = 0; k + 1 < points.length; k++) {
-      const [ax, ay] = points[k], [bx, by] = points[k + 1], steps = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * n));
+      const [ax, ay] = points[k], [bx, by] = points[k + 1], steps = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * n / every));
       for (let s = 0; s < steps; s++) {
         const left = Math.round((ax + (bx - ax) * s / steps) * n - d / 2), top = Math.round((ay + (by - ay) * s / steps) * n - d / 2);
         for (const [i, j] of cells) put(left + i, top + j, code);
       }
     }
   }
-  paintSmears(bodies, n, put);
+  paintSmears(bodies, n, put, sampled);
   const painter = bodyPainter(grid, W, H, n);
   for (const b of drawOrder(bodies)) {
     if (b.gone || b.hidden) continue;
@@ -1772,7 +1781,7 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n) {
       for (const [x, y] of cover(b, b.x, b.y)) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) put(x * n + i, y * n + j, code);
       continue;
     }
-    const { rows, cx, cy } = pictureOf(b, symbols), w = rows[0].length, h = rows.length, turns = b.shape !== 'circle';
+    const { rows, cx, cy } = pictureOf(b, symbols), w = rows[0].length, h = rows.length, turns = b.shape !== 'circle' || b.rolls;
     const rx = Math.max(cx, w - cx), ry = Math.max(cy, h - cy), reach = turns ? Math.sqrt(rx * rx + ry * ry) : Math.max(rx, ry);
     const degrees = turns ? heldTurn(b, reach, n) : 0, c = cosDeg(degrees), s = sinDeg(degrees);
     const q = ((Math.round(degrees / 90) % 4) + 4) % 4, x = heldFine(b, 0, [cx, -cy, -cx, cy][q], n, q), y = heldFine(b, 1, [cy, cx, -cy, -cx][q], n, q);
@@ -1787,21 +1796,60 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n) {
   }
 }
 
-// A frame of a bodies source: the territory's cells and waiting pickups, the bodies over them (n times finer with
-// subpixels) and the heads-up display's operations.
+// The cloths drawn under the bodies, or over them, into `grid` (n fine pixels to a world pixel).
+function paintCloths(world, where, grid, width, height, f, n) {
+  const W = width * n, H = height * n, cloths = world.cloths.filter(cloth => cloth.definition.draw === where);
+  if (cloths.length) paintCloth(cloths, (x, y, code) => { if (x >= 0 && y >= 0 && x < W && y < H) grid[y * W + x] = code; }, n, f, world.loop);
+}
+// The bodies into `grid`, with the ropes drawn under them and over them. `sampled` is the source's own subpixels.
+function paintMoving(world, grid, width, height, symbols, n, sampled = n) {
+  const W = width * n, H = height * n, put = (x, y, code) => { if (x >= 0 && y >= 0 && x < W && y < H) grid[y * W + x] = code; };
+  const beneath = world.ropes.filter(rope => rope.draw === 'under'), above = world.ropes.filter(rope => rope.draw === 'over');
+  if (beneath.length) paintRopes(beneath, put, n);
+  if (n > 1) paintBodiesFine(world.bodies, grid, width, height, symbols, n, sampled);
+  else paintBodies(world.bodies, grid, width, height, symbols);
+  if (above.length) paintRopes(above, put, n);
+}
+// A frame of a bodies source: the territory's cells and waiting pickups, the cloth, ropes and bodies over them (n times
+// finer with subpixels) and the heads-up display's operations.
 function drawFrame(world, width, height, context, f, hud) {
   const n = context.subpixels, W = width * n, H = height * n, grid = new Uint16Array(W * H);
-  const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < W && y < H) grid[y * W + x] = code; };
   if (world.turf) world.turf.draw(grid, width, height, f, context.symbols, n);
-  const beneathCloth = world.cloths.filter(cloth => cloth.definition.draw === 'under'), aboveCloth = world.cloths.filter(cloth => cloth.definition.draw === 'over');
-  const beneathRope = world.ropes.filter(rope => rope.draw === 'under'), aboveRope = world.ropes.filter(rope => rope.draw === 'over');
-  if (beneathCloth.length) paintCloth(beneathCloth, put, n, f, world.loop);
-  if (beneathRope.length) paintRopes(beneathRope, put, n);
-  if (n > 1) paintBodiesFine(world.bodies, grid, width, height, context.symbols, n);
-  else paintBodies(world.bodies, grid, width, height, context.symbols);
-  if (aboveRope.length) paintRopes(aboveRope, put, n);
-  if (aboveCloth.length) paintCloth(aboveCloth, put, n, f, world.loop);
+  paintCloths(world, 'under', grid, width, height, f, n);
+  paintMoving(world, grid, width, height, context.symbols, n);
+  paintCloths(world, 'over', grid, width, height, f, n);
   return { ...crop(grid, W, H), hud: world.turf && hud.length ? world.turf.hud(f, hud, n) : [] };
+}
+// The obstacles drawn under the bodies, or over them, as stamps on a canvas n times finer.
+const obstacleStamps = (effect, where, n) => effect.obstacles.filter(o => o.draw === where).map(o => ({ op: 'stamp', symbol: o.symbol, x: o.x * n, y: o.y * n, ...(n > 1 && { scale: n }) }));
+// A video frame, RGBA, with the bodies and ropes drawn `k` times finer again than the frame's own pixels: at the video's
+// pixels, where a turned picture keeps every one of its pixels, each a whole turned square. (Turned at the world's
+// pixels and then enlarged, a swinging monkey of 70 pixels lost up to 18 of them and drew 20 twice in a frame, each a
+// block ten video pixels wide.) The territory, the obstacles and the heads-up display are the world's own pixels, drawn
+// as ever and enlarged: they lie square on the grid, so nothing of them is lost. So is cloth, which has no picture to
+// keep: drawn that fine its cells are smooth flat shapes and its outline a hair, and it no longer reads as pixel art.
+// `grid` is the bodies and ropes, already drawn.
+function fineImage(world, effect, shell, width, height, context, f, k, grid) {
+  const n = context.subpixels, w = width * n, h = height * n, W = w * k, H = h * k, stamps = where => obstacleStamps(effect, where, n);
+  const layer = ops => renderProject({ ...shell, frames: [{ name: 'frame', ...(ops.length && { ops }) }] }).frames[0].data;
+  const beneath = new Uint16Array(w * h), cloth = new Uint16Array(w * h);
+  if (world.turf) world.turf.draw(beneath, width, height, f, context.symbols, n);
+  paintCloths(world, 'under', beneath, width, height, f, n);
+  paintCloths(world, 'over', cloth, width, height, f, n);
+  const cells = crop(beneath, w, h).op, draped = crop(cloth, w, h).op, hud = world.turf && effect.hud.length ? world.turf.hud(f, effect.hud, n) : [];
+  const under = layer([...(effect.background ? [{ op: 'rect', x: 0, y: 0, w, h, color: effect.background }] : []), ...stamps('under'), ...(cells ? [cells] : [])]);
+  const above = [...(draped ? [draped] : []), ...stamps('over'), ...hud], over = above.length ? layer(above) : null, out = new Uint8Array(W * H * 4), colours = new Map();
+  const colour = code => { if (!colours.has(code)) colours.set(code, parseColor(String.fromCharCode(code), shell.palette)); return colours.get(code); };
+  for (let y = 0; y < H; y++) {
+    const row = Math.floor(y / k) * w;
+    for (let x = 0; x < W; x++) {
+      const from = (row + Math.floor(x / k)) * 4, to = (y * W + x) * 4, code = grid[y * W + x];
+      out[to] = under[from]; out[to + 1] = under[from + 1]; out[to + 2] = under[from + 2]; out[to + 3] = under[from + 3];
+      if (code) blend(out, to, colour(code));
+      if (over && over[from + 3]) blend(out, to, over.subarray(from, from + 4));
+    }
+  }
+  return out;
 }
 
 /** Draws the bodies into `grid` (character codes, width × height): trails first, then each body in order (a cutter last). */
@@ -1836,8 +1884,8 @@ export function paintBodies(bodies, grid, width, height, symbols) {
     // picture that small shows a turn without a pinwheel.
     const upright = !b.symbol && !b.rows && (b.shape === 'box' || b.shape === 'polygon') && Math.max(b.size[0], b.size[1]) >= 6 ? uprightRows(b) : null;
     if (b.symbol || b.rows || upright) {
-      const rows = upright ?? b.rows ?? context.symbols[b.symbol], degrees = b.shape === 'circle' ? 0 : Math.round(drawnDegrees(b, [rows[0].length, rows.length])) % 360;
-      const { rows: turned, origin } = sprite(rows, b.shape === 'circle' ? 0 : degrees);
+      const rows = upright ?? b.rows ?? context.symbols[b.symbol], degrees = b.shape === 'circle' && !b.rolls ? 0 : Math.round(drawnDegrees(b, [rows[0].length, rows.length])) % 360;
+      const { rows: turned, origin } = sprite(rows, degrees, b.shape === 'circle');
       // Turned about its centre, which sits on the body's drawn centre: on a pixel's middle where the turned picture's
       // middle is one (mx a half), else on a pixel corner, so the turned picture lies on whole pixels with its middle
       // where the body is. (Snapped as the upright picture, then rounded, a turned picture sat a quarter pixel down and
@@ -1930,7 +1978,7 @@ function work(effect, { width, height, n, symbols }) {
     // A body's picture (its symbol, or its shape) within its reach, turned (a circle doesn't turn), then its trail and its
     // smear: a sample each half (fine) pixel its far end sweeps, each over the bounds it is turned in.
     const picture = b.rows ?? (b.symbol ? symbols[b.symbol] : null), w = Math.max(b.size[0], picture ? picture[0].length : 0), h = Math.max(b.size[1], picture ? picture.length : 0);
-    const reach = b.shape === 'circle' ? Math.max(w, h) / 2 : Math.sqrt(w * w + h * h) / 2, across = 2 * reach * n + 2;
+    const reach = b.shape === 'circle' && !b.rolls ? Math.max(w, h) / 2 : Math.sqrt(w * w + h * h) / 2, across = 2 * reach * n + 2;
     let cost = Math.min(width * height * n * n, across * across);
     if (b.trail) { const d = Math.max(1, Math.min(b.size[0], b.size[1]) - 1) * n; cost += b.trail.length * (MAX_SPEED * n + 1) * d * d; }
     if (b.smear) { const sweep = (b.fixed ? Math.sqrt(b.vx * b.vx + b.vy * b.vy) : MAX_SPEED) + Math.abs(b.spin) * RADIANS * 2 * reach; cost += b.smear.frames * Math.ceil(2 * n * sweep + 1) * across * across; }
@@ -2098,7 +2146,7 @@ function readSource(source, frames) {
 // One frame's operations: the background, obstacles under the bodies, the bodies' grid, obstacles over them and the
 // heads-up display, on a canvas n times finer with subpixels (the world drawn in blocks that size).
 function frameOps(effect, drawn, width, height, n) {
-  const stamps = where => effect.obstacles.filter(o => o.draw === where).map(o => ({ op: 'stamp', symbol: o.symbol, x: o.x * n, y: o.y * n, ...(n > 1 && { scale: n }) }));
+  const stamps = where => obstacleStamps(effect, where, n);
   return [...(effect.background ? [{ op: 'rect', x: 0, y: 0, w: width * n, h: height * n, color: effect.background }] : []), ...stamps('under'), ...(drawn.op ? [drawn.op] : []), ...stamps('over'), ...drawn.hud];
 }
 // The territory's figures for the metadata (the teams, each frame's cells per team, the cells that changed hands and the
@@ -2148,10 +2196,15 @@ export function compileBodies(source) {
 
 /** One effect of a pixelforge-bodies source stepped a frame at a time, for numbered video frames: a match may run up
  * to MATCH_FRAMES frames, past a recipe's 256, and none of it is kept as a recipe. Returns { name, effect, width,
- * height, palette, frames, duration, image(f), figures() }: image(f) is frame f's RGBA (f must never go back), and
- * figures() the metadata a compiled effect carries, so far. */
-export function bodiesFrames(source, effectName) {
+ * height, scale, palette, frames, duration, image(f), figures() }: image(f) is frame f's RGBA (f must never go back),
+ * and figures() the metadata a compiled effect carries, so far: each named body's path too, [x, y, angle] a frame.
+ * `scale` (1 by default; a whole number, or a function of the match's width and height that returns one) is how many
+ * times the frames will be enlarged for video: the image is then that many times larger each way, with the bodies
+ * and ropes drawn at its own pixels (fineImage), so a picture turns and moves without losing a pixel. */
+export function bodiesFrames(source, effectName, { scale = 1 } = {}) {
   const { shell, width, height, n, palette, symbols, effects } = readSource(source, MATCH_FRAMES);
+  const k = integer(typeof scale === 'function' ? scale(width * n, height * n) : scale, 'sequence.scale', 1, 256);
+  if (width * n * k > STILL_SIDE || width * n * k * height * n * k > STILL_SIDE * STILL_SIDE) fail('sequence.scale', `a ${width * n}×${height * n} match drawn ${k} times larger is ${width * n * k}×${height * n * k}, above ${STILL_SIDE} a side; lower the scale`);
   const chosen = effectName === undefined ? effects[0] : effects.find(entry => entry.name === effectName);
   if (!chosen) fail('sequence.animation', `no effect named "${effectName}"; choose one of: ${effects.map(entry => entry.name).join(', ')}`);
   const { name, path, effect } = chosen;
@@ -2161,8 +2214,10 @@ export function bodiesFrames(source, effectName) {
   const context = { width, height, symbols, subpixels: n }, world = createBodyWorld(effect, context);
   if (effect.loop) world.settle();
   let at = -1, image = null;
+  const fine = k > 1 ? new Uint16Array(width * n * k * height * n * k) : null;
+  const warnings = () => world.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`);
   return {
-    name: source.name, effect: name, width: width * n, height: height * n, palette, frames: effect.frames, duration: effect.duration,
+    name: source.name, effect: name, width: width * n * k, height: height * n * k, scale: k, palette, frames: effect.frames, duration: effect.duration,
     image: f => {
       if (!Number.isInteger(f) || f < 0 || f < at || f >= effect.frames) fail('sequence', `frame ${f} is not ahead of frame ${at} within the match's ${effect.frames}`);
       // Every frame is drawn, shown or not, as compileBodies draws them: a body's drawn place and angle hold from frame
@@ -2171,11 +2226,17 @@ export function bodiesFrames(source, effectName) {
       while (at < f) {
         at++;
         world.advance(at);
+        if (fine) {
+          fine.fill(0);
+          paintMoving(world, fine, width, height, symbols, n * k, n);
+          if (at === f) image = fineImage(world, effect, shell, width, height, context, at, k, fine);
+          continue;
+        }
         const drawn = drawFrame(world, width, height, context, at, at === f ? effect.hud : []);
         if (at === f) { const ops = frameOps(effect, drawn, width, height, n); image = renderProject({ ...shell, frames: [{ name: 'frame', ...(ops.length && { ops }) }] }).frames[0].data; }
       }
       return image;
     },
-    figures: () => ({ frames: at + 1, ...(copiesOf(world, effect) && { copies: copiesOf(world, effect) }), hits: world.stats.hits, ...(effect.joints.length && { joints: effect.joints.length }), ...(effect.ropes.length && { ropes: effect.ropes.length }), ...clothFigures(world.cloths), ...(world.stats.jointBreaks.length && { brokenJoints: world.stats.jointBreaks }), escaped: world.stats.escaped, ...(world.stats.broken.length && { broken: world.stats.broken }), ...territoryFigures(world.turf, effect.territory) })
+    figures: () => ({ frames: at + 1, ...(copiesOf(world, effect) && { copies: copiesOf(world, effect) }), hits: world.stats.hits, ...(effect.joints.length && { joints: effect.joints.length }), ...(effect.ropes.length && { ropes: effect.ropes.length }), ...clothFigures(world.cloths), ...(world.stats.jointBreaks.length && { brokenJoints: world.stats.jointBreaks }), escaped: world.stats.escaped, ...(world.stats.broken.length && { broken: world.stats.broken }), ...(world.stats.rest !== null && { rest: world.stats.rest }), ...(Object.keys(world.stats.paths).length && { paths: world.stats.paths }), ...territoryFigures(world.turf, effect.territory), ...(warnings().length && { warnings: warnings() }) })
   };
 }

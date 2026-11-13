@@ -267,6 +267,29 @@ export function rotateRows(rows, degrees, pivot = [0, 0], { cleanup = true } = {
   return { rows: rowsOf(trimmed, tw, th), pivot: [pivot[0] - originX, pivot[1] - originY], map };
 }
 
+// Turns a round picture clockwise by `degrees` in place, as a wheel rolls: its outline stays exactly as drawn (a disc
+// covers the same pixels at every angle), and what is inside turns. Every pixel copies the picture's pixel of its own
+// kind, on the edge or inside it, nearest the spot under its centre, so the rim stays one closed line with its marks
+// going round it. (turnRows turns a picture's sides, which a disc has none of: a cheese wheel came out a spiked blob.)
+// Returns rows the size of `rows`.
+export function rollRows(rows, degrees) {
+  const h = rows.length, w = rows[0].length, c = cosDeg(degrees), s = sinDeg(degrees);
+  const drawn = (x, y) => x >= 0 && y >= 0 && x < w && y < h && rows[y][x] !== '.' && rows[y][x] !== ' ';
+  const rim = (x, y) => !drawn(x - 1, y) || !drawn(x + 1, y) || !drawn(x, y - 1) || !drawn(x, y + 1);
+  if (((degrees % 360) + 360) % 360 === 0) return rows.slice();
+  return rows.map((row, y) => Array.from(row, (ch, x) => {
+    if (!drawn(x, y)) return ch;
+    const px = x + 0.5 - w / 2, py = y + 0.5 - h / 2, u = px * c + py * s + w / 2, v = py * c - px * s + h / 2, edge = rim(x, y);
+    let best = ch, near = Infinity;
+    for (let j = Math.floor(v) - 1; j <= Math.floor(v) + 1; j++) for (let i = Math.floor(u) - 1; i <= Math.floor(u) + 1; i++) {
+      if (!drawn(i, j) || rim(i, j) !== edge) continue;
+      const d = (i + 0.5 - u) * (i + 0.5 - u) + (j + 0.5 - v) * (j + 0.5 - v);
+      if (d < near) { near = d; best = rows[j][i]; }
+    }
+    return best;
+  }).join(''));
+}
+
 // Turns a picture clockwise by `degrees` about its centre the way a pixel artist draws a turned sprite: its sides turned
 // and rounded to whole pixels, so its corners sit on pixel corners and its edges are straight, even pixel steps with
 // opposite sides alike, and every pixel copies one of the picture's from the same ring (its edge, the ring inside that,

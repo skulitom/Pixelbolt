@@ -530,7 +530,11 @@
                 },
                 "symbol": {
                   "type": "string",
-                  "description": "Draw this symbol instead of fill and outline, centred on the body and turned with it to the whole degree, its outline kept a closed line (under 6 pixels across, in quarter turns)."
+                  "description": "Draw this symbol instead of fill and outline, centred on the body and turned with it to the whole degree, its outline kept a closed line (under 6 pixels across, in quarter turns). A circle's stays upright unless it rolls."
+                },
+                "rolls": {
+                  "type": "boolean",
+                  "description": "A circle with a symbol: turn the symbol as the ball rolls (a wheel, a boulder), its round outline kept as drawn. Without it the symbol stays upright (a face)."
                 },
                 "trail": {
                   "type": "object",

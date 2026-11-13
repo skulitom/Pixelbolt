@@ -156,7 +156,7 @@ export function rampShifter(palette, ramps) {
   };
 }
 
-function blend(data, i, color, opacity = 1) {
+export function blend(data, i, color, opacity = 1) {
   const a = color[3] / 255 * opacity;
   if (a === 0) return;
   if (a === 1) { data.set(color, i); return; }

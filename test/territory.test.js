@@ -105,7 +105,8 @@ test('a long match goes out as numbered video frames, and a short one matches it
   assert.deepEqual([sequence.info.frames, sequence.info.figures.frames, sequence.info.loop.plays], [300, 300, 'once']);
   assert.ok(sequence.info.figures.territory.flips > 0 && sequence.info.figures.territory.counts.length === 300);
   const short = match({ territory: board, frames: 30, duration: 40, bodies: [ball('tide', [8, 13], [2, 0.7], { team: 'tide' })] });
-  const direct = createBodiesSequence(short, { fps: 25, scale: 2 }), recipe = createSequence(renderProject(compileBodies(short).recipe), { fps: 25, scale: 2 });
+  // At the match's own size: enlarged, the ball is drawn at the larger pixels (test/bodies-frames.test.js).
+  const direct = createBodiesSequence(short, { fps: 25 }), recipe = createSequence(renderProject(compileBodies(short).recipe), { fps: 25 });
   const pngs = files => [...files].filter(([name]) => name.endsWith('.png'));
   assert.deepEqual(pngs(direct.files).map(([name, bytes]) => [name, bytes.toString('base64')]), pngs(recipe.files).map(([name, bytes]) => [name, bytes.toString('base64')]));
   // From the CLI and MCP.

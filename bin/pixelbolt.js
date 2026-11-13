@@ -150,7 +150,8 @@ Sequence writes one PNG per video frame with alpha, plus sequence.json and a REA
 (the largest that fits, or --scale; --fit cover takes the smallest that covers the canvas and crops the rest) and
 placed by --align (top-left ... bottom-right) and --offset. A scene's margins take its background colour. --step 2
 animates on twos. Rates such as 23.976 and 29.97 are exact (24000/1001, 30000/1001). A pixelforge-bodies source is
-stepped frame after frame (--animation names the effect), so a match may run past a recipe's 256 frames.
+stepped frame after frame (--animation names the effect), so a match may run past a recipe's 256 frames, and its
+bodies are drawn at the video's pixels: a picture that turns keeps every pixel.
 Command results except help and the preview server are JSON. Errors exit with code 1.
 Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (Windows) or ./pixelbolt (macOS/Linux).
 `;

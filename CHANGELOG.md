@@ -4,6 +4,16 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Bodies that turn keep their pixels in video
+
+Reported from a published video: a monkey swinging on a rope was "extremely distorted". A body's picture was turned on the world's own pixel grid and the frame then enlarged, so at any angle off a quarter turn some of its pixels were dropped and others drawn twice, each a block ten video pixels wide: of the monkey's 70 pixels, up to 18 lost and 20 doubled in a frame.
+
+- **A match's video frames draw its bodies at the video's pixels.** `pixelbolt sequence match.bodies.json --size vertical` (and MCP's `sequence`) now draws bodies and ropes at the size the frame is enlarged to: every pixel of a picture stays a whole square that turns and moves with the body, at its exact place and angle. No pixel is lost at any angle, a body under 6 pixels shows its turn, and `subpixels` is not needed for video. The territory, obstacles, cloth and heads-up display are the world's pixels as before. `sequence.json`'s `placement.drawn` says how many times finer the bodies are drawn. A sequence made from the compiled recipe is the sprite sheet's frames enlarged, as before.
+- **`bodiesFrames(source, effect, { scale })`** does the same for a program that enlarges the frames itself: the image is `scale` times larger each way. Sprite sheets, GIFs and a `scale` of 1 are unchanged.
+- **A ball's picture can roll.** A circle's `symbol` stays upright (a face keeps looking out); `rolls: true` turns it with the ball, for a cheese wheel or a boulder that read as sliding. At whole pixels its round outline stays exactly as drawn and what is inside goes round.
+- **Where each named body is, every frame, on a long match.** `bodiesFrames(...).figures()` and a sequence's `sequence.json` carry `paths` (`[x, y, angle]` a frame, as a compiled effect's metadata does, with no 256-frame limit), the frame everything came to `rest`, and the warning for bodies that start overlapping. The command's reply says where each `ended`.
+- A motion smear and a trail drawn at a video's pixels are sampled along their sweep as the source's own pixels are, each sample filled finer: sampled every half a video pixel, a sword's smear took half a second a frame.
+
 ### Poke the pixels: a live fluid toy
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
