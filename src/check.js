@@ -438,10 +438,9 @@ export function checkDelivery(project, { recipe, gifs, expect, animation } = {})
     colors: colors.size, transparent: clearOpen.length === open.length ? true : clearOpen.length ? 'some frames' : false,
     ...(seeThrough.length && { partlyTransparent: seeThrough.length === frames.length ? true : 'some frames' }),
     ...(gifs?.length && { gifs: [gifs[0].width, gifs[0].height] }),
-    // A default grid that wraps into more rows is said, with what makes one row, since a one-row strip is what a sheet
-    // of frames often means; not when the recipe chose its columns, or when expect.sheet checks the sheet (its problem
-    // says what came out).
-    ...(!sheet.trim && project.frames.length > sheet.columns && recipe?.sheet?.columns === undefined && expect?.sheet === undefined && { sheet: { size: [sheet.width, sheet.height], columns: sheet.columns, rows: Math.ceil(project.frames.length / sheet.columns), oneRow: `set sheet.columns to ${project.frames.length}, in the recipe or its source` } })
+    // A default grid that wraps into more rows is said, since a one-row strip is what a sheet of frames often means;
+    // not when the recipe chose its columns, or when expect.sheet checks the sheet (its problem says what came out).
+    ...(!sheet.trim && project.frames.length > sheet.columns && recipe?.sheet?.columns === undefined && expect?.sheet === undefined && { sheet: { size: [sheet.width, sheet.height], columns: sheet.columns, rows: Math.ceil(project.frames.length / sheet.columns) } })
   };
   const frameFiles = `${name}.png, frames/ and animations/`;
   // Nothing visible at all is never a delivery, whatever was asked: it is a problem even without expect. A few empty

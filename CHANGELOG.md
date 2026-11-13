@@ -9,6 +9,19 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
 - The playground and the toy load 0.16.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
+### Found where an agent looks
+
+Six more routes run cold (animated water tiles, an isometric storeroom, a wolf from the fox rig, a vase that shatters, a parallax background, and a contributor finding five places in the code from the repository's map). All delivered; the water run rewrote the Godot TileSet by hand to animate it.
+
+- **Tile sets are presets.** `presets --find tile` (MCP `pixel_help` with `find`) lists `ground`, `meadow` and `shore` with what each is, and `compile --preset shore` compiles one. They were files the search never showed.
+- **A shipped scene answers to its name** where a source is read: `presets iso-glade --out <new.scene.json>` saves the isometric glade, and says how to fetch the assets it names.
+- **Animated tiles are said.** An autotile source whose `variants` differ only in palette or duration, with no `animation`, gets a warning that names the line to add. The water run had exactly that and exported three tiles scattered at random.
+- **An outline that surrounds nothing warns.** A frame's ops and each of its layers are buffers apart, so an outline among the ops of a frame drawn in layers drew nothing and said nothing.
+- Diagnostics leave out `duplicate` findings unless `--full`: a pose a cycle passes twice is no finding to act on, and two runs called the list noise.
+- The craft notes gain animated tiles and a parallax background (placements' `parallax` and `haze`, a keyed `camera`, and what `scene --out` writes for Godot).
+- For contributors: `docs/modules.md` is a sentence a line, so a search returns the sentence that matched (an entry was one line of up to 3 KB, which a search tool dropped), and `AGENTS.md` says what to run after changing a file its table did not name.
+- The check's `oneRow` note is gone again: one run wanted it and two called it noise.
+
 ### One call where there were several
 
 Six more routes run cold by a first-time agent (a camp scene from three presets, a UI kit, a grass-and-sand tile set for Tiled, a barrel with a normal map for Godot, an imported PNG cut to five colours, a campfire). All six delivered; these are what they went round.
@@ -36,7 +49,6 @@ Six more routes run cold by a first-time agent (a camp scene from three presets,
 - A patch path takes `[*]` in an `insert` too: `{"insert": "frames[*].ops[0]", "value": {…}}` draws a prop behind every frame of a compiled effect in one change. It was refused, and twelve frames took twelve changes.
 - `pixelbolt presets <name> --out <new.json>` saves a preset's source alone, ready to edit and compile. Printed, the source sits inside the reply, and every cold run that changed a preset wrote a script to lift it out.
 - A change written with a field a patch does not have (`{"op": "set", "path": …}`) is answered with the shape of a change.
-- When a sheet wraps at the default 8 columns and nothing asked about its shape, the check's `delivered.sheet` also says what makes one row (`oneRow: "set sheet.columns to 10, in the recipe or its source"`).
 - The craft notes say how to draw a figure in four directions seen from above, and that one frame as a picture is already in a render's `frames/` folder.
 - `boolean`, which four modules each had a copy of, is one function in `authoring.js`.
 

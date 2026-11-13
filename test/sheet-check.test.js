@@ -35,7 +35,7 @@ test('a sheet asked for as a size or a one-row strip fails on the default 8-colu
   // Without a sheet in expect, the frames alone pass, and the wrap is still said.
   const unsaid = check(recipe, { width: 64, height: 64, frames: 10 });
   assert.equal(unsaid.ok, true);
-  assert.deepEqual(unsaid.delivered.sheet, { size: [512, 128], columns: 8, rows: 2, oneRow: 'set sheet.columns to 10, in the recipe or its source' });
+  assert.deepEqual(unsaid.delivered.sheet, { size: [512, 128], columns: 8, rows: 2 });
   assert.match(checkDelivery(renderProject(recipe), { recipe }).hint, /, sheet\)/);
   // A sheet in one row, a grid the recipe chose, and a sheet expect checks (its problem says what came out) say nothing.
   assert.equal(check(strip(8), { frames: 8 }).delivered.sheet, undefined);

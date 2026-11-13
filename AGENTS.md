@@ -34,6 +34,7 @@ Simulated and drawn output is pinned by golden hashes in `test/goldens/<set>.jso
 | an MCP tool's description or options, an operation, a help topic or a preset | `node scripts/eval-mock.mjs` (the plugin evals' copy of the listing, and the facts in their mock's instructions; a test compares them) |
 | `packaging/`, the portable build scripts | `node scripts/build-studio.mjs`, then `node scripts/verify-studio.mjs` on the built archive |
 | binary exports (PNG, APNG, GIF, ZIP) | also check with an independent image decoder |
+| anything else in `src/` or `bin/` (`check.js`, `patch.js`, `presets.js`, `help.js`, the CLI) | `npm run test:related -- <the files>`, then `npm test` |
 
 ## Rules
 

@@ -419,11 +419,11 @@ async function presetsText(name, full, find, out, force) {
   }
   if (name === undefined) { const listing = await listPresets({ budget: Infinity }); return rowsJSON(full ? listing : briefListing(listing)); }
   if (full) throw new Error('--full goes with the listing (pixelbolt presets --full); pixelbolt presets <name> prints one preset\'s source');
-  const entry = await findPreset(name, 'name'), { source, inlined } = await loadPreset(entry);
+  const entry = await findPreset(name, 'name', true), { source, inlined } = await loadPreset(entry);
   // Saved, the source is the file alone, ready to edit: printed, it sits inside this reply and takes a script to lift out.
   if (out !== undefined) {
     const written = await writeOutputs({ source: [out, formatJSON(source), '--out'] }, force);
-    return rowsJSON({ name: entry.name, ...written, ...(inlined.length && { inlined }), next: entry.kind === 'recipe' ? `Edit ${shown(path.resolve(out))}, then validate, inspect or render it.` : `Edit ${shown(path.resolve(out))}, then pixelbolt compile ${shown(path.resolve(out))} --out <new recipe.json>.` });
+    return rowsJSON({ name: entry.name, ...written, ...(inlined.length && { inlined }), next: entry.kind === 'scene' ? presetNext(entry, true) : entry.kind === 'recipe' ? `Edit ${shown(path.resolve(out))}, then validate, inspect or render it.` : `Edit ${shown(path.resolve(out))}, then pixelbolt compile ${shown(path.resolve(out))} --out <new recipe.json>.` });
   }
   return rowsJSON({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source });
 }

@@ -147,3 +147,33 @@ test('a layered tile set draws a map of its own layers, gives the tilemap a scen
   const off = renderScene(prepareScene({ format: 'pixelforge-scene', version: 1, name: 'bay', width: 40, height: 32, assets: { shore: made.recipe }, instances: [{ name: 'map', asset: 'shore', at: [0, 0], tilemap: { ...tilemapOf(made.recipe, made.metadata), rows, outside: 'match' } }] }));
   assert.match(off.warnings[0], /^\d+ drawn pixels clipped at scene bounds \(map \d+\)\.$/);
 });
+
+test('variants that are the frames of an animation are said so, and an outline with nothing to surround is too', () => {
+  // Three palettes of one water tile, with and without the animation that plays them.
+  const pond = { format: 'pixelforge-autotile', version: 1, name: 'pond', tile: 8, frame: 'pond-{mask}-{variant}', palette: { w: '#2f78b0', a: '#3c8cc4', b: '#2a6a9e' },
+    terrain: { seed: 1, fill: { color: 'w', speckle: [{ color: 'a', amount: 0.2, size: 2 }] } }, variants: [{ name: 's1', palette: { a: '#8fd0ee' }, duration: 180 }, { name: 's2', palette: { a: '#3c8cc4' }, duration: 180 }] };
+  assert.deepEqual(compileAutotile(pond).warnings.filter(text => text.startsWith('autotile.variants')), ['autotile.variants: the 2 variants differ only in palette or duration, which are the frames of an animation, but with no `animation` each cell picks one of them at random and never changes. Add "animation": "pond-{mask}" and every tile plays them in turn (an animated tile in the Godot TileSet and in Tiled).']);
+  const animated = compileAutotile({ ...pond, animation: 'pond-{mask}' });
+  assert.ok(!(animated.warnings ?? []).some(text => text.startsWith('autotile.variants')) && animated.recipe.animations['pond-255'].frames.length === 2);
+  // Variants that draw something else are tiles to scatter, and say nothing.
+  assert.ok(!(compileAutotile({ ...pond, variants: [{ name: 's1', terrain: { fill: { seed: 4 } } }, { name: 's2', palette: { a: '#8fd0ee' } }] }).warnings ?? []).some(text => text.startsWith('autotile.variants')));
+  // A frame's ops and its layers are buffers apart: an outline among the ops of a frame drawn in layers draws nothing.
+  const base = { version: 1, name: 'crate', width: 8, height: 8, palette: { a: '#b07e52', k: '#2a1c18' } }, body = { op: 'rect', x: 2, y: 2, w: 3, h: 3, color: 'a' }, outline = { op: 'outline', color: 'k' };
+  assert.deepEqual(renderProject({ ...base, frames: [{ name: 'f', layers: [{ name: 'body', ops: [body] }], ops: [outline] }] }).warnings, ["An outline drew nothing: project.frames[0].ops[0] surrounds what its own buffer holds, and a frame's ops and each of its layers are buffers apart. Put the outline at the end of the layer it should surround."]);
+  assert.deepEqual(renderProject({ ...base, frames: [{ name: 'f', layers: [{ name: 'body', ops: [body, outline] }] }] }).warnings, []);
+  // In a frame that draws nothing at all, an effect's empty frame, it is no mistake.
+  assert.deepEqual(renderProject({ ...base, frames: [{ name: 'f', ops: [outline] }, { name: 'g', ops: [body, outline] }] }).warnings, []);
+});
+
+test('tile sets are presets, and a shipped scene answers to its name where a source is read', async t => {
+  const dir = await folder(t), run = cli(dir);
+  const found = run('presets', '--find', 'shore');
+  assert.match(found.info.presets.shore, /^autotile, 16x16, \d+ frames, .*A tile set for a terrain brush \(Godot TileSet, Tiled tileset\): water, sand, grass and the tiles where they meet, with collision\.$/);
+  assert.match(run('presets', '--find', 'ground').info.presets.ground, /^autotile, .*one terrain, blob tiles, with slopes/);
+  // A scene is saved as it is, its assets still files, and says how to fetch them; nothing compiles it.
+  const saved = run('presets', 'iso-glade', '--out', 'glade.scene.json');
+  assert.equal(saved.status, 0, saved.said);
+  assert.match(saved.info.next, /^A scene: pixelbolt presets iso-glade --out <new\.scene\.json> saves it, and each file its assets name is a preset to save beside it/);
+  assert.deepEqual(JSON.parse(await readFile(path.join(dir, 'glade.scene.json'), 'utf8')), JSON.parse(await readFile(path.join(root, 'examples/iso-glade.scene.json'), 'utf8')));
+  assert.match(run('compile', '--preset', 'iso-glade', '--out', 'x.json').said, /no preset named .{1,2}iso-glade/);
+});

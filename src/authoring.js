@@ -816,6 +816,8 @@ export function compileAutotile(source) {
     symbols[`template-${variant.name}`] = rows;
   });
   if (source.animation !== undefined && (typeof source.animation !== 'string' || !source.animation.includes('{mask}'))) fail('autotile.animation', 'expected an animation name template containing {mask}');
+  // Variants that differ only in their palette or how long they show are the frames of one tile, not tiles to scatter.
+  const cycled = source.animation === undefined && Array.isArray(source.variants) && source.variants.length > 1 && source.variants.every(variant => variant !== null && typeof variant === 'object' && (variant.palette !== undefined || variant.duration !== undefined) && Object.keys(variant).every(key => ['name', 'palette', 'duration'].includes(key)));
   if (source.preview !== undefined) {
     fields(source.preview, ['background', 'rows'], 'autotile.preview');
     if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
@@ -854,6 +856,7 @@ export function compileAutotile(source) {
   const recipe = { version: 1, name: source.name, width: tile, height: tile, palette, ...(source.ramps !== undefined && { ramps: source.ramps }), symbols, frames, ...(source.animation !== undefined && { animations }), ...(source.sheet !== undefined && { sheet: source.sheet }) };
   renderProject(recipe);
   const report = templateSeams(templates, tile, mode, drawn), warnings = seamWarnings(report, tile);
+  if (cycled) warnings.push(`autotile.variants: the ${source.variants.length} variants differ only in palette or duration, which are the frames of an animation, but with no \`animation\` each cell picks one of them at random and never changes. Add "animation": "${source.name}-{mask}" and every tile plays them in turn (an animated tile in the Godot TileSet and in Tiled).`);
   const count = kind => report.seams.reduce((sum, seam) => sum + seam.pixels.filter(p => (kind === 'corner' ? seam.corner : !seam.corner && (kind === 'shape') === p.shape)).length, 0);
   // At 84 pixels a tile the test map is 1680 × 1176 (2016 × 1596 with slopes), inside the size of a still. It mixes
   // the templates the frames draw, each as often as the variants that draw it.

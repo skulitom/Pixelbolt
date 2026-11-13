@@ -24,7 +24,10 @@ import { FLUID_PRESETS } from '../studio/fluid-controls.js';
 import { POWDER_PRESETS } from '../studio/powder-controls.js';
 
 export const PRESET_FOLDER = fileURLToPath(new URL('../examples/', import.meta.url));
-const SOURCE = /^(.+)\.(fluid|fx|wave|crystal|powder|bodies|poses)\.json$/;
+const SOURCE = /^(.+)\.(fluid|fx|wave|crystal|powder|bodies|poses|autotile)\.json$/;
+// A shipped scene is no preset (nothing compiles it to a recipe), but it is the example to start a scene from, so its
+// name finds its source too.
+const SCENE = /^(.+)\.scene\.json$/;
 // What compiles each source format: the one table, which the CLI and the MCP server use too.
 export const COMPILERS = { 'pixelforge-poses': compilePoses, 'pixelforge-autotile': compileAutotile, 'pixelforge-fx': compileEffects, 'pixelforge-fluid': compileFluid, 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-powder': compilePowder, 'pixelforge-bodies': compileBodies, 'pixelforge-normals': compileNormals };
 const TITLES = new Map([...FLUID_PRESETS.map(entry => [`fluid:${entry.file}`, entry]), ...EFFECT_PRESETS.map(entry => [`fx:${entry.file}`, entry]), ...POWDER_PRESETS.map(entry => [`powder:${entry.file}`, entry])]);
@@ -34,7 +37,9 @@ const TITLES = new Map([...FLUID_PRESETS.map(entry => [`fluid:${entry.file}`, en
 export const PRESET_GUIDE = 'Start fire, smoke, explosions, splashes, spells and other effects from one of these rather than drawing them: pixel_compile {"preset": "<name>"} compiles one as it ships (pixelbolt compile --preset <name> --out <new.json> from a shell), with "size": "32x32" and "frames": 8 (--size, --frames) for the canvas and frame count asked for, and pixel_help {"topic": "preset", "name": "<name>"} returns its source to edit and compile (a recipe preset is already a recipe: edit it and send it as project). Fluid presets are simulations: a liquid preset (honey, slime, water) is liquid falling, pouring or splashing, not a character; for a character that squashes, stretches or breathes, compile a pixelforge-poses source with one mass body and motions.idle (example: slime-idle).';
 
 // What to do with a preset's source: a source compiles; a plain recipe already is one.
-export const presetNext = (entry, shell = false) => entry.kind === 'recipe'
+export const presetNext = (entry, shell = false) => entry.kind === 'scene'
+  ? (shell ? `A scene: pixelbolt presets ${entry.name} --out <new.scene.json> saves it, and each file its assets name is a preset to save beside it under that name (pixelbolt presets <asset> --out <that file>); then pixelbolt scene <new.scene.json> --image <view.png>.` : 'A scene: send source as pixel_scene\'s scene, with each asset\'s file name replaced by its recipe (pixel_compile {"preset": "<asset>"} gives a revision to name as {"revision": id}).')
+  : entry.kind === 'recipe'
   ? (shell ? `It is already a recipe: pixelbolt presets ${entry.name} --out <new.json> saves it to edit, then validate, inspect or render that file.` : `It is already a recipe: edit source and send it as project to pixel_validate, pixel_inspect or pixel_render, or use pixel_compile {"preset": "${entry.name}"} for a revision of it as it ships.`)
   : (shell ? `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save its source to edit (pixelbolt presets ${entry.name} --out <new source.json>) and compile that.` : `Compile it as it ships with pixel_compile {"preset": "${entry.name}"}, or edit source and send it as pixel_compile's source.`);
 
@@ -68,9 +73,11 @@ export async function presetEntries() {
 
 // The preset a name means: its name, `<name>.<kind>` or its file name (as the listing gives it, examples/ and all),
 // ignoring case. Names are matched against the folder's own listing, never used as a path.
-export async function findPreset(name, where = 'preset') {
+export async function findPreset(name, where = 'preset', scenes = false) {
   if (typeof name !== 'string' || !name.trim()) throw new PixelError(where, 'expected a preset name such as "smoke-puff"; pixel_help {"topic": "presets"} lists them');
   const wanted = name.trim().toLowerCase().replace(/^examples\//, ''), entries = await presetEntries();
+  // Where a source is read, not compiled, a shipped scene answers to its name as well.
+  if (scenes) for (const file of await readdir(PRESET_FOLDER)) { const match = SCENE.exec(file); if (match && [match[1], file].some(alias => alias.toLowerCase() === wanted)) return { file, base: match[1], name: match[1], kind: 'scene' }; }
   const found = entries.filter(entry => [entry.name, `${entry.base}.${entry.kind}`, entry.file].some(alias => alias.toLowerCase() === wanted));
   if (found.length === 1) return found[0];
   const shared = entries.filter(entry => entry.base.toLowerCase() === wanted);
@@ -84,6 +91,8 @@ export async function findPreset(name, where = 'preset') {
 export async function loadPreset(entry) {
   const document = entry.document ?? await readJSON(entry.file);
   if (document === null) throw new PixelError('preset', `examples/${entry.file} could not be read`);
+  // A scene keeps its assets as the files it names: inlined, the glade is 18 KB of tiles before its 2 KB of scene.
+  if (entry.kind === 'scene') return { source: document, inlined: [] };
   const { document: resolved, files } = await resolveReferences(document, { baseDir: PRESET_FOLDER, root: PRESET_FOLDER });
   return { source: resolved, inlined: files.map(file => `examples/${path.relative(PRESET_FOLDER, file).split(path.sep).join('/')}`) };
 }
@@ -139,6 +148,11 @@ function about(entry, source, animations) {
     const held = (Array.isArray(rest?.parts) ? rest.parts : []).filter(part => hands.has(part?.attach?.part) && source.parts?.[part.part]?.rows
       && !/hand/i.test(`${part.name} ${part.part}`)).map(part => part.name);
     return templates.length ? `A ${source.rig?.fore ? 'four-legged animal' : 'character'} rig whose motion templates make ${listNames(templates)}${held.length ? `, with ${listNames(held)} in hand` : ''}.` : `Posed parts: ${listNames(names)}.`;
+  }
+  if (entry.kind === 'autotile') {
+    // A tile set: its terrains, how its tiles are chosen, and what else it carries.
+    const layers = Array.isArray(source.layers) ? source.layers.map(layer => layer?.name).filter(Boolean) : [], extras = [source.animation !== undefined && 'animated', source.slopes !== undefined && 'with slopes', (source.collision !== undefined || source.layers?.some?.(layer => layer?.collision)) && 'with collision'].filter(Boolean);
+    return `A tile set for a terrain brush (Godot TileSet, Tiled tileset): ${layers.length ? `${listNames(layers)} and the tiles where they meet` : `one terrain, ${source.mode ?? 'blob'} tiles`}${extras.length ? `, ${extras.join(', ')}` : ''}.`;
   }
   if (entry.kind === 'fx') return `Particles and effect shapes: ${listNames(names)}.`;
   if (entry.kind === 'wave') return `A looping wave pattern: ${listNames(names)}.`;
@@ -330,7 +344,7 @@ const closest = (items, text, words) => {
 const NOT_A_CHARACTER = /,? not a character/g;
 export const namedLike = (entries, words) => closest(entries, entry => entry.name, words);
 // What each kind of preset is called, for a search word that names a kind rather than a preset.
-const KIND_WORDS = { powder: 'sand powder sandbox grains falling', bodies: 'bodies body rigid physics ball balls box boxes crate crates rope ropes chain chains joint joints hinge hinges pendulum swinging hanging cloth', wave: 'wave waves ripple ripples portal', crystal: 'crystal crystals gem gems', fluid: 'fluid liquid gas smoke', fx: 'particles particle spell spells', poses: 'character rig' };
+const KIND_WORDS = { powder: 'sand powder sandbox grains falling', bodies: 'bodies body rigid physics ball balls box boxes crate crates rope ropes chain chains joint joints hinge hinges pendulum swinging hanging cloth', wave: 'wave waves ripple ripples portal', autotile: 'tile tiles tileset tilesets terrain terrains autotile ground floor platform', crystal: 'crystal crystals gem gems', fluid: 'fluid liquid gas smoke', fx: 'particles particle spell spells', poses: 'character rig' };
 // `all` is every preset by name and kind, where the listing holds only those measured for this search.
 export function findListing(listing, query, where = 'find', all = listing.presets) {
   const words = presetWords(query, where), lines = briefListing(listing).presets;

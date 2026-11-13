@@ -349,7 +349,7 @@ export function createToolRunner({ directory, root, version }) {
           return { content: [textContent(args.find !== undefined ? findListing(listing, args.find) : args.full ? listing : briefListing(listing))] };
         }
         if (args.topic === 'preset') {
-          const entry = await findPreset(args.name, 'name'), { source, inlined } = await loadPreset(entry);
+          const entry = await findPreset(args.name, 'name', true), { source, inlined } = await loadPreset(entry);
           return { content: [textContent({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry), source })] };
         }
         const text = await helpText(args.topic, args.name);
