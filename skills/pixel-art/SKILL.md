@@ -1,6 +1,6 @@
 ---
 name: pixelbolt-pixel-art
-description: Make, fix and export pixel art with Pixelbolt JSON recipes - sprites, sprite sheets, tiles, icons, short animations and effects such as fire, smoke, water or sparks - saved as PNG, GIF, APNG, atlases or video frames. Use when someone asks to draw, animate, repair or export pixel art or game sprites. Not for vector or SVG graphics, photos or pictures from an image model. Local, no account, no API key.
+description: Make, fix and export pixel art with Pixelbolt JSON recipes - sprites, sprite sheets, tiles, icons, short animations and effects such as fire, smoke, water or sparks - saved as PNG, GIF, APNG, atlases or video frames. Use when someone asks to draw, animate, repair or export pixel art or game sprites. Not for vector or SVG output, photo editing or pictures from an image model, though it can redraw a logo or icon as pixel art. Local, no account, no API key.
 ---
 
 # Pixelbolt pixel art
