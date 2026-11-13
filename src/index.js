@@ -7,6 +7,7 @@ export { sceneGIF } from './scene-export.js';
 export { numberedFrames, folderGIF } from './frame-folder.js';
 export { createSequence, createSceneSequence, createBodiesSequence, figuresSummary, planSequence, placeSprite, parseFrameRate, frameGrid, VIDEO_SIZES } from './sequence.js';
 export { createBundle, writeBundle, createZip, generateCSS, formatJSON } from './export.js';
+export { readExpect, checkDelivery, briefCheck } from './check.js';
 export { spriteFrames, godotTiming, GODOT_MAX_FPS } from './godot.js';
 export { compilePoses, expandPoses, draftViews, compileAutotile, compileNormals, NORMAL_DIRECTIONS } from './authoring.js';
 export { inspectMotion } from './motion.js';
