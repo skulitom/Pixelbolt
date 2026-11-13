@@ -116,7 +116,7 @@ function locate(root, segments, where, verb) {
     if (Array.isArray(node)) {
       if (segment.key !== undefined) fail(where, `${owner} is a list; select an item with [index] or [name]`);
       if (segment.end) {
-        if (!last || verb !== 'insert') fail(where, '[-] is the end of a list and can only end an insert path');
+        if (!last || verb !== 'insert') fail(where, END_ONLY);
         slot = node.length;
       } else if (segment.index !== undefined) slot = segment.index;
       else {
@@ -141,6 +141,7 @@ function locate(root, segments, where, verb) {
   }
 }
 
+const END_ONLY = '[-] is the end of a list and can only end an insert path';
 // frames[*].layers[cape].palette: [*] stands for every item of a list, so one change reaches a layer in every frame.
 // Returns the path of each match. An item that lacks what the rest of the path names (a frame without that layer, or
 // for a remove without that field) is passed over; no match at all is an error. An insert's path ends at a place in a
@@ -148,6 +149,7 @@ function locate(root, segments, where, verb) {
 // insert creates): a prop drawn behind every frame of a compiled effect.
 function everyMatch(root, segments, where, verb) {
   if (segments.at(-1).any) fail(where, '[*] is followed by what to change in each item, such as frames[*].duration');
+  if (segments.some((segment, i) => segment.end && (verb !== 'insert' || i !== segments.length - 1))) fail(where, END_ONLY);
   const text = taken => taken.map((segment, i) => (segment.key !== undefined ? `${i ? '.' : ''}${segment.key}` : segment.index !== undefined ? `[${segment.index}]` : `[${JSON.stringify(segment.name)}]`)).join('');
   const child = (node, segment) => (Array.isArray(node) ? (segment.index !== undefined ? node[segment.index] : node.find(item => (isObject(item) ? item.name : item) === segment.name))
     : isObject(node) ? node[segment.key ?? segment.name ?? String(segment.index)] : undefined);

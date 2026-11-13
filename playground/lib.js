@@ -10,11 +10,13 @@ export const engineBase = (version, override = null) => override ?? `https://cdn
 export function engineOverride(pageURL) {
   const page = new URL(pageURL), requested = page.searchParams.get('engine');
   if (requested === null) return { base: null, notice: '' };
-  const refused = { base: null, notice: 'Ignored ?engine=: use this page’s origin, or loopback on both URLs.' };
+  const refused = { base: null, notice: 'Ignored ?engine=: it is for testing on a loopback page (localhost), with the engine on that page’s origin or on loopback.' };
   try {
     const url = new URL(requested, page), loopback = host => ['localhost', '127.0.0.1', '[::1]'].includes(host);
     if (!['http:', 'https:'].includes(url.protocol) || !['http:', 'https:'].includes(page.protocol) || url.username || url.password || url.search || url.hash) return refused;
-    if (url.origin !== page.origin && !(loopback(url.hostname) && loopback(page.hostname))) return refused;
+    // Only on a loopback page, as ?limit= is: a published page shares its origin with every other site of its host
+    // (github.io/<any repository>), so "this page's origin" let a link load another site's scripts as the engine.
+    if (!loopback(page.hostname) || (url.origin !== page.origin && !loopback(url.hostname))) return refused;
     if (!url.pathname.endsWith('/')) url.pathname += '/';
     return { base: url.href, notice: 'Local test engine override is active. The version label is requested metadata; this engine may differ.' };
   } catch { return refused; }

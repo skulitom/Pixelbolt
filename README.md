@@ -482,13 +482,14 @@ For Godot 4, put `name.png` and `name.tres` in one folder of the project and use
 ## JavaScript API
 
 ```js
-import { renderProject, inspectProject, patchRecipe, compareProjects, createBundle, writeBundle, compileEffects, compileFluid, createLiveFluid, animationGIF, folderGIF, frameGrid } from './src/index.js';
+import { renderProject, inspectProject, patchRecipe, compareProjects, createBundle, writeBundle, readExpect, checkDelivery, compileEffects, compileFluid, createLiveFluid, animationGIF, folderGIF, frameGrid } from './src/index.js';
 
 const project = renderProject(recipe); // RGBA buffers, durations, warnings
 const view = inspectProject(project, { grid: true }); // contact sheet RGBA, palette-key grids
 const { recipe: next, edits } = patchRecipe(recipe, [{ set: 'frames[idle].duration', value: 120 }]);
 const report = compareProjects(project, renderProject(next)); // changed pixels, timing, before/after RGBA
 const bundle = await createBundle(recipe);
+const check = checkDelivery(project, { recipe, expect: readExpect({ width: 32, height: 32, frames: 4 }) }); // what the CLI and MCP report as `check`: ok, or each problem and its fix
 await writeBundle(bundle, './output/my-sprite');
 const { recipe: effects } = compileEffects(fxSource); // seeded particles and spell shapes baked into an ordinary recipe
 const { recipe: fire, metadata } = compileFluid(fluidSource); // a fluid simulation baked into palette grids

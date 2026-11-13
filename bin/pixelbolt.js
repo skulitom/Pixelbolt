@@ -541,7 +541,7 @@ try {
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
-      for (const key of ['name', 'atlas', 'metadata']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --embedded`);
+      for (const key of ['name', 'atlas', 'frame', 'padding', 'metadata']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --embedded`);
       const embedded = await readEmbeddedRecipe(await readFile(positional[0]));
       if (!embedded) throw new Error('This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.');
       const { version, kind, recipe } = embedded;
@@ -739,6 +739,8 @@ try {
       print({ ok: true, ...gif, bytes: data.length, ...written });
     } else {
       const input = await readResolved(positional[0]);
+      // A source is not a recipe: read as one, its first field was "unknown", which reads as a broken file.
+      if (command === 'validate' && Object.hasOwn(COMPILERS, input.document?.format ?? '')) throw new Error(`validate checks a recipe, and this is a ${input.document.format} source; pixelbolt compile ${positional[0]} --out <new.json> checks it and writes the recipe it makes`);
       if (command === 'validate') { const project = renderProject(input.document); print({ ok: true, ...summary(project, input.document), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }), ...referenced(input) }); }
       else {
         if (!options.out) throw new Error('render requires --out <directory>');

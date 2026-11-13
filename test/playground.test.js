@@ -192,11 +192,13 @@ test('browser PNG encoder preserves RGBA and passes the independent Node decoder
   await assert.rejects(encodePNG(rgba, 2, 2), /matching RGBA/);
 });
 
-test('engine overrides only accept HTTP own-origin or loopback-to-loopback URLs', () => {
+test('engine overrides work only on a loopback page, for its own origin or loopback', () => {
   const page = 'https://skulitom.github.io/Pixelbolt/playground/';
   const use = (base, requested) => engineOverride(`${base}?engine=${encodeURIComponent(requested)}`);
-  assert.equal(use(page, '../src/').base, 'https://skulitom.github.io/Pixelbolt/src/');
-  assert.equal(use(page, 'https://skulitom.github.io/test').base, 'https://skulitom.github.io/test/');
+  assert.equal(use('http://127.0.0.1:8000/playground/', '../src/').base, 'http://127.0.0.1:8000/src/');
+  assert.equal(use('http://localhost:8000/playground/', 'http://localhost:8000/test').base, 'http://localhost:8000/test/');
+  // A published page shares its origin with its host's other sites, so its own origin is no licence either.
+  for (const value of ['../src/', 'https://skulitom.github.io/test', '/OtherRepo/dir/']) { const result = use(page, value); assert.equal(result.base, null, value); assert.match(result.notice, /Ignored/); }
   for (const host of ['localhost', '127.0.0.1', '[::1]']) assert.equal(use('http://127.0.0.1:8000/', `http://${host}:9000/src/`).base, `http://${host}:9000/src/`);
   for (const value of ['javascript:alert(1)', 'data:text/javascript,hello', 'https://cdn.jsdelivr.net/x', 'https://other.invalid/src/', 'http://localhost/src/', '//other.invalid/src/', 'https://user:password@skulitom.github.io/src/']) {
     const result = use(page, value); assert.equal(result.base, null, value); assert.match(result.notice, /Ignored/);
@@ -408,7 +410,7 @@ test('page security: safe DOM APIs, exact CSP, permitted hosts and browser-only 
   }
   const html = await read('playground/index.html');
   const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]+)">/.exec(html)[1];
-  assert.equal(policy, "default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self'; base-uri 'none'; form-action 'none'");
+  assert.equal(policy, "default-src 'none'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self'; base-uri 'none'; form-action 'none'");
   assert.doesNotMatch(html, /<style\b|\sstyle\s*=|<script(?![^>]*\bsrc=)/i);
   assert.deepEqual(ENGINE_MODULES, ['core', 'authoring', 'fx', 'fluid', 'scene', 'gif']);
   assert.doesNotMatch(await read('playground/render.js'), /^import\s/m);
@@ -602,6 +604,7 @@ test('a download or a link clicked while edits wait is delivered or says why not
   // still unsaved.
   clicked = $('export-recipe').click(); page.type(named('later'));
   assert.ok(!workers[0].terminated); assert.equal(page.asked().text, named('edited'));
+  assert.equal($('status').textContent, 'Preparing download… Your edit renders after it.');
   page.reply({ result: { files: [page.file('edited.pixel.json')], warnings: [] } }); await clicked; await flush();
   assert.deepEqual(downloads(), ['edited.pixel.json']); assert.equal(typeof events.get('beforeunload'), 'function');
   fireTimer(300); assert.equal(page.asked().text, named('later')); await page.render('later');

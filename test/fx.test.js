@@ -922,3 +922,16 @@ test('kick adds one velocity to every launch, whatever its angle', () => {
   assert.deepEqual(kicked, plain.map(([x, y]) => [x, y - 3]));
   assert.throws(() => fan([1]), /kick/);
 });
+
+test('a symbol particle never draws below its floor, in flight or at rest, whatever its height and turn', () => {
+  // A casing two pixels by three, spinning. Its middle pixel was kept on the floor, so upright it hung a row under the
+  // floor, and it came to rest a row lower upright than lying on its side.
+  for (const seed of [1, 2, 3, 41]) {
+    const source = effects({ frames: 24, seed, emitters: [{ at: [8, 8], burst: 1, life: 60, angle: [275, 290], speed: [1.5, 2.5], gravity: [0, 0.6], floor: 20, bounce: 0.4, rest: true, spin: [60, 120], shapes: ['casing'] }] });
+    source.symbols.casing = ['yy', 'yo', 'oo'];
+    const { recipe } = compileEffects(source);
+    const bottoms = recipe.frames.flatMap(frame => (frame.ops ?? []).filter(op => op.op === 'stamp').map(op => op.y + recipe.symbols[op.symbol].length - 1));
+    assert.equal(Math.max(...bottoms), 20, `seed ${seed}: ${bottoms}`);
+    assert.deepEqual(bottoms.slice(-4), [20, 20, 20, 20], `seed ${seed}: at rest ${bottoms}`);
+  }
+});

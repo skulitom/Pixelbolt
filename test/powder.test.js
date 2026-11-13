@@ -432,6 +432,8 @@ test('errors an agent meets name what to do, and a late scripted input is warned
 
 test('the powder schema lists exactly the fields the reader takes, and the package ships it', async () => {
   const schema = JSON.parse(await readFile(path.join(root, 'powder.schema.json'), 'utf8')), material = schema.properties.materials.additionalProperties;
+  // A phase change says what it is (the generator took the text and dropped it).
+  assert.match(material.properties.above.description, /melting, boiling/); assert.match(material.properties.below.description, /freezing/);
   const unknown = (source, where) => { try { createLivePowder(source); return false; } catch (error) { return error.path === where && /unknown field/.test(error.message); } };
   const base = () => tiny({ inputs: [{ frame: 0, paint: { material: 'sand', x: 1, y: 1 } }] });
   const levels = [

@@ -11,7 +11,7 @@ let version = PINNED_VERSION, worker, pending, requestId = 0, debounce, editGene
 // request in flight), `valid` (the render on screen is the editor's text), `failure` (why that text has no render:
 // { message, line }, kept until it renders or changes) and `rendered` (the last good render).
 let manifest = [], rendered = null, valid = false, failure = null, position = 0, playing = false, nextAt = 0;
-let downloadURLs = [], downloadTimer, zoomChosen = false, shownExample = '', shownHash = '', acting = null, owed = '';
+let downloadURLs = [], downloadTimer, zoomChosen = false, shownExample = '', shownHash = '', acting = null, making = '', owed = '';
 const edits = editGuard({ ask: message => confirm(message), target: globalThis });
 // One-shot animations hold their last frame this long before playing again, as the studio's Fluid lab does.
 const HOLD = 600;
@@ -113,7 +113,8 @@ async function request(type, extra) {
   } else owed = '';
   if (pending) stopWorker();
   const doing = type === 'export' ? 'preparing the download' : type === 'share' ? 'making the link' : 'rendering';
-  setStatus(type === 'export' ? 'Preparing download…' : type === 'share' ? 'Preparing share link…' : 'Loading engine and rendering…');
+  if (!source) making = type === 'export' ? 'Preparing download…' : 'Preparing share link…';
+  setStatus(source ? 'Loading engine and rendering…' : making);
   return new Promise((resolve, reject) => {
     try {
       ensureWorker();
@@ -193,7 +194,9 @@ function invalidate() {
 editor.addEventListener('input', () => {
   invalidate(); edits.set(true); $('examples').value = ''; shownExample = '';
   $('recipe-size').textContent = formatSize(new TextEncoder().encode(editor.value).length);
-  setStatus('Waiting for edits…'); debounce = setTimeout(renderEdit, 300);
+  // A download or link under way goes on while its recipe is typed over, and the status keeps saying so: "Waiting for
+  // edits…" alone read as if it had stopped, and Cancel then cancelled what the status no longer named.
+  setStatus(acting ? `${making} Your edit renders after it.` : 'Waiting for edits…'); debounce = setTimeout(renderEdit, 300);
 });
 $('examples').addEventListener('change', () => {
   if (!$('examples').value) return;

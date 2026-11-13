@@ -1,5 +1,6 @@
 export { PixelError, errorReply, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, stackViews, paletteUse, compareProjects, analyzeProject, briefDiagnostics, briefCells, briefComparison, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport, readGuides, drawGuides, pictureSheet } from './core.js';
 export { patchRecipe } from './patch.js';
+export { readExpect, checkDelivery, briefCheck } from './check.js';
 export { encodePNG, encodeAPNG } from './png.js';
 export { measureText, layoutText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';
 export { encodeGIF, animationGIF, framesGIF } from './gif.js';

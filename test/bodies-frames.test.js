@@ -85,6 +85,9 @@ test('a sequence draws a match at the size it enlarges it to, and carries each n
   // A fixed body has no path: this one floats free and turns.
   const free = { ...spinner, effects: { turn: { ...spinner.effects.turn, bodies: [{ ...spinner.effects.turn.bodies[0], fixed: undefined, weightless: true, spinDrag: 0 }] } } };
   const made = createBodiesSequence(free, { fps: 25, scale: 8 }), plain = createBodiesSequence(free, { fps: 25 });
+  // A match plays once, so one loop is what it does: the help lists --loops for every sequence, and it was refused here.
+  assert.equal(createBodiesSequence(free, { fps: 25, loops: 1 }).info.frames, plain.info.frames);
+  assert.throws(() => createBodiesSequence(free, { fps: 25, loops: 2 }), error => error.path === 'sequence.loops' && /plays once/.test(error.message));
   assert.deepEqual([made.info.placement.scale, made.info.placement.drawn, made.info.width, plain.info.placement.drawn], [8, 8, 192, undefined]);
   // Larger than a still may be drawn, the frames are drawn as fine as one may and enlarged the rest of the way.
   const wide = { ...spinner, width: 256, height: 8, symbols: { tile: tile.slice(0, 4).map(row => row.slice(0, 4)) }, effects: { turn: { ...spinner.effects.turn, frames: 2, bodies: [{ ...spinner.effects.turn.bodies[0], size: [4, 4], at: [8, 4] }] } } };
