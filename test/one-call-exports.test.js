@@ -113,6 +113,11 @@ test('gif <scene> and pixel_scene gif write the whole scene as one looping GIF',
   // A duration that is no whole number of frames is said, with one that is.
   assert.match(sceneGIF(prepareScene({ ...scene, duration: 250, assets: { lamp: sprite } })).notes.join(' '), /The scene lasts 250 ms, 6\.25 frames at 25 fps, and the GIF plays 6: give the scene a duration that is a whole number of frames \(240 ms\)/);
   assert.equal(sceneGIF(prepared, { fps: 10 }).frames, 2);
+  // A duration that cuts a placement's loop, and a one-shot in the loop, are said with what would close it.
+  const uneven = { ...sprite, frames: [{ ...sprite.frames[0], duration: 60 }, { ...sprite.frames[1], duration: 90 }] }, sparkle = { ...sprite, name: 'sparkle', animations: { glow: { frames: ['dim', 'lit'], loop: false } } };
+  const notes = sceneGIF(prepareScene({ ...scene, assets: { lamp: uneven, sparkle }, instances: [...scene.instances, { name: 'steady', asset: 'lamp', at: [0, 0], frame: 'dim' }, { name: 'spark', asset: 'sparkle', at: [8, 2], animation: 'glow' }] })).notes;
+  assert.deepEqual(notes, ["The scene's 200 ms cut lamp (a loop of 150 ms) mid-loop, so the GIF jumps where it repeats. A scene duration of 150 ms holds whole loops of every placement.",
+    'spark plays once and holds its last frame, then starts again where the GIF repeats: a one-shot animation in a loop. A patch of animations.<name> with "loop": true and "direction": "pingpong" makes a swing go there and back.']);
   // What goes with a recipe's GIF is refused for a scene, and --fps for a recipe.
   assert.match(run('gif', 'porch.scene.json', '--out', 'a.gif', '--animation', 'glow').said, /--animation goes with a recipe's GIF; a scene's takes --scale and --fps/);
   assert.match(run('gif', 'lamp.json', '--out', 'b.gif', '--fps', '10').said, /--fps goes with a scene's GIF/);

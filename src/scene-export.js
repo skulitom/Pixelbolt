@@ -11,7 +11,9 @@ import { tiledTileset, tiledMap } from './tiled.js';
 
 // A prepared scene as one looping GIF: the scene at each frame's start, through its duration once, `fps` frames a
 // second (25 unless given, which GIF's 10 ms steps hold exactly), each enlarged `scale` times. Returns framesGIF's
-// result, with a note when the duration is not a whole number of frames, since the loop then ends early or late.
+// result, with a note when the duration is not a whole number of frames, since the loop then ends early or late, and
+// notes on the placements whose animations the duration cuts mid-loop or that play once: where the GIF repeats, those
+// jump.
 export function sceneGIF(scene, { fps = 25, scale = 1 } = {}) {
   const rate = parseFrameRate(fps, 'gif.fps'), frameMs = 1000 * rate.denominator / rate.numerator, count = Math.max(1, Math.round(scene.duration / frameMs));
   function* frames() {
@@ -19,6 +21,18 @@ export function sceneGIF(scene, { fps = 25, scale = 1 } = {}) {
   }
   const gif = framesGIF(frames(), { fps: rate });
   if (Math.abs(count * frameMs - scene.duration) > 0.5) gif.notes.push(`The scene lasts ${scene.duration} ms, ${Math.round(scene.duration / frameMs * 100) / 100} frames at ${rate.label} fps, and the GIF plays ${count}: give the scene a duration that is a whole number of frames (${Math.round(count * frameMs)} ms) and the loop closes exactly.`);
+  // The placements that simply play one animation, each with its length: a loop the duration cuts, or a one-shot.
+  const plays = scene.instances.flatMap((instance, i) => {
+    if (typeof instance.animation !== 'string' || instance.sequence?.length || instance.hidden) return [];
+    const project = scene.assets[instance.asset].recipe, animation = project.animations[instance.animation];
+    return animation.frames.length > 1 || !animation.loop ? [{ name: instance.name ?? `${instance.asset}#${i}`, loop: animation.loop, length: animation.frames.reduce((sum, frame) => sum + project.frames[frame].duration, 0) }] : [];
+  });
+  const cut = plays.filter(play => play.loop && scene.duration % play.length), once = plays.filter(play => !play.loop).map(play => play.name);
+  if (cut.length) {
+    const gcd = (a, b) => (b ? gcd(b, a % b) : a), whole = plays.filter(play => play.loop).reduce((all, play) => (all > 60000 ? all : all / gcd(all, play.length) * play.length), 1);
+    gif.notes.push(`The scene's ${scene.duration} ms cut ${cut.slice(0, 6).map(item => `${item.name} (a loop of ${item.length} ms)`).join(', ')}${cut.length > 6 ? ` and ${cut.length - 6} more` : ''} mid-loop, so the GIF jumps where it repeats. ${whole <= 60000 ? `A scene duration of ${whole} ms holds whole loops of every placement.` : 'No duration up to 60000 ms holds whole loops of them all: give them loops of one length (frame durations, or fewer frames).'}`);
+  }
+  if (once.length) gif.notes.push(`${once.slice(0, 6).join(', ')}${once.length > 6 ? ` and ${once.length - 6} more` : ''} ${once.length === 1 ? 'plays' : 'play'} once and ${once.length === 1 ? 'holds its' : 'hold their'} last frame, then ${once.length === 1 ? 'starts' : 'start'} again where the GIF repeats: a one-shot animation in a loop. A patch of animations.<name> with "loop": true and "direction": "pingpong" makes a swing go there and back.`);
   return gif;
 }
 
