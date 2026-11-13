@@ -1,0 +1,85 @@
+{
+  "format": "pixelforge-fx",
+  "version": 1,
+  "name": "knight-effects",
+  "width": 72,
+  "height": 52,
+  "palette": { "W": "#ffffff", "y": "#ffe066", "o": "#ff9a3c", "b": "#2f4fb3", "c": "#4fa3f7", "p": "#aee6ff", "v": "#6a3fb5" },
+  "symbols": {
+    "knight-attack": { "recipe": "input/knight-attack.json", "animation": "attack" },
+    "knight-idle": { "recipe": "input/knight-idle.json", "animation": "idle" },
+    "knight-still": { "recipe": "input/knight-idle.json", "frame": "knight-idle-0" },
+    "spark": ["W"],
+    "spark-y": ["y"],
+    "spark-o": ["o"],
+    "spark-c": ["c"]
+  },
+  "anchor": [21, 49],
+  "effects": {
+    "attack-hit": {
+      "frames": 9,
+      "duration": 70,
+      "seed": 3,
+      "looks": {
+        "steel": { "colors": ["b", "c", "p", "W"], "thresholds": [0.15, 0.4, 0.65, 0.88] },
+        "flash": { "colors": ["o", "y", "W"], "thresholds": [0.2, 0.5, 0.8] }
+      },
+      "cleanup": { "corners": true, "strays": true },
+      "layers": [
+        { "kind": "slash", "look": "steel", "at": [30, 42], "frames": [1, 6], "radius": 17, "width": [8, 5], "arc": [200, 340], "squash": [1, 0.7], "tilt": -14, "reveal": 0.3 },
+        { "kind": "star", "look": "flash", "at": [46, 34], "frames": [2, 6], "radius": [9, 3], "width": [2, 1], "points": 8, "ratio": 0.5, "power": [1.3, 0.6] },
+        { "kind": "ring", "look": "flash", "at": [46, 34], "frames": [3, 8], "radius": [3, 9], "width": [3, 2, 1], "noise": 0.85, "scale": 4, "power": [1.2, 0.9, 0.3] }
+      ],
+      "emitters": [
+        { "at": [46, 34], "burst": 10, "start": 2, "angle": [150, 390], "speed": [1.2, 2.4], "gravity": [0, 0.25], "drag": 0.05, "life": [3, 6], "shapes": ["spark", "spark-y", "spark-o"], "trail": { "color": "o", "length": 1 } },
+        { "sprite": { "symbol": "knight-attack", "draw": true }, "at": [8, 14], "behind": true }
+      ]
+    },
+    "hit-overlay": {
+      "frames": 9,
+      "duration": 70,
+      "seed": 3,
+      "looks": {
+        "steel": { "colors": ["b", "c", "p", "W"], "thresholds": [0.15, 0.4, 0.65, 0.88] },
+        "flash": { "colors": ["o", "y", "W"], "thresholds": [0.2, 0.5, 0.8] }
+      },
+      "cleanup": { "corners": true, "strays": true },
+      "layers": [
+        { "kind": "slash", "look": "steel", "at": [30, 42], "frames": [1, 6], "radius": 17, "width": [8, 5], "arc": [200, 340], "squash": [1, 0.7], "tilt": -14, "reveal": 0.3 },
+        { "kind": "star", "look": "flash", "at": [46, 34], "frames": [2, 6], "radius": [9, 3], "width": [2, 1], "points": 8, "ratio": 0.5, "power": [1.3, 0.6] },
+        { "kind": "ring", "look": "flash", "at": [46, 34], "frames": [3, 8], "radius": [3, 9], "width": [3, 2, 1], "noise": 0.85, "scale": 4, "power": [1.2, 0.9, 0.3] }
+      ],
+      "emitters": [
+        { "at": [46, 34], "burst": 10, "start": 2, "angle": [150, 390], "speed": [1.2, 2.4], "gravity": [0, 0.25], "drag": 0.05, "life": [3, 6], "shapes": ["spark", "spark-y", "spark-o"], "trail": { "color": "o", "length": 1 } }
+      ]
+    },
+    "power-up": {
+      "frames": 12,
+      "duration": 80,
+      "loop": true,
+      "seed": 5,
+      "edges": ["bottom"],
+      "looks": { "spirit": { "colors": ["v", "b", "c", "W"], "thresholds": [0.1, 0.3, 0.55, 0.8] } },
+      "cleanup": { "corners": true, "strays": true },
+      "layers": [
+        { "kind": "aura", "look": "spirit", "symbol": "knight-idle", "at": [8, 14], "width": 4, "rise": 3, "noise": 0.8, "scale": 3, "floor": 49 }
+      ],
+      "emitters": [
+        { "sprite": { "symbol": "knight-idle", "pixels": "outline", "draw": true }, "at": [8, 14], "rate": 0.6, "angle": [255, 285], "speed": [0.6, 1.2], "life": [5, 8], "shapes": ["spark", "spark-c"] }
+      ]
+    },
+    "teleport-out": {
+      "frames": 14,
+      "duration": 70,
+      "seed": 3,
+      "edges": ["top", "bottom"],
+      "looks": { "light": { "colors": ["v", "b", "c", "W"], "thresholds": [0.3, 0.5, 0.72, 0.9] } },
+      "layers": [
+        { "kind": "beam", "look": "light", "at": [21, 49], "to": [21, 0], "width": [1, 11, 9, 0], "reveal": 0.2, "wobble": 0.12, "wavelength": 9, "waves": -3, "fade": 0.6, "power": [1.2, 1.1, 0.7, 0], "ease": "linear", "noise": 0.35, "scale": 3 }
+      ],
+      "emitters": [
+        { "sprite": { "symbol": "knight-still" }, "at": [8, 14], "release": { "sweep": 270, "jitter": 0.35 }, "start": 1, "end": 10, "angle": [255, 285], "speed": [0.6, 1.6], "gravity": [0, -0.12], "drag": 0.02, "life": [5, 8], "tint": [{}, "W", "c", "b"], "dissolve": 0.35 }
+      ]
+    }
+  }
+}
