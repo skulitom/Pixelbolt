@@ -154,7 +154,7 @@ test('a change to many frames is one summary in a reply, and a change to a few s
   assert.deepEqual([partly.frames.changed.count, partly.frames.changed.frames, partly.frames.changed.pixels, partly.frames.unchanged], [12, 'f-0 … f-11', 12, { count: 18, frames: 'f-12 … f-29' }]);
 });
 
-test('[*] in a set or remove reaches every item of a list, and passes over items that lack the rest of the path', () => {
+test('[*] in a set, remove or insert reaches every item of a list, and passes over items that lack the rest of the path', () => {
   const layer = (name, color) => ({ name, ops: [{ op: 'rect', x: name === 'coat' ? 0 : 2, y: 0, w: 2, h: 2, color }] });
   const recipe = { version: 1, name: 'pair', width: 4, height: 2, palette: { r: '#ff0000', p: '#8000ff' },
     frames: [{ name: 'a', layers: [layer('coat', 'r'), layer('plume', 'r')] }, { name: 'b', duration: 80, layers: [layer('coat', 'r')] }, { name: 'c', layers: [layer('plume', 'r'), layer('coat', 'r')] }] };
@@ -171,6 +171,17 @@ test('[*] in a set or remove reaches every item of a list, and passes over items
   assert.throws(() => patchRecipe(recipe, [{ set: 'frames[*].layers[cape].palette', value: {} }]), /no item has what this path names/);
   assert.throws(() => patchRecipe(recipe, [{ set: 'frames[*]', value: {} }]), /\[\*\] is followed by what to change in each item/);
   assert.throws(() => patchRecipe(recipe, [{ set: 'palette[*].x', value: 1 }]), /\[\*\] needs a list, and palette is not one/);
-  assert.throws(() => patchRecipe(recipe, [{ insert: 'frames[*].layers[-]', value: layer('hat', 'r') }]), /\[\*\] is every item of a list, for set and remove/);
-  assert.throws(() => patchRecipe(recipe, [{ paint: 'frames[*]', value: [{ x: 0, y: 0, color: 'p' }] }]), /\[\*\] is every item of a list, for set and remove/);
+  // An insert's path ends at a place in each item's list: a layer on top of every frame, or one beneath them all.
+  const hatted = patchRecipe(recipe, [{ insert: 'frames[*].layers[-]', value: layer('hat', 'p') }, { insert: 'frames[*].layers[0]', value: layer('shadow', 'p') }]);
+  assert.deepEqual(hatted.edits, [{ insert: 'frames[*].layers[-]', matched: 3 }, { insert: 'frames[*].layers[0]', matched: 3 }]);
+  assert.deepEqual(hatted.recipe.frames.map(frame => frame.layers.map(each => each.name).join(' ')), ['shadow coat plume hat', 'shadow coat hat', 'shadow plume coat hat']);
+  // A frame without the list gets one from [0] or [-], as a plain insert makes it; a place further in passes it over.
+  const bare = { ...recipe, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }, { name: 'b' }] };
+  const behind = patchRecipe(bare, [{ insert: 'frames[*].ops[0]', value: { op: 'rect', x: 0, y: 0, w: 4, h: 2, color: 'p' } }]);
+  assert.deepEqual([behind.edits, behind.recipe.frames.map(frame => frame.ops.map(op => op.op).join(' '))], [[{ insert: 'frames[*].ops[0]', matched: 2 }], ['rect pixel', 'rect']]);
+  assert.deepEqual(patchRecipe(bare, [{ insert: 'frames[*].ops[1]', value: { op: 'pixel', x: 1, y: 1, color: 'p' } }]).edits, [{ insert: 'frames[*].ops[1]', matched: 1 }]);
+  assert.throws(() => patchRecipe(bare, [{ insert: 'frames[*].ops[3]', value: { op: 'pixel', x: 1, y: 1, color: 'p' } }]), /frames\[0\]\.ops has 1 item/);
+  assert.throws(() => patchRecipe(recipe, [{ paint: 'frames[*]', value: [{ x: 0, y: 0, color: 'p' }] }]), /\[\*\] is every item of a list, for set, remove and insert/);
+  // A change in another tool's shape is answered with a patch's.
+  assert.throws(() => patchRecipe(recipe, [{ op: 'set', path: 'frames[0].duration', value: 120 }]), /changes\[0\]\.op: unknown field in patch: a change is \{"set": "<path>", "value": …\}/);
 });

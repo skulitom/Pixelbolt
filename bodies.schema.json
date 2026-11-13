@@ -128,6 +128,10 @@
             "maximum": 1000,
             "description": "Milliseconds per frame. Default 40."
           },
+          "loop": {
+            "type": "boolean",
+            "description": "true: cloth in a wind that repeats every `frames` frames, drawn once it has settled into it, so the last frame leads into the first. Only for cloth pinned to points or to fixed bodies that stay still; everything else plays once."
+          },
           "substeps": {
             "type": "integer",
             "minimum": 1,
@@ -1038,6 +1042,18 @@
                   "minimum": 0,
                   "maximum": 1,
                   "description": "How much the wind varies in time and across the cloth, flapping across it. Default 0."
+                },
+                "ripple": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 8,
+                  "description": "Pixels the free end is drawn swayed by a wave that travels down the cloth from its held end: what makes a flag wave. Default 0."
+                },
+                "waves": {
+                  "type": "number",
+                  "minimum": 0.25,
+                  "maximum": 4,
+                  "description": "Ripple waves along the cloth. Default 1.5."
                 },
                 "stiffness": {
                   "type": "number",

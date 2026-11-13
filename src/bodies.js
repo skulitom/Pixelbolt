@@ -15,7 +15,7 @@
 // Browser-compatible and deterministic: only + − × ÷ and sqrt, craft.js's polynomial trigonometry, fixed substeps
 // and iteration counts, and bodies, contacts and pixels visited in a fixed order.
 import { renderProject, fail, isObject, sameWidth } from './core.js';
-import { fields, number, integer, pair } from './authoring.js';
+import { fields, number, integer, boolean, pair } from './authoring.js';
 import { sinDeg, cosDeg, traceLine, turnRows, random } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { readTerritory, readPickups, readEvents, readStrikes, readHud, createTerritory } from './territory.js';
@@ -25,6 +25,10 @@ import { readCloths, createCloth, stepCloth, paintCloth, clothWork } from './clo
 export const BODY_SHAPES = ['circle', 'box', 'polygon', 'hoop'];
 export const BODY_WALLS = ['left', 'right', 'top', 'bottom'];
 const LIMITS = { effects: 16, entries: 64, bodies: 256, obstacles: 32, frames: 256, work: 400000000 };
+// A looping cloth is blown through whole cycles of its wind, undrawn, until one ends within SEAM pixels of where it
+// began: at most the cycles that make WARM frames, and never fewer than four.
+const LOOP = { warm: 192, seam: 1 / 16 };
+const loopCycles = frames => Math.max(4, Math.ceil(LOOP.warm / frames));
 // Split powers may make a crowd of up to this many bodies (an effect's `most`).
 export const CROWD = 4096;
 // A match written as numbered video frames (bodiesFrames) may run this long, and do this much work.
@@ -46,7 +50,6 @@ const GONE = 16;
 // Walls and obstacles without their own bounce and friction.
 const SURFACE = { bounce: 0, friction: 0.5 };
 
-const boolean = (value, path) => { if (typeof value !== 'boolean') fail(path, 'expected true or false'); return value; };
 const identifier = (value, path) => {
   if (typeof value !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,59}$/.test(value) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(value)) fail(path, 'expected a portable name: a letter, then letters, digits, _ or -, at most 60 characters');
   return value;
@@ -421,7 +424,7 @@ function readRopes(list, path, { bodies, byName, palette, joints }) {
 
 function readEffect(effect, path, context) {
   if (!isObject(effect)) fail(path, 'expected an effect');
-  fields(effect, ['frames', 'duration', 'substeps', 'iterations', 'gravity', 'background', 'walls', 'obstacles', 'territory', 'bodies', 'joints', 'ropes', 'cloths', 'most', 'pickups', 'events', 'strikes', 'hud'], path);
+  fields(effect, ['frames', 'duration', 'substeps', 'iterations', 'gravity', 'background', 'walls', 'obstacles', 'territory', 'bodies', 'joints', 'ropes', 'cloths', 'most', 'pickups', 'events', 'strikes', 'hud', 'loop'], path);
   const { width, height, symbols, palette } = context, most = context.frames;
   const background = effect.background === undefined ? null : paletteKey(effect.background, `${path}.background`, palette);
   if (Number.isInteger(effect.frames) && effect.frames > most && effect.frames <= MATCH_FRAMES) fail(`${path}.frames`, `a recipe holds at most ${most} frames; write a longer match as numbered video frames: pixelbolt sequence <source> --out <folder> --fps 30, or pixel_compile with sequence`);
@@ -469,7 +472,15 @@ function readEffect(effect, path, context) {
   // room for every body with breaks to break into all its pieces, up to CROWD.
   const pieces = bodies.reduce((sum, b) => sum + (b.breaks ? b.breaks.pieces : 0), 0);
   const crowd = integer(effect.most ?? Math.min(CROWD, Math.max(LIMITS.bodies, bodies.length + pieces)), `${path}.most`, bodies.length, CROWD);
-  return { frames, duration, substeps, iterations, gravity, background, walls: Object.fromEntries(BODY_WALLS.map(edge => [edge, walls.includes(edge)])), obstacles, territory, bodies, joints, ropes, cloths, most: crowd, pickups, events, strikes, hud };
+  // A loop is cloth in a wind that repeats every `frames` frames, on things that stay where they are: what falls, swings
+  // on a joint or is moved by keys plays once and ends somewhere else.
+  const loop = effect.loop === undefined ? false : boolean(effect.loop, `${path}.loop`);
+  if (loop) {
+    const once = !cloths.length ? 'no cloth' : bodies.some(b => !b.fixed) ? 'a body that is not fixed' : bodies.some(b => b.vx || b.vy || b.spin) ? 'a fixed body that moves' : joints.length || ropes.length ? 'joints or ropes'
+      : territory || pickups.length || events.length || strikes.length ? 'a territory, pickups, events or strikes' : cloths.some(cloth => cloth.pins.some(pin => pin.keys)) ? 'a pin moved by keys' : frames < 4 ? 'fewer than 4 frames' : null;
+    if (once) fail(`${path}.loop`, `a loop is cloth in a wind, pinned to points or to fixed bodies that stay still, and its wind repeats every \`frames\` frames (4 or more); this effect has ${once}, which plays once. Leave loop out`);
+  }
+  return { frames, duration, substeps, iterations, gravity, background, walls: Object.fromEntries(BODY_WALLS.map(edge => [edge, walls.includes(edge)])), obstacles, territory, bodies, joints, ropes, cloths, most: crowd, pickups, events, strikes, hud, loop };
 }
 
 // ---- Pixel obstacles --------------------------------------------------------------------------------------------------
@@ -750,7 +761,7 @@ export function createBodyWorld(effect, context) {
   });
   const ropes = (effect.ropes ?? []).map(rope => ({ ...rope, links: rope.linkIndices.map(index => bodies[index]), joints: rope.jointIndices.map(index => joints[index]) }));
   const chain = Math.max(0, ...ropes.map(rope => rope.links.length));
-  const cloths = (effect.cloths ?? []).map(definition => createCloth(definition, { bodies }));
+  const cloths = (effect.cloths ?? []).map(definition => createCloth(definition, { bodies, gravity }));
   // A cloth's solid test reads the live world grid, which a fluid may replace when its obstacles move.
   const solidAt = (x, y) => {
     const ix = Math.floor(x), iy = Math.floor(y);
@@ -1264,7 +1275,7 @@ export function createBodyWorld(effect, context) {
     // started: a paddle drawn a substep behind showed a gap before the box it pushed.
     placeMoving();
     // Cloth steps with the frame, against the bodies where they now are. Its pins follow fixed bodies' end-of-frame places.
-    if (f > 0) for (const cloth of cloths) stepCloth(cloth, f, { substeps, iterations, gravity, solidAt, bodies, width, height });
+    if (f > 0) for (const cloth of cloths) stepCloth(cloth, f, { substeps, iterations, gravity, solidAt, bodies, width, height, cycle: effect.loop ? effect.frames : 0 });
     // Powers run out and are taken, and the score is counted, between frames. What a body that vanished held up wakes.
     if (turf) {
       const was = bodies.map(b => b.gone);
@@ -1356,17 +1367,30 @@ export function createBodyWorld(effect, context) {
     for (const joint of joints) { joint.aIndex = joint.a ? joint.a.index : -1; joint.bIndex = joint.b ? joint.b.index : -1; }
     warm = new Map();
   };
-  return { bodies, stats, gravity, advance, turf, retrace, retraceCells, add, place, compact, joints, ropes, cloths };
+  // A loop's cloth, blown through whole cycles of its wind before the first frame is drawn, until a cycle ends where it
+  // began. Returns the frames that took and how far the worst particle still is from closing the loop.
+  const settle = () => {
+    let warmed = 0, seam = Infinity;
+    for (let cycle = 0; cycle < loopCycles(effect.frames) && seam > LOOP.seam; cycle++) {
+      const before = cloths.map(cloth => cloth.particles.map(p => [p.x, p.y]));
+      for (let f = 1; f <= effect.frames; f++) advance(f);
+      warmed += effect.frames;
+      seam = 0;
+      cloths.forEach((cloth, c) => cloth.particles.forEach((p, k) => { if (p.present) seam = Math.max(seam, Math.sqrt((p.x - before[c][k][0]) ** 2 + (p.y - before[c][k][1]) ** 2)); }));
+    }
+    return { warmed, seam: round(seam) };
+  };
+  return { bodies, stats, gravity, advance, turf, retrace, retraceCells, add, place, compact, joints, ropes, cloths, settle, loop: effect.loop ? effect.frames : 0 };
 }
 
 // The bodies splits added to a world (the pieces of broken bodies are counted with them, under broken).
 const copiesOf = (world, effect) => world.bodies.length - effect.bodies.length - world.stats.broken.reduce((sum, entry) => sum + entry.pieces, 0);
 const clothFigures = cloths => cloths.length ? { cloths: cloths.map((cloth, index) => ({ name: cloth.definition.name ?? `cloth-${index}`, tears: cloth.tears, rest: cloth.rest })) } : {};
 function simulate(effect, context) {
-  const world = createBodyWorld(effect, context), drawn = [];
+  const world = createBodyWorld(effect, context), drawn = [], loop = effect.loop ? world.settle() : null;
   for (let f = 0; f < effect.frames; f++) { world.advance(f); drawn.push(drawFrame(world, context.width, context.height, context, f, effect.hud)); }
   if (world.cloths.length) world.stats.cloths = clothFigures(world.cloths).cloths;
-  return { drawn, stats: world.stats, turf: world.turf, steps: (effect.frames - 1) * effect.substeps, copies: copiesOf(world, effect) };
+  return { drawn, stats: world.stats, turf: world.turf, steps: ((loop ? loop.warmed : 0) + effect.frames - 1) * effect.substeps, copies: copiesOf(world, effect), loop };
 }
 
 // ---- Drawing ----------------------------------------------------------------------------------------------------------
@@ -1771,12 +1795,12 @@ function drawFrame(world, width, height, context, f, hud) {
   if (world.turf) world.turf.draw(grid, width, height, f, context.symbols, n);
   const beneathCloth = world.cloths.filter(cloth => cloth.definition.draw === 'under'), aboveCloth = world.cloths.filter(cloth => cloth.definition.draw === 'over');
   const beneathRope = world.ropes.filter(rope => rope.draw === 'under'), aboveRope = world.ropes.filter(rope => rope.draw === 'over');
-  if (beneathCloth.length) paintCloth(beneathCloth, put, n);
+  if (beneathCloth.length) paintCloth(beneathCloth, put, n, f, world.loop);
   if (beneathRope.length) paintRopes(beneathRope, put, n);
   if (n > 1) paintBodiesFine(world.bodies, grid, width, height, context.symbols, n);
   else paintBodies(world.bodies, grid, width, height, context.symbols);
   if (aboveRope.length) paintRopes(aboveRope, put, n);
-  if (aboveCloth.length) paintCloth(aboveCloth, put, n);
+  if (aboveCloth.length) paintCloth(aboveCloth, put, n, f, world.loop);
   return { ...crop(grid, W, H), hud: world.turf && hud.length ? world.turf.hud(f, hud, n) : [] };
 }
 
@@ -1917,7 +1941,7 @@ function work(effect, { width, height, n, symbols }) {
   // Joints cost an impulse per iteration and substep; cloth adds its particles, constraints and drawn cells.
   const joints = effect.joints ?? [], cloths = effect.cloths ?? [];
   step += joints.length * effect.iterations * 8;
-  const clothCost = clothWork(cloths, { frames: effect.frames, substeps: effect.substeps, iterations: effect.iterations });
+  const clothCost = clothWork(cloths, { frames: effect.frames * (effect.loop ? 1 + loopCycles(effect.frames) : 1), substeps: effect.substeps, iterations: effect.iterations });
   return effect.frames * (effect.substeps * step + frame * PIXEL_WORK) + clothCost;
 }
 // The area of a body's shape: a circle's, or a polygon's (a box's) by its corners.
@@ -2085,7 +2109,8 @@ const territoryFigures = (turf, territory) => ({
   ...(turf && turf.stats.strikes && { strikes: turf.stats.strikes })
 });
 
-/** A version-1 pixelforge-bodies source → { recipe, metadata, warnings? }. One-shot: bodies don't loop. */
+/** A version-1 pixelforge-bodies source → { recipe, metadata, warnings? }. One-shot: bodies don't loop. The exception
+ * is an effect with `loop`, cloth in a wind that repeats, whose frames start once the cloth has settled into it. */
 export function compileBodies(source) {
   const { shell, width, height, n, symbols, effects } = readSource(source, LIMITS.frames);
   const frames = [], animations = {}, metadata = { format: 'pixelforge-bodies-metadata', version: 1, effects: {} }, warnings = [];
@@ -2101,15 +2126,16 @@ export function compileBodies(source) {
       frames.push({ name: `${name}-${i}`, duration: effect.duration, ...(ops.length && { ops }) });
       names.push(`${name}-${i}`);
     });
-    animations[name] = { frames: names, loop: false };
+    animations[name] = { frames: names, loop: effect.loop };
     const effectWarnings = run.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`);
     if (!run.drawn.some(frame => frame.pixels)) effectWarnings.push(`${path}: nothing is ever on the canvas; check at against width and height`);
+    if (run.loop && run.loop.seam > 0.5) effectWarnings.push(`${path}.loop: after ${run.loop.warmed} frames of its wind the cloth still ends a cycle ${run.loop.seam} px from where it began, so the last frame does not lead into the first; raise the cloth's damping or lower its gust`);
     const crowded = run.stats.crowded.size;
     if (crowded) effectWarnings.push(`${path}.most: ${crowded} ${crowded === 1 ? 'body' : 'bodies'} broke into fewer pieces than asked, or not at all, because the effect holds at most ${effect.most} bodies; raise most`);
     warnings.push(...effectWarnings);
     const played = territoryFigures(run.turf, effect.territory);
     metadata.effects[name] = {
-      frames: effect.frames, substeps: effect.substeps, steps: run.steps, bodies: effect.bodies.length, ...(run.copies && { copies: run.copies }), hits: run.stats.hits,
+      frames: effect.frames, ...(run.loop && { loop: run.loop }), substeps: effect.substeps, steps: run.steps, bodies: effect.bodies.length, ...(run.copies && { copies: run.copies }), hits: run.stats.hits,
       ...(effect.joints.length && { joints: effect.joints.length }), ...(effect.ropes.length && { ropes: effect.ropes.length }), ...(effect.cloths.length && { cloths: effect.cloths.length, clothFigures: run.stats.cloths }),
       ...(run.stats.jointBreaks.length && { brokenJoints: run.stats.jointBreaks }), ...(run.stats.cloths?.some(cloth => cloth.tears) && { clothTears: run.stats.cloths.filter(cloth => cloth.tears).reduce((sum, cloth) => sum + cloth.tears, 0) }),
       escaped: run.stats.escaped, ...(run.stats.broken.length && { broken: run.stats.broken }), rest: run.stats.rest, pixels: run.drawn.map(frame => frame.pixels), ...(Object.keys(run.stats.paths).length && { paths: run.stats.paths }), ...played, ...(effectWarnings.length && { warnings: effectWarnings })
@@ -2133,6 +2159,7 @@ export function bodiesFrames(source, effectName) {
   if (needs > MATCH_WORK) fail(path, `the match needs about ${Math.round(needs / 1e6)} million updates, more than ${MATCH_WORK / 1e6} million; lower frames, substeps, iterations, the number or size of the bodies, the obstacle faces near them (a checkerboard has one on every pixel edge) or subpixels`);
   // The world gets the symbols too: a symbol body that breaks cuts its picture into the pieces.
   const context = { width, height, symbols, subpixels: n }, world = createBodyWorld(effect, context);
+  if (effect.loop) world.settle();
   let at = -1, image = null;
   return {
     name: source.name, effect: name, width: width * n, height: height * n, palette, frames: effect.frames, duration: effect.duration,

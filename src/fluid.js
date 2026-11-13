@@ -13,7 +13,7 @@
 // trigonometry and seeded hash, a fixed timestep and fixed iteration counts.
 // createLiveFluid runs the same simulation a frame at a time for interactive pages, with pushes, puffs and boosts.
 import { renderProject, parseColor, fail, isObject, sameWidth } from './core.js';
-import { fields, number, integer, pair, range, pick, pickWhole } from './authoring.js';
+import { fields, number, integer, boolean, pair, range, pick, pickWhole } from './authoring.js';
 import { patternProblem, ditherThreshold, cleanupIds, traceLine, random, sinDeg, cosDeg } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { readElectric, readElectrode, createElectric, stepElectric, electricFields, electricWork, ELECTRODE_FIELDS, MATTER } from './electric.js';
@@ -56,7 +56,6 @@ const identifier = (value, path) => {
   if (typeof value !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value)) fail(path, 'expected a name of letters, digits, hyphens or underscores, starting with a letter');
   return value;
 };
-const boolean = (value, path) => { if (typeof value !== 'boolean') fail(path, 'expected true or false'); return value; };
 // Grid rows name colours by character, so every colour a fluid draws is a one-character palette key.
 const paletteKey = (value, path, palette) => {
   if (typeof value !== 'string' || value.length !== 1 || value === '.' || value === ' ' || !Object.hasOwn(palette, value)) fail(path, 'expected a one-character palette key; grid rows name colours by character');

@@ -311,22 +311,23 @@ const closest = (items, text, words) => {
 const NOT_A_CHARACTER = /,? not a character/g;
 export const namedLike = (entries, words) => closest(entries, entry => entry.name, words);
 // What each kind of preset is called, for a search word that names a kind rather than a preset.
-const KIND_WORDS = { powder: 'sand powder sandbox grains falling', bodies: 'bodies body rigid physics ball balls box boxes crate crates', wave: 'wave waves ripple ripples portal', crystal: 'crystal crystals gem gems', fluid: 'fluid liquid gas smoke', fx: 'particles particle spell spells', poses: 'character rig' };
+const KIND_WORDS = { powder: 'sand powder sandbox grains falling', bodies: 'bodies body rigid physics ball balls box boxes crate crates rope ropes chain chains joint joints hinge hinges pendulum swinging hanging cloth', wave: 'wave waves ripple ripples portal', crystal: 'crystal crystals gem gems', fluid: 'fluid liquid gas smoke', fx: 'particles particle spell spells', poses: 'character rig' };
 // `all` is every preset by name and kind, where the listing holds only those measured for this search.
 export function findListing(listing, query, where = 'find', all = listing.presets) {
   const words = presetWords(query, where), lines = briefListing(listing).presets;
   // A liquid's line says it is not a character, which is no reason to list it for "character".
   const named = namedLike(listing.presets, words), found = named.length ? named : closest(listing.presets, entry => lines[entry.name].replace(NOT_A_CHARACTER, ''), words);
+  // Names come first, and a kind of preset the words also stand for is named with its presets: "sand" is three
+  // liquids by name, and falling sand is a kind of its own with five; "chain" is in no name, and bodies hang on ropes.
+  const kinds = new Set(found.map(entry => entry.kind));
+  const also = Object.entries(KIND_WORDS).filter(([kind, text]) => !kinds.has(kind) && words.some(word => text.split(' ').includes(word)))
+    .map(([kind]) => [kind, all.filter(entry => entry.kind === kind).map(entry => entry.name)]).filter(([, names]) => names.length).map(([kind, names]) => `${kind}: ${names.join(', ')}`).join('; ');
+  if (!found.length && also) return { guide: `No preset is named or described by "${query}". Kinds of preset those words name: ${also}. pixel_help {"topic": "presets", "find": "<a name>"} (pixelbolt presets --find <a name>) says what one is.` };
   if (!found.length) {
     // Nothing ships for most characters, and the way to one is a rig redrawn, so the reply names the rigs.
     const rigs = listing.presets.filter(entry => entry.kind === 'poses' && /rig whose/.test(entry.for ?? '')).map(entry => entry.name);
     return { guide: `No preset matches "${query}": try another word, or draw it (the quick start says how).${rigs.length ? ` For a character or creature, start from a rig and redraw it (${rigs.join(', ')}; pixel_help {"topic": "craft", "name": "Characters"}, pixelbolt help craft "Characters").` : ''} Every preset by name:`, names: listing.presets.map(entry => entry.name).join(', ') };
   }
-  // Names come first, and a kind of preset the words also stand for is named with its presets: "sand" is three
-  // liquids by name, and falling sand is a kind of its own with five.
-  const kinds = new Set(found.map(entry => entry.kind));
-  const also = Object.entries(KIND_WORDS).filter(([kind, text]) => !kinds.has(kind) && words.some(word => text.split(' ').includes(word)))
-    .map(([kind]) => [kind, all.filter(entry => entry.kind === kind).map(entry => entry.name)]).filter(([, names]) => names.length).map(([kind, names]) => `${kind}: ${names.join(', ')}`).join('; ');
   return { guide: FIND_NOTE, presets: Object.fromEntries(found.map(entry => [entry.name, lines[entry.name]])), ...(also && { also: `Kinds of preset those words also name: ${also}.` }), ...(listing.note && { note: listing.note }) };
 }
 

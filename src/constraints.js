@@ -2,11 +2,10 @@
 // thresholds. Browser-compatible and deterministic: only + - * / and sqrt, craft.js trigonometry, fixed iteration counts
 // and joints solved in the order they are declared. A world anchor is a joint end without a body.
 import { fail, isObject } from './core.js';
-import { fields, number, pair } from './authoring.js';
+import { fields, number, boolean, pair } from './authoring.js';
 import { cosDeg, sinDeg, traceLine } from './craft.js';
 import { atan2Deg } from './shapes.js';
 
-const boolean = (value, path) => { if (typeof value !== 'boolean') fail(path, 'expected true or false'); return value; };
 const normalize = degrees => ((degrees % 360) + 540) % 360 - 180;
 const JOINTS = ['distance', 'rope', 'spring', 'hinge', 'weld'];
 const DEG = Math.PI / 180;

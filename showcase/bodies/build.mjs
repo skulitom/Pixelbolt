@@ -1,13 +1,13 @@
 // Builds the rigid-body GIFs shown in the README from examples/*.bodies.json: each effect is compiled, rendered at 4×
-// on a dark backdrop and encoded with exact colours. Every preset is one-shot, so the last frame holds for a moment
-// before it plays again. --check verifies the committed GIFs; --force replaces them.
+// on a dark backdrop and encoded with exact colours. A one-shot preset's last frame holds for a moment before it plays
+// again; a loop runs on. --check verifies the committed GIFs; --force replaces them.
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileBodies, renderProject, encodeGIF } from '../../src/index.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-export const BODIES_SHOWCASE = ['ring-escape', 'bouncing-pixel', 'spinning-hoop', 'crate-topple', 'territory', 'blade-bloom', 'crate-smash', 'rope-bridge', 'wrecking-ball', 'ragdoll', 'flag', 'cape'];
+export const BODIES_SHOWCASE = ['ring-escape', 'bouncing-pixel', 'spinning-hoop', 'crate-topple', 'territory', 'blade-bloom', 'crate-smash', 'rope-bridge', 'wrecking-ball', 'ragdoll', 'flag', 'banner', 'cape'];
 const BACKDROP = [38, 42, 61, 255], SCALE = 4, HOLD = 800;
 
 // One GIF per example: `recipes` may hand in recipes compiled elsewhere (the tests), keyed by example name.
@@ -16,7 +16,7 @@ export async function buildBodiesGIFs(recipes = {}) {
   for (const name of BODIES_SHOWCASE) {
     const recipe = recipes[name] ?? compileBodies(JSON.parse(await readFile(path.join(root, 'examples', `${name}.bodies.json`), 'utf8'))).recipe;
     const project = renderProject(recipe), [animation] = Object.values(project.animations);
-    const frames = animation.frames.map((index, position) => ({ data: project.frames[index].data, duration: project.frames[index].duration + (position === animation.frames.length - 1 ? HOLD : 0) }));
+    const frames = animation.frames.map((index, position) => ({ data: project.frames[index].data, duration: project.frames[index].duration + (position === animation.frames.length - 1 && !animation.loop ? HOLD : 0) }));
     // A source drawn finer than its pixels (subpixels) is enlarged less, so its world's pixels stay about SCALE across.
     const source = JSON.parse(await readFile(path.join(root, 'examples', `${name}.bodies.json`), 'utf8')), scale = Math.max(1, Math.round(SCALE / (source.subpixels ?? 1)));
     const gif = encodeGIF(frames, project.width, project.height, { scale, background: BACKDROP });

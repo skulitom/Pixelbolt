@@ -733,6 +733,8 @@ const cloth = object({
   light: { ...pairOf(num(-1, 1)), description: 'Direction toward the light for fold shading. Default [0, -1].' },
   wind: { ...pairOf(num(-4, 4)), description: 'Wind acceleration [x, y] in pixels a frame². Default [0, 0].' },
   gust: num(0, 1, 'How much the wind varies in time and across the cloth, flapping across it. Default 0.'),
+  ripple: num(0, 8, 'Pixels the free end is drawn swayed by a wave that travels down the cloth from its held end: what makes a flag wave. Default 0.'),
+  waves: num(0.25, 4, 'Ripple waves along the cloth. Default 1.5.'),
   stiffness: num(0.05, 1, 'Structural constraint strength. Default 0.6.'),
   slack: num(0, 1, 'Extra rest length as a share, so the cloth can billow. Default 0.05.'),
   shear: num(0, 1, 'Diagonal constraint strength relative to structural. Default 0.4.'),
@@ -754,6 +756,7 @@ const bodies = {
       propertyNames: { ...id, maxLength: 60 }, description: 'Names become animations and frame names; unique ignoring case. At most 256 frames in all.',
       additionalProperties: object({
         frames: int(1, 18000, 'At most 256 in a recipe (and in all of a source\'s effects); a longer match goes out as numbered video frames: pixelbolt sequence, or pixel_compile with sequence.'), duration: int(10, 1000, 'Milliseconds per frame. Default 40.'),
+        loop: { type: 'boolean', description: 'true: cloth in a wind that repeats every `frames` frames, drawn once it has settled into it, so the last frame leads into the first. Only for cloth pinned to points or to fixed bodies that stay still; everything else plays once.' },
         substeps: int(1, 16, 'Solver steps a frame. Default 8.'), iterations: int(1, 16, 'Contact passes a step. Default 6.'),
         gravity: { ...pairOf(num(-2, 2)), description: 'Pixels a frame² [x, y]. Default [0, 0.15].' },
         background: { ...bodyKey, description: 'Fills the canvas under everything.' },

@@ -189,7 +189,7 @@ A bodies effect may lay a **territory** over its canvas: a grid of square cells,
 
 ## 14. Joints, ropes and cloth
 
-`pixelforge-bodies` also carries articulated constraints and cloth. They are optional fields of the same effect and use the same units, gravity, obstacles, walls, body records and one-shot compile. An effect may have bodies, cloths or both; `bodies` may be empty when `cloths` or `ropes` are present.
+`pixelforge-bodies` also carries articulated constraints and cloth. They are optional fields of the same effect and use the same units, gravity, obstacles, walls, body records and one-shot compile. The one loop is cloth alone in a wind (`loop`, 14c). An effect may have bodies, cloths or both; `bodies` may be empty when `cloths` or `ropes` are present.
 
 ### 14a. Joints
 
@@ -218,6 +218,10 @@ Pins hold particles to a fixed point, to `[frame, x, y]` keys (held before the f
 Wind is an acceleration in pixels a frame². `gust` varies it in time and across the cloth and adds a perpendicular flap, so a flag pinned along one edge ripples rather than only stretching. Gravity is the effect's. A particle that enters an obstacle or a body is pushed out; a particle struck by a moving body takes half its velocity. Cloth pushes bodies in no direction in this version: the bodies push the cloth. `tear` breaks a constraint stretched past that multiple of its rest length; the cloth then hangs from the remaining constraints and the metadata counts the tears.
 
 Cloth is drawn as palette-shaded cells: the local edges against `light` choose a colour on the `fill` ramp, `back` colours a folded reverse face, and `outline` traces the silhouette. It is drawn under or over the bodies (`draw`), never interleaved per pixel.
+
+Looks first: a sheet the wind pulls taut stays nearly flat in the simulation, whatever force flaps it, because the pull that holds it out also holds it straight. So the wave that makes a flag read as a flag is drawn, not simulated: `ripple` sways each particle's drawn place across the pull of gravity and wind together, by a wave that travels from the held end to the free end and grows with the distance along it. The simulation still decides where the cloth hangs, swings, catches and tears; the ripple changes no particle and no collision.
+
+An effect with `loop` is the one bodies effect that repeats. Its wind and its ripple turn a whole number of times in `frames` frames, and before the first frame is drawn the cloth is stepped through whole cycles until one ends within 1/16 pixel of where it began (it tries for as many cycles as make 192 frames, and never fewer than four). A driven, damped cloth settles into its wind's period, so the last frame then leads into the first. The effect may hold nothing that plays once: free bodies, moving fixed bodies, joints, ropes, a territory, pickups, events, strikes or pins on keys are refused.
 
 ### 14d. Step order
 

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { compileBodies } from '../src/bodies.js';
-import { PixelError } from '../src/core.js';
+import { compileBodies, bodiesFrames } from '../src/bodies.js';
+import { PixelError, renderProject } from '../src/core.js';
 import { cosDeg, sinDeg } from '../src/craft.js';
 
 const palette = { k: '#111111', w: '#eeeeee', r: '#dd3344', d: '#553333', f: '#aa6644', g: '#eeaa77', s: '#4a5068' };
@@ -151,4 +151,58 @@ test('a rope hangs at its length however many links it is made of', () => {
   };
   // 50 pixels from anchor to load. With one solver pass a joint, 64 links hung at 73.7.
   for (const links of [12, 40, 64]) { const length = hang(links); assert.ok(length > 49 && length < 53.5, `${links} links hang ${length.toFixed(1)} long`); }
+});
+
+// Pixels that differ between two frames of a rendered recipe.
+const differing = (project, a, b) => { let count = 0; const one = project.frames[a].data, other = project.frames[b].data; for (let i = 0; i < one.length; i += 4) if (one[i] !== other[i] || one[i + 1] !== other[i + 1] || one[i + 2] !== other[i + 2] || one[i + 3] !== other[i + 3]) count++; return count; };
+
+test('a looping cloth is drawn once it has settled into its wind, so the last frame leads into the first', async () => {
+  const cloth = { name: 'flag', at: [12, 8], size: [19, 14], cell: 1, fill: ['d', 'f', 'g'], outline: 'k', wind: [1.4, 0], gust: 0.9, slack: 0.2, stiffness: 0.5, shear: 0.5, bend: 0.2, pins: [{ at: [0, 0], x: 11, y: 8 }, { at: [0, 13], x: 11, y: 21 }] };
+  const make = (effect = {}, extra = {}) => source({ frames: 24, gravity: [0, 0.08], loop: true, cloths: [{ ...cloth, ...extra }], ...effect });
+  const looped = run(make()), once = run(make({ loop: false }));
+  assert.deepEqual([looped.recipe.animations.e.loop, once.recipe.animations.e.loop, once.effect.loop], [true, false, undefined]);
+  // Whole cycles of the wind, until one ends where it began.
+  assert.ok(looped.effect.loop.warmed >= 48 && looped.effect.loop.warmed % 24 === 0 && looped.effect.loop.seam <= 1 / 16, JSON.stringify(looped.effect.loop));
+  assert.equal(looped.warnings, undefined);
+  // The join is a step like any other: from the last frame to the first no more changes than between two neighbours,
+  // where a cloth played once ends far from the rectangle it started as.
+  const drawn = renderProject(looped.recipe), played = renderProject(once.recipe);
+  const steps = Array.from({ length: 23 }, (_, i) => differing(drawn, i, i + 1));
+  assert.ok(Math.max(...steps) > 0 && differing(drawn, 23, 0) <= Math.max(...steps), `join ${differing(drawn, 23, 0)}, steps ${steps}`);
+  assert.ok(differing(played, 23, 0) > 4 * Math.max(...steps), `a one-shot's ends differ by ${differing(played, 23, 0)}`);
+  // Numbered video frames start from the same settled cloth.
+  assert.deepEqual([...bodiesFrames(make()).image(0)], [...drawn.frames[0].data]);
+  // A cloth that never settles is said, with what to change: this one is blown against the canvas's right edge.
+  const restless = run(source({ frames: 24, duration: 80, gravity: [0, 0.12], loop: true, bodies: [{ name: 'pole', shape: 'box', size: [40, 2], at: [24, 8], fixed: true, fill: 'g', outline: 'k' }],
+    cloths: [{ ...cloth, at: [14, 10], size: [20, 30], wind: [0.5, 0], gust: 1, slack: 0.1, shear: 0.25, bend: 0.02, tear: 4, pins: [{ at: [0, 0], x: 14, y: 10 }, { at: [19, 0], x: 33, y: 10 }] }] }, { width: 48, height: 48 }));
+  assert.match(restless.warnings[0], /^bodies\.effects\.e\.loop: after 192 frames of its wind the cloth still ends a cycle [\d.]+ px from where it began, so the last frame does not lead into the first; raise the cloth's damping or lower its gust$/);
+  // What plays once is refused by name.
+  const loop = 'bodies.effects.e.loop';
+  refused(make({ bodies: [{ name: 'ball', shape: 'circle', radius: 2, at: [40, 4], fill: 'r' }] }), loop, /this effect has a body that is not fixed, which plays once\. Leave loop out$/);
+  refused(make({ bodies: [{ name: 'cart', shape: 'box', size: [6, 4], at: [40, 40], fixed: true, velocity: [0.2, 0], fill: 'r' }] }), loop, /a fixed body that moves/);
+  refused(make({}, { pins: [{ at: [0, 0], keys: [[0, 11, 8], [12, 14, 8]] }] }), loop, /a pin moved by keys/);
+  refused(source({ frames: 24, loop: true, bodies: [{ name: 'post', shape: 'box', size: [2, 20], at: [10, 20], fixed: true, fill: 'k' }] }), loop, /no cloth/);
+  refused(make({ frames: 3 }), loop, /fewer than 4 frames/);
+  refused(make({ loop: 'yes' }), loop, /expected true or false/);
+  // The shipped flag and banner are such loops.
+  for (const name of ['flag', 'banner']) {
+    const made = run(JSON.parse(await readFile(new URL(`../examples/${name}.bodies.json`, import.meta.url), 'utf8')));
+    assert.ok(made.recipe.animations[name].loop && made.effect.loop.seam <= 1 / 16 && made.warnings === undefined, `${name}: ${JSON.stringify(made.effect.loop)} ${made.warnings}`);
+  }
+});
+
+test('a ripple is drawn down a cloth from its held end, and turns a whole number of times in a loop', () => {
+  // A cloth hung by its whole top edge in still air comes to rest, so only the ripple moves it.
+  const hung = ripple => run(source({ frames: 24, gravity: [0, 0.1], loop: true, cloths: [{ name: 'drape', at: [20, 8], size: [15, 20], cell: 1, fill: 'r', slack: 0, stiffness: 1,
+    pins: Array.from({ length: 15 }, (_, u) => ({ at: [u, 0], x: 20 + u, y: 8 })), ...ripple }] }));
+  const still = renderProject(hung({}).recipe), swayed = renderProject(hung({ ripple: 3, waves: 1 }).recipe);
+  for (let f = 1; f < 24; f++) assert.equal(differing(still, 0, f), 0, `frame ${f} of the still cloth`);
+  assert.ok(differing(swayed, 0, 6) > 20 && differing(swayed, 0, 12) > 20, `${differing(swayed, 0, 6)} ${differing(swayed, 0, 12)}`);
+  // The held edge stays where it is pinned, and the free end sways about three pixels to each side over the cycle.
+  const reach = (project, row) => { let min = Infinity, max = -Infinity; for (const frame of project.frames) for (let x = 0; x < project.width; x++) if (frame.data[(row * project.width + x) * 4 + 3]) { min = Math.min(min, x); max = Math.max(max, x); } return [min, max]; };
+  assert.deepEqual(reach(swayed, 8), reach(still, 8));
+  const [left, right] = reach(swayed, 26), [stillLeft, stillRight] = reach(still, 26);
+  assert.ok(stillLeft - left >= 2 && stillLeft - left <= 4 && right - stillRight >= 2 && right - stillRight <= 4, `${left}-${right} against ${stillLeft}-${stillRight}`);
+  refused(source({ cloths: [{ at: [8, 8], size: [4, 4], fill: 'r', ripple: 9 }] }), 'bodies.effects.e.cloths[0].ripple', /expected a number from 0 to 8/);
+  refused(source({ cloths: [{ at: [8, 8], size: [4, 4], fill: 'r', waves: 0 }] }), 'bodies.effects.e.cloths[0].waves', /expected a number from 0\.25 to 4/);
 });

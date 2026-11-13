@@ -21,6 +21,10 @@ export function number(value, path, min, max) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) fail(path, `expected a number from ${min} to ${max}`);
   return value;
 }
+export function boolean(value, path) {
+  if (typeof value !== 'boolean') fail(path, 'expected true or false');
+  return value;
+}
 export function integer(value, path, min, max) {
   if (!Number.isInteger(value) || value < min || value > max) fail(path, `expected an integer from ${min} to ${max}`);
   return value;

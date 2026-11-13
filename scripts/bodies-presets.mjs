@@ -232,16 +232,33 @@ const ragdoll = bodiesSource('ragdoll', 96, 64,
   },
   { ground: shapeRows(96, 4, (x, y) => (y ? 's' : 'f')) });
 
-// Flag: a cloth pinned to a pole by its two hoist corners, loose enough to belly and ripple in a gusting wind.
+// Flag: a cloth pinned to a pole along its hoist, waving in a loop. The wind holds it out, and the ripple that
+// travels from the pole to the fly is what waves it.
 const flag = bodiesSource('flag', 64, 48,
   { k: '#14141c', s: '#4a5068', b: '#1a2433', r: '#b23a48', R: '#e06c5a', w: '#f2e6c9', g: '#d7b56d' },
   {
-    frames: 60, duration: 40, gravity: [0, 0.1], background: 'b',
+    frames: 24, duration: 40, loop: true, gravity: [0, 0.1], background: 'b',
     bodies: [{ name: 'pole', shape: 'box', size: [2, 38], at: [16, 24], fixed: true, fill: 'g', outline: 'k' }],
     cloths: [{
       name: 'flag', at: [18, 10], size: [25, 15], cell: 1, fill: ['r', 'R', 'w'], outline: 'k', light: [0, -1],
-      wind: [1.6, 0], gust: 1, slack: 0.35, stiffness: 0.5, shear: 0.25, bend: 0.02, tear: 4,
-      pins: [{ at: [0, 0], x: 17, y: 10 }, { at: [0, 14], x: 17, y: 24 }]
+      wind: [1.6, 0], gust: 1, ripple: 3, waves: 1.5, slack: 0.35, stiffness: 0.5, shear: 0.25, bend: 0.02, tear: 4,
+      pins: Array.from({ length: 8 }, (_, i) => ({ at: [0, i * 2], x: 17, y: 10 + i * 2 }))
+    }]
+  });
+
+// Banner: a tattered cloth hung from a rod by its top edge, swaying in a light wind, in a loop. Its `mask` cuts the
+// ragged hem and the holes; no background, so it drops into a scene.
+const bannerHem = [22, 23, 25, 26, 27, 27, 25, 23, 22, 24, 26, 27, 26, 24, 22, 23, 25, 27, 27, 26, 23];
+const banner = bodiesSource('banner', 48, 48,
+  { k: '#14141c', r: '#8f2433', R: '#b23a48', l: '#e06c5a', g: '#d7b56d' },
+  {
+    frames: 24, duration: 60, loop: true, gravity: [0, 0.15],
+    bodies: [{ name: 'rod', shape: 'box', size: [32, 3], at: [24, 7.5], fixed: true, fill: 'g', outline: 'k' }],
+    cloths: [{
+      name: 'banner', at: [14, 9], size: [21, 28], cell: 1, fill: ['r', 'R', 'l'], outline: 'k', light: [-1, 0],
+      mask: shapeRows(21, 28, (u, v) => (v <= bannerHem[u] && !(u === 6 && v > 15 && v < 21) && !(u === 14 && v > 8 && v < 12) ? '#' : '.')),
+      wind: [0.1, 0], gust: 1, ripple: 3, waves: 1.25, slack: 0.1, stiffness: 0.5, shear: 0.25, bend: 0.05, collide: false,
+      pins: Array.from({ length: 11 }, (_, i) => ({ at: [i * 2, 0], x: 14 + i * 2, y: 9 }))
     }]
   });
 
@@ -263,4 +280,4 @@ const cape = bodiesSource('cape', 80, 64,
   { ground: shapeRows(80, 4, (x, y) => (y ? 's' : 'f')), hero: heroRows });
 
 export const bodiesPresets = { 'ring-escape': ringEscape, 'bouncing-pixel': bouncingPixel, 'spinning-hoop': spinningHoop, 'crate-topple': finer(crateTopple, 2), territory, 'blade-bloom': bladeBloom, 'crate-smash': crateSmash,
-  'rope-bridge': ropeBridge, 'wrecking-ball': wreckingBall, ragdoll, flag, cape };
+  'rope-bridge': ropeBridge, 'wrecking-ball': wreckingBall, ragdoll, flag, banner, cape };
