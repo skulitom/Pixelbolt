@@ -43,7 +43,6 @@ Reported from a video that could not be made: a heavy ball dropped down a shaft 
 - **A scene sequence's hint to author the scene at the size that fills the frame** is offered up to a scene's own limits (1024 a side); it stopped at 256.
 - **`powder.schema.json` describes a material's `above` and `below`**; the generator took the texts and dropped them.
 - **`pixelbolt import --embedded` refuses `--frame` and `--padding`**, which it took and ignored. **`pixelbolt validate` on a source** says it is a source and how to check it, where it called its first field unknown. **`pixelbolt sequence` of a match takes `--loops 1`**, as its help lists.
-- **`readExpect`, `checkDelivery` and `briefCheck` are exported** from the package, so a program that renders with `createBundle` can check what it made as the CLI and MCP do.
 - The playground: typing while a download is prepared no longer says "Waiting for edits…" over a download that goes on; `?engine=` works only on a loopback page (a published page shares its origin with its host's other sites); the page's own script policy is `'self'` (it loads nothing from jsDelivr itself, its worker does).
 - The figure memory check in CI no longer holds a frame count that a deliberate change moves. The bodies guide says what catches people out: canvas and box limits, what `hits` counts, sleeping bodies that hang, loops with no gravity, and that a tiny change can flip a match.
 
@@ -100,6 +99,7 @@ Six more routes run cold by a first-time agent (a camp scene from three presets,
 ### Look and refine before delivering
 
 - The server's instructions, the quick start, the skill and the craft notes' Effects checklist ask the agent to look before it delivers: write down what the request names (the subject and where it is, how it moves, its size and colours), compare the frames with it, fix the worst difference and look again, at least twice for an effect or an animation. A preset is a first draft, delivered as it ships when it shows what was asked or the user named it; the skill said to deliver a preset as shipped first. In a benchmark of twelve effect requests, Sonnet delivered a first draft or a nearby preset in about nine turns and a blind judge preferred a rival whose guide has the agent look and fix three times; on four of those requests, a blind judge preferred what Sonnet made with the new text in three.
+- **Library users get the check too.** `readExpect`, `checkDelivery` and `briefCheck` come from the package entry (`import { checkDelivery } from 'pixelbolt'`), so a tool that bundles Pixelbolt checks a render against what was asked, as `render --expect` and `pixel_render`'s `expect` do. The entry had no check, and the exports map refuses `pixelbolt/src/check.js`.
 
 ### The playground opens every source
 
