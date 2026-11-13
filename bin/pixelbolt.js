@@ -80,6 +80,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            several (a,b for more than one)
   pixelbolt presets [name] [--full]        List the presets, a line each (size, frames, loop, colours, what each is
                                            for; --full adds every animation and file), or print one preset's source
+                                           (--out <new.json> saves the source alone, to edit and compile)
   pixelbolt presets --find "water splash"  Only the presets those words match: by name, else by description
   pixelbolt autotile <template.json> --out recipe.json [--metadata masks.json] [--preview map.png]
                                            Build a 47-tile blob or 16-tile cardinal set from template rows or a
@@ -169,7 +170,7 @@ const OPTIONS = {
   scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files', 'embed-recipe'],
   overlay: ['changes', 'selections', 'out', 'force'],
   import: ['out', 'name', 'atlas', 'frame', 'padding', 'metadata', 'force', 'embedded'],
-  presets: ['full', 'find'],
+  presets: ['full', 'find', 'out', 'force'],
   share: [],
   skill: ['project', 'dir', 'force']
 };
@@ -398,7 +399,8 @@ const referenced = input => input.resolution.files.length ? { resolved: input.re
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 // `presets [name] [--full]`, and `help presets [--full]` or `help preset <name>`: every preset, a line each or in full,
 // or one preset's source. A shell has no time limit, so every preset is measured.
-async function presetsText(name, full, find) {
+async function presetsText(name, full, find, out, force) {
+  if (out !== undefined && (name === undefined || find !== undefined)) throw new Error('--out saves one preset\'s source: pixelbolt presets <name> --out <new.json>');
   if (find !== undefined) {
     if (name !== undefined || full) throw new Error('--find goes on its own: pixelbolt presets --find "water splash" lists the presets those words match');
     // Names are known without compiling anything, so a name match measures only the presets it lists.
@@ -408,6 +410,11 @@ async function presetsText(name, full, find) {
   if (name === undefined) { const listing = await listPresets({ budget: Infinity }); return rowsJSON(full ? listing : briefListing(listing)); }
   if (full) throw new Error('--full goes with the listing (pixelbolt presets --full); pixelbolt presets <name> prints one preset\'s source');
   const entry = await findPreset(name, 'name'), { source, inlined } = await loadPreset(entry);
+  // Saved, the source is the file alone, ready to edit: printed, it sits inside this reply and takes a script to lift out.
+  if (out !== undefined) {
+    const written = await writeOutputs({ source: [out, formatJSON(source), '--out'] }, force);
+    return rowsJSON({ name: entry.name, ...written, ...(inlined.length && { inlined }), next: entry.kind === 'recipe' ? `Edit ${shown(path.resolve(out))}, then validate, inspect or render it.` : `Edit ${shown(path.resolve(out))}, then pixelbolt compile ${shown(path.resolve(out))} --out <new recipe.json>.` });
+  }
   return rowsJSON({ name: entry.name, file: `examples/${entry.file}`, ...(inlined.length && { inlined }), next: presetNext(entry, true), source });
 }
 // `help <topic> [section]`: what MCP pixel_help returns for the topic, so a shell reads one section of a long guide
@@ -465,7 +472,7 @@ try {
       print({ ok: true, file });
     } else if (command === 'schema') process.stdout.write(await readFile(new URL('../schema.json', import.meta.url), 'utf8'));
     else if (command === 'presets') {
-      console.log(await presetsText(positional[0], options.full === true, options.find));
+      console.log(await presetsText(positional[0], options.full === true, options.find, options.out, options.force));
     } else if (command === 'skill') {
       if (positional[0] !== 'install') throw new Error('Usage: pixelbolt skill install [--project | --dir <skills folder>] [--force]');
       const { installSkill } = await import('../src/skill.js');

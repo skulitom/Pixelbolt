@@ -322,6 +322,16 @@ test('MCP and the CLI compile crystal sources and presets', async t => {
   const listed = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'presets', 'snowflakes'], { encoding: 'utf8' });
   assert.equal(listed.status, 0, listed.stderr);
   assert.match(listed.stdout, /pixelforge-crystal/);
+  // --out saves the source alone, ready to edit and compile; an earlier file is kept, and it goes with one name.
+  const saved = path.join(dir, 'snow.crystal.json'), keep = (...args) => spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'presets', ...args], { encoding: 'utf8' });
+  const kept = keep('snowflakes', '--out', saved);
+  assert.equal(kept.status, 0, kept.stderr + kept.stdout);
+  assert.deepEqual(JSON.parse(await readFile(saved, 'utf8')), JSON.parse(await readFile(path.join(root, 'examples/snowflakes.crystal.json'), 'utf8')));
+  assert.deepEqual(Object.keys(JSON.parse(kept.stdout)), ['name', 'source', 'next']);
+  assert.match(JSON.parse(kept.stdout).next, /snow\.crystal\.json --out <new recipe\.json>\.$/);
+  const said = result => result.stdout + result.stderr;
+  assert.match(said(keep('snowflakes', '--out', saved)), /Output already exists/);
+  assert.match(said(keep('--find', 'snow', '--out', path.join(dir, 'found.json'))), /--out saves one preset's source: pixelbolt presets <name> --out <new\.json>/);
 });
 
 test('pixelbolt share shares crystal and bodies sources as the ordinary grids they compile to', async () => {

@@ -22,8 +22,9 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Smaller steps
 
 - A patch path takes `[*]` in an `insert` too: `{"insert": "frames[*].ops[0]", "value": {…}}` draws a prop behind every frame of a compiled effect in one change. It was refused, and twelve frames took twelve changes.
+- `pixelbolt presets <name> --out <new.json>` saves a preset's source alone, ready to edit and compile. Printed, the source sits inside the reply, and every cold run that changed a preset wrote a script to lift it out.
 - A change written with a field a patch does not have (`{"op": "set", "path": …}`) is answered with the shape of a change.
-- When a sheet wraps at the default 8 columns and nothing asked about its shape, the check's `delivered.sheet` also says what makes one row (`oneRow: "sheet.columns 10"`).
+- When a sheet wraps at the default 8 columns and nothing asked about its shape, the check's `delivered.sheet` also says what makes one row (`oneRow: "set sheet.columns to 10, in the recipe or its source"`).
 - The craft notes say how to draw a figure in four directions seen from above, and that one frame as a picture is already in a render's `frames/` folder.
 - `boolean`, which four modules each had a copy of, is one function in `authoring.js`.
 

@@ -35,8 +35,8 @@ export const PRESET_GUIDE = 'Start fire, smoke, explosions, splashes, spells and
 
 // What to do with a preset's source: a source compiles; a plain recipe already is one.
 export const presetNext = (entry, shell = false) => entry.kind === 'recipe'
-  ? (shell ? `It is already a recipe: save source to a file, edit it, then validate, inspect or render that file (pixelbolt compile --preset ${entry.name} --out <new.json> saves it as it ships).` : `It is already a recipe: edit source and send it as project to pixel_validate, pixel_inspect or pixel_render, or use pixel_compile {"preset": "${entry.name}"} for a revision of it as it ships.`)
-  : (shell ? `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save source to a file, edit it and compile that.` : `Compile it as it ships with pixel_compile {"preset": "${entry.name}"}, or edit source and send it as pixel_compile's source.`);
+  ? (shell ? `It is already a recipe: pixelbolt presets ${entry.name} --out <new.json> saves it to edit, then validate, inspect or render that file.` : `It is already a recipe: edit source and send it as project to pixel_validate, pixel_inspect or pixel_render, or use pixel_compile {"preset": "${entry.name}"} for a revision of it as it ships.`)
+  : (shell ? `Compile it as it ships with pixelbolt compile --preset ${entry.name} --out <new.json>, or save its source to edit (pixelbolt presets ${entry.name} --out <new source.json>) and compile that.` : `Compile it as it ships with pixel_compile {"preset": "${entry.name}"}, or edit source and send it as pixel_compile's source.`);
 
 // The plain recipes are only known once read; each file is read once per call.
 async function readJSON(file) {
