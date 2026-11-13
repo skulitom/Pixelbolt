@@ -30,8 +30,8 @@ export async function assembleMcpb({ base = root } = {}) {
   if (typeof version !== 'string' || !VERSION.test(version)) throw new Error('package.json version must have the form X.Y.Z.');
   const manifest = { ...template, version };
   // The CLI imports index.js, including frame-folder.js. server.js serves the Studio and is not needed by MCP.
-  // pixel_help reads the quick start, two guides and one example, and its presets topics and pixel_compile's preset read
-  // every top-level example (presets.js, which also reads the Fluid and Effects labs' preset titles). pixel_scene
+  // pixel_help reads the quick start, three guides and one example, and its presets topics and pixel_compile's preset read
+  // every top-level example (presets.js, which also reads the Fluid, Effects and Powder labs' preset titles). pixel_scene
   // exports these three Studio player files as assets.
   const names = [
     'package.json', 'bin/pixelbolt.js', 'bin/pixelforge.js', 'LICENSE', 'README.md', 'schema.json',
