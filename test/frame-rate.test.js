@@ -55,12 +55,16 @@ test('a slow animation keeps three significant figures, and a still tile set has
 });
 
 test('a reply describes at most 16 animations and names the rest; README.txt still times every animation', async () => {
-  const many = { ...torch, frames: frames(2, 50), animations: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`a${i}`, { frames: ['f0', 'f1'] }])) };
+  // Twenty animations that each say something else: a different number of frames.
+  const many = { ...torch, frames: frames(21, 50), animations: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`a${i}`, { frames: Array.from({ length: i + 2 }, (_, f) => `f${f}`) }])) };
   const described = describeAnimations(renderProject(many), many);
   assert.equal(Object.keys(described.animations).length, 16);
   assert.deepEqual([Object.keys(described.animations).slice(0, 2), described.moreAnimations], [['a0', 'a1'], ['a16', 'a17', 'a18', 'a19']]);
+  // Four or more that differ only in a number and are alike in every fact are one entry, counted; fewer stay apart.
+  const alike = { ...torch, frames: frames(2, 50), animations: { ...Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`tile-${i * 3}`, { frames: ['f0', 'f1'] }])), 'tile-900': { frames: ['f0'] }, 'door-1': { frames: ['f0', 'f1'] }, 'door-2': { frames: ['f0', 'f1'] } } };
+  assert.deepEqual(describeAnimations(renderProject(alike), alike), { animations: { 'tile-{n}': { count: 20, frames: 2, duration: 100, loop: true, fps: 20 }, 'tile-900': { frames: 1, duration: 50, loop: true }, 'door-1': { frames: 2, duration: 100, loop: true, fps: 20 }, 'door-2': { frames: 2, duration: 100, loop: true, fps: 20 } } });
   const readme = (await createBundle(many)).files.get('README.txt').toString();
-  assert.match(readme, /\na19: 2 frames of 50 ms \(20 fps\)\n/);
+  assert.match(readme, /\na19: 21 frames of 50 ms \(20 fps\)\n/);
 });
 
 test('README.txt states each animation\'s timing, with its frame rate when every frame lasts the same', async () => {

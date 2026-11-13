@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, decodePNG, compileNormals, compileAutotile, prepareScene, renderScene, sceneGIF } from '../src/index.js';
+import { createSceneBundle } from '../src/scene-export.js';
 import { tilemapOf } from '../src/autotile.js';
 import { startMCP } from '../src/mcp.js';
 
@@ -155,6 +156,8 @@ test('variants that are the frames of an animation are said so, and an outline w
   assert.deepEqual(compileAutotile(pond).warnings.filter(text => text.startsWith('autotile.variants')), ['autotile.variants: the 2 variants differ only in palette or duration, which are the frames of an animation, but with no `animation` each cell picks one of them at random and never changes. Add "animation": "pond-{mask}" and every tile plays them in turn (an animated tile in the Godot TileSet and in Tiled).']);
   const animated = compileAutotile({ ...pond, animation: 'pond-{mask}' });
   assert.ok(!(animated.warnings ?? []).some(text => text.startsWith('autotile.variants')) && animated.recipe.animations['pond-255'].frames.length === 2);
+  // The tilemap the reply gives names the animation, where a list of its frames would scatter them as stills.
+  assert.deepEqual([tilemapOf(animated.recipe, animated.metadata).legend['#'], tilemapOf(compileAutotile(pond).recipe, null).legend['#']], [{ animation: 'pond-{mask}', autotile: 'blob' }, { frames: ['pond-{mask}-s1', 'pond-{mask}-s2'], autotile: 'blob' }]);
   // Variants that draw something else are tiles to scatter, and say nothing.
   assert.ok(!(compileAutotile({ ...pond, variants: [{ name: 's1', terrain: { fill: { seed: 4 } } }, { name: 's2', palette: { a: '#8fd0ee' } }] }).warnings ?? []).some(text => text.startsWith('autotile.variants')));
   // A frame's ops and its layers are buffers apart: an outline among the ops of a frame drawn in layers draws nothing.
@@ -176,4 +179,21 @@ test('tile sets are presets, and a shipped scene answers to its name where a sou
   assert.match(saved.info.next, /^A scene: pixelbolt presets iso-glade --out <new\.scene\.json> saves it, and each file its assets name is a preset to save beside it/);
   assert.deepEqual(JSON.parse(await readFile(path.join(dir, 'glade.scene.json'), 'utf8')), JSON.parse(await readFile(path.join(root, 'examples/iso-glade.scene.json'), 'utf8')));
   assert.match(run('compile', '--preset', 'iso-glade', '--out', 'x.json').said, /no preset named .{1,2}iso-glade/);
+});
+
+test('a scene export keeps what replays it in player/, and the page finds every file it loads', async () => {
+  const bundle = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'porch', width: 16, height: 12, assets: { lamp: sprite }, instances: [{ name: 'lamp', asset: 'lamp', at: [4, 2], animation: 'glow' }] });
+  const files = [...bundle.files.keys()], top = files.filter(file => !file.includes('/'));
+  // The top level is the scene and what an engine takes; no module of the player sits among it.
+  assert.deepEqual(top.filter(file => file.endsWith('.js') || file.endsWith('.css')), []);
+  assert.ok(top.includes('preview.html') && top.includes('scene.json') && top.includes('scene.tscn') && top.includes('scene.tmx'), top.join(' '));
+  // The page's stylesheet and module, and every module those import, are in the bundle where they are asked for.
+  const page = bundle.files.get('preview.html').toString();
+  const asked = [...page.matchAll(/(?:href|src)="\.\/([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(asked.sort(), ['player/scene-player.js', 'player/scene.css']);
+  for (const file of files.filter(name => name.startsWith('player/') && name.endsWith('.js'))) {
+    for (const [, from] of bundle.files.get(file).toString().matchAll(/^import [^;]*? from '\.\/([^']+)';/gm)) assert.ok(bundle.files.has(`player/${from}`), `${file} imports ${from}`);
+  }
+  // The scene itself is fetched beside the page, not from player/.
+  assert.match(bundle.files.get('player/scene-player.js').toString(), /fetch\('\.\/scene\.json'\)/);
 });

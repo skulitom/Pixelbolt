@@ -16,6 +16,8 @@ Six more routes run cold (animated water tiles, an isometric storeroom, a wolf f
 - **Tile sets are presets.** `presets --find tile` (MCP `pixel_help` with `find`) lists `ground`, `meadow` and `shore` with what each is, and `compile --preset shore` compiles one. They were files the search never showed.
 - **A shipped scene answers to its name** where a source is read: `presets iso-glade --out <new.scene.json>` saves the isometric glade, and says how to fetch the assets it names.
 - **Animated tiles are said.** An autotile source whose `variants` differ only in palette or duration, with no `animation`, gets a warning that names the line to add. The water run had exactly that and exported three tiles scattered at random.
+- An animated tile set's compile reply gives a `tilemap` legend that names the animation (`{"animation": "lava-{mask}"}`), where its list of frames drew stills in a scene; and its forty-six animations, alike but for the mask in their names, are one counted line (`"lava-{n}"`), as any four or more such are.
+- A scene export keeps the modules of its replay page in `player/`, so the folder's top level is the scene and what an engine takes (`scene.tscn`, `scene.tmx`, `planes/`, `assets/`). Three runs called a dozen `.js` files among them noise.
 - **An outline that surrounds nothing warns.** A frame's ops and each of its layers are buffers apart, so an outline among the ops of a frame drawn in layers drew nothing and said nothing.
 - Diagnostics leave out `duplicate` findings unless `--full`: a pose a cycle passes twice is no finding to act on, and two runs called the list noise.
 - The craft notes gain animated tiles and a parallax background (placements' `parallax` and `haze`, a keyed `camera`, and what `scene --out` writes for Godot).

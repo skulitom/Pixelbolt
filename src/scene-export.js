@@ -121,8 +121,13 @@ export async function createSceneBundle(source) {
   }
   files.set('alignment.json', Buffer.from(JSON.stringify(alignment, null, 2) + '\n'));
   files.set('review.json', Buffer.from(JSON.stringify({ placements: view.placements, warnings: [...view.warnings, ...tileWarnings] }, null, 2) + '\n'));
-  for (const file of ['core.js', 'craft.js', 'font.js', 'authoring.js', 'pose-geometry.js', 'motions.js', 'autotile.js', 'terrain.js', 'slopes.js', 'scene.js']) files.set(file, await readFile(new URL(file, import.meta.url)));
-  for (const [file, source] of [['preview.html', '../studio/scene.html'], ['scene-player.js', '../studio/scene-player.js'], ['scene.css', '../studio/scene.css']]) files.set(file, await readFile(new URL(source, import.meta.url)));
+  // The page that replays the scene, with what it runs on in player/: the folder's top level is what a game takes
+  // (scene.tscn, scene.tmx, planes/, assets/), not a dozen engine modules among it.
+  for (const file of ['core.js', 'craft.js', 'font.js', 'authoring.js', 'pose-geometry.js', 'motions.js', 'autotile.js', 'terrain.js', 'slopes.js', 'scene.js']) files.set(`player/${file}`, await readFile(new URL(file, import.meta.url)));
+  for (const file of ['scene-player.js', 'scene.css']) files.set(`player/${file}`, await readFile(new URL(`../studio/${file}`, import.meta.url)));
+  const page = await readFile(new URL('../studio/scene.html', import.meta.url), 'utf8'), placed = page.replace('href="./scene.css"', 'href="./player/scene.css"').replace('src="./scene-player.js"', 'src="./player/scene-player.js"');
+  if (placed === page || !placed.includes('./player/scene.css') || !placed.includes('./player/scene-player.js')) throw new Error('studio/scene.html no longer names scene.css and scene-player.js as the scene export expects');
+  files.set('preview.html', Buffer.from(placed));
   // A forced export over an earlier export of a scene removes what that one wrote and this one doesn't: planes, hazed
   // copies, the files of an asset it no longer has (or of a pass it lost), tileset.tres. Only files the earlier
   // alignment.json lists go, and only in the folders they are in, so nothing else in the folder is touched.

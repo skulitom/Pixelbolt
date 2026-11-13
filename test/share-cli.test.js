@@ -97,7 +97,7 @@ test('CLI render embeds source in every PNG only on request, preserving every ot
     const input = source === '-' ? JSON.stringify(recipe) : undefined;
     const old = cli(['render', source, '--out', plain], { input });
     // The folder once, and its files relative to it without each frame, which the summary already names.
-    assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, ...summary(bundle.project, recipe), directory: plain, sheet: `${recipe.name}.png`, atlas: `${recipe.name}.atlas.json`, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/') && !(!name.includes('/') && (name.endsWith('.js') || name === 'README.txt'))), check: briefCheck(checkDelivery(bundle.project, { recipe })) })));
+    assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, ...summary(bundle.project, recipe), directory: plain, sheet: `${recipe.name}.png`, atlas: `${recipe.name}.atlas.json`, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/') && !name.startsWith('player/') && !(!name.includes('/') && (name.endsWith('.js') || name === 'README.txt'))), check: briefCheck(checkDelivery(bundle.project, { recipe })) })));
     await checkBundle(plain, bundle);
     const carried = cli(['render', source, '--out', embedded, '--embed-recipe'], { input });
     assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);
@@ -112,7 +112,7 @@ test('CLI scene embeds its resolved source only in scene.png and unlit.png; defa
   assert.deepEqual(document.assets.spirit.recipe, JSON.parse(await readFile(path.join(root, 'examples/forest-spirit.json'), 'utf8')));
   const bundle = await createSceneBundle(document), plain = path.join(dir, 'plain'), embedded = path.join(dir, 'embedded');
   const old = cli(['scene', source, '--out', plain]);
-  assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/') && !(!name.includes('/') && (name.endsWith('.js') || name === 'README.txt'))), warnings: bundle.warnings, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) })));
+  assert.deepEqual(JSON.parse(old.stdout), JSON.parse(JSON.stringify({ ok: true, directory: plain, files: [...bundle.files.keys()].filter(name => !name.startsWith('frames/') && !name.startsWith('player/') && !(!name.includes('/') && (name.endsWith('.js') || name === 'README.txt'))), warnings: bundle.warnings, resolved: files.map(file => path.relative(root, file).split(path.sep).join('/')) })));
   await checkBundle(plain, bundle);
   const carried = cli(['scene', source, '--out', embedded, '--embed-recipe']);
   assert.equal(carried.stdout.replaceAll(JSON.stringify(embedded).slice(1, -1), JSON.stringify(plain).slice(1, -1)), old.stdout);

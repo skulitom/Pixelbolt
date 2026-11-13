@@ -222,14 +222,26 @@ function stillTileSet(spec, project) {
 }
 // What a reply says about a project's animations, the same from every command and tool: by name, how many frames each
 // plays, how long that takes, whether it loops and, where its frames all last the same (and it is not a still tile
-// set), its frame rate, which Godot, Unity, Aseprite and video editors ask for. Past 16 animations the rest are named
-// in `moreAnimations`. `spec` is the recipe the project was rendered from.
+// set), its frame rate, which Godot, Unity, Aseprite and video editors ask for. Four or more animations that differ
+// only in the last number of their names and are alike in every fact (an animated tile set's, one for each mask) are
+// one entry, named with {n} for the number and counted: forty-six lines said one thing. Past 16 entries the rest are
+// named in `moreAnimations`. `spec` is the recipe the project was rendered from.
 export function describeAnimations(project, spec) {
   const names = Object.keys(project.animations), still = stillTileSet(spec, project);
   // A still tile set's only animation is the flipbook of every tile, which no export animates: nothing to describe.
   if (still && names.length === 1) return {};
-  const entry = key => { const { frames, duration, loop } = project.animations[key], fps = still ? undefined : animationFps(project, key); return [key, { frames: frames.length, duration, loop, ...(fps !== undefined && { fps }) }]; };
-  return { animations: Object.fromEntries(names.slice(0, 16).map(entry)), ...(names.length > 16 && { moreAnimations: names.slice(16) }) };
+  const facts = key => { const { frames, duration, loop } = project.animations[key], fps = still ? undefined : animationFps(project, key); return { frames: frames.length, duration, loop, ...(fps !== undefined && { fps }) }; };
+  const alike = new Map();
+  for (const key of names) { const group = `${key.replace(/\d+(?!.*\d)/, '{n}')} ${JSON.stringify(facts(key))}`; alike.set(group, [...(alike.get(group) ?? []), key]); }
+  const entries = [], told = new Set();
+  for (const key of names) {
+    if (told.has(key)) continue;
+    const group = alike.get(`${key.replace(/\d+(?!.*\d)/, '{n}')} ${JSON.stringify(facts(key))}`);
+    if (group.length < 4) { entries.push([key, facts(key)]); continue; }
+    for (const each of group) told.add(each);
+    entries.push([key.replace(/\d+(?!.*\d)/, '{n}'), { count: group.length, ...facts(key) }]);
+  }
+  return { animations: Object.fromEntries(entries.slice(0, 16)), ...(entries.length > 16 && { moreAnimations: entries.slice(16).map(([key]) => key) }) };
 }
 const popcount = mask => { let bits = 0; for (let m = mask; m; m &= m - 1) bits++; return bits; };
 // The frame and animation PNGs an export wrote, as its atlas metadata names them. Anything else lists nothing.
@@ -404,9 +416,9 @@ export function outputSummary(out, files, listFiles) {
   const relative = files.map(file => path.relative(out, file).split(path.sep).join('/'));
   const count = prefix => relative.filter(file => file.startsWith(`${prefix}/`)).length;
   const animations = count('animations');
-  // What the preview page runs on (its player, a scene's copies of the modules it draws with) and the README are in
-  // the folder for the page, not to deliver: a reply lists what a game, a site or a post takes.
-  const support = file => !file.includes('/') && (file.endsWith('.js') || file === 'README.txt');
+  // What the preview page runs on (its player, a scene's player/ folder of the modules it draws with) and the README
+  // are in the folder for the page, not to deliver: a reply lists what a game, a site or a post takes.
+  const support = file => file.startsWith('player/') || (!file.includes('/') && (file.endsWith('.js') || file === 'README.txt'));
   // The two files a game takes first, by what they are: among a dozen names an agent asked which one was the sheet.
   const atlas = relative.find(file => !file.includes('/') && file.endsWith('.atlas.json')), sheet = atlas && `${atlas.slice(0, -'.atlas.json'.length)}.png`;
   return {

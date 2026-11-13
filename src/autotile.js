@@ -73,7 +73,11 @@ export function tilemapEntry(recipe) {
   }
   const names = [...patterns.keys()], counts = new Set([...patterns.values()].map(entry => entry.count)), weights = names.map(name => patterns.get(name).weight);
   if (counts.size !== 1) return null;
-  const entry = names.length === 1 ? { frame: names[0] } : { frames: names, ...(weights.some(value => value !== 1) && { weights }) };
+  // An animated set, where each mask's variants are the frames of its animation: the legend names the animation, since
+  // a map of `frames` scatters them as stills that never change.
+  const masks = [...new Set(tiles.map(tile => tile.mask))], animated = Object.keys(recipe.animations ?? {}).map(name => name.split('-').map(part => (part === String(masks[0]) ? '{mask}' : part)).join('-'))
+    .find(pattern => pattern.includes('{mask}') && masks.every(mask => Object.hasOwn(recipe.animations, pattern.replace('{mask}', String(mask)))));
+  const entry = animated ? { animation: animated } : names.length === 1 ? { frame: names[0] } : { frames: names, ...(weights.some(value => value !== 1) && { weights }) };
   return { tile: [recipe.width, recipe.height], legend: { ...entry, autotile: tiles[0].mode } };
 }
 

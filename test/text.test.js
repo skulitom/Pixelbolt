@@ -131,5 +131,5 @@ test('every module the browser imports is served by the studio and packed with s
     }
   }
   const scene = JSON.parse(await readFile(path.join(root, 'examples', 'quality', 'stride.scene.json'), 'utf8')), { files } = await createSceneBundle(scene);
-  for (const file of [...files.keys()].filter(name => name.endsWith('.js'))) for (const [, specifier] of files.get(file).toString().matchAll(/^import [^;]*? from '([^']+)';/gm)) assert.ok(files.has(specifier.replace(/^\.\//, '')), `the scene bundle's ${file} imports ${specifier}, which is not in the bundle`);
+  for (const file of [...files.keys()].filter(name => name.endsWith('.js'))) for (const [, specifier] of files.get(file).toString().matchAll(/^import [^;]*? from '([^']+)';/gm)) assert.ok(files.has(path.posix.join(path.posix.dirname(file), specifier)), `the scene bundle's ${file} imports ${specifier}, which is not in the bundle`);
 });
