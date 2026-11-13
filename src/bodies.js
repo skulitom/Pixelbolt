@@ -15,7 +15,7 @@
 // Browser-compatible and deterministic: only + − × ÷ and sqrt, craft.js's polynomial trigonometry, fixed substeps
 // and iteration counts, and bodies, contacts and pixels visited in a fixed order.
 import { renderProject, fail, isObject, sameWidth } from './core.js';
-import { fields, number, integer } from './authoring.js';
+import { fields, number, integer, pair } from './authoring.js';
 import { sinDeg, cosDeg, traceLine, turnRows, random } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { readTerritory, readPickups, readEvents, readStrikes, readHud, createTerritory } from './territory.js';
@@ -47,10 +47,6 @@ const GONE = 16;
 const SURFACE = { bounce: 0, friction: 0.5 };
 
 const boolean = (value, path) => { if (typeof value !== 'boolean') fail(path, 'expected true or false'); return value; };
-const pair = (value, path, min, max) => {
-  if (!Array.isArray(value) || value.length !== 2) fail(path, 'expected [x, y]');
-  return value.map((n, i) => number(n, `${path}[${i}]`, min, max));
-};
 const identifier = (value, path) => {
   if (typeof value !== 'string' || !/^[A-Za-z][A-Za-z0-9_-]{0,59}$/.test(value) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(value)) fail(path, 'expected a portable name: a letter, then letters, digits, _ or -, at most 60 characters');
   return value;
@@ -426,7 +422,7 @@ function readRopes(list, path, { bodies, byName, palette, joints }) {
 function readEffect(effect, path, context) {
   if (!isObject(effect)) fail(path, 'expected an effect');
   fields(effect, ['frames', 'duration', 'substeps', 'iterations', 'gravity', 'background', 'walls', 'obstacles', 'territory', 'bodies', 'joints', 'ropes', 'cloths', 'most', 'pickups', 'events', 'strikes', 'hud'], path);
-  const { width, height, symbols, palette } = context, most = context.frames ?? LIMITS.frames;
+  const { width, height, symbols, palette } = context, most = context.frames;
   const background = effect.background === undefined ? null : paletteKey(effect.background, `${path}.background`, palette);
   if (Number.isInteger(effect.frames) && effect.frames > most && effect.frames <= MATCH_FRAMES) fail(`${path}.frames`, `a recipe holds at most ${most} frames; write a longer match as numbered video frames: pixelbolt sequence <source> --out <folder> --fps 30, or pixel_compile with sequence`);
   const frames = integer(effect.frames, `${path}.frames`, 1, most);
@@ -1722,7 +1718,7 @@ function paintSmears(bodies, n, put) {
 /**
  * Draws the bodies `n` times finer than the world's pixels (a source's `subpixels`) into `grid` (character codes,
  * width × n by height × n): each body is its own picture, every pixel of it a square n fine pixels across, turned with
- * the body and placed where the body is to the fine pixel (held as heldFine and fineStep say), so it turns and moves
+ * the body and placed where the body is to the fine pixel (held as heldTurn and heldFine say), so it turns and moves
  * smoothly and never changes shape. A circle's picture doesn't turn, as at whole pixels; a hoop is drawn as at whole
  * pixels, enlarged.
  */
@@ -1769,8 +1765,8 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n) {
 
 // A frame of a bodies source: the territory's cells and waiting pickups, the bodies over them (n times finer with
 // subpixels) and the heads-up display's operations.
-function drawFrame(world, width, height, context, f, hud = []) {
-  const n = context.subpixels ?? 1, W = width * n, H = height * n, grid = new Uint16Array(W * H);
+function drawFrame(world, width, height, context, f, hud) {
+  const n = context.subpixels, W = width * n, H = height * n, grid = new Uint16Array(W * H);
   const put = (x, y, code) => { if (x >= 0 && y >= 0 && x < W && y < H) grid[y * W + x] = code; };
   if (world.turf) world.turf.draw(grid, width, height, f, context.symbols, n);
   const beneathCloth = world.cloths.filter(cloth => cloth.definition.draw === 'under'), aboveCloth = world.cloths.filter(cloth => cloth.definition.draw === 'over');
@@ -1883,7 +1879,7 @@ export const scaleAnchor = (anchor, n) => (n > 1 && Array.isArray(anchor) && anc
 // its sweep. Weighed against time, a unit is about what the presets' pair tests and contacts cost: these cases and the
 // presets run at 18 to 85 ms a million.
 const FACE_WORK = 1, PIXEL_WORK = 0.25;
-function work(effect, { width, height, n = 1, symbols = {} }) {
+function work(effect, { width, height, n, symbols }) {
   const count = effect.bodies.length, margin = MAX_SPEED / effect.substeps + 0.1;
   // A fixed body an event breaks falls as pieces, so it is priced as a free body would be.
   const broken = (effect.events ?? []).filter(e => e.power === 'break' && effect.bodies[e.body].fixed);

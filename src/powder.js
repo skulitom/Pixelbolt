@@ -365,7 +365,7 @@ function readPowder(given) {
     if (!Array.isArray(into) || into.length !== 2) fail(`${path}.into`, 'expected [what a becomes, what b becomes]; null keeps it');
     const side = (value, label) => { if (value !== undefined && value !== 'a' && value !== 'b') fail(`${path}.${label}`, 'expected "a" or "b"'); return value === 'a' ? 1 : value === 'b' ? 2 : 0; };
     const entry = {
-      a, b, into: into.map((v, k) => (v === null ? -1 : ref(v, `${path}.into[${k}]`))), chance: chanceOf(r.chance ?? 1, `${path}.chance`),
+      into: into.map((v, k) => (v === null ? -1 : ref(v, `${path}.into[${k}]`))), chance: chanceOf(r.chance ?? 1, `${path}.chance`),
       heat: r.heat === undefined ? 0 : degrees(r.heat, `${path}.heat`), ignite: side(r.ignite, 'ignite'), douse: side(r.douse, 'douse'), burning: side(r.burning, 'burning')
     };
     for (const [key, which] of [['ignite', entry.ignite], ['douse', entry.douse], ['burning', entry.burning]]) {
@@ -624,7 +624,6 @@ export function createLivePowder(source, options = {}) {
   const lifeDraw = m => (lifeMax[m] ? lifeMin[m] + rand() % (lifeMax[m] - lifeMin[m] + 1) : 0);
   const clampT = v => (v < T_LOW * SIXTEENTHS ? T_LOW * SIXTEENTHS : v > T_HIGH * SIXTEENTHS ? T_HIGH * SIXTEENTHS : v);
 
-  // A cell changes material in place and keeps its temperature (a phase change, burning out, a life ending).
   // Blotch and grain fields per material, from craft's seeded value noise.
   const fields = Array.from(T.pattern, (p, m) => (p === 1 ? ditherThreshold('value', [0, 0], hash(seed, m, 1), 6) : p === 2 ? ditherThreshold('value', [0, 0], hash(seed, m, 2), 12) : null));
   const shadeAt = (c, m) => {
@@ -635,6 +634,7 @@ export function createLivePowder(source, options = {}) {
     // Grain: each row its own tone, drifting slowly along the row.
     return ((hash(seed, m, y) & 255) * 0.55 + fields[m](x, y * 6) * 115) | 0;
   };
+  // A cell changes material in place and keeps its temperature (a phase change, burning out, a life ending).
   const become = (c, m) => {
     if (state[mat[c]] === SOLID || state[m] === SOLID) supportChanged = true;
     mat[c] = m; flag[c] = 0; shade[c] = m ? shadeAt(c, m) : 0; life[c] = lifeDraw(m);

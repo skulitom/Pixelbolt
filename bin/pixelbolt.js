@@ -264,7 +264,7 @@ function takeStdin(input) {
   stdinTaken = input;
 }
 const STDIN_OPTIONS = { inspect: ['reference', 'metadata', 'guides'], patch: ['changes'], overlay: ['changes', 'selections'], render: ['expect'], scene: ['guides'], import: ['atlas'] };
-async function readProject(file, input = INPUT_FILE) {
+async function readProject(file, input) {
   if (!file) throw new Error('Provide a project JSON filename or - for stdin');
   let source;
   if (file === '-') { takeStdin(input); const chunks = []; for await (const chunk of process.stdin) chunks.push(chunk); source = Buffer.concat(chunks).toString('utf8'); }
@@ -328,7 +328,7 @@ async function outputPath(target) {
 // fails, the files and folders this call made are removed again, as writeBundle removes a failed export's; a file
 // replaced under --force can't be put back, so the error says which ones now hold this run's bytes.
 async function writeOutputs(targets, force, inputs = []) {
-  const entries = Object.entries(targets).map(([label, [file, data, option = label]]) => [label, path.resolve(file), data, option]);
+  const entries = Object.entries(targets).map(([label, [file, data, option]]) => [label, path.resolve(file), data, option]);
   // Windows and macOS file systems ignore case by default, so Hero.json and hero.json are one file there.
   const unique = new Set(entries.map(([, target]) => process.platform === 'win32' || process.platform === 'darwin' ? target.toLowerCase() : target));
   if (unique.size !== entries.length) throw new Error('Output paths must be distinct; no files were written.');
@@ -398,7 +398,7 @@ const referenced = input => input.resolution.files.length ? { resolved: input.re
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 // `presets [name] [--full]`, and `help presets [--full]` or `help preset <name>`: every preset, a line each or in full,
 // or one preset's source. A shell has no time limit, so every preset is measured.
-async function presetsText(name, full = false, find) {
+async function presetsText(name, full, find) {
   if (find !== undefined) {
     if (name !== undefined || full) throw new Error('--find goes on its own: pixelbolt presets --find "water splash" lists the presets those words match');
     // Names are known without compiling anything, so a name match measures only the presets it lists.
@@ -558,7 +558,7 @@ try {
         }
         // --size: the compiled drawing on a canvas of another size (cut or given margins, never scaled).
         if (options.size !== undefined) {
-          if (command === 'autotile' || compile === compileAutotile) throw new Error('--size: a tile set\'s size is its tile, set in the source');
+          if (compile === compileAutotile) throw new Error('--size: a tile set\'s size is its tile, set in the source');
           const { recipe, resized: moved } = resizeRecipe(compiled.recipe, options.size, '--size'), cut = resizeWarning(moved, [recipe.width, recipe.height]);
           compiled.recipe = recipe; resized = moved;
           if (cut) warnings.push(cut);
@@ -597,7 +597,7 @@ try {
       // said what a map needs.
       const unsaved = metadata && !options.metadata && reviewed && !tilemap;
       const margins = resized && resizeMargins(resized, [made.width, made.height]);
-      print({ ok: true, ...written, ...made, ...(margins && { margins }), ...(kept && { kept }), ...(tilemap && { tilemap }), ...(warnings && { warnings }), ...((unsaved || (preview && !options.preview)) && { hint: [unsaved && `The metadata${warnings ? ' (what review tools read: pose contacts, joints, loop seams, tile masks)' : ''} was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
+      print({ ok: true, ...written, ...made, ...(margins && { margins }), ...(kept && { kept }), ...(tilemap && { tilemap }), ...(warnings && { warnings }), ...((unsaved || (preview && !options.preview)) && { hint: [unsaved && `The metadata (what review tools read: pose contacts, joints, loop seams, tile masks) was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
     } else if (command === 'scene' && options.image !== undefined) {
       // One image at one time, as MCP pixel_scene returns it: color, grayscale or depth, with optional guides.
       if (options.out !== undefined || options['embed-recipe']) throw new Error('scene --image writes one image; export a bundle with --out instead');

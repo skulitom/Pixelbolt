@@ -157,7 +157,7 @@ function target(pin, frame) {
 
 // The live state of one cloth: particles, constraints and pins. The definition stays untouched.
 export function createCloth(definition, { bodies }) {
-  const particles = definition.nodes.map(node => ({ ...node, x: node.x, y: node.y, px: node.x, py: node.y, pin: node.pin }));
+  const particles = definition.nodes.map(node => ({ ...node, px: node.x, py: node.y }));
   const constraints = definition.constraints.map(item => ({ ...item }));
   const pins = definition.pins.map(item => ({ ...item, body: item.bodyIndex >= 0 ? bodies[item.bodyIndex] : null }));
   for (const pin of pins) {
