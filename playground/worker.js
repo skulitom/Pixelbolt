@@ -50,7 +50,7 @@ async function engineFor(version, override, kind) {
   checkVersion(version);
   const required = SOURCE_ENGINES[kind];
   if (required && compareVersions(version, required[0]) < 0) {
-    throw new Error(`${required[1]} sources need Pixelbolt ${required[0]} or newer; this link uses ${version}.`);
+    throw new Error(`${required[1]} sources need Pixelbolt ${required[0]} or newer; the engine selected here is ${version}.`);
   }
   const base = checkedBase(version, override);
   try {

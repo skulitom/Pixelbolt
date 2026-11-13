@@ -105,6 +105,7 @@ Six more routes run cold by a first-time agent (a camp scene from three presets,
 
 - **Wave, crystal, falling-sand and rigid-body sources open in the playground** by link, by Open file and from a PNG that carries one, compiled in the page with the linked engine, and the editor keeps the source. Each compiler loads only when a source needs it, so links to older engines still open; a source on an engine older than its format (wave 0.9.2, bodies 0.12.0, crystal 0.13.0, falling sand 0.14.0) says which version it needs.
 - **`pixelbolt share` links the source itself**, no longer the grids it compiles to, so long presets fit a link: hut-fire's went from 148,528 characters (over the 16,384 limit) to 644. Its reply drops `compiledFrom`.
+- Links and PNGs of these four kinds open only where this change is: Pixelbolt 0.16.0's `import --embedded` and a playground deployed before it refuse them, as they refused these sources before.
 
 ## 0.16.0 (2026-11-12)
 

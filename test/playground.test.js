@@ -59,13 +59,13 @@ for (const [kind, file, first, older, label] of sourceCases) {
     const png = await embedRecipe(await encodePNG(renderRecipe(engine, tiny).frames[0].data, 2, 1), source, older);
     for (const request of [{ type: 'link', hash, version: pin }, { type: 'open', png, version: pin }, { type: 'open', text: JSON.stringify(source), version: older }]) {
       await assert.rejects(handleRequest({ ...request, override }), {
-        message: `${label} sources need Pixelbolt ${first} or newer; this link uses ${older}.`
+        message: `${label} sources need Pixelbolt ${first} or newer; the engine selected here is ${older}.`
       });
     }
     // A compiler already loaded for a newer version must not let an old link bypass the gate.
     await handleRequest({ type: 'open', text: JSON.stringify(source), version: pin, override: engineURL.href });
     await assert.rejects(handleRequest({ type: 'link', hash, version: pin, override: engineURL.href }), {
-      message: `${label} sources need Pixelbolt ${first} or newer; this link uses ${older}.`
+      message: `${label} sources need Pixelbolt ${first} or newer; the engine selected here is ${older}.`
     });
   });
 }
