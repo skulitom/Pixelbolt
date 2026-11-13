@@ -175,6 +175,29 @@ test('CLI import --embedded recovers source, protects output and reports missing
   assert.equal(await readFile(tracedOut, 'utf8'), formatJSON(traced.recipe));
 });
 
+for (const [kind, file] of [['wave', 'interference.wave.json'], ['crystal', 'snowflakes.crystal.json'], ['powder', 'hut-fire.powder.json'], ['bodies', 'crate-topple.bodies.json']]) {
+  test(`CLI share keeps the ${kind} source in a short link`, async () => {
+    const source = JSON.parse(await readFile(path.join(root, 'examples', file), 'utf8'));
+    // hut-fire's compiled grids made a 148,528-character link at 0.16.0, over LINK_LIMIT (16,384).
+    const info = JSON.parse(cli(['share', `examples/${file}`]).stdout);
+    assert.deepEqual(info, { ok: true, link: info.link, characters: info.link.length, version, kind });
+    assert.ok(info.characters < LINK_LIMIT);
+    assert.deepEqual(await readShareLink(info.link), { recipe: source, version, kind });
+  });
+  test(`bundle embedding and CLI import --embedded preserve the ${kind} source`, async t => {
+    const dir = await temp(t), source = JSON.parse(await readFile(path.join(root, 'examples', file), 'utf8'));
+    const original = (await createBundle(blink)).files.get('frames/on.png'), bundle = { files: new Map([['source.png', original]]) };
+    await embedBundleRecipe(bundle, source, version);
+    const png = Buffer.from(bundle.files.get('source.png'));
+    await checkEmbedded(png, original, source, kind);
+    const carried = path.join(dir, 'source.png'), out = path.join(dir, 'source.json');
+    await writeFile(carried, png);
+    const info = JSON.parse(cli(['import', carried, '--embedded', '--out', out]).stdout);
+    assert.deepEqual(info.embedded, { version, kind });
+    assert.deepEqual(JSON.parse(await readFile(out, 'utf8')), source);
+  });
+}
+
 test('MCP render shares resolved recipes and revisions, embeds PNGs, survives long links and keeps default replies identical', async t => {
   const dir = await temp(t), mcp = session(t, path.join(dir, 'out'), dir); await mcp.init();
   const bundle = await createBundle(blink), plain = await mcp.call({ project: blink }), off = await mcp.call({ project: blink, share: false, embedRecipe: false });

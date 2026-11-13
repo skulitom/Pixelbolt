@@ -334,16 +334,15 @@ test('MCP and the CLI compile crystal sources and presets', async t => {
   assert.match(said(keep('--find', 'snow', '--out', path.join(dir, 'found.json'))), /--out saves one preset's source: pixelbolt presets <name> --out <new\.json>/);
 });
 
-test('pixelbolt share shares crystal and bodies sources as the ordinary grids they compile to', async () => {
-  // The hosted playground has no crystal or bodies compiler, so the CLI compiles them first, as it does waves.
+test('pixelbolt share preserves crystal and bodies sources for the playground compiler', async () => {
   const { readShareLink } = await import('../src/share.js');
   const cli = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', ...args], { cwd: root, encoding: 'utf8' });
   const snow = cli('share', 'examples/snowflakes.crystal.json');
   assert.equal(snow.status, 0, snow.stderr);
   const info = JSON.parse(snow.stdout), decoded = await readShareLink(info.link);
-  assert.equal(info.compiledFrom, 'pixelforge-crystal');
-  assert.equal(decoded.recipe.format, undefined);
-  assert.deepEqual(decoded.recipe.frames, compileCrystals(JSON.parse(await readFile(new URL('../examples/snowflakes.crystal.json', import.meta.url), 'utf8'))).recipe.frames);
-  // A bodies scene too large for a link says so, instead of naming its format.
-  assert.match(cli('share', 'examples/crate-topple.bodies.json').stderr, /character link, over the 16,384-character limit/);
+  assert.equal(info.kind, 'crystal'); assert.equal(info.compiledFrom, undefined);
+  assert.deepEqual(decoded.recipe, JSON.parse(await readFile(new URL('../examples/snowflakes.crystal.json', import.meta.url), 'utf8')));
+  const bodies = cli('share', 'examples/crate-topple.bodies.json');
+  assert.equal(bodies.status, 0, bodies.stderr);
+  assert.deepEqual((await readShareLink(JSON.parse(bodies.stdout).link)).recipe, JSON.parse(await readFile(new URL('../examples/crate-topple.bodies.json', import.meta.url), 'utf8')));
 });
