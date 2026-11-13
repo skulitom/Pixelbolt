@@ -248,11 +248,17 @@ function readBody(entry, path, context) {
   if (entry.breaks !== undefined) {
     if (!context.breakable) fail(`${path}.breaks`, 'bodies break in a pixelforge-bodies source; the bodies in a fluid do not break yet');
     if (!isObject(entry.breaks)) fail(`${path}.breaks`, 'expected { at, pieces, speed }');
-    fields(entry.breaks, ['at', 'pieces', 'speed'], `${path}.breaks`);
+    fields(entry.breaks, ['at', 'pieces', 'speed', 'fall'], `${path}.breaks`);
     if (shape === 'hoop') fail(`${path}.breaks`, 'a hoop is a container and does not break; an event can make it vanish');
     if (fixed) fail(`${path}.breaks`, 'a fixed body takes no knocks; break it on cue with an event whose power is break');
     if (area < 4) fail(`${path}.breaks`, 'the body is under 4 square pixels, too small to show pieces; make it bigger');
     breaks = { at: number(entry.breaks.at ?? 3, `${path}.breaks.at`, 0.1, 16), pieces: integer(entry.breaks.pieces ?? 6, `${path}.breaks.pieces`, 2, 16), speed: number(entry.breaks.speed ?? 0.5, `${path}.breaks.speed`, 0, MAX_SPEED) };
+    // The pieces of a weightless body float as it did, unless they `fall`: a shell that holds its shape in the air until
+    // it is hit, and crumbles down as it breaks. (An egg of weightless pieces left its bits hanging beside it.)
+    if (entry.breaks.fall !== undefined) {
+      if (boolean(entry.breaks.fall, `${path}.breaks.fall`) && !material.weightless) fail(`${path}.breaks.fall`, 'fall gives weight to the pieces of a weightless body; this body has weight, so its pieces fall already');
+      breaks.fall = entry.breaks.fall;
+    }
   }
   // Copies on a ring (each turned to face out from its centre, `at`) or on a grid (from `at`).
   if (entry.ring !== undefined && entry.grid !== undefined) fail(`${path}.grid`, 'copies go on a ring or a grid, not both');
@@ -880,7 +886,7 @@ export function createBodyWorld(effect, context) {
         ...b, name: null, shape: 'polygon', parts: [polygonPart(local)], size, extent: Math.max(size[0], size[1]) / 2, fixed: false, x, y, x0: x, y0: y,
         vx: b.vx - b.w * wy + (f > 1e-6 ? kick * fx / f : 0), vy: b.vy + b.w * wx + (f > 1e-6 ? kick * fy / f : 0), spin: 0,
         invMass: 1 / mass, invInertia: 1 / (mass * inertia), symbol: null, rows: picture.map(row => row.join('')), fills: null, fillEvery: null, outline: null, colour: 0,
-        trail: null, smear: null, speed: null, tireless: false, energy: undefined, breaks: null, piece: true, pivot: null, anchor: null, drift: null, cuts: false,
+        trail: null, smear: null, speed: null, tireless: false, energy: undefined, breaks: null, piece: true, weightless: b.breaks?.fall ? false : b.weightless, pivot: null, anchor: null, drift: null, cuts: false,
         gone: false, asleep: false, sleepy: 0, hit: false, struck: false, hits: 0, history: [], poses: [], held: undefined, rested: b.rested ? { ...b.rested } : undefined
       });
     });

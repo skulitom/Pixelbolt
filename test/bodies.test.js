@@ -26,6 +26,8 @@ const example = async name => JSON.parse(await readFile(path.join(root, 'example
 const palette = { k: '#111111', w: '#eeeeee', r: '#dd3344', s: '#555566' };
 const scene = (effect, extra = {}) => ({ format: 'pixelforge-bodies', version: 1, name: 'bodies', width: 48, height: 32, palette, ...extra, effects: { e: { frames: 40, ...effect } } });
 const run = source => { const { recipe, metadata } = compileBodies(source); return { recipe, effect: Object.values(metadata.effects)[0] }; };
+// A source run to its end: what broke, and how low its lowest pixel is in the last frame.
+const bodiesWorld = source => { const match = bodiesFrames(source); let image; for (let f = 0; f < match.frames; f++) image = match.image(f); let lowest = -1; for (let i = 3; i < image.length; i += 4) if (image[i]) lowest = Math.floor((i >> 2) / match.width); return { broken: match.figures().broken ?? [], lowest }; };
 const refused = (source, where, pattern) => assert.throws(() => compileBodies(source), error => error instanceof PixelError && error.path === where && pattern.test(error.message), where);
 // The highest point (smallest y) a path reaches after `from`, between bounces.
 const apexes = path => { const out = []; for (let i = 1; i + 1 < path.length; i++) if (path[i][1] < path[i - 1][1] && path[i][1] <= path[i + 1][1]) out.push(path[i][1]); return out; };
@@ -671,6 +673,20 @@ test('a tower whose weight is past its last support keeps tipping', () => {
   steady.effects.e.bodies[2].at[0] = 98;
   const rested = run(steady).effect;
   assert.ok(rested.rest !== null && rested.rest < 40 && Math.abs(rested.paths.top[119][0] - 98) < 0.2, `rest ${rested.rest}, top ${rested.paths.top[119]}`);
+});
+
+test('the pieces of a weightless body float unless they fall', () => {
+  // P-139: an egg shell of weightless pieces left the bits that cracked off hanging in mid-air.
+  const shell = fall => { const world = bodiesWorld(scene({ frames: 60, gravity: [0, 0.3], walls: ['bottom', 'right'], bodies: [
+    { name: 'shell', shape: 'box', size: [8, 8], at: [24, 10], weightless: true, fill: 'w', breaks: { at: 1, pieces: 3, speed: 0, ...(fall && { fall: true }) } },
+    { name: 'stone', shape: 'circle', radius: 2, at: [10, 10], velocity: [3, 0], density: 4, weightless: true, fill: 'k' }] })); return world; };
+  for (const fall of [false, true]) {
+    const figures = shell(fall), lowest = figures.lowest;
+    assert.equal(figures.broken.length, 1, `fall ${fall}: the shell broke`);
+    // Knocked from the side: floating pieces drift along at the shell's height, falling ones land on the floor.
+    assert.ok(fall ? lowest > 28 : lowest < 20, `fall ${fall}: the lowest piece is at ${lowest}`);
+  }
+  assert.throws(() => compileBodies(scene({ bodies: [{ shape: 'box', size: [8, 8], at: [24, 10], fill: 'w', breaks: { fall: true } }] })), error => error.path === 'bodies.effects.e.bodies[0].breaks.fall' && /this body has weight/.test(error.message));
 });
 
 test('a match drawn frame by frame has no frame before its first', () => {

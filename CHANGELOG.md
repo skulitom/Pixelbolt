@@ -19,6 +19,7 @@ Reported from a published video: a monkey swinging on a rope was "extremely dist
 - **A tower past its balance keeps tipping.** A column standing a few pixels past its last support turns so slowly at first that its crates stayed under the sleep speed for 12 frames, fell asleep mid-tip and held the tower half a degree over, hanging there for good. A body that is still gaining speed, frame after frame, no longer falls asleep.
 - **A body asleep on ice falls when the ice melts.** Only a hard obstacle that came or went woke a sleeper; soft ground (ice, a fluid's sand at rest) that goes from under one now wakes it too. Ground that arrives beside it still lets it sleep.
 - **A weld or hinge to the world holds the body where it starts.** With no anchor on the world's end, the joint was fixed to the canvas corner (0, 0), so a cage of bars welded to the world tore apart on the first frame. A hinge or weld now takes the point under the body's own anchor; a distance, rope or spring to the world must name its point, and says so.
+- **The bits of a weightless body can fall.** A shell built of `weightless` pieces holds its shape until it is hit, but the bits that broke off floated beside it. `breaks: { ..., "fall": true }` gives them weight.
 - The bodies guide says what was met by building: a box is at most 64 pixels a side, a polygon's `at` is its centroid, `spinDrag` is 0.02 unless set, an event's frame already shows its effect, and a starting `spin` does nothing to a box that stands on the floor.
 
 ### Poke the pixels: a live fluid toy
