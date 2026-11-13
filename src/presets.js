@@ -98,6 +98,24 @@ const plays = animations => {
   const loops = animations.filter(([, item]) => item.loop).length;
   return loops === animations.length ? 'loop' : loops ? 'loops and one-shots' : 'one-shot';
 };
+// What each shipped rigid-body preset shows: a count of its shapes says what it is made of, not what to start from it,
+// and "a sign that swings" is found by these words. A test holds that every bodies preset has its line.
+const BODIES_SHOW = {
+  'ring-escape': 'A ball knocks its way out of a ring of blocks',
+  'bouncing-pixel': 'A pixel bounces round a room with a ledge and steps and comes to rest',
+  'spinning-hoop': 'Three balls bounce in a turning hoop until each falls out through its gap',
+  'crate-topple': 'A heavy ball thrown into a pyramid of crates, which topples',
+  territory: 'Two teams of balls claim each other\'s ground, with pickups and a score',
+  'blade-bloom': 'A turning sword cuts the balls dropped on it into pieces that fill a ring',
+  'crate-smash': 'An iron ball thrown through a pane of glass into crates that break apart',
+  'rope-bridge': 'Planks hung on ropes between two posts sag under a dropped crate',
+  'wrecking-ball': 'A heavy ball on a rope swings into a pyramid of crates',
+  lantern: 'A lantern on a chain swings and settles: what hangs from a beam, such as a sign or a pendulum',
+  ragdoll: 'A figure of six hinged blocks falls into a heap',
+  flag: 'A flag waves on its pole',
+  banner: 'A tattered banner with a stripe sways on its rod',
+  cape: 'A cape trails behind a walking figure'
+};
 const listNames = names => names.length <= 6 ? names.join(', ') : `${names.slice(0, 6).join(', ')} and ${names.length - 6} more`;
 // A lab's title and note ("Campfire", "gas · loop"), without the loop or one-shot the listing already gives.
 const titleLine = ({ title, note }) => {
@@ -149,11 +167,12 @@ function about(entry, source, animations) {
     const ropes = effects.reduce((n, effect) => n + (effect?.ropes?.length ?? 0), 0);
     const cloths = effects.reduce((n, effect) => n + (effect?.cloths?.length ?? 0), 0);
     const extras = [joints && `${joints} joint${joints === 1 ? '' : 's'}`, ropes && `${ropes} rope${ropes === 1 ? '' : 's'}`, cloths && `${cloths} cloth${cloths === 1 ? '' : 's'}`].filter(Boolean);
+    const shows = Object.hasOwn(BODIES_SHOW, entry.base) ? `${BODIES_SHOW[entry.base]}. ` : '';
     if (!parts.length && cloths) {
       const others = extras.filter(extra => !/ cloth/.test(extra));
-      return `Cloth${cloths === 1 ? '' : ` (${cloths})`}${others.length ? ` with ${others.join(' and ')}` : ''}.`;
+      return `${shows}Cloth${cloths === 1 ? '' : ` (${cloths})`}${others.length ? ` with ${others.join(' and ')}` : ''}.`;
     }
-    const bodies = `Simulated rigid bodies: ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0] ?? 'none'}.`;
+    const bodies = `${shows}Simulated rigid bodies: ${parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0] ?? 'none'}.`;
     return extras.length ? `${bodies.slice(0, -1)}, with ${extras.join(' and ')}.` : bodies;
   }
   // Frames no animation plays are pictures of their own: the tiles of a set beside its one animated tile.

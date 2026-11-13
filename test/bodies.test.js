@@ -13,6 +13,7 @@ import { cosDeg, sinDeg } from '../src/craft.js';
 import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { bodiesPresets } from '../scripts/bodies-presets.mjs';
+import { measurePreset } from '../src/presets.js';
 import { BODIES_SHOWCASE, buildBodiesGIFs } from '../showcase/bodies/build.mjs';
 import { goldens } from '../scripts/goldens.mjs';
 
@@ -132,6 +133,13 @@ test('the work estimate counts the obstacle faces near each body and the pixels 
     effects: { e: { frames: 18000, substeps: 1, iterations: 1, gravity: [0, 0], bodies: [{ shape: 'box', size: [40, 40], at: [16, 16], angle: 30, grid: { count: [16, 16], step: [0.001, 0.001] }, asleep: true, fill: 'r', outline: 'k' }] } } });
   assert.equal(bodiesFrames(fine(1)).frames, 18000);
   assert.throws(() => bodiesFrames(fine(8)), error => error instanceof PixelError && error.path === 'bodies.effects.e' && /the match needs about \d+ million updates, more than 4000 million; .*or subpixels/.test(error.message));
+});
+
+test('every rigid-body preset says what it shows before what it is made of, so a search by subject finds it', async () => {
+  for (const name of Object.keys(bodiesPresets)) {
+    const line = measurePreset({ kind: 'bodies', base: name, name, file: `${name}.bodies.json` }, await example(name)).for;
+    assert.match(line, /^[A-Z][^.]+\. (Simulated rigid bodies: |Cloth)/, `${name}: ${line}; add its line to BODIES_SHOW in src/presets.js`);
+  }
 });
 
 golden.test('every rigid-body example compiles to its golden recipe and draws only palette keys', async () => {

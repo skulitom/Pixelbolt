@@ -16,6 +16,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 - A cloth can carry a design: `fill` takes a ramp for each character, `{"b": ["d", "b", "l"], "g": ["G", "g", "y"]}`, and the `mask` rows draw the cloth with those characters, so a stripe or a cross moves and shades with the folds. A second cloth laid over the first drifted from it.
 - The `flag` preset waves in a 24-frame loop, pinned along its hoist. New preset `banner`: a tattered cloth with a gold stripe, hung from a rod, swaying in a loop on a transparent background; its `mask` cuts the ragged hem and draws the stripe.
 - New preset `lantern`: a lantern on a chain from a beam, pushed by a gust, swings and settles. A chain (`"look": "chain"`) given an `outline` key is drawn link by link in its two keys by turns; with one key it was a faint dotted line.
+- The rigid-body presets say what they show ("A lantern on a chain swings and settles: what hangs from a beam, such as a sign or a pendulum") before what they are made of; the listing gave only the count of their shapes, so a search by subject found nothing.
 - What hangs and swings is easier to find: the server's instructions, the quick start and the craft notes say a lantern on a chain or a sign is a body on a rope or a hinge, and a preset search for a word of that kind (`chain`, `pendulum`, `hinge`, `cloth`) that no preset's name or description holds names the rigid-body presets.
 
 ### Smaller steps
