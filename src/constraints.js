@@ -56,7 +56,7 @@ export function readJoints(list, path, { bodies, byName }) {
     let length = type === 'hinge' || type === 'weld' ? 0 : entry.length === undefined ? current : number(entry.length, `${at}.length`, 0, 4096);
     let max = length;
     if (type === 'rope') {
-      max = entry.max === undefined ? entry.length === undefined ? current : length : number(entry.max, `${at}.max`, 0, 4096);
+      max = entry.max === undefined ? length : number(entry.max, `${at}.max`, 0, 4096);
       length = max;
     } else if (entry.max !== undefined) fail(`${at}.max`, 'max goes with a rope; a distance joint keeps its length');
     if (type === 'hinge' || type === 'weld') {

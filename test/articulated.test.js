@@ -2,12 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { compileBodies } from '../src/bodies.js';
 import { PixelError } from '../src/core.js';
 import { cosDeg, sinDeg } from '../src/craft.js';
 
-const root = fileURLToPath(new URL('../', import.meta.url));
 const palette = { k: '#111111', w: '#eeeeee', r: '#dd3344', d: '#553333', f: '#aa6644', g: '#eeaa77', s: '#4a5068' };
 const source = (effect, extra = {}) => ({ format: 'pixelforge-bodies', version: 1, name: 'joints', width: 64, height: 64, palette, ...extra, effects: { e: { frames: 120, duration: 40, ...effect } } });
 const run = source => { const { recipe, metadata, warnings } = compileBodies(source); return { recipe, effect: Object.values(metadata.effects)[0], warnings }; };

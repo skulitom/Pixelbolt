@@ -2,7 +2,7 @@
 // They are read from examples/ whenever they are asked for, so the listing always matches the folder. A preset is a
 // top-level examples/*.fluid.json, *.fx.json, *.wave.json, *.crystal.json, *.powder.json, *.bodies.json or *.poses.json source, or a
 // plain recipe whose animations all loop (a coin spin, a flickering ember) and that no source there compiles to. Titles
-// and notes come from the Fluid and Effects labs' lists where those have one; anything else is described from its own
+// and notes come from the Fluid, Effects and Powder labs' lists where those have one; anything else is described from its own
 // name and animations.
 import { readdir, readFile, writeFile, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
