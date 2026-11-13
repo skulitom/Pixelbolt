@@ -206,3 +206,25 @@ test('a ripple is drawn down a cloth from its held end, and turns a whole number
   refused(source({ cloths: [{ at: [8, 8], size: [4, 4], fill: 'r', ripple: 9 }] }), 'bodies.effects.e.cloths[0].ripple', /expected a number from 0 to 8/);
   refused(source({ cloths: [{ at: [8, 8], size: [4, 4], fill: 'r', waves: 0 }] }), 'bodies.effects.e.cloths[0].waves', /expected a number from 0\.25 to 4/);
 });
+
+test('a cloth carries a design drawn by its mask, a ramp to each character; a chain with two keys is drawn in both', async () => {
+  // Left half dark red, right half cream, with a hole: each cell takes the character at its top-left particle.
+  const mask = Array.from({ length: 10 }, (_, v) => Array.from({ length: 12 }, (_, u) => (u === 3 && v === 4 ? '.' : u < 6 ? 'a' : 'b')).join(''));
+  const designed = extra => source({ frames: 2, gravity: [0, 0], cloths: [{ at: [10, 10], size: [12, 10], cell: 2, mask, fill: { a: 'd', b: ['w', 'g'] }, pins: [{ at: [0, 0] }], ...extra }] });
+  const drawn = renderProject(run(designed({})).recipe).frames[0], at = (x, y) => [...drawn.data.subarray((y * 64 + x) * 4, (y * 64 + x) * 4 + 3)].map(v => v.toString(16).padStart(2, '0')).join('');
+  assert.deepEqual([`#${at(12, 12)}`, `#${at(20, 20)}`], [palette.d, palette.d]);
+  for (const [x, y] of [[24, 20], [30, 12]]) assert.ok([palette.w, palette.g].includes(`#${at(x, y)}`), `${x},${y} is ${at(x, y)}`);
+  assert.equal(drawn.data[(19 * 64 + 17) * 4 + 3], 0, 'the hole stays a hole');
+  const cloth = 'bodies.effects.e.cloths[0]';
+  refused(designed({ mask: mask.map(row => row.replace('a', '#')) }), `${cloth}.mask[0]`, /expected a, b for cloth or \. for a hole/);
+  refused(designed({ mask: undefined }), `${cloth}.mask`, /a fill of ramps by character needs a mask whose rows draw the cloth with them: a, b, and \. for a hole/);
+  refused(designed({ fill: { ab: 'd' } }), `${cloth}.fill`, /1–16 such ramps each under the single character the mask draws it with/);
+  refused(designed({ fill: { a: 'd', b: 'z' } }), `${cloth}.fill.b`, /expected a single-character key in the palette/);
+  // The lantern preset hangs on such a chain: both its keys are in the frames, between the beam and the lantern.
+  const lantern = run(JSON.parse(await readFile(new URL('../examples/lantern.bodies.json', import.meta.url), 'utf8')));
+  const rows = grid(lantern.recipe.frames[0]).rows.slice(8, 28).join('');
+  assert.ok(rows.includes('c') && rows.includes('k'), 'the chain draws its fill and its outline');
+  // It swings out to the right, back past the middle, and ends near where it hung.
+  const xs = lantern.effect.paths.lantern.map(([x]) => x);
+  assert.ok(Math.max(...xs) > 34 && Math.min(...xs) < 20 && Math.abs(xs.at(-1) - 24) < 6, `${Math.min(...xs)} to ${Math.max(...xs)}, ends at ${xs.at(-1)}`);
+});

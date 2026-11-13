@@ -900,7 +900,7 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 1,
-                  "description": "Optional outline key for a rope line."
+                  "description": "Optional outline key for a rope line. On a chain: the key of every other link, which is what reads as a chain."
                 },
                 "density": {
                   "type": "number",
@@ -979,7 +979,7 @@
                   },
                   "maxItems": 128,
                   "minItems": 2,
-                  "description": "Rows of # for cloth and . for a hole; the size must match."
+                  "description": "Rows of # for cloth and . for a hole; the size must match. With a fill of ramps by character, the rows draw the cloth's design with those characters."
                 },
                 "fill": {
                   "oneOf": [
@@ -999,9 +999,35 @@
                       },
                       "maxItems": 8,
                       "minItems": 1
+                    },
+                    {
+                      "type": "object",
+                      "minProperties": 1,
+                      "maxProperties": 16,
+                      "additionalProperties": {
+                        "oneOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 1,
+                            "description": "A one-character palette key; dot and space are reserved."
+                          },
+                          {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 1,
+                              "description": "A one-character palette key; dot and space are reserved."
+                            },
+                            "maxItems": 8,
+                            "minItems": 1
+                          }
+                        ]
+                      }
                     }
                   ],
-                  "description": "A key, or 1–8 keys from dark to light used as the fold ramp."
+                  "description": "A key, or 1–8 keys from dark to light used as the fold ramp. Or a design: such a ramp under each character the mask draws with, {\"b\": [\"d\", \"b\", \"l\"], \"g\": [\"G\", \"g\"]} for a blue cloth with a gold stripe."
                 },
                 "outline": {
                   "type": "string",

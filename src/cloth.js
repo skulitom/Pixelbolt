@@ -19,6 +19,8 @@ const LIMITS = { cloths: 16, particles: 4096, pins: 64 };
 
 // Reads a bodies effect's `cloths`. A cloth is a grid of particles at `at`, spaced `cell` pixels apart; cells between four
 // present particles are drawn. Pins hold particles to a fixed point, keys over time or a named body's local point.
+// `fill` is one ramp of keys from dark to light for the whole cloth, or a ramp for each character of the `mask`, whose
+// rows are then the cloth's design (a stripe, a cross): a cell takes the character at its top-left particle.
 export function readCloths(list, path, { bodies, byName, palette }) {
   if (list === undefined) return [];
   if (!Array.isArray(list) || list.length > LIMITS.cloths) fail(path, `expected a list of at most ${LIMITS.cloths} cloths`);
@@ -36,15 +38,26 @@ export function readCloths(list, path, { bodies, byName, palette }) {
     total += columns * rows;
     if (total > LIMITS.particles) fail(`${at}.size`, `the cloths make ${total} particles, more than ${LIMITS.particles}`);
     const cell = integer(entry.cell ?? 1, `${at}.cell`, 1, 8);
+    const ramp = (value, where) => {
+      const keys = Array.isArray(value) ? value : [value];
+      if (value === undefined || !keys.length || keys.length > 8) fail(where, 'expected a palette key, or 1–8 keys from dark to light');
+      keys.forEach((each, k) => key(each, `${where}${Array.isArray(value) ? `[${k}]` : ''}`, palette));
+      return keys;
+    };
+    const designed = isObject(entry.fill), ramps = {};
+    if (designed) {
+      const marks = Object.keys(entry.fill);
+      if (!marks.length || marks.length > 16 || marks.some(mark => mark.length !== 1 || mark === '.' || mark === ' ')) fail(`${at}.fill`, 'expected a palette key, 1–8 keys from dark to light, or 1–16 such ramps each under the single character the mask draws it with');
+      for (const mark of marks) ramps[mark] = ramp(entry.fill[mark], `${at}.fill.${mark}`);
+      if (entry.mask === undefined) fail(`${at}.mask`, `a fill of ramps by character needs a mask whose rows draw the cloth with them: ${marks.join(', ')}, and . for a hole`);
+    } else ramps['#'] = ramp(entry.fill, `${at}.fill`);
+    const marks = Object.keys(ramps).join(', '), drawnWith = new Array(columns * rows).fill('#');
     let present = new Uint8Array(columns * rows).fill(1);
     if (entry.mask !== undefined) {
-      if (!Array.isArray(entry.mask) || entry.mask.length !== rows || entry.mask.some(row => typeof row !== 'string' || row.length !== columns)) fail(`${at}.mask`, `expected ${rows} rows of ${columns} characters, # for cloth and . for a hole`);
+      if (!Array.isArray(entry.mask) || entry.mask.length !== rows || entry.mask.some(row => typeof row !== 'string' || row.length !== columns)) fail(`${at}.mask`, `expected ${rows} rows of ${columns} characters, ${marks} for cloth and . for a hole`);
       present = new Uint8Array(columns * rows);
-      entry.mask.forEach((row, v) => { for (let u = 0; u < columns; u++) if (row[u] === '#') present[v * columns + u] = 1; else if (row[u] !== '.') fail(`${at}.mask[${v}]`, 'expected # for cloth or . for a hole'); });
+      entry.mask.forEach((row, v) => { for (let u = 0; u < columns; u++) if (Object.hasOwn(ramps, row[u])) { present[v * columns + u] = 1; drawnWith[v * columns + u] = row[u]; } else if (row[u] !== '.') fail(`${at}.mask[${v}]`, `expected ${marks} for cloth or . for a hole`); });
     }
-    const fills = entry.fill === undefined ? null : (Array.isArray(entry.fill) ? entry.fill : [entry.fill]);
-    if (!fills || !fills.length || fills.length > 8) fail(`${at}.fill`, 'expected a palette key, or 1–8 keys from dark to light');
-    fills.forEach((value, k) => key(value, `${at}.fill${Array.isArray(entry.fill) ? `[${k}]` : ''}`, palette));
     const outline = entry.outline === undefined ? null : key(entry.outline, `${at}.outline`, palette);
     const back = entry.back === undefined ? null : key(entry.back, `${at}.back`, palette);
     const light = entry.light === undefined ? [0, -1] : pair(entry.light, `${at}.light`, -1, 1);
@@ -65,7 +78,7 @@ export function readCloths(list, path, { bodies, byName, palette }) {
     const nodes = [];
     for (let v = 0; v < rows; v++) for (let u = 0; u < columns; u++) {
       const on = present[v * columns + u] === 1;
-      nodes.push({ u, v, present: on, x: origin[0] + u * cell, y: origin[1] + v * cell, pin: false });
+      nodes.push({ u, v, present: on, x: origin[0] + u * cell, y: origin[1] + v * cell, pin: false, fills: ramps[drawnWith[v * columns + u]] });
     }
     const constraints = [];
     const add = (a, b, rest, kind) => {
@@ -129,7 +142,7 @@ export function readCloths(list, path, { bodies, byName, palette }) {
         pins.push({ index, bodyIndex, point: null, keys, x, y, last: null });
       });
     }
-    return { name, columns, rows, nodes, constraints, pins, fills, outline, back, light, wind, gust, ripple, waves, damping, tear, seed, draw, collide };
+    return { name, columns, rows, nodes, constraints, pins, outline, back, light, wind, gust, ripple, waves, damping, tear, seed, draw, collide };
   });
 }
 
@@ -322,8 +335,8 @@ export function paintCloth(cloths, put, n, frame, cycle) {
         const tx = p10.x - p00.x, ty = p10.y - p00.y, bx = p01.x - p00.x, by = p01.y - p00.y;
         const tl = Math.sqrt(tx * tx + ty * ty) || 1, bl = Math.sqrt(bx * bx + by * by) || 1;
         const shade = ((tx * light[0] + ty * light[1]) / tl + (bx * light[0] + by * light[1]) / bl) / 2;
-        const index = Math.max(0, Math.min(def.fills.length - 1, Math.round((shade + 1) / 2 * (def.fills.length - 1))));
-        fill = def.fills[index];
+        const fills = def.nodes[v * def.columns + u].fills;
+        fill = fills[Math.max(0, Math.min(fills.length - 1, Math.round((shade + 1) / 2 * (fills.length - 1))))];
       }
       const color = fill.charCodeAt(0), x0 = Math.floor(Math.min(...cx)), x1 = Math.ceil(Math.max(...cx)), y0 = Math.floor(Math.min(...cy)), y1 = Math.ceil(Math.max(...cy));
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (inside(x + 0.5, y + 0.5, cx, cy)) put(x, y, color);

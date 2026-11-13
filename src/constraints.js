@@ -275,7 +275,8 @@ export function breakJoints(joints, frame, stats) {
   }
 }
 
-// Draws ropes: a line along each intact link joint, or a chain of links.
+// Draws ropes: a line along each intact link joint, or a chain of links. A chain with an outline key is drawn link by
+// link in its two keys by turns, which is what reads as a chain at this size; with one key it is a dot at each link.
 export function paintRopes(ropes, put, n = 1) {
   const disc = (x, y, code, r) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) put(x + i, y + j, code); };
   const worldDot = (x, y, code, r) => disc(Math.floor(x * n), Math.floor(y * n), code, r);
@@ -285,10 +286,11 @@ export function paintRopes(ropes, put, n = 1) {
   };
   for (const rope of ropes) {
     const code = rope.fill.charCodeAt(0), outline = rope.outline?.charCodeAt(0);
-    for (const joint of rope.joints) {
+    for (const [index, joint] of rope.joints.entries()) {
       if (joint.broken || joint.a?.gone || joint.b?.gone) continue;
       const [ax, ay, bx, by] = anchors(joint);
-      if (rope.look === 'chain') {
+      if (rope.look === 'chain' && outline !== undefined) line(ax, ay, bx, by, index % 2 ? outline : code, rope.thickness);
+      else if (rope.look === 'chain') {
         worldDot(ax, ay, code, Math.max(0, Math.floor((rope.thickness * n - 1) / 2)));
         worldDot(bx, by, code, Math.max(0, Math.floor((rope.thickness * n - 1) / 2)));
       } else {
@@ -296,6 +298,6 @@ export function paintRopes(ropes, put, n = 1) {
         line(ax, ay, bx, by, code, rope.thickness);
       }
     }
-    if (rope.look === 'chain') for (const link of rope.links) if (!link.gone) worldDot(link.x, link.y, code, Math.max(0, Math.floor((rope.thickness * n - 1) / 2)));
+    if (rope.look === 'chain' && outline === undefined) for (const link of rope.links) if (!link.gone) worldDot(link.x, link.y, code, Math.max(0, Math.floor((rope.thickness * n - 1) / 2)));
   }
 }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { compileBodies, renderProject, encodeGIF } from '../../src/index.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-export const BODIES_SHOWCASE = ['ring-escape', 'bouncing-pixel', 'spinning-hoop', 'crate-topple', 'territory', 'blade-bloom', 'crate-smash', 'rope-bridge', 'wrecking-ball', 'ragdoll', 'flag', 'banner', 'cape'];
+export const BODIES_SHOWCASE = ['ring-escape', 'bouncing-pixel', 'spinning-hoop', 'crate-topple', 'territory', 'blade-bloom', 'crate-smash', 'rope-bridge', 'wrecking-ball', 'lantern', 'ragdoll', 'flag', 'banner', 'cape'];
 const BACKDROP = [38, 42, 61, 255], SCALE = 4, HOLD = 800;
 
 // One GIF per example: `recipes` may hand in recipes compiled elsewhere (the tests), keyed by example name.

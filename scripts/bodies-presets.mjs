@@ -247,20 +247,36 @@ const flag = bodiesSource('flag', 64, 48,
   });
 
 // Banner: a tattered cloth hung from a rod by its top edge, swaying in a light wind, in a loop. Its `mask` cuts the
-// ragged hem and the holes; no background, so it drops into a scene.
+// ragged hem and the holes and draws the design, a gold stripe down the red, each character with its own ramp; no
+// background, so it drops into a scene.
 const bannerHem = [22, 23, 25, 26, 27, 27, 25, 23, 22, 24, 26, 27, 26, 24, 22, 23, 25, 27, 27, 26, 23];
 const banner = bodiesSource('banner', 48, 48,
-  { k: '#14141c', r: '#8f2433', R: '#b23a48', l: '#e06c5a', g: '#d7b56d' },
+  { k: '#14141c', r: '#8f2433', R: '#b23a48', l: '#e06c5a', G: '#a8802f', g: '#d7b56d', y: '#f2dc9b' },
   {
     frames: 24, duration: 60, loop: true, gravity: [0, 0.15],
     bodies: [{ name: 'rod', shape: 'box', size: [32, 3], at: [24, 7.5], fixed: true, fill: 'g', outline: 'k' }],
     cloths: [{
-      name: 'banner', at: [14, 9], size: [21, 28], cell: 1, fill: ['r', 'R', 'l'], outline: 'k', light: [-1, 0],
-      mask: shapeRows(21, 28, (u, v) => (v <= bannerHem[u] && !(u === 6 && v > 15 && v < 21) && !(u === 14 && v > 8 && v < 12) ? '#' : '.')),
+      name: 'banner', at: [14, 9], size: [21, 28], cell: 1, fill: { r: ['r', 'R', 'l'], g: ['G', 'g', 'y'] }, outline: 'k', light: [-1, 0],
+      mask: shapeRows(21, 28, (u, v) => (v <= bannerHem[u] && !(u === 6 && v > 15 && v < 21) && !(u === 14 && v > 8 && v < 12) ? (u >= 9 && u <= 11 ? 'g' : 'r') : '.')),
       wind: [0.1, 0], gust: 1, ripple: 3, waves: 1.25, slack: 0.1, stiffness: 0.5, shear: 0.25, bend: 0.05, collide: false,
       pins: Array.from({ length: 11 }, (_, i) => ({ at: [i * 2, 0], x: 14 + i * 2, y: 9 }))
     }]
   });
+
+// Lantern: an iron lantern on a chain from a beam, pushed by a gust, swinging and settling. What hangs and swings is a
+// body on a rope: the picture is a symbol that turns with it, and the chain's two keys are its links by turns.
+const lanternRows = ['.....kkk.....', '....kiiik....', '...kkiiikk...', '..kiiiiiiik..', '.kkkkkkkkkkk.', '.kiyyYYYyyik.', '.kiyYYWYYyik.', '.kiyYWWWYyik.', '.kiyYWWWYyik.', '.kiyYYWYYyik.', '.kiyyYYYyyik.', '.kiyyyYyyyik.', '.kkkkkkkkkkk.', '..kiiiiiiik..', '...kkkkkkk...'];
+const lantern = bodiesSource('lantern', 48, 64,
+  { k: '#14141c', i: '#4a5068', y: '#e8a23a', Y: '#ffd866', W: '#fff6c9', b: '#8a5a36', c: '#8b93ad' },
+  {
+    frames: 76, duration: 40, gravity: [0, 0.5],
+    bodies: [
+      { name: 'beam', shape: 'box', size: [44, 5], at: [24, 4.5], fixed: true, fill: 'b', outline: 'k' },
+      { name: 'lantern', shape: 'box', size: [13, 15], at: [24, 37.5], velocity: [2.2, 0], density: 3, drag: 0.03, spinDrag: 0.1, symbol: 'lantern' }
+    ],
+    ropes: [{ from: { body: 'beam', point: [0, 2.5] }, to: { body: 'lantern', point: [0, -7.5] }, links: 8, slack: 0, look: 'chain', fill: 'c', outline: 'k' }]
+  },
+  { lantern: lanternRows });
 
 // Cape: a walking figure (a fixed body that moves) with a cloth pinned at its shoulders, hanging down its back and
 // trailing as it goes.
@@ -280,4 +296,4 @@ const cape = bodiesSource('cape', 80, 64,
   { ground: shapeRows(80, 4, (x, y) => (y ? 's' : 'f')), hero: heroRows });
 
 export const bodiesPresets = { 'ring-escape': ringEscape, 'bouncing-pixel': bouncingPixel, 'spinning-hoop': spinningHoop, 'crate-topple': finer(crateTopple, 2), territory, 'blade-bloom': bladeBloom, 'crate-smash': crateSmash,
-  'rope-bridge': ropeBridge, 'wrecking-ball': wreckingBall, ragdoll, flag, banner, cape };
+  'rope-bridge': ropeBridge, 'wrecking-ball': wreckingBall, lantern, ragdoll, flag, banner, cape };
