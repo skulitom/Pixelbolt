@@ -295,7 +295,7 @@ test('finding presets by words lists the names that hold the most of them, else 
   assert.deepEqual(names('flame'), ['torch']);
   assert.deepEqual(names('flame, gas'), ['campfire', 'torch']);
   assert.equal(findListing(listing, 'torch').presets.torch, briefListing(listing).presets.torch);
-  assert.deepEqual(findListing(listing, 'knight'), { guide: 'No preset matches "knight": try another word, or draw it (the quick start says how). Every preset by name:', names: 'campfire, torch, water-wheel, splash' });
+  assert.deepEqual(findListing(listing, 'knight'), { guide: 'No preset matches "knight". Presets are effects, simulations, tile sets and character rigs; an icon, a prop or a piece of UI is drawn by hand (the quick start says how). Every preset by name:', names: 'campfire, torch, water-wheel, splash' });
   assert.equal(findListing({ ...listing, note: 'n' }, 'torch').note, 'n');
   assert.throws(() => findListing(listing, '--'), /find: expected words/);
 });

@@ -345,7 +345,7 @@ export function findListing(listing, query, where = 'find', all = listing.preset
   if (!found.length) {
     // Nothing ships for most characters, and the way to one is a rig redrawn, so the reply names the rigs.
     const rigs = listing.presets.filter(entry => entry.kind === 'poses' && /rig whose/.test(entry.for ?? '')).map(entry => entry.name);
-    return { guide: `No preset matches "${query}": try another word, or draw it (the quick start says how).${rigs.length ? ` For a character or creature, start from a rig and redraw it (${rigs.join(', ')}; pixel_help {"topic": "craft", "name": "Characters"}, pixelbolt help craft "Characters").` : ''} Every preset by name:`, names: listing.presets.map(entry => entry.name).join(', ') };
+    return { guide: `No preset matches "${query}". Presets are effects, simulations, tile sets and character rigs; an icon, a prop or a piece of UI is drawn by hand (the quick start says how).${rigs.length ? ` For a character or creature, start from a rig and redraw it (${rigs.join(', ')}; pixel_help {"topic": "craft", "name": "Characters"}, pixelbolt help craft "Characters").` : ''} Every preset by name:`, names: listing.presets.map(entry => entry.name).join(', ') };
   }
   return { guide: FIND_NOTE, presets: Object.fromEntries(found.map(entry => [entry.name, lines[entry.name]])), ...(also && { also: `Kinds of preset those words also name: ${also}.` }), ...(listing.note && { note: listing.note }) };
 }

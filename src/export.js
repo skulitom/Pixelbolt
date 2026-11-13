@@ -3,7 +3,7 @@ import { encodePNG, encodeAPNG, crc32 } from './png.js';
 import { readFile, readdir, mkdir, writeFile, access, rm, rmdir, stat, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { embedRecipe, recipeKind } from './share.js';
-import { spriteFrames, tileSets } from './godot.js';
+import { spriteFrames, tileSets, canvasTexture, normalsYUp } from './godot.js';
 import { tiledTileset } from './tiled.js';
 import { autotileFrames } from './autotile.js';
 
@@ -57,7 +57,11 @@ export function generateCSS(project, atlas) {
   lines.push('@media (prefers-reduced-motion: reduce) {', ...Object.keys(project.animations).map(key => `  .pf-${project.name}-${key} { animation: none; }`), '}');
   return lines.join('\n') + '\n';
 }
-export async function createBundle(spec) {
+// `normal`: a normal recipe aligned with `spec` (the same size and frame names in the same order, as compileNormals
+// makes one). Its sheet is written beside the colour sheet on the same grid, as authored (+Y down) and with green
+// flipped as Godot and Unity read a normal map, with a Godot CanvasTexture pairing the two that the SpriteFrames then
+// draws through, so an AnimatedSprite2D with it takes light from Light2D nodes.
+export async function createBundle(spec, { normal } = {}) {
   const project = renderProject(spec);
   const { width, height, sheet, frames, name } = project;
   const animationPixels = Object.values(project.animations).reduce((sum, a) => sum + a.frames.length * width * height * sheet.scale ** 2, 0);
@@ -72,7 +76,17 @@ export async function createBundle(spec) {
   // A tile set with no animations of its own has only the flipbook of every tile, which is no animation: it gets no
   // SpriteFrames, animated PNGs, CSS or player, and its preview shows the sheet.
   const still = Boolean(tiles) && spec.animations === undefined;
-  const godot = still ? null : spriteFrames(atlas.metadata);
+  if (normal !== undefined) {
+    const pass = renderProject({ ...normal, sheet: spec.sheet });
+    const differs = pass.width !== width || pass.height !== height ? `it is ${pass.width}×${pass.height} and the colour recipe ${width}×${height}` : pass.frames.length !== frames.length ? `it has ${pass.frames.length} frames and the colour recipe ${frames.length}` : pass.frames.find((frame, i) => frame.name !== frames[i].name);
+    if (differs) throw new PixelError('normal', `a normal pass shares the colour recipe's size and frames: ${typeof differs === 'string' ? differs : `its frame "${differs.name}" is "${frames[pass.frames.indexOf(differs)].name}" in the colour recipe`}. Derive it from this recipe with a pixelforge-normals source`);
+    const lit = buildAtlas(pass);
+    if (lit.width !== atlas.width || lit.height !== atlas.height) throw new PixelError('normal', 'a trimmed colour sheet packs each frame by what it draws, and the normal sheet must match it pixel for pixel: derive the normal pass from this recipe, or set sheet.trim to false');
+    files.set(`${name}.normal.png`, encodePNG(lit.data, lit.width, lit.height));
+    files.set(`${name}.normal_y_up.png`, encodePNG(normalsYUp(lit.data), lit.width, lit.height));
+    files.set(`${name}.canvas.tres`, Buffer.from(canvasTexture({ diffuse: `${name}.png`, normal: `${name}.normal_y_up.png` })));
+  }
+  const godot = still ? null : spriteFrames(atlas.metadata, normal !== undefined ? { image: `${name}.canvas.tres` } : {});
   if (godot) files.set(`${name}.tres`, Buffer.from(godot.text));
   // Frame times Godot holds as fractions play within a ten-millionth of their length: a fact for whoever opens the
   // .tres, written in README.txt and kept in `notes`, not a warning for every reply to carry.
@@ -94,7 +108,8 @@ export async function createBundle(spec) {
   if (raised.size) project.warnings.push(`${raised.size} frame${raised.size === 1 ? '' : 's'} of 10 ms or less (${[...raised].slice(0, 8).join(', ')}${raised.size > 8 ? ', …' : ''}) last 11 ms in the animated PNGs: browsers play such short frames at 100 ms. The atlas, CSS and player keep the exact durations.`);
   if (!still) files.set('player.js', await readFile(new URL('./runtime.js', import.meta.url)));
   files.set('preview.html', Buffer.from(still ? sheetHTML(project) : previewHTML(project)));
-  files.set('README.txt', Buffer.from((tiles ? tilesetReadme(project, tiles, still) : spriteReadme(project)) + notes.map(note => `\nGodot: ${note}\n`).join('')));
+  const lit = normal === undefined ? '' : `\n${name}.normal.png: the normal pass on the same grid, +Y down as Pixelbolt draws it\n${name}.normal_y_up.png: the same with green flipped, as Godot and Unity read a normal map\n${name}.canvas.tres: a Godot 4 CanvasTexture of ${name}.png and ${name}.normal_y_up.png; ${name}.tres draws through it, so an AnimatedSprite2D with ${name}.tres is shaded by PointLight2D and DirectionalLight2D nodes, and a Sprite2D takes ${name}.canvas.tres as its texture. Keep the four files together\n`;
+  files.set('README.txt', Buffer.from((tiles ? tilesetReadme(project, tiles, still) : spriteReadme(project)) + lit + notes.map(note => `\nGodot: ${note}\n`).join('')));
   // A forced export over an earlier export of this recipe removes the frame and animation PNGs that export's atlas
   // lists and this one no longer has. Another recipe's export in the same folder keeps its PNGs, and so does a PNG
   // put in frames/ by hand.

@@ -1,11 +1,26 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { prepareScene, renderScene, sceneHaze, scenePlanes } from './scene.js';
+import { prepareScene, renderScene, sceneImage, sceneHaze, scenePlanes } from './scene.js';
+import { framesGIF } from './gif.js';
+import { parseFrameRate } from './sequence.js';
 import { encodePNG } from './png.js';
 import { buildAtlas } from './core.js';
 import { spriteFrames, canvasTexture, normalsYUp, tileSets, parallaxScene } from './godot.js';
 import { tileSource } from './export.js';
 import { tiledTileset, tiledMap } from './tiled.js';
+
+// A prepared scene as one looping GIF: the scene at each frame's start, through its duration once, `fps` frames a
+// second (25 unless given, which GIF's 10 ms steps hold exactly), each enlarged `scale` times. Returns framesGIF's
+// result, with a note when the duration is not a whole number of frames, since the loop then ends early or late.
+export function sceneGIF(scene, { fps = 25, scale = 1 } = {}) {
+  const rate = parseFrameRate(fps, 'gif.fps'), frameMs = 1000 * rate.denominator / rate.numerator, count = Math.max(1, Math.round(scene.duration / frameMs));
+  function* frames() {
+    for (let k = 0; k < count; k++) { const image = sceneImage(renderScene(scene, { time: k * frameMs }), { scale }); yield { data: image.data, width: image.width, height: image.height, name: `frame ${k + 1}` }; }
+  }
+  const gif = framesGIF(frames(), { fps: rate });
+  if (Math.abs(count * frameMs - scene.duration) > 0.5) gif.notes.push(`The scene lasts ${scene.duration} ms, ${Math.round(scene.duration / frameMs * 100) / 100} frames at ${rate.label} fps, and the GIF plays ${count}: give the scene a duration that is a whole number of frames (${Math.round(count * frameMs)} ms) and the loop closes exactly.`);
+  return gif;
+}
 
 export async function createSceneBundle(source) {
   const scene = prepareScene(source), view = renderScene(scene), files = new Map();

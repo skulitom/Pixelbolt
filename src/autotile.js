@@ -79,8 +79,10 @@ export function tilemapEntry(recipe) {
 
 // What a compile reply gives of a tile set: a scene instance's `tilemap` without its rows, the cell size and the
 // legend with `#` for the terrain. A set with slopes has a character for each slope too and rules for the feet under
-// them (the legend its metadata holds), with the small map that uses every one. null where tilemapEntry is.
+// them (the legend its metadata holds), with the small map that uses every one. A layered set's legend has each
+// layer's key, all drawn from the one family of corner tiles. null where tilemapEntry is.
 export function tilemapOf(recipe, metadata) {
+  if (metadata?.layers && metadata.frame) return { tile: [recipe.width, recipe.height], legend: Object.fromEntries(metadata.layers.map(layer => [layer.key, { frame: metadata.frame, autotile: 'corner' }])) };
   const entry = tilemapEntry(recipe);
   if (!entry) return null;
   return metadata?.slopes ? { tile: entry.tile, legend: metadata.slopes.legend, rows: metadata.slopes.map } : { tile: entry.tile, legend: { '#': entry.legend } };

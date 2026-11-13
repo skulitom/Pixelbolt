@@ -36,10 +36,13 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            See every frame; writes only --out
   pixelbolt patch <file.json|-> --changes <changes.json|-> [--out new.json] [--image diff.png]
                                            Preview edits; writes only --out and --image
-  pixelbolt render <file.json|-> --out dir [--look] [--gif | --gif-scale 1-16]
-                                           Export a complete asset bundle. --look also writes look.png there, the frames
-                                           enlarged to look at; --gif a GIF of each animation in gifs/, at the frames'
-                                           own size or --gif-scale times it
+  pixelbolt render <file.json|-> --out dir [--scale 1-16] [--look] [--gif | --gif-scale 1-16] [--normal <file>]
+                                           Export a complete asset bundle. --scale enlarges every exported pixel that
+                                           many times (the recipe's sheet.scale, for this export); --look also writes
+                                           look.png there, the frames enlarged to look at; --gif a GIF of each
+                                           animation in gifs/, at the frames' own size or --gif-scale times it;
+                                           --normal a normal recipe or a pixelforge-normals source of this recipe,
+                                           exported beside the sheet with a Godot CanvasTexture that lights it
                                            --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it
                                            against the request; --animation <name> checks only that animation
   pixelbolt share <file.json|->           Print a playground link for the resolved recipe
@@ -49,6 +52,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            A shipped preset straight to its GIF, in one call: --size and --frames as
                                            in compile, --sheet also writes the frames as a contact sheet to look at
                                            (all three work with a recipe file too)
+  pixelbolt gif <scene.json> --out scene.gif [--scale 1-16] [--fps 25]
+                                           A whole scene as one looping GIF, through its duration once
   pixelbolt gif-frames <folder> --fps 25 --out loop.gif [--loops 0] [--background color] [--prefix name_]
                                            A GIF from numbered PNG frames (name_0001.png ...); writes only --out
   pixelbolt sequence <recipe|source|scene.json> --out folder --fps 30 [--size 1080p|WxH] [--scale n]
@@ -158,8 +163,8 @@ const OPTIONS = {
   validate: ['fps'],
   inspect: ['frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'full', 'max-cells', 'step', 'offset', 'every', 'layers', 'reference', 'beside', 'palette', 'guides', 'motion', 'speed', 'ground', 'metadata'],
   patch: ['changes', 'out', 'image', 'force'],
-  render: ['out', 'force', 'expect', 'animation', 'list-files', 'embed-recipe', 'gif', 'gif-scale', 'look'],
-  gif: ['out', 'animation', 'scale', 'background', 'force', 'preset', 'size', 'frames', 'sheet'],
+  render: ['out', 'force', 'expect', 'animation', 'list-files', 'embed-recipe', 'gif', 'gif-scale', 'look', 'scale', 'normal'],
+  gif: ['out', 'animation', 'scale', 'background', 'force', 'preset', 'size', 'frames', 'sheet', 'fps'],
   'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'],
   sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'],
   preview: ['port', 'open'],
@@ -399,6 +404,11 @@ const referenced = input => input.resolution.files.length ? { resolved: input.re
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 // `presets [name] [--full]`, and `help presets [--full]` or `help preset <name>`: every preset, a line each or in full,
 // or one preset's source. A shell has no time limit, so every preset is measured.
+// Whether a file holds a scene, which `gif` writes whole where it writes one animation of a recipe.
+async function holdsScene(file) {
+  if (!file || file === '-') return false;
+  try { return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, '')).format === 'pixelforge-scene'; } catch { return false; }
+}
 async function presetsText(name, full, find, out, force) {
   if (out !== undefined && (name === undefined || find !== undefined)) throw new Error('--out saves one preset\'s source: pixelbolt presets <name> --out <new.json>');
   if (find !== undefined) {
@@ -691,7 +701,16 @@ try {
       const files = await writeBundle(sequence, options.out, { force: options.force, inputs: inputsOf(input) }), { timing, figures, ...info } = sequence.info;
       // A match's every-frame figures stay in sequence.json; the reply carries their summary, after where the files went.
       print({ ok: true, ...info, directory: shown(path.resolve(options.out)), files: files.length, ...(files.removed && { removed: files.removed }), ...referenced(input), ...(figures && { figures: figuresSummary(figures) }) });
+    } else if (command === 'gif' && options.preset === undefined && await holdsScene(positional[0])) {
+      // A scene: the whole of it as one looping GIF, sampled through its duration.
+      if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
+      for (const key of ['animation', 'background', 'size', 'frames', 'sheet']) if (options[key] !== undefined) throw new Error(`--${key} goes with a recipe's GIF; a scene's takes --scale and --fps`);
+      if (options.scale !== undefined && !/^\d{1,2}$/.test(options.scale)) throw new Error('--scale expects a whole number from 1 to 16');
+      const { sceneGIF } = await import('../src/scene-export.js');
+      const input = await readResolved(positional[0]), { data, ...gif } = sceneGIF(prepareScene(input.document), { ...(options.fps !== undefined && { fps: options.fps }), ...(options.scale !== undefined && { scale: Number(options.scale) }) });
+      print({ ok: true, name: input.document.name, width: gif.width, height: gif.height, frames: gif.frames, fps: gif.fps.label, duration: gif.duration, colors: gif.colors, bytes: data.length, ...await writeOutputs({ file: [options.out, data, '--out'] }, options.force, inputsOf(input)), ...(gif.notes.length && { notes: gif.notes }), ...referenced(input) });
     } else if (command === 'gif') {
+      if (options.fps !== undefined) throw new Error('--fps goes with a scene\'s GIF; a recipe\'s frames carry their own durations');
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
       if (options.sheet !== undefined && !/\.png$/i.test(options.sheet)) throw new Error('--sheet must name a new .png file');
       // --preset: a shipped preset straight to its GIF, compiled as compile --preset compiles it.
@@ -733,7 +752,14 @@ try {
         // pixel_render's gif does. They are encoded, and the check run, before anything is written, so a refused GIF or
         // an unknown --animation writes nothing.
         if (options['gif-scale'] !== undefined && !/^\d{1,2}$/.test(options['gif-scale'])) throw new Error('--gif-scale expects a whole number from 1 to 16, such as --gif-scale 4');
-        const bundle = await createBundle(input.document), scale = options['gif-scale'] === undefined ? undefined : Number(options['gif-scale']);
+        if (options.scale !== undefined && !/^(?:[1-9]|1[0-6])$/.test(options.scale)) throw new Error('--scale expects a whole number from 1 to 16: how many times to enlarge every exported pixel');
+        // --scale: sheet.scale for this export, so "a PNG at 4x" needs no patch first. The bundle's copy of the recipe carries it.
+        if (options.scale !== undefined) input.document = { ...input.document, sheet: { ...input.document.sheet, scale: Number(options.scale) } };
+        // --normal: a normal recipe aligned with this one, or the pixelforge-normals source that derives it, exported
+        // beside the colour sheet with what Godot needs to light it.
+        const lit = options.normal === undefined ? null : await readResolved(options.normal, '--normal');
+        const normal = !lit ? undefined : lit.document?.format === 'pixelforge-normals' ? COMPILERS['pixelforge-normals'](lit.document).recipe : lit.document;
+        const bundle = await createBundle(input.document, { normal }), scale = options['gif-scale'] === undefined ? undefined : Number(options['gif-scale']);
         const gifs = options.gif || scale !== undefined ? Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, { ...(scale !== undefined && { scale }) })) : undefined;
         if (gifs && gifs.reduce((sum, item) => sum + item.frames * item.width * item.height, 0) > 67108864) throw new Error('--gif-scale: all animations at this scale exceed 67,108,864 pixels; use a lower scale');
         const check = checkDelivery(bundle.project, { recipe: input.document, gifs, expect, animation: options.animation });
@@ -743,7 +769,7 @@ try {
         // size for a game, too small to judge by eye.
         if (options.look) { const sheet = inspectProject(bundle.project, options.animation !== undefined ? { animation: options.animation } : {}).sheet; bundle.files.set('look.png', encodePNG(sheet.data, sheet.width, sheet.height)); }
         const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
-        const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile] });
+        const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile, ...(lit ? inputsOf(lit) : [])] });
         const notes = (gifs ?? []).flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16);
         print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), ...(gifs?.length && { gifs: { scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(notes.length && { notes }) } }), ...(options.look && { look: shown(path.join(path.resolve(options.out), 'look.png')) }), check: briefCheck(check), ...referenced(input) });
       }
