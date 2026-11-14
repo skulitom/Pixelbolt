@@ -305,3 +305,31 @@ test('a light plank dropped flat on a pool lands on it: the water stays in, and 
     assert.ok(body.asleep && Math.abs(body.angle - Math.round(body.angle / 360) * 360) < 1, `seed ${seed}: and rests flat: angle ${body.angle}, asleep ${body.asleep}`);
   }
 });
+
+test('a light body under water rises whatever hangs in the water beside it, and a raft floats with the load it can carry', () => {
+  // The level a body floats at was the top of the unbroken run of water in the column beside its lowest row. Under another
+  // solid there (a crate that had pushed a raft under and rolled off beside it, a ledge) that was the solid's underside,
+  // so the water over the body counted as a load resting on it and held it down: this box, 0.4 as dense as water, lay on
+  // the bottom for good.
+  const light = paths(pool([{ name: 'light', shape: 'box', size: [6, 4], at: [24, 37.9], density: 0.4, fill: 'h' }, { shape: 'box', size: [6, 3], at: [18, 30], fixed: true, fill: 'g' }], { frames: 120 })).light;
+  assert.ok(light.at(-1)[1] > 22 && light.at(-1)[1] < 25.5, `the light box rises past the ledge to the surface (row 24): ${light[0]} to ${light.at(-1)}`);
+  // A crate on a raft wider than itself has the raft beside its lowest row, not water, and with its top out of the water
+  // it read as dry: its lift went from all to nothing as it came up, and the pair bobbed under the surface. And the
+  // liquid's lift and a body's weight were shared over its mass and the liquid moving with it, while a contact was solved
+  // with its own mass alone, so a light raft held a load up with under half its lift. This pair, 0.69 as dense as water
+  // together, went to sleep where it was let go, 5 rows under the surface.
+  const pair = paths(pool([{ name: 'raft', shape: 'box', size: [22, 4], at: [24, 34], density: 0.25, fill: 'h' }, { name: 'crate', shape: 'box', size: [16, 3], at: [24, 30.5], density: 1.5, fill: 'g' }], { frames: 160 }));
+  const mean = name => pair[name].slice(110).reduce((sum, at) => sum + at[1], 0) / 50;
+  // 632 cells of water and the 94 the pair weighs fill the pool to row 24.9: the raft is under it and the crate 0.4 rows in.
+  assert.ok(Math.abs(mean('crate') - 23.75) < 0.75, `the crate rides with its top out of the water, its middle near row 23.75: ${mean('crate')}`);
+  assert.ok(Math.abs(mean('raft') - mean('crate') - 3.5) < 0.3, `on the raft: ${mean('raft')}`);
+  // The report's tank: a crate of 1.4 dropped onto a floating raft of 0.4, off its middle, pushed it under and slid off,
+  // and the raft stayed down for 40 to 200 of 240 frames (with this seed, still 16 rows under at the end).
+  const tank = { format: 'pixelforge-fluid', version: 1, name: 'tank', width: 26, height: 40, palette,
+    effects: { tank: { kind: 'liquid', frames: 240, duration: 50, seed: 2, walls: ['left', 'right', 'bottom'], flip: 0.3, drag: 0.05, fill: [{ x: 0, y: 16, w: 26, h: 24 }], emitters: [],
+      look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }],
+      bodies: [{ name: 'raft', shape: 'box', size: [11, 6], at: [13, 15.4], density: 0.4, fill: 'h' }, { name: 'crate', shape: 'box', size: [6, 6], at: [11, 8.4], density: 1.4, fill: 'g' }] } } };
+  const { raft, crate } = paths(tank), deepest = Math.max(...raft.map(at => at[1]));
+  assert.ok(deepest < 22 && Math.abs(raft.at(-1)[1] - 14) < 1, `the raft comes back up and floats: deepest ${deepest}, ends ${raft.at(-1)}`);
+  assert.equal(crate.at(-1)[1], 37, 'and the crate lies on the bottom');
+});

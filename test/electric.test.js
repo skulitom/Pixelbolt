@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderProject, PixelError } from '../src/core.js';
 import { compileFluid, createLiveFluid } from '../src/fluid.js';
+import { createElectric, stepElectric } from '../src/electric.js';
 
 // Plasma drawn by ionization (i), current by c, a glow of current as v; obstacles stamp g (gas never draws them).
 const palette = { i: '#4f7cff', c: '#ffffff', v: '#3b2a8c', s: '#888888', g: '#666666', k: '#222222' };
@@ -126,6 +127,25 @@ test('electric effects are deterministic, and a live run from warmup 0 reproduce
     live.step();
     assert.deepEqual(Array.from(live.render().rgba), Array.from(project.frames[index].data), `frame ${f}`);
   });
+});
+
+test('a link whose midpoint is in its own end\'s cell stays as it is, and the link after it still splits that step', () => {
+  // Still air, no electrode: three markers by hand. The link a–b is 2.5 pixels long and its midpoint falls in b's own
+  // cell; a–c is 3 pixels long over an empty cell. Before, a–b was parted and joined again, which moved it to the end
+  // of a's links and stepped past a–c, so a–c got its middle marker a step late (three markers after this step).
+  const W = 8, H = 8, N = W * H;
+  const effect = { seed: 1, obstacles: [], electric: { recombine: 0, sustain: 0.5, memory: 8, heating: 0, ionize: 0, ground: {} }, layout: { key: 'still', places: [] } };
+  const state = { g: { u: new Float64Array((W + 1) * H), v: new Float64Array(W * (H + 1)), pixels: new Uint8Array(N) }, T: new Float64Array(N), solids: { solid: new Uint8Array(N) } };
+  const E = createElectric(effect, W, H), marker = (x, y) => ({ x, y, ion: 1, trace: 1, links: [] });
+  const a = marker(2.1, 2.1), b = marker(3.9, 3.9), c = marker(5.1, 2.1);
+  a.links.push(b, c); b.links.push(a); c.links.push(a);
+  E.markers.push(a, b, c);
+  stepElectric(E, state, effect, 1);
+  assert.equal(E.markers.length, 4);
+  const [middle] = E.markers.slice(3);
+  assert.deepEqual([middle.x, middle.y], [(2.1 + 5.1) / 2, 2.1]);
+  assert.deepEqual(a.links, [b, middle], 'a keeps its links in order');
+  assert.deepEqual([b.links, c.links, middle.links], [[a], [middle], [a, c]]);
 });
 
 test('electric settings are checked, each error naming its field', () => {

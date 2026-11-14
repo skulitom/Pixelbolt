@@ -1167,7 +1167,8 @@ export function createBodyWorld(effect, context) {
     const next = new Map();
     const prepare = () => contacts.forEach(contact => {
       const { a, b, nx, ny } = contact, tx = ny, ty = -nx;
-      let ma = solid(a) ? 0 : a.invMass, ia = solid(a) ? 0 : a.invInertia, mb = solid(b) ? 0 : b.invMass, ib = solid(b) ? 0 : b.invInertia;
+      // A body in a liquid moves with some of the liquid round it (`heft`, from fluid.js: its mass with that, over its own).
+      let ma = solid(a) ? 0 : a.invMass / (a.heft ?? 1), ia = solid(a) ? 0 : a.invInertia, mb = solid(b) ? 0 : b.invMass / (b.heft ?? 1), ib = solid(b) ? 0 : b.invInertia;
       for (const point of contact.points) {
         point.rax = point.x - a.x; point.ray = point.y - a.y; point.rbx = b ? point.x - b.x : 0; point.rby = b ? point.y - b.y : 0;
         const [dvx, dvy] = relative(contact, point);

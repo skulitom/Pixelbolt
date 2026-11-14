@@ -1228,6 +1228,48 @@ test('obstacles move and vanish on cue, pushing the fluid ahead of them', () => 
   assert.equal(lid.warnings, undefined);
 });
 
+test('liquid an obstacle closes on is squeezed out of the gap, not removed, and never through another solid (P-034)', () => {
+  // Liquid in the cells an obstacle covers went along its move to the first open cell, and was removed where another
+  // solid came first, or where the obstacle had not moved there (it was shown, or jumped). The counts below are what
+  // each of these lost before.
+  const block = (w, h) => Array(h).fill('y'.repeat(w)), look = [{ field: 'density', colors: ['s'], thresholds: [0.5], dither: 0 }];
+  const run = (effect, symbols) => {
+    const { recipe, metadata } = compileFluid({ ...gas(null), width: 48, height: 40, symbols, effects: { e: { kind: 'liquid', frames: 60, seed: 3, walls: ['left', 'right', 'bottom'], emitters: [], look, ...effect } } });
+    return { recipe, particles: metadata.effects.e.figures.particles };
+  };
+  const whole = (name, { particles }) => assert.equal(Math.min(...particles), particles[0], `${name}: every particle kept, ${particles[0]} to ${Math.min(...particles)}`);
+  // A crusher comes down to the floor through a pool, open on both sides (43 of 1,152 particles), and through a slab of
+  // slime that holds its shape (37 of 1,024).
+  const crusher = { symbol: 'crusher', x: 16, y: 12, keys: [{ frame: 10, y: 30, over: 20 }] };
+  whole('a crusher in water', run({ fill: [{ x: 0, y: 34, w: 48, h: 6 }], obstacles: [crusher] }, { crusher: block(16, 10) }));
+  whole('a crusher in slime', run({ yield: 0.15, viscosity: 1, slip: true, fill: [{ x: 8, y: 32, w: 32, h: 8 }], obstacles: [crusher] }, { crusher: block(16, 10) }));
+  // The same onto a shelf two pixels thick across the whole canvas, with air under it: what is squeezed comes out at the
+  // crusher's sides, never under the shelf.
+  const shelf = run({ fill: [{ x: 0, y: 20, w: 48, h: 4 }], obstacles: [{ symbol: 'shelf', x: 0, y: 24 }, { symbol: 'crusher', x: 16, y: 6, keys: [{ frame: 10, y: 14, over: 16 }] }] }, { crusher: block(16, 10), shelf: block(48, 2) });
+  whole('a crusher on a thin shelf', shelf);
+  for (let f = 0; f < 60; f++) assert.equal(drawn(shelf.recipe, f).filter(([, y]) => y >= 26).length, 0, `nothing comes through the shelf on frame ${f}`);
+  // A piston pushes a pool against the canvas edge under an open top: the water climbs over it (26 of 720; one or two
+  // still leave through the top).
+  const open = run({ fill: [{ x: 30, y: 30, w: 18, h: 10 }], obstacles: [{ symbol: 'piston', x: 12, y: 30, keys: [{ frame: 10, x: 42, over: 30 }] }] }, { piston: block(6, 10) });
+  assert.ok(open.particles.at(-1) >= open.particles[0] - 4, `a piston under an open top: ${open.particles[0]} to ${open.particles.at(-1)}`);
+  // A piston as tall as its chamber, under a lid, closes the pocket behind it against the end wall: sealed on every side,
+  // the water is pressed denser and comes out past the piston when it shuts (all 560 particles went at once).
+  const lid = [...Array(26).fill('.'.repeat(48)), ...block(48, 4), ...Array(10).fill('.'.repeat(48))];
+  const sealed = run({ fill: [{ x: 30, y: 30, w: 14, h: 10 }], obstacles: [{ symbol: 'lid', x: 0, y: 0 }, { symbol: 'piston', x: 12, y: 30, keys: [{ frame: 10, x: 42, over: 30 }] }] }, { lid, piston: block(6, 10) });
+  whole('a piston that seals its chamber', sealed);
+  const out = drawn(sealed.recipe, 59);
+  assert.ok(out.length > 100 && out.every(([x, y]) => x < 42 && y >= 30), 'the water is on the open side of the piston, under the lid');
+  // Cuts push nothing, and take nothing: a gate shown across a full channel (144 of 2,304) and a slab that jumps into a
+  // pool (240) move the water out round them, so the level rises.
+  const channel = { fill: [{ x: 0, y: 28, w: 48, h: 12 }] }, wet = ({ recipe }, f) => drawn(recipe, f).length;
+  const gate = run({ ...channel, obstacles: [{ symbol: 'gate', x: 22, y: 26, keys: [{ frame: 0, show: false }, { frame: 20, show: true }] }] }, { gate: block(3, 14) });
+  const jump = run({ ...channel, obstacles: [{ symbol: 'slab', x: 4, y: 4, keys: [{ frame: 20, x: 20, y: 30 }] }] }, { slab: block(10, 6) });
+  whole('a gate shown in a channel', gate);
+  whole('a slab that jumps into a pool', jump);
+  // The slab takes 60 of the pool's 576 pixels, and as many are drawn round it as before (516 were).
+  assert.ok(wet(jump, 19) === 576 && Math.abs(wet(jump, 59) - 576) <= 12, `the pool rises round the slab: ${wet(jump, 19)} pixels of water, then ${wet(jump, 59)}`);
+});
+
 test('per-frame figures measure where the fluid is, how much there is and in how many pieces', async () => {
   // A ball dropped in a closed box: its middle falls, it stays one piece with every particle, and it lands.
   const drop = compileFluid(goo({ frames: 30, walls: FLUID_WALLS }, [{ at: [24, 6], radius: 4 }]));
