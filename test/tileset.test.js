@@ -160,6 +160,14 @@ test('autotile collision and weights are checked, and the test map mixes variant
   assert.ok(colours.has('#78b850') && colours.has('#2c5878'), [...colours].join(' '));
   const drawn = renderProject(ledge).frames[0].data, has = ([r, g, b]) => { for (let i = 0; i < drawn.length; i += 4) if (drawn[i] === r && drawn[i + 1] === g && drawn[i + 2] === b) return true; return false; };
   assert.ok(has([0x78, 0xb8, 0x50]) && has([0x2c, 0x58, 0x78]) && has([0x58, 0xa0, 0x40]), 'each variant is drawn in its colours');
+  // The copies stay inside a palette: a colour the palette has keeps its key, a new colour gets one spare key however
+  // many variants use it, and a variant that would take the test map past 256 colours is drawn in the base palette.
+  const wide = Object.fromEntries(Array.from({ length: 250 }, (_, i) => [String.fromCharCode(0x100 + i), `#${(0x100000 + i * 37).toString(16)}`]));
+  const many = compileAutotile({ ...ledgeSource, palette: { ...ledgeSource.palette, ...wide }, variants: [{ name: 'a' }, { name: 'b', palette: { g: 'o' } }, { name: 'c', palette: { g: '#123456' } }, { name: 'd', palette: { d: '#123456' } },
+    { name: 'e', palette: { g: '#111111', d: '#222222', o: '#333333' } }] }).preview;
+  assert.equal(Object.keys(many.palette).length, 254);
+  assert.deepEqual(many.frames[0].ops.at(-1).legend['#'].templates, ['template', 'template-as-b', 'template-as-c', 'template-as-d']);
+  assert.equal(renderProject(many).frames.length, 1);
   // The frames of an animation are one tile at different moments, so they stay one template.
   const cycled = compileAutotile({ ...ledgeSource, animation: 'ledge-{mask}' }).preview.frames[0].ops.at(-1).legend['#'];
   assert.deepEqual(cycled, { template: 'template', autotile: 'blob' });

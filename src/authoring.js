@@ -865,17 +865,24 @@ export function compileAutotile(source) {
   // A variant that only recolours draws the shared template in its own palette, which one frame of one palette can't
   // do: there it is a copy of the template in spare keys that hold its colours. (Every variant was drawn in the base
   // palette, so a red set with a blue variant showed a test map all red.) The frames of an animation stay one template.
-  const shown = { ...recipe, palette: { ...palette }, symbols: { ...symbols } };
+  // A colour the palette already has keeps its key, each new colour gets one spare key however many variants use it, and
+  // a variant whose colours would take the palette past its 256 is drawn in the base palette, as all were.
+  const shown = { ...recipe, palette: { ...palette }, symbols: { ...symbols } }, spares = new Map();
   let spare = 0x2460;
   const drawnAs = variant => {
     const base = symbolOf(variant);
     if (variant.palette === undefined || source.animation !== undefined) return base;
-    const swap = new Map();
+    const swap = new Map(), fresh = [];
     for (const [key, value] of Object.entries(variant.palette)) {
-      while (Object.hasOwn(shown.palette, String.fromCharCode(spare))) spare++;
-      const fresh = String.fromCharCode(spare++);
-      shown.palette[fresh] = Object.hasOwn(palette, value) ? palette[value] : value; swap.set(key, fresh);
+      if (Object.hasOwn(palette, value)) { swap.set(key, value); continue; }
+      if (!spares.has(value)) {
+        while (Object.hasOwn(shown.palette, String.fromCharCode(spare))) spare++;
+        spares.set(value, String.fromCharCode(spare++)); fresh.push(value);
+      }
+      swap.set(key, spares.get(value));
     }
+    if (Object.keys(shown.palette).length + fresh.length > 256) { for (const value of fresh) spares.delete(value); return base; }
+    for (const value of fresh) shown.palette[spares.get(value)] = value;
     const name = `${base}-as-${variant.name}`;
     shown.symbols[name] = symbols[base].map(row => [...row].map(key => swap.get(key) ?? key).join(''));
     return name;

@@ -206,7 +206,7 @@ test('a pool levels to rest: water poured in stops moving', () => {
   const before = Uint8Array.from(live.cells.mat);
   live.step(60);
   assert.deepEqual(live.cells.mat, before);
-  // The surface is flat but for one strip at most: no column of water is two or more pixels higher than another.
+  // The surface is flat but for a strip against each bank: no column of water is two or more pixels higher than another.
   const tops = [];
   for (let x = 2; x < 62; x++) tops.push(column(live, x).indexOf('water'));
   assert.ok(Math.max(...tops) - Math.min(...tops) <= 1, `surface rows ${[...new Set(tops)].join(', ')}`);

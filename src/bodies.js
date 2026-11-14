@@ -1496,6 +1496,23 @@ function disc(d) {
   }
   return discs.get(d);
 }
+// The same disc as its rows, the first and last column of each (none where first > last), for a painter that fills
+// rows: a trail drawn at a video's pixels is discs thousands of pixels across, which as lists of cells held hundreds of
+// megabytes for as long as the module lived and took seconds a frame to lay.
+const discRows = new Map();
+function discSpans(d) {
+  if (!discRows.has(d)) {
+    const spans = new Int32Array(2 * d), r = d / 2;
+    for (let j = 0; j < d; j++) {
+      const v = (j + 0.5 - r) / r;
+      let first = d, last = -1;
+      for (let i = 0; i < d; i++) { const u = (i + 0.5 - r) / r; if (u * u + v * v <= 1) { if (first === d) first = i; last = i; } }
+      spans[2 * j] = first; spans[2 * j + 1] = last;
+    }
+    bounded(discRows).set(d, spans);
+  }
+  return discRows.get(d);
+}
 
 // A circle of pixels around a centre: one pixel thick, each column's top and bottom pixel on the top and bottom arcs
 // where the arc runs flatter than the diagonal, and each row's outer pixels on the side arcs where it runs steeper, then
@@ -1820,7 +1837,7 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n, sampled
   // Trails first, under every body: a disc a pixel narrower than the body, along where it was in recent frames.
   for (const b of bodies) {
     if (b.gone || b.hidden || !b.trail || b.history.length < 2) continue;
-    const code = b.trail.color.charCodeAt(0), points = b.history.slice(-1 - b.trail.length), d = Math.max(1, Math.min(b.size[0], b.size[1]) - 1) * n, cells = disc(d);
+    const code = b.trail.color.charCodeAt(0), points = b.history.slice(-1 - b.trail.length), d = Math.max(1, Math.min(b.size[0], b.size[1]) - 1) * n, spans = discSpans(d);
     // A disc each fine pixel along the way; finer than the source, as far apart as leaves the trail's edge within half
     // a fine pixel of straight.
     const every = n > sampled ? Math.max(1, Math.floor(Math.sqrt(2 * d))) : 1;
@@ -1828,7 +1845,10 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n, sampled
       const [ax, ay] = points[k], [bx, by] = points[k + 1], steps = Math.max(1, Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * n / every));
       for (let s = 0; s < steps; s++) {
         const left = Math.round((ax + (bx - ax) * s / steps) * n - d / 2), top = Math.round((ay + (by - ay) * s / steps) * n - d / 2);
-        for (const [i, j] of cells) put(left + i, top + j, code);
+        for (let j = Math.max(0, -top), rows = Math.min(d, H - top); j < rows; j++) {
+          const x0 = Math.max(0, left + spans[2 * j]), x1 = Math.min(W - 1, left + spans[2 * j + 1]);
+          if (x0 <= x1) grid.fill(code, (top + j) * W + x0, (top + j) * W + x1 + 1);
+        }
       }
     }
   }
@@ -1899,17 +1919,39 @@ function fineImage(world, effect, shell, width, height, context, f, k, grid) {
   paintCloths(world, 'under', beneath, width, height, f, n);
   paintCloths(world, 'over', cloth, width, height, f, n);
   const cells = crop(beneath, w, h).op, draped = crop(cloth, w, h).op, hud = world.turf && effect.hud.length ? world.turf.hud(f, effect.hud, n) : [];
-  const under = layer([...(effect.background ? [{ op: 'rect', x: 0, y: 0, w, h, color: effect.background }] : []), ...stamps('under'), ...(cells ? [cells] : [])]);
+  const ground = [...(effect.background ? [{ op: 'rect', x: 0, y: 0, w, h, color: effect.background }] : []), ...stamps('under')];
+  const under = layer([...ground, ...(cells ? [cells] : [])]);
   const above = [...(draped ? [draped] : []), ...stamps('over'), ...hud], over = above.length ? layer(above) : null, out = new Uint8Array(W * H * 4), colours = new Map();
   const colour = code => { if (!colours.has(code)) colours.set(code, parseColor(String.fromCharCode(code), shell.palette)); return colours.get(code); };
-  for (let y = 0; y < H; y++) {
-    const row = Math.floor(y / k) * w;
-    for (let x = 0; x < W; x++) {
-      const from = (row + Math.floor(x / k)) * 4, to = (y * W + x) * 4, code = grid[y * W + x];
-      out[to] = under[from]; out[to + 1] = under[from + 1]; out[to + 2] = under[from + 2]; out[to + 3] = under[from + 3];
-      if (code) blend(out, to, colour(code));
-      if (over && over[from + 3]) blend(out, to, over.subarray(from, from + 4));
+  // What is under the bodies: each of the world's rows enlarged once and copied down the rows it fills.
+  for (let j = 0; j < h; j++) {
+    const first = j * k * W * 4;
+    for (let i = 0, to = first; i < w; i++) {
+      const from = (j * w + i) * 4, r = under[from], g = under[from + 1], b = under[from + 2], a = under[from + 3];
+      for (let x = 0; x < k; x++, to += 4) { out[to] = r; out[to + 1] = g; out[to + 2] = b; out[to + 3] = a; }
     }
+    for (let r = 1; r < k; r++) out.copyWithin(first + r * W * 4, first, first + W * 4);
+  }
+  // The bodies and ropes, at the frame's own pixels. A colour that lets what is under it show is laid over the ground
+  // alone, as in the sprite sheet, where a body's pixel takes a cell's place in the grid: laid over the cell, a
+  // translucent body was one colour in the sheet and another in the video.
+  let bare = null;
+  for (let c = 0, to = 0; c < W * H; c++, to += 4) {
+    const code = grid[c];
+    if (!code) continue;
+    const rgba = colour(code);
+    if (rgba[3] === 255) { out[to] = rgba[0]; out[to + 1] = rgba[1]; out[to + 2] = rgba[2]; out[to + 3] = 255; continue; }
+    bare ??= cells ? layer(ground) : under;
+    const from = (Math.floor(Math.floor(c / W) / k) * w + Math.floor(c % W / k)) * 4;
+    out[to] = bare[from]; out[to + 1] = bare[from + 1]; out[to + 2] = bare[from + 2]; out[to + 3] = bare[from + 3];
+    blend(out, to, rgba);
+  }
+  // And what is drawn over them, at the world's pixels.
+  if (over) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const from = (j * w + i) * 4;
+    if (!over[from + 3]) continue;
+    const top = over.subarray(from, from + 4);
+    for (let y = j * k; y < (j + 1) * k; y++) for (let x = i * k; x < (i + 1) * k; x++) blend(out, (y * W + x) * 4, top);
   }
   return out;
 }
@@ -2267,7 +2309,7 @@ export function compileBodies(source) {
 export function bodiesFrames(source, effectName, { scale = 1 } = {}) {
   const { shell, width, height, n, palette, symbols, effects } = readSource(source, MATCH_FRAMES);
   const k = integer(typeof scale === 'function' ? scale(width * n, height * n) : scale, 'sequence.scale', 1, 256);
-  if (width * n * k > STILL_SIDE || width * n * k * height * n * k > STILL_SIDE * STILL_SIDE) fail('sequence.scale', `a ${width * n}×${height * n} match drawn ${k} times larger is ${width * n * k}×${height * n * k}, above ${STILL_SIDE} a side; lower the scale`);
+  if (width * n * k > STILL_SIDE || height * n * k > STILL_SIDE) fail('sequence.scale', `a ${width * n}×${height * n} match drawn ${k} times larger is ${width * n * k}×${height * n * k}, above ${STILL_SIDE} a side; lower the scale`);
   const chosen = effectName === undefined ? effects[0] : effects.find(entry => entry.name === effectName);
   if (!chosen) fail('sequence.animation', `no effect named "${effectName}"; choose one of: ${effects.map(entry => entry.name).join(', ')}`);
   const { name, path, effect } = chosen;

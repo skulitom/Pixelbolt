@@ -116,3 +116,30 @@ test('a circle\'s symbol stays upright unless it rolls, and a rolled disc keeps 
   assert.throws(() => compileBodies(ball({ shape: 'box', size: [6, 6], radius: undefined, rolls: true })), /rolls: a box's picture always turns/);
   assert.throws(() => compileBodies({ ...round, effects: { turn: { ...spinner.effects.turn, bodies: [{ shape: 'circle', radius: 3, at: [12, 12], fill: 'a', rolls: true }] } } }), /rolls: rolls turns a circle's symbol/);
 });
+
+test('a match drawn larger keeps to a still\'s size, takes its options as an object, and colours a translucent body as the sheet does', () => {
+  // Height as well as width: a 16 by 256 match drawn 17 times larger was let through, 4,352 pixels tall.
+  const tall = { ...spinner, width: 16, height: 256, effects: { turn: { ...spinner.effects.turn, frames: 2, bodies: [{ ...spinner.effects.turn.bodies[0], at: [8, 8] }] } } };
+  assert.throws(() => bodiesFrames(tall, undefined, { scale: 17 }), error => error.path === 'sequence.scale' && /above 4096 a side/.test(error.message));
+  assert.equal(bodiesFrames(tall, undefined, { scale: 16 }).height, 4096);
+  // Options that are no object are refused in words, not by a TypeError.
+  assert.throws(() => createBodiesSequence(spinner, null), error => error.path === 'sequence' && /expected an object/.test(error.message));
+  // A translucent body over a territory cell: in the sheet its pixel takes the cell's place and shows the ground
+  // through, and the frame drawn larger laid it over the cell, so the video was another colour than the sheet.
+  const sheer = { format: 'pixelforge-bodies', version: 1, name: 'sheer', width: 16, height: 16, palette: { a: '#ff000080', n: '#0000ff', m: '#00ff00', k: '#000000' },
+    effects: { e: { frames: 3, duration: 40, gravity: [0, 0], background: 'k', territory: { cell: 4, size: [4, 4], split: 'rows', teams: [{ name: 'x', color: 'n' }, { name: 'y', color: 'm' }] },
+      bodies: [{ shape: 'box', size: [4, 4], at: [8, 6], team: 'x', fill: 'a' }] } } };
+  const plain = bodiesFrames(sheer), fine = bodiesFrames(sheer, undefined, { scale: 2 }), a = plain.image(1), b = fine.image(1);
+  for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+    const from = ((y >> 1) * 16 + (x >> 1)) * 4, to = (y * 32 + x) * 4;
+    assert.deepEqual([...b.subarray(to, to + 4)], [...a.subarray(from, from + 4)], `pixel ${x},${y}`);
+  }
+  assert.deepEqual([...a.subarray((6 * 16 + 8) * 4, (6 * 16 + 8) * 4 + 4)], [128, 0, 0, 255]);
+  // A trail at the larger size is the trail of the sheet, enlarged along with the ball it follows (its discs are laid
+  // as rows; as lists of cells they held hundreds of megabytes at a video's size).
+  const comet = { ...spinner, symbols: undefined, effects: { turn: { frames: 12, duration: 40, gravity: [0, 0], bodies: [{ name: 'ball', shape: 'circle', radius: 3, at: [5, 12], velocity: [1, 0], weightless: true, fill: 'a', trail: { color: 'b', length: 4 } }] } } };
+  const trailed = bodiesFrames(comet, undefined, { scale: 4 });
+  let image; for (let f = 0; f < 10; f++) image = trailed.image(f);
+  const keys = new Set(); for (let i = 0; i < image.length; i += 4) if (image[i + 3]) keys.add(`${image[i]},${image[i + 1]},${image[i + 2]}`);
+  assert.equal(keys.size, 2, 'the ball and its trail are both drawn');
+});

@@ -85,8 +85,11 @@ const sequenceSummary = info => ({ directory: 'sequence', pattern: info.pattern,
 // `pixelbolt sequence`, which a person runs on purpose.
 const SEQUENCE_BYTES = 512 * 1048576;
 // And at most this many pixels of different frames from a bodies match, which a call draws in about half its time
-// limit (600 vertical frames took 21 s); a longer match is refused before it is simulated, naming the command line.
-const SEQUENCE_PIXELS = 1.5e9;
+// limit; a longer match is refused before it is simulated, naming the command line. (Bodies are drawn at the video's
+// pixels, which costs about twice what enlarging the sprite sheet's did: at the 1.5e9 this was, a match it let in
+// was simulated for 50 s and then stopped. 600 frames of the territory, crate-smash and blade-bloom presets at 1080 by
+// 1920 take 34, 30 and 59 s; this lets in 241, 600 and 462 of them.)
+const SEQUENCE_PIXELS = 0.5e9;
 function checkSequenceSize(frames) {
   const total = [...frames.files.values()].reduce((sum, bytes) => sum + bytes.length, 0);
   if (total > SEQUENCE_BYTES) throw new PixelError('sequence', `these ${frames.info.frames} frames come to ${Math.ceil(total / 1048576)} MB, more than one call writes (${SEQUENCE_BYTES / 1048576} MB); lower the size, fps or seconds, or use the pixelbolt sequence command for longer shots`);

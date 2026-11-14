@@ -14,6 +14,13 @@ Reported from a published video: a monkey swinging on a rope was "extremely dist
 - **Where each named body is, every frame, on a long match.** `bodiesFrames(...).figures()` and a sequence's `sequence.json` carry `paths` (`[x, y, angle]` a frame, as a compiled effect's metadata does, with no 256-frame limit), the frame everything came to `rest`, and the warning for bodies that start overlapping. The command's reply says where each `ended`.
 - A motion smear and a trail drawn at a video's pixels are sampled along their sweep as the source's own pixels are, each sample filled finer: sampled every half a video pixel, a sword's smear took half a second a frame.
 
+### Found by the review before this release
+
+- **An MCP call takes a shorter match as a sequence.** Bodies drawn at the video's pixels cost about twice what enlarging the sprite sheet's did, so a match the old limit let in was simulated for 50 seconds and then stopped. One call now draws a third as many pixels of a match (241 frames of a 72 by 128 board at 1080 by 1920); a longer one is refused at once, naming the command line, which has no limit. A frame is also drawn faster than it first was: each of the world's rows is enlarged once and copied down.
+- **A trail at a video's size is laid as rows.** As a list of cells, a trail's disc drawn 256 times larger held hundreds of megabytes for as long as the server ran, and took seconds a frame.
+- **A translucent body is the colour it is in the sheet.** Drawn larger, it was laid over the territory cell under it, where the sheet shows the ground through it.
+- `bodiesFrames` refuses a frame taller than a still as it refuses one wider; `createBodiesSequence` with options that are no object says so; the autotile test map's recoloured copies stay inside the palette's 256 colours.
+
 ### Bodies that hung in the air
 
 - **A tower past its balance keeps tipping.** A column standing a few pixels past its last support turns so slowly at first that its crates stayed under the sleep speed for 12 frames, fell asleep mid-tip and held the tower half a degree over, hanging there for good. A body that is still gaining speed, frame after frame, no longer falls asleep.

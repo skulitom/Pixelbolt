@@ -1,7 +1,7 @@
 // Image sequences for video editors: one numbered PNG per video frame at a constant frame rate, on a canvas of the
 // video's size. Editors read these directly and keep the alpha; nothing here encodes video. Timing is exact integer
 // arithmetic on the frame rate as a fraction, so 29.97 means 30000/1001 and a sequence is the same on every machine.
-import { parseColor, fail } from './core.js';
+import { parseColor, fail, isObject } from './core.js';
 import { renderScene, SCENE_SIDE, SCENE_AREA } from './scene.js';
 import { bodiesFrames } from './bodies.js';
 import { encodePNG } from './png.js';
@@ -276,9 +276,12 @@ export function createSequence(project, options = {}) {
 // (MCP names its own version, so the line runs the same release). With `stream` (the command line), each
 // frame is simulated, drawn and encoded as writeBundle writes it, and only one is held at a time, so a match is bounded
 // by its frames alone; without it, every frame's PNG is kept until the call returns, up to MAX_UNIQUE_PIXELS.
-export function createBodiesSequence(source, { loops, ...options } = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
+export function createBodiesSequence(source, options = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
   // A match plays once, so one loop is what it does anyway (the help lists --loops for every sequence).
-  if (loops !== undefined && loops !== 1) fail('sequence.loops', 'a match plays once and does not repeat; leave loops out, and end it early with seconds');
+  if (isObject(options) && options.loops !== undefined) {
+    if (options.loops !== 1) fail('sequence.loops', 'a match plays once and does not repeat; leave loops out, and end it early with seconds');
+    options = Object.fromEntries(Object.entries(options).filter(([key]) => key !== 'loops'));
+  }
   const rate = common(options, KEYS.filter(key => key !== 'loops' && key !== 'step'));
   let sized = null;
   const match = bodiesFrames(source, options.animation, { scale: (width, height) => { sized = [width, height]; return fineness(width, height, placeSprite(width, height, options).scale); } }), fine = match.scale;
