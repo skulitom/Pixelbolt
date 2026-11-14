@@ -6,6 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
+import { runInNewContext } from 'node:vm';
+import { createHash } from 'node:crypto';
 import { assembleMcpb, buildMcpb, registryEntry, root } from '../scripts/build-mcpb.mjs';
 import { readZip, writeZip, sha256 } from '../scripts/build-studio.mjs';
 import { verifyMcpb } from '../scripts/verify-mcpb.mjs';
@@ -83,18 +85,209 @@ test('the Gemini CLI extension runs its own copy of the server in the user\'s fo
 
 test('release workflow guards and assets use the renamed repository', async () => {
   let guards = 0;
-  for (const file of ['release.yml', 'publish-registry.yml', 'test.yml']) {
+  for (const file of ['release.yml', 'publish-registry.yml', 'test.yml', 'studio-assets.yml']) {
     const text = await readFile(path.join(root, '.github/workflows', file), 'utf8');
     const matches = [...text.matchAll(/github\.repository\s*==\s*(['"])(.*?)\1/g)];
     assert.equal(matches.length, [...text.matchAll(/github\.repository\s*==/g)].length, file);
     for (const match of matches) { assert.equal(match[2], 'skulitom/Pixelbolt', file); guards++; }
     assert.doesNotMatch(text, /pixelforge/i);
-    assert.ok(text.includes('pixelbolt.mcpb'), file);
+    // The attachment workflow ships Studio archives, not the MCPB bundle.
+    assert.ok(text.includes(file === 'studio-assets.yml' ? 'PixelboltStudio-' : 'pixelbolt.mcpb'), file);
     if (file === 'release.yml') { assert.ok(text.includes('name: pixelbolt-mcpb')); assert.ok(text.includes('--title "Pixelbolt $RELEASE_TAG"')); }
     if (file === 'publish-registry.yml') assert.ok(text.includes('io.github.skulitom%2Fpixelbolt'));
     if (file === 'test.yml') assert.ok(text.includes('PixelboltStudio-*'));
   }
-  assert.equal(guards, 4);
+  assert.equal(guards, 5);
+});
+
+function checkStudioWorkflow(text) {
+  const code = text.replaceAll('\r\n', '\n').split('\njobs:\n')[1].split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
+  const jobs = Object.fromEntries(code.split(/\n(?=  [a-z-]+:\n)/).map(block => [block.match(/^  ([a-z-]+):/)[1], block]));
+  assert.deepEqual(Object.keys(jobs), ['plan', 'build', 'report', 'upload']);
+  assert.equal([...text.matchAll(/github\.repository\s*==/g)].length, 1);
+  assert.match(jobs.plan, /if: github\.repository == 'skulitom\/Pixelbolt'/);
+  assert.deepEqual(Object.entries(jobs).filter(([, block]) => /:\s*write\b/.test(block)).map(([name]) => name), ['upload']);
+  assert.deepEqual(Object.entries(jobs).filter(([, block]) => /actions:\s*read\b/.test(block)).map(([name]) => name), ['plan']);
+  assert.equal(jobs.upload.match(/    permissions:\n((?:      [^\n]+\n)+)/)[1], '      contents: write\n');
+  assert.match(text.split('\njobs:')[0], /\npermissions:\n  contents: read\n/);
+  assert.match(jobs.build, /needs: plan/);
+  assert.match(jobs.report, /needs: \[plan, build\]/);
+  assert.match(jobs.upload, /needs: \[plan, report\]/);
+  // Fail closed: the upload runs only when the plan said in so many words that this is not a dry run.
+  assert.match(jobs.upload, /if: needs\.plan\.outputs\.go == 'true' && needs\.plan\.outputs\.dry_run == 'false'\n/);
+  assert.doesNotMatch(jobs.upload, /\bnpx\b|\bnpm\b|node\s+--test|verify-studio|qa-studio/);
+  assert.doesNotMatch(text, /--clobber|gh\s+release\s+(edit|delete)|['"]release['"],\s*['"](?:edit|delete)['"]|pixelforge/i);
+  for (const [, action] of text.matchAll(/uses:\s*(\S+)/g)) assert.match(action, /^actions\/[a-z/-]+@[a-f0-9]{40}$/);
+  for (const [, block] of text.matchAll(/- uses: actions\/checkout@[^\n]+\n([\s\S]*?)(?=      - |\n  [a-z]|$)/g)) {
+    assert.match(block, /ref: refs\/tags\//);
+    assert.match(block, /persist-credentials: false/);
+  }
+  for (const block of Object.values(jobs)) assert.match(block, /    timeout-minutes:/);
+  assert.match(text, /workflow_run:\n    workflows: \[Release\]\n    types: \[completed\]/);
+  assert.match(text, /workflow_dispatch:\n    inputs:\n      tag:[\s\S]*?required: true\n        type: string\n      dry_run:[\s\S]*?type: boolean\n        default: true/);
+  assert.match(text, /run-name: Studio release assets for \$\{\{ inputs.tag \|\| github.event.workflow_run.head_branch \}\}/);
+  assert.match(text, /group: studio-assets-\$\{\{ inputs.tag \|\| github.event.workflow_run.head_branch \}\}\n  cancel-in-progress: false/);
+  assert.doesNotMatch(jobs.plan, /workflow_run\.conclusion/);
+  assert.doesNotMatch(text, /actions\/cache\/save@|run-id:|github-token:/);
+  for (const [, run] of text.matchAll(/        run: \|\n((?:          .*\n|\n)+)/g)) assert.doesNotMatch(run, /\$\{\{/);
+  for (const [, step] of text.matchAll(/        shell: bash\n([\s\S]*?)(?=      - |\n  [a-z]|$)/g)) assert.match(step, /run: \|\n          set -euo pipefail\n/);
+  return jobs;
+}
+
+test('Studio attachment rights, tag refs and dry runs are guarded, including against mutations', async () => {
+  const text = await readFile(path.join(root, '.github/workflows/studio-assets.yml'), 'utf8');
+  checkStudioWorkflow(text);
+  const mutants = [
+    text.replace("    if: github.repository == 'skulitom/Pixelbolt'\n", ''),
+    text.replace(/(  build:[\s\S]*?permissions:\n      contents:) read/, '$1 write'),
+    text.replace("gh('release', 'upload', tag, ...missing", "gh('release', 'upload', tag, '--clobber', ...missing"),
+    text.replace(/          ref: refs\/tags\/[^\n]+\n/, ''),
+    text.replace(" && needs.plan.outputs.dry_run == 'false'", ''),
+    text.replace("needs.plan.outputs.dry_run == 'false'", "needs.plan.outputs.dry_run != 'true'")
+  ];
+  for (const [i, mutant] of mutants.entries()) { assert.notEqual(mutant, text); assert.throws(() => checkStudioWorkflow(mutant), `mutant ${i + 1}`); }
+});
+
+// Exercise the actual inline code: older release tags do not carry a new helper script.
+async function studioChecks(section) {
+  const text = await readFile(path.join(root, '.github/workflows/studio-assets.yml'), 'utf8');
+  const code = text.split(`// BEGIN ${section} checks\n`)[1].split(`// END ${section} checks`)[0];
+  return import(`data:text/javascript;base64,${Buffer.from("import { createHash } from 'node:crypto';\n" + code).toString('base64')}`);
+}
+
+test('Studio Release logs require every occurrence of the exact archive hash to agree', async () => {
+  const { printedHash, unavailable, stableTag } = await studioChecks('plan');
+  // Trimmed real lines from Release 43539548933, Windows job 132287084837.
+  const log = `2026-11-14T01:20:58.2233374Z 02d96c1e16f84327317d18212c0df17898d09466b7167b25ad01442e172ea370  PixelboltStudio-0.17.0-linux-x64.tar.gz
+2026-11-14T01:20:58.2235110Z 72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b  PixelboltStudio-0.17.0-win-x64.zip
+2026-11-14T01:21:11.4551809Z 72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b  PixelboltStudio-0.17.0-win-x64.zip
+2026-11-14T01:21:11.4551809Z ##[group]Run verify`;
+  const file = 'PixelboltStudio-0.17.0-win-x64.zip', hash = '72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b';
+  assert.equal(printedHash(log, file), hash);
+  assert.equal(printedHash(log.replaceAll('\n', '\r\n'), file), hash);
+  assert.throws(() => printedHash(log.replace(hash, 'a'.repeat(64)), file), /Conflicting/);
+  assert.throws(() => printedHash(log, 'PixelboltStudio-0.17.1-win-x64.zip'), /No printed/);
+  for (const status of [404, 410]) assert.equal(unavailable({ stderr: `gh: gone (HTTP ${status})` }), true);
+  assert.equal(unavailable({ stderr: 'gh: forbidden (HTTP 403)' }), false);
+  for (const tag of ['v0.17.0', 'v1.2.3']) assert.equal(stableTag(tag), true);
+  for (const tag of ['main', 'v01.2.3', 'v1.2.3-beta', 'v1.2.3\n', 'v1.2.3;echo bad']) assert.equal(stableTag(tag), false);
+});
+
+test('Studio records, deterministic checksum list and upload checks reject changed or extra data', async () => {
+  const { checkArchive, checksumList, targets } = await studioChecks('report');
+  const { checkedFiles, requireIdentical } = await studioChecks('upload');
+  const version = '0.17.0', tag = `v${version}`, sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f', disk = new Map();
+  const records = targets.map(target => {
+    const bytes = Buffer.from(target), file = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`, hash = sha256(bytes);
+    disk.set(`artifacts/studio-${target}/${file}`, bytes);
+    const record = { target, file, bytes: bytes.length, sha256: hash, verify: 'pass', suite: 'pass', walk: target === 'darwin-x64' ? 'not run (translated browser under Rosetta)' : 'pass' };
+    assert.deepEqual(checkArchive(target, version, bytes, `${hash}  ${file}\n`, record, hash), record);
+    assert.deepEqual(checkArchive(target, version, bytes, `${hash}  ${file}\n`, record, null), record);
+    assert.throws(() => checkArchive(target, version, bytes, `${hash}  ${file}`, record, 'f'.repeat(64)), /Release-run/);
+    assert.throws(() => checkArchive(target, version, bytes, `${hash}  ${file}`, { ...record, bytes: 0 }, hash), /disagree/);
+    assert.throws(() => checkArchive(target, version, bytes, `${hash}  ${file}`, { ...record, suite: 'not run (oops)' }, hash), /Invalid check/);
+    return record;
+  });
+  const { text } = checksumList(tag, sha, records);
+  assert.equal(checksumList(tag, sha, [...records].reverse()).text, text);
+  assert.match(text, /# \| darwin-x64 \| pass \| pass \| not run \(translated browser under Rosetta\)/);
+  const sumsPath = `artifacts/studio-sums/PixelboltStudio-${version}-SHA256SUMS.txt`;
+  disk.set(sumsPath, Buffer.from(text));
+  const read = file => { assert.ok(disk.has(file)); return disk.get(file); };
+  const files = checkedFiles(version, tag, sha, read);
+  assert.equal(files.size, 6);
+  for (const [name, entry] of files) requireIdentical(name, entry.hash, read(entry.file));
+  assert.throws(() => requireIdentical('existing.zip', records[0].sha256, Buffer.from('changed')), /different SHA-256/);
+  disk.set(sumsPath, Buffer.from(text + `${'f'.repeat(64)}  unexpected.zip\n`));
+  assert.throws(() => checkedFiles(version, tag, sha, read), /Unexpected/);
+  disk.set(sumsPath, Buffer.from(text));
+  disk.set(`artifacts/studio-win-x64/${records[0].file}`, Buffer.from('changed'));
+  assert.throws(() => checkedFiles(version, tag, sha, read), /mismatch/);
+});
+
+async function studioScript(job) {
+  const text = await readFile(path.join(root, '.github/workflows/studio-assets.yml'), 'utf8');
+  const block = checkStudioWorkflow(text)[job];
+  return block.split("node --input-type=module <<'NODE'\n")[1].split('\n          NODE')[0]
+    .replace(/^          /gm, '').replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
+}
+
+test('Studio plan skips unpublished or invalid releases, peels tags and tolerates only expired logs', async () => {
+  const code = await studioScript('plan'), sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f';
+  for (const scenario of ['dispatch', 'failed Release', 'invalid', 'draft', 'missing release', 'annotated', 'no jobs', 'expired', 'forbidden', 'wrong sha', 'wrong repository', 'wrong event']) {
+    const env = { EVENT: 'workflow_dispatch', TAG: 'v0.17.0', DRY_RUN: 'true', GITHUB_OUTPUT: 'outputs', GITHUB_STEP_SUMMARY: 'summary' }, written = {}, calls = [];
+    if (['failed Release', 'wrong sha', 'wrong repository', 'wrong event'].includes(scenario)) Object.assign(env, { EVENT: 'workflow_run', DRY_RUN: 'false', RUN_EVENT: 'push', RUN_REPO: 'skulitom/Pixelbolt', RUN_SHA: sha, RUN_ID: '43539548933' });
+    if (scenario === 'invalid') env.TAG = 'main';
+    if (scenario === 'wrong sha') env.RUN_SHA = 'a'.repeat(40);
+    if (scenario === 'wrong repository') env.RUN_REPO = 'somewhere/else';
+    if (scenario === 'wrong event') env.RUN_EVENT = 'pull_request';
+    const gone = status => Object.assign(new Error(`HTTP ${status}`), { stderr: `gh: unavailable (HTTP ${status})` });
+    const stop = new Error('exit zero');
+    const execFileSync = (command, args) => {
+      assert.equal(command, 'gh'); calls.push(args);
+      if (args[0] === 'run') return JSON.stringify([{ databaseId: 43539548933, headSha: sha, createdAt: '2026-11-14T01:16:09Z' }]);
+      const endpoint = args.at(-1);
+      if (endpoint.includes('/git/ref/')) return JSON.stringify({ object: { type: scenario === 'annotated' ? 'tag' : 'commit', sha } });
+      if (endpoint.includes('/git/tags/')) return JSON.stringify({ object: { type: 'commit', sha } });
+      if (endpoint.includes('/releases/')) {
+        if (scenario === 'missing release') throw gone(404);
+        return JSON.stringify({ draft: scenario === 'draft', published_at: '2026-11-14T01:42:42Z' });
+      }
+      if (endpoint.includes('/jobs?')) return JSON.stringify([{ jobs: scenario === 'no jobs' ? [] : [{ id: 132287084837, name: 'Full test matrix / Portable Studio / win-x64' }] }]);
+      if (endpoint.endsWith('/logs')) {
+        if (scenario === 'expired') throw gone(410);
+        if (scenario === 'forbidden') throw gone(403);
+        return '2026-11-14T01:21:11.4551809Z 72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b  PixelboltStudio-0.17.0-win-x64.zip\n';
+      }
+      assert.fail(endpoint);
+    };
+    const invoke = () => runInNewContext(code, { process: { env, exit: n => { assert.equal(n, 0); throw stop; } }, execFileSync, appendFileSync: (file, data) => { written[file] = (written[file] ?? '') + data; } });
+    if (['forbidden', 'wrong sha', 'wrong repository', 'wrong event'].includes(scenario)) { assert.throws(invoke); continue; }
+    try { invoke(); } catch (error) { assert.equal(error, stop); }
+    const outputs = Object.fromEntries(written.outputs.trim().split('\n').map(line => { const at = line.indexOf('='); return [line.slice(0, at), line.slice(at + 1)]; }));
+    if (['invalid', 'draft', 'missing release'].includes(scenario)) { assert.equal(outputs.go, 'false'); assert.match(written.summary, /Skipped/); }
+    else {
+      assert.equal(outputs.go, 'true'); assert.equal(outputs.sha, sha);
+      assert.equal(outputs.dry_run, scenario === 'failed Release' ? 'false' : 'true');
+      const expected = JSON.parse(outputs.expected);
+      assert.equal(expected['linux-x64'], null);
+      assert.equal(expected['win-x64'] === null, ['no jobs', 'expired'].includes(scenario));
+      assert.match(written.summary, /no Release-run/);
+    }
+    if (scenario === 'invalid') assert.equal(calls.length, 0);
+  }
+});
+
+test('Studio upload checks all existing assets before sending any and skips identical reruns', async () => {
+  const code = await studioScript('upload'), { checksumList, targets } = await studioChecks('report');
+  const tag = 'v0.17.0', version = '0.17.0', sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f';
+  for (const scenario of ['missing', 'identical', 'conflict', 'draft']) {
+    const disk = new Map(), calls = [], errors = [], summaries = [];
+    const records = targets.map(target => {
+      const file = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`, bytes = Buffer.from(target);
+      disk.set(`artifacts/studio-${target}/${file}`, bytes);
+      return { file, target, bytes: bytes.length, sha256: sha256(bytes), verify: 'pass', suite: 'pass', walk: 'pass' };
+    });
+    const sums = `PixelboltStudio-${version}-SHA256SUMS.txt`;
+    disk.set(`artifacts/studio-sums/${sums}`, Buffer.from(checksumList(tag, sha, records).text));
+    const process = { env: { TAG: tag, VERSION: version, SHA: sha, GITHUB_STEP_SUMMARY: 'summary' } };
+    const execFileSync = (command, args) => {
+      assert.equal(command, 'gh'); calls.push(args);
+      if (args[1] === 'view') return JSON.stringify({ isDraft: scenario === 'draft', publishedAt: '2026-11-14T01:42:42Z', assets: scenario === 'missing' ? [] : scenario === 'conflict' ? [{ name: sums }] : [...records, { file: sums }].map(r => ({ name: r.file })) });
+      if (args[1] === 'download') {
+        const name = args[args.indexOf('--pattern') + 1], entry = [...disk].find(([file]) => file.endsWith('/' + name));
+        disk.set(`existing/${name}`, scenario === 'conflict' ? Buffer.from('different') : entry[1]);
+        return '';
+      }
+      assert.equal(args[1], 'upload'); return '';
+    };
+    runInNewContext(code, { process, createHash, execFileSync, readFileSync: file => { assert.ok(disk.has(file)); return disk.get(file); }, mkdirSync: () => {}, appendFileSync: (_, data) => summaries.push(data), console: { error: e => errors.push(e) } });
+    const uploads = calls.filter(args => args[1] === 'upload');
+    if (scenario === 'missing') { assert.equal(uploads.length, 1); assert.equal(uploads[0].filter(arg => arg.startsWith('artifacts/')).length, 6); }
+    else assert.equal(uploads.length, 0);
+    if (['conflict', 'draft'].includes(scenario)) { assert.equal(process.exitCode, 1); assert.match(errors[0], /^::error::/); assert.equal(summaries.length, 0); }
+    if (scenario === 'identical') assert.equal((summaries[0].match(/Skipped identical asset:/g) ?? []).length, 6);
+  }
 });
 
 test('release rights stay in jobs that run only this repository\'s code, after the full test matrix passes', async () => {

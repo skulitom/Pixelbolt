@@ -1,0 +1,419 @@
+name: Studio release assets
+run-name: Studio release assets for ${{ inputs.tag || github.event.workflow_run.head_branch }}
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag, in the form vX.Y.Z'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build and check without attaching release assets'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-assets-${{ inputs.tag || github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+# Keep the release lookup here: an npm failure need not hold back Studio downloads.
+# Inline checks also work for tags that predate this workflow.
+jobs:
+  plan:
+    if: github.repository == 'skulitom/Pixelbolt'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      go: ${{ steps.plan.outputs.go }}
+      tag: ${{ steps.plan.outputs.tag }}
+      version: ${{ steps.plan.outputs.version }}
+      sha: ${{ steps.plan.outputs.sha }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+      release_run: ${{ steps.plan.outputs.release_run }}
+      expected: ${{ steps.plan.outputs.expected }}
+    steps:
+      - name: Find the published release and its checked hashes
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_REPO: ${{ github.event.workflow_run.repository.full_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          // BEGIN plan checks
+          export function printedHash(log, file) {
+            const hashes = log.split(/\r?\n/).flatMap(line => {
+              const match = line.match(/^(?:\d{4}-\d\d-\d\dT\S+\s+)?([a-fA-F0-9]{64}) {2}(\S+)\s*$/);
+              return match?.[2] === file ? [match[1].toLowerCase()] : [];
+            });
+            if (!hashes.length) throw new Error(`No printed SHA-256 for ${file} in the available job log`);
+            if (new Set(hashes).size !== 1) throw new Error(`Conflicting Release-run hashes for ${file}`);
+            return hashes[0];
+          }
+          export const unavailable = error => /\bHTTP (404|410)\b/.test(String(error.stderr));
+          export const stableTag = tag => /^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(tag);
+          // END plan checks
+          const env = process.env, repo = 'skulitom/Pixelbolt', tag = env.TAG;
+          const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+          const api = endpoint => JSON.parse(gh('api', `repos/${repo}/${endpoint}`));
+          const summary = message => appendFileSync(env.GITHUB_STEP_SUMMARY, message + '\n');
+          const output = values => { for (const [key, value] of Object.entries(values)) appendFileSync(env.GITHUB_OUTPUT, `${key}=${value}\n`); };
+          output({ go: 'false' });
+          if (env.EVENT === 'workflow_run' && (!['push', 'workflow_dispatch'].includes(env.RUN_EVENT) || env.RUN_REPO !== repo)) {
+            throw new Error('The triggering Release run must belong to this repository and be a push or dispatch');
+          }
+          if (!stableTag(tag)) { summary('Skipped: the Release ref is not a stable vX.Y.Z tag.'); process.exit(0); }
+          let object = api(`git/ref/tags/${tag}`).object;
+          const seen = new Set();
+          while (object.type === 'tag') {
+            if (seen.has(object.sha)) throw new Error('Cyclic annotated tag');
+            seen.add(object.sha);
+            object = api(`git/tags/${object.sha}`).object;
+          }
+          if (object.type !== 'commit' || !/^[a-f0-9]{40}$/.test(object.sha)) throw new Error('Tag must resolve to a commit');
+          const sha = object.sha, version = tag.slice(1);
+          if (env.EVENT === 'workflow_run' && sha !== env.RUN_SHA) throw new Error('Tag commit differs from the triggering Release run');
+          let release;
+          try { release = api(`releases/tags/${tag}`); }
+          catch (error) { if (!unavailable(error)) throw error; summary(`Skipped ${tag}: no GitHub release exists.`); process.exit(0); }
+          if (release.draft || !release.published_at) { summary(`Skipped ${tag}: the GitHub release is not published (draft).`); process.exit(0); }
+          let run = env.RUN_ID;
+          if (env.EVENT === 'workflow_dispatch') {
+            const runs = JSON.parse(gh('run', 'list', '-R', repo, '--workflow', 'release.yml', '--branch', tag,
+              '--commit', sha, '--limit', '100', '--json', 'databaseId,headSha,createdAt'));
+            run = runs.filter(item => item.headSha === sha).sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.databaseId - a.databaseId)[0]?.databaseId;
+          }
+          const jobs = run ? JSON.parse(gh('api', '--paginate', '--slurp', `repos/${repo}/actions/runs/${run}/jobs?per_page=100`)).flatMap(page => page.jobs) : [];
+          const expected = {};
+          for (const target of ['win-x64', 'linux-x64', 'linux-arm64', 'darwin-arm64', 'darwin-x64']) {
+            const job = jobs.find(item => item.name === `Full test matrix / Portable Studio / ${target}`);
+            expected[target] = null;
+            if (!job) { summary(`${target}: no Release-run job to compare with (older tag or no Release run).`); continue; }
+            let log;
+            try { log = gh('api', `repos/${repo}/actions/jobs/${job.id}/logs`); }
+            catch (error) { if (!unavailable(error)) throw error; summary(`${target}: no Release-run log to compare with (expired, HTTP 404/410).`); continue; }
+            expected[target] = printedHash(log, `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`);
+          }
+          output({ go: 'true', tag, version, sha, dry_run: env.DRY_RUN === 'true', release_run: run || '', expected: JSON.stringify(expected) });
+          summary(`Planned ${tag} at ${sha}; Release run: ${run || 'unavailable'}. Dry run: ${env.DRY_RUN === 'true'}.`);
+          NODE
+
+  build:
+    name: Portable Studio / ${{ matrix.target }}
+    needs: plan
+    if: needs.plan.outputs.go == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.target == 'darwin-x64' && 35 || 20 }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, target: win-x64 }
+          - { os: ubuntu-latest, target: linux-x64 }
+          - { os: ubuntu-24.04-arm, target: linux-arm64 }
+          - { os: macos-latest, target: darwin-arm64 }
+          # The Intel runtime runs through Rosetta on Apple silicon.
+          - { os: macos-latest, target: darwin-x64 }
+    env:
+      TARGET: ${{ matrix.target }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      PLANNED_SHA: ${{ needs.plan.outputs.sha }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ needs.plan.outputs.tag }}
+          persist-credentials: false
+      - name: Check the tag has not moved
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PLANNED_SHA"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Read the pinned Node.js version
+        id: pinned
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node --input-type=module -e "import { NODE_VERSION } from './scripts/build-studio.mjs'; console.log(NODE_VERSION)")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      # Only the test workflow saves runtimes; this job can restore them.
+      - name: Restore the pinned runtimes
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: dist/.cache
+          key: studio-node-${{ steps.pinned.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+          restore-keys: studio-node-${{ steps.pinned.outputs.version }}-
+          enableCrossOsArchive: true
+      - name: Build the archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-studio.mjs --target "$TARGET"
+      - name: Build it again and compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-studio.mjs --target "$TARGET" --check
+      - name: Verify the archive with Node.js and git off PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $zip = (Get-Item dist/PixelboltStudio-*-win-x64.zip).FullName
+          Get-Content "$zip.sha256"
+          Expand-Archive -LiteralPath $zip -DestinationPath "$env:RUNNER_TEMP/studio"
+          $node = (Get-Item "$env:RUNNER_TEMP/studio/*/runtime/node.exe").FullName
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
+          if (Get-Command node, git -ErrorAction SilentlyContinue) { throw 'Node.js or git is still on PATH' }
+          & $node scripts/verify-studio.mjs $zip
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Make sure Rosetta is there for the Intel build
+        if: matrix.target == 'darwin-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          softwareupdate --install-rosetta --agree-to-license || true
+      # The verifier removes developer tools from each child's PATH.
+      - name: Verify the archive on its own runtime (macOS and Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$PWD/dist/PixelboltStudio-$VERSION-$TARGET.tar.gz"
+          cat "$archive.sha256"
+          mkdir "$RUNNER_TEMP/studio"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/studio"
+          runtimes=("$RUNNER_TEMP"/studio/*/runtime/node)
+          "${runtimes[0]}" scripts/verify-studio.mjs "$archive"
+      - name: Run the test suite on the bundled runtime (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & (Get-Item "$env:RUNNER_TEMP/studio/*/runtime/node.exe").FullName --test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run the test suite on the bundled runtime (macOS and Linux)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtimes=("$RUNNER_TEMP"/studio/*/runtime/node)
+          "${runtimes[0]}" --test
+      - name: Walk the studio in the runner's browser (Windows)
+        id: walk_windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $build = (Get-Item "$env:RUNNER_TEMP/studio/*").FullName
+          & "$build/runtime/node.exe" scripts/qa-studio.mjs --app "$build/app" --out "$env:RUNNER_TEMP/studio-qa"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          'result=pass' >> $env:GITHUB_OUTPUT
+      # ARM Linux may lack a browser; Rosetta's browser is deliberately not walked.
+      - name: Walk the studio in the runner's browser (macOS and Linux)
+        id: walk_unix
+        if: runner.os != 'Windows' && matrix.target != 'darwin-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          builds=("$RUNNER_TEMP"/studio/*)
+          build="${builds[0]}"
+          result=pass
+          "$build/runtime/node" scripts/qa-studio.mjs --app "$build/app" --out "$RUNNER_TEMP/studio-qa" || {
+            code=$?
+            if [[ "$code" = 3 && "$TARGET" = linux-arm64 ]]; then
+              result='not run (no browser on ARM Linux runner)'
+            else
+              exit "$code"
+            fi
+          }
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+      - name: Record the checks that passed
+        shell: bash
+        env:
+          WALK: ${{ steps.walk_windows.outputs.result || steps.walk_unix.outputs.result }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const { TARGET: target, VERSION: version, WALK: result } = process.env;
+          const file = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`;
+          const bytes = readFileSync(`dist/${file}`), sha256 = createHash('sha256').update(bytes).digest('hex');
+          const walk = target === 'darwin-x64' ? 'not run (translated browser under Rosetta)' : result;
+          if (!walk) throw new Error('Missing walk result');
+          writeFileSync(`dist/${target}.json`, JSON.stringify({ target, file, bytes: bytes.length, sha256, verify: 'pass', suite: 'pass', walk }) + '\n');
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: studio-${{ matrix.target }}
+          path: |
+            dist/PixelboltStudio-${{ needs.plan.outputs.version }}-${{ matrix.target }}.${{ matrix.target == 'win-x64' && 'zip' || 'tar.gz' }}
+            dist/PixelboltStudio-${{ needs.plan.outputs.version }}-${{ matrix.target }}.${{ matrix.target == 'win-x64' && 'zip' || 'tar.gz' }}.sha256
+            dist/${{ matrix.target }}.json
+          retention-days: 1
+          if-no-files-found: error
+
+  report:
+    needs: [plan, build]
+    if: needs.plan.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: studio-*
+          path: artifacts
+      - name: Check the archives and write the release checksum list
+        shell: bash
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA: ${{ needs.plan.outputs.sha }}
+          EXPECTED: ${{ needs.plan.outputs.expected }}
+          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          // BEGIN report checks
+          export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+          export const targets = ['win-x64', 'linux-x64', 'linux-arm64', 'darwin-arm64', 'darwin-x64'];
+          export function checkArchive(target, version, bytes, checksum, record, expected) {
+            const file = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`, sha256 = digest(bytes);
+            if (checksum.trim() !== `${sha256}  ${file}` || record.target !== target || record.file !== file || record.bytes !== bytes.length || record.sha256 !== sha256) {
+              throw new Error(`Archive, checksum and record disagree: ${file}`);
+            }
+            if (expected !== null && expected !== sha256) throw new Error(`Release-run hash mismatch: ${file}`);
+            const walk = target === 'darwin-x64' ? ['not run (translated browser under Rosetta)'] :
+              target === 'linux-arm64' ? ['pass', 'not run (no browser on ARM Linux runner)'] : ['pass'];
+            if (record.verify !== 'pass' || record.suite !== 'pass' || !walk.includes(record.walk)) throw new Error(`Invalid check results: ${file}`);
+            return record;
+          }
+          export function checksumList(tag, sha, records) {
+            const table = ['| Target | verify | suite | walk |', '| --- | --- | --- | --- |',
+              ...[...records].sort((a, b) => a.target < b.target ? -1 : 1).map(r => `| ${r.target} | ${r.verify} | ${r.suite} | ${r.walk} |`)];
+            const comments = ['Pixelbolt Studio portable archive SHA-256 checksums', `Tag: ${tag}`, `Commit: ${sha}`,
+              'Checks on GitHub runners (not a real-desktop check):', ...table].map(line => `# ${line}`);
+            const lines = [...records].sort((a, b) => a.file < b.file ? -1 : 1).map(r => `${r.sha256}  ${r.file}`);
+            return { text: [...comments, ...lines, ''].join('\n'), table: table.join('\n') };
+          }
+          // END report checks
+          const { TAG: tag, VERSION: version, SHA: sha, DRY_RUN: dryRun } = process.env, expected = JSON.parse(process.env.EXPECTED);
+          const records = targets.map(target => {
+            const base = `artifacts/studio-${target}/`, record = JSON.parse(readFileSync(`${base}${target}.json`));
+            const file = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`;
+            return checkArchive(target, version, readFileSync(base + file), readFileSync(base + file + '.sha256', 'utf8'), record, expected[target]);
+          });
+          const list = checksumList(tag, sha, records), file = `PixelboltStudio-${version}-SHA256SUMS.txt`;
+          mkdirSync('sums');
+          writeFileSync(`sums/${file}`, list.text);
+          const files = [...records, { file, bytes: Buffer.byteLength(list.text), sha256: digest(list.text) }];
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+            dryRun === 'true' ? 'Dry run: nothing was uploaded to the release. These files would be uploaded:' : 'Checked files planned for release upload:', '',
+            '| File | Bytes | SHA-256 |', '| --- | ---: | --- |', ...files.map(r => `| ${r.file} | ${r.bytes} | ${r.sha256} |`), '', list.table, '',
+            ...targets.filter(t => expected[t] === null).map(t => `${t}: no Release-run log to compare with.`), ''
+          ].join('\n'));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: studio-sums
+          path: sums/PixelboltStudio-*-SHA256SUMS.txt
+          retention-days: 1
+          if-no-files-found: error
+
+  # All comparisons finish before the first upload; existing assets are never replaced.
+  upload:
+    needs: [plan, report]
+    if: needs.plan.outputs.go == 'true' && needs.plan.outputs.dry_run == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: studio-*
+          path: artifacts
+      - name: Match the list and attach only missing assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+          SHA: ${{ needs.plan.outputs.sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, mkdirSync, appendFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          // BEGIN upload checks
+          export function checkedFiles(version, tag, sha, read) {
+            const sums = `PixelboltStudio-${version}-SHA256SUMS.txt`, list = read(`artifacts/studio-sums/${sums}`).toString();
+            if (!list.includes(`# Tag: ${tag}\n`) || !list.includes(`# Commit: ${sha}\n`)) throw new Error('Checksum list provenance differs');
+            const lines = list.split(/\r?\n/).filter(line => line && !line.startsWith('#'));
+            const files = new Map();
+            for (const target of ['win-x64', 'linux-x64', 'linux-arm64', 'darwin-arm64', 'darwin-x64']) {
+              const name = `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`;
+              const file = `artifacts/studio-${target}/${name}`, hash = createHash('sha256').update(read(file)).digest('hex');
+              if (lines.filter(line => line === `${hash}  ${name}`).length !== 1) throw new Error(`Checksum list mismatch: ${name}`);
+              files.set(name, { file, hash });
+            }
+            if (lines.length !== files.size) throw new Error('Unexpected checksum list entries');
+            files.set(sums, { file: `artifacts/studio-sums/${sums}`, hash: createHash('sha256').update(list).digest('hex') });
+            return files;
+          }
+          export function requireIdentical(name, expected, bytes) {
+            if (createHash('sha256').update(bytes).digest('hex') !== expected) throw new Error(`Release asset ${name} has a different SHA-256; refusing to replace it`);
+          }
+          // END upload checks
+          try {
+            const { TAG: tag, VERSION: version, SHA: sha } = process.env, repo = 'skulitom/Pixelbolt';
+            const files = checkedFiles(version, tag, sha, readFileSync);
+            const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+            const release = JSON.parse(gh('release', 'view', tag, '-R', repo, '--json', 'assets,isDraft,publishedAt'));
+            if (release.isDraft || !release.publishedAt) throw new Error('Release is no longer published');
+            mkdirSync('existing');
+            const missing = [], skipped = [];
+            for (const [name, { file, hash }] of files) {
+              if (release.assets.some(asset => asset.name === name)) {
+                gh('release', 'download', tag, '-R', repo, '--pattern', name, '--dir', 'existing');
+                requireIdentical(name, hash, readFileSync(`existing/${name}`));
+                skipped.push(name);
+              } else missing.push(file);
+            }
+            if (missing.length) gh('release', 'upload', tag, ...missing, '-R', repo);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+              `Studio assets for ${tag}:`, ...missing.map(file => `- Uploaded: ${file.split('/').at(-1)}`),
+              ...skipped.map(name => `- Skipped identical asset: ${name}`), ''
+            ].join('\n'));
+          } catch (error) {
+            console.error(`::error::${String(error.message).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`);
+            process.exitCode = 1;
+          }
+          NODE
