@@ -4,6 +4,13 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Poke the pixels: a live fluid toy
+
+- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
+- The playground and the toy load 0.16.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
+
+## 0.17.0 (2026-11-14)
+
 ### Bodies that turn keep their pixels in video
 
 Reported from a published video: a monkey swinging on a rope was "extremely distorted". A body's picture was turned on the world's own pixel grid and the frame then enlarged, so at any angle off a quarter turn some of its pixels were dropped and others drawn twice, each a block ten video pixels wide: of the monkey's 70 pixels, up to 18 lost and 20 doubled in a frame.
@@ -67,11 +74,6 @@ Reported from a video that could not be made: a heavy ball dropped down a shaft 
 - The playground: typing while a download is prepared no longer says "Waiting for edits…" over a download that goes on; `?engine=` works only on a loopback page (a published page shares its origin with its host's other sites); the page's own script policy is `'self'` (it loads nothing from jsDelivr itself, its worker does).
 - **A territory `split` that leaves teams unequal shares is warned about.** 19 rows between two teams start one of them on 10, on a board that looks even; the compile's warnings and a match's `figures().warnings` now say so, with the cells each team starts on.
 - The figure memory check in CI no longer holds a frame count that a deliberate change moves. The bodies guide says what catches people out: canvas and box limits, what `hits` counts, sleeping bodies that hang, loops with no gravity, and that a tiny change can flip a match.
-
-### Poke the pixels: a live fluid toy
-
-- The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
-- The playground and the toy load 0.16.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 
 ### Found where an agent looks
 
