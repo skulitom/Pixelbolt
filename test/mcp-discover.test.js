@@ -115,10 +115,23 @@ const invalidMeta = [
 ];
 for (const [label, envelope, fields] of invalidMeta) test(`MCP rejects ${label} with named invalid metadata fields`, async t => {
   const mcp = await session(t);
-  for (const method of envelope === undefined ? ['server/discover'] : ['server/discover', 'tools/list', 'ping']) {
+  // A _meta that isn't an object holds no envelope, so only server/discover reads it as a 2026 request.
+  const envelopes = envelope !== null && typeof envelope === 'object' && !Array.isArray(envelope);
+  for (const method of envelopes ? ['server/discover', 'tools/list', 'ping'] : ['server/discover']) {
     const reply = await mcp.request(method, envelope === undefined ? undefined : { _meta: envelope }).answered;
     assert.equal(reply.error?.code, -32602);
     for (const field of fields) assert.ok(reply.error.message.includes(field), reply.error.message);
+  }
+});
+
+test('MCP keeps a 2025 session\'s requests with a _meta that holds no envelope on the 2025 path', async t => {
+  const mcp = await session(t);
+  for (const envelope of [null, [], 'x']) assert.deepEqual((await mcp.request('tools/list', { _meta: envelope }).answered).error, { code: -32000, message: 'Initialize the server first' });
+  await mcp.init();
+  const legacy = (await mcp.request('tools/list').answered).result;
+  for (const envelope of [null, [], 'x', { progressToken: 3 }]) {
+    assert.deepEqual((await mcp.request('tools/list', { _meta: envelope }).answered).result, legacy);
+    assert.deepEqual((await mcp.request('ping', { _meta: envelope }).answered).result, {});
   }
 });
 

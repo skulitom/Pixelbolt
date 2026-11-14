@@ -748,7 +748,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       if (typeof target === 'string' || typeof target === 'number') for (const entry of waiting) if (entry.id === target && entry.method !== 'initialize') entry.controller.abort();
       return;
     }
-    if (request.method === 'ping') { void handle(request); return; }
+    if (request.method === 'ping') { handle(request).catch(cause => send({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: `Internal error: ${cause.message}` } })); return; }
     enqueue(request.id, request.method, bytes, signal => handle(request, signal));
   }
   const tooLarge = prefix => reply(0, { jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });

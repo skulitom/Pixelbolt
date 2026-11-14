@@ -26,9 +26,9 @@ const clientValid = value => optionalFields(value, { title: string, websiteUrl: 
 
 export function discoverRequest({ method, params }, versions, mime) {
   const meta = params?._meta;
-  // A progress token alone is still legacy metadata. Discovery itself identifies the modern protocol even when
-  // the envelope is absent; ordinary requests without an envelope must retain the old initialization gate.
-  if (method === 'initialize' || (method !== 'server/discover' && (meta === undefined || (isObject(meta) && !Object.hasOwn(meta, PROTOCOL) && !Object.hasOwn(meta, CAPABILITIES))))) return null;
+  // A progress token alone, or a _meta that is not an object, is still a 2025 request. Discovery itself identifies the
+  // modern protocol even when the envelope is absent; ordinary requests without an envelope keep the initialization gate.
+  if (method === 'initialize' || (method !== 'server/discover' && !(isObject(meta) && (Object.hasOwn(meta, PROTOCOL) || Object.hasOwn(meta, CAPABILITIES))))) return null;
   const protocol = isObject(meta) ? meta[PROTOCOL] : undefined, capabilities = isObject(meta) ? meta[CAPABILITIES] : undefined;
   if (string(protocol) && !supported(versions).includes(protocol)) return { error: { code: -32022, message: `Unsupported protocol version: ${protocol}`, data: { supported: supported(versions), requested: protocol } } };
   if (versions.includes(protocol) && method !== 'server/discover') return null;
