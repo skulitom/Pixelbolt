@@ -103,7 +103,8 @@ test('water meeting lava becomes steam and stone; fire spreads through wood and 
   const before = live.measure().counts;
   live.step(120);
   const mid = live.measure();
-  assert.ok(mid.burning > 30, `the lit wood burns and lights more (${mid.burning} burning)`);
+  // 18 cells were lit; by now about 38 burn (28 to 56 over seeds).
+  assert.ok(mid.burning > 24, `the lit wood burns and lights more (${mid.burning} burning)`);
   assert.ok((mid.counts.fire ?? 0) > 0, 'burning wood gives off fire');
   live.step(480);
   const after = live.measure().counts;
@@ -209,6 +210,68 @@ test('a pool levels to rest: water poured in stops moving', () => {
   const tops = [];
   for (let x = 2; x < 62; x++) tops.push(column(live, x).indexOf('water'));
   assert.ok(Math.max(...tops) - Math.min(...tops) <= 1, `surface rows ${[...new Set(tops)].join(', ')}`);
+});
+
+test('left and right are alike: a source drawn mirrored runs the mirrored way as often', () => {
+  // Each scene is run as drawn and mirrored, over the same seeds; `left` and `right` count the water that ends beyond
+  // x0 and x1 (and their mirror images), so [far, near] is the far side and the near side of whatever is off centre.
+  const W = 96, H = 48, SEEDS = 16;
+  const mirrored = scene => scene.map(entry => ({ ...entry, rect: [W - entry.rect[0] - entry.rect[2], ...entry.rect.slice(1)] }));
+  const tally = (scene, frames, tap, x0, x1) => [false, true].map(flip => {
+    const total = [0, 0];
+    let wins = 0;
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const live = createLivePowder(sandboxSource(W, H, flip ? mirrored(scene) : scene, seed));
+      for (let f = 0; f < frames; f++) {
+        if (tap) live.paint({ material: 'water', x: (flip ? W - tap : tap) - 2, x2: (flip ? W - tap : tap) + 2, y: 4.5, radius: 0.5, fill: 0.1 });
+        live.step();
+      }
+      const xs = cellsOf(live, 'water').map(c => (flip ? W - 1 - (c % W) : c % W)), left = xs.filter(x => x < x0).length, right = xs.filter(x => x >= x1).length;
+      total[0] += left; total[1] += right;
+      if (left > right) wins++;
+    }
+    return { share: total[0] / (total[0] + total[1]), wins };
+  });
+  // A block of water on a table that stands nearer the grid's left edge: as much runs off each end, whichever end faces
+  // the nearer edge, and neither end gets more every time. (With every row one way, and rows read by turns, a third
+  // ran off the left end and two thirds off the right, as drawn and mirrored alike, the same end ahead on every seed.)
+  const table = tally([{ material: 'stone', rect: [0, 44, W, 4] }, { material: 'stone', rect: [12, 28, 32, 16] }, { material: 'water', rect: [20, 12, 16, 16] }], 160, 0, 12, 44);
+  for (const [run, name] of [[table[0], 'as drawn'], [table[1], 'mirrored']]) {
+    assert.ok(run.share > 0.4 && run.share < 0.6, `off the table ${name}: ${run.share.toFixed(3)} of the water ran off the end nearer the grid's edge`);
+    assert.ok(run.wins >= 3 && run.wins <= SEEDS - 3, `off the table ${name}: that end got more on ${run.wins} of ${SEEDS} seeds`);
+  }
+  // A pool between two rims, a tap over it nearer the left rim: the nearer rim spills more, by the same share when the
+  // whole source is mirrored. (It was 0.44 as drawn and 0.64 mirrored: the right rim spilled more either way round.)
+  const [drawn, flipped] = tally([{ material: 'stone', rect: [0, 44, W, 4] }, { material: 'stone', rect: [16, 30, 48, 14] }, { material: 'stone', rect: [16, 24, 3, 6] }, { material: 'stone', rect: [61, 24, 3, 6] }, { material: 'water', rect: [19, 26, 42, 4] }], 500, 36.5, 16, 64);
+  assert.ok(drawn.share > 0.5 && flipped.share > 0.5, `the rim nearer the tap spills more: ${drawn.share.toFixed(3)} as drawn, ${flipped.share.toFixed(3)} mirrored`);
+  assert.ok(Math.abs(drawn.share - flipped.share) < 0.08, `and the same share mirrored: ${drawn.share.toFixed(3)} as drawn, ${flipped.share.toFixed(3)} mirrored`);
+});
+
+test('a pool levels under what floats on it: a river skinned with ash, or under oil, while water runs down both banks', () => {
+  // A gorge holding a river, water poured down both walls. The water sinks through the skin where it lands; it must
+  // then run on under the skin, not stand against the walls. (It stood in a V, 20 rows deep under ash and 10 under oil,
+  // and stayed so when the pouring stopped.)
+  const W = 64, H = 72;
+  for (const [skin, deep] of [['ash', 1], ['oil', 2]]) for (const seed of [1, 2]) {
+    const live = createLivePowder(sandboxSource(W, H, [
+      { material: 'stone', rect: [0, 68, W, 4] }, { material: 'stone', rect: [0, 20, 8, 48] }, { material: 'stone', rect: [56, 20, 8, 48] },
+      { material: 'water', rect: [8, 52, 48, 16] }, { material: skin, rect: [8, 52 - deep, 48, deep] }
+    ], seed));
+    // The top of the water standing on the floor, column by column: how many rows its highest is over its lowest.
+    const apart = () => {
+      const tops = [];
+      for (let x = 8; x < 56; x++) { const rows = column(live, x); let y = 67; while (rows[y - 1] === 'water') y--; tops.push(y); }
+      return Math.max(...tops) - Math.min(...tops);
+    };
+    for (let f = 0; f < 300; f++) live.paint({ material: 'water', x: 8.5, x2: 10.5, y: 4.5, radius: 0.5, fill: 0.3 }).paint({ material: 'water', x: 53.5, x2: 55.5, y: 4.5, radius: 0.5, fill: 0.3 }).step();
+    assert.ok(apart() <= 8, `under ${skin}, seed ${seed}: the river is ${apart()} rows higher by the walls while it pours`);
+    live.step(500);
+    const before = Uint8Array.from(live.cells.mat);
+    live.step(60);
+    assert.deepEqual(live.cells.mat, before, `under ${skin}, seed ${seed}: it comes to rest`);
+    assert.ok(apart() <= 1, `under ${skin}, seed ${seed}: and lies level (${apart()} rows apart)`);
+    assert.ok(cellsOf(live, skin).every(c => Math.floor(c / W) < 52), `the ${skin} still floats on it`);
+  }
 });
 
 test('solids that fall: a loose piece drops as one, floats on water if lighter, and a fixed solid stays put', () => {
@@ -498,7 +561,9 @@ golden.test('every powder example compiles to its golden recipe, as its preset w
 });
 
 // ---- Tumbling pieces (pieces: "tumble") ----
-// A hut on stilts over a pool, its left stilt burning just above the water.
+// A hut on stilts over a pool, its left stilt burning just above the water. How the stilt burns through goes by the
+// seed: on about one seed in four the falling hut catches on the stilt's stub and is still propped there at frame 400
+// (seed 4 now, 18 of seeds 1 to 64 before any change to what a seed draws), so the seed is one where it falls clear.
 const STILT_HUT = ['.......rrrrrrrr.......', '.....rrrrrrrrrrrr.....', '...rrrrrrrrrrrrrrrr...', '.rrrrrrrrrrrrrrrrrrrr.', 'rrrrrrrrrrrrrrrrrrrrrr', '.ww................ww.', '.ww....wwww........ww.', '.ww....w..w........ww.', '.ww....wwww........ww.', '.ww................ww.', 'wwwwwwwwwwwwwwwwwwwwww', 'wwwwwwwwwwwwwwwwwwwwww'];
 const stiltHut = pieces => ({ ...sandboxSource(96, 64, [
   { material: 'stone', rect: [0, 60, 96, 4] }, { material: 'stone', rect: [0, 38, 4, 22] }, { material: 'stone', rect: [92, 38, 4, 22] },
@@ -506,7 +571,7 @@ const stiltHut = pieces => ({ ...sandboxSource(96, 64, [
   { rows: STILT_HUT, at: [36, 18], legend: { r: 'wood', w: 'wood' } },
   { material: 'wood', rect: [37, 30, 2, 30] }, { material: 'wood', rect: [55, 30, 2, 30] },
   { material: 'wood', rect: [37, 38, 2, 6], burning: true }
-], 4), ...(pieces && { pieces }) });
+], 3), ...(pieces && { pieces }) });
 const topOf = (live, name) => { for (let y = 0; y < live.height; y++) for (let x = 0; x < live.width; x++) if (live.at(x, y).material === name) return y; return -1; };
 const countIn = (live, name, x0, y0, x1, y1) => { let n = 0; for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (live.at(x, y).material === name) n++; return n; };
 // The angle of the piece with the most cells.
