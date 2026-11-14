@@ -19,9 +19,9 @@ function spawn() {
   });
   // An idle worker ends its own thread: terminate() on workers that had just compiled sometimes crashed the whole
   // process natively (an access violation on Windows under load). terminate() stays for a worker still starting,
-  // holding a job or already gone, and for one that has not ended 2 s after it was asked.
+  // holding a job or already gone, and for one that has not ended 5 s after it was asked.
   const leave = () => new Promise(resolve => {
-    const fallback = setTimeout(() => thread.terminate(), 2000);
+    const fallback = setTimeout(() => thread.terminate(), 5000);
     thread.once('exit', () => { clearTimeout(fallback); resolve(); });
     thread.postMessage('close');
   });

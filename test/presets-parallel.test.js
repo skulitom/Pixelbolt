@@ -21,7 +21,7 @@ const observer = `
 import './test-cores.js';
 import { Worker as NativeWorker, resourceLimits, workerData } from 'node:worker_threads';
 export { resourceLimits };
-export const state = { attempts: 0, workers: [], starts: [], completions: [], failAt: Infinity, onStart: null, release: null, probes: workerData?.probes ?? [] };
+export const state = { attempts: 0, workers: [], starts: [], completions: [], failAt: Infinity, onStart: null, onClose: null, release: null, probes: workerData?.probes ?? [], threads: [] };
 export const gate = new Int32Array(new SharedArrayBuffer(4));
 export class ObservedWorker extends NativeWorker {
   constructor(url, options) {
@@ -30,6 +30,7 @@ export class ObservedWorker extends NativeWorker {
     super(url, { ...options, workerData: { gate: gate.buffer, attempt: state.attempts, probe }, transferList: probe ? [probe] : [] });
     const record = { options: options.resourceLimits, limits: this.resourceLimits, exited: false, terminated: false };
     state.workers.push(record);
+    state.threads.push(this);
     this.on('exit', () => { record.exited = true; });
     this.on('message', message => {
       if (message === 'ready') return;
@@ -39,7 +40,7 @@ export class ObservedWorker extends NativeWorker {
     this.record = record;
   }
   postMessage(message) {
-    if (message === 'close') return super.postMessage(message);
+    if (message === 'close') { super.postMessage(message); state.onClose?.(); return; }
     this.job = message.entry.name;
     state.starts.push({ name: this.job, time: Date.now(), deadline: message.deadline });
     super.postMessage(message);
@@ -76,6 +77,8 @@ os.availableParallelism = () => ${cores}; syncBuiltinESMExports();`);
     await writeFile(worker, `import { workerData } from 'node:worker_threads';\n${workerInit}\n` + (await readFile(worker, 'utf8')).replace("  if (Date.now() > deadline)", `${workerCode}\n  if (Date.now() > deadline)`));
   }
   const { state, gate } = await import(pathToFileURL(path.join(dir, 'src/observe-workers.js')));
+  // A worker left running by a failed test would keep the file from exiting.
+  t.after(() => Promise.all(state.threads.map(thread => Worker.prototype.terminate.call(thread))));
   const { listPresets } = await import(pathToFileURL(path.join(dir, 'src/presets.js')));
   const list = options => listPresets({ budget: Infinity, ...options });
   return { dir, list, state, gate };
@@ -87,8 +90,10 @@ async function cacheFile(directory) {
   return { name: names[0], text: await readFile(path.join(directory, names[0]), 'utf8') };
 }
 
-test('parallel and serial listings agree for every preset kind and a compile error, and obey the pool cap', async t => {
+test('parallel and serial listings agree for every preset kind and a compile error, and obey the pool cap', { timeout: 30000 }, async t => {
   const { list, state } = await fixture(t, { cores: 32 });
+  // The pool's fallback timer is held, so only a worker ending its own thread lets the listing return.
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const serial = await list({ concurrency: 1 });
   assert.equal(state.attempts, 0);
   const parallel = await list({ concurrency: 99 });
@@ -101,7 +106,11 @@ test('parallel and serial listings agree for every preset kind and a compile err
 
 test('an idle worker that does not end when asked is terminated, and the listing still returns', { timeout: 30000 }, async t => {
   const { list, state } = await fixture(t, { broken: false, workerInit: 'setInterval(() => {}, 60000);' });
-  sameJSON(await list({ concurrency: 2 }), await list({ concurrency: 1 }));
+  const serial = await list({ concurrency: 1 });
+  // Each worker is asked to close after its fallback timer is set; moving the clock fires that timer at once.
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  state.onClose = () => t.mock.timers.tick(5000);
+  sameJSON(await list({ concurrency: 2 }), serial);
   assert.equal(state.workers.length, 2);
   assert.ok(state.workers.every(worker => worker.terminated && worker.exited));
 });
