@@ -103,7 +103,8 @@ test('water meeting lava becomes steam and stone; fire spreads through wood and 
   const before = live.measure().counts;
   live.step(120);
   const mid = live.measure();
-  assert.ok(mid.burning > 30, `the lit wood burns and lights more (${mid.burning} burning)`);
+  // 18 cells were lit; by now about 38 burn (28 to 56 over seeds).
+  assert.ok(mid.burning > 24, `the lit wood burns and lights more (${mid.burning} burning)`);
   assert.ok((mid.counts.fire ?? 0) > 0, 'burning wood gives off fire');
   live.step(480);
   const after = live.measure().counts;
@@ -209,6 +210,41 @@ test('a pool levels to rest: water poured in stops moving', () => {
   const tops = [];
   for (let x = 2; x < 62; x++) tops.push(column(live, x).indexOf('water'));
   assert.ok(Math.max(...tops) - Math.min(...tops) <= 1, `surface rows ${[...new Set(tops)].join(', ')}`);
+});
+
+test('left and right are alike: a source drawn mirrored runs the mirrored way as often', () => {
+  // Each scene is run as drawn and mirrored, over the same seeds; `left` and `right` count the water that ends beyond
+  // x0 and x1 (and their mirror images), so [far, near] is the far side and the near side of whatever is off centre.
+  const W = 96, H = 48, SEEDS = 16;
+  const mirrored = scene => scene.map(entry => ({ ...entry, rect: [W - entry.rect[0] - entry.rect[2], ...entry.rect.slice(1)] }));
+  const tally = (scene, frames, tap, x0, x1) => [false, true].map(flip => {
+    const total = [0, 0];
+    let wins = 0;
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const live = createLivePowder(sandboxSource(W, H, flip ? mirrored(scene) : scene, seed));
+      for (let f = 0; f < frames; f++) {
+        if (tap) live.paint({ material: 'water', x: (flip ? W - tap : tap) - 2, x2: (flip ? W - tap : tap) + 2, y: 4.5, radius: 0.5, fill: 0.1 });
+        live.step();
+      }
+      const xs = cellsOf(live, 'water').map(c => (flip ? W - 1 - (c % W) : c % W)), left = xs.filter(x => x < x0).length, right = xs.filter(x => x >= x1).length;
+      total[0] += left; total[1] += right;
+      if (left > right) wins++;
+    }
+    return { share: total[0] / (total[0] + total[1]), wins };
+  });
+  // A block of water on a table that stands nearer the grid's left edge: as much runs off each end, whichever end faces
+  // the nearer edge, and neither end gets more every time. (With every row one way, and rows read by turns, a third
+  // ran off the left end and two thirds off the right, as drawn and mirrored alike, the same end ahead on every seed.)
+  const table = tally([{ material: 'stone', rect: [0, 44, W, 4] }, { material: 'stone', rect: [12, 28, 32, 16] }, { material: 'water', rect: [20, 12, 16, 16] }], 160, 0, 12, 44);
+  for (const [run, name] of [[table[0], 'as drawn'], [table[1], 'mirrored']]) {
+    assert.ok(run.share > 0.4 && run.share < 0.6, `off the table ${name}: ${run.share.toFixed(3)} of the water ran off the end nearer the grid's edge`);
+    assert.ok(run.wins >= 3 && run.wins <= SEEDS - 3, `off the table ${name}: that end got more on ${run.wins} of ${SEEDS} seeds`);
+  }
+  // A pool between two rims, a tap over it nearer the left rim: the nearer rim spills more, by the same share when the
+  // whole source is mirrored. (It was 0.44 as drawn and 0.64 mirrored: the right rim spilled more either way round.)
+  const [drawn, flipped] = tally([{ material: 'stone', rect: [0, 44, W, 4] }, { material: 'stone', rect: [16, 30, 48, 14] }, { material: 'stone', rect: [16, 24, 3, 6] }, { material: 'stone', rect: [61, 24, 3, 6] }, { material: 'water', rect: [19, 26, 42, 4] }], 500, 36.5, 16, 64);
+  assert.ok(drawn.share > 0.5 && flipped.share > 0.5, `the rim nearer the tap spills more: ${drawn.share.toFixed(3)} as drawn, ${flipped.share.toFixed(3)} mirrored`);
+  assert.ok(Math.abs(drawn.share - flipped.share) < 0.08, `and the same share mirrored: ${drawn.share.toFixed(3)} as drawn, ${flipped.share.toFixed(3)} mirrored`);
 });
 
 test('solids that fall: a loose piece drops as one, floats on water if lighter, and a fixed solid stays put', () => {
