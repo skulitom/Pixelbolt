@@ -709,45 +709,51 @@ export function createLivePowder(source, options = {}) {
     }
     return best;
   };
+  // Does n float on a liquid m? A lighter powder or liquid does: a skin of ash on water, oil over it.
+  const floats = (n, m) => (state[n] === POWDER || state[n] === LIQUID) && density[n] < density[m];
   // A resting liquid's look along its row, up to FAR cells the way s, for somewhere lower: an empty cell over an empty
   // cell. Returns how far that is (0 for none). It looks past more of its own kind, so the cells of a film running off
   // a table follow the ones ahead of them, off either end alike (stopped by them, the cells one side went a cell at a
-  // time). `free` is the empty cells beside it, and `blocker` the material that ends them (-1 for none).
+  // time). `free` is the cells beside it that it could move into, and `blocker` the material that ends them (-1 for
+  // none). With `through`, what floats on it is as air to it: it looks through that and moves into it (the two change
+  // places), and somewhere lower is also where what floats lies on more that floats, so a pool levels under a skin of
+  // ash or a layer of oil, and not only where it is bare. (Water running down a gorge's walls sank through the ash on
+  // the river where it landed and could go no further: the river stood in a V, a cell's step to a row, while it rained.)
   let free = 0, blocker = -1;
-  const lower = (c, x, s, m, ahead) => {
+  const lower = (c, x, s, m, ahead, through) => {
     free = 0; blocker = -1;
     for (let i = 1; i <= FAR; i++) {
       const xx = x + s * i;
       if (xx < 0 || xx >= W) break;
       const d = c + s * i, n = mat[d];
-      if (n !== 0 && state[n] !== GAS && state[n] !== FIRE) {
+      if (n !== 0 && state[n] !== GAS && state[n] !== FIRE && !(through && floats(n, m))) {
         if (blocker < 0) blocker = n;
         if (n !== m || !free) break;
         continue;
       }
       if (blocker < 0) free = i;
-      if (ahead && mat[d + ahead] === 0) return i;
+      if (ahead) { const under = mat[d + ahead]; if (under === 0 || (through && floats(under, m))) return i; }
     }
     return 0;
   };
   // The way a resting liquid drifts along its row when nowhere is lower: toward the nearer bank, the first cell either
-  // way that is neither empty, a gas nor more of its kind (or the grid's edge), so a pool's top layer gathers against
-  // both its banks alike and a source drawn mirrored runs mirrored. Where both banks are as near, or further than FAR,
-  // it is the row's own way, left or right by the seed. A cell only ever drifts toward its bank, so nothing goes back
-  // and forth. (Every row had one way, left on even rows and right on odd: the top layer of a lake gathered against
-  // one of its two dams, and that dam gave way first whichever way round the source was drawn.)
+  // way that is neither empty, a gas, what floats on it nor more of its kind (or the grid's edge), so a pool's top
+  // layer gathers against both its banks alike and a source drawn mirrored runs mirrored. Where both banks are as
+  // near, or further than FAR, it is the row's own way, left or right by the seed. A cell only ever drifts toward its
+  // bank, so nothing goes back and forth. (Every row had one way, left on even rows and right on odd: the top layer of
+  // a lake gathered against one of its two dams, and that dam gave way first whichever way round the source was drawn.)
   const ways = Int8Array.from({ length: H }, (_, y) => (hash(seed, SALT.way, y) & 1 ? 1 : -1));
-  const shore = (c, x, s, m) => {
+  const shore = (c, x, s, m, through) => {
     let i = 1;
     for (; i <= FAR; i++) {
       const xx = x + s * i;
       if (xx < 0 || xx >= W) break;
       const n = mat[c + s * i];
-      if (n !== 0 && n !== m && state[n] !== GAS && state[n] !== FIRE) break;
+      if (n !== 0 && n !== m && state[n] !== GAS && state[n] !== FIRE && !(through && floats(n, m))) break;
     }
     return i;
   };
-  const bank = (c, x, y, m) => { const l = shore(c, x, -1, m), r = shore(c, x, 1, m); return l < r ? -1 : r < l ? 1 : ways[y]; };
+  const bank = (c, x, y, m, through) => { const l = shore(c, x, -1, m, through), r = shore(c, x, 1, m, through); return l < r ? -1 : r < l ? 1 : ways[y]; };
   // A powder or liquid cell in the air: gravity, then this frame's whole pixels one cell at a time, more vertically or
   // sideways as its velocity leans, sliding off what it falls onto as a resting cell would, and landing where it can
   // go no lower. `first` says the cell below is already known to be free (it was just checked, with its draw).
@@ -957,9 +963,11 @@ export function createLivePowder(source, options = {}) {
                 // and a puddle drains into a hole. Otherwise a liquid holds together, and moves only toward its nearer
                 // bank: the end of a strip joins the next strip of its kind that way, and what lies on a pool drifts
                 // on until it meets something. Puddles and pools come to rest, flat but for a strip against each bank.
-                const reach = spread[m];
-                const dr = lower(c, x, 1, m, ahead), rf = free, rb = blocker;
-                const dl = lower(c, x, -1, m, ahead), lf = free, lb = blocker;
+                // What floats on it is as air to it in all of this, unless it lies on that itself: held back by its
+                // drag, it has yet to sink, and looks for nowhere else.
+                const reach = spread[m], through = !ahead || !floats(mat[c + W], m);
+                const dr = lower(c, x, 1, m, ahead, through), rf = free, rb = blocker;
+                const dl = lower(c, x, -1, m, ahead, through), lf = free, lb = blocker;
                 let to = -1;
                 if (dr || dl) {
                   const dir = !dl || (dr && (dr < dl || (dr === dl && rand() >>> 31))) ? 1 : -1, far = dir > 0 ? rf : lf;
@@ -969,7 +977,7 @@ export function createLivePowder(source, options = {}) {
                 } else if (rf || lf) {
                   const afloat = ahead && state[mat[c + W]] === LIQUID;
                   if (afloat || (rf && rb === m) || (lf && lb === m)) {
-                    const way = bank(c, x, y, m), dist = way > 0 ? rf : lf;
+                    const way = bank(c, x, y, m, through), dist = way > 0 ? rf : lf;
                     if (dist && (afloat || (way > 0 ? rb : lb) === m)) to = c + way * (dist < reach ? dist : reach);
                   }
                 }
