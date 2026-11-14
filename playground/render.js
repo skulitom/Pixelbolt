@@ -1,8 +1,8 @@
 // No static imports: Node checks and the worker must run exactly the same engine calls.
 export const ENGINE_MODULES = ['core', 'authoring', 'fx', 'fluid', 'scene', 'gif'];
 
-export async function loadEngine(base) {
-  return Object.fromEntries(await Promise.all(ENGINE_MODULES.map(async name => [name, await import(new URL(`${name}.js`, base))])));
+export async function loadEngine(base, modules = ENGINE_MODULES) {
+  return Object.fromEntries(await Promise.all(modules.map(async name => [name, await import(new URL(`${name}.js`, base))])));
 }
 
 export function assertInline(document) {
@@ -46,12 +46,19 @@ export function renderRecipe(engine, document) {
     'pixelforge-autotile': engine.authoring.compileAutotile,
     'pixelforge-normals': engine.authoring.compileNormals,
     'pixelforge-fx': engine.fx.compileEffects,
-    'pixelforge-fluid': engine.fluid.compileFluid
+    'pixelforge-fluid': engine.fluid.compileFluid,
+    'pixelforge-wave': engine.wave?.compileWaves,
+    'pixelforge-crystal': engine.crystal?.compileCrystals,
+    'pixelforge-powder': engine.powder?.compilePowder,
+    'pixelforge-bodies': engine.bodies?.compileBodies
   };
   if (document.format !== undefined && !Object.hasOwn(compilers, document.format)) {
     throw new Error(`Recipes with format ${JSON.stringify(String(document.format)).slice(0, 80)} cannot be rendered on their own.`);
   }
   const kind = document.format === undefined ? 'project' : document.format.slice('pixelforge-'.length);
+  // The newer source compilers load only when a source needs one (the worker's engineFor); an engine loaded without it
+  // says which module to load rather than failing on an undefined call.
+  if (kind !== 'project' && typeof compilers[document.format] !== 'function') throw new Error(`This engine was loaded without its ${kind} compiler; load the ${kind} module too.`);
   const recipe = kind === 'project' ? document : compilers[document.format](document).recipe;
   const project = engine.core.renderProject(recipe);
   return { kind, name: project.name, width: project.width, height: project.height,

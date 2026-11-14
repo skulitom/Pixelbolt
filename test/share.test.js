@@ -38,6 +38,14 @@ test('share links refuse the documented limit on both writing and reading', asyn
   await rejectsShare(readShareLink('x'.repeat(LINK_LIMIT + 1)), /16,384-character limit/);
 });
 
+for (const kind of ['wave', 'crystal', 'powder', 'bodies']) test(`share links and PNGs keep the ${kind} source kind`, async () => {
+  const source = { format: `pixelforge-${kind}`, version: 1, name: kind };
+  assert.equal(recipeKind(source), kind);
+  const expected = { recipe: source, version: '0.16.0', kind };
+  assert.deepEqual(await readShareLink(await shareLink(source, expected.version)), expected);
+  assert.deepEqual(await readEmbeddedRecipe(await embedRecipe(png, source, expected.version)), expected);
+});
+
 for (const [label, fragment, message] of [
   ['no version', '#r=AA', /needs both v= and r=/],
   ['no recipe', '#v=0.9.0', /needs both v= and r=/],

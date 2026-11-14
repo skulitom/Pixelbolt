@@ -110,6 +110,12 @@ Six more routes run cold by a first-time agent (a camp scene from three presets,
 - The server's instructions, the quick start, the skill and the craft notes' Effects checklist ask the agent to look before it delivers: write down what the request names (the subject and where it is, how it moves, its size and colours), compare the frames with it, fix the worst difference and look again, at least twice for an effect or an animation. A preset is a first draft, delivered as it ships when it shows what was asked or the user named it; the skill said to deliver a preset as shipped first. In a benchmark of twelve effect requests, Sonnet delivered a first draft or a nearby preset in about nine turns and a blind judge preferred a rival whose guide has the agent look and fix three times; on four of those requests, a blind judge preferred what Sonnet made with the new text in three.
 - **Library users get the check too.** `readExpect`, `checkDelivery` and `briefCheck` come from the package entry (`import { checkDelivery } from 'pixelbolt'`), so a tool that bundles Pixelbolt checks a render against what was asked, as `render --expect` and `pixel_render`'s `expect` do. The entry had no check, and the exports map refuses `pixelbolt/src/check.js`.
 
+### The playground opens every source
+
+- **Wave, crystal, falling-sand and rigid-body sources open in the playground** by link, by Open file and from a PNG that carries one, compiled in the page with the linked engine, and the editor keeps the source. Each compiler loads only when a source needs it, so links to older engines still open; a source on an engine older than its format (wave 0.9.2, bodies 0.12.0, crystal 0.13.0, falling sand 0.14.0) says which version it needs.
+- **`pixelbolt share` links the source itself**, no longer the grids it compiles to, so long presets fit a link: hut-fire's went from 148,528 characters (over the 16,384 limit) to 644. Its reply drops `compiledFrom`.
+- Links and PNGs of these four kinds open only where this change is: Pixelbolt 0.16.0's `import --embedded` and a playground deployed before it refuse them, as they refused these sources before.
+
 ## 0.16.0 (2026-11-12)
 
 ### The check knows the sprite sheet

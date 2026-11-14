@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir, mkdtemp, writeFile, rm, stat } from 'node:fs/promises';
+import { readFile, readdir, mkdtemp, writeFile, rm, stat, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,7 +8,8 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { decodePNG } from '../src/import.js';
 import { resolveReferences } from '../src/resolve.js';
-import { checkVersion, recipeKind, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT, EMBED_LIMIT } from '../src/share.js';
+import { COMPILERS } from '../src/presets.js';
+import { checkVersion, recipeKind, shareLink, embedRecipe, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT, EMBED_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
 import { compareVersions, filterExamples, engineOverride, engineBase, engineAllowed, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
@@ -23,6 +24,87 @@ const engineURL = pathToFileURL(path.join(root, 'src') + path.sep);
 const engine = await loadEngine(engineURL);
 const tiny = { version: 1, name: 'tiny', width: 2, height: 1, palette: { a: '#f008' }, frames: [{ name: 'one', duration: 100, ops: [{ op: 'grid', rows: ['a.'] }] }, { name: 'two', duration: 100, ops: [{ op: 'grid', rows: ['.a'] }] }] };
 const resolved = async file => (await resolveReferences(await json(`examples/${file}`), { baseDir: path.join(root, 'examples', path.dirname(file)) })).document;
+const sourceCases = [
+  ['wave', 'interference.wave.json', '0.9.2', '0.9.1', 'Wave'],
+  ['crystal', 'snowflakes.crystal.json', '0.13.0', '0.12.9', 'Crystal'],
+  ['powder', 'quarry-blast.powder.json', '0.14.0', '0.13.0', 'Falling-sand'],
+  ['bodies', 'bouncing-pixel.bodies.json', '0.12.0', '0.11.9', 'Rigid-body']
+];
+
+for (const [kind, file, first, older, label] of sourceCases) {
+  for (const route of ['file', 'link', 'png']) test(`worker opens ${kind} source by ${route}, keeps its source and matches CLI pixels`, async () => {
+    const source = await resolved(file), text = JSON.stringify(source), request = { version: first, override: engineURL.href };
+    const direct = renderRecipe(engine, COMPILERS[source.format](source).recipe);
+    // Clear the last render so each opening route exercises the compiler, even when its editor text is identical.
+    await handleRequest({ ...request, type: 'render', text: JSON.stringify(tiny) });
+    if (route === 'link') Object.assign(request, { type: 'link', hash: await shareLink(source, first), version: pin });
+    else if (route === 'png') Object.assign(request, { type: 'open', png: await embedRecipe(await encodePNG(direct.frames[0].data, direct.width, direct.height), source, first), version: pin });
+    else Object.assign(request, { type: 'open', text });
+    let editor;
+    const preview = await handleRequest(request, value => { editor = value; });
+    assert.equal(preview.kind, kind); assert.equal(preview.version, first);
+    assert.equal(preview.digest, await framesDigest(direct.frames));
+    assert.deepEqual(preview.animations, direct.animations);
+    assert.deepEqual(JSON.parse(editor.text), source); assert.equal(editor.version, first);
+    const shared = await handleRequest({ type: 'share', ...editor });
+    assert.deepEqual((await readShareLink(shared.link)).recipe, source);
+    const downloaded = await handleRequest({ type: 'export', export: 'recipe', ...editor });
+    assert.deepEqual(JSON.parse(new TextDecoder().decode(downloaded.files[0].data)), source);
+    assert.ok(downloaded.files[0].name.endsWith(`.${kind}.json`));
+  });
+  test(`worker refuses ${kind} on an older engine before loading any modules`, async () => {
+    const source = await resolved(file), hash = await shareLink(source, older);
+    // A missing engine makes an attempted import observable; the version message must win over a load error.
+    const override = new URL('../missing-source-test-engine/', engineURL).href;
+    const png = await embedRecipe(await encodePNG(renderRecipe(engine, tiny).frames[0].data, 2, 1), source, older);
+    for (const request of [{ type: 'link', hash, version: pin }, { type: 'open', png, version: pin }, { type: 'open', text: JSON.stringify(source), version: older }]) {
+      await assert.rejects(handleRequest({ ...request, override }), {
+        message: `${label} sources need Pixelbolt ${first} or newer; the engine selected here is ${older}.`
+      });
+    }
+    // A compiler already loaded for a newer version must not let an old link bypass the gate.
+    await handleRequest({ type: 'open', text: JSON.stringify(source), version: pin, override: engineURL.href });
+    await assert.rejects(handleRequest({ type: 'link', hash, version: pin, override: engineURL.href }), {
+      message: `${label} sources need Pixelbolt ${first} or newer; the engine selected here is ${older}.`
+    });
+  });
+}
+
+test('old project and fluid links load without powder and survive a missing source compiler', async t => {
+  const base = path.resolve(tmpdir()), dir = await mkdtemp(path.join(base, 'pixelbolt-old-engine-'));
+  t.after(async () => { assert.equal(path.dirname(dir), base); await rm(dir, { recursive: true, force: true }); });
+  // Current fx and fluid import wave and bodies internally; leave those dependencies, but omit powder entirely.
+  await cp(path.join(root, 'src'), path.join(dir, 'src'), { recursive: true, filter: file => path.basename(file) !== 'powder.js' });
+  await writeFile(path.join(dir, 'package.json'), '{"type":"module"}');
+  const override = pathToFileURL(path.join(dir, 'src') + path.sep).href, old = await loadEngine(override);
+  for (const [kind] of sourceCases) assert.equal(Object.hasOwn(old, kind), false);
+  await assert.rejects(handleRequest({ type: 'open', text: await read('examples/quarry-blast.powder.json'), version: pin, override }), /local test engine could not be loaded/);
+  for (const source of [tiny, await resolved('torch.fluid.json')]) {
+    const preview = await handleRequest({ type: 'link', hash: await shareLink(source, '0.9.0'), version: pin, override });
+    assert.equal(preview.version, '0.9.0'); assert.equal(preview.kind, recipeKind(source));
+    assert.equal(preview.digest, await framesDigest(renderRecipe(engine, source).frames));
+  }
+});
+
+test('renderRecipe names the compiler an engine was loaded without', async () => {
+  // The default engine has no source compilers; the worker loads one per source. Called without it, the renderer says
+  // which module to load instead of calling undefined.
+  const source = await resolved('quarry-blast.powder.json');
+  assert.throws(() => renderRecipe(engine, source), /loaded without its powder compiler/);
+  const full = { ...engine, ...(await loadEngine(engineURL, ['powder'])) };
+  assert.equal(renderRecipe(full, source).kind, 'powder');
+});
+
+test('worker preserves a new source compiler work-limit error and recovers after it', async () => {
+  const source = { format: 'pixelforge-powder', version: 1, name: 'too-much-work', base: 'sandbox', width: 256, height: 256,
+    clips: { long: { frames: 2, every: 60 }, longer: { start: 3000, frames: 2, every: 60 } } };
+  let expected;
+  assert.throws(() => COMPILERS[source.format](source), error => { expected = error; return /million cell steps/.test(error.message); });
+  await assert.rejects(handleRequest({ type: 'open', text: JSON.stringify(source), version: pin, override: engineURL.href }), {
+    name: expected.name, message: expected.message, path: expected.path
+  });
+  assert.equal((await handleRequest({ type: 'render', text: JSON.stringify(tiny), version: pin, override: engineURL.href })).kind, 'project');
+});
 
 test('manifest has valid unique files, matching kinds and version-gated presets', async () => {
   const seen = new Set();

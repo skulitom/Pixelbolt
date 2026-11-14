@@ -126,7 +126,7 @@ golden.test('reviewed presets regenerate exactly and keep palette-only, byte-sta
   }
 });
 
-test('CLI compiles shared palettes without losing the source, refuses overwrites and shares ordinary grids', async t => {
+test('CLI compiles shared palettes without losing the source, refuses overwrites and shares resolved sources', async t => {
   const dir = await temp(t), source = tiny();
   const palette = source.palette; source.palette = { $ref: 'palette.json' };
   await writeFile(path.join(dir, 'palette.json'), JSON.stringify(palette));
@@ -146,9 +146,8 @@ test('CLI compiles shared palettes without losing the source, refuses overwrites
   const share = cli('share', path.join(dir, 'source.wave.json'));
   assert.equal(share.status, 0, share.stderr);
   const info = JSON.parse(share.stdout), decoded = await readShareLink(info.link);
-  assert.equal(info.compiledFrom, 'pixelforge-wave');
-  assert.equal(decoded.recipe.format, undefined);
-  assert.deepEqual(decoded.recipe.frames, result.frames);
+  assert.equal(info.kind, 'wave'); assert.equal(info.compiledFrom, undefined);
+  assert.deepEqual(decoded.recipe, { ...source, palette });
   assert.deepEqual(JSON.parse(await readFile(path.join(dir, 'source.wave.json'), 'utf8')), source);
 });
 

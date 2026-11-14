@@ -4,9 +4,6 @@ import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { compileWaves } from '../src/wave.js';
-import { compileCrystals } from '../src/crystal.js';
-import { compilePowder } from '../src/powder.js';
-import { compileBodies } from '../src/bodies.js';
 import { readExpect, checkDelivery, briefCheck } from '../src/check.js';
 import { readSize, resizeRecipe, resizeWarning, resizeMargins, keepFrames, keepAnimations } from '../src/resize.js';
 import { embedBundleRecipe, sameFiles, outputSummary, describeAnimations } from '../src/export.js';
@@ -45,7 +42,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            exported beside the sheet with a Godot CanvasTexture that lights it
                                            --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it
                                            against the request; --animation <name> checks only that animation
-  pixelbolt share <file.json|->           Print a playground link for the resolved recipe
+  pixelbolt share <file.json|->           Print a playground link for the resolved source recipe
   pixelbolt gif <file.json|-> --out anim.gif [--animation name] [--scale 1-16] [--background color]
                                            Share one animation as a GIF; writes only --out
   pixelbolt gif --preset <name> --out anim.gif [--size 32x32] [--frames 8] [--scale 8] [--sheet frames.png]
@@ -537,12 +534,10 @@ try {
       else process.stdout.write(formatJSON(expanded));
     } else if (command === 'share') {
       const input = await readResolved(positional[0]), version = await engineVersion();
-      // The hosted playground has no compiler for wave, crystal, powder or bodies sources, so they are shared as the
-      // ordinary grids they compile to.
-      const compile = { 'pixelforge-wave': compileWaves, 'pixelforge-crystal': compileCrystals, 'pixelforge-powder': compilePowder, 'pixelforge-bodies': compileBodies }[input.document?.format];
-      const document = compile ? compile(input.document).recipe : input.document;
+      // The playground compiles sources with the linked engine, keeping links short and their source editable.
+      const document = input.document;
       const link = await shareLink(document, version);
-      print({ ok: true, link, characters: link.length, version, kind: recipeKind(document), ...(compile && { compiledFrom: input.document.format }) });
+      print({ ok: true, link, characters: link.length, version, kind: recipeKind(document) });
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
