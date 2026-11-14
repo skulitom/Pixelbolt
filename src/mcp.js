@@ -26,8 +26,11 @@ import { tilemapOf } from './autotile.js';
 import { listPresets, briefListing, findListing, findPreset, loadPreset, compilePreset, presetNext, COMPILERS } from './presets.js';
 import { TOPICS, SECTIONED, helpText, jsonTopic, isSchema } from './help.js';
 import { skillCommand } from './skill.js';
+import { discoverRequest, discoverResult, completeResult } from './mcp-discover.js';
 
 const versions = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
+// The server's instructions, sent by initialize and by server/discover (the 2026-07-28 handshake).
+const instructions = 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water), rigid-body sources (bouncing, toppling, things that hang and swing on ropes and hinges, flags and banners, territory matches) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset, plus size and frames for the canvas and frame count asked for). pixel_scene puts several assets (compiled presets, sprites, tile maps) in one picture and writes it as a still or, with gif, one looping GIF. Before you deliver, look and refine: compare the contact sheet from pixel_compile, pixel_inspect or pixel_render with what the request names (the subject and where it is, how it moves, its size and colours), fix the worst difference, and look again, at least twice for an effect or an animation; a preset the user named, as it ships, needs one look. A preset or first draft that passes expect has the right files, not yet the right picture.';
 const UI_URI = 'ui://pixelbolt/viewer', UI_MIME = 'text/html;profile=mcp-app';
 const pictureTools = new Set(['pixel_inspect', 'pixel_patch', 'pixel_compile', 'pixel_render', 'pixel_scene', 'pixel_import']);
 const textContent = value => ({ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value) });
@@ -674,8 +677,11 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   // One request, already parsed and checked by receive(), answered in arrival order.
   async function handle(request, signal) {
     const { id, method, params } = request;
-    const error = (code, message) => send({ jsonrpc: '2.0', id, error: { code, message } });
-    const result = value => send({ jsonrpc: '2.0', id, result: value });
+    const context = discoverRequest(request, versions, UI_MIME);
+    if (context?.error) { send({ jsonrpc: '2.0', id, error: context.error }); return; }
+    const error = (code, message) => send({ jsonrpc: '2.0', id, error: { code: context && code === -32002 ? -32602 : code, message } });
+    const result = value => send({ jsonrpc: '2.0', id, result: context ? completeResult(method, value, version) : value });
+    if (method === 'ping') { result({}); return; }
     if (method === 'initialize') {
       if (!params || typeof params.protocolVersion !== 'string') { error(-32602, 'protocolVersion is required'); return; }
       // The first initialize settles the session. A repeat is answered as the first was, so what the client has been
@@ -686,13 +692,15 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
         ui = Array.isArray(mimeTypes) && mimeTypes.includes(UI_MIME);
         if (versions.includes(params.protocolVersion)) protocol = params.protocolVersion;
       }
-      result({ protocolVersion: protocol, capabilities: { tools: {}, ...(ui && { resources: {} }) }, serverInfo: { name: 'pixelbolt', version }, instructions: 'Use Pixelbolt when the user wants pixel art: sprites and sprite sheets, tiles and tilesets, icons, pixel effects (fire, smoke, explosions, water, sparks) or short frame animations for a game or a video, saved as PNG, GIF, APNG or numbered frames. Do not use it for photos, vector logos or full-resolution illustrations. It runs locally, with no account and no API key. Call pixel_help for the JSON format. Use small grids and reusable symbols. Send a full recipe once; every response returns a revision id to use instead of project afterwards. Call pixel_inspect to see every frame (grid: true reads exact pixels), pixel_patch to make targeted edits and check what changed, and pixel_render to export game-ready files: pass it expect (what the user asked for) and fix what its check reports. pixel_compile builds recipes from pose sources, autotile templates, particle and spell-shape effect sources, fluid sources (smoke, fire, explosions, magic, water), rigid-body sources (bouncing, toppling, things that hang and swing on ropes and hinges, flags and banners, territory matches) and normals sources (lighting passes derived from a colour recipe); start fire, smoke, explosions, splashes and spells from a preset (pixel_help topic presets, then pixel_compile with preset, plus size and frames for the canvas and frame count asked for). pixel_scene puts several assets (compiled presets, sprites, tile maps) in one picture and writes it as a still or, with gif, one looping GIF. Before you deliver, look and refine: compare the contact sheet from pixel_compile, pixel_inspect or pixel_render with what the request names (the subject and where it is, how it moves, its size and colours), fix the worst difference, and look again, at least twice for an effect or an animation; a preset the user named, as it ships, needs one look. A preset or first draft that passes expect has the right files, not yet the right picture.' }); return;
+      result({ protocolVersion: protocol, capabilities: { tools: {}, ...(ui && { resources: {} }) }, serverInfo: { name: 'pixelbolt', version }, instructions }); return;
     }
-    if (!initialized) { error(-32000, 'Initialize the server first'); return; }
-    if (method === 'tools/list') { result({ tools: ui ? tools.map(tool => pictureTools.has(tool.name) ? { ...tool, _meta: { ui: { resourceUri: UI_URI }, 'ui/resourceUri': UI_URI } } : tool) : tools }); return; }
-    if (ui && method === 'resources/list') { result({ resources: [{ uri: UI_URI, name: 'Pixelbolt viewer', description: 'Play and inspect pixel art frames and animations.', mimeType: UI_MIME }] }); return; }
-    if (ui && method === 'resources/templates/list') { result({ resourceTemplates: [] }); return; }
-    if (ui && method === 'resources/read') {
+    if (method === 'server/discover') { result(discoverResult(versions, context.ui, instructions)); return; }
+    if (!initialized && !context) { error(-32000, 'Initialize the server first'); return; }
+    const showUI = context ? context.ui : ui;
+    if (method === 'tools/list') { result({ tools: showUI ? tools.map(tool => pictureTools.has(tool.name) ? { ...tool, _meta: { ui: { resourceUri: UI_URI }, 'ui/resourceUri': UI_URI } } : tool) : tools }); return; }
+    if (showUI && method === 'resources/list') { result({ resources: [{ uri: UI_URI, name: 'Pixelbolt viewer', description: 'Play and inspect pixel art frames and animations.', mimeType: UI_MIME }] }); return; }
+    if (showUI && method === 'resources/templates/list') { result({ resourceTemplates: [] }); return; }
+    if (showUI && method === 'resources/read') {
       if (params?.uri !== UI_URI) { error(-32002, 'Resource not found'); return; }
       const { viewerHTML } = await import('./mcp-app.js');
       // A host border separates the player controls from chat; omitted CSP means no network access is needed.
@@ -709,7 +717,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     try { ({ args, parsed } = parseTextArguments(args, tool.inputSchema.properties)); } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, path: cause.path })] }); return; }
     if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
     let reply;
-    try { reply = await host.run(params.name, args, signal, ui); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    try { reply = await host.run(params.name, args, signal, showUI); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
     // A cancelled call gets no response: the client has stopped waiting for it (MCP cancellation).
     if (signal.aborted) return;
     result(parsed.length ? { ...reply, content: [...reply.content, textContent({ note: `${parsed.join('; ')}. Send JSON values as they are, not inside strings.` })] } : reply);
@@ -740,7 +748,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       if (typeof target === 'string' || typeof target === 'number') for (const entry of waiting) if (entry.id === target && entry.method !== 'initialize') entry.controller.abort();
       return;
     }
-    if (request.method === 'ping') { send({ jsonrpc: '2.0', id: request.id, result: {} }); return; }
+    if (request.method === 'ping') { void handle(request); return; }
     enqueue(request.id, request.method, bytes, signal => handle(request, signal));
   }
   const tooLarge = prefix => reply(0, { jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
