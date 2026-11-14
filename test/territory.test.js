@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, PixelError, createSequence, createBodiesSequence } from '../src/index.js';
-import { compileBodies } from '../src/bodies.js';
+import { compileBodies, bodiesFrames } from '../src/bodies.js';
 import { startMCP } from '../src/mcp.js';
 
 // Territory, held speed and powers for pixelforge-bodies (docs/physics-model.md, section 13a).
@@ -267,4 +267,16 @@ test('a tireless body keeps what a power gives it', () => {
     const [before, after, later] = apex([16, y]);
     assert.ok(Math.abs(before - 14) < 0.3 && Math.abs(after - y) < 2 && Math.abs(later - after) < 0.3, `warped to ${y}: bounces to ${before}, then to ${after} and ${later}`);
   }
+});
+
+test('a split that leaves teams unequal shares of the board says so', () => {
+  // 28 px of 4-px cells is 7 rows: the top team starts on 4 of them. The board looks even, and 30 test matches were
+  // needed to find that it was not.
+  const bodies = [ball('tide', [8, 8], [1, 0.5], { team: 'tide' }), ball('ember', [24, 24], [-1, -0.5], { team: 'ember' })];
+  const uneven = compileBodies(match({ territory: { ...board, split: 'rows', size: [8, 7] }, bodies }));
+  assert.deepEqual(uneven.warnings.filter(text => /split/.test(text)), ["bodies.effects.m.territory.split: 7 rows don't share out evenly among 2 teams, which start with 32, 24 cells; give size a height that divides by 2"]);
+  const live = bodiesFrames(match({ territory: { ...board, split: 'rows', size: [8, 7] }, bodies }));
+  live.image(0);
+  assert.deepEqual(live.figures().warnings, uneven.warnings.filter(text => /split/.test(text)));
+  assert.deepEqual((compileBodies(match({ territory: { ...board, split: 'rows', size: [8, 8] }, bodies })).warnings ?? []).filter(text => /split/.test(text)), []);
 });

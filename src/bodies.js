@@ -2238,6 +2238,7 @@ export function compileBodies(source) {
     });
     animations[name] = { frames: names, loop: effect.loop };
     const effectWarnings = run.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`);
+    if (effect.territory?.uneven) effectWarnings.push(effect.territory.uneven);
     if (!run.drawn.some(frame => frame.pixels)) effectWarnings.push(`${path}: nothing is ever on the canvas; check at against width and height`);
     if (run.loop && run.loop.seam > 0.5) effectWarnings.push(`${path}.loop: after ${run.loop.warmed} frames of its wind the cloth still ends a cycle ${run.loop.seam} px from where it began, so the last frame does not lead into the first; raise the cloth's damping or lower its gust`);
     const crowded = run.stats.crowded.size;
@@ -2277,7 +2278,7 @@ export function bodiesFrames(source, effectName, { scale = 1 } = {}) {
   if (effect.loop) world.settle();
   let at = -1, image = null;
   const fine = k > 1 ? new Uint16Array(width * n * k * height * n * k) : null;
-  const warnings = () => world.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`);
+  const warnings = () => [...world.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`), ...(effect.territory?.uneven ? [effect.territory.uneven] : [])];
   return {
     name: source.name, effect: name, width: width * n * k, height: height * n * k, scale: k, palette, frames: effect.frames, duration: effect.duration,
     image: f => {

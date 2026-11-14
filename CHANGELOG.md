@@ -52,6 +52,7 @@ Reported from a video that could not be made: a heavy ball dropped down a shaft 
 - **`powder.schema.json` describes a material's `above` and `below`**; the generator took the texts and dropped them.
 - **`pixelbolt import --embedded` refuses `--frame` and `--padding`**, which it took and ignored. **`pixelbolt validate` on a source** says it is a source and how to check it, where it called its first field unknown. **`pixelbolt sequence` of a match takes `--loops 1`**, as its help lists.
 - The playground: typing while a download is prepared no longer says "Waiting for edits…" over a download that goes on; `?engine=` works only on a loopback page (a published page shares its origin with its host's other sites); the page's own script policy is `'self'` (it loads nothing from jsDelivr itself, its worker does).
+- **A territory `split` that leaves teams unequal shares is warned about.** 19 rows between two teams start one of them on 10, on a board that looks even; the compile's warnings and a match's `figures().warnings` now say so, with the cells each team starts on.
 - The figure memory check in CI no longer holds a frame count that a deliberate change moves. The bodies guide says what catches people out: canvas and box limits, what `hits` counts, sleeping bodies that hang, loops with no gravity, and that a tiny change can flip a match.
 
 ### Poke the pixels: a live fluid toy
