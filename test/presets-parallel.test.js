@@ -105,12 +105,14 @@ test('parallel and serial listings agree for every preset kind and a compile err
 });
 
 test('an idle worker that does not end when asked is terminated, and the listing still returns', { timeout: 30000 }, async t => {
-  const { list, state } = await fixture(t, { broken: false, workerInit: 'setInterval(() => {}, 60000);' });
+  // The workers reply without compiling: terminating a worker that has compiled is the crash this fallback avoids.
+  const { list, state } = await fixture(t, { broken: false, workerInit: 'setInterval(() => {}, 60000);', workerCode: '  parentPort.postMessage(null); return;' });
   const serial = await list({ concurrency: 1 });
   // Each worker is asked to close after its fallback timer is set; moving the clock fires that timer at once.
   t.mock.timers.enable({ apis: ['setTimeout'] });
   state.onClose = () => t.mock.timers.tick(5000);
-  sameJSON(await list({ concurrency: 2 }), serial);
+  const listing = await list({ concurrency: 2 });
+  sameJSON(listing.presets, serial.presets.map(({ name, kind, file }) => ({ name, kind, file, unmeasured: true })));
   assert.equal(state.workers.length, 2);
   assert.ok(state.workers.every(worker => worker.terminated && worker.exited));
 });
