@@ -214,7 +214,7 @@ async function studioScript(job) {
 
 test('Studio plan skips unpublished or invalid releases, peels tags and tolerates only expired logs', async () => {
   const code = await studioScript('plan'), sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f';
-  for (const scenario of ['dispatch', 'failed Release', 'invalid', 'draft', 'missing release', 'annotated', 'no jobs', 'expired', 'forbidden', 'wrong sha', 'wrong repository', 'wrong event']) {
+  for (const scenario of ['dispatch', 'failed Release', 'invalid', 'draft', 'missing release', 'annotated', 'no jobs', 'expired', 'escapes', 'escapes, expired', 'forbidden', 'wrong sha', 'wrong repository', 'wrong event']) {
     const env = { EVENT: 'workflow_dispatch', TAG: 'v0.17.0', DRY_RUN: 'true', GITHUB_OUTPUT: 'outputs', GITHUB_STEP_SUMMARY: 'summary' }, written = {}, calls = [];
     if (['failed Release', 'wrong sha', 'wrong repository', 'wrong event'].includes(scenario)) Object.assign(env, { EVENT: 'workflow_run', DRY_RUN: 'false', RUN_EVENT: 'push', RUN_REPO: 'skulitom/Pixelbolt', RUN_SHA: sha, RUN_ID: '43539548933' });
     if (scenario === 'invalid') env.TAG = 'main';
@@ -235,7 +235,10 @@ test('Studio plan skips unpublished or invalid releases, peels tags and tolerate
       }
       if (endpoint.includes('/jobs?')) return JSON.stringify([{ jobs: scenario === 'no jobs' ? [] : [{ id: 132287084837, name: 'Full test matrix / Portable Studio / win-x64' }] }]);
       if (endpoint.endsWith('/logs')) {
-        if (scenario === 'expired') throw gone(410);
+        // Newer gh (GitHub's runners, 2026-11) refuses to print a log with terminal escape sequences unless told to.
+        if (scenario.startsWith('escapes') && !args.includes('--allow-escape-sequences')) throw Object.assign(new Error('Command failed'), { stderr: 'the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway\n' });
+        if (scenario === 'expired' || scenario === 'escapes, expired') throw gone(410);
+        if (scenario === 'escapes') return '2026-11-14T01:21:11.1825882Z \u001b[36;1m$zip = (Get-Item dist/PixelboltStudio-*-win-x64.zip).FullName\u001b[0m\n2026-11-14T01:21:11.4551809Z 72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b  PixelboltStudio-0.17.0-win-x64.zip\n';
         if (scenario === 'forbidden') throw gone(403);
         return '2026-11-14T01:21:11.4551809Z 72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b  PixelboltStudio-0.17.0-win-x64.zip\n';
       }
@@ -251,7 +254,10 @@ test('Studio plan skips unpublished or invalid releases, peels tags and tolerate
       assert.equal(outputs.dry_run, scenario === 'failed Release' ? 'false' : 'true');
       const expected = JSON.parse(outputs.expected);
       assert.equal(expected['linux-x64'], null);
-      assert.equal(expected['win-x64'] === null, ['no jobs', 'expired'].includes(scenario));
+      assert.equal(expected['win-x64'] === null, ['no jobs', 'expired', 'escapes, expired'].includes(scenario));
+      if (scenario === 'escapes') assert.equal(expected['win-x64'], '72e8aa76eeec0e60ef6e7a7b147a82a6fe662bb50e2ff643b37926d72672445b');
+      // The flag is passed only after gh asked for it, so older gh (which lacks it) is never given it.
+      assert.equal(calls.some(args => args.includes('--allow-escape-sequences')), scenario.startsWith('escapes'));
       assert.match(written.summary, /no Release-run/);
     }
     if (scenario === 'invalid') assert.equal(calls.length, 0);

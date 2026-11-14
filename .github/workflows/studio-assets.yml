@@ -75,6 +75,13 @@ jobs:
           const env = process.env, repo = 'skulitom/Pixelbolt', tag = env.TAG;
           const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
           const api = endpoint => JSON.parse(gh('api', `repos/${repo}/${endpoint}`));
+          // A job log keeps its colours, and newer gh prints such a response only when told to; older gh lacks the flag.
+          const jobLog = id => {
+            const endpoint = `repos/${repo}/actions/jobs/${id}/logs`;
+            try { return gh('api', endpoint); }
+            catch (error) { if (!/--allow-escape-sequences/.test(String(error.stderr))) throw error; }
+            return gh('api', '--allow-escape-sequences', endpoint);
+          };
           const summary = message => appendFileSync(env.GITHUB_STEP_SUMMARY, message + '\n');
           const output = values => { for (const [key, value] of Object.entries(values)) appendFileSync(env.GITHUB_OUTPUT, `${key}=${value}\n`); };
           output({ go: 'false' });
@@ -109,7 +116,7 @@ jobs:
             expected[target] = null;
             if (!job) { summary(`${target}: no Release-run job to compare with (older tag or no Release run).`); continue; }
             let log;
-            try { log = gh('api', `repos/${repo}/actions/jobs/${job.id}/logs`); }
+            try { log = jobLog(job.id); }
             catch (error) { if (!unavailable(error)) throw error; summary(`${target}: no Release-run log to compare with (expired, HTTP 404/410).`); continue; }
             expected[target] = printedHash(log, `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`);
           }
