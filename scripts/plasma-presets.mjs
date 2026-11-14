@@ -30,9 +30,10 @@ const pulses = (on, off, frames, volts) => {
 // Jacob's ladder: two rods in a V. The arc strikes where they are closest, its own heat lifts it, it stretches as the
 // rods part and, too long for the supply (its resistance sags the voltage), it goes out at the top; the supply rests
 // for a few frames so the hot air clears, and the next arc strikes at the bottom.
+// (Seed 5: under seed 3 the arc climbs lopsided, a tail hanging by the right rod.)
 const ladderRod = side => shapeRows(40, 64, (x, y) => (onLine(side < 0 ? 17 : 22, 52, side < 0 ? 5 : 34, 4, 2)(x, y) ? 'G' : null));
 const jacobsLadder = fluidSource('jacobs-ladder', 40, 64, { ...arc, G: '#c4c8cf', g: '#6f7889', k: '#262a33' }, {
-  frames: 22, duration: 60, loop: true, blend: 1, seed: 3, buoyancy: 0.6, vorticity: 0.1, cooling: 0.2, drag: 0.05,
+  frames: 22, duration: 60, loop: true, blend: 1, seed: 5, buoyancy: 0.6, vorticity: 0.1, cooling: 0.2, drag: 0.05,
   obstacles: [
     { symbol: 'rod-left', x: 0, y: 0, voltage: [{ frame: 0, voltage: 30 }, { frame: 18, voltage: 0 }], resistance: 20 },
     { symbol: 'rod-right', x: 0, y: 0, voltage: 0 },
