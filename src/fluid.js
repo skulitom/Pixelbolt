@@ -4015,10 +4015,11 @@ function createRun(effect, width, height, path) {
 // for it. Through every frame of a key's `over`, the faces against the obstacle carry its speed along the ramp (in
 // pixels per frame, before rounding to whole pixels), so the pressure solve pushes the fluid ahead of it steadily;
 // beside smooth obstacles the closed share of a part-open face carries it. Fluid in the cells it now covers is shoved
-// along its move to the first open cell, never through another solid (or lost, where there is none). A jump (a key
-// with no `over`), an obstacle appearing or vanishing, and the place a loop comes round to are cuts, not moves: they
-// push nothing, and fluid where an obstacle lands is lost. With heat the grid stays and heatMasks reshapes it, with the
-// ice, and builds the solid layer; ice stops what is pushed as an obstacle does.
+// along its move to the first open cell, never through another solid. A jump (a key with no `over`), an obstacle
+// appearing or vanishing, and the place a loop comes round to are cuts, not moves: they push nothing. Liquid with no
+// open cell along the move, or under a cut, keeps its matter (`squeezed`): it goes to the nearest open cell out of the
+// gap; a gas there is lost. With heat the grid stays and heatMasks reshapes it, with the ice, and builds the solid
+// layer; ice stops what is pushed as an obstacle does.
 function moveObstacles(run, cycle) {
   const { effect, state } = run, places = placementsAt(effect.obstacles, cycle), key = layoutKey(places), before = run.layout, P = state.heat;
   let g = state.g;
@@ -4177,6 +4178,36 @@ function moveObstacles(run, cycle) {
     best.room--;
     return best.c;
   };
+  // Where liquid an obstacle has closed on goes when nothing is open along its move (it met another solid: a piston
+  // back against its chamber's end wall, a crusher on the floor) or it made no move (a gate shown on top of liquid, a
+  // jump, the place a loop comes round to): the nearest open cell that has room, by a walk through the cells the
+  // obstacle has just covered, so out of the gap it closed, sideways or up; failing that through any of its own cells,
+  // so a pocket it seals on every side leaks past it. Never through another solid, and -1 only where the obstacle and
+  // other solids shut it in altogether. A cell has room for twice what fills it, so what is squeezed out stays by where
+  // it came out and the pressure solve spreads it from there. (It was removed instead: a piston that came back to sit
+  // against the end wall took 72 of 1,008 particles of slime with it, in sight, and a valve shown in a nozzle 84.)
+  let crowd = null, walk = null, walked = null, pass = 0;
+  const squeezed = (from, o) => {
+    if (!crowd) {
+      crowd = new Uint16Array(g.N); walk = new Int32Array(g.N); walked = new Int32Array(g.N);
+      for (let k = 0; k < state.n; k++) { const c = Math.floor(state.y[k]) * W + Math.floor(state.x[k]); if (c >= 0 && c < g.N && !solid[c]) crowd[c]++; }
+    }
+    for (const fresh of [true, false]) {
+      pass++;
+      let head = 0, tail = 0;
+      walk[tail++] = from; walked[from] = pass;
+      while (head < tail) {
+        const c = walk[head++];
+        if (!solid[c] && crowd[c] < 2 * PER_CELL) { crowd[c]++; return c; }
+        const i = c % W, j = (c - i) / W;
+        for (const n of [j > 0 ? c - W : -1, i > 0 ? c - 1 : -1, i < W - 1 ? c + 1 : -1, j < H - 1 ? c + W : -1]) {
+          if (n < 0 || walked[n] === pass || (solid[n] && (owner[n] !== o || (fresh && !covered(n))))) continue;
+          walked[n] = pass; walk[tail++] = n;
+        }
+      }
+    }
+    return -1;
+  };
   if (effect.liquid) {
     const moved = state.coupling && state.coupling.list.length ? new Map(state.coupling.list.map(b => [b.obstacle, b])) : null;
     for (let k = state.n - 1; k >= 0; k--) {
@@ -4193,7 +4224,12 @@ function moveObstacles(run, cycle) {
       const s = shift[o] ?? outward(o, x, y), to = s ? landing(x, y, o, s) : -1;
       // Fluid a body lands on keeps its matter: with nowhere along the move, it goes to the nearest open cell.
       if (to < 0 && effect.obstacles[o].body !== undefined) { const near = nearestOpen(x, y); if (near >= 0) { state.x[k] = near % W + 0.5; state.y[k] = Math.floor(near / W) + 0.5; continue; } }
-      if (to < 0) { removeParticle(state, k); continue; }
+      if (to < 0) {
+        const out = squeezed(c, o);
+        if (out < 0) { removeParticle(state, k); continue; }
+        state.x[k] = out % W + 0.5 + (random(effect.seed, state.id[k], SALT.drain, 7) - 0.5) * 0.9; state.y[k] = Math.floor(out / W) + 0.5 + (random(effect.seed, state.id[k], SALT.drain, 8) - 0.5) * 0.9;
+        continue;
+      }
       // Into the open cell the walk reached, just past the obstacle, moving at least as fast as it does. A body the
       // liquid's pressure moves pays for that: the particle and the body meet as one knock that sticks, so a stone
       // throws what it lands on nearly at its own speed and a light plank landing flat is stopped by it. (Given the
