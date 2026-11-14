@@ -39,6 +39,7 @@ export class ObservedWorker extends NativeWorker {
     this.record = record;
   }
   postMessage(message) {
+    if (message === 'close') return super.postMessage(message);
     this.job = message.entry.name;
     state.starts.push({ name: this.job, time: Date.now(), deadline: message.deadline });
     super.postMessage(message);
@@ -79,7 +80,7 @@ os.availableParallelism = () => ${cores}; syncBuiltinESMExports();`);
   const list = options => listPresets({ budget: Infinity, ...options });
   return { dir, list, state, gate };
 }
-const stopped = state => assert.ok(state.workers.every(worker => worker.terminated && worker.exited), 'every pool worker was terminated and exited before the listing returned');
+const stopped = state => assert.ok(state.workers.every(worker => worker.exited), 'every pool worker exited before the listing returned');
 async function cacheFile(directory) {
   const names = await readdir(directory);
   assert.equal(names.length, 1, 'one engine cache file and no temporary files');
@@ -95,6 +96,14 @@ test('parallel and serial listings agree for every preset kind and a compile err
   assert.ok(parallel.presets.find(entry => entry.name === 'zz-broken').error);
   assert.equal(state.workers.length, 6, 'no more workers than jobs, even when concurrency exceeds eight');
   stopped(state);
+  assert.ok(state.workers.every(worker => !worker.terminated), 'idle workers end their own threads; terminate() under load could crash the process');
+});
+
+test('an idle worker that does not end when asked is terminated, and the listing still returns', { timeout: 30000 }, async t => {
+  const { list, state } = await fixture(t, { broken: false, workerInit: 'setInterval(() => {}, 60000);' });
+  sameJSON(await list({ concurrency: 2 }), await list({ concurrency: 1 }));
+  assert.equal(state.workers.length, 2);
+  assert.ok(state.workers.every(worker => worker.terminated && worker.exited));
 });
 
 test('default pool size leaves a core free and limits larger machines to eight', async t => {
@@ -214,6 +223,7 @@ test('worker construction failure silently falls back to serial and terminates a
     sameJSON(await list({ concurrency: 3 }), serial);
     assert.equal(state.attempts, failAt);
     stopped(state);
+    assert.ok(state.workers.every(worker => worker.terminated), 'a worker that has not started is terminated');
   }
 });
 
