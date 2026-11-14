@@ -455,7 +455,7 @@ const fluidEmitter = object({
   vortex: num(-16, 16, 'Swirl speed around at, in pixels per frame; positive turns clockwise on screen.'),
   noise: num(0, 8, 'Random push in pixels per frame, coherent over about three pixels and new every frame (seeded): turbulence.'),
   flicker: num(0, 1, 'Random variation of strength from cell to cell and frame to frame (seeded value noise), so a flame base breaks into tongues.'),
-  pulse: cycle({ amplitude: num(0, 1, 'Share by which strength rises and falls; default 0.5. 1 switches the emitter off at the trough.') }, 1, 'Strength follows a sine wave: puffs, heaves, heartbeats.'),
+  pulse: cycle({ amplitude: num(0, 1, 'Share by which strength rises and falls; default 0.5. 1 switches the emitter off at the trough.') }, 1, 'Strength follows a sine wave: puffs, heaves, heartbeats. A liquid is never fuller than full, so a liquid emitter at rate 1 only dips: its stream thins and falls short in the low half of a cycle, and never passes its steady reach.'),
   orbit: cycle({ radius: { oneOf: [num(0, 128), pairOf(num(0, 128))], description: 'Pixels from at, or [x, y] for an ellipse.' } }, -256, 'The emitter circles at (or follows an ellipse round it); a negative period turns anticlockwise. A rate emitter is laid along the path it covered since the last frame, so a fast orbit leaves a smooth trail.', ['radius']),
   follow: { oneOf: [int(0, 31), { type: 'string', minLength: 1 }], description: 'An obstacle this emitter stays beside: its index in obstacles, or the symbol exactly one of them stamps. Write at for where the obstacle starts (its own x and y); as the obstacle\'s keys move it, the emitter moves the same whole pixels, so a nozzle\'s flame leaves with its rocket. A rate emitter is laid along the way between frames (not across a key with no over, which is a cut). It emits whether or not the obstacle shows; end stops it.' },
   carry: { ...object({
@@ -648,7 +648,7 @@ const fluid = {
       ice: { ...object({ look: { ...array(fluidLook, 8), minItems: 1, description: 'Gas-style layers for the ice, drawn cell by cell over the water (density 0.5 is a cell of ice).' } }, ['look']), description: 'Liquid with heat: how ice is drawn; default the water\'s look.' },
       light: vector(-1, 1, 'Direction toward the light for the light and shadow fields; default [-1, -1], the upper left.'),
       outline: { ...key, description: 'Palette key for a one-pixel outline around the fluid.' },
-      cleanup: { ...object({ strays: bool, corners: bool }), description: 'De-Stray (specks and pinholes take their surroundings\' colour; a liquid\'s lone pixel is a drop, and stays) and De-Corner cleanup of the fluid before outline and sparks.' }
+      cleanup: { ...object({ strays: bool, corners: bool }), description: 'De-Stray (specks and pinholes take their surroundings\' colour, the commonest where bands meet; a liquid\'s lone pixel is a drop, and stays) and De-Corner cleanup of the fluid before outline and sparks.' }
     }, ['frames', 'emitters', 'look']) },
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'width', 'height', 'effects']), $defs: { rows: schema.$defs.rows }

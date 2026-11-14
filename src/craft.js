@@ -163,7 +163,9 @@ export function idsOf(data) {
 const FOUR = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 // Proposes fixes on a working copy, in scan order, so the second pixel of a doubled pair is judged after the first.
 // strays: a pixel whose in-canvas eight neighbours all share one other colour takes that colour (noise, pinholes,
-//   isolated specks).
+//   isolated specks). An empty pixel closed in by drawn ones of several colours is a pinhole too (where two bands of
+//   one body meet, no neighbourhood is one colour) and takes the colour most of them have, the first met on a tie;
+//   so do the two cells of a hole that touch only at a corner, each closed in but for the other.
 // corners: the corner pixel of an L-shaped step in a one-pixel line (a "double") takes the colour outside the step,
 //   when those pixels agree. It needs exactly two perpendicular same-colour neighbours, a different colour on the
 //   diagonal between them (so filled areas are untouched) and at least one arm one pixel long, so real right-angle
@@ -191,6 +193,17 @@ export function cleanupIds(ids, width, height, { corners = false, strays = false
     if (uniform && shared >= 0 && shared !== work[i]) {
       work[i] = shared; kinds.set(i, 'stray');
       if (took) took(i, [[x - 1, y - 1], [x, y - 1], [x + 1, y - 1], [x - 1, y], [x + 1, y], [x - 1, y + 1], [x, y + 1], [x + 1, y + 1]].filter(inCanvas).map(indexOf), shared);
+    } else if (!uniform && work[i] === 0) {
+      // The empty neighbours of (px, py), leaving out (sx, sy).
+      const open = (px, py, sx, sy) => { const list = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && !(px + dx === sx && py + dy === sy) && at(px + dx, py + dy) === 0) list.push([px + dx, py + dy]); return list; };
+      const gaps = open(x, y, x, y);
+      if (gaps.length > 1 || (gaps.length === 1 && (gaps[0][0] === x || gaps[0][1] === y || open(gaps[0][0], gaps[0][1], x, y).length))) continue;
+      const counts = new Map();
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const n = dx || dy ? at(x + dx, y + dy) : -1; if (n > 0) counts.set(n, (counts.get(n) ?? 0) + 1); }
+      let most = 0, fill = 0;
+      for (const [id, count] of counts) if (count > most) { most = count; fill = id; }
+      work[i] = fill; kinds.set(i, 'stray');
+      if (took) took(i, [[x - 1, y - 1], [x, y - 1], [x + 1, y - 1], [x - 1, y], [x + 1, y], [x - 1, y + 1], [x, y + 1], [x + 1, y + 1]].filter(point => inCanvas(point) && at(point[0], point[1]) === fill).map(indexOf), fill);
     }
   }
   if (corners) for (let pass = 0; pass < 4; pass++) {

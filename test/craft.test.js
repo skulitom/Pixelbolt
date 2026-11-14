@@ -125,6 +125,16 @@ test('cleanup finds doubled corners and strays without touching filled areas or 
   assert.deepEqual(cleanupIds(grid(['ggg', 'gbg', 'ggg']), 3, 3, { strays: true }).map(({ id }) => id), [2]);
   assert.deepEqual(cleanupIds(grid(['ggg', 'g.g', 'ggg']), 3, 3, { strays: true }).map(({ id }) => id), [2]);
   assert.equal(cleanupIds(grid(['ggg', 'gbg', 'ggg']), 3, 3, { strays: true, allowed: index => index !== 4 }).length, 0);
+  // A pinhole where two bands of one body meet has no one colour around it: it takes the colour most neighbours have
+  // (it was left open, and a liquid's depth bands flickered with transparent specks). A hole of two cells that touch at
+  // a corner closes too; one of two cells side by side, a slot, is a shape and stays, and so does a coloured pixel
+  // between two colours.
+  const filled = (rows, w = rows[0].length) => cleanupIds(grid(rows), w, rows.length, { strays: true }).map(({ x, y, id }) => [x, y, id]);
+  assert.deepEqual(filled(['ggggg', 'gb.bb', 'gbbbb', 'bbbbb']), [[2, 1, 3]]);
+  assert.deepEqual(filled(['ggggg', 'gg.bb', 'gbbbb', 'bbbbb']), [[2, 1, 2]], 'on a tie, the first met');
+  assert.deepEqual(filled(['ggggg', 'g.ggg', 'gg.gg', 'ggggg']), [[1, 1, 2], [2, 2, 2]]);
+  assert.deepEqual(filled(['ggggg', 'g..gg', 'ggggg']), []);
+  assert.deepEqual(filled(['ggggg', 'ggxbb', 'bbbbb']), []);
   // A step out in the open goes; the same step tucked against a wall (an obstacle a liquid rests on) stays.
   const nook = grid(['.....', '.xx..', '.x...', '.x...']);
   assert.deepEqual(cleanupIds(nook, 5, 4, { corners: true }).map(({ x, y }) => [x, y]), [[1, 1]]);
