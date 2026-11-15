@@ -4,6 +4,7 @@
 import { parseColor, fail, isObject } from './core.js';
 import { renderScene, SCENE_SIDE, SCENE_AREA } from './scene.js';
 import { bodiesFrames } from './bodies.js';
+import { powderFrames } from './powder.js';
 import { encodePNG } from './png.js';
 
 export const MAX_SEQUENCE_FRAMES = 18000;
@@ -309,6 +310,32 @@ export function createBodiesSequence(source, options = {}, { budget = Infinity, 
   if (missed > 0) notes.push(`${missed} of the match's ${reach < match.frames ? `first ${reach}` : match.frames} frames (${match.duration} ms each) ${missed === 1 ? 'falls' : 'fall'} between video frames at ${rate.label} frames per second and ${missed === 1 ? 'is' : 'are'} not shown; give the effect a duration of at least one video frame (${Math.ceil(1000 * rate.denominator / rate.numerator)} ms at this rate).`);
   built.info.loop = { loops: 1, plays: 'once', passFrames: Math.round(plan.exactFrames * 1e6) / 1e6, seamless: false };
   return finish(built, notes, () => { built.info.figures = match.figures(); });
+}
+
+// One clip of a pixelforge-powder source as a sequence (`animation` names it; the first by default): the grid is
+// stepped as its frames are shown and drawn straight to video frames, never kept as a recipe, so a clip may run past a
+// recipe's 256 frames and its grid past a recipe's canvas (powderFrames). It plays once and holds its last frame, and
+// every frame is the one the compiled recipe shows. `budget`, `stream` and `command` are createBodiesSequence's; a clip
+// repeated with `loops` is held as other sequences are, since its frames come back. info.ended says where the grid
+// stood after the last frame made: its step, what is on it and whether it has settled.
+export function createPowderSequence(source, options = {}, { budget = Infinity, stream = false, command = 'npx -y pixelbolt' } = {}) {
+  const rate = common(options, KEYS), clip = powderFrames(source, options.animation), loops = options.loops ?? 1, step = options.step ?? 1;
+  const plan = planSequence(new Array(clip.frames).fill(clip.duration), { fps: rate, loop: false, loops, seconds: options.seconds, step });
+  // As for a match: say what will not fit before simulating it.
+  const place = placeSprite(clip.width, clip.height, options), different = new Set(plan.poses).size, fits = Math.floor(MAX_UNIQUE_PIXELS / (place.width * place.height)), streamed = stream && loops === 1;
+  const line = `${command} sequence <source.json> --out <new folder> --fps ${rate.label}${options.size ? ` --size ${options.size}` : ''}; or use a smaller size, a lower frame rate or fewer frames`;
+  if (!streamed && different > fits) fail('sequence', `the clip shows ${different} different frames at ${place.width}×${place.height}; a sequence made in one call${stream ? ', or one that repeats,' : ''} holds at most ${fits} at that size (about ${Math.floor(fits * rate.denominator / rate.numerator)} seconds at ${rate.label} frames a second). ${stream ? 'Leave loops out, so each frame is written as it is made' : `Run it on the command line, which writes each frame as it is made: ${line}`}`);
+  const most = Math.floor(budget / (place.width * place.height));
+  if (different > most) fail('sequence', `the clip shows ${different} different frames at ${place.width}×${place.height}, more than one call draws in its time (about ${most} at that size). Run it on the command line, which has no time limit: ${line}`);
+  const built = build(`${clip.name}-${clip.clip}`, clip.width, clip.height, plan.count, frame => { const pose = plan.poses[frame]; return { key: pose, pixels: () => clip.image(pose) }; }, { ...options, rate, palette: clip.palette }, { source: 'powder', powder: clip.name, clip: clip.clip }, streamed);
+  const notes = [...clip.warnings];
+  if (step > 1) notes.push(`Animated on ${step}s: each sampled frame is held for ${step} video frames.`);
+  if (built.place.cropped) notes.push(cropNote('grid', built.info));
+  // Counted as a match's are: over the clip, or up to the last frame shown when `seconds` ends it early.
+  const reach = plan.count < Math.ceil(plan.exactFrames / loops) ? plan.poses[plan.poses.length - 1] + 1 : clip.frames, missed = reach - different;
+  if (missed > 0) notes.push(`${missed} of the clip's ${reach < clip.frames ? `first ${reach}` : clip.frames} frames (${clip.duration} ms each) ${missed === 1 ? 'falls' : 'fall'} between video frames at ${rate.label} frames per second${step > 1 ? ` on ${step}s` : ''} and ${missed === 1 ? 'is' : 'are'} not shown; give the clip a duration of at least ${step > 1 ? `${step} video frames` : 'one video frame'} (${Math.ceil(step * 1000 * rate.denominator / rate.numerator)} ms at this rate).`);
+  built.info.loop = { loops, plays: 'once', passFrames: Math.round(plan.exactFrames / loops * 1e6) / 1e6, seamless: false };
+  return finish(built, notes, () => { built.info.ended = clip.ended(); });
 }
 
 // A match's figures for a reply: the last frame's cells per team and the leader, totals, and the first powers taken.

@@ -477,7 +477,7 @@ test('errors an agent meets name what to do, and a late scripted input is warned
   const colours = n => Object.fromEntries(Array.from({ length: n }, (_, k) => [`m${k}`, { state: 'powder', colors: Array.from({ length: 8 }, (_, j) => `#${(k * 8 + j).toString(16).padStart(2, '0')}2040`) }]));
   bad(tiny({ materials: colours(2) }), 'powder.materials', /92 different colours in all: the sandbox base uses 76 and this source adds 16, and a grid draws at most 89; share colours .* or replace base materials/);
   bad({ ...tiny({ materials: colours(12) }), base: undefined }, 'powder.materials', /^powder\.materials: 97 different colours in all, and a grid draws at most 89; share colours between materials$/);
-  bad(tiny({ width: 300 }), 'powder.width', /at most 256 pixels a side; use a smaller grid, or run a larger one live .*createLivePowder/);
+  bad(tiny({ width: 300 }), 'powder.width', /at most 256 pixels a side; use a smaller grid, write a larger one as numbered video frames \(pixelbolt sequence\), or run it live .*createLivePowder/);
   bad(tiny({ scene: [{ rows: ['ss'], at: [1.5, 2], legend: { s: 'stone' } }] }), 'powder.scene[0].at', /expected 2 whole numbers/);
   bad(tiny({ scene: [{ rows: ['ss'], at: [1], legend: { s: 'stone' } }] }), 'powder.scene[0].at', /expected 2 whole numbers/);
   bad(tiny({ scene: [{ rows: ['ss'], at: ['x', 'y'], legend: { s: 'stone' } }] }), 'powder.scene[0].at', /expected 2 whole numbers/);

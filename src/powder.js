@@ -2064,17 +2064,19 @@ export function createLivePowder(source, options = {}) {
 }
 
 // ---- Compiling ----------------------------------------------------------------------------------------------------
-// Bakes a source into an ordinary recipe: the grid runs from its scene, playing its scripted inputs, and each clip
-// samples it every `every` steps from `start` (60 steps a second), drawn exactly as render() draws it. Pixels that never
-// change in any sampled frame are drawn once, as the symbol `still`, stamped under every frame; each frame draws the
-// rest as one palette grid per 16-row band, cropped to where anything changes. Returns { recipe, metadata, warnings? }:
-// warnings (only when there are any) name scripted inputs played after the last step a clip samples.
-export function compilePowder(source) {
+/** The most frames of a clip written as numbered video frames (powderFrames), past the 256 a recipe holds. */
+export const CLIP_FRAMES = 18000;
+// A source's runner and the clips to play, checked against what is made of them. For a recipe (`only` undefined) that
+// is every clip, within a recipe's canvas, frames and pixels. For video frames it is one clip (`only` names it; null
+// is the first), which may run CLIP_FRAMES frames on a grid of any size a runner takes. Either way the steps and the
+// work are those of the clips played.
+function readClips(source, only) {
+  const video = only !== undefined;
   if (!isObject(source)) fail('powder', 'expected a pixelforge-powder source object');
   if (source.version !== 1) fail('powder.version', 'expected 1');
   const name = recipeName(source.name, 'powder.name');
   const live = createLivePowder(source), { width: W, height: H } = live;
-  if (W > CANVAS_SIDE || H > CANVAS_SIDE) fail(W > CANVAS_SIDE ? 'powder.width' : 'powder.height', `a compiled powder grid is an animation, at most ${CANVAS_SIDE} pixels a side; use a smaller grid, or run a larger one live in a page or game (createLivePowder)`);
+  if (!video && (W > CANVAS_SIDE || H > CANVAS_SIDE)) fail(W > CANVAS_SIDE ? 'powder.width' : 'powder.height', `a compiled powder grid is an animation, at most ${CANVAS_SIDE} pixels a side; use a smaller grid, write a larger one as numbered video frames (pixelbolt sequence), or run it live in a page or game (createLivePowder)`);
   // Clips: each a one-shot animation.
   const given = source.clips ?? { [name]: {} };
   if (!isObject(given) || !Object.keys(given).length || Object.keys(given).length > LIMITS.clips) fail('powder.clips', `expected 1 to ${LIMITS.clips} named clips: { start, frames, every, duration }`);
@@ -2083,14 +2085,18 @@ export function compilePowder(source) {
     recipeName(clip, path);
     if (!isObject(value)) fail(path, 'expected { start, frames, every, duration }');
     known(value, ['start', 'frames', 'every', 'duration'], path);
-    const start = integer(value.start ?? 0, `${path}.start`, 0, LIMITS.steps), frames = integer(value.frames ?? 60, `${path}.frames`, 1, LIMITS.frames);
+    if (!video && Number.isInteger(value.frames) && value.frames > LIMITS.frames && value.frames <= CLIP_FRAMES) fail(`${path}.frames`, `a recipe holds at most ${LIMITS.frames} frames; write a longer clip as numbered video frames: pixelbolt sequence <source> --out <folder> --fps 30, or pixel_compile with sequence`);
+    const start = integer(value.start ?? 0, `${path}.start`, 0, LIMITS.steps), frames = integer(value.frames ?? 60, `${path}.frames`, 1, video ? CLIP_FRAMES : LIMITS.frames);
     const every = integer(value.every ?? 2, `${path}.every`, 1, 60), duration = integer(value.duration ?? Math.round(every * 1000 / 60), `${path}.duration`, 10, 10000);
     return { clip, start, frames, every, duration, last: start + (frames - 1) * every };
   });
   if (new Set(clips.map(c => c.clip.toLowerCase())).size !== clips.length) fail('powder.clips', 'clip names must be unique ignoring case');
-  const total = clips.reduce((sum, c) => sum + c.frames, 0), steps = Math.max(...clips.map(c => c.last));
-  if (total > LIMITS.frames) fail('powder.clips', `${total} frames in all; a recipe holds at most ${LIMITS.frames}`);
-  if (W * H * total > FRAME_AREA) fail('powder.clips', `${total} frames of ${W}×${H} are ${(W * H * total).toLocaleString('en')} pixels; a recipe holds at most 4,194,304 (fewer frames, or a smaller grid)`);
+  // Video frames play one clip: the one named, or the first.
+  const played = !video ? clips : clips.filter((c, n) => (only === null ? n === 0 : c.clip === only));
+  if (!played.length) fail('sequence.animation', `no clip named "${only}"; choose one of: ${clips.map(c => c.clip).join(', ')}`);
+  const total = played.reduce((sum, c) => sum + c.frames, 0), steps = Math.max(...played.map(c => c.last));
+  if (!video && total > LIMITS.frames) fail('powder.clips', `${total} frames in all; a recipe holds at most ${LIMITS.frames}`);
+  if (!video && W * H * total > FRAME_AREA) fail('powder.clips', `${total} frames of ${W}×${H} are ${(W * H * total).toLocaleString('en')} pixels; a recipe holds at most 4,194,304 (fewer frames, or a smaller grid)`);
   if (steps > LIMITS.steps) fail('powder.clips', `the clips need ${steps} steps; at most ${LIMITS.steps}`);
   // The work, in cell steps (see INPUT_WORK): the grid's, weighed for tumbling pieces, and each scripted input's on the
   // steps it runs before the last one sampled (the step from `steps` on is never run).
@@ -2109,6 +2115,15 @@ export function compilePowder(source) {
   }
   // A scripted input played only after the last step a clip samples changes no frame.
   const warnings = plan.script.filter(entry => entry.from >= steps).map(entry => `${entry.path} is played ${entry.from === entry.to ? 'on' : 'from'} step ${entry.from}, so it first shows on step ${entry.from + 1}, after the last step a clip samples (${steps}): no frame shows it; play it earlier, or sample later (a clip's start, frames and every)`);
+  return { name, live, W, H, clips: played, steps, warnings };
+}
+// Bakes a source into an ordinary recipe: the grid runs from its scene, playing its scripted inputs, and each clip
+// samples it every `every` steps from `start` (60 steps a second), drawn exactly as render() draws it. Pixels that never
+// change in any sampled frame are drawn once, as the symbol `still`, stamped under every frame; each frame draws the
+// rest as one palette grid per 16-row band, cropped to where anything changes. Returns { recipe, metadata, warnings? }:
+// warnings (only when there are any) name scripted inputs played after the last step a clip samples.
+export function compilePowder(source) {
+  const { name, live, W, H, clips, steps, warnings } = readClips(source);
 
   // Every sampled moment, in time order, then each clip's frames from them.
   const times = [...new Set(clips.flatMap(c => Array.from({ length: c.frames }, (_, k) => c.start + k * c.every)))].sort((a, b) => a - b);
@@ -2156,6 +2171,28 @@ export function compilePowder(source) {
   const recipe = { version: 1, name, width: W, height: H, ...(background && { background }), palette, ...(anyStill && { symbols: { still } }), frames, animations };
   renderProject(recipe);
   return JSON.parse(JSON.stringify({ recipe, metadata: { format: 'pixelforge-powder-metadata', version: 1, steps, clips: summaries }, ...(warnings.length && { warnings }) }));
+}
+
+/** One clip of a pixelforge-powder source stepped as it is shown, for numbered video frames: the clip may run up to
+ * CLIP_FRAMES frames, past a recipe's 256, on a grid of any size a runner takes, and none of it is kept as a recipe.
+ * Returns { name, clip, width, height, palette, background, frames, duration, warnings, image(n), ended() }: image(n)
+ * is the clip's frame n as RGBA, the picture compilePowder draws for it (a frame before the last one asked for runs
+ * the grid again from its start, since a grid only steps forward); ended() says where the grid stands after the last
+ * frame made: its step, what is on it and whether it has settled, as a compiled clip's metadata does. */
+export function powderFrames(source, clipName) {
+  const { name, live: first, W, H, clips: [clip], warnings } = readClips(source, clipName ?? null);
+  let live = first;
+  return {
+    name, clip: clip.clip, width: W, height: H, palette: first.palette, background: first.backgroundColor, frames: clip.frames, duration: clip.duration, warnings,
+    image: n => {
+      if (!Number.isInteger(n) || n < 0 || n >= clip.frames) fail('sequence', `frame ${n} is not one of the clip's ${clip.frames}`);
+      const time = clip.start + n * clip.every;
+      if (time < live.frame) live = createLivePowder(source);
+      live.step(time - live.frame);
+      return live.render().rgba;
+    },
+    ended: () => { const { counts, chunks } = live.measure(); return { step: live.frame, counts, settled: chunks.stepped === 0 }; }
+  };
 }
 
 // ---- Recorded strokes ---------------------------------------------------------------------------------------------
