@@ -1,0 +1,33 @@
+Pixelbolt dam-break check, 15 November 2026 (UK time), Windows 11 Pro (build 26200), AMD Ryzen 9 7950X3D,
+Node.js 24.19.0.
+
+Build: Pixelbolt 0.17.0, the newest release on npm on 15 November 2026 (`npm view pixelbolt version`), from the
+npm tarball (npm's gitHead e1eb58000671d12bbfacd3add9240e1d0118656f; tarball SHA-1
+fb8f0349ed6414427a95c1ff787f19f44c7c4df7, as `npm view pixelbolt@0.17.0 dist.shasum` gives). It has no
+dependencies. Nothing was installed:
+  npm pack pixelbolt@0.17.0
+  tar -xzf pixelbolt-0.17.0.tgz          (unpacks into package/)
+
+The preset: package/examples/dam-break.fluid.json (SHA-256 312e459b90c03fc72d3f02b036072d49e06add17a3f7e8d9f853d7f185e4d612),
+a 64x36 liquid effect of 70 frames: a 20x20 block of water (1,600 liquid particles, per the metadata) held
+behind a plank that starts to lift away at frame 4, a rock at x 40-48 on the floor, and a basin whose top row is y 30.
+
+Commands:
+  node package/bin/pixelbolt.js compile package/examples/dam-break.fluid.json --out dam-break.recipe.json --metadata dam-break.meta.json
+  node pixelbolt_dambreak.mjs dam-break.recipe.json dam-break.meta.json pixelbolt-dambreak-0.17.0.json
+
+The compile ran twice, into two new folders: the recipe (SHA-256 c01e9da1c305f004ca3fd28dcc3669a2f4280365480be85d2a531a13506862d3)
+and the metadata (b328a05c2c0761c941cd80468795d4b37ce9f6538bad04d4c00415aed9a5fd5a) were byte-identical. One
+compile command took 0.51 s, Node's start-up included.
+
+In the recipe, each frame's water is a `grid` op (one character per pixel, "." = none) and the rock, basin and
+plank are `stamp` or `copy` ops of their symbols. pixelbolt_dambreak.mjs counts water cells and checks them
+against every solid (non-".") cell those ops place in the same frame.
+
+Results (pixelbolt-dambreak-0.17.0.json):
+  - Water pixels: 400 in frame 0 (x 0-19, y 10-29), between 392 and 407 in every one of the 70 frames, 396 in the
+    last; the metadata's own per-frame count agrees.
+  - Water cells on a solid cell of the rock, basin or plank: 0 in every frame.
+  - Last frame: water in all 64 columns (x 0-63, y 22-29); all 55 free cells of the row just above the basin
+    floor hold water; water lies against the rock's left side (4 cells), right side (4) and top (9); 40 water
+    columns lie left of the rock and 15 right of it.

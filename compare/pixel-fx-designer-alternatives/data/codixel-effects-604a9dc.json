@@ -1,0 +1,376 @@
+{
+ "node": "v24.19.0",
+ "core_sha256": "25400878a41d0ddcd1eb48aea995819811def82de5e0e1040407c19b986b42b5",
+ "effects": {
+  "flame": {
+   "settings": {
+    "frames": 24,
+    "frame": {
+     "w": 64,
+     "h": 72
+    },
+    "sheet": {
+     "w": 64,
+     "h": 72,
+     "cols": 8,
+     "rows": 3,
+     "count": 24,
+     "pad": 0
+    },
+    "gif_delay_ms": 80,
+    "gif_on_filled_background": false,
+    "seconds_per_frame": 0.08
+   },
+   "wall_s": [
+    0.082,
+    0.083
+   ],
+   "in_process_ms": [
+    38.4,
+    37.8
+   ],
+   "files": 26,
+   "bytes_identical": true,
+   "sha256": {
+    "anim.gif": "92589b80526e056d",
+    "sheet.png": "091922491223760e"
+   },
+   "check": {
+    "frame_files": 24,
+    "png_modes": [
+     "RGBA"
+    ],
+    "frame_size": [
+     64,
+     72
+    ],
+    "colours_rgba": 6,
+    "colours_rgb": 6,
+    "alpha_values": [
+     255
+    ],
+    "visible_share": 0.1415,
+    "partly_transparent_share_of_all": 0.0,
+    "partly_transparent_share_of_visible": 0.0,
+    "sheet": {
+     "size": [
+      512,
+      216
+     ],
+     "mode": "RGBA",
+     "matches_frames": true
+    },
+    "gif": {
+     "frames": 24,
+     "size": [
+      64,
+      72
+     ],
+     "colours": 6,
+     "delays_ms": [
+      80
+     ]
+    }
+   }
+  },
+  "smoke": {
+   "settings": {
+    "frames": 24,
+    "frame": {
+     "w": 128,
+     "h": 120
+    },
+    "sheet": {
+     "w": 128,
+     "h": 120,
+     "cols": 8,
+     "rows": 3,
+     "count": 24,
+     "pad": 0
+    },
+    "gif_delay_ms": 80,
+    "gif_on_filled_background": true,
+    "seconds_per_frame": 0.08
+   },
+   "wall_s": [
+    0.159,
+    0.153
+   ],
+   "in_process_ms": [
+    112.8,
+    110.3
+   ],
+   "files": 26,
+   "bytes_identical": true,
+   "sha256": {
+    "anim.gif": "cc31c499e730fadb",
+    "sheet.png": "f9732f61041f5195"
+   },
+   "check": {
+    "frame_files": 24,
+    "png_modes": [
+     "RGBA"
+    ],
+    "frame_size": [
+     128,
+     120
+    ],
+    "colours_rgba": 5,
+    "colours_rgb": 5,
+    "alpha_values": [
+     20,
+     46,
+     82,
+     128,
+     179
+    ],
+    "visible_share": 0.038,
+    "partly_transparent_share_of_all": 0.038,
+    "partly_transparent_share_of_visible": 1.0,
+    "sheet": {
+     "size": [
+      1024,
+      360
+     ],
+     "mode": "RGBA",
+     "matches_frames": true
+    },
+    "gif": {
+     "frames": 24,
+     "size": [
+      128,
+      120
+     ],
+     "colours": 6,
+     "delays_ms": [
+      80
+     ]
+    }
+   }
+  },
+  "hellfire": {
+   "settings": {
+    "frames": 24,
+    "frame": {
+     "w": 64,
+     "h": 64
+    },
+    "sheet": {
+     "w": 64,
+     "h": 64,
+     "cols": 8,
+     "rows": 3,
+     "count": 24,
+     "pad": 0
+    },
+    "gif_delay_ms": 80,
+    "gif_on_filled_background": false,
+    "seconds_per_frame": 0.08
+   },
+   "wall_s": [
+    0.099,
+    0.093
+   ],
+   "in_process_ms": [
+    51.0,
+    51.1
+   ],
+   "files": 26,
+   "bytes_identical": true,
+   "sha256": {
+    "anim.gif": "7228dd86ec4c6e75",
+    "sheet.png": "c71232468156c258"
+   },
+   "check": {
+    "frame_files": 24,
+    "png_modes": [
+     "RGBA"
+    ],
+    "frame_size": [
+     64,
+     64
+    ],
+    "colours_rgba": 32,
+    "colours_rgb": 32,
+    "alpha_values": [
+     255
+    ],
+    "visible_share": 0.5888,
+    "partly_transparent_share_of_all": 0.0,
+    "partly_transparent_share_of_visible": 0.0,
+    "sheet": {
+     "size": [
+      512,
+      192
+     ],
+     "mode": "RGBA",
+     "matches_frames": true
+    },
+    "gif": {
+     "frames": 24,
+     "size": [
+      64,
+      64
+     ],
+     "colours": 32,
+     "delays_ms": [
+      80
+     ]
+    }
+   }
+  },
+  "beams": {
+   "settings": {
+    "frames": 20,
+    "frame": {
+     "w": 240,
+     "h": 135
+    },
+    "sheet": {
+     "w": 240,
+     "h": 135,
+     "cols": 8,
+     "rows": 3,
+     "count": 20,
+     "pad": 0
+    },
+    "gif_delay_ms": 80,
+    "gif_on_filled_background": true,
+    "seconds_per_frame": 0.08
+   },
+   "wall_s": [
+    0.205,
+    0.202
+   ],
+   "in_process_ms": [
+    162.7,
+    159.4
+   ],
+   "files": 22,
+   "bytes_identical": true,
+   "sha256": {
+    "anim.gif": "9ccdff29819d6ae6",
+    "sheet.png": "367f309a7b38f776"
+   },
+   "check": {
+    "frame_files": 20,
+    "png_modes": [
+     "RGBA"
+    ],
+    "frame_size": [
+     240,
+     135
+    ],
+    "colours_rgba": 68,
+    "colours_rgb": 68,
+    "alpha_values": [
+     255
+    ],
+    "visible_share": 1.0,
+    "partly_transparent_share_of_all": 0.0,
+    "partly_transparent_share_of_visible": 0.0,
+    "sheet": {
+     "size": [
+      1920,
+      405
+     ],
+     "mode": "RGBA",
+     "matches_frames": true
+    },
+    "gif": {
+     "frames": 20,
+     "size": [
+      240,
+      135
+     ],
+     "colours": 68,
+     "delays_ms": [
+      80
+     ]
+    }
+   }
+  }
+ },
+ "palette": {
+  "flame": {
+   "cols": {
+    "palette_size": 5,
+    "colours_rgb": 5,
+    "colours_in_palette": 5,
+    "colours_outside_palette": 0,
+    "colours_outside_palette_excluding_scene_bg": 0,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 5
+   },
+   "quantize_pico8": {
+    "palette_size": 16,
+    "colours_rgb": 5,
+    "colours_in_palette": 5,
+    "colours_outside_palette": 0,
+    "colours_outside_palette_excluding_scene_bg": 0,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 5
+   }
+  },
+  "smoke": {
+   "cols": {
+    "palette_size": 2,
+    "colours_rgb": 5,
+    "colours_in_palette": 1,
+    "colours_outside_palette": 4,
+    "colours_outside_palette_excluding_scene_bg": 4,
+    "partly_transparent_share_of_visible": 1.0,
+    "gif_colours": 6
+   },
+   "quantize_pico8": {
+    "palette_size": 16,
+    "colours_rgb": 2,
+    "colours_in_palette": 2,
+    "colours_outside_palette": 0,
+    "colours_outside_palette_excluding_scene_bg": 0,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 2
+   }
+  },
+  "hellfire": {
+   "cols": {
+    "palette_size": 5,
+    "colours_rgb": 32,
+    "colours_in_palette": 4,
+    "colours_outside_palette": 28,
+    "colours_outside_palette_excluding_scene_bg": 28,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 32
+   },
+   "quantize_pico8": {
+    "palette_size": 16,
+    "colours_rgb": 6,
+    "colours_in_palette": 6,
+    "colours_outside_palette": 0,
+    "colours_outside_palette_excluding_scene_bg": 0,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 6
+   }
+  },
+  "beams": {
+   "cols": {
+    "palette_size": 2,
+    "colours_rgb": 75,
+    "colours_in_palette": 1,
+    "colours_outside_palette": 74,
+    "colours_outside_palette_excluding_scene_bg": 73,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 75
+   },
+   "quantize_pico8": {
+    "palette_size": 16,
+    "colours_rgb": 5,
+    "colours_in_palette": 5,
+    "colours_outside_palette": 0,
+    "colours_outside_palette_excluding_scene_bg": 0,
+    "partly_transparent_share_of_visible": 0.0,
+    "gif_colours": 5
+   }
+  }
+ }
+}

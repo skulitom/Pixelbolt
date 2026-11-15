@@ -1,0 +1,76 @@
+Codixel run log, 15 November 2026 (UK time), Windows 11 Pro (build 26200), AMD Ryzen 9 7950X3D, Node.js 24.19.0,
+Python 3.13.9 with Pillow 12.0.0.
+
+What we ran: Codixel's core library, core/pixel.js, at commit 604a9dcbcc4e386bc48188b5f7f49099f5d04db7 (2 November
+2026, the newest commit on 15 November; the repository has no tags or releases). Codixel ships no example scripts
+and no command line: its SKILL.md tells Claude Code to `require("<skill folder>/core/pixel.js")` and call the
+effect functions it documents. We did the same from our own script, codixel_effects.cjs, with no AI agent or
+language model involved, using each effect's default settings. The canvas size, frame count and time step are
+ours, because the core leaves them to the caller; they are printed in the result file.
+
+Why it qualified to run (our rules for running another tool): open source (MIT) from its official repository; one JavaScript
+file whose only requires are Node's zlib and fs (P.load reads a PNG, P.save writes one); no fetch, http,
+child_process, Math.random, Date or GPU calls; no package.json, dependencies or install scripts.
+
+Install, as its README shows, but into a folder of our own and pinned to the commit:
+  git -c core.autocrlf=false clone https://github.com/mankidev/codixel src
+  git -C src checkout 604a9dcbcc4e386bc48188b5f7f49099f5d04db7
+  (the clone downloaded a 69.50 MiB pack, 71 commits; the checkout is 23,393,413 bytes, 23,236,400 of them in
+  images/; core/pixel.js is 92,274 bytes and SKILL.md 51,403 bytes)
+
+SHA-256 of the files we read and ran:
+  core/pixel.js 25400878a41d0ddcd1eb48aea995819811def82de5e0e1040407c19b986b42b5
+  SKILL.md      8bc38083b2c1a5d0f3c18a7f3dc69b02623ff6be9a2fe18bf2f82e465ba4bf22
+  README.md     c5c863bcb94333bb5155606f3ae047148cce82e303ca77c1d7b294aeb81e8104
+  LICENSE       c951367e9bd58667a98ab957c3546b59578ebc17d25bff0077635b2fb3c22c59 (MIT)
+
+Measure (from a folder holding the two scripts and the clone; the work folder must not exist yet):
+  python -I codixel_measure.py src/core/pixel.js codixel_effects.cjs run codixel-effects-604a9dc.json
+That runs, for each effect, twice, each in a new folder:
+  node codixel_effects.cjs src/core/pixel.js <flame|smoke|hellfire|beams> <new folder>
+and then, for the palette check, once each with
+  --cols '<a PICO-8 subset>'      (the effect's own colour option)
+  --quantize '<the 16 PICO-8 colours>'  (P.quantize(frame, 16, { palette }) on every frame)
+Each run writes frames/fNN.png (P.save), sheet.png (P.pack, 8 columns, saved with P.save) and anim.gif (P.gif,
+80 ms a frame). Where frames have see-through pixels (smoke), the GIF is made from frames drawn on a filled
+background, as SKILL.md says ("A GIF cannot be see-through, so fill the background before making one"). Beams
+mix into what is already drawn and flash the screen, so they are drawn on a filled background (24, 26, 38).
+
+Effects and settings:
+  flame    new P.Flame()  (defaults: height 48, width 14), 64x72 canvas, draw(buf, 32, 70, t), 24 frames, t = 0.08 s steps
+  smoke    new P.Smoke()  (defaults: height 84, see-through alpha bands), 128x120 canvas, draw(buf, 64, 116, t), 24 frames
+  hellfire new P.HellFire(64, 64), step(1, 2, 60) to warm up, then step(1, 2, 1) and draw per frame, 24 frames
+  beams    P.volley(0, 3, { stagger: 0.15 }) on its default 240x135 screen, P.beams(buf, list, t) per frame, 20 frames
+
+Results (codixel-effects-604a9dc.json):
+  effect    frame    frames  colours  partly see-through   same bytes twice  whole command (s)
+  flame     64x72    24      6        0% of visible px    yes (26 files)    0.082 / 0.083
+  smoke     128x120  24      5        100% of visible px  yes (26 files)    0.159 / 0.153
+  hellfire  64x64    24      32       0%                  yes (26 files)    0.099 / 0.093
+  beams     240x135  20      68       0%                  yes (22 files)    0.205 / 0.202
+  Smoke's five colours are one grey ramp at alpha 20, 46, 82, 128 and 179 (of 255). Every sprite sheet matched its
+  frames pixel for pixel when decoded with Pillow. Every GIF had the run's frame count and an 80 ms delay.
+
+Palette check:
+  --cols (the effect's own colour list):
+    flame     5 given -> 5 colours used, all 5 from the list
+    hellfire  5 given -> 32 colours used, 4 from the list (it builds a 37-step ramp between the given colours)
+    smoke     2 given -> 5 colours used, 1 from the list (a ramp between them, each at its own alpha)
+    beams     2 given -> 75 colours used: 1 from the list, the scene colour and 73 blends (beams mix into the scene)
+  --quantize to the 16 PICO-8 colours: every visible pixel of every effect was a PICO-8 colour (flame 5, smoke 2,
+  hellfire 6, beams 5 colours used), and no pixel stayed partly see-through.
+
+Reading the source (core/pixel.js at 604a9dc), for the table:
+  - P.Flame, P.Smoke and their base P.Flow: one value per pixel from a shape plus moving fbm noise, cut at a
+    threshold and turned into ramp colours with a 4x4 Bayer dither (P.ditherIndex). No simulation.
+  - P.HellFire and P.Breath: an integer heat grid that each step copies upward (outward for Breath) with random
+    sideways jitter and decay, the classic Doom fire; SKILL.md calls it "the way old Doom fire works".
+  - P.novaSmoke: noise and shapes as functions of time. P.volley and P.beams: lines with a bloom and a screen flash.
+  - Water: P.reflect (mirrored rows with ripples) and P.mist (see-through spray) for scenes; SKILL.md suggests
+    extending P.Flow for a waterfall. No fluid solver, velocity field or pressure anywhere in the file.
+  - Obstacles: Flow.draw(buf, x, ground, t) and HellFire.draw(buf, x, ground) take none; Breath.draw takes a
+    `floor` y below which nothing is drawn.
+  - Randomness: P.rng (seeded), xorshift seeds with fixed defaults, P.hash noise; no Math.random.
+  - Output: P.png writes 8-bit RGBA PNG; P.gif writes GIF89a with up to 256 colours (more are reduced with
+    P.quantize), on/off transparency; P.pack lays frames in a grid and returns its frame size, columns and count
+    in code (no atlas file is written). No engine files.

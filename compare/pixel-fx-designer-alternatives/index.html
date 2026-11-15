@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Pixel FX Designer alternatives: 8 pixel-art effect tools compared (October 2026)</title>
-<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt, with Pixelbolt measured.">
+<title>Pixel FX Designer alternatives: 9 pixel-art effect tools compared (October–November 2026)</title>
+<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct, Codixel 15 Nov: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel and Pixelbolt, with Pixelbolt and Codixel measured.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared",
-  "description": "By the Pixelbolt maintainers: eight tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt measured; the others read from their own pages.",
+  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 9 tools compared",
+  "description": "By the Pixelbolt maintainers: nine tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt and Codixel measured; the others read from their own pages.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-10-28",
+  "dateModified": "2026-11-15",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
@@ -28,7 +28,8 @@
     {"@type": "SoftwareApplication", "name": "Pixel Composer", "url": "https://pixel-composer.com/", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "PHOSPHOR VFX", "url": "https://sinopskyd.itch.io/phosphor", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "BlastFX", "url": "https://mnkytech.itch.io/blastfx", "applicationCategory": "MultimediaApplication"},
-    {"@type": "SoftwareApplication", "name": "Pixel VFX Forge", "url": "https://www.scenario.com/explorations/pixel-vfx-forge/", "applicationCategory": "MultimediaApplication"}
+    {"@type": "SoftwareApplication", "name": "Pixel VFX Forge", "url": "https://www.scenario.com/explorations/pixel-vfx-forge/", "applicationCategory": "MultimediaApplication"},
+    {"@type": "SoftwareApplication", "name": "Codixel", "url": "https://github.com/mankidev/codixel", "applicationCategory": "MultimediaApplication"}
   ]
 }
 </script>
@@ -45,7 +46,7 @@ h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
 .meta, .muted { color: var(--muted); font-size: 0.92rem; }
 .note { background: var(--note); border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.9rem; }
 .wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
-table { border-collapse: collapse; font-size: 0.86rem; min-width: 68rem; }
+table { border-collapse: collapse; font-size: 0.86rem; min-width: 76rem; }
 table.small { min-width: 44rem; }
 caption { text-align: left; color: var(--muted); font-size: 0.9rem; padding-bottom: 0.4rem; }
 th, td { border: 1px solid var(--rule); padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
@@ -61,21 +62,28 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 </head>
 <body>
 <main>
-<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 8 tools compared</h1>
+<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 9 tools compared</h1>
 
-<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt, and updated on 27 October to add Pixel
-VFX Forge: alternatives to Pixel FX Designer (CodeManu's particle-effect app, US$9.99 on Steam) include its maker's
-SpriteMancer and Fluid FX, the node-based Pixel Composer, the free browser apps PHOSPHOR and Pixel VFX Forge, BlastFX
-and Pixelbolt. All of them except BlastFX and Pixel VFX Forge run a fluid or material simulation for smoke, fire or
-liquids, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as slashes, beams, shockwaves
-and lightning instead.</strong> Pixelbolt, free and MIT-licensed like PHOSPHOR, is the only one of the eight with an
-MCP server that makes the effects (Pixel VFX Forge's agent skill renders with a Node script and uses Scenario's MCP
-server for character art); measured on one Windows PC, its 0.9.0 release compiled
-each of its 10 fire, smoke, explosion, magic and water presets three times to byte-identical files in 0.12–0.49 s per
-command, and Pillow, a decoder independent of Pixelbolt's code, found only palette colours in every exported frame.
-Pixel Composer, PHOSPHOR and Pixel VFX Forge also document a way to render effects from a script; the others are used
-through their own window. We read the other seven tools' pages and docs without running them (for Pixel VFX Forge, also
-its agent skill's source), so the only measured numbers here are Pixelbolt's. Method, sources and data are below.</p>
+<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt and updated on 27 October and 15
+November: alternatives to Pixel FX Designer (CodeManu's particle-effect app, US$9.99 on Steam) include its maker's
+SpriteMancer and Fluid FX, the node-based Pixel Composer, the free browser apps PHOSPHOR and Pixel VFX Forge, BlastFX,
+the free Claude Code skill Codixel, and Pixelbolt; we read every tool's pages and docs and ran two, Pixelbolt 0.17.0
+and Codixel. Five of the eight alternatives (SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR and Pixelbolt) run a
+fluid or material simulation, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as
+slashes, beams, shockwaves and lightning instead, and Codixel draws its flame and smoke from moving noise and its fire
+wall from a Doom-style heat grid.</strong> A liquid simulation keeps
+track of the water: in Pixelbolt 0.17.0's dam-break preset, measured on 15 November 2026, 400 pixels of water let out
+from behind a plank stayed between 392 and 407 pixels in all 70 frames, never covered a pixel of the rock, basin or
+plank, and ended in all 64 columns, past the rock and resting on the basin floor. Pixelbolt is free and MIT-licensed
+like PHOSPHOR and Codixel, and of the nine, only Pixelbolt documents an MCP server that makes the effects (Pixel VFX Forge's agent skill renders with a Node script and uses
+Scenario's MCP server for character art). Measured on one Windows PC on 15 November 2026, its 0.17.0 release from npm
+compiled each of its 37 fluid presets (fire, smoke, explosions, magic, water, thick liquids, sand and lightning) three
+times to byte-identical files in 0.20–1.55 s per command and to the same recipes in Chromium, Firefox and WebKit, and
+Pillow, a decoder independent of Pixelbolt's code, found only palette colours in every exported frame.
+Pixel Composer, PHOSPHOR and Pixel VFX Forge also document a way to render effects from a script, and Codixel's effects
+are functions that an agent's script calls; the others are used through their own window. We read seven of the other
+eight tools' pages and docs without running them (for Pixel VFX Forge, also its agent skill's source); Codixel we read
+and ran, and four of its effects each gave byte-identical files twice. Method, sources and data are below.</p>
 
 <p class="note"><strong>We make Pixelbolt.</strong> Read this as a vendor's page: our own numbers come from runs you can
 repeat, and everything about the other tools links to the page we read it on. We are not affiliated with CodeManu
@@ -83,9 +91,12 @@ repeat, and everything about the other tools links to the page we read it on. We
 ideas from Pixel Composer's node set, adapted to text recipes, and its README credits them. If we got something wrong,
 <a href="https://github.com/skulitom/Pixelbolt/issues/new">open an issue</a> and we will correct it.</p>
 
-<p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Pixelbolt's spell and liquid shapes and Godot 4 export noted on <code>main</code>
-(<code>afe232f</code>) 27 October 2026 and released in 0.9.2 on 28 October 2026 · Pixelbolt release 0.9.0 (<code>2c180d6</code>) and
-<code>main</code> at <code>d8776d4</code> · Prices are US list prices on Steam and itch.io; the table also gives the sales
+<p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Codixel added 15 November
+2026 (read and run at commit <code>604a9dc</code>) · Re-checked on 15 November 2026: the Steam prices and latest
+versions of Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer and BlastFX, and Pixel VFX Forge's skill
+download; itch.io pages, PHOSPHOR's included, answered our reader with a bot check and were not re-checked ·
+Pixelbolt's rows (its column, presets, measurements and limits) re-measured on its 0.17.0 npm release (14 November
+2026) on 15 November 2026 · Prices are US list prices on Steam and itch.io; the table also gives the sales
 running on 19 October and when they end · Next check by 18 November 2026, or sooner when one of these tools releases.</p>
 
 <h2>The short answer</h2>
@@ -109,26 +120,36 @@ macOS or Linux:</strong> BlastFX (US$19.99 on Steam or itch.io).</li>
 circles, damage numbers) to remix in the browser, preview on a character and download as MP4, GIF, a sprite sheet or a
 Godot 4 resource, with an agent skill that renders the same JSON recipes:</strong> Pixel VFX Forge (Scenario, free;
 announced on 26 October 2026). Its making-of describes it as a library of 42 hand-built effects.</li>
+<li><strong>You want Claude Code to turn your own reference picture into pixel art, give it bones and animate it, and
+to draw effects (flame, smoke, fire wall, fire breath, beams) and whole scenes with a one-file (92 KB) JavaScript library, checking
+each step with you:</strong> Codixel (free, MIT; a Claude Code skill created on 31 October 2026, with no releases yet).
+Its flame, smoke and fire are drawn from noise and a heat grid, not a fluid simulation, and none of its effects takes
+obstacles.</li>
 <li><strong>You want an AI agent (Claude Code, Codex, Cursor, Claude Desktop) to make and revise the effect over MCP (or a
 command line), seeing each result as an image, with the same files on every run and no colour outside your
-palette:</strong> Pixelbolt (free, MIT). You or the agent describe the effect in JSON; there is no hand-drawing editor
-for effects.</li>
+palette:</strong> Pixelbolt (free, MIT). You or the agent describe the effect in JSON; apart from its Powder lab,
+where you paint falling-sand materials live, there is no hand-drawing editor for effects.</li>
 </ul>
 
 <h2>Side by side</h2>
-<p class="muted">Pixelbolt's column is measured (see <a href="#measured">below</a>) or taken from its own docs. The other
+<p class="muted">Pixelbolt's column is for its 0.17.0 release, measured (see <a href="#measured">below</a>) or taken from
+the docs and schemas in its npm package, on 15 November 2026. The other
 columns come from each tool's store pages, docs and source, read on 19 October 2026 (Pixel VFX Forge on 27 October)
-and linked under <a href="#sources">Sources</a>; we did not run them. "Not stated" means the pages we read don't say.</p>
+and linked under <a href="#sources">Sources</a>; we did not run them. Codixel's column comes from its source at commit
+<code>604a9dc</code>, read on 15 November 2026, and from our run of it (<a href="#codixel-measured">below</a>). "Not
+stated" means the pages we read don't say.</p>
 <div class="wrap" tabindex="0" role="region" aria-label="Side-by-side table, scrolls sideways">
 <table>
-<caption>Eight tools for pixel-art effects, as of 19 October 2026 (Pixel VFX Forge: 27 October)</caption>
+<caption>Nine tools for pixel-art effects, as of 19 October 2026 (Pixel VFX Forge: 27 October; Codixel and Pixelbolt 0.17.0: 15 November)</caption>
 <thead>
-<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th><th scope="col">Pixel VFX Forge</th></tr>
+<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th><th scope="col">Pixel VFX Forge</th><th scope="col">Codixel</th></tr>
 </thead>
 <tbody>
 <tr><th scope="row">How effects are made</th>
-<td>A JSON source compiled on the CPU: a fluid simulation (gases and liquids) or seeded particle emitters (since
-0.9.2, also shape layers for spells and water), baked into palette pixels frame by frame</td>
+<td>A JSON source compiled on the CPU and baked into palette pixels frame by frame: a fluid simulation (gases,
+liquids, thick liquids and sand, which can carry rigid bodies and electricity), seeded particle emitters with ten kinds
+of shape layer for spells and water, rigid bodies with joints, ropes and cloth, a falling-sand sandbox, growing
+crystals or wave interference</td>
 <td>Particle emitters tuned with sliders, or particle motion drawn with the mouse, in a desktop app</td>
 <td>Layers of particles, emitters and fluids, plus a node graph and imported 3D models, in a desktop app</td>
 <td>A fluid simulation started from 20+ presets and tuned with sliders, in a desktop app</td>
@@ -139,10 +160,15 @@ force fields and particle emitters, on a keyframe timeline</td>
 <td>GPU particle emitters with render layers and chains of post-effects, in a desktop app</td>
 <td>Layers of 22 types (fireball, shockwave ring, slash, beam, lightning, magic circle, smoke puffs, particles, pixel
 text and more), each writing a heat field that is cut into hard bands of a 4–7 colour ramp; 42 library effects remixed
-with words or an inspector in a browser, or a JSON recipe rendered by its agent skill's Node script</td></tr>
+with words or an inspector in a browser, or a JSON recipe rendered by its agent skill's Node script</td>
+<td>A JavaScript library (<code>core/pixel.js</code>) that Claude Code calls from its own script, guided by a SKILL.md:
+the flame and smoke give each pixel a value from a shape plus moving noise, cut into flat bands of a colour ramp with
+a 4×4 Bayer dither strip where bands meet; the fire wall and fire breath spread heat on a grid the way Doom's fire
+does; beams are lines with a bloom</td></tr>
 <tr><th scope="row">Fluid simulation</th>
-<td>Yes: gases with a grid solver (stable fluids, vorticity, buoyancy) and liquids as FLIP particles, one grid cell per
-pixel, up to 128×128</td>
+<td>Yes: gases with a grid solver (stable fluids, vorticity, buoyancy) and liquids as FLIP particles (APIC optional),
+which may be viscous, have a yield stress or be granular sand; one grid cell per world pixel, up to 128×128 cells (a
+preset with rigid bodies may draw each cell as a 2–8 pixel block, so its frames reach 224×176)</td>
 <td>None described</td>
 <td>Yes: a "Fluids" element that simulates fluid pressure for smoke, fire and explosions; the method isn't stated</td>
 <td>Yes: a "fluid/pressure simulation", powered by Mytino's Fluid Dynamics for GameMaker, which runs on shaders; the
@@ -151,26 +177,33 @@ method isn't stated</td>
 <td>Cellular materials (water, smoke, fire, steam) and liquid and gas emitter behaviours; no grid fluid solver
 described</td>
 <td>None stated</td>
-<td>None described; fire and smoke are noise-shaped layers</td></tr>
+<td>None described; fire and smoke are noise-shaped layers</td>
+<td>None: nothing in <code>core/pixel.js</code> solves for a fluid's velocity or pressure (we read the whole file);
+water in scenes is mirrored rows with ripples (<code>P.reflect</code>). No effect takes obstacles; fire breath takes a
+floor line it draws nothing below</td></tr>
 <tr><th scope="row">Runs on</th>
-<td>Node.js 20 or newer on Windows, macOS or Linux (its CI tests all three; we measured on Windows)</td>
+<td>Node.js 20 or newer on Windows, macOS or Linux (its CI tests all three, and its release job runs them on the
+tagged commit; we measured on Windows); portable Studio builds bundle Node.js for all three</td>
 <td>Windows; an older macOS build on itch.io</td>
 <td>Windows</td>
 <td>Windows</td>
 <td>Windows, macOS, Linux</td>
 <td>A desktop browser (Canvas 2D), from itch.io or a local folder; not phones</td>
 <td>Windows, macOS, Linux</td>
-<td>A browser (it renders in module workers); the agent skill's script needs Node.js 18 or newer</td></tr>
+<td>A browser (it renders in module workers); the agent skill's script needs Node.js 18 or newer</td>
+<td>Node.js (no version stated; we ran it on 24.19.0 on Windows) or a browser, with no dependencies; installed as a
+Claude Code skill</td></tr>
 <tr><th scope="row">Price (US list price; sales on 19 Oct 2026)</th>
 <td>Free</td>
-<td>US$9.99 on Steam (US$6.99 in a week-long Steam deal that ran until 19 Oct); US$19.95 on itch.io (US$14.96 in a sale until 10 Nov 2026), with a Steam key</td>
-<td>US$24.99 on Steam, Early Access (US$17.49 in the same Steam deal); US$29.95 on itch.io (US$22.46 until 10 Nov)</td>
-<td>US$9.99 on Steam (US$6.99 in the same Steam deal); US$19.95 on itch.io (US$14.96 until 10 Nov)</td>
+<td>US$9.99 on Steam (US$6.99 in a week-long Steam deal that ran until 19 Oct); US$19.95 on itch.io (US$14.96 in a sale on 19 Oct, due to end 10 Nov 2026), with a Steam key</td>
+<td>US$24.99 on Steam, Early Access (US$17.49 in the same Steam deal); US$29.95 on itch.io (US$22.46 in a sale on 19 Oct, due to end 10 Nov 2026)</td>
+<td>US$9.99 on Steam (US$6.99 in the same Steam deal); US$19.95 on itch.io (US$14.96 in a sale on 19 Oct, due to end 10 Nov 2026)</td>
 <td>US$14.99 on Steam; US$15 on itch.io</td>
 <td>Free (donations optional)</td>
 <td>US$19.99 on Steam or itch.io (itch.io includes a Steam key)</td>
 <td>Free, with no account for the web page; the agent skill's optional character art through Scenario's MCP server is
-paid</td></tr>
+paid</td>
+<td>Free</td></tr>
 <tr><th scope="row">Source code</th>
 <td>MIT</td>
 <td>No source offered</td>
@@ -180,11 +213,12 @@ paid</td></tr>
 <td>MIT (its itch.io code licence)</td>
 <td>No source offered</td>
 <td>The skill download is readable JavaScript (engine, prompt interpreter, render script) with no licence file or
-notice; Scenario's MIT-licensed skills repository on GitHub doesn't include it</td></tr>
+notice; Scenario's MIT-licensed skills repository on GitHub doesn't include it</td>
+<td>MIT on GitHub (since 1 November 2026; GPL-3.0-or-later from the evening of 31 October, its first day)</td></tr>
 <tr><th scope="row">Exports</th>
-<td>PNG sprite sheet with atlas JSON, numbered PNG frames, animated PNG, GIF, CSS, a Canvas player, and frame folders
-for video editors; since 0.9.2, also Aseprite frame tags in the atlas and a Godot 4
-SpriteFrames <code>.tres</code></td>
+<td>Measured: PNG sprite sheet with atlas JSON (with Aseprite frame tags), numbered PNG frames, animated PNG, GIF
+(on-or-off transparency at 50% alpha, or blended onto a <code>--background</code> colour), CSS, a Canvas player and a Godot 4 SpriteFrames <code>.tres</code>; its docs add numbered frames for video editors, with
+the ffmpeg command for a video</td>
 <td>PNG sprite sheet or frame by frame (Steam page); GIF (marked experimental in its docs); the emitter data as JSON</td>
 <td>PNG sprite sheet, a PNG per frame, GIF (without alpha), MP4, WEBM</td>
 <td>Trimmed PNG sprite sheet; GIF for previews</td>
@@ -196,9 +230,13 @@ as a ZIP</td>
 <td>Web page: MP4 (H.264, 16:9, 1:1 or 9:16), transparent GIF, PNG sprite sheet, and a ZIP with frames, GIFs, a
 TexturePacker-style atlas with Aseprite frame tags, a Godot 4 SpriteFrames <code>.tres</code> and the recipe. Agent
 skill: sprite sheet, atlas JSON with the impact frame and pivot, GIF, PNG frames, and a preview GIF over your own
-image</td></tr>
+image</td>
+<td>Measured: RGBA PNG frames, a PNG sprite sheet laid out as a plain grid (its frame size, columns and count come back
+in code, not in a file) and GIF (on-or-off transparency, as in any GIF; its SKILL.md says to fill the background
+first). No atlas or engine files. Its SKILL.md suggests ffmpeg for MP4</td></tr>
 <tr><th scope="row">Palette control</th>
-<td>Colours come only from the source's palette (measured: no other colour in any frame), with ordered dither</td>
+<td>Colours come only from the source's palette (measured on all 37 fluid presets: no other colour in any frame), with
+ordered dither</td>
 <td>Import a palette of up to 256 colours; custom dithering</td>
 <td>No palette lock stated; a Scale setting gives the render a pixelated look</td>
 <td>Not stated</td>
@@ -206,9 +244,13 @@ image</td></tr>
 <td>Palette lock with ordered dithering (PICO-8, Game Boy, NES or your own)</td>
 <td>Palette Map and Pixelate post-effects</td>
 <td>Hue-shifted ramps (27 named, or your own colours) with optional 4×4 Bayer dither; a palette lock maps every colour to
-PICO-8, Sweetie 16, Endesga 32, Game Boy, 1-bit or your own list (nearest in OKLab)</td></tr>
+PICO-8, Sweetie 16, Endesga 32, Game Boy, 1-bit or your own list (nearest in OKLab)</td>
+<td>Measured: each effect takes a colour list. The flame used only the 5 colours given; the fire wall, smoke and beams
+made 32, 5 and 75 colours from 5, 2 and 2 given (ramp steps, alpha and blends). <code>P.quantize</code> maps frames to
+a palette you give: after it, every pixel was one of the 16 PICO-8 colours</td></tr>
 <tr><th scope="row">Without the GUI</th>
-<td>An MCP server (8 tools), a command line and a JavaScript API</td>
+<td>An MCP server (8 tools, measured), a command line, a JavaScript API, and an agent skill it can install on its
+own</td>
 <td>None documented</td>
 <td>None documented</td>
 <td>None documented</td>
@@ -218,18 +260,23 @@ persist or server mode stays open for console commands such as <code>set</code> 
 for AI agents; its page mentions no MCP server</td>
 <td>None stated</td>
 <td>A SKILL.md and a Node script that renders a recipe, or a prompt in its fixed vocabulary; no MCP server for effects
-(the skill uses Scenario's MCP server for character art)</td></tr>
+(the skill uses Scenario's MCP server for character art)</td>
+<td>It has no GUI: a SKILL.md for Claude Code and a JavaScript API; no command line or MCP server</td></tr>
 <tr><th scope="row">Same output every run</th>
-<td>Measured: byte-identical across runs, and the same recipes in Node, Chromium, Firefox and WebKit</td>
+<td>Measured: byte-identical across runs (37 fluid presets compiled three times and exported twice; 45 other effect
+examples compiled twice), and the same fluid recipes in Node, Chromium, Firefox and WebKit</td>
 <td>Not stated</td>
 <td>A render option sets the random seed</td>
 <td>Not stated</td>
 <td>Seed inputs on some nodes; repeatability not stated</td>
 <td>Its page says the engine is "deterministic and seed-based"</td>
 <td>A random seed per emitter (its docs); repeatability not stated</td>
-<td>Its reference says the same recipe and seed give identical frames. Its engine uses <code>Math.sin</code>,
-<code>cos</code>, <code>atan2</code> and other functions that JavaScript engines may round differently, so identical
-output across browsers is not guaranteed by design; not measured</td></tr>
+<td>Its reference says the same recipe and seed give identical frames; not measured by us</td>
+<td>Measured: four built-in effects, each made twice in separate processes, gave byte-identical frames, sheets and
+GIFs (Node.js 24 on Windows), and the same frames in headless Chromium 156, Firefox 157 and WebKit 26.6. It seeds its
+own random numbers. Its beams, fire breath and flame shape use <code>Math.sin</code>, <code>atan2</code>,
+<code>exp</code> and <code>pow</code>, which the JavaScript standard lets engines round differently, but the three
+engines we tried agreed</td></tr>
 <tr><th scope="row">GPU</th>
 <td>Not used</td>
 <td>Steam minimum lists a GeForce GTX 670</td>
@@ -238,105 +285,204 @@ output across browsers is not guaranteed by design; not measured</td></tr>
 <td>An OpenGL GPU or integrated GPU</td>
 <td>None stated (Canvas 2D)</td>
 <td>OpenGL 3.3</td>
-<td>Not used (its skill says no GPU)</td></tr>
+<td>Not used (its skill says no GPU)</td>
+<td>Not used (plain JavaScript on the CPU)</td></tr>
 <tr><th scope="row">Latest version</th>
-<td>0.9.0, 18 October 2026</td>
+<td>0.17.0, 14 November 2026</td>
 <td>1.1.8.0, April 2024 (a 2.0 beta from 2022)</td>
 <td>0.4.0.0, 1 October 2026</td>
 <td>1.1.0, January 2022</td>
-<td>1.22, 28 September 2026 (current build 1.22.0.5, October 2026)</td>
+<td>1.22, 28 September 2026 (current build 1.22.0.5, October 2026); its beta branch reached 1.22.3 on 13 November
+2026</td>
 <td>0.1 (its devlog is from August 2026)</td>
-<td>2.0.6, August 2026</td>
-<td>Engine version 1; announced 26 October 2026</td></tr>
+<td>2.0.6, posted on Steam on 16 September 2026 (a Mac fix after 2.0.5 on 5 August)</td>
+<td>Engine version 1; announced 26 October 2026</td>
+<td>No releases or tags; the latest commit is <code>604a9dc</code>, 2 November 2026</td></tr>
 </tbody>
 </table>
 </div>
 
 <h2>Pixelbolt's presets, as exported in our run</h2>
-<p class="muted">These are six of the 1× GIFs our run exported from Pixelbolt 0.9.0, shown at 3× with nearest-neighbour
-scaling on a dark background. They are the same files the checks below decoded. The explosion is a one-shot effect, so
-it plays once; reload the page to see it again.</p>
+<p class="muted">These are seven of the 1× GIFs our run exported from Pixelbolt 0.17.0 on 15 November 2026, shown at 3×
+with nearest-neighbour scaling on a dark background. They are the same files the checks below decoded. The explosion
+and the dam break are one-shot effects, so they play once; reload the page to see them again.</p>
 <div class="stage">
-<img src="data/gifs/campfire.gif" width="96" height="144" alt="A campfire: flames lick up from crossed logs, embers drift up and smoke curls away">
-<img src="data/gifs/steam-vent.gif" width="96" height="144" alt="Steam puffs from a pipe, rises, curls and thins">
-<img src="data/gifs/magic-swirl.gif" width="144" height="144" alt="A magic swirl: two glowing sources orbit and leave purple mana that spirals">
-<img src="data/gifs/explosion.gif" width="192" height="192" alt="An explosion: a white flash grows into an orange fireball that rises, cools into smoke while sparks fly">
-<img src="data/gifs/waterfall.gif" width="144" height="192" alt="A waterfall: a thin stream runs down a stepped stone cliff into a basin that spills over its far rim">
-<img src="data/gifs/potion.gif" width="96" height="120" alt="A green potion bubbles in a round flask">
+<img src="data/gifs-0.17.0/campfire.gif" width="96" height="144" alt="A campfire: flames lick up from crossed logs, embers drift up and smoke curls away">
+<img src="data/gifs-0.17.0/steam-vent.gif" width="96" height="144" alt="Steam puffs from a pipe, rises, curls and thins">
+<img src="data/gifs-0.17.0/magic-swirl.gif" width="144" height="144" alt="A magic swirl: two glowing sources orbit and leave purple mana that spirals">
+<img src="data/gifs-0.17.0/explosion.gif" width="192" height="192" alt="An explosion: a white flash grows into an orange fireball that cools into smoke while sparks fly">
+<img src="data/gifs-0.17.0/waterfall.gif" width="144" height="192" alt="A waterfall: a stream pours off a stone cliff into a basin of water">
+<img src="data/gifs-0.17.0/potion.gif" width="96" height="120" alt="A green potion bubbles in a round flask">
+<img src="data/gifs-0.17.0/dam-break.gif" width="192" height="108" alt="A dam break: a plank lifts, the water behind it rushes across the floor, over and round a rock, and settles in a level pool">
 </div>
 
 <h2 id="measured">What we measured on Pixelbolt</h2>
-<p>On 19 October 2026 we ran Pixelbolt 0.9.0 and the newer <code>main</code> on one Windows 11 PC (AMD Ryzen 9
-7950X3D, Node.js 24.19.0). Every file in the <code>pixelbolt.mcpb</code> bundle on the
-<a href="https://github.com/skulitom/Pixelbolt/releases/tag/v0.9.0">0.9.0 release</a>, whose SHA-256 matches the
-published <code>.sha256</code>, is byte-identical to the tagged source we compiled from, except the manifest the release
-generates (<a href="data/pixelbolt-mcpb-v0.9.0.txt">check</a>). The tag's 241 tests pass
-(<a href="data/pixelbolt-node-test-v0.9.0.txt">log</a>), and so do <code>main</code>'s 256
-(<a href="data/pixelbolt-node-test-main-d8776d4.txt">log</a>). Each claim below links to its data.</p>
+<p>On 15 November 2026 we ran Pixelbolt 0.17.0, the newest release on npm (published 14 November), on one Windows 11
+PC (AMD Ryzen 9 7950X3D, Node.js 24.19.0). We unpacked the npm package itself (<code>npm pack pixelbolt@0.17.0</code>,
+SHA-1 <code>fb8f0349…</code> as npm lists it), which has no dependencies, and ran every check on it with nothing
+installed. Pixelbolt's own CI ran its test matrix on the tagged commit (<code>e1eb580</code>) before the release was
+published, and passed (<a href="https://github.com/skulitom/Pixelbolt/actions/runs/43539548933">release run</a>,
+<a href="https://github.com/skulitom/Pixelbolt/actions/runs/43539527562">test run</a>); we did not re-run the
+tests. Each claim below links to its data.</p>
 <ul>
-<li><strong>Repeatable:</strong> each of the 10 fluid presets in 0.9.0 (12 on <code>main</code>) compiled three
-times, each in its own process, to byte-identical recipes. Rendering each recipe twice gave byte-identical sprite
-sheets, frames, atlases and GIFs (<a href="data/pixelbolt-fluid-cli-v0.9.0.json">0.9.0</a>,
-<a href="data/pixelbolt-fluid-cli-main-d8776d4.json"><code>main</code></a>). The particle example
-(<code>effects.fx.json</code>, 57 frames) also compiled three times to the same bytes
-(<a href="data/pixelbolt-particles-v0.9.0.txt">log</a>).</li>
-<li><strong>The same in browsers:</strong> headless Chromium 156, Firefox 157 and WebKit 26.6 compiled every preset to
-the same recipe as Node. We compared Pixelbolt's revision ids, the first 12 hex digits of each recipe's SHA-256
-(<a href="data/pixelbolt-fluid-browsers-v0.9.0.json">0.9.0</a>,
-<a href="data/pixelbolt-fluid-browsers-main-d8776d4.json"><code>main</code></a>).</li>
-<li><strong>Only palette colours:</strong> we decoded every exported frame with Pillow 12.0.0, a decoder independent of
-Pixelbolt's code. Every visible pixel in every frame of every preset was one of the source's palette colours, and none
-was semi-transparent. The sprite sheet matched the frames pixel for pixel, and so did the 1× GIF, with the same frame
-timings (<a href="data/pixelbolt-fluid-pillow-check-v0.9.0.json">0.9.0</a>,
-<a href="data/pixelbolt-fluid-pillow-check-main-d8776d4.json"><code>main</code></a>).</li>
-<li><strong>Time:</strong> one <code>pixelbolt compile</code> command took 0.12–0.49 s per preset, Node's start-up
-included; the waterfall was the slowest (<a href="data/pixelbolt-fluid-cli-v0.9.0.json">data</a>). Over MCP, where
-the server also renders the contact sheet it sends back, <code>pixel_compile</code> took 0.07–0.61 s
-(<a href="data/pixelbolt-fluid-mcp-v0.9.0.json">data</a>).</li>
-<li><strong>An agent's round trip over MCP</strong> (<a href="data/pixelbolt-fluid-mcp-v0.9.0.json">0.9.0</a>,
-<a href="data/pixelbolt-fluid-mcp-main-d8776d4.json"><code>main</code></a>): for 0.9.0 we ran the server from the
-release's bundle. <code>pixel_compile</code> returned a revision id and a PNG contact sheet for every preset. Sending
-the same source again returned the same revision id, and each id equalled the one computed from the recipe the command
-line compiled. <code>pixel_render</code> then exported the campfire's sprite sheet, frames and GIF in 0.18 s. Adding
-wind to the campfire source and compiling again took 0.28 s and gave a new revision.</li>
-<li><strong>Loops:</strong> seven of the 0.9.0 presets loop. In six, the jump from the last frame back to the first
-changed no more pixels than the largest change between two ordinary neighbouring frames. In the steam vent it changed
-169 pixels, against at most 168 elsewhere in the loop
-(<a href="data/pixelbolt-fluid-pillow-check-v0.9.0.json">data</a>).</li>
+<li><strong>Repeatable:</strong> each of the 37 fluid presets compiled three times, each in its own process, to
+byte-identical recipes and metadata. Rendering each recipe twice gave byte-identical sprite sheets, frames, atlases
+and other exports, and the 1× GIFs were byte-identical too
+(<a href="data/pixelbolt-fluid-cli-v0.17.0.json">data</a>). The 45 other effect examples (14 rigid-body scenes, 5
+falling-sand sandboxes, 4 crystals, 2 wave loops and 20 particle and spell effects) each compiled twice to the same
+bytes (<a href="data/pixelbolt-formats-v0.17.0.json">data</a>).</li>
+<li><strong>The same in browsers:</strong> headless Chromium 156, Firefox 157 and WebKit 26.6 compiled all 37 fluid
+presets to the same recipe as Node. We compared Pixelbolt's revision ids, the first 12 hex digits of each recipe's
+SHA-256 (<a href="data/pixelbolt-fluid-browsers-v0.17.0.json">data</a>).</li>
+<li><strong>Only palette colours:</strong> we decoded all 1,911 exported frames with Pillow 12.0.0, a decoder
+independent of Pixelbolt's code. Every visible pixel in every frame of every preset was one of the source's palette
+colours, and none was semi-transparent. The sprite sheet matched the frames pixel for pixel, and so did the 1× GIF,
+with the same frame timings (<a href="data/pixelbolt-fluid-pillow-check-v0.17.0.json">data</a>).</li>
+<li><strong>Time:</strong> one <code>pixelbolt compile</code> command took 0.20–1.55 s per preset, Node's start-up
+included; the torch was the fastest and the water wheel, 224×176 pixels with rigid bodies, the slowest
+(<a href="data/pixelbolt-fluid-cli-v0.17.0.json">data</a>). Over MCP, where the server also renders the contact sheet
+it sends back, <code>pixel_compile</code> took 0.05–1.53 s (<a href="data/pixelbolt-fluid-mcp-v0.17.0.json">data</a>).
+Timed on 15 November in back-to-back runs that alternated the two versions (20 runs each, medians, Node's start-up
+included), the ten presets 0.9.0 also had took 1.35 to 2.0 times as long to compile in 0.17.0: the campfire 336 ms
+against 247 ms, the waterfall 915 ms against 512 ms. Five of the ten sources are unchanged since 0.9.0 apart from
+formatting, so the
+difference is the compiler's (<a href="data/pixelbolt-compile-0.9.0-vs-0.17.0.json">data</a>,
+<a href="data/compile_interleave.py">script</a>, <a href="data/compile_interleave_merge.py">merge script</a>).</li>
+<li><strong>An agent's round trip over MCP</strong> (<a href="data/pixelbolt-fluid-mcp-v0.17.0.json">data</a>): we ran
+the server from the npm package. Its <code>tools/list</code> reply lists 8 tools in 20,905 bytes, and the fluid help
+topic is 3,306 bytes. <code>pixel_compile</code> returned a revision id and a PNG contact sheet for every preset.
+Sending the same source again returned the same revision id, and each id equalled the one computed from the recipe the
+command line compiled. <code>pixel_render</code> then exported the campfire's sprite sheet, frames and GIF in 0.08 s.
+Adding wind to the campfire source and compiling again took 0.16 s and gave a new revision.</li>
+<li><strong>Loops:</strong> 13 of the 37 presets loop. In all 13, the jump from the last frame back to the first
+changed no more pixels than the largest change between two ordinary neighbouring frames
+(<a href="data/pixelbolt-fluid-pillow-check-v0.17.0.json">data</a>).</li>
 </ul>
 
 <div class="wrap" tabindex="0" role="region" aria-label="Preset table, scrolls sideways">
 <table class="small">
-<caption>Pixelbolt 0.9.0's fluid presets, measured on 19 October 2026</caption>
+<caption>Pixelbolt 0.17.0's fluid presets, measured on 15 November 2026</caption>
 <thead>
 <tr><th scope="col">Preset</th><th scope="col">Kind</th><th scope="col">Size</th><th scope="col">Frames</th><th scope="col">Source JSON (bytes)</th><th scope="col">Compile, 3 runs (ms)</th><th scope="col">Colours used</th><th scope="col">Pixels changed at the loop seam</th></tr>
 </thead>
 <tbody>
-<tr><td>Campfire</td><td>Gas</td><td>32×48</td><td>24</td><td>2,742</td><td>227 / 235 / 229</td><td>9 of 9</td><td>92 (others 73–115)</td></tr>
-<tr><td>Drip</td><td>Liquid</td><td>16×32</td><td>24</td><td>3,944</td><td>147 / 137 / 136</td><td>4 of 7</td><td>6 (others 2–25)</td></tr>
-<tr><td>Explosion</td><td>Gas</td><td>64×64</td><td>32</td><td>8,497</td><td>267 / 265 / 268</td><td>8 of 8</td><td>one-shot</td></tr>
-<tr><td>Magic swirl</td><td>Gas</td><td>48×48</td><td>24</td><td>5,733</td><td>233 / 233 / 240</td><td>5 of 5</td><td>274 (others 222–285)</td></tr>
-<tr><td>Bubbling potion</td><td>Liquid</td><td>32×40</td><td>24</td><td>5,168</td><td>217 / 213 / 217</td><td>7 of 7</td><td>12 (others 10–37)</td></tr>
-<tr><td>Smoke puff</td><td>Gas</td><td>32×32</td><td>19</td><td>2,747</td><td>124 / 123 / 121</td><td>5 of 5</td><td>one-shot</td></tr>
-<tr><td>Splash</td><td>Liquid</td><td>48×40</td><td>40</td><td>2,564</td><td>196 / 195 / 193</td><td>4 of 4</td><td>one-shot</td></tr>
-<tr><td>Steam vent</td><td>Gas</td><td>32×48</td><td>24</td><td>5,736</td><td>216 / 218 / 221</td><td>7 of 7</td><td>169 (others 89–168)</td></tr>
-<tr><td>Torch</td><td>Gas</td><td>16×32</td><td>16</td><td>2,070</td><td>126 / 125 / 125</td><td>9 of 9</td><td>23 (others 12–23)</td></tr>
-<tr><td>Waterfall</td><td>Liquid</td><td>48×64</td><td>24</td><td>6,265</td><td>492 / 492 / 491</td><td>9 of 9</td><td>109 (others 84–129)</td></tr>
+<tr><td>Aquarium</td><td>Liquid</td><td>56×48</td><td>48</td><td>4,139</td><td>1,417 / 1,443 / 1,434</td><td>17 of 17</td><td>53 (others 37–83)</td></tr>
+<tr><td>Boiling pot</td><td>Liquid</td><td>40×48</td><td>48</td><td>3,587</td><td>968 / 986 / 988</td><td>14 of 14</td><td>34 (others 26–101)</td></tr>
+<tr><td>Campfire</td><td>Gas</td><td>32×48</td><td>24</td><td>2,014</td><td>339 / 338 / 334</td><td>9 of 9</td><td>62 (others 54–97)</td></tr>
+<tr><td>Crate splash</td><td>Liquid (rigid bodies)</td><td>192×144</td><td>120</td><td>2,042</td><td>1,496 / 1,413 / 1,329</td><td>13 of 13</td><td>one-shot</td></tr>
+<tr><td>Dam break</td><td>Liquid</td><td>64×36</td><td>70</td><td>2,170</td><td>479 / 478 / 485</td><td>9 of 9</td><td>one-shot</td></tr>
+<tr><td>Drip</td><td>Liquid</td><td>16×32</td><td>24</td><td>2,482</td><td>276 / 268 / 280</td><td>4 of 7</td><td>16 (others 1–33)</td></tr>
+<tr><td>Dry ice</td><td>Liquid</td><td>56×40</td><td>64</td><td>2,780</td><td>453 / 446 / 461</td><td>9 of 9</td><td>one-shot</td></tr>
+<tr><td>Dust wave</td><td>Gas</td><td>64×32</td><td>26</td><td>2,527</td><td>262 / 264 / 265</td><td>8 of 9</td><td>one-shot</td></tr>
+<tr><td>Explosion</td><td>Gas</td><td>64×64</td><td>32</td><td>5,843</td><td>388 / 391 / 389</td><td>8 of 8</td><td>one-shot</td></tr>
+<tr><td>Frost window</td><td>Liquid</td><td>40×40</td><td>64</td><td>3,143</td><td>397 / 380 / 412</td><td>3 of 6</td><td>one-shot</td></tr>
+<tr><td>Glug</td><td>Liquid</td><td>40×56</td><td>110</td><td>2,864</td><td>608 / 556 / 584</td><td>8 of 9</td><td>one-shot</td></tr>
+<tr><td>Honey dipper</td><td>Liquid (thick)</td><td>40×60</td><td>56</td><td>3,279</td><td>571 / 562 / 577</td><td>9 of 9</td><td>one-shot</td></tr>
+<tr><td>Honey drop</td><td>Liquid (thick)</td><td>40×48</td><td>44</td><td>2,036</td><td>418 / 425 / 435</td><td>9 of 10</td><td>one-shot</td></tr>
+<tr><td>Honey</td><td>Liquid (thick)</td><td>40×48</td><td>24</td><td>2,880</td><td>637 / 663 / 698</td><td>9 of 9</td><td>14 (others 6–31)</td></tr>
+<tr><td>Hot stone</td><td>Liquid (rigid bodies)</td><td>160×160</td><td>140</td><td>1,676</td><td>1,199 / 1,196 / 1,197</td><td>9 of 9</td><td>one-shot</td></tr>
+<tr><td>Hourglass</td><td>Liquid (sand)</td><td>30×58</td><td>120</td><td>6,490</td><td>1,199 / 1,252 / 1,239</td><td>8 of 8</td><td>one-shot</td></tr>
+<tr><td>Ice melt</td><td>Liquid</td><td>48×40</td><td>72</td><td>2,374</td><td>701 / 654 / 620</td><td>13 of 14</td><td>one-shot</td></tr>
+<tr><td>Jacobs ladder</td><td>Gas</td><td>40×64</td><td>22</td><td>8,408</td><td>630 / 618 / 622</td><td>7 of 7</td><td>19 (others 34–106)</td></tr>
+<tr><td>Lightning pond</td><td>Liquid</td><td>64×72</td><td>48</td><td>6,575</td><td>1,374 / 1,382 / 1,408</td><td>15 of 15</td><td>one-shot</td></tr>
+<tr><td>Lightning</td><td>Gas</td><td>64×96</td><td>32</td><td>2,969</td><td>820 / 809 / 821</td><td>8 of 8</td><td>one-shot</td></tr>
+<tr><td>Magic swirl</td><td>Gas</td><td>48×48</td><td>24</td><td>3,753</td><td>345 / 346 / 352</td><td>5 of 5</td><td>252 (others 203–273)</td></tr>
+<tr><td>Plank tip</td><td>Liquid (sand, rigid bodies)</td><td>192×120</td><td>80</td><td>1,680</td><td>900 / 918 / 914</td><td>8 of 8</td><td>one-shot</td></tr>
+<tr><td>Plasma globe</td><td>Gas</td><td>64×64</td><td>24</td><td>11,479</td><td>771 / 765 / 767</td><td>7 of 10</td><td>231 (others 51–362)</td></tr>
+<tr><td>Pond freeze</td><td>Liquid</td><td>56×36</td><td>80</td><td>2,803</td><td>494 / 504 / 509</td><td>10 of 12</td><td>one-shot</td></tr>
+<tr><td>Potion</td><td>Liquid</td><td>32×40</td><td>24</td><td>3,914</td><td>408 / 422 / 397</td><td>7 of 7</td><td>14 (others 5–42)</td></tr>
+<tr><td>Roof snow</td><td>Liquid (thick)</td><td>56×44</td><td>48</td><td>3,873</td><td>567 / 569 / 574</td><td>12 of 12</td><td>one-shot</td></tr>
+<tr><td>Sand gate</td><td>Liquid (sand)</td><td>64×40</td><td>64</td><td>1,821</td><td>722 / 739 / 754</td><td>9 of 9</td><td>one-shot</td></tr>
+<tr><td>Sand plough</td><td>Liquid (sand)</td><td>72×40</td><td>80</td><td>1,756</td><td>891 / 881 / 859</td><td>10 of 10</td><td>one-shot</td></tr>
+<tr><td>Sand slide</td><td>Liquid (sand, rigid bodies)</td><td>216×132</td><td>56</td><td>2,621</td><td>1,029 / 1,022 / 1,125</td><td>13 of 13</td><td>one-shot</td></tr>
+<tr><td>Slime burst</td><td>Liquid (thick)</td><td>56×40</td><td>40</td><td>1,392</td><td>690 / 667 / 639</td><td>7 of 7</td><td>one-shot</td></tr>
+<tr><td>Slime</td><td>Liquid (thick)</td><td>32×32</td><td>40</td><td>1,336</td><td>437 / 447 / 451</td><td>7 of 7</td><td>one-shot</td></tr>
+<tr><td>Smoke puff</td><td>Gas</td><td>32×32</td><td>19</td><td>2,147</td><td>240 / 233 / 228</td><td>5 of 5</td><td>one-shot</td></tr>
+<tr><td>Splash</td><td>Liquid</td><td>48×40</td><td>40</td><td>1,511</td><td>394 / 404 / 394</td><td>4 of 4</td><td>one-shot</td></tr>
+<tr><td>Steam vent</td><td>Gas</td><td>32×48</td><td>24</td><td>4,081</td><td>379 / 375 / 360</td><td>7 of 7</td><td>263 (others 156–264)</td></tr>
+<tr><td>Torch</td><td>Gas</td><td>16×32</td><td>16</td><td>1,606</td><td>206 / 203 / 208</td><td>9 of 9</td><td>13 (others 9–22)</td></tr>
+<tr><td>Water wheel</td><td>Liquid (rigid bodies)</td><td>224×176</td><td>40</td><td>2,028</td><td>1,508 / 1,552 / 1,517</td><td>10 of 10</td><td>1,558 (others 714–1,666)</td></tr>
+<tr><td>Waterfall</td><td>Liquid</td><td>48×64</td><td>24</td><td>4,751</td><td>896 / 896 / 1,070</td><td>9 of 9</td><td>99 (others 84–133)</td></tr>
 </tbody>
 </table>
 </div>
-<p class="muted">Compile times are whole <code>pixelbolt compile</code> commands, Node's start-up included. "Colours
-used" counts the distinct colours in all exported frames against the palette's size. The seam column counts pixels
-that differ between the last frame and the first; "others" is the range between neighbouring frames inside the
-loop.</p>
-<p><code>main</code> (<code>d8776d4</code>, not yet released) passed the same compile, render, browser, Pillow and MCP
-checks with 12 presets; we ran its MCP server from the checkout, not from a bundle. It adds honey (viscosity) and slime
-(a yield stress). Its drip and potion differ slightly from 0.9.0's, because it stopped fast particles passing through
-thin obstacles. Its waterfall differs because of that fix, a depth-band fix and a retuned preset. The other seven
-presets compile to the same recipes as in 0.9.0.</p>
+<p class="muted">Compile times are whole <code>pixelbolt compile</code> commands, Node's start-up included. "Kind" is
+the simulation the source runs; sand is a liquid with a granular material, and "thick" a liquid with viscosity or a
+yield stress. "Colours used" counts the distinct colours in all exported frames against the palette's size. The seam
+column counts pixels that differ between the last frame and the first; "others" is the range between neighbouring
+frames inside the loop.</p>
+<p id="dam-break"><strong>Liquid round an obstacle (15 November 2026).</strong> We compiled the dam-break liquid preset
+from Pixelbolt 0.17.0, the newest release on npm that day, unpacked from its npm tarball and run with nothing installed
+(<a href="data/pixelbolt-dambreak-0.17.0.txt">log</a>, <a href="data/pixelbolt_dambreak.mjs">script</a>,
+<a href="data/pixelbolt-dambreak-0.17.0.json">results</a>). In a 64×36 scene, a 20×20 block of water (400 pixels,
+1,600 particles) waits behind a plank that lifts away, and a rock stands on the floor of a basin. The water stayed
+between 392 and 407 pixels in all 70 frames. In no frame was a water pixel on a pixel of the rock, the basin or the
+plank. In the last frame water filled all 64 columns and all 55 free cells of the row just above the basin floor, and
+lay against the rock's left side, right side and top (4, 4 and 9 cells), with 15 water columns past it. Two compiles
+gave byte-identical files; one took 0.51 s, Node's start-up included.</p>
+
+<h2 id="codixel-measured">What we measured on Codixel</h2>
+<p>On 15 November 2026 we cloned Codixel at commit <code>604a9dc</code> (its newest; it has no releases) and ran four of
+its built-in effects on the same Windows PC with Node.js 24.19.0. It met our rules for running another tool: it is
+MIT-licensed, and its one code file requires only Node's <code>zlib</code> and <code>fs</code> (to write and read PNG
+files), with no network calls, GPU use, dependencies or install scripts. Codixel ships no command line and no example
+scripts; its SKILL.md has Claude call the library from a script of its own. So our own script,
+<a href="data/codixel_effects.cjs">codixel_effects.cjs</a>, calls its documented functions with their default
+settings. The canvas size, frame count and time step are ours, since the library leaves them to the caller, and no AI
+agent was involved.
+Each effect was made twice, each time in a new folder and process, and decoded with Pillow 12.0.0
+(<a href="data/codixel_measure.py">codixel_measure.py</a>, <a href="data/codixel-effects-604a9dc.json">results</a>,
+<a href="data/codixel-run-604a9dc.txt">run log</a>).</p>
+<div class="wrap" tabindex="0" role="region" aria-label="Codixel effects table, scrolls sideways">
+<table class="small">
+<caption>Four of Codixel's built-in effects, measured on 15 November 2026</caption>
+<thead>
+<tr><th scope="col">Effect</th><th scope="col">Call</th><th scope="col">Frame</th><th scope="col">Frames</th><th scope="col">Colours used</th><th scope="col">Visible pixels partly see-through</th><th scope="col">Same bytes twice</th><th scope="col">One command (s)</th></tr>
+</thead>
+<tbody>
+<tr><td>Flame</td><td><code>new P.Flame()</code></td><td>64×72</td><td>24</td><td>6</td><td>0%</td><td>Yes (26 files)</td><td>0.082 / 0.083</td></tr>
+<tr><td>Smoke column</td><td><code>new P.Smoke()</code></td><td>128×120</td><td>24</td><td>5</td><td>100%</td><td>Yes (26 files)</td><td>0.159 / 0.153</td></tr>
+<tr><td>Fire wall</td><td><code>new P.HellFire(64, 64)</code></td><td>64×64</td><td>24</td><td>32</td><td>0%</td><td>Yes (26 files)</td><td>0.099 / 0.093</td></tr>
+<tr><td>Beams</td><td><code>P.volley</code>, <code>P.beams</code></td><td>240×135</td><td>20</td><td>68</td><td>0%</td><td>Yes (22 files)</td><td>0.205 / 0.202</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong>Files:</strong> each run wrote RGBA PNG frames, a PNG sprite sheet and a GIF at 80 ms a frame. Every sheet
+matched its frames pixel for pixel, and every GIF had the same number of frames. The smoke's five colours are one grey
+ramp at five alpha levels (20 to 179 of 255); because a GIF has no partial transparency, we made its GIF from frames
+drawn on a filled background, as its SKILL.md says to. Beams blend into what is already drawn and flash the screen, so
+we drew them on a dark background.</li>
+<li><strong>Palette:</strong> with each effect's colour list set to PICO-8 colours, the flame used only the 5 given.
+The fire wall used 32 colours, 4 of them from the 5 given (it builds a 37-step ramp between them); the smoke used 5,
+1 of the 2 given; the beams used 75, 1 of the 2 given plus the background and 73 blends. Mapping every frame to the 16
+PICO-8 colours with <code>P.quantize</code> left only PICO-8 colours in all four effects, and no partly see-through
+pixel.</li>
+<li><strong>Time:</strong> 0.082–0.205 s per command, Node's start-up included.</li>
+<li><strong>The same in browsers:</strong> the same four effects, with the same calls and settings, rendered in
+headless Chromium 156, Firefox 157 and WebKit 26.6 gave the same hash as Node for every one of the 92 frames
+(<a href="data/codixel_engines.mjs">script</a>, <a href="data/codixel-engines.json">data</a>).</li>
+<li><strong>Not measured:</strong> how good the effects look, and the skill itself. We did not give Codixel's SKILL.md
+to Claude, so its main work, guiding an agent from your reference picture to an animated sprite, is described from its
+docs, not run by us.</li>
+<li><strong>To repeat it</strong>, from a folder holding the three scripts:
+<pre>git -c core.autocrlf=false clone https://github.com/mankidev/codixel src
+git -C src checkout 604a9dcbcc4e386bc48188b5f7f49099f5d04db7
+python -I codixel_measure.py src/core/pixel.js codixel_effects.cjs run codixel-effects.json
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node codixel_engines.mjs src/core/pixel.js codixel-engines.json</pre>
+(<code>core.autocrlf=false</code> keeps the files' own line endings, so <code>core/pixel.js</code> hashes as in our
+log. For the browser line, set <code>CHROMIUM_EXE</code> and <code>FIREFOX_EXE</code> if Playwright's own builds are
+missing.)
+and for the dam-break check, from a new folder holding <code>pixelbolt_dambreak.mjs</code>:
+<pre>npm pack pixelbolt@0.17.0
+tar -xzf pixelbolt-0.17.0.tgz
+node package/bin/pixelbolt.js compile package/examples/dam-break.fluid.json --out dam-break.recipe.json --metadata dam-break.meta.json
+node pixelbolt_dambreak.mjs dam-break.recipe.json dam-break.meta.json dam-break-check.json</pre></li>
+</ul>
 
 <h2>Each tool, and when to choose it over Pixelbolt</h2>
-<p class="muted">From each tool's own pages, read on 19 October 2026 (Pixel VFX Forge on 27 October); not run by us.</p>
+<p class="muted">From each tool's own pages, read on 19 October 2026 (Pixel VFX Forge on 27 October); not run by us,
+except Codixel, read and run on 15 November 2026.</p>
 
 <h3 id="pixel-fx-designer">Pixel FX Designer (CodeManu)</h3>
 <p>A desktop app for particle effects: emitters, motion, a timeline, physics such as attractors and gravity points,
@@ -382,8 +528,8 @@ the command line, and a persist or server (TCP port) mode keeps it open for cons
 downloaded CLI wrapper, since the app prints nothing to the console; the current source also parses them in the app.
 No MCP server is mentioned. Its source is MIT-licensed on GitHub, but current builds cost
 US$14.99, and building it yourself needs the GameMaker IDE. It needs an OpenGL GPU or integrated GPU.</p>
-<p><strong>Choose it over Pixelbolt</strong> when you want a visual node graph with more kinds of simulation (rigid
-bodies, strands, verlet meshes such as cloth), 3D objects with lighting and cameras, <code>.aseprite</code> import, video export and
+<p><strong>Choose it over Pixelbolt</strong> when you want a visual node graph with its simulation nodes (including
+strands and verlet meshes), 3D objects with lighting and cameras, <code>.aseprite</code> import, video export and
 a GUI for building new effects. Pixelbolt's fluids stop at 128×128 and are written as JSON; Pixel Composer's docs state
 no domain limit.</p>
 
@@ -398,10 +544,11 @@ ZIP. Scenes are plain JSON. Command-line tools render a scene to a sprite sheet,
 Edge you have installed, validate it and summarise it, and a SKILL.md explains the format to AI agents. Its page says
 the engine is deterministic and seed-based, and mentions no MCP server. The download is version 0.1, and its one
 devlog is from August 2026.</p>
-<p><strong>Choose it over Pixelbolt</strong> when you want a free visual editor in the browser, with physics Pixelbolt
-doesn't have (falling-sand materials, fracturing rigid bodies, cloth and ropes), post-effects it lacks (bloom,
-chromatic aberration, scanlines), larger canvases (Pixelbolt's fluids stop at 128×128), and still want JSON scenes an
-agent can write. Of the tools here, it is the closest to Pixelbolt's approach.</p>
+<p><strong>Choose it over Pixelbolt</strong> when you want a free visual editor in the browser for physics effects on a
+keyframe timeline, including soft bodies, which none of Pixelbolt 0.17.0's schemas describe; post-effects Pixelbolt
+lacks (bloom, chromatic aberration, scanlines); and still JSON scenes an agent can write. Pixelbolt 0.17.0 also has
+falling sand, rigid bodies that break, cloth and ropes, but written as JSON rather than edited by hand. Of the tools
+here, PHOSPHOR is the closest to Pixelbolt's approach.</p>
 
 <h3 id="blastfx">BlastFX (MNKY)</h3>
 <p>A desktop app for Windows, macOS and Linux, on Steam since 2018, with GPU-accelerated particle emitters and render
@@ -433,16 +580,41 @@ not include it. We read its page, its making-of and the skill's source; we did n
 <p><strong>Choose it over Pixelbolt</strong> when you want stylised combat and magic effects picked from a library
 of ready-made recipes and previewed on a character in the browser, with MP4 for posting or a Godot 4 resource to
 import. Its 22 layer types include sword slashes, beams, shockwave rings, lightning, magic circles, impact stars, claw
-marks, shields and damage numbers. Pixelbolt added eight such shapes in 0.9.2 (28 October 2026):
-rings, slashes, beams, lightning, magic circles, impact stars, fireball bursts and tapered water streams as effect layers, along with a Godot 4
-export. Its skill lets an agent render the same recipes from a Node script, without an MCP
+marks, shields and damage numbers. Pixelbolt added eight such shapes in 0.9.2 (28 October 2026), along with a Godot 4
+export, and 0.17.0 has ten kinds of shape layer: rings, slashes, beams, lightning bolts, magic circles, impact stars,
+fireball bursts, water streams, auras round a sprite and trails behind a sword tip. Its skill lets an agent render the same recipes from a Node script, without an MCP
 server.</p>
+
+<h3 id="codixel">Codixel (mankidev)</h3>
+<p>Added on 15 November 2026: a free, MIT-licensed Claude Code skill on GitHub, created on 31 October 2026 (187 stars
+on 15 November), with no releases or tags; we read and ran its newest commit, <code>604a9dc</code> from 2 November.
+It has two parts. Its 51 KB SKILL.md tells Claude to work from a reference picture the user supplies rather than draw
+complex subjects from imagination: remove the background, turn it into pixels, give it bones (<code>P.Rig</code>, or
+<code>P.bend</code> along a spine), animate it, and show each step and ask before going on; game files wait until the
+user approves a preview. It also sets style rules (hue-shifted ramps, flat bands with a dither strip only where two
+bands meet, outlines in the sprite's own colours) and asks Claude to take motion from real physics, with formulas.
+Its 92 KB <code>core/pixel.js</code> is a dependency-free JavaScript library for Node or a browser with those image
+tools, scene builders (sky, clouds, rock, trees, grass, water reflections, mist, and gems drawn by following light
+through the stone) and effects its docs say are "taken from finished games": a flame, a smoke column, a fire wall,
+fire breath, a smoke explosion and beams. The flame and smoke are a shape plus moving noise, cut into colour bands; the
+fire wall and fire breath spread heat on a grid the way Doom's fire does. Nothing in the file simulates a fluid, and no
+effect takes obstacles (fire breath takes a floor line below which it draws nothing). It writes RGBA PNG frames, a
+plain-grid PNG sprite sheet and GIF; there is no command line, MCP server, atlas file or engine export. Its README shows
+fire, smoke, beam, explosion and water results as GIFs; the scripts that made them are not in the repository.
+Installing it as the README says (<code>git clone</code> into Claude Code's skills folder) downloaded 69.5 MiB, nearly all
+of it images. We ran four of its effects; the numbers are <a href="#codixel-measured">above</a>.</p>
+<p><strong>Choose it over Pixelbolt</strong> when you want Claude Code to turn your own picture into a pixel-art
+character or creature, rig it and animate it, with a method that stops for your approval at every step, or to build
+whole scenes in code (trees, rock, water reflections, skies, gems). It is one readable JavaScript file that also runs
+in a browser, and its smoke fades through five alpha levels: every visible smoke pixel in our run was partly
+see-through, while all 37 of Pixelbolt 0.17.0's fluid presets used only opaque pixels in our run.</p>
 
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
 <p>When an AI agent should make, check and change the effect over MCP, seeing each result as an image: the agent writes
 a few kilobytes of JSON (palette, obstacles, emitters and how fields map to colours), compiles it, looks at the contact
 sheet it gets back, and changes one setting at a time, with the same file every time. (PHOSPHOR and Pixel VFX Forge
-also take agent-written JSON, through command-line scripts rather than MCP.) The result is an ordinary Pixelbolt recipe, so
+also take agent-written JSON, through command-line scripts rather than MCP; Codixel's agent writes JavaScript that
+calls its library.) The result is an ordinary Pixelbolt recipe, so
 the same agent can inspect it, patch single pixels, and export sprite sheets, atlases, GIFs or frames for a video
 editor. It is free and needs only Node.js: no account, API key or network service. Install it from the
 <a href="https://github.com/skulitom/Pixelbolt">GitHub repository</a>, or as <code>pixelbolt.mcpb</code> for Claude
@@ -451,27 +623,32 @@ Desktop from the <a href="https://github.com/skulitom/Pixelbolt/releases/latest"
 <h2>Pixelbolt's limits</h2>
 <ul>
 <li><strong>No hand-editing tool for new effects.</strong> A new effect is a JSON source that you or an agent write.
-The studio's Fluid lab (in its docs; not used for this page) runs a preset in your browser with a few sliders and
-downloads the result, but there is no emitter editor, timeline or node graph like the desktop apps above.</li>
-<li><strong>Eight spell shapes, new in 0.9.2.</strong> Release 0.9.2 (28 October 2026) added eight shape layers
-(rings, slashes, beams, bolts, magic circles, stars, fireball bursts and tapered streams for water). Before it, an agent
-built slashes, beams, shockwave rings, lightning and magic circles from particle emitters or drew them with lines,
-ellipses and stamps. Pixel VFX Forge has 22 layer types.</li>
-<li><strong>New and bounded.</strong> Fluid effects shipped in 0.9.0 on 18 October 2026, the day before this check. A
-source is refused if it needs more than 32,768 liquid particles, 4,096 sparks or about 400 million cell updates, and
-flows are capped at 32 pixels a frame.</li>
-<li><strong>Small and 2D.</strong> A fluid grid is at most 128×128 cells, one per pixel, and a project at most 256
-frames. There are no rigid bodies, cloth, ropes, falling-sand materials or 3D models.</li>
-<li><strong>Hard-edged pixels only.</strong> Every pixel is one of the palette's colours. The ten presets use only
-opaque ones (measured: no semi-transparent pixel), and a palette may include translucent colours, but there is no
-blur, smooth alpha falloff or additive blending. Dithering stands in for gradients.</li>
+The studio's Fluid lab and Effects lab (in its docs; not used for this page) run a preset in your browser with a few
+sliders and download the result, and its Powder lab lets you paint falling-sand materials live, but there is no
+emitter editor, timeline or node graph like the desktop apps above.</li>
+<li><strong>Ten kinds of shape layer.</strong> Spells and hits are built from ten kinds of shape layer (rings, slashes,
+beams, bolts, magic circles, stars, fireball bursts, water streams, auras and trails; all ten compiled in our run) plus
+particle emitters. Pixel VFX Forge has 22 layer types.</li>
+<li><strong>Young and bounded.</strong> Fluid effects first shipped in 0.9.0 on 18 October 2026, and 0.17.0 came out on
+14 November. A fluid source is refused if it needs more than 32,768 liquid particles, 4,096 sparks or about 400
+million cell updates, and flows are capped at 32 pixels a frame.</li>
+<li><strong>Small and 2D.</strong> A fluid grid is at most 128×128 cells, one per world pixel (a scene with rigid
+bodies may draw each cell as a block of 2–8 pixels), and an animated recipe at most 256 pixels a side and 256 frames.
+None of its schemas or docs describe soft bodies or 3D models.</li>
+<li><strong>Hard-edged pixels only.</strong> Every pixel an effect source compiles to is one of the palette's colours.
+All 37 fluid presets use only opaque ones (measured: no semi-transparent pixel); a palette may include translucent
+colours (the poison-spells effect example uses three), and a recipe layer can be given one opacity by hand, but there
+is no blur, smooth alpha falloff or additive blending; glows are drawn with dither.</li>
 <li><strong>Baked frames for engines.</strong> Effects compile to sprite frames, not engine particles. A web page can
-run a fluid live with <code>createLiveFluid</code> (since 0.9.1, 25 October 2026, which also added honey and slime), as
-the <a href="../../playground/fluids/">live fluid toy</a> does, but there is no live runtime for game engines.</li>
+run a fluid or a falling-sand sandbox live with <code>createLiveFluid</code> or <code>createLivePowder</code>, as the
+<a href="../../playground/fluids/">live fluid toy</a> does with fluids, but there is no live runtime for game
+engines.</li>
 <li><strong>Video is frames only.</strong> Pixelbolt writes numbered PNGs and the FFmpeg command for a video; it encodes
 no video itself.</li>
-<li><strong>A large tool list.</strong> The MCP server's <code>tools/list</code> reply is about 136 KB (135,553 bytes on
-0.9.0), which an agent pays for in context; the fluid help topic is another 22 KB.</li>
+<li><strong>Tool list in context.</strong> The MCP server's <code>tools/list</code> reply is 20,905 bytes on 0.17.0
+(135,553 on 0.9.0; <a href="data/pixelbolt-fluid-mcp-v0.17.0.json">data</a>,
+<a href="data/pixelbolt-fluid-mcp-v0.9.0.json">0.9.0 data</a>), which an agent pays for in context; the fluid help
+topic is another 3,306 bytes.</li>
 <li><strong>Measured on one machine.</strong> Our timings are from one Windows desktop CPU. Pixelbolt's CI runs its
 tests, fluid golden hashes included, on Linux, Windows and macOS.</li>
 </ul>
@@ -508,53 +685,81 @@ our
 tool: "Pixel FX Designer alternative", "free pixel art fire smoke explosion effect generator sprite sheet", "pixel art
 fluid simulation effects tool open source" and "pixel art VFX particle effects tool for AI agents MCP". We ran five
 more while researching the tools. Pixelbolt appeared in none of the eight whose results we recorded. The results and summaries are in
-<a href="data/searches-2026-10-19.txt">searches-2026-10-19.txt</a>.</li>
+<a href="data/searches-2026-10-19.txt">searches-2026-10-19.txt</a>. On 15 November 2026 we ran five more with the same
+kind of tool: "Pixel FX Designer alternatives", "pixel art fire smoke explosion effect generator free", "codixel pixel
+art effects claude skill", "claude code skill pixel art particle effects" and "pixel art vfx tool for AI agents". No
+page of ours appeared in any of them, and nor did Codixel's repository (skills directories listing it did). Their
+results also named tools we have not read yet, such as the PixelFX skill and Sprite Dust; all are in
+<a href="data/searches-2026-11-15.txt">searches-2026-11-15.txt</a>.</li>
 <li><strong>Which tools.</strong> We compared tools that generate effects, rather than animate existing sprites or sell
 finished art, and whose own pages describe pixel-art output control (a palette, pixelation or palette mapping). Fluid
 FX is the one exception: its pages describe no such control, and we kept it because it is the fluid-simulation tool
 from Pixel FX Designer's own maker. Pixelpart and Effekseer make particle effects, but the pages we read describe none
 of these controls. Two tools meet the rule and were left out for scope: Heos Explosions (an Aseprite 1.3 script that
 makes explosions only) and glideengine's Particles Editor (Mac and iOS App Stores; it exports PNG textures and source
-code). Pixel VFX Forge, announced on 26 October 2026, meets the rule and was added on 27 October.</li>
+code). Pixel VFX Forge, announced on 26 October 2026, meets the rule and was added on 27 October. Codixel, a Claude
+Code skill created on 31 October 2026, meets it too (its effects take a colour list, and <code>P.quantize</code> maps
+frames to a palette) and was added on 15 November.</li>
 <li><strong>The other tools</strong> were read from their store pages, docs, devlogs and (for Pixel Composer) source,
 on 19 October 2026. We did not download or run them. That was a choice of scope: PHOSPHOR is free and runs in a
 browser, and the five paid tools have free demos (BlastFX's can't export). So nothing here compares speed or output
-quality between tools; the only measured numbers are Pixelbolt's. No page we read restricts comparisons.</li>
+quality between tools; apart from Codixel's run below, the measured numbers are Pixelbolt's. No page we read restricts
+comparisons.</li>
+<li><strong>Codixel</strong> was read on 15 November 2026 from its repository at commit <code>604a9dc</code> (README,
+SKILL.md, <code>core/pixel.js</code> and LICENSE) and from GitHub's API (creation date, stars, commits, tags, releases
+and issues: none of the last three). It met our rules for running another tool, so we ran it as described under
+<a href="#codixel-measured">What we measured on Codixel</a>, on the same PC with Python 3.13.9 and Pillow 12.0.0. We
+did not run its SKILL.md with an AI agent.</li>
 <li><strong>Pixel VFX Forge</strong> was read on 27 October 2026 from its page and its illustrated making-of. We also
 downloaded its agent skill, a 49,821-byte ZIP whose SHA-256 (<code>f5284ec0…7d23cd2c</code>) matches the hash in its
 download address, and read its source and recipe reference; we did not run it.</li>
-<li><strong>Pixelbolt</strong> was measured on Windows 11 Pro (build 26200), an AMD Ryzen 9 7950X3D with about 64 GB
-of RAM, Node.js 24.19.0, Pillow 12.0.0 and Playwright's Chromium 156, Firefox 157 and WebKit 26.6. We used two builds:
-<ul>
-<li>release 0.9.0: the tag <code>2c180d6</code>, plus the release's <code>pixelbolt.mcpb</code> for the MCP run;</li>
-<li><code>main</code> at <code>d8776d4</code>.</li>
-</ul>
-</li>
+<li><strong>Pixelbolt</strong> was measured on 15 November 2026 on Windows 11 Pro (build 26200), an AMD Ryzen 9
+7950X3D with about 64 GB of RAM, Node.js 24.19.0, Pillow 12.0.0 and Playwright 1.63 driving installed Chromium 156
+and Firefox 157 builds and its own WebKit 26.6. The build was release 0.17.0 as npm ships it: the unpacked <code>pixelbolt-0.17.0.tgz</code>, which npm
+records as built from commit <code>e1eb580</code>. Its column was read from the docs, schemas, examples and command-line
+help in that package. The compile-time comparison with 0.9.0 was run on 15 November on a <code>git archive</code> of tag
+v0.9.0 (GitHub's archive of the tag, as in the block below, builds the same ten recipes); the page's earlier 0.9.0 measurements, of 19 October, are cited only for the tool list's size, and their data
+files stay in this folder.</li>
 <li><strong>Scripts</strong>, next to this page:
 <ul>
-<li><a href="data/pixelfx_measure.mjs">pixelfx_measure.mjs</a> compiles every preset three times through the
-command line, then renders and exports each GIF twice, hashing every file.</li>
+<li><a href="data/pixelfx_measure-0.17.0.mjs">pixelfx_measure-0.17.0.mjs</a> compiles every fluid preset three times
+through the command line, then renders and exports each GIF twice, hashing every file. It is
+<code>pixelfx_measure.mjs</code> changed in one place: it also runs on an npm package, which has no git history.</li>
 <li><a href="data/pixelfx_check.py">pixelfx_check.py</a> decodes every frame, sprite sheet and GIF with Pillow and
 checks the palette, the sheet, the GIF and the loop seam.</li>
 <li><a href="data/pixelfx_mcp_probe.mjs">pixelfx_mcp_probe.mjs</a> drives the MCP server over stdio.</li>
-<li><a href="data/pixelfx_browsers.mjs">pixelfx_browsers.mjs</a> compiles the presets in three browser engines.</li>
+<li><a href="data/pixelfx_browsers.mjs">pixelfx_browsers.mjs</a> compiles the fluid presets in three browser engines.</li>
+<li><a href="data/pixelbolt_formats-0.17.0.mjs">pixelbolt_formats-0.17.0.mjs</a> compiles every rigid-body,
+falling-sand, crystal, wave and particle example twice.</li>
+<li><a href="data/pixelfx_presets_table-0.17.0.py">pixelfx_presets_table-0.17.0.py</a> prints the preset table's rows
+from the results.</li>
+<li><a href="data/compile_interleave.py">compile_interleave.py</a> times 0.9.0 and 0.17.0 compiling the same ten
+presets, alternating the versions in every round, and
+<a href="data/compile_interleave_merge.py">compile_interleave_merge.py</a> pools its sessions.</li>
 </ul>
-In the published JSON, our local folders are shown as <code>&lt;work&gt;</code>, <code>&lt;clone&gt;</code> and
-<code>&lt;mcpb&gt;</code>; nothing else was changed.</li>
+In the published JSON, our local folders are shown as <code>&lt;work&gt;</code>, <code>&lt;package&gt;</code> and
+<code>&lt;mcp-out&gt;</code>; nothing else was changed.</li>
 <li><strong>To repeat it</strong>, from a folder holding the scripts:
-<pre>git clone https://github.com/skulitom/Pixelbolt.git
-git -C Pixelbolt checkout v0.9.0
-node pixelfx_measure.mjs Pixelbolt run-cli result-cli.json 3
+<pre>npm pack pixelbolt@0.17.0
+tar -xzf pixelbolt-0.17.0.tgz
+node pixelfx_measure-0.17.0.mjs package run-cli result-cli.json 3
 python -I pixelfx_check.py result-cli.json result-check.json
-node pixelfx_mcp_probe.mjs Pixelbolt/bin/pixelbolt.js Pixelbolt/examples run-mcp result-cli.json result-mcp.json
-PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node pixelfx_browsers.mjs Pixelbolt result-browsers.json</pre>
-Our 0.9.0 MCP run used the bundle's own files: download <code>pixelbolt.mcpb</code> from the release, check its
-SHA-256 against <code>pixelbolt.mcpb.sha256</code>, unzip it, and pass its <code>bin/pixelbolt.js</code> to the MCP
-script instead.</li>
+node pixelfx_mcp_probe.mjs package/bin/pixelbolt.js package/examples run-mcp result-cli.json result-mcp.json
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node pixelfx_browsers.mjs package result-browsers.json
+node pixelbolt_formats-0.17.0.mjs package run-formats result-formats.json
+python -I -X utf8 pixelfx_presets_table-0.17.0.py result-cli.json result-check.json package/examples &gt; rows.html
+mkdir v090 &amp;&amp; curl -sL https://github.com/skulitom/Pixelbolt/archive/refs/tags/v0.9.0.tar.gz | tar -xz --strip-components=1 -C v090
+mkdir v017 &amp;&amp; tar -xzf pixelbolt-0.17.0.tgz -C v017
+python -I compile_interleave.py 11 run-speed-1 speed-1.json
+python -I compile_interleave.py 9 run-speed-2 speed-2.json
+python -I compile_interleave_merge.py speed-1.json speed-2.json speed.json</pre>
+If Playwright's own browser builds are missing, as ours were, set <code>CHROMIUM_EXE</code> and
+<code>FIREFOX_EXE</code> to installed ones.</li>
 </ul>
 
 <h2 id="sources">Sources</h2>
-<p class="muted">Read on 19 October 2026, except Pixel VFX Forge (27 October).</p>
+<p class="muted">Read on 19 October 2026, except Pixel VFX Forge (27 October) and Codixel (15 November). Steam's store data and news (prices and latest
+versions), Pixel Composer's GitHub releases and Pixel VFX Forge's page were read again on 15 November 2026.</p>
 <ul>
 <li>Pixel FX Designer: <a href="https://codemanu.itch.io/particle-fx-designer">itch.io page</a>,
 <a href="https://store.steampowered.com/app/939360/Pixel_FX_Designer/">Steam page</a> (price, exports, minimum
@@ -598,6 +803,27 @@ making-of (PDF)</a>,
 skill (ZIP)</a> (<code>SKILL.md</code>, <code>references/recipe.md</code>, <code>scripts/lib/engine.js</code>,
 <code>scripts/render.mjs</code>), <a href="https://x.com/emmanuel_2m/status/2114763793284857865">announcement on X</a>
 (26 October 2026), <a href="https://github.com/scenario-labs/skills">Scenario's skills repository</a>.</li>
+<li>Codixel, read on 15 November 2026: <a href="https://github.com/mankidev/codixel">GitHub repository</a> (stars,
+creation date, commits, tags, releases and issues through GitHub's API) and, at commit <code>604a9dc</code>, its
+<a href="https://github.com/mankidev/codixel/blob/604a9dcbcc4e386bc48188b5f7f49099f5d04db7/README.md">README</a>,
+<a href="https://github.com/mankidev/codixel/blob/604a9dcbcc4e386bc48188b5f7f49099f5d04db7/SKILL.md">SKILL.md</a>,
+<a href="https://github.com/mankidev/codixel/blob/604a9dcbcc4e386bc48188b5f7f49099f5d04db7/core/pixel.js"><code>core/pixel.js</code></a>
+and <a href="https://github.com/mankidev/codixel/blob/604a9dcbcc4e386bc48188b5f7f49099f5d04db7/LICENSE">LICENSE</a>;
+its licence history in commits <a href="https://github.com/mankidev/codixel/commit/dee99f594d06f9c36d41a6eeadfda92d94d40c51"><code>dee99f5</code></a>
+(GPL-3.0-or-later, 31 October) and <a href="https://github.com/mankidev/codixel/commit/32caa0d70ae1a8ccbd61d6e5b20002e7c0890481"><code>32caa0d</code></a>
+(MIT, 1 November); our run: <a href="data/codixel-run-604a9dc.txt">log</a> and
+<a href="data/codixel-effects-604a9dc.json">results</a>.</li>
+<li>Read again on 15 November 2026: the US prices on Steam's store data for Pixel FX Designer, SpriteMancer, Fluid FX,
+Pixel Composer and BlastFX; their Steam news, read through Steam's public news API (for example
+<a href="https://store.steampowered.com/news/app/2299510">Pixel Composer's</a> 1.22.1–1.22.3 betas and its
+note on software branches, and <a href="https://store.steampowered.com/news/app/940920">BlastFX's</a> "Mac fix -
+2.0.6" of 16 September); <a href="https://github.com/Ttanasart-pt/Pixel-Composer/releases">Pixel Composer's GitHub
+releases</a> (1.21.0 and 1.19.0.5 carry no download, so 0.8.2 is still the newest free binary); and Pixel VFX Forge's
+page, whose skill ZIP address still carries the same SHA-256. The itch.io pages answered with a bot check, so we did
+not re-read them.</li>
+<li>Pixelbolt 0.17.0: <a href="https://www.npmjs.com/package/pixelbolt/v/0.17.0">npm package</a> (newest on 15
+November 2026) and its <code>examples/dam-break.fluid.json</code>; data in <a href="#dam-break">the dam-break
+check</a>.</li>
 <li>Also: <a href="https://soeren-m.itch.io/pixelpart">Pixelpart</a>,
 <a href="https://heosphorus.itch.io/heos-explosions">Heos Explosions</a>,
 <a href="https://glideengine.itch.io/particles-editor">Particles Editor</a>,
@@ -605,16 +831,21 @@ skill (ZIP)</a> (<code>SKILL.md</code>, <code>references/recipe.md</code>, <code
 <a href="https://github.com/effekseer/Effekseer">repository</a>,
 <a href="https://aim-studios.itch.io/explosions-pixel-art">Aim Studios' explosions</a>,
 <a href="https://www.pixa.com/create/pixel-art-particle-effect-generator">Pixa's generator page</a> (404).</li>
-<li>Pixelbolt 0.9.0: <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/README.md">README</a>,
-<a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/CHANGELOG.md">CHANGELOG</a>,
-<a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/docs/art-workflow.md#fluid-effects">fluid effects
-guide</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.0/fluid.schema.json">fluid schema</a>; on
-<code>main</code>: <a href="https://github.com/skulitom/Pixelbolt/blob/d8776d4447ad228aa41727c3d07baf705793ca4b/CHANGELOG.md">CHANGELOG
-(Unreleased)</a>; Pixelbolt 0.9.2: <a href="https://github.com/skulitom/Pixelbolt/blob/v0.9.2/CHANGELOG.md">CHANGELOG</a>; this page's data: the files linked in <a href="#measured">What we measured</a>.</li>
+<li>Pixelbolt 0.17.0, read in its npm package on 15 November 2026 (the same files at the tag on GitHub):
+<a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/README.md">README</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/docs/art-workflow.md#fluid-effects">fluid effects
+guide</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/docs/physics-model.md">physics model</a> (sand, rigid bodies, joints, ropes and cloth),
+<a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/docs/game-integration.md">game integration</a>, the
+<a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/fluid.schema.json">fluid</a>, <a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/fx.schema.json">effects</a>,
+<a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/bodies.schema.json">bodies</a> and <a href="https://github.com/skulitom/Pixelbolt/blob/v0.17.0/powder.schema.json">powder</a> schemas,
+<code>src/fluid.js</code> (its limits) and <code>pixelbolt --help</code>; its
+<a href="https://github.com/skulitom/Pixelbolt/actions/runs/43539548933">release</a> and
+<a href="https://github.com/skulitom/Pixelbolt/actions/runs/43539527562">test</a> runs on the tagged commit, and
+<a href="https://github.com/skulitom/Pixelbolt/releases/tag/v0.17.0">the release's files</a>; this page's data: the
+files linked in <a href="#measured">What we measured</a>.</li>
 </ul>
 
 <footer class="muted">
-<p>Last checked 19 October 2026; Pixel VFX Forge, and Pixelbolt's spell and liquid shapes and Godot 4 export, added 27 October 2026; those Pixelbolt features released in 0.9.2 on 28 October 2026. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. Codixel added 15 November 2026, when we also re-checked the Steam prices and latest versions (not the itch.io pages) and re-measured Pixelbolt's rows on its 0.17.0 release. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·

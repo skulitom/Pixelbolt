@@ -1,0 +1,3356 @@
+{
+ "version": "0.17.0",
+ "node": "v24.19.0",
+ "formats": {
+  "bodies": [
+   {
+    "example": "examples/banner.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 48,
+    "height": 48,
+    "frames": 24,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": true,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     374,
+     374
+    ],
+    "identical": true,
+    "recipeBytes": 44933,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "banner",
+      "kind": null,
+      "frames": 24,
+      "keys": [
+       "bodies",
+       "clothFigures",
+       "cloths",
+       "escaped",
+       "frames",
+       "hits",
+       "loop",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/blade-bloom.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 80,
+    "height": 80,
+    "frames": 240,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     6683,
+     6556
+    ],
+    "identical": true,
+    "recipeBytes": 1541610,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "blade-bloom",
+      "kind": null,
+      "frames": 240,
+      "keys": [
+       "bodies",
+       "copies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "powers",
+       "rest",
+       "steps",
+       "strikes",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/bouncing-pixel.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 48,
+    "height": 32,
+    "frames": 220,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     204,
+     200
+    ],
+    "identical": true,
+    "recipeBytes": 93629,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "bouncing-pixel",
+      "kind": null,
+      "frames": 220,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/cape.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 80,
+    "height": 64,
+    "frames": 120,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": true,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     265,
+     259
+    ],
+    "identical": true,
+    "recipeBytes": 123880,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "cape",
+      "kind": null,
+      "frames": 120,
+      "keys": [
+       "bodies",
+       "clothFigures",
+       "cloths",
+       "escaped",
+       "frames",
+       "hits",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/crate-smash.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 112,
+    "height": 64,
+    "frames": 152,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     739,
+     758
+    ],
+    "identical": true,
+    "recipeBytes": 638018,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "crate-smash",
+      "kind": null,
+      "frames": 152,
+      "keys": [
+       "bodies",
+       "broken",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/crate-topple.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 224,
+    "height": 96,
+    "frames": 140,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     361,
+     365
+    ],
+    "identical": true,
+    "recipeBytes": 606706,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "crate-topple",
+      "kind": null,
+      "frames": 140,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/flag.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 64,
+    "height": 48,
+    "frames": 24,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": true,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     363,
+     370
+    ],
+    "identical": true,
+    "recipeBytes": 56853,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "flag",
+      "kind": null,
+      "frames": 24,
+      "keys": [
+       "bodies",
+       "clothFigures",
+       "cloths",
+       "escaped",
+       "frames",
+       "hits",
+       "loop",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/lantern.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 48,
+    "height": 64,
+    "frames": 76,
+    "sourceUses": {
+     "joints": false,
+     "ropes": true,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     255,
+     249
+    ],
+    "identical": true,
+    "recipeBytes": 218531,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "lantern",
+      "kind": null,
+      "frames": 76,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "joints",
+       "paths",
+       "pixels",
+       "rest",
+       "ropes",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/ragdoll.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 96,
+    "height": 64,
+    "frames": 64,
+    "sourceUses": {
+     "joints": true,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     255,
+     257
+    ],
+    "identical": true,
+    "recipeBytes": 96747,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "ragdoll",
+      "kind": null,
+      "frames": 64,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "joints",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/ring-escape.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 96,
+    "height": 96,
+    "frames": 256,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     668,
+     670
+    ],
+    "identical": true,
+    "recipeBytes": 1910925,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "ring-escape",
+      "kind": null,
+      "frames": 256,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/rope-bridge.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 128,
+    "height": 64,
+    "frames": 140,
+    "sourceUses": {
+     "joints": true,
+     "ropes": true,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     375,
+     378
+    ],
+    "identical": true,
+    "recipeBytes": 786839,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "rope-bridge",
+      "kind": null,
+      "frames": 140,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "joints",
+       "paths",
+       "pixels",
+       "rest",
+       "ropes",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/spinning-hoop.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 72,
+    "height": 72,
+    "frames": 240,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     348,
+     362
+    ],
+    "identical": true,
+    "recipeBytes": 1002314,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "spinning-hoop",
+      "kind": null,
+      "frames": 240,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "rest",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/territory.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 72,
+    "height": 128,
+    "frames": 256,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     795,
+     803
+    ],
+    "identical": true,
+    "recipeBytes": 2705404,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "territory",
+      "kind": null,
+      "frames": 256,
+      "keys": [
+       "bodies",
+       "copies",
+       "escaped",
+       "frames",
+       "hits",
+       "paths",
+       "pixels",
+       "powers",
+       "rest",
+       "steps",
+       "substeps",
+       "territory"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/wrecking-ball.bodies.json",
+    "format": "pixelforge-bodies",
+    "width": 96,
+    "height": 64,
+    "frames": 160,
+    "sourceUses": {
+     "joints": false,
+     "ropes": true,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     485,
+     462
+    ],
+    "identical": true,
+    "recipeBytes": 741841,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "wrecking-ball",
+      "kind": null,
+      "frames": 160,
+      "keys": [
+       "bodies",
+       "escaped",
+       "frames",
+       "hits",
+       "joints",
+       "paths",
+       "pixels",
+       "rest",
+       "ropes",
+       "steps",
+       "substeps"
+      ],
+      "bodies": null
+     }
+    ]
+   }
+  ],
+  "powder": [
+   {
+    "example": "examples/hut-fire.powder.json",
+    "format": "pixelforge-powder",
+    "width": 192,
+    "height": 108,
+    "frames": 150,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     1440,
+     1423
+    ],
+    "identical": true,
+    "recipeBytes": 2792187,
+    "warnings": [],
+    "effects": []
+   },
+   {
+    "example": "examples/lava-falls.powder.json",
+    "format": "pixelforge-powder",
+    "width": 128,
+    "height": 96,
+    "frames": 120,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     851,
+     829
+    ],
+    "identical": true,
+    "recipeBytes": 1329482,
+    "warnings": [],
+    "effects": []
+   },
+   {
+    "example": "examples/quarry-blast.powder.json",
+    "format": "pixelforge-powder",
+    "width": 128,
+    "height": 80,
+    "frames": 32,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     348,
+     358
+    ],
+    "identical": true,
+    "recipeBytes": 185550,
+    "warnings": [],
+    "effects": []
+   },
+   {
+    "example": "examples/rain-on-fire.powder.json",
+    "format": "pixelforge-powder",
+    "width": 112,
+    "height": 72,
+    "frames": 120,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     654,
+     696
+    ],
+    "identical": true,
+    "recipeBytes": 1086002,
+    "warnings": [],
+    "effects": []
+   },
+   {
+    "example": "examples/stilt-hut.powder.json",
+    "format": "pixelforge-powder",
+    "width": 128,
+    "height": 80,
+    "frames": 90,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     1354,
+     1329
+    ],
+    "identical": true,
+    "recipeBytes": 695312,
+    "warnings": [],
+    "effects": []
+   }
+  ],
+  "crystal": [
+   {
+    "example": "examples/geode.crystal.json",
+    "format": "pixelforge-crystal",
+    "width": 76,
+    "height": 58,
+    "frames": 56,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     271,
+     275
+    ],
+    "identical": true,
+    "recipeBytes": 649832,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "geode",
+      "kind": null,
+      "frames": 56,
+      "keys": [
+       "crystals",
+       "duration",
+       "frames",
+       "grown",
+       "settled",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/pyrite.crystal.json",
+    "format": "pixelforge-crystal",
+    "width": 56,
+    "height": 44,
+    "frames": 52,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     213,
+     226
+    ],
+    "identical": true,
+    "recipeBytes": 372178,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "pyrite",
+      "kind": null,
+      "frames": 52,
+      "keys": [
+       "crystals",
+       "duration",
+       "frames",
+       "grown",
+       "settled",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/quartz-cluster.crystal.json",
+    "format": "pixelforge-crystal",
+    "width": 64,
+    "height": 58,
+    "frames": 60,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     279,
+     284
+    ],
+    "identical": true,
+    "recipeBytes": 916594,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "quartz-cluster",
+      "kind": null,
+      "frames": 60,
+      "keys": [
+       "crystals",
+       "duration",
+       "frames",
+       "grown",
+       "settled",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/snowflakes.crystal.json",
+    "format": "pixelforge-crystal",
+    "width": 96,
+    "height": 52,
+    "frames": 44,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     215,
+     221
+    ],
+    "identical": true,
+    "recipeBytes": 278548,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "snowflakes",
+      "kind": null,
+      "frames": 44,
+      "keys": [
+       "crystals",
+       "duration",
+       "frames",
+       "grown",
+       "settled",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   }
+  ],
+  "wave": [
+   {
+    "example": "examples/interference.wave.json",
+    "format": "pixelforge-wave",
+    "width": 48,
+    "height": 30,
+    "frames": 40,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     217,
+     200
+    ],
+    "identical": true,
+    "recipeBytes": 181893,
+    "warnings": [
+     "wave.effects.resonate: narrow waves may shimmer at this pixel size; increase wavelength or stretch."
+    ],
+    "effects": [
+     {
+      "effect": "resonate",
+      "kind": null,
+      "frames": 40,
+      "keys": [
+       "duration",
+       "frames",
+       "sources",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/portal.wave.json",
+    "format": "pixelforge-wave",
+    "width": 38,
+    "height": 56,
+    "frames": 40,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     227,
+     238
+    ],
+    "identical": true,
+    "recipeBytes": 415317,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "open",
+      "kind": null,
+      "frames": 40,
+      "keys": [
+       "duration",
+       "frames",
+       "sources",
+       "visiblePixels"
+      ],
+      "bodies": null
+     }
+    ]
+   }
+  ],
+  "fx": [
+   {
+    "example": "examples/effects.fx.json",
+    "format": "pixelforge-fx",
+    "width": 48,
+    "height": 40,
+    "frames": 60,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": []
+    },
+    "compileMs": [
+     193,
+     192
+    ],
+    "identical": true,
+    "recipeBytes": 49457,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "sparks",
+      "kind": null,
+      "frames": 9,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "embers",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "dust",
+      "kind": null,
+      "frames": 11,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "leaves",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "shatter",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/fire-explosion.fx.json",
+    "format": "pixelforge-fx",
+    "width": 96,
+    "height": 96,
+    "frames": 16,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     258,
+     253
+    ],
+    "identical": true,
+    "recipeBytes": 62532,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "fire-explosion",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/fire-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 107,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "aura",
+      "beam",
+      "burst",
+      "ring",
+      "star",
+      "stream"
+     ]
+    },
+    "compileMs": [
+     432,
+     421
+    ],
+    "identical": true,
+    "recipeBytes": 170184,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 19,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/fireball.fx.json",
+    "format": "pixelforge-fx",
+    "width": 56,
+    "height": 56,
+    "frames": 64,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "beam",
+      "burst"
+     ]
+    },
+    "compileMs": [
+     295,
+     296
+    ],
+    "identical": true,
+    "recipeBytes": 85811,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "fireball-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "fireball-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/fluid-blast.fx.json",
+    "format": "pixelforge-fx",
+    "width": 96,
+    "height": 96,
+    "frames": 32,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     455,
+     467
+    ],
+    "identical": true,
+    "recipeBytes": 126544,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "blast",
+      "kind": null,
+      "frames": 32,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/healing-circle.fx.json",
+    "format": "pixelforge-fx",
+    "width": 96,
+    "height": 72,
+    "frames": 18,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "beam",
+      "glyph",
+      "ring"
+     ]
+    },
+    "compileMs": [
+     236,
+     248
+    ],
+    "identical": true,
+    "recipeBytes": 91553,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "healing-circle",
+      "kind": null,
+      "frames": 18,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/hero-magic.fx.json",
+    "format": "pixelforge-fx",
+    "width": 40,
+    "height": 52,
+    "frames": 26,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "aura",
+      "beam"
+     ]
+    },
+    "compileMs": [
+     356,
+     341
+    ],
+    "identical": true,
+    "recipeBytes": 62223,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "teleport",
+      "kind": null,
+      "frames": 14,
+      "keys": [
+       "culled",
+       "edges",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "aura",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "edges",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/holy-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 124,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "beam",
+      "burst",
+      "glyph",
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     382,
+     404
+    ],
+    "identical": true,
+    "recipeBytes": 267669,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 14,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "parts",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff-back",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "frames",
+       "loop",
+       "part",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff-front",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "frames",
+       "loop",
+       "part",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/ice-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 134,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "beam",
+      "burst",
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     524,
+     514
+    ],
+    "identical": true,
+    "recipeBytes": 300293,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 22,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "parts",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff-back",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "frames",
+       "loop",
+       "part",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff-front",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "frames",
+       "loop",
+       "part",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/lightning-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 106,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "beam",
+      "bolt",
+      "burst",
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     403,
+     416
+    ],
+    "identical": true,
+    "recipeBytes": 183553,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 20,
+      "keys": [
+       "cues",
+       "culled",
+       "edges",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/lightning-strike.fx.json",
+    "format": "pixelforge-fx",
+    "width": 96,
+    "height": 104,
+    "frames": 12,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "bolt",
+      "ring",
+      "star"
+     ]
+    },
+    "compileMs": [
+     235,
+     228
+    ],
+    "identical": true,
+    "recipeBytes": 48748,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "lightning-strike",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "cues",
+       "culled",
+       "edges",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/meteor.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 22,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "ring"
+     ]
+    },
+    "compileMs": [
+     216,
+     217
+    ],
+    "identical": true,
+    "recipeBytes": 50862,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "meteor",
+      "kind": null,
+      "frames": 22,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/poison-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 110,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "star"
+     ]
+    },
+    "compileMs": [
+     431,
+     435
+    ],
+    "identical": true,
+    "recipeBytes": 135415,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 22,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/shadow-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 105,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "ring",
+      "stream"
+     ]
+    },
+    "compileMs": [
+     494,
+     524
+    ],
+    "identical": true,
+    "recipeBytes": 149356,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 19,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/shield.fx.json",
+    "format": "pixelforge-fx",
+    "width": 48,
+    "height": 48,
+    "frames": 12,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "ring",
+      "slash"
+     ]
+    },
+    "compileMs": [
+     228,
+     222
+    ],
+    "identical": true,
+    "recipeBytes": 34295,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "shield",
+      "kind": null,
+      "frames": 12,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/slash-hit.fx.json",
+    "format": "pixelforge-fx",
+    "width": 80,
+    "height": 64,
+    "frames": 9,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "ring",
+      "slash",
+      "star"
+     ]
+    },
+    "compileMs": [
+     221,
+     214
+    ],
+    "identical": true,
+    "recipeBytes": 22894,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "slash-hit",
+      "kind": null,
+      "frames": 9,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/swing-trail.fx.json",
+    "format": "pixelforge-fx",
+    "width": 40,
+    "height": 40,
+    "frames": 7,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "star",
+      "trail"
+     ]
+    },
+    "compileMs": [
+     198,
+     198
+    ],
+    "identical": true,
+    "recipeBytes": 10149,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "swing",
+      "kind": null,
+      "frames": 7,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/vortex.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 16,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "aura",
+      "burst"
+     ]
+    },
+    "compileMs": [
+     257,
+     254
+    ],
+    "identical": true,
+    "recipeBytes": 105249,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "vortex",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/water-spells.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 64,
+    "frames": 105,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "ring",
+      "star",
+      "stream"
+     ]
+    },
+    "compileMs": [
+     417,
+     437
+    ],
+    "identical": true,
+    "recipeBytes": 179868,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "projectile-0",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-45",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-90",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-135",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-180",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-225",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-270",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "projectile-315",
+      "kind": null,
+      "frames": 8,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed",
+       "turn"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "impact",
+      "kind": null,
+      "frames": 11,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "area",
+      "kind": null,
+      "frames": 20,
+      "keys": [
+       "cues",
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "buff",
+      "kind": null,
+      "frames": 10,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "seam",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   },
+   {
+    "example": "examples/water.fx.json",
+    "format": "pixelforge-fx",
+    "width": 64,
+    "height": 68,
+    "frames": 74,
+    "sourceUses": {
+     "joints": false,
+     "ropes": false,
+     "cloths": false,
+     "shapeLayers": [
+      "burst",
+      "ring",
+      "stream"
+     ]
+    },
+    "compileMs": [
+     315,
+     318
+    ],
+    "identical": true,
+    "recipeBytes": 149966,
+    "warnings": [],
+    "effects": [
+     {
+      "effect": "geyser",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "whip",
+      "kind": null,
+      "frames": 14,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "ring",
+      "kind": null,
+      "frames": 14,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "dome",
+      "kind": null,
+      "frames": 16,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     },
+     {
+      "effect": "curl",
+      "kind": null,
+      "frames": 14,
+      "keys": [
+       "culled",
+       "emitters",
+       "frames",
+       "layers",
+       "light",
+       "loop",
+       "operations",
+       "residue",
+       "seed"
+      ],
+      "bodies": null
+     }
+    ]
+   }
+  ]
+ }
+}
