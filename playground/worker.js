@@ -1,9 +1,12 @@
 import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
 import { encodePNG } from './png.js';
 import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
-import { engineAllowed, engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
+import { compareVersions, engineAllowed, engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
 
 let loadedBase, loadedEngine, cached;
+// These compilers shipped after the first supported engine. Import only the one this source needs, so older links
+// keep loading without requesting modules their release never shipped.
+const SOURCE_ENGINES = { wave: ['0.9.2', 'Wave'], crystal: ['0.13.0', 'Crystal'], powder: ['0.14.0', 'Falling-sand'], bodies: ['0.12.0', 'Rigid-body'] };
 const encoder = new TextEncoder();
 function checkText(text) {
   if (typeof text !== 'string') throw new Error('Expected recipe text.');
@@ -43,21 +46,27 @@ function checkedBase(version, override) {
   if (workerURL && !engineAllowed(base, workerURL)) throw new Error('This engine address is refused: use jsDelivr, this page’s origin, or loopback on both URLs.');
   return base;
 }
-async function engineFor(version, override) {
+async function engineFor(version, override, kind) {
   checkVersion(version);
-  const base = checkedBase(version, override);
-  if (loadedBase !== base) {
-    loadedEngine = null; loadedBase = null;
-    try { loadedEngine = await loadEngine(base); loadedBase = base; }
-    catch { throw new Error(override ? 'The local test engine could not be loaded. Check the engine URL and static server.' : `Pixelbolt ${version} could not be loaded from jsDelivr. Is it a published version?`); }
+  const required = SOURCE_ENGINES[kind];
+  if (required && compareVersions(version, required[0]) < 0) {
+    throw new Error(`${required[1]} sources need Pixelbolt ${required[0]} or newer; the engine selected here is ${version}.`);
   }
+  const base = checkedBase(version, override);
+  try {
+    if (loadedBase !== base) {
+      loadedEngine = null; loadedBase = null;
+      loadedEngine = await loadEngine(base); loadedBase = base;
+    }
+    if (required && !loadedEngine[kind]) Object.assign(loadedEngine, await loadEngine(base, [kind]));
+  } catch { throw new Error(override ? 'The local test engine could not be loaded. Check the engine URL and static server.' : `Pixelbolt ${version} could not be loaded from jsDelivr. Is it a published version?`); }
   return loadedEngine;
 }
 async function render(text, version, override) {
   const source = parse(text), base = engineBase(version, override);
-  recipeKind(source); assertInline(source);
+  const kind = recipeKind(source); assertInline(source);
   if (cached?.text === text && cached.version === version && cached.base === base) return cached;
-  const engine = await engineFor(version, override), result = renderRecipe(engine, source);
+  const engine = await engineFor(version, override, kind), result = renderRecipe(engine, source);
   cached = { text, version, base, source, engine, result, digest: await framesDigest(result.frames) };
   return cached;
 }
