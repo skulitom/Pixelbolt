@@ -101,6 +101,21 @@ test('a clip that will not fit is refused before it is simulated, naming the com
   assert.deepEqual(createPowderSequence(source, { fps: 25, seconds: 1 }).info.notes, ['24 of the clip\'s first 49 frames (20 ms each) fall between video frames at 25 frames per second and are not shown; give the clip a duration of at least one video frame (40 ms at this rate).']);
 });
 
+test('a repeated clip whose passes fall differently on the frame grid runs its grid once', () => {
+  // 40 frames of 17 ms at 6 frames a second, twice: the second pass shows frames 18, 28 and 38, which the first passed
+  // over on its way to 19, 29 and 39. Asked for in that order, each made the grid run again from its start, so the
+  // work grew with the loops and passed the limit the clip was checked against.
+  const source = { ...pour(40), clips: { fall: { frames: 40, every: 2, duration: 17 } } }, options = { fps: 6, loops: 2 };
+  const made = createPowderSequence(source, options), recipe = renderProject(compilePowder(source).recipe);
+  assert.deepEqual(pngs(made.files), pngs(createSequence(recipe, options).files));
+  assert.deepEqual([made.info.frames, made.info.differentFrames, made.info.loop.loops], [9, 8, 2]);
+  // The grid stands at the latest frame shown (39, step 78), not at the last one asked for (38).
+  assert.equal(made.info.ended.step, 78);
+  // Frames kept for a later pass are bounded: 800 of 300×300 are more than a repeated clip keeps.
+  const large = { ...sandboxSource(300, 300, [{ material: 'sand', rect: [100, 0, 100, 20] }]), name: 'large', clips: { fall: { frames: 800, every: 1, duration: 20 } } };
+  assert.throws(() => createPowderSequence(large, { fps: 50, loops: 2 }), error => error.path === 'sequence.loops' && /a repeated clip keeps the frames a later pass shows, at most 67,108,864 grid pixels of different frames; this one shows 800 of 300×300\. Leave loops out/.test(error.message));
+});
+
 test('pixelbolt sequence writes a long falling-sand clip from its source, a frame at a time', async t => {
   const dir = await temp(t, 'powder-sequence'), file = path.join(dir, 'pour.powder.json'), out = path.join(dir, 'frames');
   await writeFile(file, JSON.stringify(pour()));
