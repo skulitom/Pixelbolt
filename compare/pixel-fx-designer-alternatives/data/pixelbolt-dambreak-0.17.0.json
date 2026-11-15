@@ -1,0 +1,60 @@
+{
+ "recipe": {
+  "width": 64,
+  "height": 36,
+  "frames": 70
+ },
+ "metadata": {
+  "particles": 1600,
+  "steps": 140,
+  "liquidPixelsFirst": 400,
+  "liquidPixelsLast": 396,
+  "liquidPixelsMin": 392,
+  "liquidPixelsMax": 407,
+  "boxFirst": [
+   0,
+   10,
+   19,
+   29
+  ],
+  "boxLast": [
+   0,
+   22,
+   63,
+   29
+  ]
+ },
+ "allFrames": {
+  "framesChecked": 70,
+  "liquidCellsInsideSolidMax": 0,
+  "liquidCellsMin": 392,
+  "liquidCellsMax": 407,
+  "stampsSeen": [
+   "basin",
+   "rock",
+   "plank"
+  ]
+ },
+ "lastFrame": {
+  "liquidCells": 396,
+  "liquidCellsInsideSolid": 0,
+  "rock": {
+   "solidCells": 30,
+   "x0": 40,
+   "x1": 48,
+   "liquidTouching": {
+    "left": 4,
+    "right": 4,
+    "above": 9
+   },
+   "liquidColumnsLeftOfRock": 40,
+   "liquidColumnsRightOfRock": 15
+  },
+  "basinTopRow": 30,
+  "rowAboveBasin": {
+   "freeCells": 55,
+   "liquidCells": 55
+  },
+  "columnsWithLiquid": 64
+ }
+}

@@ -1,0 +1,82 @@
+Searches for the Pixel FX Designer alternatives page, run on 15 November 2026 (UK time) with an AI agent's
+web search tool (Claude Code's WebSearch, standard mode). Each list is the first 10 results the tool returned,
+in its order, as rank, title (as the tool gave it) and URL. The last line of each says whether any
+skulitom.github.io or github.com/skulitom page appeared among all the results the tool returned (up to 20).
+
+1. "Pixel FX Designer alternatives"
+ 1. gamefromscratch.com | https://gamefromscratch.com/?p=10398
+ 2. itch.io | https://itch.io/post/12655775
+ 3. itch.io | https://itch.io/post/12658521
+ 4. Pixel FX Designer | https://dekudeals.com/items/pixel-fx-designer
+ 5. store.steampowered.com | https://store.steampowered.com/app/939360?l=german
+ 6. store.steampowered.com | https://store.steampowered.com/app/939360?l=swedish
+ 7. Pixel Fx Designer | https://codemanu.itch.io/particle-fx-designer/purchase
+ 8. store.steampowered.com | https://store.steampowered.com/sub/815848
+ 9. store.steampowered.com | https://store.steampowered.com/app/939360
+10. Pixel Fx Designer | https://codemanu.itch.io/particle-fx-designer
+ skulitom.github.io or github.com/skulitom: none (19 results returned).
+ The tool's summary named SpriteMancer, BlastFX and CodeManu's FX Tools bundle, plus general animation tools.
+
+2. "pixel art fire smoke explosion effect generator free"
+ 1. avskum.itch.io | https://avskum.itch.io/effectforge
+ 2. A downloadable asset pack for Windows, macOS, Linux, and Android | https://bdragon1727.itch.io/free-smoke-fx-pixel-2
+ 3. A downloadable asset pack | https://xyezawr.itch.io/free
+ 4. pixel simulations | https://itch.io/games-like/723375/pixel-simulations
+ 5. pixel explosion vfx pack | https://rs-pixel-store.itch.io/pixel-explosion-vfx-pack
+ 6. explosion effect | https://itch.io/games-like/2291875/explosion-effect
+ 7. pixel art particle effect generator | https://www.pixa.com/create/pixel-art-particle-effect-generator
+ 8. wills pixel explosions | https://itch.io/games-like/259198/wills-pixel-explosions
+ 9. Explosions Pack 9 | https://ansimuz.itch.io/explosions-pack-9
+10. 20 VFX 2D hand-drawn explosions with fire, smoke, water, lava, and pixel art effects for epic animations | https://sinbadstudios.itch.io/20-2d-hand-drawn-explosions-with-fire-smoke-water-lava-and-pixel-art-effects-for
+ skulitom.github.io or github.com/skulitom: none (15 results returned).
+ The tool's summary named EffectForge and Pixa's generator as generators; the rest were asset packs.
+
+3. "codixel pixel art effects claude skill"
+ 1. mankidev codixel | https://www.skillsdirectory.com/skills/mankidev-codixel
+ 2. AI Pulse · Under the Radar | https://enterprisedna.co/resources/ai-pulse/ai-pulse-2026-10-31-pixel-art-effects-packaged-as-skill
+ 3. pixel art snap | https://mcpmarket.com/tools/skills/pixel-art-snap
+ 4. Claude-skills ascii-pixel-art | https://openskillindex.com/skills/ckorhonen-claude-skills-ascii-pixel-art
+ 5. pixel art studio | https://skills.cat/skills/gamezxz/pixel-art-studio
+ 6. Pixel Art Studio logo | https://www.typingmind.com/skills/anastasiyaw-pixel-art-studio
+ 7. pixel art skills claude code guide | https://skillselion.com/guides/pixel-art-skills-claude-code-guide
+ 8. pixel art professional | https://tomevault.io/tome/willibrandon/pixel-plugin/pixel-art-professional
+ 9. Learn-skills.dev pixel-art-sprites | https://openskillindex.com/skills/neversight-learn-skills-dev-pixel-art-sprites
+10. ascii pixel art | https://skills.sh/ckorhonen/claude-skills/ascii-pixel-art
+ skulitom.github.io or github.com/skulitom: none (17 results returned).
+ Codixel's own repository (github.com/mankidev/codixel) was not among the results; the tool's summary
+ described it from a skills directory (which gave 128 stars) and also named PixelFX (patch-gg/pixelfx).
+
+4. "claude code skill pixel art particle effects"
+ 1. pixel art | https://vibehackers.io/claude-code/skills/pixel-art
+ 2. AI Pulse · Under the Radar | https://enterprisedna.co/resources/ai-pulse/ai-pulse-2026-10-31-pixel-art-effects-packaged-as-skill
+ 3. pixel art studio | https://skills.cat/skills/gamezxz/pixel-art-studio
+ 4. pixel art skills claude code guide | https://skillselion.com/guides/pixel-art-skills-claude-code-guide
+ 5. built in pixel art | https://claudemarket.ai/skills/hermes/built-in-pixel-art
+ 6. patch gg pixelfx | https://www.skillsdirectory.com/skills/patch-gg-pixelfx
+ 7. From claude-code-config | https://www.claudepluginhub.com/skills/anastasiyaw-claude-code-config/pixel-art-studio
+ 8. mankidev codixel | https://www.skillsdirectory.com/skills/mankidev-codixel
+ 9. Learn-skills.dev pixel-art-sprites | https://openskillindex.com/skills/neversight-learn-skills-dev-pixel-art-sprites
+10. pixel art animator | https://www.mdskills.ai/ja/skills/pixel-art-animator
+ skulitom.github.io or github.com/skulitom: none (17 results returned).
+ The tool's summary led with PixelFX (patch-gg/pixelfx, a library of coded pixel-art effects with a Claude
+ Code skill), then a Hermes pixel-art skill, a particle-systems skill, Pixel Art Studio and an Aseprite plugin.
+
+5. "pixel art vfx tool for AI agents"
+ 1. pixelforge 1 | https://mcpmarket.com/server/pixelforge-1
+ 2. Open Source AI Voice Agent SDK | https://www.videosdk.live/ai-apps/pixelfy
+ 3. Agent One: now live on invideo | https://invideo.io/make/pixel-art-generator/
+ 4. llms full | https://www.pixellab.ai/llms-full.txt
+ 5. A downloadable tool | https://soingamedev.itch.io/sprite-dust
+ 6. Pixel art AI generator | https://morphic.com/resources/images/pixel-art-ai
+ 7. pixel art ai | https://morphic.com/es/resources/images/pixel-art-ai
+ 8. Back to Sorceress | https://sorceress.games/pages/pixel-snap
+ 9. www.pixellab.ai | https://www.pixellab.ai/llms.txt
+10. pixel art vfx generator | https://llamagen.ai/el/pixel-game-tools/pixel-art-vfx-generator
+ skulitom.github.io or github.com/skulitom: none (19 results returned).
+ Result 1 is a third-party MCP directory page for "PixelForge" (the tool's summary: "transforms textual JSON
+ recipes into rich pixel art and sprite animations"), which appears to be Pixelbolt under its earlier name;
+ it is not one of our pages, and we did not open it. The summary also named pixelfx (patch-gg) and Sprite Dust
+ (an MIT pixel-art and VFX editor that lists MCP).
+
+Summary: no skulitom.github.io or github.com/skulitom page appeared in any of the five searches. Codixel's
+repository did not appear either; skills directories did.
