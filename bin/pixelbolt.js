@@ -91,7 +91,7 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt scene <scene.json> --image view.png [--time ms] [--view color|grayscale|depth] [--scale 1-16]
                     [--guides json]        One enlarged view at one time; depth lists who covers whom
   pixelbolt overlay <recipe.json> --changes edits.json --out fixes.json [--selections regions.json]
-  pixelbolt import <image.png> --out recipe.json [--atlas atlas.json | --frame 24x24 [--padding 1]] [--name imported]
+  pixelbolt import <image.png> --out recipe.json [--atlas atlas.json | --frame 24x24 [--padding 1] [--frames N]] [--name imported]
                                            A sprite sheet becomes its frames by its atlas, or by the size of one frame
                     [--embedded]         Recover the recipe carried inside the PNG instead of its pixels
   pixelbolt preview [file.json] [--port N] [--open]
@@ -172,7 +172,7 @@ const OPTIONS = {
   autotile: ['out', 'metadata', 'preview', 'force'],
   scene: ['out', 'force', 'image', 'time', 'view', 'scale', 'guides', 'list-files', 'embed-recipe'],
   overlay: ['changes', 'selections', 'out', 'force'],
-  import: ['out', 'name', 'atlas', 'frame', 'padding', 'metadata', 'force', 'embedded'],
+  import: ['out', 'name', 'atlas', 'frame', 'padding', 'frames', 'metadata', 'force', 'embedded'],
   presets: ['full', 'find', 'out', 'force'],
   share: [],
   skill: ['project', 'dir', 'force']
@@ -541,14 +541,14 @@ try {
     } else if (command === 'import' && options.embedded) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error('import requires --out <new.json>');
       if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
-      for (const key of ['name', 'atlas', 'frame', 'padding', 'metadata']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --embedded`);
+      for (const key of ['name', 'atlas', 'frame', 'padding', 'frames', 'metadata']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --embedded`);
       const embedded = await readEmbeddedRecipe(await readFile(positional[0]));
       if (!embedded) throw new Error('This PNG carries no Pixelbolt recipe; drop --embedded to import its pixels.');
       const { version, kind, recipe } = embedded;
       print({ ok: true, ...await writeOutputs({ recipe: [options.out, formatJSON(recipe), '--out'] }, options.force, filesRead(positional[0])), embedded: { version, kind } });
     } else if (['compile', 'autotile', 'overlay', 'import'].includes(command)) {
       if (!options.out || !/\.json$/i.test(options.out)) throw new Error(`${command} requires --out <new.json>`);
-      let value, metadata, input, warnings, preview, resized, kept, made;
+      let value, metadata, input, warnings, preview, resized, kept, made, notes;
       if (command === 'compile' || command === 'autotile') {
         input = await readResolved(positional[0]);
         // A preset may be a plain recipe, which compiles to itself.
@@ -590,8 +590,8 @@ try {
       } else {
         if (!positional[0] || positional[0] === '-') throw new Error('import requires a PNG filename');
         const imported = importPNG(await readFile(positional[0]), { name: options.name ?? nameFromFile(positional[0]), atlas: options.atlas ? await readProject(options.atlas, '--atlas') : undefined,
-          ...(options.frame !== undefined && { frame: readSize(options.frame, '--frame') }), ...(options.padding !== undefined && { padding: Number(options.padding) }) });
-        value = imported.recipe; metadata = imported.provenance;
+          ...(options.frame !== undefined && { frame: readSize(options.frame, '--frame') }), ...(options.padding !== undefined && { padding: Number(options.padding) }), ...(options.frames !== undefined && { frames: Number(options.frames) }) });
+        value = imported.recipe; metadata = imported.provenance; notes = imported.notes;
       }
       if (options.metadata && !/\.json$/i.test(options.metadata)) throw new Error('--metadata must name a .json file');
       if (options.preview !== undefined && !/\.png$/i.test(options.preview)) throw new Error('--preview must name a new .png file');
@@ -610,7 +610,7 @@ try {
       // said what a map needs.
       const unsaved = metadata && !options.metadata && reviewed && !tilemap;
       const margins = resized && resizeMargins(resized, [made.width, made.height]);
-      print({ ok: true, ...written, ...made, ...(margins && { margins }), ...(kept && { kept }), ...(tilemap && { tilemap }), ...(warnings && { warnings }), ...((unsaved || (preview && !options.preview)) && { hint: [unsaved && `The metadata (what review tools read: pose contacts, joints, loop seams, tile masks) was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
+      print({ ok: true, ...written, ...made, ...(margins && { margins }), ...(kept && { kept }), ...(tilemap && { tilemap }), ...(warnings && { warnings }), ...(notes && { notes }), ...((unsaved || (preview && !options.preview)) && { hint: [unsaved && `The metadata (what review tools read: pose contacts, joints, loop seams, tile masks) was not saved; pass --metadata <new.json> to keep it.`, preview && !options.preview && 'Pass --preview <new.png> to see every tile in a test map.'].filter(Boolean).join(' ') }), ...(input && referenced(input)) });
     } else if (command === 'scene' && options.image !== undefined) {
       // One image at one time, as MCP pixel_scene returns it: color, grayscale or depth, with optional guides.
       if (options.out !== undefined || options['embed-recipe']) throw new Error('scene --image writes one image; export a bundle with --out instead');

@@ -27,7 +27,7 @@ Begin from the closest row. A preset or example compiled as it ships needs nothi
 | A sprite lit by an engine's 2D lights (a normal map) | `help craft "Lit sprites"`: a `pixelforge-normals` source beside the recipe, then `render <recipe> --normal <source> --out <directory>` writes the sheet, its normal map and a Godot CanvasTexture |
 | An icon, a hand-drawn sprite, a caption | `examples/coin.json`, `examples/forest-spirit.json`, `examples/caption.json`, or `init <recipe.json>`. Read `help quickstart` first: it is the recipe format. |
 | A colour variant of something that exists (team colours, an enemy, a season) | Compile it, then a `patch` of its palette; `inspect <recipe> --palette` says which keys colour what. `help craft "Colour variants"` |
-| An existing PNG to edit | `import <image.png> --out <recipe.json>`; a sheet of frames takes `--frame 24x24` (the size of one frame) or `--atlas <atlas.json>` when it has one |
+| An existing PNG to edit | `import <image.png> --out <recipe.json>`; a sheet takes `--frame 24x24` (`--frames N` keeps blanks) or `--atlas <atlas.json>` (Aseprite array/hash too) |
 | Frames for a video editor | `sequence <recipe> --out <directory> --fps 30 --size 1080p --seconds 4` (a source file works too; compile a preset to a recipe first): numbered PNGs with alpha, enlarged by a whole number, and a README with the ffmpeg command for one video file. `help craft "Exports and delivery"` |
 
 ## The loop

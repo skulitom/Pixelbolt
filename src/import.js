@@ -4,7 +4,7 @@
 import { inflateSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { crc32 } from './png.js';
-import { PixelError, renderProject } from './core.js';
+import { PixelError, renderProject, isObject } from './core.js';
 
 const fail = message => { throw new PixelError('import', message); };
 // Per PNG colour type: its name, samples per pixel and allowed bit depths.
@@ -111,37 +111,83 @@ export function decodePNG(bytes) {
   return { data, width, height, encoding: { colorType: COLOR_TYPES[type][0], bitDepth: depth, tRNS: Boolean(trns) } };
 }
 // A sheet of equal frames laid out in a grid, when no atlas came with it: the frames in reading order, as an atlas
-// would list them, leaving out cells with nothing drawn. `padding` is the empty border round each frame (Pixelbolt's
-// own sheets have 1); left out, it is the smallest from 0 to 8 that makes the frames tile the image exactly.
-function gridFrames(image, name, frame, padding) {
+// would list them, leaving out cells with nothing drawn unless a count keeps the first cells, empty ones included.
+// `padding` is the empty border round each frame (Pixelbolt's own sheets have 1); left out, it is the smallest from
+// 0 to 8 that makes the frames tile the image exactly.
+function gridFrames(image, name, frame, padding, count) {
   const [w, h] = frame ?? [];
   if (!Array.isArray(frame) || frame.length !== 2 || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > 256 || h > 256) fail('frame: expected the size of one frame, [width, height], each 1–256');
   if (padding !== undefined && (!Number.isInteger(padding) || padding < 0 || padding > 64)) fail('padding: expected the empty border round each frame, a whole number from 0 to 64');
+  if (count !== undefined && (!Number.isInteger(count) || count < 1 || count > 256)) fail('frames: expected a whole number from 1 to 256');
   const fits = p => image.width % (w + 2 * p) === 0 && image.height % (h + 2 * p) === 0;
   const border = padding ?? [0, 1, 2, 3, 4, 5, 6, 7, 8].find(fits);
   if (border === undefined || !fits(border)) fail(`frame: frames of ${w}×${h}${padding === undefined ? ' with a border of 0 to 8 pixels' : ` with a border of ${padding}`} do not tile the ${image.width}×${image.height} image; give the padding its sheet has, or its atlas`);
   const frames = {}, columns = image.width / (w + 2 * border), rows = image.height / (h + 2 * border);
+  const cells = columns * rows; let empty = 0, kept = 0;
+  if (count > cells) fail(`frames: expected at most ${cells}; the sheet has ${cells} cells`);
   for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
     const x = column * (w + 2 * border) + border, y = row * (h + 2 * border) + border;
     let drawn = false;
     for (let py = 0; py < h && !drawn; py++) for (let px = 0; px < w; px++) if (image.data[((y + py) * image.width + x + px) * 4 + 3]) { drawn = true; break; }
-    if (drawn) frames[`${name}-${Object.keys(frames).length}`] = { frame: { x, y, w, h }, duration: 100 };
+    if (!drawn) empty++;
+    if (count === undefined ? drawn : row * columns + column < count) frames[`${name}-${kept++}`] = { frame: { x, y, w, h }, duration: 100 };
   }
-  return { frames };
+  return { frames, ...(kept < cells && { grid: { cells, kept, empty } }) };
 }
 
-export function importPNG(bytes, { name = 'imported', atlas, frame, padding } = {}) {
+// core's name() is private: keep its spelling and reserved-filename rules here, plus uniqueness ignoring case.
+// Repair in source order, so native atlas names survive byte for byte and collisions get stable suffixes. A name
+// loses one file extension (.aseprite, .png: 1 to 8 letters or digits with a letter among them, so "walk.1" keeps
+// its number), then every run of other characters becomes a hyphen.
+function importName(value, taken) {
+  const reserved = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+  if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(value) || reserved.test(value) || taken.has(value.toLowerCase())) {
+    value = value.replace(/\.(?=[0-9]*[A-Za-z])[A-Za-z0-9]{1,8}$/, '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '');
+    if (!/^[A-Za-z]/.test(value)) value = `frame-${value}`;
+    value = value.slice(0, 64).replace(/-+$/, '');
+    if (reserved.test(value)) value += '-frame';
+  }
+  const stem = value;
+  for (let i = 2; taken.has(value.toLowerCase()); i++) { const suffix = `-${i}`; value = stem.slice(0, 64 - suffix.length) + suffix; }
+  taken.add(value.toLowerCase()); return value;
+}
+
+function atlasAnimations(atlas, frames, name, renamed) {
+  if (atlas?.animations) return Object.fromEntries(Object.entries(atlas.animations).map(([key, value]) => [key, { frames: Array.isArray(value.frames) ? value.frames.map(frame => renamed.get(frame) ?? frame) : value.frames, loop: value.loop ?? true }]));
+  const tags = atlas?.meta?.frameTags, loop = atlas?.meta?.pixelfx?.loop !== false, taken = new Set();
+  if (tags !== undefined && !Array.isArray(tags)) fail('atlas.meta.frameTags: expected an array of frame tags');
+  if (!tags?.length) return loop ? undefined : { [name]: { frames: frames.map(frame => frame.name), loop: false } };
+  return Object.fromEntries(tags.map((tag, i) => {
+    const p = `atlas.meta.frameTags[${i}]`;
+    if (typeof tag?.name !== 'string') fail(`${p}.name: expected the animation's name`);
+    for (const key of ['from', 'to']) if (!Number.isInteger(tag[key]) || tag[key] < 0 || tag[key] >= frames.length) fail(`${p}.${key}: expected a whole number from 0 to ${frames.length - 1}`);
+    if (tag.from > tag.to) fail(`${p}.from: expected a frame no later than to`);
+    const direction = tag.direction === undefined ? 'forward' : tag.direction;
+    if (!['forward', 'reverse', 'pingpong'].includes(direction)) fail(`${p}.direction: ${JSON.stringify(direction)} is not supported; use forward, reverse or pingpong`);
+    const sequence = frames.slice(tag.from, tag.to + 1).map(frame => frame.name);
+    if (direction === 'reverse') sequence.reverse();
+    return [importName(tag.name, taken), { frames: sequence, ...(direction === 'pingpong' && { direction }), loop }];
+  }));
+}
+
+export function importPNG(bytes, { name = 'imported', atlas, frame, padding, frames: count } = {}) {
   const image = decodePNG(bytes), keyed = image.encoding.tRNS;
+  if (count !== undefined && atlas !== undefined) fail('frames: an atlas already says which frames to keep; give frame instead');
   if (frame !== undefined && atlas !== undefined) fail('frame: an atlas already says where the frames are; give one or the other');
   if (frame === undefined && padding !== undefined) fail('padding: goes with frame, the size of one frame in a sheet');
-  if (frame !== undefined) atlas = gridFrames(image, name, frame, padding);
+  if (frame === undefined && count !== undefined) fail('frames: goes with frame, the size of one frame in a sheet');
+  if (frame !== undefined) atlas = gridFrames(image, name, frame, padding, count);
   if (atlas !== undefined && (!atlas || typeof atlas !== 'object' || Array.isArray(atlas) || String(atlas.meta?.scale ?? '1') !== '1')) fail('atlas must use unscaled source pixels (meta.scale 1)');
-  const entries = atlas?.frames ? Object.entries(atlas.frames) : [['idle', { frame: { x: 0, y: 0, w: image.width, h: image.height }, duration: 100 }]];
+  if (atlas?.frames && !isObject(atlas.frames) && !Array.isArray(atlas.frames)) fail('atlas.frames: expected an object or an array of named frames');
+  const entries = Array.isArray(atlas?.frames) ? atlas.frames.map((entry, i) => {
+    if (typeof entry?.filename !== 'string') fail(`atlas.frames[${i}].filename: expected the frame's name`);
+    return [entry.filename, entry];
+  }) : atlas?.frames ? Object.entries(atlas.frames) : [['idle', { frame: { x: 0, y: 0, w: image.width, h: image.height }, duration: 100 }]];
   if (!entries.length || entries.length > 256) fail('expected 1–256 atlas frames');
-  const first = entries[0][1].frame, width = first?.w, height = first?.h;
+  const first = entries[0][1]?.frame, width = first?.w, height = first?.h, taken = new Set();
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > 256 || height > 256 || width * height * entries.length > 4194304) fail('frames must fit the 256×256 canvas and total 4,194,304 source pixel limit');
   const frames = entries.map(([frameName, entry]) => {
-    const rect = entry.frame;
+    const rect = entry?.frame;
     if (!rect || !Number.isInteger(rect.x) || !Number.isInteger(rect.y) || rect.x < 0 || rect.y < 0 || rect.w !== width || rect.h !== height || rect.x + width > image.width || rect.y + height > image.height || entry.rotated || entry.trimmed) fail('atlas needs equal-size, untrimmed, unrotated rectangles inside the PNG');
     const pixels = [];
     for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
@@ -149,9 +195,9 @@ export function importPNG(bytes, { name = 'imported', atlas, frame, padding } = 
       // Under tRNS a fully transparent pixel shows its palette entry's or key's colour, not one of its own, so it
       // imports as plain transparency rather than a hidden-RGB correction on every empty pixel.
       const color = keyed && !image.data[at + 3] ? '#00000000' : '#' + [...image.data.subarray(at, at + 4)].map(v => v.toString(16).padStart(2, '0')).join('');
-      pixels.push({ x, y, color });
+      if (color !== '#00000000') pixels.push({ x, y, color });
     }
-    return { name: frameName, duration: entry.duration ?? 100, pixels };
+    return { name: importName(frameName, taken), duration: entry.duration ?? 100, pixels };
   });
   // Typical pixel art should return as compact, palette-editable grids, not thousands of literal overrides.
   // ASCII keys first, then single-code-unit Latin letters, up to the 256-colour palette limit.
@@ -173,7 +219,9 @@ export function importPNG(bytes, { name = 'imported', atlas, frame, padding } = 
     frame.ops = [{ op: 'grid', rows: rows.map(row => row.join('')) }];
     if (hidden.length) frame.pixels = hidden; else delete frame.pixels;
   }
-  const recipe = { version: 1, name, width, height, ...(compact && { palette: Object.fromEntries([...colors].map(([color, key]) => [key, color])) }), frames, ...(atlas?.animations && { animations: Object.fromEntries(Object.entries(atlas.animations).map(([key, value]) => [key, { frames: value.frames, loop: value.loop ?? true }])) }) };
+  const animations = atlasAnimations(atlas, frames, name, new Map(entries.map(([frameName], i) => [frameName, frames[i].name]))), pivot = atlas?.meta?.pixelfx?.pivot, grid = frame !== undefined && atlas.grid;
+  const anchor = Array.isArray(pivot) && pivot.length === 2 && [pivot[0], pivot[1]].every((v, i) => Number.isInteger(v) && v >= 0 && v <= [width, height][i]) ? pivot : undefined;
+  const recipe = { version: 1, name, width, height, ...(compact && { palette: Object.fromEntries([...colors].map(([color, key]) => [key, color])) }), frames, ...(animations && { animations }), ...(anchor && { anchor }) };
   renderProject(recipe);
-  return { recipe, provenance: { format: 'pixelforge-raster-import', version: 1, sha256: createHash('sha256').update(bytes).digest('hex'), width: image.width, height: image.height, encoding: image.encoding, lossless: true, ...(keyed && { hiddenRGB: 'not kept: tRNS gives a fully transparent pixel its palette entry\'s or key\'s colour' }), representation: compact ? 'palette grids with hidden-RGB corrections' : 'exact RGBA pixels', authoritative: 'The imported recipe. Original drawing operations cannot be reconstructed; rebuild generators must explicitly incorporate it.' } };
+  return { recipe, provenance: { format: 'pixelforge-raster-import', version: 1, sha256: createHash('sha256').update(bytes).digest('hex'), width: image.width, height: image.height, encoding: image.encoding, lossless: true, ...(keyed && { hiddenRGB: 'not kept: tRNS gives a fully transparent pixel its palette entry\'s or key\'s colour' }), representation: compact ? 'palette grids with hidden-RGB corrections' : 'exact RGBA pixels', authoritative: 'The imported recipe. Original drawing operations cannot be reconstructed; rebuild generators must explicitly incorporate it.', ...(grid && { grid }) }, ...(grid && count === undefined && { notes: [`${grid.empty} of ${grid.cells} cells are empty and were left out; frames N (--frames N) keeps the first N cells, empty ones included (${grid.cells} keeps them all)`] }) };
 }
