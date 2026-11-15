@@ -39,6 +39,20 @@ test('APNG contains exact durations, loop flag and source replacement', () => {
   assert.deepEqual(controls.map(c => c.data[25]), [0,0]);
   assert.deepEqual([...inflateSync(chunks.find(c => c.type === 'fdAT').data.subarray(4))], [0,0,0,0,0]);
 });
+test('a half-transparent glow keeps its colour in the sheet, the frame PNGs and the animated PNG: alpha is straight, never premultiplied', async () => {
+  // A premultiplied PNG stores colour × alpha: a 50% #ffcc00 glow would read (128, 102, 0, 128) and draw dark in an
+  // engine that expects straight alpha, as Godot's and Unity's sprite shaders do. Two translucent layers mix the same
+  // way: the colour under them is their weighted average, never scaled by the alpha that goes with it.
+  const glow = { version: 1, name: 'glow', width: 2, height: 1, sheet: { scale: 2, padding: 0 }, palette: { g: '#ffcc0080', s: '#ff660040' }, frames: [{ name: 'lit', duration: 100, ops: [{ op: 'grid', rows: ['gs'] }] }, { name: 'mixed', duration: 100, layers: [{ name: 'under', ops: [{ op: 'grid', rows: ['g.'] }] }, { name: 'over', ops: [{ op: 'grid', rows: ['s.'] }] }] }] };
+  const bundle = await createBundle(glow), images = name => pngChunks(bundle.files.get(name)).filter(c => c.type === 'IDAT' || c.type === 'fdAT').map(c => [...inflateSync(c.type === 'fdAT' ? c.data.subarray(4) : c.data)]);
+  // Each canvas pixel is two sheet pixels wide and two rows tall (scale 2); every row starts with filter byte 0.
+  const twice = cells => { const row = [0, ...cells.flatMap(cell => [...cell, ...cell])]; return [...row, ...row]; };
+  const lit = [[255, 204, 0, 128], [255, 102, 0, 64]], mixed = [[255, 163, 0, 160], [0, 0, 0, 0]];
+  assert.deepEqual(images('glow.png'), [twice([...lit, ...mixed])]);
+  assert.deepEqual(images('frames/lit.png'), [twice(lit)]);
+  assert.deepEqual(images('frames/mixed.png'), [twice(mixed)]);
+  assert.deepEqual(images('animations/default.png'), [twice(lit), twice(mixed)]);
+});
 test('animated PNGs give frames of 10 ms or less 11 ms, which browsers play as written, and say so', async () => {
   // Browsers play an animation frame of 10 ms or less at 100 ms, so a 5 ms spark flickered ten times too slowly.
   const quick = { ...tiny, frames: [{ ...tiny.frames[0], duration: 5 }, { ...tiny.frames[1], duration: 11 }], animations: { once: { frames: ['a', 'b', 'a'], loop: false } } };
