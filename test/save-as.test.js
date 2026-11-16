@@ -291,6 +291,26 @@ test('pixel_render saveAs protects the files behind a revision a normals source 
   assert.match(info.error, /palette\.json is a palette or asset file this recipe references/);
 });
 
+test('pixel_render saveAs never writes over the files a normal pass was made from, a revision\'s included (P-171)', async t => {
+  const project = await temp(t), mcp = await session(t, project);
+  // spirit.json is a recipe, which overwrite would replace, and the shared palette file of the revision below.
+  await writeFile(path.join(project, 'spirit.json'), JSON.stringify(spirit));
+  const validated = await mcp.call('pixel_validate', { project: { ...spirit, palette: { $ref: 'spirit.json' } } });
+  const normals = await mcp.call('pixel_compile', { source: { format: 'pixelforge-normals', version: 1, recipe: { revision: validated.info.revision } } });
+  assert.equal(normals.isError, false, JSON.stringify(normals.info));
+  // The colour project is inline and reads no file; the normal pass names spirit.json as a file, through a revision,
+  // or as a revision made from it.
+  for (const normal of [{ format: 'pixelforge-normals', version: 1, recipe: 'spirit.json' }, { format: 'pixelforge-normals', version: 1, recipe: { revision: validated.info.revision } }, { revision: normals.info.revision }]) {
+    const { isError, info } = await mcp.render({ project: spirit, normal, saveAs: { recipe: 'spirit.json' }, overwrite: true });
+    assert.deepEqual([isError, info.path], [true, 'saveAs.recipe'], JSON.stringify(normal) + JSON.stringify(info));
+    assert.match(info.error, /spirit\.json is a palette or asset file this recipe references/);
+  }
+  assert.deepEqual(JSON.parse(await readFile(path.join(project, 'spirit.json'), 'utf8')), spirit);
+  // Another name still saves beside the lit export.
+  const saved = await mcp.render({ project: spirit, normal: { revision: normals.info.revision }, saveAs: { recipe: 'spirit-copy.json' } });
+  assert.equal(saved.isError, false, JSON.stringify(saved.info));
+});
+
 test('pixel_render saveAs puts replaced files back when a later one can\'t be replaced', { skip: process.platform !== 'win32' }, async t => {
   const project = await temp(t), mcp = await session(t, project);
   await writeFile(path.join(project, 'a.png'), 'old a');

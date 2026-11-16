@@ -425,11 +425,14 @@ export function createToolRunner({ directory, root, version }) {
         if (options.scale !== undefined && (!Number.isInteger(options.scale) || options.scale < 1 || options.scale > 16)) throw new PixelError('scale', 'expected a whole number from 1 to 16: how many times to enlarge every exported pixel');
         const from = await recipeFrom(spec, revision), { resolved, sources } = from, recipe = options.scale === undefined ? from.recipe : { ...from.recipe, sheet: { ...from.recipe.sheet, scale: options.scale } };
         // normal: a normal recipe (inline or a revision) or the source that derives one, exported beside the colour sheet.
-        let normal;
+        // Its files, and those behind any revision it names, are inputs too: saveAs never writes over them.
+        let normal, normalSources = [];
         if (options.normal !== undefined) {
           if (!isObject(options.normal)) throw new PixelError('normal', 'expected a normal recipe, {"revision": id} or a pixelforge-normals source');
-          const given = options.normal.revision !== undefined && options.normal.version === undefined ? await read(options.normal.revision) : (await resolveReferences(options.normal, { baseDir: root, root, revisions: read })).document;
+          const referenced = [], revision = id => { referenced.push(id); return read(id); };
+          const { document: given, files = [] } = options.normal.revision !== undefined && options.normal.version === undefined ? { document: await revision(options.normal.revision) } : await resolveReferences(options.normal, { baseDir: root, root, revisions: revision });
           normal = given?.format === 'pixelforge-normals' ? COMPILERS['pixelforge-normals'](given).recipe : given;
+          normalSources = [...relativeToRoot(files), ...(await Promise.all(referenced.map(sourcesOf))).flat()];
         }
         const bundle = await createBundle(recipe, { normal }), view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
         // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
@@ -444,7 +447,7 @@ export function createToolRunner({ directory, root, version }) {
         }
         // Every PNG this call writes carries the recipe, video frames included.
         if (embedRecipe === true) for (const files of [bundle, frames]) if (files) await embedBundleRecipe(files, recipe, version);
-        const saves = await planSaves(saveAs, overwrite, bundle, gifs, animation, frames, sources);
+        const saves = await planSaves(saveAs, overwrite, bundle, gifs, animation, frames, [...sources, ...normalSources]);
         const savedRevision = await keep(recipe, sources), out = await newFolder(bundle.project.name);
         const files = await writeBundle(bundle, out);
         if (frames) await writeBundle(frames, path.join(out, 'sequence'));
