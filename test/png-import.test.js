@@ -210,10 +210,41 @@ test('an atlas with Pixelbolt-style animations follows the frames whose names we
   assert.deepEqual(renderProject(recipe).animations.walk.frames, [0, 1, 0]);
 });
 
+test('a name that is valid as written keeps its spelling, whatever is repaired before it', () => {
+  // "torch 0" repairs to torch-0, which a later frame already has: the repaired one moves aside.
+  const order = names => { const { bytes, atlas } = atlasPNG(names); return importPNG(bytes, { atlas }).recipe.frames.map(frame => frame.name); };
+  assert.deepEqual(order(['torch 0', 'torch-0']), ['torch-0-2', 'torch-0']);
+  // Of names that differ only in letter case the first keeps its own, and the next keeps its spelling before its number.
+  assert.deepEqual(order(['valid__', 'VALID__', 'valid']), ['valid__', 'VALID__-2', 'valid']);
+  assert.deepEqual(order(['a', 'a', 'A', 'a 2', 'a-2']), ['a', 'a-3', 'A-4', 'a-2-2', 'a-2']);
+  // Tags are named the same way.
+  const { bytes, atlas } = atlasPNG(['a', 'b']);
+  atlas.meta = { frameTags: [{ name: 'run 1', from: 0, to: 1 }, { name: 'run-1', from: 0, to: 0 }] };
+  assert.deepEqual(Object.keys(importPNG(bytes, { atlas }).recipe.animations), ['run-1-2', 'run-1']);
+});
+
+test('a repeated filename keeps its first frame in a Pixelbolt-style animation, and that table is checked and named as frames are', () => {
+  const { bytes, atlas } = atlasPNG(['a', 'a', 'b c']);
+  atlas.animations = { 'walk loop': { frames: ['a', 'b c'] } };
+  const { recipe } = importPNG(bytes, { atlas });
+  assert.deepEqual(recipe.frames.map(frame => frame.name), ['a', 'a-2', 'b-c']);
+  assert.deepEqual(recipe.animations, { 'walk-loop': { frames: ['a', 'b-c'], loop: true } });
+  for (const value of [null, 3, 'a', []]) assert.throws(() => importPNG(bytes, { atlas: { ...atlas, animations: { x: value } } }), /import: atlas\.animations\.x: expected \{ frames, loop \}/);
+});
+
+test('pingpong_reverse plays the run back and forth from its far end', () => {
+  const { bytes, atlas } = atlasPNG(['a', 'b', 'c']);
+  atlas.meta = { frameTags: [{ name: 'sway', from: 0, to: 2, direction: 'pingpong_reverse' }] };
+  const { recipe } = importPNG(bytes, { atlas });
+  assert.deepEqual(recipe.animations, { sway: { frames: ['c', 'b', 'a'], direction: 'pingpong', loop: true } });
+  // Aseprite plays c, b, a, b and round again.
+  assert.deepEqual(renderProject(recipe).animations.sway.frames, [2, 1, 0, 1]);
+});
+
 test('every reserved filename is repaired before case-insensitive collision suffixes', () => {
   const names = ['con', 'PRN', 'aux', 'NuL', ...Array.from({ length: 9 }, (_, i) => `com${i + 1}`), ...Array.from({ length: 9 }, (_, i) => `LPT${i + 1}`), 'con-frame', 'CON', 'com0', 'lpt10'];
   const { bytes, atlas } = atlasPNG(names), { recipe } = importPNG(bytes, { atlas });
-  assert.deepEqual(recipe.frames.map(frame => frame.name), [...names.slice(0, 22).map(name => `${name}-frame`), 'con-frame-2', 'CON-frame-3', 'com0', 'lpt10']);
+  assert.deepEqual(recipe.frames.map(frame => frame.name), ['con-frame-2', ...names.slice(1, 22).map(name => `${name}-frame`), 'con-frame', 'CON-frame-3', 'com0', 'lpt10']);
   assert.equal(renderProject(recipe).frames.length, names.length);
 });
 
@@ -247,7 +278,7 @@ test('invalid frameTags refuse the offending path and unsupported direction plai
     [{ from: -1 }, /atlas\.meta\.frameTags\[0\]\.from: expected.*0.*1/],
     [{ from: 0.5 }, /atlas\.meta\.frameTags\[0\]\.from: expected.*whole number/],
     [{ to: '1' }, /atlas\.meta\.frameTags\[0\]\.to: expected.*whole number/],
-    ...['pingpong_reverse', 'other', null].map(direction => [{ direction }, `atlas.meta.frameTags[0].direction: ${JSON.stringify(direction)} is not supported; use forward, reverse or pingpong`])
+    ...['pingpong-reverse', 'other', null].map(direction => [{ direction }, `atlas.meta.frameTags[0].direction: ${JSON.stringify(direction)} is not supported; use forward, reverse, pingpong or pingpong_reverse`])
   ]) {
     const bad = { ...atlas, meta: { frameTags: [{ name: 'run', from: 0, to: 1, ...change }] } };
     assert.throws(() => importPNG(bytes, { atlas: bad }), typeof message === 'string' ? error => error.message.endsWith(message) : message);
@@ -301,6 +332,13 @@ test('grid import reports omitted empty cells and can retain exactly the first N
   assert.deepEqual(drawn[3].data, new Uint8ClampedArray(16));
   assert.deepEqual(renderProject(importPNG(bytes, { ...options, frames: 2 }).recipe).frames, drawn.slice(0, 2));
   assert.throws(() => importPNG(bytes, { ...options, frames: 5 }), /frames:.*sheet has 4 cells/);
+  // The note is for a default import that left cells out: a sheet with every cell drawn says nothing, nor does a count.
+  assert.deepEqual([imported.notes.length, kept.notes, importPNG(bytes, { ...options, frames: 3 }).notes], [1, undefined, undefined]);
+  const full = importPNG(encodePNG(new Uint8ClampedArray(4 * 2 * 4).fill(255), 4, 2), { name: 'full', frame: [2, 2] });
+  assert.deepEqual([full.recipe.frames.length, full.provenance.grid, full.notes], [2, undefined, undefined]);
+  // A sheet of more cells than a recipe holds frames is not told to keep them all.
+  const dots = new Uint8ClampedArray(20 * 20 * 4); dots.set([9, 9, 9, 255], 0);
+  assert.deepEqual(importPNG(encodePNG(dots, 20, 20), { name: 'dots', frame: [1, 1], padding: 0 }).notes, ['399 of 400 cells are empty and were left out; frames N (--frames N) keeps the first N cells, empty ones included, up to 256']);
   for (const frames of [0, 257, 1.5, '4', null]) assert.throws(() => importPNG(bytes, { ...options, frames }), /frames: expected.*1.*256/);
   assert.throws(() => importPNG(bytes, { frames: 4 }), /frames: goes with frame/);
   assert.throws(() => importPNG(bytes, { frames: 4, atlas: { frames: {} } }), /frames:.*atlas/);
