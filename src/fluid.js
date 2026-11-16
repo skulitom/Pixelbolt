@@ -4610,9 +4610,9 @@ function fluidForces(run, crowd) {
     let K = 0, Kx = 0, Ky = 0, Ku = 0, Kv = 0, Kr = 0, T = 0, faces = 0, held = 0, px = 0, py = 0, pt = 0;
     for (const c of inside) {
       const i = c % W, j = (c - i) / W, key = across ? j : i;
-      if (!lanes.has(key)) lanes.set(key, { wet: false, n: 0, x: 0, y: 0 });
+      if (!lanes.has(key)) lanes.set(key, { wet: false, n: 0 });
       const lane = lanes.get(key);
-      lane.n++; lane.x += i + 0.5; lane.y += j + 0.5;
+      lane.n++;
       for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const ni = i + di, nj = j + dj;
         if (ni < 0 || nj < 0 || ni >= W || nj >= H) continue;

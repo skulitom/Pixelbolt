@@ -489,7 +489,7 @@ function readEffect(effect, path, context) {
   // on a joint or is moved by keys plays once and ends somewhere else.
   const loop = effect.loop === undefined ? false : boolean(effect.loop, `${path}.loop`);
   if (loop) {
-    const once = !cloths.length ? 'no cloth' : bodies.some(b => !b.fixed) ? 'a body that is not fixed' : bodies.some(b => b.vx || b.vy || b.spin) ? 'a fixed body that moves' : joints.length || ropes.length ? 'joints or ropes'
+    const once = !cloths.length ? 'no cloth' : bodies.some(b => !b.fixed) ? 'a body that is not fixed' : bodies.some(b => b.vx || b.vy || b.spin) ? 'a fixed body that moves' : joints.length ? 'joints or ropes'
       : territory || pickups.length || events.length || strikes.length ? 'a territory, pickups, events or strikes' : cloths.some(cloth => cloth.pins.some(pin => pin.keys)) ? 'a pin moved by keys' : frames < 4 ? 'fewer than 4 frames' : null;
     if (once) fail(`${path}.loop`, `a loop is cloth in a wind, pinned to points or to fixed bodies that stay still, and its wind repeats every \`frames\` frames (4 or more); this effect has ${once}, which plays once. Leave loop out`);
   }
@@ -1672,7 +1672,7 @@ function uprightRows(b) {
 // its outline and frame stay closed lines), cached by picture and angle. A circle's picture rolls in place instead
 // (craft.js rollRows): its outline as drawn, the inside turned.
 const sprites = new Map();
-function sprite(rows, degrees, round = false) {
+function sprite(rows, degrees, round) {
   const key = `${rows.join('/')}@${degrees}${round ? 'o' : ''}`;
   if (!sprites.has(key)) bounded(sprites).set(key, round ? { rows: rollRows(rows, degrees), origin: [0, 0] } : turnRows(rows, degrees));
   return sprites.get(key);

@@ -46,7 +46,7 @@ function chunks(png) {
   return found;
 }
 const filterPNG = (png, keep) => Buffer.concat([png.subarray(0, 8), ...chunks(png).filter(keep).map(chunk => chunk.bytes)]);
-async function checkEmbedded(png, original, recipe, kind = 'project') {
+async function checkEmbedded(png, original, recipe, kind) {
   const embedded = await readEmbeddedRecipe(png);
   assert.equal(embedded.version, version); assert.equal(embedded.kind, kind);
   assert.equal(JSON.stringify(embedded.recipe), JSON.stringify(recipe));

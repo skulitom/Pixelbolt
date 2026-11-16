@@ -74,7 +74,7 @@ export async function measurePresets(jobs, { concurrency, deadline }, measure) {
     }
   }
   try {
-    if (!jobs.length || !open()) return results;
+    if (!jobs.length) return results;
     const lanes = [];
     if (!serial) {
       try {

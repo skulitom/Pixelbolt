@@ -246,7 +246,7 @@ export function correctJoints(joints) {
         if (a && !solid(a)) { a.x += nx * moveA; a.y += ny * moveA; }
         if (b && !solid(b)) { b.x -= nx * moveB; b.y -= ny * moveB; }
       }
-    } else if (error < 0 && type !== 'rope') {
+    } else if (error < 0) {
       const correction = clamp(-error * 0.5, 0, MAX_CORRECTION);
       const ma = invMass(a), mb = invMass(b), total = ma + mb;
       if (total > 0) {

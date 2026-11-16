@@ -23,7 +23,7 @@ async function session(t) {
   t.after(async () => { input.end(); await running; assert.ok(directory.startsWith(base + path.sep)); await rm(directory, { recursive: true, force: true }); });
   const send = message => input.write(JSON.stringify({ jsonrpc: '2.0', ...message }) + '\n');
   const request = (method, params) => { const id = ++next, answered = new Promise(resolve => waiting.set(id, resolve)); send({ id, method, params }); return { id, answered }; };
-  const modern = (method, params = {}, capabilities = {}) => request(method, { ...params, _meta: meta(capabilities) }).answered;
+  const modern = (method, params, capabilities = {}) => request(method, { ...params, _meta: meta(capabilities) }).answered;
   const init = (capabilities = {}) => request('initialize', { protocolVersion: '2025-11-25', capabilities, clientInfo: { name: 'test', version: '1' } }).answered;
   return { received, request, modern, init };
 }

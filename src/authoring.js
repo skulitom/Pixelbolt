@@ -67,9 +67,6 @@ function checkView(view, path, part, palette) {
 function structuralPart(part, source, path) {
   const kind = part.bone !== undefined ? 'bone' : 'mass', shape = part[kind], p = `${path}.${kind}`;
   fields(shape, kind === 'bone' ? ['length', 'width', 'ramp', 'base', 'outline', 'caps', 'snap'] : ['size', 'ramp', 'base', 'outline', 'flat'], p, ['outline']);
-  const integer = (value, at, low, high) => {
-    if (!Number.isInteger(value) || value < low || value > high) fail(at, `expected an integer from ${low} to ${high}`);
-  };
   if (kind === 'bone') {
     integer(shape.length, `${p}.length`, 1, 64);
     if (!Array.isArray(shape.width) || ![2, 3].includes(shape.width.length)) fail(`${p}.width`, 'expected [start, end] or [start, middle, end]');
@@ -819,7 +816,7 @@ export function compileAutotile(source) {
   });
   if (source.animation !== undefined && (typeof source.animation !== 'string' || !source.animation.includes('{mask}'))) fail('autotile.animation', 'expected an animation name template containing {mask}');
   // Variants that differ only in their palette or how long they show are the frames of one tile, not tiles to scatter.
-  const cycled = source.animation === undefined && Array.isArray(source.variants) && source.variants.length > 1 && source.variants.every(variant => variant !== null && typeof variant === 'object' && (variant.palette !== undefined || variant.duration !== undefined) && Object.keys(variant).every(key => ['name', 'palette', 'duration'].includes(key)));
+  const cycled = source.animation === undefined && Array.isArray(source.variants) && source.variants.length > 1 && source.variants.every(variant => (variant.palette !== undefined || variant.duration !== undefined) && Object.keys(variant).every(key => ['name', 'palette', 'duration'].includes(key)));
   if (source.preview !== undefined) {
     fields(source.preview, ['background', 'rows'], 'autotile.preview');
     if (source.preview.background !== undefined) parseColor(source.preview.background, palette, 'autotile.preview.background');
