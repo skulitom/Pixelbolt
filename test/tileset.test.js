@@ -168,6 +168,16 @@ test('autotile collision and weights are checked, and the test map mixes variant
   assert.equal(Object.keys(many.palette).length, 254);
   assert.deepEqual(many.frames[0].ops.at(-1).legend['#'].templates, ['template', 'template-as-b', 'template-as-c', 'template-as-d']);
   assert.equal(renderProject(many).frames.length, 1);
+  // A variant may name a palette key longer than one character, which no row can hold: the copy draws that key's
+  // colour from a spare key, shared with a variant that gives the same colour (the copy named the whole key in every
+  // cell, so the test map failed to render: P-170).
+  const named = compileAutotile({ format: 'pixelforge-autotile', version: 1, name: 'named', tile: 2, mode: 'cardinal', palette: { a: '#f00', blue: '#00f' }, template: Array(6).fill('aaaa'), frame: 'tile-{mask}-{variant}',
+    variants: [{ name: 'base' }, { name: 'blue', palette: { a: 'blue' } }, { name: 'navy', palette: { a: '#00f' } }] }).preview;
+  assert.deepEqual(named.frames[0].ops.at(-1).legend['#'].templates, ['template', 'template-as-blue', 'template-as-navy']);
+  assert.equal(Object.keys(named.palette).length, 3);
+  const pixels = renderProject(named).frames[0].data, seen = new Set();
+  for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3]) seen.add(pixels.slice(i, i + 3).join());
+  assert.ok(seen.has('255,0,0') && seen.has('0,0,255'), [...seen].join(' '));
   // The frames of an animation are one tile at different moments, so they stay one template.
   const cycled = compileAutotile({ ...ledgeSource, animation: 'ledge-{mask}' }).preview.frames[0].ops.at(-1).legend['#'];
   assert.deepEqual(cycled, { template: 'template', autotile: 'blob' });

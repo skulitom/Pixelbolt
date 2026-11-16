@@ -870,8 +870,10 @@ export function compileAutotile(source) {
     const base = symbolOf(variant);
     if (variant.palette === undefined || source.animation !== undefined) return base;
     const swap = new Map(), fresh = [];
-    for (const [key, value] of Object.entries(variant.palette)) {
-      if (Object.hasOwn(palette, value)) { swap.set(key, value); continue; }
+    for (const [key, named] of Object.entries(variant.palette)) {
+      // A key of one character can stand in a row; a longer key name draws its colour from a spare key.
+      if (Object.hasOwn(palette, named) && named.length === 1) { swap.set(key, named); continue; }
+      const value = Object.hasOwn(palette, named) ? palette[named] : named;
       if (!spares.has(value)) {
         while (Object.hasOwn(shown.palette, String.fromCharCode(spare))) spare++;
         spares.set(value, String.fromCharCode(spare++)); fresh.push(value);
