@@ -145,6 +145,8 @@ function checkStudioWorkflow(text) {
   assert.equal(jobs.itch.match(/^    if: (.*)$/m)?.[1],
     "${{ !cancelled() && needs.plan.outputs.go == 'true' && needs.report.result == 'success' && (needs.upload.result == 'success' || (needs.upload.result == 'skipped' && needs.plan.outputs.dry_run == 'true')) }}");
   assert.match(jobs.itch, /^    runs-on: ubuntu-latest\n    timeout-minutes: 10\n/m);
+  // Real pushes share one queue; the release lookup is a step, so it runs after the wait.
+  assert.ok(jobs.itch.includes("    concurrency:\n      group: studio-itch-${{ needs.plan.outputs.dry_run == 'false' && 'push' || format('dry-{0}', github.run_id) }}\n      cancel-in-progress: false\n"));
   assert.equal(jobs.itch.match(/    permissions:\n((?:      [^\n]+\n)+)/)?.[1], '      contents: read\n');
   assert.match(jobs.itch, /    env:\n      VERSION: \$\{\{ needs.plan.outputs.version \}\}\n      ARCHIVE: artifacts\/studio-win-x64\/PixelboltStudio-\$\{\{ needs.plan.outputs.version \}\}-win-x64.zip\n      ITCH_TARGET: skulitom\/pixelforge-studio:windows\n    steps:/);
   const steps = jobs.itch.split(/\n(?=      - )/).slice(1);
@@ -163,17 +165,21 @@ function checkStudioWorkflow(text) {
   assert.doesNotMatch(butler, /LATEST/i);
   assert.doesNotMatch(jobs.itch, /\|\s*(?:ba)?sh\b/i);
   assert.match(listing, /"\$RUNNER_TEMP\/butler\/butler" push --dry-run "\$ARCHIVE" "\$ITCH_TARGET" --userversion "\$VERSION"$/m);
-  assert.doesNotMatch(listing, /env:|BUTLER_API_KEY|secrets\./);
+  assert.doesNotMatch(listing, /env:|BUTLER_API_KEY|\bsecrets\b/);
   assert.match(key, /id: key\n/);
   assert.match(key, /if \[\[ -n "\$BUTLER_API_KEY" \]\]; then\n            echo 'present=true' >> "\$GITHUB_OUTPUT"\n          else\n            echo 'present=false' >> "\$GITHUB_OUTPUT"\n          fi/);
   const secret = '          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}\n';
   for (const step of [key, push]) assert.ok(step.includes('        env:\n' + secret + '        run: |\n'));
-  assert.equal([...text.matchAll(/secrets\./g)].length, 2, 'only the presence and push steps receive secrets');
+  // Any spelling counts: secrets.NAME, secrets['NAME'] and toJSON(secrets) all hand a step the key.
+  const bare = text.split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
+  assert.equal([...bare.matchAll(/\bsecrets\b/g)].length, 2, 'only the presence and push steps receive secrets');
+  // A failed push must show red.
+  assert.doesNotMatch(jobs.itch, /continue-on-error:/);
   assert.equal([...text.matchAll(/^\s*BUTLER_API_KEY:/gm)].length, 2);
   assert.doesNotMatch(text, /set\s+-[a-z]*x\b|(?:echo|printf)[^\n]*\$[({]?BUTLER_API_KEY/);
   assert.match(decide, /id: decide\n/);
   assert.match(decide, /GH_TOKEN: \$\{\{ github.token \}\}\n          DRY_RUN: \$\{\{ needs.plan.outputs.dry_run \}\}\n          KEY_PRESENT: \$\{\{ steps.key.outputs.present \}\}\n          TAG: \$\{\{ needs.plan.outputs.tag \}\}/);
-  assert.doesNotMatch(decide, /secrets\.|env\.BUTLER_API_KEY/);
+  assert.doesNotMatch(decide, /\bsecrets\b|env\.BUTLER_API_KEY/);
   assert.match(decide, /execFileSync\('gh', \['api', 'repos\/skulitom\/Pixelbolt\/releases\/latest'\]/);
   assert.match(push, /        if: steps.decide.outputs.push == 'true'\n/);
   assert.match(push, /"\$RUNNER_TEMP\/butler\/butler" push "\$ARCHIVE" "\$ITCH_TARGET" --userversion "\$VERSION" --if-changed\n          "\$RUNNER_TEMP\/butler\/butler" status "\$ITCH_TARGET"\n/);
@@ -207,6 +213,12 @@ test('Studio itch.io upload guards reject unsafe workflow mutations', async () =
     ['key in listing', text.replace('      - name: List the itch.io build\n        shell: bash\n', '      - name: List the itch.io build\n        shell: bash\n        env:\n' + secret)],
     ['key at job level', text.replace(/(  itch:[\s\S]*?    env:\n)/, '$1' + secret.replace(/^    /, ''))],
     ['duplicate builds', text.replace(' --if-changed', '')],
+    ['every secret in the archive check', text.replace('          TAG: ${{ needs.plan.outputs.tag }}\n          SHA: ${{ needs.plan.outputs.sha }}\n', '          TAG: ${{ needs.plan.outputs.tag }}\n          SHA: ${{ needs.plan.outputs.sha }}\n          ALL: ${{ toJSON(secrets) }}\n')],
+    ['key by index in the decision', text.replace('          KEY_PRESENT: ${{ steps.key.outputs.present }}\n', "          KEY_PRESENT: ${{ steps.key.outputs.present }}\n          K: ${{ secrets['BUTLER_API_KEY'] }}\n")],
+    ['a failed push shown green', text.replace("        if: steps.decide.outputs.push == 'true'\n", "        if: steps.decide.outputs.push == 'true'\n        continue-on-error: true\n")],
+    ['pushes not serialized', text.replace(/    concurrency:\n      group: studio-itch-[^\n]+\n      cancel-in-progress: false\n/, '')],
+    ['a queue per tag', text.replace("'push' || format('dry-{0}', github.run_id)", "needs.plan.outputs.tag || format('dry-{0}', github.run_id)")],
+    ['a newer push cancels a running one', text.replace(/(group: studio-itch-[^\n]+\n      cancel-in-progress:) false/, '$1 true')],
     ['another old name', text + '\n# pixelforge\n'],
     ['second legacy target', text + '\n# ' + ITCH_TARGET + '\n']
   ];

@@ -429,6 +429,11 @@ jobs:
     name: Studio on itch.io
     needs: [plan, report, upload]
     if: ${{ !cancelled() && needs.plan.outputs.go == 'true' && needs.report.result == 'success' && (needs.upload.result == 'success' || (needs.upload.result == 'skipped' && needs.plan.outputs.dry_run == 'true')) }}
+    # Real pushes take turns across tags, and each decides only once its turn has come: two releases close
+    # together cannot leave the older build on the page. A dry run pushes nothing, so it waits for no one.
+    concurrency:
+      group: studio-itch-${{ needs.plan.outputs.dry_run == 'false' && 'push' || format('dry-{0}', github.run_id) }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

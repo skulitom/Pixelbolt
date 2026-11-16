@@ -1,9 +1,10 @@
 // Check the shipped inline workflow, including its public artifact boundary, without network access.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm, readdir } from 'node:fs/promises';
 import { writeFileSync, appendFileSync } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 
@@ -71,10 +72,13 @@ concurrency:
   assert.match(upload, /^      - name: Upload\n/);
   for (const step of [read, upload]) assert.ok(step.includes(gate), 'later steps require the key');
   assert.equal([...code.matchAll(/^\s*if:/gm)].length, 3, 'one job and two step guards');
-  assert.equal([...text.matchAll(/secrets\./g)].length, 2, 'only two secret references');
+  // Any spelling counts: secrets.NAME, secrets['NAME'] and toJSON(secrets) all hand a step the key.
+  assert.equal([...code.matchAll(/\bsecrets\b/g)].length, 2, 'only two secret references');
+  assert.doesNotMatch(code, /continue-on-error:/, 'a failed read shows red');
+  assert.ok(code.includes(".slice(0, 200)"), 'the public error line is bounded');
   assert.equal([...code.matchAll(/^\s*env:/gm)].length, 2, 'only two step environments');
   for (const step of [presence, read]) assert.ok(step.includes(secretEnv), 'key only in step env');
-  assert.doesNotMatch(upload, /\benv:|secrets\./, 'upload has no secret or environment');
+  assert.doesNotMatch(upload, /\benv:|\bsecrets\b/, 'upload has no secret or environment');
 
   const runs = [...code.matchAll(/        run: \|\n((?:          .*\n|\n)+)/g)].map(match => match[1]);
   assert.equal(runs.length, 2, 'two inline scripts');
@@ -117,6 +121,12 @@ test('store numbers has the required guards and the Studio upload pin', async ()
   assert.equal(checked.action, studio.match(/uses: (actions\/upload-artifact@[a-f0-9]{40})/)[1]);
 });
 
+// A sixth workflow would be outside both workflow tests: name it here once a test holds it.
+test('every workflow file is one that a test holds', async () => {
+  const files = (await readdir(path.join(root, '.github/workflows'))).sort();
+  assert.deepEqual(files, ['publish-registry.yml', 'release.yml', 'store-numbers.yml', 'studio-assets.yml', 'test.yml']);
+});
+
 test('store numbers structure rejects unsafe mutations', async t => {
   const text = await workflow();
   const mutants = [
@@ -127,6 +137,9 @@ test('store numbers structure rejects unsafe mutations', async t => {
     ['read gate removed', text.replace(gate, '')],
     ['upload gate removed', text.replace('      - name: Upload\n' + gate, '      - name: Upload\n')],
     ['secret in upload', text.replace('      - name: Upload\n', '      - name: Upload\n' + secretEnv)],
+    ['every secret in the read step', text.replace(secretEnv + "        run: |\n          set -euo pipefail\n          node", secretEnv + "          ALL: ${{ toJSON(secrets) }}\n        run: |\n          set -euo pipefail\n          node")],
+    ['a failed read shown green', text.replace('      - name: Read and reduce\n', '      - name: Read and reduce\n        continue-on-error: true\n')],
+    ['unbounded public error line', text.replace('.slice(0, 200)', '')],
     ['retention removed', text.replace('          retention-days: 7\n', '')],
     ['retention above seven', text.replace('retention-days: 7', 'retention-days: 8')],
     ['legacy key URL', text.replace(endpoint, 'https://itch.io/api/1/KEY/my-games')],
@@ -225,12 +238,8 @@ async function numbersScript() {
 }
 
 async function runNumbers(t, scenario) {
-  const folder = await mkdtemp(path.join(root, '.store-numbers-test-'));
-  t.after(async () => {
-    const relative = path.relative(root, folder);
-    assert.ok(relative && !relative.startsWith('..') && !path.isAbsolute(relative));
-    await rm(folder, { recursive: true, force: true });
-  });
+  const folder = await mkdtemp(path.join(os.tmpdir(), 'store-numbers-test-'));
+  t.after(() => rm(folder, { recursive: true, force: true }));
   const env = { BUTLER_API_KEY: secret, GITHUB_OUTPUT: path.join(folder, 'output'), GITHUB_STEP_SUMMARY: path.join(folder, 'summary') };
   await writeFile(env.GITHUB_OUTPUT, '');
   await writeFile(env.GITHUB_STEP_SUMMARY, '');
@@ -295,6 +304,7 @@ for (const [name, scenario, errorLine] of [
   ['empty errors field', { body: { errors: [], games: [] } }, 'HTTP 200: API reported errors'],
   ['malformed errors field', { body: { errors: { buyer_email: secret }, games: [] } }, 'HTTP 200: API reported errors'],
   ['escaped error strings', { body: { errors: [`invalid ${secret}\r\n::notice::100%`] } }, 'HTTP 200: invalid [redacted]%0D%0A::notice::100%25'],
+  ['a very long error string', { body: { errors: ['x'.repeat(500)] } }, 'HTTP 200: ' + 'x'.repeat(200)],
   ['request failure', { requestError: true }, 'HTTP unavailable: request failed']
 ]) test(`inline reader fails safely: ${name}`, async t => {
   const result = await runNumbers(t, scenario);

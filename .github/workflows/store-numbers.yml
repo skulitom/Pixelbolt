@@ -100,7 +100,8 @@ jobs:
           } catch {
             // Library exceptions may contain request details, so keep them out of public logs.
             const key = process.env.BUTLER_API_KEY;
-            const detail = key ? problem.replaceAll(key, '[redacted]') : problem;
+            // The line is public: redact first, then bound what a reply can put in it.
+            const detail = (key ? problem.replaceAll(key, '[redacted]') : problem).slice(0, 200);
             console.error(`::error::HTTP ${status}: ${detail.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`);
             process.exitCode = 1;
           }
