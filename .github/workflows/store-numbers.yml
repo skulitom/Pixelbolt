@@ -1,0 +1,116 @@
+# Saves views and downloads for the owner's free, public itch.io pages.
+# Any signed-in GitHub user can read the artifact, so purchases and
+# earnings are left out, and so are paid pages (their downloads track
+# sales), drafts and other accounts' pages.
+# With no key, the job passes and reads nothing.
+name: Store numbers
+
+on:
+  schedule:
+    - cron: '37 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: store-numbers
+  cancel-in-progress: false
+
+jobs:
+  itch:
+    name: itch.io views and downloads
+    if: github.repository == 'skulitom/Pixelbolt'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Is the key there?
+        id: key
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$BUTLER_API_KEY" ]]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo '::notice::BUTLER_API_KEY is not set, so no itch.io numbers were read.'
+          fi
+
+      - name: Read and reduce
+        if: steps.key.outputs.present == 'true'
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { writeFileSync, appendFileSync } from 'node:fs';
+          // BEGIN numbers checks
+          const source = 'https://api.itch.io/profile/games';
+          export function publicNumbers(games, readAt) {
+            const pages = [];
+            for (const game of games) {
+              const page = typeof game?.url === 'string' && game.url.match(/^https?:\/\/skulitom\.itch\.io\/[a-z0-9_-]+\/?$/);
+              // A paid page's downloads follow its sales, so only free pages are saved.
+              if (game?.published !== true || game.min_price !== 0 || !page || page[0] !== game.url ||
+                  !Number.isSafeInteger(game.id) || game.id <= 0 || typeof game.title !== 'string' ||
+                  !Number.isSafeInteger(game.views_count) || game.views_count < 0 ||
+                  !Number.isSafeInteger(game.downloads_count) || game.downloads_count < 0) continue;
+              pages.push({
+                id: game.id,
+                url: game.url.replace(/^http:/, 'https:').replace(/\/$/, ''),
+                title: Array.from(game.title).slice(0, 120).join(''),
+                views: game.views_count,
+                downloads: game.downloads_count
+              });
+            }
+            pages.sort((a, b) => a.url < b.url ? -1 : a.url > b.url ? 1 : 0);
+            return { source, read_at: readAt, games: pages };
+          }
+          // END numbers checks
+          let status = 'unavailable', problem = 'request failed';
+          try {
+            const response = await fetch(source, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${process.env.BUTLER_API_KEY}` },
+              redirect: 'error',
+              signal: AbortSignal.timeout(30_000)
+            });
+            status = response.status;
+            problem = 'reply is not JSON';
+            const body = await response.json();
+            if (body !== null && typeof body === 'object' && Object.hasOwn(body, 'errors')) {
+              problem = Array.isArray(body.errors) ? body.errors.filter(error => typeof error === 'string').join('; ') : '';
+              problem ||= 'API reported errors';
+              throw new Error();
+            }
+            problem = 'request was rejected';
+            if (!response.ok) throw new Error();
+            problem = 'reply has no games array';
+            if (!Array.isArray(body?.games)) throw new Error();
+            const numbers = publicNumbers(body.games, new Date().toISOString());
+            problem = 'could not save numbers';
+            writeFileSync('itch-numbers.json', JSON.stringify(numbers, null, 2) + '\n', { flag: 'wx' });
+            // The summary is public too: it says how many pages were saved, not how many exist.
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, `Saved ${numbers.games.length} pages.\n`);
+          } catch {
+            // Library exceptions may contain request details, so keep them out of public logs.
+            const key = process.env.BUTLER_API_KEY;
+            const detail = key ? problem.replaceAll(key, '[redacted]') : problem;
+            console.error(`::error::HTTP ${status}: ${detail.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`);
+            process.exitCode = 1;
+          }
+          NODE
+
+      - name: Upload
+        if: steps.key.outputs.present == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: itch-numbers
+          path: itch-numbers.json
+          retention-days: 7
+          if-no-files-found: error
