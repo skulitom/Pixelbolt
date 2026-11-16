@@ -424,3 +424,119 @@ jobs:
             process.exitCode = 1;
           }
           NODE
+
+  itch:
+    name: Studio on itch.io
+    needs: [plan, report, upload]
+    if: ${{ !cancelled() && needs.plan.outputs.go == 'true' && needs.report.result == 'success' && (needs.upload.result == 'success' || (needs.upload.result == 'skipped' && needs.plan.outputs.dry_run == 'true')) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      ARCHIVE: artifacts/studio-win-x64/PixelboltStudio-${{ needs.plan.outputs.version }}-win-x64.zip
+      ITCH_TARGET: skulitom/pixelforge-studio:windows
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: studio-win-x64
+          path: artifacts/studio-win-x64
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: studio-sums
+          path: artifacts/studio-sums
+      - name: Match the Windows archive to the checked list
+        shell: bash
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+          SHA: ${{ needs.plan.outputs.sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          // BEGIN itch archive checks
+          export function checkWindowsArchive(version, tag, sha, bytes, list) {
+            const file = `PixelboltStudio-${version}-win-x64.zip`, lines = list.split(/\r?\n/);
+            if (!lines.includes(`# Tag: ${tag}`) || !lines.includes(`# Commit: ${sha}`)) throw new Error('Checksum list provenance differs');
+            const entries = lines.filter(line => !line.startsWith('#') && line.trim().split(/\s+/).at(-1) === file);
+            const hash = createHash('sha256').update(bytes).digest('hex');
+            if (entries.length !== 1 || entries[0] !== `${hash}  ${file}`) throw new Error(`Checksum list mismatch: ${file}`);
+          }
+          // END itch archive checks
+          const { VERSION: version, TAG: tag, SHA: sha, ARCHIVE: archive } = process.env;
+          checkWindowsArchive(version, tag, sha, readFileSync(archive),
+            readFileSync(`artifacts/studio-sums/PixelboltStudio-${version}-SHA256SUMS.txt`, 'utf8'));
+          NODE
+      - name: Get the pinned butler
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 https://broth.itch.zone/butler/linux-amd64/15.32.0/archive/default -o butler.zip
+          echo '2335971394ef6596f95ded0833e85ee28755e13761716ef4c91d6b11f69162f5  butler.zip' | sha256sum -c
+          unzip -q butler.zip -d butler
+          chmod +x butler/butler
+          version=$(butler/butler version)
+          printf '%s\n' "$version"
+          [[ "$version" == v15.32.0,* ]]
+      - name: List the itch.io build
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/butler/butler" push --dry-run "$ARCHIVE" "$ITCH_TARGET" --userversion "$VERSION"
+      # Keep the key out of the listing and the release lookup.
+      - name: Check whether the itch.io key is set
+        id: key
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$BUTLER_API_KEY" ]]; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Decide whether to push to itch.io
+        id: decide
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
+          KEY_PRESENT: ${{ steps.key.outputs.present }}
+          TAG: ${{ needs.plan.outputs.tag }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          // BEGIN itch checks
+          export function itchDecision({ dryRun, keyPresent, tag, latestTag }) {
+            if (dryRun !== 'false') return { push: false, reason: 'Dry run: nothing was pushed to itch.io.' };
+            if (!keyPresent) return { push: false, reason: 'BUTLER_API_KEY is not set, so nothing was pushed to itch.io.' };
+            if (!tag || !latestTag || tag !== latestTag) return { push: false, reason: 'Skipped: itch.io shows the last build pushed, so an older tag is not pushed over a newer one. Only the newest published release may be pushed.' };
+            return { push: true, reason: 'Newest published release: ready to push to itch.io.' };
+          }
+          // END itch checks
+          const env = process.env, dryRun = env.DRY_RUN, keyPresent = env.KEY_PRESENT === 'true';
+          let latestTag;
+          if (dryRun === 'false' && keyPresent) {
+            latestTag = JSON.parse(execFileSync('gh', ['api', 'repos/skulitom/Pixelbolt/releases/latest'], { encoding: 'utf8' })).tag_name;
+          }
+          const result = itchDecision({ dryRun, keyPresent, tag: env.TAG, latestTag });
+          appendFileSync(env.GITHUB_OUTPUT, `push=${result.push}\n`);
+          appendFileSync(env.GITHUB_STEP_SUMMARY, result.reason + '\n');
+          if (dryRun === 'false' && !keyPresent) console.log(`::notice::${result.reason}`);
+          NODE
+      - name: Push the checked Windows archive to itch.io
+        if: steps.decide.outputs.push == 'true'
+        shell: bash
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/butler/butler" push "$ARCHIVE" "$ITCH_TARGET" --userversion "$VERSION" --if-changed
+          "$RUNNER_TEMP/butler/butler" status "$ITCH_TARGET"
+          printf 'Studio on itch.io: %s, version %s.\n' "$ITCH_TARGET" "$VERSION" >> "$GITHUB_STEP_SUMMARY"

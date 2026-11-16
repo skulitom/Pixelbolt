@@ -83,6 +83,12 @@ test('the Gemini CLI extension runs its own copy of the server in the user\'s fo
   assert.match(await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8'), /^---\nname: /);
 });
 
+const ITCH_TARGET = 'skulitom/pixelforge-studio:windows';
+function checkWorkflowName(file, text) {
+  // The itch.io page keeps its address; only that one literal in the attachment workflow is allowed.
+  assert.doesNotMatch(file === 'studio-assets.yml' ? text.replace(ITCH_TARGET, '') : text, /pixelforge/i);
+}
+
 test('release workflow guards and assets use the renamed repository', async () => {
   let guards = 0;
   for (const file of ['release.yml', 'publish-registry.yml', 'test.yml', 'studio-assets.yml']) {
@@ -90,7 +96,9 @@ test('release workflow guards and assets use the renamed repository', async () =
     const matches = [...text.matchAll(/github\.repository\s*==\s*(['"])(.*?)\1/g)];
     assert.equal(matches.length, [...text.matchAll(/github\.repository\s*==/g)].length, file);
     for (const match of matches) { assert.equal(match[2], 'skulitom/Pixelbolt', file); guards++; }
-    assert.doesNotMatch(text, /pixelforge/i);
+    checkWorkflowName(file, text);
+    assert.throws(() => checkWorkflowName(file, text + '\n# pixelforge\n'));
+    assert.throws(() => checkWorkflowName(file, text + '\n# ' + ITCH_TARGET + '\n'));
     // The attachment workflow ships Studio archives, not the MCPB bundle.
     assert.ok(text.includes(file === 'studio-assets.yml' ? 'PixelboltStudio-' : 'pixelbolt.mcpb'), file);
     if (file === 'release.yml') { assert.ok(text.includes('name: pixelbolt-mcpb')); assert.ok(text.includes('--title "Pixelbolt $RELEASE_TAG"')); }
@@ -103,7 +111,7 @@ test('release workflow guards and assets use the renamed repository', async () =
 function checkStudioWorkflow(text) {
   const code = text.replaceAll('\r\n', '\n').split('\njobs:\n')[1].split('\n').filter(line => !/^\s*#/.test(line)).join('\n');
   const jobs = Object.fromEntries(code.split(/\n(?=  [a-z-]+:\n)/).map(block => [block.match(/^  ([a-z-]+):/)[1], block]));
-  assert.deepEqual(Object.keys(jobs), ['plan', 'build', 'report', 'upload']);
+  assert.deepEqual(Object.keys(jobs), ['plan', 'build', 'report', 'upload', 'itch']);
   assert.equal([...text.matchAll(/github\.repository\s*==/g)].length, 1);
   assert.match(jobs.plan, /if: github\.repository == 'skulitom\/Pixelbolt'/);
   assert.deepEqual(Object.entries(jobs).filter(([, block]) => /:\s*write\b/.test(block)).map(([name]) => name), ['upload']);
@@ -116,7 +124,8 @@ function checkStudioWorkflow(text) {
   // Fail closed: the upload runs only when the plan said in so many words that this is not a dry run.
   assert.match(jobs.upload, /if: needs\.plan\.outputs\.go == 'true' && needs\.plan\.outputs\.dry_run == 'false'\n/);
   assert.doesNotMatch(jobs.upload, /\bnpx\b|\bnpm\b|node\s+--test|verify-studio|qa-studio/);
-  assert.doesNotMatch(text, /--clobber|gh\s+release\s+(edit|delete)|['"]release['"],\s*['"](?:edit|delete)['"]|pixelforge/i);
+  checkWorkflowName('studio-assets.yml', text);
+  assert.doesNotMatch(text, /--clobber|gh\s+release\s+(edit|delete)|['"]release['"],\s*['"](?:edit|delete)['"]/i);
   for (const [, action] of text.matchAll(/uses:\s*(\S+)/g)) assert.match(action, /^actions\/[a-z/-]+@[a-f0-9]{40}$/);
   for (const [, block] of text.matchAll(/- uses: actions\/checkout@[^\n]+\n([\s\S]*?)(?=      - |\n  [a-z]|$)/g)) {
     assert.match(block, /ref: refs\/tags\//);
@@ -131,6 +140,44 @@ function checkStudioWorkflow(text) {
   assert.doesNotMatch(text, /actions\/cache\/save@|run-id:|github-token:/);
   for (const [, run] of text.matchAll(/        run: \|\n((?:          .*\n|\n)+)/g)) assert.doesNotMatch(run, /\$\{\{/);
   for (const [, step] of text.matchAll(/        shell: bash\n([\s\S]*?)(?=      - |\n  [a-z]|$)/g)) assert.match(step, /run: \|\n          set -euo pipefail\n/);
+  assert.match(jobs.itch, /^    name: Studio on itch.io\n/m);
+  assert.match(jobs.itch, /^    needs: \[plan, report, upload\]\n/m);
+  assert.equal(jobs.itch.match(/^    if: (.*)$/m)?.[1],
+    "${{ !cancelled() && needs.plan.outputs.go == 'true' && needs.report.result == 'success' && (needs.upload.result == 'success' || (needs.upload.result == 'skipped' && needs.plan.outputs.dry_run == 'true')) }}");
+  assert.match(jobs.itch, /^    runs-on: ubuntu-latest\n    timeout-minutes: 10\n/m);
+  assert.equal(jobs.itch.match(/    permissions:\n((?:      [^\n]+\n)+)/)?.[1], '      contents: read\n');
+  assert.match(jobs.itch, /    env:\n      VERSION: \$\{\{ needs.plan.outputs.version \}\}\n      ARCHIVE: artifacts\/studio-win-x64\/PixelboltStudio-\$\{\{ needs.plan.outputs.version \}\}-win-x64.zip\n      ITCH_TARGET: skulitom\/pixelforge-studio:windows\n    steps:/);
+  const steps = jobs.itch.split(/\n(?=      - )/).slice(1);
+  assert.equal(steps.length, 8);
+  const [windows, sums, archive, butler, listing, key, decide, push] = steps;
+  const download = 'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093';
+  for (const block of [jobs.report, jobs.upload, windows, sums]) assert.ok(block.includes('uses: ' + download));
+  assert.match(windows, /with:\n          name: studio-win-x64\n          path: artifacts\/studio-win-x64/);
+  assert.match(sums, /with:\n          name: studio-sums\n          path: artifacts\/studio-sums/);
+  for (const step of steps.slice(0, -1)) assert.doesNotMatch(step, /^\s*if:|continue-on-error:/m);
+  assert.match(archive, /TAG: \$\{\{ needs.plan.outputs.tag \}\}\n          SHA: \$\{\{ needs.plan.outputs.sha \}\}/);
+  assert.match(archive, /checkWindowsArchive\(version, tag, sha, readFileSync\(archive\),\n            readFileSync\(\x60artifacts\/studio-sums\/PixelboltStudio-\$\{version\}-SHA256SUMS.txt\x60, 'utf8'\)\)/);
+  assert.match(butler, /cd "\$RUNNER_TEMP"\n          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 https:\/\/broth.itch.zone\/butler\/linux-amd64\/15\.32\.0\/archive\/default -o butler.zip\n/);
+  assert.match(butler, /echo '2335971394ef6596f95ded0833e85ee28755e13761716ef4c91d6b11f69162f5  butler.zip' \| sha256sum -c\n          unzip -q butler.zip -d butler\n          chmod \+x butler\/butler\n/);
+  assert.match(butler, /version=\$\(butler\/butler version\)\n          printf '%s\\n' "\$version"\n          \[\[ "\$version" == v15\.32\.0,\* \]\]/);
+  assert.doesNotMatch(butler, /LATEST/i);
+  assert.doesNotMatch(jobs.itch, /\|\s*(?:ba)?sh\b/i);
+  assert.match(listing, /"\$RUNNER_TEMP\/butler\/butler" push --dry-run "\$ARCHIVE" "\$ITCH_TARGET" --userversion "\$VERSION"$/m);
+  assert.doesNotMatch(listing, /env:|BUTLER_API_KEY|secrets\./);
+  assert.match(key, /id: key\n/);
+  assert.match(key, /if \[\[ -n "\$BUTLER_API_KEY" \]\]; then\n            echo 'present=true' >> "\$GITHUB_OUTPUT"\n          else\n            echo 'present=false' >> "\$GITHUB_OUTPUT"\n          fi/);
+  const secret = '          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}\n';
+  for (const step of [key, push]) assert.ok(step.includes('        env:\n' + secret + '        run: |\n'));
+  assert.equal([...text.matchAll(/secrets\./g)].length, 2, 'only the presence and push steps receive secrets');
+  assert.equal([...text.matchAll(/^\s*BUTLER_API_KEY:/gm)].length, 2);
+  assert.doesNotMatch(text, /set\s+-[a-z]*x\b|(?:echo|printf)[^\n]*\$[({]?BUTLER_API_KEY/);
+  assert.match(decide, /id: decide\n/);
+  assert.match(decide, /GH_TOKEN: \$\{\{ github.token \}\}\n          DRY_RUN: \$\{\{ needs.plan.outputs.dry_run \}\}\n          KEY_PRESENT: \$\{\{ steps.key.outputs.present \}\}\n          TAG: \$\{\{ needs.plan.outputs.tag \}\}/);
+  assert.doesNotMatch(decide, /secrets\.|env\.BUTLER_API_KEY/);
+  assert.match(decide, /execFileSync\('gh', \['api', 'repos\/skulitom\/Pixelbolt\/releases\/latest'\]/);
+  assert.match(push, /        if: steps.decide.outputs.push == 'true'\n/);
+  assert.match(push, /"\$RUNNER_TEMP\/butler\/butler" push "\$ARCHIVE" "\$ITCH_TARGET" --userversion "\$VERSION" --if-changed\n          "\$RUNNER_TEMP\/butler\/butler" status "\$ITCH_TARGET"\n/);
+  assert.match(push, /printf 'Studio on itch.io: %s, version %s.\\n' "\$ITCH_TARGET" "\$VERSION" >> "\$GITHUB_STEP_SUMMARY"/);
   return jobs;
 }
 
@@ -146,6 +193,27 @@ test('Studio attachment rights, tag refs and dry runs are guarded, including aga
     text.replace("needs.plan.outputs.dry_run == 'false'", "needs.plan.outputs.dry_run != 'true'")
   ];
   for (const [i, mutant] of mutants.entries()) { assert.notEqual(mutant, text); assert.throws(() => checkStudioWorkflow(mutant), `mutant ${i + 1}`); }
+});
+
+test('Studio itch.io upload guards reject unsafe workflow mutations', async () => {
+  const text = await readFile(path.join(root, '.github/workflows/studio-assets.yml'), 'utf8');
+  checkStudioWorkflow(text);
+  const secret = '          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}\n';
+  const mutants = [
+    ['unguarded push', text.replace("        if: steps.decide.outputs.push == 'true'\n", '')],
+    ['missing upload success guard', text.replace("needs.upload.result == 'success' || ", '')],
+    ['moving butler version', text.replace('butler/linux-amd64/15.32.0/', 'butler/linux-amd64/LATEST/')],
+    ['unchecked butler download', text.replace(/^          echo '[a-f0-9]+  butler.zip' \| sha256sum -c\n/m, '')],
+    ['key in listing', text.replace('      - name: List the itch.io build\n        shell: bash\n', '      - name: List the itch.io build\n        shell: bash\n        env:\n' + secret)],
+    ['key at job level', text.replace(/(  itch:[\s\S]*?    env:\n)/, '$1' + secret.replace(/^    /, ''))],
+    ['duplicate builds', text.replace(' --if-changed', '')],
+    ['another old name', text + '\n# pixelforge\n'],
+    ['second legacy target', text + '\n# ' + ITCH_TARGET + '\n']
+  ];
+  for (const [name, mutant] of mutants) {
+    assert.notEqual(mutant, text, name);
+    assert.throws(() => checkStudioWorkflow(mutant), name);
+  }
 });
 
 // Exercise the actual inline code: older release tags do not carry a new helper script.
@@ -205,12 +273,101 @@ test('Studio records, deterministic checksum list and upload checks reject chang
   assert.throws(() => checkedFiles(version, tag, sha, read), /mismatch/);
 });
 
-async function studioScript(job) {
+async function studioScript(job, step) {
   const text = await readFile(path.join(root, '.github/workflows/studio-assets.yml'), 'utf8');
-  const block = checkStudioWorkflow(text)[job];
+  let block = checkStudioWorkflow(text)[job];
+  if (step) block = block.split(/\n(?=      - )/).find(part => part.includes(`        id: ${step}\n`));
   return block.split("node --input-type=module <<'NODE'\n")[1].split('\n          NODE')[0]
     .replace(/^          /gm, '').replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
 }
+
+test('Studio itch.io checks the Windows hash, its unique list entry and the planned provenance', async () => {
+  const { checkWindowsArchive } = await studioChecks('itch archive'), code = await studioScript('itch');
+  const version = '0.17.0', tag = 'v0.17.0', sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f';
+  const file = `PixelboltStudio-${version}-win-x64.zip`, archive = `artifacts/studio-win-x64/${file}`, bytes = Buffer.from('checked Windows zip');
+  const entry = `${sha256(bytes)}  ${file}`, list = `# Tag: ${tag}\n# Commit: ${sha}\n${entry}\n${'a'.repeat(64)}  PixelboltStudio-${version}-linux-x64.tar.gz\n`;
+  checkWindowsArchive(version, tag, sha, bytes, list);
+  checkWindowsArchive(version, tag, sha, bytes, list.replaceAll('\n', '\r\n'));
+  for (const [name, changedBytes, changedList] of [
+    ['changed archive', Buffer.from('different'), list],
+    ['wrong hash', bytes, list.replace(sha256(bytes), 'f'.repeat(64))],
+    ['missing entry', bytes, list.replace(entry + '\n', '')],
+    ['duplicate entry', bytes, list + entry + '\n'],
+    ['conflicting entry', bytes, list + `${'f'.repeat(64)}  ${file}\n`],
+    ['wrong tag', bytes, list.replace(tag, 'v0.16.0')],
+    ['wrong commit', bytes, list.replace(sha, 'a'.repeat(40))],
+    ['missing tag', bytes, list.replace(`# Tag: ${tag}\n`, '')],
+    ['missing commit', bytes, list.replace(`# Commit: ${sha}\n`, '')]
+  ]) assert.throws(() => checkWindowsArchive(version, tag, sha, changedBytes, changedList), /Checksum list (provenance differs|mismatch)/, name);
+  const reads = [];
+  runInNewContext(code, {
+    process: { env: { VERSION: version, TAG: tag, SHA: sha, ARCHIVE: archive } }, createHash,
+    readFileSync: (file, encoding) => {
+      reads.push(file);
+      if (file === archive) return bytes;
+      assert.equal(file, `artifacts/studio-sums/PixelboltStudio-${version}-SHA256SUMS.txt`);
+      assert.equal(encoding, 'utf8');
+      return list;
+    }
+  });
+  assert.deepEqual(reads, [archive, `artifacts/studio-sums/PixelboltStudio-${version}-SHA256SUMS.txt`]);
+});
+
+test('Studio itch.io decides without secrets and treats only the string false as a real run', async () => {
+  const { itchDecision } = await studioChecks('itch');
+  const ready = { dryRun: 'false', keyPresent: true, tag: 'v0.17.0', latestTag: 'v0.17.0' };
+  const cases = [
+    ...['true', '', undefined, 'False', false, null].map(dryRun => [`dry run ${String(dryRun)}`, { dryRun }, false, /Dry run/]),
+    ['dry run before key check', { dryRun: 'true', keyPresent: false }, false, /Dry run/],
+    ['no key', { keyPresent: false }, false, /BUTLER_API_KEY is not set, so nothing was pushed to itch.io/],
+    ['old release', { tag: 'v0.16.0' }, false, /itch.io shows the last build pushed, so an older tag is not pushed over a newer one/],
+    ['empty latest tag', { latestTag: '' }, false, /Only the newest published release/],
+    ['missing latest tag', { latestTag: undefined }, false, /Only the newest published release/],
+    ['missing both tags', { tag: undefined, latestTag: undefined }, false, /Only the newest published release/],
+    ['newest release', {}, true, /Newest published release/]
+  ];
+  for (const [name, changes, push, reason] of cases) {
+    const input = Object.freeze({ ...ready, ...changes }), result = itchDecision(input);
+    assert.deepEqual(Object.keys(result).sort(), ['push', 'reason'], name);
+    assert.equal(result.push, push, name);
+    assert.match(result.reason, reason, name);
+  }
+});
+
+test('Studio itch.io decision script writes each outcome and fails closed on release lookup errors', async () => {
+  const code = await studioScript('itch', 'decide');
+  for (const scenario of ['dry run', 'no key', 'older tag', 'newest tag', 'empty latest', 'missing latest', 'lookup failed']) {
+    const env = { DRY_RUN: 'false', KEY_PRESENT: 'true', TAG: 'v0.17.0', GITHUB_OUTPUT: 'outputs', GITHUB_STEP_SUMMARY: 'summary' };
+    if (scenario === 'dry run') env.DRY_RUN = 'true';
+    if (scenario === 'no key') env.KEY_PRESENT = 'false';
+    const written = {}, calls = [], notices = [], lookupError = new Error('Release lookup failed');
+    const invoke = () => runInNewContext(code, {
+      process: { env },
+      execFileSync: (command, args, options) => {
+        assert.equal(command, 'gh');
+        assert.deepEqual([...args], ['api', 'repos/skulitom/Pixelbolt/releases/latest']);
+        assert.equal(options.encoding, 'utf8');
+        calls.push([...args]);
+        if (scenario === 'lookup failed') throw lookupError;
+        return JSON.stringify({ tag_name: scenario === 'older tag' ? 'v0.18.0' : scenario === 'empty latest' ? '' : scenario === 'missing latest' ? undefined : 'v0.17.0' });
+      },
+      appendFileSync: (file, data) => { written[file] = (written[file] ?? '') + data; },
+      console: { log: line => notices.push(line) }
+    });
+    if (scenario === 'lookup failed') {
+      assert.throws(invoke, error => error === lookupError);
+      assert.equal(written.outputs, undefined);
+      continue;
+    }
+    invoke();
+    assert.equal(written.outputs, `push=${scenario === 'newest tag'}\n`, scenario);
+    const reason = scenario === 'dry run' ? /Dry run/ : scenario === 'no key' ? /BUTLER_API_KEY is not set, so nothing was pushed to itch.io/ :
+      scenario === 'newest tag' ? /Newest published release/ : /itch.io shows the last build pushed, so an older tag is not pushed over a newer one/;
+    assert.match(written.summary, reason, scenario);
+    assert.equal(calls.length, ['dry run', 'no key'].includes(scenario) ? 0 : 1, scenario);
+    assert.deepEqual(notices, scenario === 'no key' ? [`::notice::${written.summary.trim()}`] : [], scenario);
+  }
+});
 
 test('Studio plan skips unpublished or invalid releases, peels tags and tolerates only expired logs', async () => {
   const code = await studioScript('plan'), sha = 'e1eb58000671d12bbfacd3add9240e1d0118656f';
