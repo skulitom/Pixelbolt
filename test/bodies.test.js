@@ -13,7 +13,6 @@ import { cosDeg, sinDeg } from '../src/craft.js';
 import { startMCP } from '../src/mcp.js';
 import { packageFiles } from '../scripts/build-studio.mjs';
 import { bodiesPresets } from '../scripts/bodies-presets.mjs';
-import { measurePreset } from '../src/presets.js';
 import { BODIES_SHOWCASE, buildBodiesGIFs } from '../showcase/bodies/build.mjs';
 import { goldens } from '../scripts/goldens.mjs';
 
@@ -137,13 +136,8 @@ test('the work estimate counts the obstacle faces near each body and the pixels 
   assert.throws(() => bodiesFrames(fine(8)), error => error instanceof PixelError && error.path === 'bodies.effects.e' && /the match needs about \d+ million updates, more than 4000 million; .*or subpixels/.test(error.message));
 });
 
-test('every rigid-body preset says what it shows before what it is made of, so a search by subject finds it', async () => {
-  for (const name of Object.keys(bodiesPresets)) {
-    const line = measurePreset({ kind: 'bodies', base: name, name, file: `${name}.bodies.json` }, await example(name)).for;
-    assert.match(line, /^[A-Z][^.]+\. (Simulated rigid bodies: |Cloth)/, `${name}: ${line}; add its line to BODIES_SHOW in src/presets.js`);
-  }
-});
-
+// That every rigid-body preset says what it shows before what it is made of is held on the presets listing itself, in
+// presets.test.js, which measures every preset already.
 golden.test('every rigid-body example compiles to its golden recipe and draws only palette keys', async () => {
   for (const name of BODIES_SHOWCASE) {
     const source = await example(name);
