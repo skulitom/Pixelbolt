@@ -161,3 +161,34 @@ test('the bundled spirit normal pass is what its source compiles to, and its nig
   const scene = prepareScene((await resolveReferences(await read('forest-spirit-lit.scene.json'), { baseDir: examples })).document);
   assert.notDeepEqual(renderScene(scene).data, renderScene(scene, { lit: false }).data);
 });
+
+test("a trimmed sheet's normal map is drawn on the colour sheet's own cells, and frames that share a cell need the same normals (P-172)", async () => {
+  const { createBundle } = await import('../src/export.js');
+  const { decodePNG } = await import('../src/import.js');
+  const frame = (name, color) => ({ name, duration: 100, ops: [{ op: 'rect', x: 1, y: 1, w: 2, h: 2, color }] });
+  const base = { version: 1, name: 'sq', width: 4, height: 4, sheet: { trim: true } };
+  const colour = { ...base, palette: { r: '#ff0000', g: '#00ff00', b: '#0000ff', y: '#ffff00' }, frames: [frame('a', 'r'), frame('b', 'g'), frame('c', 'b'), frame('d', 'y')] };
+  // Four colours, but a and c face the same way: packed on its own, the normal pass gives them one cell and moves c and d.
+  const normal = { ...base, palette: { e: '#ff8080', w: '#0080ff', n: '#80ff80' }, frames: [frame('a', 'e'), frame('b', 'w'), frame('c', 'e'), frame('d', 'n')] };
+  const faces = { a: [255, 128, 128, 255], b: [0, 128, 255, 255], c: [255, 128, 128, 255], d: [128, 255, 128, 255] };
+  const readCells = bundle => {
+    const atlas = JSON.parse(bundle.files.get('sq.atlas.json')), sheet = decodePNG(bundle.files.get('sq.normal.png'));
+    return Object.fromEntries(Object.keys(atlas.frames).map(name => {
+      const { x, y, w, h } = atlas.frames[name].frame, seen = new Set();
+      for (let row = y; row < y + h; row++) for (let col = x; col < x + w; col++) seen.add(String([...sheet.data.subarray((row * sheet.width + col) * 4, (row * sheet.width + col) * 4 + 4)]));
+      return [name, [...seen]];
+    }));
+  };
+  assert.deepEqual(readCells(await createBundle(colour, { normal })), Object.fromEntries(Object.entries(faces).map(([name, rgba]) => [name, [String(rgba)]])));
+  // At scale 2 the cells move with the colour sheet's too.
+  const scaled = await createBundle({ ...colour, sheet: { trim: true, scale: 2 } }, { normal });
+  assert.deepEqual(readCells(scaled), Object.fromEntries(Object.entries(faces).map(([name, rgba]) => [name, [String(rgba)]])));
+  // Frames with one picture share one colour cell, so the normal sheet can hold only one set of normals for them.
+  const twins = { ...colour, frames: [frame('a', 'r'), frame('b', 'g'), frame('c', 'r')] };
+  await assert.rejects(createBundle(twins, { normal: { ...normal, frames: [frame('a', 'e'), frame('b', 'w'), frame('c', 'n')] } }),
+    error => error instanceof PixelError && /frames "a" and "c" from one cell, as their pictures are the same, but their normals differ there: give them the same normals, or set sheet\.trim to false/.test(error.message));
+  const shared = readCells(await createBundle(twins, { normal: { ...normal, frames: [frame('a', 'e'), frame('b', 'w'), frame('c', 'e')] } }));
+  assert.deepEqual(shared, { a: [String(faces.a)], b: [String(faces.b)], c: [String(faces.a)] });
+  // An untrimmed sheet keeps every frame in its own whole-canvas grid cell, transparent border included, as before.
+  assert.deepEqual(readCells(await createBundle({ ...colour, sheet: { trim: false } }, { normal })).c.sort(), ['0,0,0,0', String(faces.c)]);
+});

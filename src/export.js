@@ -82,8 +82,23 @@ export async function createBundle(spec, { normal } = {}) {
     const pass = renderProject({ ...normal, sheet: spec.sheet });
     const differs = pass.width !== width || pass.height !== height ? `it is ${pass.width}×${pass.height} and the colour recipe ${width}×${height}` : pass.frames.length !== frames.length ? `it has ${pass.frames.length} frames and the colour recipe ${frames.length}` : pass.frames.find((frame, i) => frame.name !== frames[i].name);
     if (differs) throw new PixelError('normal', `a normal pass shares the colour recipe's size and frames: ${typeof differs === 'string' ? differs : `its frame "${differs.name}" is "${frames[pass.frames.indexOf(differs)].name}" in the colour recipe`}. Derive it from this recipe with a pixelforge-normals source`);
-    const lit = buildAtlas(pass);
-    if (lit.width !== atlas.width || lit.height !== atlas.height) throw new PixelError('normal', 'a trimmed colour sheet packs each frame by what it draws, and the normal sheet must match it pixel for pixel: derive the normal pass from this recipe, or set sheet.trim to false');
+    // The normal sheet is drawn on the colour sheet's own cells, so the atlas and the SpriteFrames read both sheets at
+    // the same place. A trimmed colour sheet packs each frame by what it draws and gives frames with the same picture
+    // one cell, so those frames need the same normals there.
+    if (project.sheet.trim) {
+      const owners = new Map();
+      pass.frames.forEach((frame, i) => {
+        const cell = project.sheet.layout[i], at = `${cell.x},${cell.y}`, first = owners.get(at);
+        if (cell.empty) return;
+        if (first === undefined) { owners.set(at, i); return; }
+        const other = project.sheet.layout[first], row = (data, box, y) => data.subarray(((box.sy + y) * width + box.sx) * 4, ((box.sy + y) * width + box.sx + box.w) * 4);
+        for (let y = 0; y < cell.h; y++) {
+          const mine = row(frame.data, cell, y), theirs = row(pass.frames[first].data, other, y);
+          if (mine.some((value, k) => value !== theirs[k])) throw new PixelError('normal', `the trimmed colour sheet draws frames "${frames[first].name}" and "${frames[i].name}" from one cell, as their pictures are the same, but their normals differ there: give them the same normals, or set sheet.trim to false`);
+        }
+      });
+    }
+    const lit = buildAtlas({ ...pass, sheet: project.sheet });
     files.set(`${name}.normal.png`, encodePNG(lit.data, lit.width, lit.height));
     files.set(`${name}.normal_y_up.png`, encodePNG(normalsYUp(lit.data), lit.width, lit.height));
     files.set(`${name}.canvas.tres`, Buffer.from(canvasTexture({ diffuse: `${name}.png`, normal: `${name}.normal_y_up.png` })));
