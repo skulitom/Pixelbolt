@@ -1,0 +1,45 @@
+{
+ "node": "v24.19.0",
+ "command": "node tools/render.mjs <id> --sheet --out <new dir>",
+ "rounds": 3,
+ "wall_s": {
+  "fire/campfire": [
+   0.863,
+   0.819,
+   0.82
+  ],
+  "explosions/smoke-bomb": [
+   1.66,
+   1.636,
+   1.632
+  ],
+  "explosions/big-explosion": [
+   6.688,
+   6.364,
+   7.486
+  ],
+  "water/splash": [
+   0.608,
+   0.595,
+   0.6
+  ],
+  "lightning/lightning-strike": [
+   1.872,
+   1.877,
+   1.866
+  ],
+  "arcane/portal": [
+   1.405,
+   1.436,
+   1.38
+  ]
+ },
+ "median_s": {
+  "fire/campfire": 0.82,
+  "explosions/smoke-bomb": 1.636,
+  "explosions/big-explosion": 6.688,
+  "water/splash": 0.6,
+  "lightning/lightning-strike": 1.872,
+  "arcane/portal": 1.405
+ }
+}

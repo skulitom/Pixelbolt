@@ -1,0 +1,87 @@
+pixelfx (patch-gg/pixelfx) run log, 17 November 2026 (UK time), Windows 11 Pro (build 26200), AMD Ryzen 9 7950X3D,
+Node.js 24.19.0, Python 3.13.9 with Pillow 12.0.0 and numpy 2.3.5, ffmpeg 7.0 (gyan.dev full build), Playwright 1.63.0.
+
+Not to be confused with the pixelfx_*.mjs / pixelfx_check.py files in this folder: those are Pixelbolt's own scripts,
+written for this page on 19 October and 15 November, after Pixelbolt had its current name. Everything about patch-gg's pixelfx here starts "patchgg-pixelfx".
+
+What we ran: pixelfx at commit 5294518ce7c72e48b6100a744596e0acf57f2826 (12 November 2026, "Link pixelfx's page on
+Patch (#13)", the newest commit on main on 17 November; no tags or releases; package.json says 0.3.1). Six of its 244
+effects, with each effect's own default settings (size, duration, 30 fps, seed): fire/campfire, explosions/smoke-bomb,
+explosions/big-explosion, water/splash, lightning/lightning-strike, arcane/portal. No AI agent or language model was
+involved, and Patch's command line (pch) was not installed or run.
+
+Why it qualified to run (our rules for running another tool): open source (MIT) from its official repository;
+src/ (library and effects) imports only its own relative modules, with no fetch, http, child_process, WebGL/WebGPU,
+canvas, Math.random, Date, process or globalThis; tools/render.mjs and tools/lib/fxlib.mjs use node:fs, node:path,
+node:url and node:child_process, whose one use is spawnSync("ffmpeg") for --gif/--mp4 previews (raw frames piped to a
+local ffmpeg); tools/lib/png.mjs uses node:zlib. package.json has no install scripts and one devDependency (esbuild, for
+building the gallery); we ran no npm install. tools/serve.mjs (a local HTTP server for the gallery) was not run.
+
+Install, pinned to the commit:
+  git -c core.autocrlf=false clone https://github.com/patch-gg/pixelfx src
+  git -C src checkout 5294518ce7c72e48b6100a744596e0acf57f2826
+  (the clone downloaded a 24.95 MiB pack, 10 commits on main; the checkout is 14,221,663 bytes without .git)
+
+SHA-256 of the files we read and ran (at 5294518):
+  README.md                            3efaa774a326170d2d0bca4e769a840d38650591f673e037172bb05143873b2d
+  skills/pixelfx/SKILL.md              b8210917cf4218fbc7d64a07ec4eed4b7888981df3a0224a4681f3547e0f09c5
+  LICENSE                              0a77565a50c3462831244452f129c38d2adc4fd07897cbeba8adc943f958604e
+  NOTICE.md                            d12932473f98b1a3f0b5820ae23d568b52e39294ba7c2d60c0649a93a808af3b
+  package.json                         a0663052563c9e8cf1c5aceee3f57efd9d3031fd6ea51db4d4816705c1f00264
+  .claude-plugin/plugin.json           be4224e7541d7c6cfc6b83b0c9ef8698ee86e63bf1411fe04a347898860b708d
+  src/core/fx.js                       a959c5f7b1c15ba8e07cb26e5b1ccc0bce0aef54ca14cf01f9d6e794cf4e5a0b
+  src/core/sim.js                      517febe05b72de9d07e3596c019b9bb01e1f97a74089a30fa80e9e98849ba4b0
+  tools/render.mjs                     5e7415073e473ba5e4baaeb9ebb0c120357641c657554e3218119546225e9796
+  tools/lib/fxlib.mjs                  4667773a1b83c9c64498006caa7349f65c9f19ddc61be94e72ba94554faa6431
+  tools/lib/png.mjs                    19da8ce363e7a4722fa49f06dd9066e07e83262c24da14a496b39a793111ed7c
+  src/fx/fire/campfire.js              9e406f69bac94a7a81ebe37fb09860b909807b05be0d2fa562b65afcb213103b
+  src/fx/explosions/smoke-bomb.js      7e252d16a14434c82ae7dd4b6173bd51b8998993f8dce22ba70dc72712f80d78
+  src/fx/explosions/big-explosion.js   3f0eea9e36abfd9d8c1b15430fc13412c4b18abb55545f5f589e882ad50b4b0a
+  src/fx/water/splash.js               511a1f4e5b95c7c9c92db61fad587f6ff990a000bcda232412bf3efe5a6ba3eb
+  src/fx/lightning/lightning-strike.js bbb6485615807a740df19f5196a81c033f938fc7081deefeb750d941790fddec
+  src/fx/arcane/portal.js              e623a552ef6441bce613beecb7aa1f1c3417c6d4875ee91927144aaf632962af
+
+Measure (from a folder holding the scripts and the clone; each work folder must not exist yet):
+  python -I patchgg-pixelfx_measure.py src patchgg-pixelfx_frames.mjs run patchgg-pixelfx-effects-5294518.json
+That runs, for each effect, twice, each in a new folder and new processes, and times each whole command:
+  node src/tools/render.mjs <id> --sheet --out <run>/sheet     pixelfx's documented sprite-sheet export
+  node src/tools/render.mjs <id> --gif --out <run>/gif         its GIF preview, made through ffmpeg
+  node patchgg-pixelfx_frames.mjs src <id> <run>/frames        ours: pixelfx's loadEffect, renderFrames and encodePNG,
+                                                               one RGBA PNG per frame (the image its sheet is built from)
+then decodes everything with Pillow, and runs each effect once more with --opts {"palette": [4 or 5 PICO-8 colours]}.
+  python -I patchgg-pixelfx_timing.py src run-timing patchgg-pixelfx-timing-5294518.json
+  python -I patchgg-pixelfx_light0.py src patchgg-pixelfx_frames.mjs run-light0 patchgg-pixelfx-light0-5294518.json
+  PLAYWRIGHT_MODULE=<playwright>/index.mjs CHROMIUM_EXE=<chromium-1248 chrome.exe> FIREFOX_EXE=<firefox-1555 firefox.exe>
+    node patchgg-pixelfx_engines.mjs src patchgg-pixelfx-engines-5294518.json
+In the published results our work folder is shown as <work>; nothing else was changed.
+
+Output of the measure run:
+fire/campfire {"frame_size": [128, 128], "frame_files": 90, "bytes_identical": true, "wall_s": {"sheet": [3.48, 1.566], "gif": [8.284, 1.175], "frames": [3.187, 0.883]}}
+explosions/smoke-bomb {"frame_size": [260, 176], "frame_files": 151, "bytes_identical": true, "wall_s": {"sheet": [1.662, 1.627], "gif": [0.926, 0.895], "frames": [1.754, 1.726]}}
+explosions/big-explosion {"frame_size": [360, 300], "frame_files": 217, "bytes_identical": true, "wall_s": {"sheet": [6.338, 5.97], "gif": [3.09, 3.057], "frames": [5.803, 5.728]}}
+water/splash {"frame_size": [176, 100], "frame_files": 76, "bytes_identical": true, "wall_s": {"sheet": [0.545, 0.543], "gif": [0.371, 0.37], "frames": [0.418, 0.403]}}
+lightning/lightning-strike {"frame_size": [240, 264], "frame_files": 91, "bytes_identical": true, "wall_s": {"sheet": [4.075, 6.91], "gif": [4.065, 7.735], "frames": [2.791, 5.853]}}
+arcane/portal {"frame_size": [152, 116], "frame_files": 72, "bytes_identical": true, "wall_s": {"sheet": [5.604, 1.674], "gif": [2.322, 1.174], "frames": [1.466, 0.91]}}
+palette fire/campfire {"palette_given": ["#7e2553", "#ff004d", "#ffa300", "#ffec27", "#fff1e8"], "colours_rgba": 77671, "colours_rgb": 49770, "given_colours_used": 2, "colours_outside_given": 49768, "partly_see_through_share_of_visible": 0.908, "wall_s": 2.248}
+palette explosions/smoke-bomb {"palette_given": ["#1d2b53", "#5f574f", "#83769c", "#c2c3c7"], "colours_rgba": 34319, "colours_rgb": 5838, "given_colours_used": 3, "colours_outside_given": 5835, "partly_see_through_share_of_visible": 0.982, "wall_s": 3.585}
+palette explosions/big-explosion {"palette_given": ["#7e2553", "#ff004d", "#ffa300", "#ffec27", "#fff1e8"], "colours_rgba": 435619, "colours_rgb": 190067, "given_colours_used": 4, "colours_outside_given": 190063, "partly_see_through_share_of_visible": 0.9084, "wall_s": 10.46}
+palette water/splash {"palette_given": ["#1d2b53", "#29adff", "#c2c3c7", "#fff1e8"], "colours_rgba": 10343, "colours_rgb": 6013, "given_colours_used": 3, "colours_outside_given": 6010, "partly_see_through_share_of_visible": 0.9243, "wall_s": 0.606}
+palette lightning/lightning-strike {"palette_given": ["#1d2b53", "#29adff", "#ffec27", "#fff1e8"], "colours_rgba": 90162, "colours_rgb": 40991, "given_colours_used": 3, "colours_outside_given": 40988, "partly_see_through_share_of_visible": 0.9411, "wall_s": 1.548}
+palette arcane/portal {"palette_given": ["#1d2b53", "#7e2553", "#83769c", "#ff77a8", "#fff1e8"], "colours_rgba": 22923, "colours_rgb": 16015, "given_colours_used": 0, "colours_outside_given": 16015, "partly_see_through_share_of_visible": 0.8827, "wall_s": 1.036}
+
+Output of the timing run (median of 3 rounds, seconds):
+{"fire/campfire": 0.82, "explosions/smoke-bomb": 1.636, "explosions/big-explosion": 6.688, "water/splash": 0.6, "lightning/lightning-strike": 1.872, "arcane/portal": 1.405}
+
+Output of the light-off run (option light: 0):
+fire/campfire {"visible_share": 0.0864, "colours_rgba": 23233, "colours_rgb": 3288, "partly_see_through_share_of_visible": 0.4595}
+explosions/smoke-bomb {"visible_share": 0.1007, "colours_rgba": 36377, "colours_rgb": 1581, "partly_see_through_share_of_visible": 0.9812}
+explosions/big-explosion {"visible_share": 0.093, "colours_rgba": 137325, "colours_rgb": 28956, "partly_see_through_share_of_visible": 0.8619}
+water/splash {"visible_share": 0.0349, "colours_rgba": 6222, "colours_rgb": 1164, "partly_see_through_share_of_visible": 0.5094}
+lightning/lightning-strike {"visible_share": 0.0832, "colours_rgba": 4263, "colours_rgb": 1264, "partly_see_through_share_of_visible": 0.8651}
+arcane/portal {"visible_share": 0.1108, "colours_rgba": 13, "colours_rgb": 13, "partly_see_through_share_of_visible": 0.0}
+
+Output of the browser run:
+node v24.19.0 copy matches renderFrames: {"fire/campfire":true,"explosions/smoke-bomb":true,"explosions/big-explosion":true,"water/splash":true,"lightning/lightning-strike":true,"arcane/portal":true}
+chromium 156.0.8078.4 {"fire/campfire":{"framesMatching":90,"frames":90,"browserFrames":90},"explosions/smoke-bomb":{"framesMatching":151,"frames":151,"browserFrames":151},"explosions/big-explosion":{"framesMatching":217,"frames":217,"browserFrames":217},"water/splash":{"framesMatching":76,"frames":76,"browserFrames":76},"lightning/lightning-strike":{"framesMatching":91,"frames":91,"browserFrames":91},"arcane/portal":{"framesMatching":72,"frames":72,"browserFrames":72}} outside requests: 0
+firefox 157.0 {"fire/campfire":{"framesMatching":90,"frames":90,"browserFrames":90},"explosions/smoke-bomb":{"framesMatching":151,"frames":151,"browserFrames":151},"explosions/big-explosion":{"framesMatching":217,"frames":217,"browserFrames":217},"water/splash":{"framesMatching":76,"frames":76,"browserFrames":76},"lightning/lightning-strike":{"framesMatching":91,"frames":91,"browserFrames":91},"arcane/portal":{"framesMatching":72,"frames":72,"browserFrames":72}} outside requests: 0
+webkit 26.6 {"fire/campfire":{"framesMatching":90,"frames":90,"browserFrames":90},"explosions/smoke-bomb":{"framesMatching":151,"frames":151,"browserFrames":151},"explosions/big-explosion":{"framesMatching":217,"frames":217,"browserFrames":217},"water/splash":{"framesMatching":76,"frames":76,"browserFrames":76},"lightning/lightning-strike":{"framesMatching":91,"frames":91,"browserFrames":91},"arcane/portal":{"framesMatching":72,"frames":72,"browserFrames":72}} outside requests: 0
