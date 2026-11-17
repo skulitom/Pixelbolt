@@ -97,10 +97,12 @@ export async function loadPreset(entry) {
   return { source: resolved, inlined: files.map(file => `examples/${path.relative(PRESET_FOLDER, file).split(path.sep).join('/')}`) };
 }
 
-// A plain recipe compiles to itself.
-export function compilePreset(source) {
+// A plain recipe compiles to itself. frames: how many frames of each animation the compile keeps (compile --frames,
+// pixel_compile frames), and animation the animations it keeps (named at animationPath), which an effect source's
+// budgets count instead of all it makes (compileEffects).
+export function compilePreset(source, { frames, animation, animationPath } = {}) {
   const compile = COMPILERS[source?.format];
-  return compile ? compile(source) : { recipe: source, warnings: [] };
+  return !compile ? { recipe: source, warnings: [] } : compile === compileEffects ? compileEffects(source, { frames, animation, animationPath }) : compile(source);
 }
 
 const plays = animations => {

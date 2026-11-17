@@ -1,4 +1,4 @@
-import { renderProject, buildAtlas, scalePixels, PixelError, animationFps, namesAnimations, exportsStill, exportAtlas, stillTileSet } from './core.js';
+import { renderProject, buildAtlas, scalePixels, PixelError, animationFps, namesAnimations, exportsStill, exportAtlas, stillTileSet, largestScale } from './core.js';
 import { encodePNG, encodeAPNG, crc32 } from './png.js';
 import { readFile, readdir, mkdir, writeFile, access, rm, rmdir, stat, realpath } from 'node:fs/promises';
 import path from 'node:path';
@@ -72,7 +72,11 @@ export async function createBundle(spec, { normal } = {}) {
   const still = exportsStill(spec, project);
   atlas.metadata = exportAtlas(spec, project, atlas.metadata);
   const animationPixels = still ? 0 : Object.values(project.animations).reduce((sum, a) => sum + a.frames.length * width * height * sheet.scale ** 2, 0);
-  if (animationPixels > 67108864) throw new PixelError('project.animations', 'export exceeds 67,108,864 animation pixels; shorten sequences or reduce scale');
+  if (animationPixels > 67108864) {
+    // The fix is at sheet.scale when a smaller one fits, and in the animations when not even scale 1 does.
+    const s = sheet.scale, fits = largestScale(animationPixels / (s * s), 67108864, s), played = animationPixels / (width * height * s * s);
+    throw new PixelError(fits ? 'project.sheet.scale' : 'project.animations', `the animations play ${played} frames of ${width * s}×${height * s}, past the 67,108,864 animation pixels an export holds; ${fits ? `scale ${fits} is the largest that fits, or shorten them` : 'shorten them'}`);
+  }
   const files = new Map();
   files.set(`${name}.png`, encodePNG(atlas.data, atlas.width, atlas.height));
   files.set(`${name}.atlas.json`, Buffer.from(json(atlas.metadata)));
@@ -252,7 +256,7 @@ function sheetHTML(project, tiles) {
 }
 function previewHTML(project) {
   const { name, animations } = project;
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>${name} · Pixelbolt</title><link rel="stylesheet" href="${name}.css"><style>body{font:16px system-ui;background:#17191d;color:#e6e7eb;margin:48px}main{display:flex;gap:32px;flex-wrap:wrap}figure{margin:0;padding:24px;background:#252930;border-radius:12px}img{width:${project.width * Math.min(8, Math.max(1, Math.floor(256 / project.width)))}px;image-rendering:pixelated}figcaption{margin-top:20px}a{color:#c4b9f3}</style><h1>${name}</h1><p>Animated PNGs. Original frame timing and transparency are preserved.</p><main>${Object.keys(animations).map(key => `<figure><img src="animations/${key}.png" alt="${key} animation"><figcaption>${key}</figcaption></figure>`).join('')}</main><p><a href="${name}.png">Sprite sheet</a> · <a href="${name}.atlas.json">Atlas metadata</a> · <a href="${name}.pixel.json">Editable source</a></p></html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>${name} · Pixelbolt</title><link rel="stylesheet" href="${name}.css"><style>body{font:16px system-ui;background:#17191d;color:#e6e7eb;margin:48px}main{display:flex;gap:32px;flex-wrap:wrap}figure{margin:0;padding:24px;background:#252930;border-radius:12px;max-width:100%;box-sizing:border-box}img{width:${project.width * Math.min(8, Math.max(1, Math.floor(256 / project.width)))}px;max-width:100%;image-rendering:pixelated}figcaption{margin-top:20px}a{color:#c4b9f3}</style><h1>${name}</h1><p>Animated PNGs. Original frame timing and transparency are preserved.</p><main>${Object.keys(animations).map(key => `<figure><img src="animations/${key}.png" alt="${key} animation"><figcaption>${key}</figcaption></figure>`).join('')}</main><p><a href="${name}.png">Sprite sheet</a> · <a href="${name}.atlas.json">Atlas metadata</a> · <a href="${name}.pixel.json">Editable source</a></p></html>`;
 }
 
 // Store-mode ZIP keeps the already-compressed PNGs intact and needs no dependency.

@@ -1,7 +1,7 @@
 // Browser-compatible GIF89a export for sharing an animation where APNG or CSS scaling is not an option. Colours are
 // exact: nothing is quantized or dithered, so a frame that needs more than 256 colours is refused rather than
 // approximated. GIF has no partial transparency and times frames in 10 ms steps; both conversions are reported.
-import { PixelError, parseColor, stillsHaveNoAnimation } from './core.js';
+import { PixelError, parseColor, stillsHaveNoAnimation, largestScale } from './core.js';
 
 const MAX_PIXELS = 67108864;
 // Integer arithmetic only, so table sizes never depend on an engine's logarithm.
@@ -197,7 +197,11 @@ export function encodeGIF(frames, width, height, { loop = true, scale = 1, backg
   if (!Array.isArray(frames) || !frames.length) throw new PixelError('gif', 'at least one frame is required');
   if (!Number.isInteger(scale) || scale < 1 || scale > 16) throw new PixelError('gif.scale', 'expected a whole number from 1 to 16');
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width * scale > 65535 || height * scale > 65535) throw new PixelError('gif', 'invalid dimensions');
-  if (frames.length * width * height * scale * scale > MAX_PIXELS) throw new PixelError('gif', `${frames.length} frames at ${width * scale}×${height * scale} exceed 67,108,864 pixels; lower the scale or shorten the animation`);
+  if (frames.length * width * height * scale * scale > MAX_PIXELS) {
+    const fits = largestScale(frames.length * width * height, MAX_PIXELS, scale);
+    // One frame has no animation to shorten.
+    throw new PixelError('gif', `${plural(frames.length, 'frame')} at ${width * scale}×${height * scale} exceed${frames.length === 1 ? 's' : ''} 67,108,864 pixels; ${fits ? `scale ${fits} is the largest that fits${frames.length === 1 ? '' : ', or shorten the animation'}` : 'shorten the animation'}`);
+  }
   const area = width * height, indexed = [], delays = [];
   let partialAlpha = 0, carry = 0;
   for (const [position, frame] of frames.entries()) {
@@ -215,7 +219,8 @@ export function encodeGIF(frames, width, height, { loop = true, scale = 1, backg
   return { data: gif.data, width: width * scale, height: height * scale, colors: gif.colors, transparent: gif.transparent, delays, partialAlpha, backgroundClears: gif.backgroundClears };
 }
 
-const MAX_FRAMES_PIXELS = 134217728, MAX_FRAMES = 18000;
+// The pixels over all of one GIF's frames, and its frames: what a scene GIF's scale is held to up front (scene-export.js).
+export const MAX_FRAMES_PIXELS = 134217728, MAX_FRAMES = 18000;
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 // The note for frames that writeFrames had to clear without naming a transparent index.
 const backgroundNote = count => `${plural(count, 'frame')} with 256 colours of ${count === 1 ? 'its' : 'their'} own ${count === 1 ? 'is' : 'are'} followed by transparent pixels that GIF cannot clear for every viewer: browsers and ffmpeg clear them, but Pillow shows a colour of the frame's table there. At most 255 colours in ${count === 1 ? 'that frame' : 'those frames'} keeps them clear everywhere.`;

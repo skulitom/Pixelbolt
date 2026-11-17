@@ -49,6 +49,16 @@ export const GODOT_FIXTURE = {
   sheet: { trim: true, padding: 1, scale: 2 }
 };
 
+// A screen-sized animation: 640x360 frames (an animation frame is at most 1024 a side and 262,144 pixels), seven of
+// them in six columns, at scale 2, so each region is 1280x720 and the sheet 7680x1440, past 4096 a side.
+export const GODOT_BIG_FIXTURE = {
+  version: 1, name: 'godot-screen', width: 640, height: 360,
+  palette: { k: '#102030', s: '#a0c0f0', r: '#e04030' },
+  frames: Array.from({ length: 7 }, (_, i) => ({ name: `f${i}`, duration: 100, ops: [{ op: 'rect', x: 0, y: 0, w: 640, h: 360, color: 'k' }, { op: 'rect', x: 40 + i * 80, y: 140, w: 64, h: 64, color: 'r' }, { op: 'line', x: i * 16, y: 0, x2: 639 - i * 16, y2: 359, color: 's' }] })),
+  animations: { sweep: { frames: ['f0', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6'] } },
+  sheet: { scale: 2 }
+};
+
 // Runs in Godot: dumps every animation's frames and plays each one, recording when its frame changes.
 const CHECK = `extends SceneTree
 
@@ -113,6 +123,8 @@ func compare(texture: AtlasTexture, file: String) -> int:
 	expected.convert(Image.FORMAT_RGBA8)
 	if expected.get_size() != drawn.get_size():
 		return -2
+	if drawn.get_data() == expected.get_data():
+		return 0
 	var wrong := 0
 	for y in drawn.get_height():
 		for x in drawn.get_width():
@@ -396,7 +408,7 @@ export async function verifyGodot({ godot = findGodot(), keep = false, log = con
     await writeFile(path.join(dir, 'project.godot'), 'config_version=5\n\n[application]\n\nconfig/name="Pixelbolt Godot check"\n');
     const spirit = JSON.parse(await readFile(fileURLToPath(new URL('../examples/forest-spirit.json', import.meta.url)), 'utf8'));
     const cases = [], expected = {};
-    for (const recipe of [spirit, GODOT_FIXTURE]) {
+    for (const recipe of [spirit, GODOT_FIXTURE, GODOT_BIG_FIXTURE]) {
       const bundle = await createBundle(recipe), { name } = bundle.project, folder = `sprites/${name}`;
       const atlas = JSON.parse(bundle.files.get(`${name}.atlas.json`));
       // The sheet, the .tres and the frame PNGs, in a folder below the project root, so the .tres's relative path is used.

@@ -105,8 +105,9 @@ test('gif <scene> and pixel_scene gif write the whole scene as one looping GIF',
   await writeFile(path.join(dir, 'porch.scene.json'), JSON.stringify(scene));
   const made = run('gif', 'porch.scene.json', '--out', 'porch.gif', '--scale', '3');
   assert.equal(made.status, 0, made.said);
-  // 200 ms at 25 frames a second: five frames of 40 ms, the lamp dim for the first 100 ms and lit after.
-  assert.deepEqual([made.info.width, made.info.height, made.info.frames, made.info.fps, made.info.duration, made.info.notes], [48, 36, 5, '25', 200, undefined]);
+  // 200 ms at 25 frames a second: five frames of 40 ms, the lamp dim for the first 100 ms and lit after, which 40 ms
+  // frames split unevenly (three, then two), so the reply names an even rate.
+  assert.deepEqual([made.info.width, made.info.height, made.info.frames, made.info.fps, made.info.duration, made.info.notes], [48, 36, 5, '25', 200, ['At 25 fps (40 ms a GIF frame) frames of 100 ms are held for uneven numbers of GIF frames, so their animation stutters; fps 20 holds each for a whole number.']]);
   const bytes = await readFile(path.join(dir, 'porch.gif'));
   assert.deepEqual([bytes.subarray(0, 6).toString('latin1'), bytes.readUInt16LE(6), bytes.readUInt16LE(8)], ['GIF89a', 48, 36]);
   const prepared = prepareScene({ ...scene, assets: { lamp: sprite } }), same = sceneGIF(prepared, { scale: 3 });

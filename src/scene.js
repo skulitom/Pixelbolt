@@ -1,12 +1,13 @@
 // Bounded scene review, not a game engine. In-memory recipes only; no filesystem or network access.
-import { renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, reviewPixels, scalePixels, readGuides, drawGuides, CANVAS_SIDE, fail } from './core.js';
+import { renderProject, parseColor, animationPosition, tileRepeat, tileReport, rampShifter, reviewPixels, scalePixels, readGuides, drawGuides, CANVAS_SIDE, FRAME_PIXELS, frameFits, frameAreaProblem, fail } from './core.js';
 import { EASINGS, ease, pixelId, random, nearestColor } from './craft.js';
 import { fields, point, number, integer } from './authoring.js';
 import { expandTilemap, isoLayout } from './autotile.js';
 
 // A scene is one view: up to SCENE_SIDE pixels a side and SCENE_AREA in all (1024×256, 640×360, 512×512), so a level
-// some sixty tiles long is one picture. Its assets stay at the animation canvas, and a map may still be larger than it.
-export const SCENE_SIDE = 1024, SCENE_AREA = 262144;
+// some sixty tiles long is one picture. It is the size of an animation frame (core.js), and so is each asset at most,
+// a still one included; a map may still be larger than the view.
+export const SCENE_SIDE = CANVAS_SIDE, SCENE_AREA = FRAME_PIXELS;
 const smooth = t => t * t * (3 - 2 * t);
 // A light's flicker at `time`: seeded value noise from 0 to 1 over `steps` evenly spaced points per scene duration,
 // eased between them, wrapping at the duration so a looping scene flickers without a seam.
@@ -67,7 +68,7 @@ const MAX_DRAWS = 4096, MAX_WORK = 4194304, MAX_CASTS = 2048;
 // drawn after it.
 function sceneTilemap(tilemap, project, path) {
   fields(tilemap, ['tile', 'rows', 'legend', 'outside', 'empty', 'classes', 'seed', 'layout'], path);
-  const tile = point(tilemap.tile ?? [project.width, project.height], `${path}.tile`, 256);
+  const tile = point(tilemap.tile ?? [project.width, project.height], `${path}.tile`, CANVAS_SIDE);
   if (tile.some(n => n < 1)) fail(`${path}.tile`, 'tile size must be positive');
   if (tilemap.layout !== undefined && tilemap.layout !== 'square' && tilemap.layout !== 'iso') fail(`${path}.layout`, 'expected square or iso');
   const iso = tilemap.layout === 'iso';
@@ -166,7 +167,20 @@ export function prepareScene(source) {
   }
   if (!source.assets || Array.isArray(source.assets) || typeof source.assets !== 'object' || Object.keys(source.assets).length > 64) fail('scene.assets', 'expected at most 64 inlined assets');
   // Ramp shifters per asset (kept apart from the passes, which exports iterate as images).
-  const assets = Object.create(null), shifts = Object.create(null), warnings = []; let sourceArea = 0;
+  // used: the pixels each asset's passes render (every frame of each), which together stay within 4,194,304.
+  const assets = Object.create(null), shifts = Object.create(null), warnings = [], used = new Map(); let sourceArea = 0;
+  // Every asset's pixels a frame (over all its passes) and in all, counted before any renders, so a refusal names a
+  // frame count that fits beside the whole scene, not only the passes before it.
+  const whole = new Map(); let sceneArea = 0;
+  for (const [id, value] of Object.entries(source.assets)) {
+    const entry = value?.recipe ? value : { recipe: value };
+    let frame = 0, all = 0;
+    for (const key of ['recipe', 'normal', 'emissive']) {
+      const area = entry[key]?.width * entry[key]?.height, frames = entry[key]?.frames?.length;
+      if (Number.isFinite(area * frames)) { frame += area; all += area * frames; }
+    }
+    whole.set(id, { frame, all, count: entry.recipe?.frames?.length }); sceneArea += all;
+  }
   for (const [id, value] of Object.entries(source.assets)) {
     if (typeof value === 'string' || typeof value?.recipe === 'string' || typeof value?.normal === 'string' || typeof value?.emissive === 'string' || value?.revision !== undefined) fail(`scene.assets.${id}`, 'file and revision references are resolved by the CLI and MCP; inline the recipe to render here');
     const entry = value?.recipe ? value : { recipe: value };
@@ -175,10 +189,25 @@ export function prepareScene(source) {
     const passes = {};
     for (const key of ['recipe', 'normal', 'emissive']) if (entry[key] !== undefined) {
       const spec = key === 'recipe' ? themed(entry[key], scenePalette, assetPalette) : entry[key];
-      // A still larger than 256 pixels a side renders on its own; scenes keep their assets to the animation canvas.
-      if (spec?.width > CANVAS_SIDE || spec?.height > CANVAS_SIDE) fail(`scene.assets.${id}`, `a scene asset is at most ${CANVAS_SIDE}×${CANVAS_SIDE} pixels; a larger still renders on its own, not in a scene`);
+      // A still larger than an animation frame renders on its own; scenes keep their assets to the frame's side and area.
+      if (Number.isFinite(spec?.width) && Number.isFinite(spec?.height) && !frameFits(spec.width, spec.height)) fail(`scene.assets.${id}`, `${frameAreaProblem(spec.width, spec.height)}, and a scene asset is one; a larger still renders on its own, not in a scene`);
       const area = spec?.width * spec?.height * spec?.frames?.length;
-      if (!Number.isFinite(area) || (sourceArea += area) > 4194304) fail(`scene.assets.${id}`, 'combined scene source passes exceed 4,194,304 pixels or have invalid dimensions');
+      if (!Number.isFinite(area)) fail(`scene.assets.${id}`, `its ${key} pass has invalid dimensions`);
+      if (sourceArea + area > 4194304) {
+        // What the assets before it use, the largest by name, and the asset to give fewer frames: the largest of all.
+        // An asset with a normal or emissive pass needs every pass's pixels, so its need is said for all of them.
+        const n = value => value.toLocaleString('en-US'), before = [...used].filter(([name]) => name !== id).sort((a, b) => b[1] - a[1]);
+        const largest = [...whole].reduce((top, entry) => entry[1].all > top[1].all ? entry : top)[0];
+        const uses = !before.length ? '' : before.length === 1 ? `${before[0][0]} uses ${n(before[0][1])}, and ` : `the assets before it use ${n(sourceArea - (used.get(id) ?? 0))} (${before.slice(0, 3).map(([name, pixels]) => `${name} ${n(pixels)}`).join(', ')}${before.length > 3 ? ', …' : ''}), and `;
+        const more = ['normal', 'emissive'].filter(pass => entry[pass] !== undefined);
+        const needs = more.length ? `${id} needs ${n(whole.get(id).all)} with its ${more.join(' and ')} pass${more.length > 1 ? 'es' : ''}` : `${id} needs ${n(area)}`;
+        // How many of its frames fit beside the whole rest of the scene (every pass of it counted per frame). Its own
+        // frames are set where it is made: dropping some of them to that count plays unevenly.
+        const { frame, all, count } = whole.get(largest), fit = Math.floor((4194304 - (sceneArea - all)) / frame);
+        const fewer = fit >= 1 ? `${largest} fits with ${fit} frame${fit === 1 ? '' : 's'}, so make it with ${fit} (in its source, rather than thinning its ${count} frames unevenly) or give it a smaller canvas` : `give ${largest} a smaller canvas`;
+        fail(`scene.assets.${id}`, `a scene's assets render at most 4,194,304 pixels in all, every frame of every pass; ${uses}${needs}: ${fewer}`);
+      }
+      sourceArea += area; used.set(id, (used.get(id) ?? 0) + area);
       passes[key] = renderProject(spec);
       warnings.push(...passes[key].warnings.map(message => `${id}.${key}: ${message}`));
     }

@@ -797,15 +797,15 @@ test('spin turns each particle\'s symbol in 45° RotSprite steps from a seeded s
   names.slice(1).forEach((name, i) => assert.equal((step(name) - step(names[i]) + 8) % 8, 2, String(names)));
   for (const name of names.filter(n => n !== 'chip')) assert.deepEqual(recipe.symbols[name], rotateRows(recipe.symbols.chip, Number(name.split('_r')[1]), [1, 1]).rows);
   assert.throws(() => compileEffects(effects({ frames: 2, emitters: [{ at: [12, 12], burst: 1, life: 2, shapes: [['dot'], ['warm']], face: true, spin: 10 }] })), /use one or the other/);
-  // Turned 45°, a symbol must still fit the 256 rows and columns of a recipe symbol: its visible width plus height may
-  // be at most 360, checked up front with the emitter's path; clear borders don't count.
+  // A spinning symbol's visible width plus height may be at most 360 (RotSprite turns it at eight times its size), checked
+  // up front with the emitter's path; clear borders don't count, and a turned symbol stays within 256 a side.
   const rock = (w, h, border = 0) => [...Array(border).fill('.'.repeat(w + 2 * border)), ...Array.from({ length: h }, () => '.'.repeat(border) + 'w'.repeat(w) + '.'.repeat(border)), ...Array(border).fill('.'.repeat(w + 2 * border))];
   const spinning = rows => compileEffects(effects({ frames: 2, edges: ['left', 'right', 'top', 'bottom'], emitters: [{ at: [12, 12], burst: 1, life: 2, spin: 45, shapes: ['rock'] }] }, { symbols: { rock: rows } }));
   for (const rows of [rock(200, 160), rock(180, 180, 30)]) {
     const turned = Object.entries(spinning(rows).recipe.symbols).filter(([name]) => name.startsWith('rock_r')).map(([, symbol]) => symbol);
     assert.ok(turned.length && turned.every(symbol => symbol.length <= 256 && symbol[0].length <= 256 && symbol.length >= 250), String(turned.map(symbol => symbol.length)));
   }
-  assert.match(compileEffectsError(() => spinning(rock(200, 161))), /^fx\.effects\.burst\.emitters\[0\]\.spin: fx\.effects\.burst\.emitters\[0\]\.spin: spin turns rock in 45° steps, and turned 45° its visible 200 × 161 pixels would pass the 256 rows and columns a symbol may have; a spinning symbol's visible width plus height may be at most 360 pixels$/);
+  assert.match(compileEffectsError(() => spinning(rock(200, 161))), /^fx\.effects\.burst\.emitters\[0\]\.spin: fx\.effects\.burst\.emitters\[0\]\.spin: spin turns rock in 45° steps with RotSprite, at eight times its size; a spinning symbol's visible width plus height may be at most 360 pixels, and its visible 200 × 161 pixels add up to 361$/);
 });
 
 test('rest keeps a landed particle where it lands: no slide, sway or spin, and with bounce once a rebound is slow', () => {

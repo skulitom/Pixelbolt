@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { prepareScene, renderScene, sceneImage, sceneHaze, scenePlanes } from './scene.js';
-import { framesGIF, gifBackground, asGIFShows } from './gif.js';
+import { prepareScene, renderScene, sceneImage, sceneHaze, scenePlanes, MAX_PLANE } from './scene.js';
+import { framesGIF, gifBackground, asGIFShows, MAX_FRAMES_PIXELS } from './gif.js';
 import { parseFrameRate } from './sequence.js';
 import { encodePNG } from './png.js';
-import { buildAtlas, inspectProject, namesAnimations } from './core.js';
+import { buildAtlas, inspectProject, namesAnimations, largestScale, fail } from './core.js';
 import { spriteFrames, canvasTexture, normalsYUp, tileSets, parallaxScene } from './godot.js';
 import { tileSource } from './export.js';
 import { tiledTileset, tiledMap } from './tiled.js';
@@ -16,9 +16,24 @@ import { tiledTileset, tiledMap } from './tiled.js';
 // early or late, and notes on the placements whose animations the duration cuts mid-loop or that play once: where the
 // GIF repeats, those jump. `sheet: true` adds `sheet`, inspectProject's view of the frames as the GIF holds them (at
 // their own size, at most 256 evenly spaced cells, as inspect samples): each sampled frame is drawn again, so the
-// frames inspect skips are never kept.
-export function sceneGIF(scene, { fps = 25, scale = 1, background, sheet = false } = {}) {
-  const rate = parseFrameRate(fps, 'gif.fps'), frameMs = 1000 * rate.denominator / rate.numerator, count = Math.max(1, Math.round(scene.duration / frameMs));
+// frames inspect skips are never kept. Without `fps`, a note names an even rate when 25 holds some placement's frames
+// for uneven numbers of GIF frames (see evenRate). It names the rate rather than choosing it: choosing would change
+// shipped scenes' GIFs.
+export function sceneGIF(scene, { fps, scale = 1, background, sheet = false } = {}) {
+  const rate = parseFrameRate(fps ?? 25, 'gif.fps'), frameMs = 1000 * rate.denominator / rate.numerator, count = Math.max(1, Math.round(scene.duration / frameMs));
+  // The whole loop at this scale is held to what one GIF holds, and each frame to one image, before a frame is drawn,
+  // so a refusal names the largest scale at which all of it fits rather than one that fails a frame later. A loop too
+  // long even at scale 1 names the largest whole frame rate that fits, which keeps the scene's timing in fewer frames.
+  const { width, height } = scene, plane = width * height * scale * scale, loop = count * plane;
+  if (Number.isInteger(scale) && scale >= 1 && scale <= 16 && (loop > MAX_FRAMES_PIXELS || plane > MAX_PLANE)) {
+    const fits = Math.min(largestScale(count * width * height, MAX_FRAMES_PIXELS, scale), largestScale(width * height, MAX_PLANE, scale));
+    const past = plane > MAX_PLANE ? 'more pixels than one image holds' : `${loop.toLocaleString('en-US')} pixels in all, past the 134,217,728 a GIF holds`;
+    const head = `at scale ${scale} the ${count} frame${count === 1 ? '' : 's'} of the ${width}×${height} scene ${count === 1 ? 'is' : 'are'} ${width * scale}×${height * scale}, ${past}`;
+    if (fits) fail('scale', `${head}; scale ${fits} is the largest that fits${count === 1 ? '' : ', or shorten the scene'}`);
+    let slower = Math.min(240, Math.floor(rate.numerator / rate.denominator));
+    while (slower >= 1 && Math.max(1, Math.round(scene.duration * slower / 1000)) * width * height > MAX_FRAMES_PIXELS) slower--;
+    fail('fps', `${head}; ${slower >= 1 ? `fps ${slower}${scale > 1 ? ' at scale 1' : ''} is the largest that fits, or shorten the scene` : 'shorten the scene'}`);
+  }
   const blend = gifBackground(background), at = (k, enlarge) => sceneImage(renderScene(scene, { time: k * frameMs }), { scale: enlarge });
   function* frames() {
     for (let k = 0; k < count; k++) { const image = at(k, scale); yield { data: image.data, width: image.width, height: image.height, name: `frame ${k + 1}` }; }
@@ -40,8 +55,39 @@ export function sceneGIF(scene, { fps = 25, scale = 1, background, sheet = false
     const gcd = (a, b) => (b ? gcd(b, a % b) : a), whole = plays.filter(play => play.loop).reduce((all, play) => (all > 60000 ? all : all / gcd(all, play.length) * play.length), 1);
     gif.notes.push(`The scene's ${scene.duration} ms cut ${cut.slice(0, 6).map(item => `${item.name} (a loop of ${item.length} ms)`).join(', ')}${cut.length > 6 ? ` and ${cut.length - 6} more` : ''} mid-loop, so the GIF jumps where it repeats. ${whole <= 60000 ? `A scene duration of ${whole} ms holds whole loops of every placement.` : 'No duration up to 60000 ms holds whole loops of them all: give them loops of one length (frame durations, or fewer frames).'}`);
   }
+  const even = fps === undefined && evenRate(scene, rate);
+  if (even) gif.notes.push(even);
   if (once.length) gif.notes.push(`${once.slice(0, 6).join(', ')}${once.length > 6 ? ` and ${once.length - 6} more` : ''} ${once.length === 1 ? 'plays' : 'play'} once and ${once.length === 1 ? 'holds its' : 'hold their'} last frame, then ${once.length === 1 ? 'starts' : 'start'} again where the GIF repeats: a one-shot animation in a loop. A patch of animations.<name> with "loop": true and "direction": "pingpong" makes a swing go there and back.`);
   return gif;
+}
+
+// What a note says when the frame rate splits the frames of the animations the placements play (those of more than one
+// frame: placements, sequence cues and tilemap cells) unevenly, so a frame of 100 ms at 25 fps is held 120 ms, then
+// 80: the largest rate up to this one whose GIF frame is a whole number of centiseconds and divides every such frame.
+// null when the frames are even already, or when that rate is below 8 fps or there is none (frames of 90 and 80 ms
+// share only 10 ms, which 25 fps cannot divide): a slower GIF loses more than its stutter, so the note stays out.
+function evenRate(scene, rate) {
+  const durations = new Set(), add = (project, name) => {
+    const animation = typeof name === 'string' ? project.animations[name] : null;
+    if (animation?.frames.length > 1) for (const index of animation.frames) durations.add(project.frames[index].duration);
+  };
+  for (const instance of scene.instances) {
+    // A placement hidden at the start plays only what its cues show.
+    const project = scene.assets[instance.asset].recipe;
+    for (const name of [instance.hidden ? null : instance.animation, ...(instance.sequence ?? []).map(cue => cue.animation)]) add(project, name);
+    for (const cell of instance.tilemap?.cells ?? []) add(project, cell.animation);
+  }
+  // A frame of d ms is a whole number of GIF frames when d × numerator is a multiple of 1000 × denominator.
+  const uneven = [...durations].filter(d => (d * rate.numerator) % (1000 * rate.denominator)).sort((a, b) => a - b);
+  if (!uneven.length) return null;
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a), whole = [...durations].reduce(gcd, 0), own = 1000 * rate.denominator / rate.numerator;
+  let step = Math.ceil(own / 10) * 10;
+  while (step <= Math.min(whole, 125) && whole % step) step += 10;
+  if (step > Math.min(whole, 125)) return null;
+  const shared = gcd(1000, step), label = step === shared ? String(1000 / step) : `${1000 / shared}/${step / shared}`;
+  const shown = uneven.slice(0, 6), more = uneven.length - shown.length;
+  const listed = more ? `${shown.join(', ')} ms and ${more} more` : shown.length > 1 ? `${shown.slice(0, -1).join(', ')} and ${shown.at(-1)} ms` : `${shown[0]} ms`;
+  return `At ${rate.label} fps (${Math.round(own * 100) / 100} ms a GIF frame) frames of ${listed} are held for uneven numbers of GIF frames, so their animation stutters; fps ${label}${step === shared ? '' : ` (${step} ms a frame)`} holds each for a whole number.`;
 }
 
 export async function createSceneBundle(source) {

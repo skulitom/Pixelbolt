@@ -105,16 +105,19 @@ export class SpritePlayer {
     this.drawFrame(frameAt(this.atlas, this.animationName, time));
     if (!this.animation.loop && time >= this.animation.duration) this.pause();
   }
-  // The canvas always shows the full source size; trimmed frames are drawn at their original offset.
+  // The canvas always shows the full source size; trimmed frames are drawn at their original offset. The scale is
+  // lowered for a frame it would take past 8192 canvas pixels a side (32 times a 256-pixel frame, 8 times a 1024-pixel
+  // one): browsers draw nothing on a larger canvas, and say nothing.
   drawFrame(name) {
     if (!Object.hasOwn(this.atlas.frames, name)) throw new Error(`Unknown frame: ${name}`);
     const entry = this.atlas.frames[name], { x, y, w, h } = entry.frame;
     const source = entry.sourceSize ?? { w, h }, offset = entry.spriteSourceSize ?? { x: 0, y: 0 };
-    if (this.canvas.width !== source.w * this.scale) this.canvas.width = source.w * this.scale;
-    if (this.canvas.height !== source.h * this.scale) this.canvas.height = source.h * this.scale;
+    const scale = Math.max(1, Math.min(this.scale, Math.floor(8192 / Math.max(source.w, source.h))));
+    if (this.canvas.width !== source.w * scale) this.canvas.width = source.w * scale;
+    if (this.canvas.height !== source.h * scale) this.canvas.height = source.h * scale;
     this.context.imageSmoothingEnabled = false;
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.context.drawImage(this.image, x, y, w, h, offset.x * this.scale, offset.y * this.scale, w * this.scale, h * this.scale);
+    this.context.drawImage(this.image, x, y, w, h, offset.x * scale, offset.y * scale, w * scale, h * scale);
   }
   destroy() { this.pause(); this.animation = null; this.animationName = null; }
 }

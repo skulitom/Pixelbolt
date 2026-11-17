@@ -1,7 +1,7 @@
 import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
 import { encodePNG } from './png.js';
 import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
-import { compareVersions, engineAllowed, engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
+import { compareVersions, engineAllowed, engineBase, examplePath, framePNGScale, inlineExample, jsonErrorLocation, PNG_PIXELS, safeName } from './lib.js';
 
 let loadedBase, loadedEngine, cached;
 // These compilers shipped after the first supported engine. Import only the one this source needs, so older links
@@ -130,7 +130,10 @@ export async function handleRequest(request, onSource = () => {}) {
   if (request.export === 'frame') {
     const frame = result.frames[request.frame];
     if (!frame) throw new Error('Choose an available frame.');
-    const scale = request.scale;
+    // Checked before the frame is enlarged: a 640 × 360 frame at 16× would hold 59 million pixels (236 MB) only for
+    // the PNG encoder to refuse it, and a 4096-pixel still about 17 GB.
+    const scale = request.scale, most = framePNGScale(result.width, result.height);
+    if (Number.isInteger(scale) && scale > most) throw new Error(`At scale ${scale} this ${result.width}×${result.height} frame would be ${result.width * scale}×${result.height * scale}, more than the ${PNG_PIXELS.toLocaleString('en')} pixels one PNG holds. Choose scale ${most} or lower.`);
     files.push(await pngFile({ width: result.width * scale, height: result.height * scale,
       data: engine.core.scalePixels(frame.data, result.width, result.height, scale) }, `${name}-${safeName(frame.name)}.png`));
   } else if (request.export === 'sheet' || request.export === 'atlas') {

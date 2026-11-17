@@ -177,7 +177,8 @@ test('every source that can link a shared palette compiles to a recipe that keep
 test('validate on a source says what the file is and how to check it, and the package exports the render check', async () => {
   // Read as a recipe, a source's first field was "unknown", which reads as a broken file.
   const error = refused(cli('validate', 'examples/meteor.fx.json'));
-  assert.match(error.error, /^validate checks a recipe, and this is a pixelforge-fx source; pixelbolt compile examples\/meteor\.fx\.json --out <new\.json> checks it/);
+  assert.equal(error.path, 'project.format');
+  assert.equal(error.error, 'project.format: this is a pixelforge-fx source: compile it first (pixelbolt compile examples/meteor.fx.json --out <new.json>), then validate the recipe it writes');
   // What the CLI and MCP check a render against is the library's too: createBundle alone delivered unchecked.
   const { readExpect, checkDelivery, briefCheck, renderProject } = await import('../src/index.js');
   const recipe = JSON.parse(await readFile(path.join(root, 'examples', 'coin.json'), 'utf8')), project = renderProject(recipe);

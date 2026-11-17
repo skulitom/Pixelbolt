@@ -20,7 +20,7 @@ El fuego, el humo, el vapor, las explosiones, la magia, el agua, la miel, el sli
 
 - **Para quién es:** desarrolladores de videojuegos, equipos de game jams y creadores web o de video que quieren que un agente como Claude, Codex o Cursor dibuje y corrija su pixel art, y quienes construyen agentes que necesitan imágenes exactas y repetibles.
 - **Úsalo cuando** quieras recursos 2D pequeños para juegos que sigan siendo editables como texto: el agente vuelve a leer cada píxel, corrige un píxel o un fotograma sin redibujar el resto, y la misma receta produce siempre la misma imagen.
-- **No lo uses para** imágenes pictóricas o fotográficas, animaciones grandes (un fotograma de animación mide como máximo 256 × 256 píxeles, y un proyecto tiene como máximo 256 fotogramas y 4 194 304 píxeles en total; una imagen fija de un solo fotograma, como un fondo o un mural de 1920 × 1080, puede medir hasta 4096 píxeles por lado dentro de ese total), generar arte con un modelo de imágenes ni editar GIF o archivos de Aseprite (solo importa PNG de hasta 8 bits por canal).
+- **No lo uses para** imágenes pictóricas o fotográficas, animaciones grandes (un fotograma de animación mide como máximo 1024 píxeles por lado y 262 144 píxeles, como 320 × 180, 640 × 360 o 512 × 512, y un proyecto tiene como máximo 256 fotogramas y 4 194 304 píxeles en total, es decir, 72 fotogramas de 320 × 180; una imagen fija de un solo fotograma, como un fondo o un mural de 1920 × 1080, puede medir hasta 4096 píxeles por lado dentro de ese total), generar arte con un modelo de imágenes ni editar GIF o archivos de Aseprite (solo importa PNG de hasta 8 bits por canal).
 
 ## Pruébalo
 

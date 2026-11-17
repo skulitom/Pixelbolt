@@ -109,7 +109,7 @@ test('pose compilation retains recipe validation without rasterizing frames', ()
     [s => { s.animations = { walk: { frames: ['missing'] } }; }, /animations.walk.frames/],
     [s => { s.animations = { walk: { frames: ['pose-0'], loop: 1 } }; }, /animations.walk.loop/],
     [s => { s.sheet = { scale: 17 }; }, /sheet.scale/],
-    [s => { s.sheet = { columns: 256, scale: 16 }; s.width = 256; s.height = 256; }, /atlas exceeds/]
+    [s => { s.sheet = { columns: 256, scale: 16 }; s.width = 256; s.height = 256; }, /project.sheet.scale: at scale 16 the 2 frames of 256×256 make an atlas of 1048576×4096, past the 16,777,216 pixels one PNG holds; scale 1 is the largest that fits, or sheet.columns 2 at scale 11/]
   ];
   for (const [change, expected] of cases) {
     const source = stampRig(16, 2, 2); change(source);

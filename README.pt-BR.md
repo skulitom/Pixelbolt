@@ -20,7 +20,7 @@ Fogo, fumaça, vapor, explosões, magia, água, mel, slime e areia vêm de uma s
 
 - **Para quem é:** desenvolvedores de jogos, equipes de game jam e criadores para web ou vídeo que querem que um agente como Claude, Codex ou Cursor desenhe e revise a sua pixel art, e quem constrói agentes que precisam de imagens exatas e reproduzíveis.
 - **Use quando** você quiser assets 2D pequenos para jogos que continuem editáveis como texto: o agente relê cada pixel, corrige um pixel ou um quadro sem redesenhar o resto, e a mesma receita sempre gera a mesma imagem.
-- **Não use para** imagens pictóricas ou fotográficas, animações grandes (um quadro de animação tem no máximo 256 × 256 pixels, e um projeto tem no máximo 256 quadros e 4.194.304 pixels no total; uma imagem estática de um só quadro, como um fundo ou um mural de 1920 × 1080, pode ter até 4096 pixels de lado dentro desse total), gerar arte com um modelo de imagens nem editar GIFs ou arquivos do Aseprite (ele importa apenas PNG, com até 8 bits por canal).
+- **Não use para** imagens pictóricas ou fotográficas, animações grandes (um quadro de animação tem no máximo 1024 pixels de lado e 262.144 pixels, como 320 × 180, 640 × 360 ou 512 × 512, e um projeto tem no máximo 256 quadros e 4.194.304 pixels no total, ou seja, 72 quadros de 320 × 180; uma imagem estática de um só quadro, como um fundo ou um mural de 1920 × 1080, pode ter até 4096 pixels de lado dentro desse total), gerar arte com um modelo de imagens nem editar GIFs ou arquivos do Aseprite (ele importa apenas PNG, com até 8 bits por canal).
 
 ## Experimente
 

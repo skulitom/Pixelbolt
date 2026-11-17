@@ -47,6 +47,8 @@ select { max-width: 100%; min-width: 0; }
 textarea { display: block; width: 100%; min-height: 26rem; height: 58vh; resize: vertical; padding: 1rem; tab-size: 2; font: .8rem/1.6 Consolas, 'Courier New', monospace; }
 .artboard { height: 58vh; min-height: 26rem; width: 100%; overflow: auto; display: grid; border: 1px solid var(--rule); border-radius: 5px; padding: 1rem; background: conic-gradient(var(--surface) 25%, var(--checker) 0 50%, var(--surface) 0 75%, var(--checker) 0) 0 0 / 16px 16px; }
 canvas { display: block; image-rendering: pixelated; margin: auto; grid-area: 1 / 1; }
+/* Art fitted below 1× is scaled down smoothly, so a dither reads as the tone it makes rather than as noise. */
+canvas.smooth { image-rendering: auto; }
 #empty-preview { grid-area: 1 / 1; margin: auto; background: var(--bg); padding: .4rem .8rem; border-radius: 4px; }
 body[data-state='error'] canvas, body[data-state='rendering'] canvas, body[data-state='loading'] canvas { opacity: .4; }
 .playback { margin-top: .8rem; }
