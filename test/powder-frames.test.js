@@ -34,8 +34,10 @@ test('a falling-sand clip stepped for video frames shows the frames its recipe d
     const clip = powderFrames(source);
     assert.deepEqual([clip.name, clip.width, clip.height, clip.frames, clip.duration], [recipe.name, recipe.width, recipe.height, recipe.frames.length, recipe.frames[0].duration]);
     for (const n of [0, 1, 5, clip.frames - 1, 3, 0]) assert.ok(same(clip.image(n), recipe.frames[n].data), `${preset}: frame ${n}`);
-    // The same through the sequence a video editor gets: the PNG files, their names and their bytes.
-    for (const options of [{ fps: 30 }, { fps: 12, loops: 2 }, { fps: 30, step: 2 }, { fps: 60, seconds: 1.5, background: '#102030' }, { fps: 25, size: '720p', align: 'bottom' }]) {
+    // The same through the sequence a video editor gets: the PNG files, their names and their bytes. Both sides enlarge
+    // a frame in the same code (build's compose), so the shorter clip shows 720p and the longer runs at its rate unenlarged.
+    const enlarged = preset === 'quarry-blast' ? { size: '720p', align: 'bottom' } : {};
+    for (const options of [{ fps: 30 }, { fps: 12, loops: 2 }, { fps: 30, step: 2 }, { fps: 60, seconds: 1.5, background: '#102030' }, { fps: 25, ...enlarged }]) {
       assert.deepEqual(pngs(createPowderSequence(source, options).files), pngs(createSequence(recipe, options).files), `${preset} ${JSON.stringify(options)}`);
     }
   }
