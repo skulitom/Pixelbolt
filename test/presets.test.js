@@ -16,6 +16,7 @@ import { compileWaves } from '../src/wave.js';
 import { compileCrystals } from '../src/crystal.js';
 import { compilePowder } from '../src/powder.js';
 import { compileBodies } from '../src/bodies.js';
+import { bodiesPresets } from '../scripts/bodies-presets.mjs';
 import { decodePNG } from '../src/import.js';
 import { skillFiles } from '../src/skill.js';
 import { presetEntries, listPresets, briefListing, findListing, FIND_NOTE, BRIEF_NOTE, COMPILERS } from '../src/presets.js';
@@ -148,6 +149,8 @@ test('the presets listing covers every source and looping recipe in examples/, m
     // A liquid simulation reads as an effect, never as a character's idle.
     if (entry.kind === 'fluid' && liquid) assert.match(entry.for, /liquid, not a character/);
   }
+  // The rigid-body lines above were checked for every preset the bodies compiler ships, no fewer.
+  assert.deepEqual(presets.filter(entry => entry.kind === 'bodies').map(entry => entry.name).sort(), Object.keys(bodiesPresets).sort());
 });
 
 // A listed preset has colours only if it draws something, and the renders above count each one's.
