@@ -4,8 +4,8 @@ Fire, smoke, steam, magic and dust that move like real gases, simulated inside A
 ordinary frames. It's free, open source (MIT) and made with [Pixelbolt](https://github.com/skulitom/Pixelbolt).
 
 The extension runs the gas presets from Pixelbolt's Fluid lab, with the same controls. For the same settings you get
-the same frames Pixelbolt makes, pixel for pixel: every build checks that against Pixelbolt itself before it's
-packaged.
+the same frames as the Pixelbolt it was built from, pixel for pixel: every build checks that against that Pixelbolt
+before it's packaged. A later Pixelbolt release may change a preset.
 
 | Preset | Size | Frames | |
 |---|---|---|---|
@@ -23,7 +23,7 @@ All seven simulate live in Aseprite.
 
 1. Get `pixelbolt-fluids-1.0.0.aseprite-extension`, or build it from this folder (see
    [Building from source](#building-from-source)).
-2. Double-click it, or in Aseprite open **Edit > Preferences > Extensions > Add Extension** and pick the file.
+2. In Aseprite, open **Edit > Preferences > Extensions > Add Extension** and pick the file.
 
 You need Aseprite 1.3 or newer. The extension reads and writes no files and asks for no permissions.
 
@@ -56,8 +56,8 @@ Colour modes:
 
 ## More from Pixelbolt
 
-Pixelbolt is a free pixel-art toolkit with 38 fluid presets (liquids, slime, honey, sand, electricity and heat as well
-as these gases), effects, crystals and more, all from small text recipes:
+Pixelbolt is a free pixel-art toolkit with more than forty fluid presets (liquids, slime, honey, sand, electricity and
+heat as well as these gases), effects, crystals and more, all from small text recipes:
 - [Poke the pixels](https://skulitom.github.io/Pixelbolt/playground/fluids/): a live campfire and liquids in your
   browser, nothing to install.
 - [The gallery](https://skulitom.github.io/Pixelbolt/gallery/) and the [playground](https://skulitom.github.io/Pixelbolt/playground/).

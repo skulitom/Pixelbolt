@@ -5,7 +5,7 @@ description: Make, fix and export pixel art with Pixelbolt JSON recipes - sprite
 
 # Pixelbolt pixel art
 
-Use this when creating pixel sprites, tiles, icons, effects or short sprite animations. Pixelbolt lives at the project root two directories above this skill's directory. Run its CLI with Node.js (20 or newer) as `node bin/pixelbolt.js <command>`, or use its MCP tools if configured. It is not for vector or SVG logos, photographs, painted images or pictures from an image model: say so and suggest a tool for that work.
+Use this when creating pixel sprites, tiles, icons, effects or short sprite animations. Pixelbolt lives at the project root two directories above this skill's directory. Run its CLI with Node.js (20 or newer) as `node bin/pixelbolt.js <command>`, or use its MCP tools if configured. It is not for vector or SVG output, photographs, painted images or pictures from an image model, though it can redraw a logo or icon as pixel art: for that other work, say so and suggest a tool.
 
 In a copy of this file alone, as `npx skills add skulitom/Pixelbolt` installs it, there is no checkout, so run every command below as `npx -y pixelbolt@latest <command>` in place of `node bin/pixelbolt.js <command>`, and read any `docs/`, schema or `examples/` path named here after https://raw.githubusercontent.com/skulitom/Pixelbolt/main/. That copy comes from Pixelbolt's main branch, which can be a few days ahead of the npm release, so if `npx -y pixelbolt@latest help` does not know a command, option or topic, leave it out rather than guess. Skip this paragraph where `bin/pixelbolt.js` is two directories above this file, as in a checkout, the npm package, the Claude Code plugin and Pixelbolt Studio.
 
@@ -51,7 +51,7 @@ Over MCP the same steps are `pixel_compile`, `pixel_validate`, `pixel_inspect`, 
 Run `help` as `node bin/pixelbolt.js help <topic> ["<section>"]`; over MCP, `pixel_help` with `topic` and `name`.
 
 - `help quickstart` (MCP `pixel_help` alone): the recipe format, the operations and patches. Read it before writing or editing a recipe by hand.
-- `help craft "<section>"`: one short checklist. Sections: `Rules`, `Drawing by hand`, `Characters`, `Colour variants`, `Effects`, `Tiles and scenes`, `Isometric`, `Exports and delivery` (video frames, GIF options, Godot, Tiled, Phaser), `MCP`, `Limits`.
+- `help craft "<section>"`: one short checklist. Sections: `Rules`, `Drawing by hand`, `Characters`, `Colour variants`, `Effects`, `Tiles and scenes`, `Isometric`, `Lit sprites`, `Exports and delivery` (video frames, GIF options, Godot, Tiled, Phaser), `MCP`, `Limits`.
 - `help guide "<heading>"`: every field, operation, inspection option and export. `help guide` lists its headings, and a word that is no heading finds the paragraphs that mention it (`help guide text`, `help workflow apex`).
 - `help workflow "<section>"`: long techniques for poses, scenes, tiles, effects and lighting. `help workflow` lists its sections, and a long section lists its parts.
 - Files: `docs/agent-quick-start.md`, `docs/agent-craft.md`, `docs/agent-guide.md`, `docs/art-workflow.md`, `docs/game-integration.md`, and `schema.json` with the per-format schemas beside it.
