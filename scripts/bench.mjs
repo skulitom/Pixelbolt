@@ -140,6 +140,16 @@ const CASES = [
       return { compareProjects, before: renderProject(still('#102030')), after: renderProject(still('#112233')) };
     },
     run: ({ compareProjects, before, after }) => { const { image, ...report } = compareProjects(before, after); return { frames: report.frames.changed.length, hash: hash(JSON.stringify(report), ...(image ? [image.sheet.data] : [])) }; } })),
+  // A batch of small paints on a frame full of corrections: each change merges into the frame's whole list, so this is
+  // the cost the work budget caps; the refusal note's bookkeeping must not add a second pass over the list.
+  { id: 'patch/paint-many', what: 'patchRecipe: 128 one-pixel paints on a 256 × 256 still with 65,536 corrections', budget: 3000,
+    setup: async load => {
+      const pixels = [];
+      for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) pixels.push({ x, y, color: 's' });
+      return { patchRecipe: (await load('src/patch.js')).patchRecipe, recipe: { version: 1, name: 'w', width: 256, height: 256, palette: { k: '#102030', s: '#a0c0f0' }, frames: [{ name: 'f', ops: [], pixels }] },
+        changes: Array.from({ length: 128 }, (_, i) => ({ paint: 'frames[f]', value: [{ x: i, y: 0, color: 'k' }] })) };
+    },
+    run: ({ patchRecipe, recipe, changes }) => { const { recipe: next } = patchRecipe(recipe, changes); return { frames: 1, hash: hash(JSON.stringify(next.frames[0].pixels.slice(0, 256))) }; } },
   // A contact sheet of every frame, as inspect, render and patch replies carry one (the same drawing as above).
   { id: 'inspect/waterfall', what: 'inspectProject: a contact sheet of the compiled waterfall', inputs: ['waterfall'],
     setup: async load => ({ inspectProject: (await load('src/core.js')).inspectProject, project: (await load('src/core.js')).renderProject(prepared('waterfall')) }),

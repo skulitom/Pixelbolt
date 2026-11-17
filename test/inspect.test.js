@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { renderProject, inspectProject, wildcard } from '../src/core.js';
+import { renderProject, inspectProject, analyzeProject, wildcard } from '../src/core.js';
 
 const pixel = (sheet, x, y) => [...sheet.data.slice((y * sheet.width + x) * 4, (y * sheet.width + x) * 4 + 4)];
 test('grids read pixels back as palette keys, transparency and one shared legend', () => {
@@ -119,4 +119,15 @@ test('CLI inspect takes --step and --offset', () => {
   // --frames and --animation pick cells two ways: the help says so, and the refusal says what each does.
   assert.match(run('--help').stdout, /--frames a,b or --animation name \(one or the other\) picks cells/);
   assert.match(JSON.parse(run('--frames', 'rest', '--animation', 'idle').stderr).error, /not both: frames picks the named frames in the order named, animation one animation's frames in play order/);
+});
+
+test('diagnostics give a loop its boundary and leave it out of a one-shot, which never plays its last frame into its first', () => {
+  const recipe = loop => ({ version: 1, name: 'intro', width: 8, height: 4, palette: { k: '#000' }, frames: Array.from({ length: 3 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'rect', x: 0, y: 0, w: 2 + i * 3, h: 4, color: 'k' }] })), animations: { play: { frames: ['f0', 'f1', 'f2'], loop } } });
+  const [once] = analyzeProject(renderProject(recipe(false))).animations, [looped] = analyzeProject(renderProject(recipe(true))).animations;
+  assert.deepEqual(once, { animation: 'play', duration: 300, entries: 3, repeatedAdjacent: 0 });
+  assert.deepEqual(looped.boundary, { pixels: 24, box: { x: 2, y: 0, w: 6, h: 4 } });
+  // The CLI reply is the same.
+  const made = spawnSync(process.execPath, ['bin/pixelbolt.js', 'inspect', '-', '--diagnostics'], { cwd: new URL('../', import.meta.url), input: JSON.stringify(recipe(false)), encoding: 'utf8' });
+  assert.equal(made.status, 0, made.stderr);
+  assert.equal(JSON.parse(made.stdout).diagnostics.animations[0].boundary, undefined);
 });

@@ -153,8 +153,10 @@ In the "app" folder:
     examples                     the samples
     README.md                    full documentation
 
-Pixelbolt is for small sprites, tiles and effects: up to 256 x 256 pixels and
-256 frames per recipe.
+Pixelbolt is for sprites, tiles and effects: an animation frame of up to 1024
+pixels a side and 262,144 pixels (320 x 180, 640 x 360 or 512 x 512), up to
+256 frames holding 4,194,304 pixels in all (72 frames of 320 x 180), and a
+single still of up to 4096 pixels a side.
 
 Source code and issues: https://github.com/skulitom/Pixelbolt
 

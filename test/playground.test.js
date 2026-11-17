@@ -12,7 +12,7 @@ import { COMPILERS } from '../src/presets.js';
 import { checkVersion, recipeKind, shareLink, embedRecipe, readEmbeddedRecipe, readShareLink, RECIPE_LIMIT, EMBED_LIMIT } from '../src/share.js';
 import { loadEngine, renderRecipe, framesDigest, ENGINE_MODULES, sceneSheet } from '../playground/render.js';
 import { encodePNG } from '../playground/png.js';
-import { compareVersions, filterExamples, engineOverride, engineBase, engineAllowed, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS } from '../playground/lib.js';
+import { compareVersions, filterExamples, engineOverride, engineBase, engineAllowed, jsonErrorLocation, formatSize, safeName, examplePath, inlineExample, timeLimit, advancePlayback, editGuard, REPLACE_EDITS, framePNGScale, fitScale, PNG_PIXELS } from '../playground/lib.js';
 import { handleRequest, EDITOR_LINES } from '../playground/worker.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -293,6 +293,26 @@ test('small helpers order versions numerically, format sizes and sanitise filena
   assert.equal(formatSize(100), '100 B'); assert.equal(formatSize(1024), '1.0 KiB'); assert.equal(formatSize(1048576), '1.0 MiB');
   assert.match(safeName('<img src=x onerror=alert(1)>/../'), /^[A-Za-z0-9_-]+$/);
 });
+test('frame PNGs stop at the scale one PNG holds, and Fit goes below 1× only for art larger than the box', () => {
+  assert.equal(PNG_PIXELS, 16777216);
+  // Every frame up to 256 × 256 keeps all 16 scales; bigger animation frames and stills stop sooner.
+  assert.deepEqual([[16, 16], [256, 256], [320, 180], [640, 360], [512, 512], [1024, 256], [4096, 4096]].map(([w, h]) => framePNGScale(w, h)), [16, 16, 16, 8, 8, 8, 1]);
+  for (const [w, h] of [[320, 180], [640, 360], [1024, 256], [4096, 1]]) {
+    const most = framePNGScale(w, h);
+    assert.ok(w * most * h * most <= PNG_PIXELS && (most === 16 || w * (most + 1) * h * (most + 1) > PNG_PIXELS), `${w}x${h}`);
+  }
+  assert.equal(fitScale(600, 400, 32, 32), 12); assert.equal(fitScale(6000, 4000, 32, 32), 16); assert.equal(fitScale(700, 400, 640, 360), 1);
+  assert.equal(fitScale(320, 400, 640, 360), 0.5);
+});
+test('a big animation frame exports a frame PNG within the PNG limit and refuses a larger scale before enlarging it', async () => {
+  const recipe = { version: 1, name: 'screen', width: 640, height: 360, palette: { a: '#204060', b: '#f0e0a0' },
+    frames: ['one', 'two'].map((name, i) => ({ name, duration: 100, ops: [{ op: 'fill', color: 'a' }, { op: 'rect', x: 100 + i * 40, y: 50, w: 30, h: 20, color: 'b' }] })) };
+  const request = { type: 'export', export: 'frame', version: pin, override: engineURL.href, text: JSON.stringify(recipe), frame: 1 };
+  const image = decodePNG((await handleRequest({ ...request, scale: 2 })).files[0].data);
+  assert.deepEqual([image.width, image.height], [1280, 720]);
+  assert.deepEqual(Buffer.from(image.data), Buffer.from(engine.core.scalePixels(engine.core.renderProject(recipe).frames[1].data, 640, 360, 2)));
+  await assert.rejects(handleRequest({ ...request, scale: 9 }), { message: 'At scale 9 this 640×360 frame would be 5760×3240, more than the 16,777,216 pixels one PNG holds. Choose scale 8 or lower.' });
+});
 test('example inlining agrees with resolve.js for all manifest sources', async () => {
   for (const entry of manifest) {
     const source = await json(`examples/${entry.file}`);
@@ -457,12 +477,17 @@ test('deploy copies only page files, inserts once, keeps second-run bytes and mt
 
 // The real controller (playground/app.js) without a browser or network: an element for each id in index.html, a
 // Worker that answers when told to, timers fired by hand, and an address that history.replaceState changes as a
-// browser's does. Each call imports its own copy of the page. Pixels and workers have their own tests above.
-async function playgroundPage(tag, run) {
+// browser's does. Each call imports its own copy of the page. Pixels and workers have their own tests above. A `box`
+// ({ width, height }) gives the preview box a size and the page getComputedStyle, so Fit can measure it.
+const recordClasses = names => ({
+  add: name => { names.add(name); }, remove: name => { names.delete(name); }, contains: name => names.has(name),
+  toggle: (name, force = !names.has(name)) => { if (force) names.add(name); else names.delete(name); return force; }
+});
+async function playgroundPage(tag, run, { box } = {}) {
   const elements = new Map(), timers = new Map(), workers = [], events = new Map(), questions = [], addresses = [], copied = [];
   let timerId = 0;
   class Element {
-    constructor(tag) { this.tag = tag; this.value = ''; this.textContent = ''; this.children = []; this.events = new Map(); this.style = {}; this.dataset = {}; this.attributes = {}; this.classList = { add() {}, remove() {} }; }
+    constructor(tag) { this.tag = tag; this.value = ''; this.textContent = ''; this.children = []; this.events = new Map(); this.style = {}; this.dataset = {}; this.attributes = {}; this.classes = new Set(); this.classList = recordClasses(this.classes); }
     get options() { return this.children.flatMap(child => child.tag === 'optgroup' ? child.children : [child]); }
     append(...children) { this.children.push(...children); if (this.tag === 'select' && !this.value) this.value = this.options[0]?.value ?? ''; }
     replaceChildren(...children) { this.children = []; this.value = ''; this.append(...children); }
@@ -474,6 +499,7 @@ async function playgroundPage(tag, run) {
   }
   for (const match of (await read('playground/index.html')).matchAll(/<(\w+)\b[^>]*\bid="([^"]+)"/g)) elements.set(match[2], new Element(match[1]));
   const body = new Element('body');
+  if (box) Object.assign(elements.get('artboard'), { clientWidth: box.width, clientHeight: box.height });
   class Worker {
     constructor(url, options) { assert.ok(url.href.endsWith('/playground/worker.js')); assert.equal(options.type, 'module'); this.requests = []; workers.push(this); }
     postMessage(message) { this.requests.push(message); }
@@ -494,7 +520,8 @@ async function playgroundPage(tag, run) {
     fetch: async () => ({ ok: true, json: async () => manifest }),
     ImageData: class { constructor(data, width, height) { this.data = data; this.width = width; this.height = height; } },
     setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
-    clearTimeout: id => timers.delete(id)
+    clearTimeout: id => timers.delete(id),
+    ...box && { getComputedStyle: () => ({ paddingLeft: '0px', paddingRight: '0px', paddingTop: '0px', paddingBottom: '0px' }) }
   };
   const originals = new Map(Object.keys(replacements).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
@@ -524,7 +551,7 @@ async function playgroundPage(tag, run) {
   }
 }
 // The page once its first example has rendered.
-const playgroundReady = (tag, run) => playgroundPage(tag, async page => { page.source('tiny'); await page.render('tiny'); assert.equal(page.body.dataset.state, 'ready'); await run(page); });
+const playgroundReady = (tag, run, options) => playgroundPage(tag, async page => { page.source('tiny'); await page.render('tiny'); assert.equal(page.body.dataset.state, 'ready'); await run(page); }, options);
 
 test('main-thread lifecycle handles reduced motion, stale results, errors, cancellation and the 20-second deadline', () => playgroundPage('controller-test', async page => {
   const { elements, workers, events, questions, addresses, body, preview, flush, fireTimer } = page;
@@ -582,6 +609,29 @@ test('main-thread lifecycle handles reduced motion, stale results, errors, cance
   elements.get('use-pin').click(); assert.equal(workers[3].requests.at(-1).version, pin);
   events.get('pagehide')(); await flush();
 }));
+test('the scale line says where frame PNGs stop for a big frame, and the zoom list offers Fit', () => playgroundReady('big-frame', async page => {
+  const { $ } = page;
+  assert.deepEqual($('zoom').options.map(option => option.value), ['fit', ...Array.from({ length: 16 }, (_, i) => String(i + 1))]);
+  $('gif-scale').value = '12'; $('gif-scale').emit('change');
+  assert.equal($('gif-size').textContent, 'GIF: 24×12 px, 2 frames, scale 12');
+  page.type(page.named('screen')); page.fireTimer(300); await page.flush();
+  page.reply({ result: { ...page.preview, name: 'screen', width: 640, height: 360 } }); await page.flush();
+  assert.equal($('gif-size').textContent, 'GIF: 7680×4320 px, 2 frames, scale 12. Frame PNGs at this size stop at scale 8.');
+  $('gif-scale').value = '8'; $('gif-scale').emit('change');
+  assert.equal($('gif-size').textContent, 'GIF: 5120×2880 px, 2 frames, scale 8');
+}));
+test('a frame larger than the preview box opens at Fit, below 1x and smoothed, and a chosen zoom keeps its pixels sharp', () => playgroundReady('fit-below-one', async page => {
+  const { $ } = page, canvas = $('preview');
+  // The 2 x 1 example gets the largest whole zoom that fits the 600 x 400 box.
+  assert.equal($('zoom').value, '16'); assert.equal(canvas.style.width, '32px'); assert.equal(canvas.classes.has('smooth'), false);
+  page.type(page.named('screen')); page.fireTimer(300); await page.flush();
+  page.reply({ result: { ...page.preview, name: 'screen', width: 640, height: 360 } }); await page.flush();
+  assert.equal($('zoom').value, 'fit');
+  assert.equal(canvas.style.width, '600px'); assert.equal(canvas.style.height, '337.5px');
+  assert.equal(canvas.width, 640); assert.equal(canvas.classes.has('smooth'), true);
+  $('zoom').value = '1'; $('zoom').emit('change');
+  assert.equal(canvas.style.width, '640px'); assert.equal(canvas.classes.has('smooth'), false);
+}, { box: { width: 600, height: 400 } }));
 test('a download or a link clicked while edits wait is delivered or says why not, and the edits render after it', () => playgroundReady('waiting-click', async page => {
   const { $, workers, events, flush, fireTimer, named } = page;
   const downloads = () => $('download-links').children.map(link => link.download);

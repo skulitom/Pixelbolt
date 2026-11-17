@@ -21,6 +21,8 @@ const small = { version: 1, name: 'tile', width: 4, height: 2, palette: { r: '#f
 const check = (recipe, options = {}) => checkDelivery(renderProject(recipe), { recipe, ...options });
 // The fixes quote a pixel_patch change; this reads it back, to prove it is a change patchRecipe accepts.
 const quoted = fix => JSON.parse(fix.slice(fix.indexOf('pixel_patch ') + 12, fix.lastIndexOf(', then render again')));
+// The changes a canvas-size fix quotes, "(pixel_patch [...])" or one change, as a list.
+const quotedSets = fix => [JSON.parse(fix.slice(fix.indexOf('(pixel_patch ') + 13, fix.indexOf('), fit the drawing')))].flat();
 
 test('the render check reports what was delivered, and a hint, when nothing was asked for', () => {
   const plain = check(spirit, { gifs: [] });
@@ -48,7 +50,10 @@ test('the render check passes a delivery that matches the request and names each
     ['forest-spirit.png, frames/ and animations/', 'at most 4 colours', 7],
     ['forest-spirit.png, frames/ and animations/', 'an opaque background', 'transparent or partly transparent pixels in "rest", "rise", "float", "blink", "fall", "settle"']
   ]);
-  assert.match(miss.problems[0].fix, /pixel_patch \{ "set": "width", "value": 32 \}/);
+  // Both asked sides are patched: the first alone left a 32x24 canvas.
+  assert.deepEqual(quotedSets(miss.problems[0].fix), [{ set: 'width', value: 32 }, { set: 'height', value: 32 }]);
+  assert.equal(check(patchRecipe(spirit, quotedSets(miss.problems[0].fix)).recipe, { expect: { width: 32, height: 32 } }).ok, true);
+  assert.match(check(spirit, { expect: { width: 32 } }).problems[0].fix, /\(pixel_patch \{ "set": "width", "value": 32 \}\)/);
   // 32 is no whole multiple of 24, so the GIF waits for the frame size; an asked 24 needs scale 1.
   assert.match(miss.problems[1].fix, /fix the frame size first/);
   const native = check(spirit, { gifs: [animationGIF(project, 'idle', { scale: 8 })], expect: { width: 24 } });
@@ -161,16 +166,21 @@ test('GIFs enlarged by the scale the call gave are noted, not failed, until expe
 const changesAfter = (fix, marker) => { const start = fix.indexOf(marker) + marker.length - 1; return JSON.parse(fix.slice(start, fix.indexOf(']', start) + 1)); };
 
 test('the render check\'s fixes stay inside the format\'s limits, and applying them passes the check', () => {
-  // Over 256 px a side: a smaller canvas at a whole sheet.scale, the one nearest the drawing and the most detailed.
-  const big = check(spirit, { expect: { width: 512, height: 512 } }).problems[0].fix;
-  assert.match(big, /^canvases stop at 256 px a side, so 512x512 is a 32x32 canvas at sheet\.scale 16, the nearest to the current 24x24: .*a 256x256 canvas at sheet\.scale 2, for the most detail\)/);
+  // Past an animation frame's 262,144 pixels: a smaller canvas at a whole sheet.scale, the one nearest the drawing and
+  // the most detailed.
+  const big = check(spirit, { expect: { width: 1024, height: 1024 } }).problems[0].fix;
+  assert.match(big, /^an animation frame is at most 1024 pixels a side and 262,144 in all, so 1024x1024 is a 64x64 canvas at sheet\.scale 16, the nearest to the current 24x24: .*a 512x512 canvas at sheet\.scale 2, for the most detail\)/);
   for (const changes of [changesAfter(big, 'pixel_patch ['), changesAfter(big, '(or [')]) {
-    assert.equal(check(patchRecipe(spirit, changes).recipe, { expect: { width: 512, height: 512 } }).ok, true, JSON.stringify(changes));
+    assert.equal(check(patchRecipe(spirit, changes).recipe, { expect: { width: 1024, height: 1024 } }).ok, true, JSON.stringify(changes));
   }
-  // One side asked: the other keeps its canvas size. 300 = 25 x 12 is nearest 24.
-  const wide = check(spirit, { expect: { width: 300 } }).problems[0].fix;
-  assert.deepEqual(changesAfter(wide, 'pixel_patch ['), [{ set: 'width', value: 25 }, { set: 'sheet.scale', value: 12 }]);
-  assert.equal(check(patchRecipe(spirit, changesAfter(wide, 'pixel_patch [')).recipe, { expect: { width: 300 } }).ok, true);
+  // A size a frame holds is the canvas itself.
+  const framed = check(spirit, { expect: { width: 512, height: 512 } }).problems[0].fix;
+  assert.match(framed, /^the canvas is 24x24: change the recipe's width and height \(pixel_patch \[/);
+  assert.equal(check(patchRecipe(spirit, quotedSets(framed)).recipe, { expect: { width: 512, height: 512 } }).ok, true);
+  // One side asked: the other keeps its canvas size. 1200 = 75 x 16 is nearest 24.
+  const wide = check(spirit, { expect: { width: 1200 } }).problems[0].fix;
+  assert.deepEqual(changesAfter(wide, 'pixel_patch ['), [{ set: 'width', value: 75 }, { set: 'sheet.scale', value: 16 }]);
+  assert.equal(check(patchRecipe(spirit, changesAfter(wide, 'pixel_patch [')).recipe, { expect: { width: 1200 } }).ok, true);
   // An atlas the renderer refuses is never offered: 100 frames of 512x512 pass 16,777,216 pixels at any scale.
   const dots = { version: 1, name: 'dots', width: 2, height: 2, palette: { r: '#ff0000' }, frames: Array.from({ length: 100 }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) };
   assert.equal(check(dots, { expect: { width: 512, height: 512 } }).problems[0].fix, 'at every whole scale that makes 512x512, an atlas of 100 frames at 512x512 passes 16,777,216 pixels: ask for fewer frames or a smaller size, or set sheet.trim if the frames have empty margins');
@@ -192,9 +202,9 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   // Frame-count fixes are held to the animation pixels: 300 frames of 256x256 at sheet.scale 2 pass 67,108,864.
   const poster = { version: 1, name: 'poster', width: 256, height: 256, palette: { r: '#ff0000' }, sheet: { scale: 2 }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }] };
   assert.equal(check(poster, { expect: { frames: 300 } }).problems[0].fix, '300 frames in "default" make 300 played frames at 512x512, past the 67,108,864 animation pixels an export holds: ask for fewer frames or a smaller size');
-  // The nearest size offered when no whole scale fits is held to the same budgets: 100 played frames at 4096x384.
-  const repeated = { ...spirit, animations: { idle: { frames: Array(100).fill('rest') } } };
-  assert.match(check(repeated, { expect: { width: 4093 } }).problems[0].fix, /and the nearest size, 4096x384, is refused too \(100 played frames at 4096x384 pass the 67,108,864 animation pixels an export holds\): tell the user, and ask for fewer frames or a smaller size$/);
+  // The nearest size offered when no whole scale fits is held to the same budgets: 200 played frames at 4092x96.
+  const repeated = { ...spirit, animations: { idle: { frames: Array(200).fill('rest') } } };
+  assert.match(check(repeated, { expect: { width: 4093 } }).problems[0].fix, /and the nearest size, 4092x96, is refused too \(200 played frames at 4092x96 pass the 67,108,864 animation pixels an export holds\): tell the user, and ask for fewer frames or a smaller size$/);
   // Many animations: each frame-count fix is weighed against one count of the played frames, not a rescan.
   const many = { version: 1, name: 'many', width: 1, height: 1, palette: { r: '#f00' }, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }], animations: Object.fromEntries(Array.from({ length: 3000 }, (_, i) => [`m${i}`, { frames: ['a'] }])) };
   const crowd = check(many, { expect: { frames: 2 } });
@@ -209,7 +219,11 @@ test('the render check\'s fixes stay inside the format\'s limits, and applying t
   const forty = { ...dots, frames: dots.frames.slice(0, 40) }, roomy = check(forty, { expect: { width: 512, height: 512 } }).problems[0].fix;
   assert.equal(check(patchRecipe(forty, changesAfter(roomy, '(or [')).recipe, { expect: { width: 512, height: 512 } }).ok, true);
   // No whole scale: say so and offer the nearest size that exists.
-  assert.match(check(spirit, { expect: { width: 4093 } }).problems[0].fix, /no whole scale exports a width of 4093 exactly from 6 frames: tell the user, and offer 4096x384 \(a 256x24 canvas at sheet\.scale 16\) instead$/);
+  assert.match(check(spirit, { expect: { width: 4093 } }).problems[0].fix, /^an animation frame is at most 1024 pixels a side and 262,144 in all, sheet\.scale at most 16, and no whole scale exports a width of 4093 exactly from 6 frames: tell the user, and offer 4092x96 \(a 1023x24 canvas at sheet\.scale 4\) instead$/);
+  // Asked both sides, the nearest canvas also keeps a frame's area: 1021x1021 is a 511x511 canvas at scale 2, not
+  // 1021x1021 at scale 1 (1,042,441 pixels).
+  assert.match(check(spirit, { expect: { width: 1021, height: 1021 } }).problems[0].fix, /exactly from 6 frames: tell the user, and offer 1022x1022 \(a 511x511 canvas at sheet\.scale 2\) instead$/);
+  assert.match(check(spirit, { expect: { width: 4093, height: 4093 } }).problems[0].fix, /and the nearest size, 4096x4096, is refused too \(14 played frames at 4096x4096 pass/);
 
   // An opaque background asked for, with pixels erased after the background: name what erases them.
   const cleared = { version: 1, name: 'cleared', width: 4, height: 2, background: 'r', palette: { r: '#ff0000' }, frames: [{ name: 'a', ops: [{ op: 'clear', x: 0, y: 0, w: 1, h: 1 }] }, { name: 'b', from: 'a' }] };
@@ -257,6 +271,13 @@ test('expect is refused by name when it is malformed', () => {
   for (const [expect, where] of [[null, 'expect'], [[], 'expect'], [{ size: 32 }, 'expect.size'], [{ width: 0 }, 'expect.width'], [{ frames: 1.5 }, 'expect.frames'], [{ frames: 2047 }, 'expect.frames'], [{ frames: {} }, 'expect.frames'], [{ frames: { walk: 0 } }, 'expect.frames.walk'], [{ frames: { walk: '8' } }, 'expect.frames.walk'], [{ frames: [8] }, 'expect.frames'], [{ frames: null }, 'expect.frames'], [{ width: 4097 }, 'expect.width'], [{ gifScale: 17 }, 'expect.gifScale'], [{ loop: 'yes' }, 'expect.loop']]) {
     assert.throws(() => readExpect(expect), error => error instanceof PixelError && error.path === where, JSON.stringify(expect));
   }
+  // A count under an animation's name points to expect.frames, with every such count and those frames already gives;
+  // a name the recipe does not animate gets the list of fields.
+  const named = { animations: { intro: { frames: ['a'] }, idle: { frames: ['a'] }, loop: { frames: ['a'] } } };
+  assert.throws(() => readExpect({ width: 640, height: 360, intro: 6, idle: 6 }, named), error => error.path === 'expect.intro' && error.message.endsWith('unknown field; "intro" is an animation, and a count per animation goes in expect.frames: {"frames": {"intro": 6, "idle": 6}}'));
+  assert.throws(() => readExpect({ frames: { walk: 2 }, loop: true, idle: 0 }, named), error => error.path === 'expect.idle' && error.message.endsWith('{"frames": {"walk": 2, "idle": 1}}'));
+  for (const recipe of [undefined, named, { animations: [] }]) assert.throws(() => readExpect({ walk: 6 }, recipe), error => error.path === 'expect.walk' && error.message.endsWith('unknown field; use width, height, frames, colors, transparent, loop, gifScale or sheet'));
+  assert.equal(readExpect({ frames: { intro: 6, idle: 6 } }, named).frames.intro, 6);
 });
 
 test('MCP pixel_render and CLI render carry the check, and a bad expect or animation writes nothing', async t => {
@@ -264,15 +285,18 @@ test('MCP pixel_render and CLI render carry the check, and a bad expect or anima
   t.after(async () => { assert.ok(dir.startsWith(tempRoot + path.sep)); await rm(dir, { recursive: true, force: true }); });
   const messages = [{ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2025-11-25' } },
     { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'pixel_render', arguments: { project: spirit, gif: { scale: 8 }, expect: { width: 24, height: 24 } } } },
-    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'pixel_render', arguments: { project: spirit, expect: { width: '24' } } } }];
+    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'pixel_render', arguments: { project: spirit, expect: { width: '24' } } } },
+    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'pixel_render', arguments: { project: spirit, expect: { idle: 7 } } } }];
   const result = spawnSync(process.execPath, ['bin/pixelbolt.js', 'mcp', '--out', path.join(dir, 'mcp')], { cwd: root, input: messages.map(message => JSON.stringify(message)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
   assert.equal(result.status, 0, result.stderr);
-  const [, rendered, refused] = result.stdout.trim().split('\n').map(line => JSON.parse(line).result);
+  const [, rendered, refused, misplaced] = result.stdout.trim().split('\n').map(line => JSON.parse(line).result);
   const info = JSON.parse(rendered.content[0].text);
   // The frames are the 24 asked for, and the GIFs 8 times that by the scale the call gave: noted, not failed.
   assert.deepEqual([info.check.ok, info.check.delivered.gifs, info.check.problems], [true, [192, 192], undefined]);
   assert.match(info.check.notes.at(-1), /^The GIFs are 8 times the frame size \(192×192\)/);
   assert.deepEqual([refused.isError, JSON.parse(refused.content[0].text).path], [true, 'expect.width']);
+  // The recipe's animation names reach the refusal.
+  assert.match(JSON.parse(misplaced.content[0].text).error, /expect\.frames: \{"frames": \{"idle": 7\}\}$/);
   // Only the first render wrote a folder.
   assert.equal((await readdir(path.join(dir, 'mcp'))).filter(name => !name.startsWith('.')).length, 1);
   const cli = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', 'render', 'examples/forest-spirit.json', ...args], { cwd: root, encoding: 'utf8' });
@@ -281,9 +305,10 @@ test('MCP pixel_render and CLI render carry the check, and a bad expect or anima
   // render writes no GIFs, so gifScale asks nothing of it; blink plays 3 frames once.
   const report = JSON.parse(out.stdout).check;
   assert.deepEqual([report.ok, report.delivered.animations], [true, { blink: { frames: 3, loop: false } }]);
-  for (const [args, where] of [[['--expect', '{"width":'], 'expect'], [['--animation', 'nope'], 'animation']]) {
+  for (const [args, where] of [[['--expect', '{"width":'], 'expect'], [['--animation', 'nope'], 'animation'], [['--expect', '{"bob":4}'], 'expect.bob']]) {
     const bad = cli('--out', path.join(dir, 'bad'), ...args);
     assert.deepEqual([bad.status, JSON.parse(bad.stderr).path], [1, where]);
+    if (where === 'expect.bob') assert.match(JSON.parse(bad.stderr).error, /\{"frames": \{"bob": 4\}\}$/);
   }
   await assert.rejects(readdir(path.join(dir, 'bad')));
 });
@@ -326,4 +351,27 @@ test('the render check delivers stills by count, judges no motion, and counts ex
   const missed = check(stills, { expect: { frames: 4, loop: true } });
   assert.deepEqual(missed.problems.map(problem => [problem.file, problem.asked, problem.got]), [['tile.png and frames/', 4, 3], ['animations/', 'a loop', 'stills']]);
   assert.match(missed.problems[1].fix, /^the frames are stills \("animations": \{\} in the recipe\), so there is no animation to loop: /);
+});
+
+test('a still asked past 256 is offered a smaller canvas enlarged and itself, held to a still\'s limits; an animation up to 1024 is the canvas', () => {
+  const dots = (width, height, count) => ({ version: 1, name: 'dots', width, height, palette: { r: '#ff0000' }, frames: Array.from({ length: count }, (_, i) => ({ name: `f${i}`, ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] })) });
+  const still = dots(128, 128, 1);
+  // 600x400 fits an animation frame and 600x500 does not; a still gets the same kind of fix for both. The branch sent
+  // 600x400 to "change the recipe's width and height" with a patch of the width alone (a 600x128 canvas).
+  for (const [w, h, near] of [[600, 400, [150, 100]], [600, 500, [150, 125]]]) {
+    const fix = check(still, { expect: { width: w, height: h } }).problems[0].fix;
+    assert.ok(fix.startsWith(`${w}x${h} is a ${near[0]}x${near[1]} canvas at sheet.scale 4, the nearest to the current 128x128: `), fix);
+    assert.ok(fix.includes(`; or, since this is a still, a ${w}x${h} still at sheet.scale 1, one screen pixel per art pixel: pixel_patch [{"set":"width","value":${w}},{"set":"height","value":${h}}]. Either way`), fix);
+    for (const marker of ['pixel_patch [', '(or [', 'art pixel: pixel_patch [']) assert.equal(check(patchRecipe(still, changesAfter(fix, marker)).recipe, { expect: { width: w, height: h } }).ok, true, marker);
+  }
+  // A still's canvas is not held to an animation frame's area: 1200x1000 is a 600x500 canvas at sheet.scale 2 at most.
+  assert.match(check(still, { expect: { width: 1200, height: 1000 } }).problems[0].fix, /\(or \[\{"set":"width","value":600\},\{"set":"height","value":500\},\{"set":"sheet","value":\{"scale":2\}\}\], a 600x500 canvas at sheet\.scale 2, for the most detail\)/);
+  // An animation: a size a frame holds is the canvas, with both sides patched; past a frame's area, a smaller canvas.
+  const strip = dots(128, 128, 4);
+  assert.deepEqual(quotedSets(check(strip, { expect: { width: 600, height: 400 } }).problems[0].fix), [{ set: 'width', value: 600 }, { set: 'height', value: 400 }]);
+  assert.match(check(strip, { expect: { width: 600, height: 500 } }).problems[0].fix, /^an animation frame is at most 1024 pixels a side and 262,144 in all, so 600x500 is a 150x125 canvas at sheet\.scale 4/);
+  // Frames the export refuses at the asked size: up to 256 a side, refused as before; past it, a smaller canvas.
+  const crowd = dots(64, 64, 100);
+  assert.equal(check(crowd, { expect: { width: 256, height: 192 } }).problems[0].fix, '100 frames of 256x192 pass the limit of 4,194,304 pixels of frames: ask for fewer frames or a smaller size');
+  assert.match(check(crowd, { expect: { width: 320, height: 180 } }).problems[0].fix, /^100 frames of 320x180 pass the limit of 4,194,304 pixels of frames, so 320x180 is a 64x36 canvas at sheet\.scale 5, .*a 160x90 canvas at sheet\.scale 2, for the most detail\)/);
 });

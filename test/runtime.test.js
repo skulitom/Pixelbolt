@@ -28,6 +28,19 @@ test('Canvas player respects durations, once/loop behavior, pause/resume and sca
   player.destroy(); assert.equal(pending.size, 0); assert.equal(player.animation, null);
 });
 
+test('the player keeps its canvas within 8192 pixels a side: scale 32 shows a 1024-pixel frame at 8', () => {
+  const draws = [], ctx = { clearRect() {}, drawImage(...args) { draws.push(args); } };
+  const canvas = { width: 0, height: 0, style: {}, getContext() { return ctx; } };
+  const atlas = { frames: { wide: { frame: { x: 0, y: 0, w: 1024, h: 256 }, duration: 100 }, small: { frame: { x: 0, y: 256, w: 256, h: 256 }, duration: 100 } }, animations: {} };
+  const player = new SpritePlayer(canvas, {}, atlas, { scale: 32 });
+  player.drawFrame('wide');
+  assert.deepEqual([canvas.width, canvas.height], [8192, 2048]);
+  assert.deepEqual(draws.at(-1).slice(5), [0, 0, 8192, 2048]);
+  // A 256-pixel frame still takes the whole scale, as before: 8192 exactly.
+  player.drawFrame('small');
+  assert.deepEqual([canvas.width, canvas.height], [8192, 8192]);
+});
+
 test('runtime helpers look up frames by time and draw trimmed, anchored and mirrored frames', async t => {
   const { frameAt, drawFrame, loadSpriteSheet } = await import('../src/runtime.js');
   const atlas = {

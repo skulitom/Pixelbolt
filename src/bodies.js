@@ -2021,17 +2021,19 @@ function crop(grid, width, height) {
 
 // ---- Compiling --------------------------------------------------------------------------------------------------------
 // A source's `subpixels`: how many times finer than the world's pixels its bodies are drawn (1, the default, draws them
-// at whole pixels). The recipe's canvas is that many times larger, at most 256 a side for an animation.
+// at whole pixels). The recipe's canvas is that many times larger, at most BODIES_SIDE a side.
+// A bodies canvas keeps 256 a side, whatever an animation frame may be: the simulation's per-frame cost is not budgeted.
+const BODIES_SIDE = 256;
 // `effects`, the source's effects as written, only make the hint name a value the frames' pixels allow too.
 export function readSubpixels(value, path, width, height, effects) {
   if (value === undefined) return 1;
   const n = integer(value, `${path}.subpixels`, 1, 8);
   const frames = Object.values(isObject(effects) ? effects : {}).reduce((sum, effect) => sum + (Number.isInteger(effect?.frames) && effect.frames > 0 ? effect.frames : 0), 0);
-  if (Math.max(width, height) * n > 256) fail(`${path}.subpixels`, `a ${width}×${height} canvas drawn ${n} times finer is ${width * n}×${height * n}; an animation is at most 256 a side, so use subpixels of at most ${finest(width, height, frames)}`);
+  if (Math.max(width, height) * n > BODIES_SIDE) fail(`${path}.subpixels`, `a ${width}×${height} canvas drawn ${n} times finer is ${width * n}×${height * n}; an animation is at most ${BODIES_SIDE} a side, so use subpixels of at most ${finest(width, height, frames)}`);
   return n;
 }
-// The finest a canvas may be drawn: at most 256 a side and, with `frames`, 4,194,304 pixels over them.
-const finest = (width, height, frames) => Math.max(1, Math.min(8, Math.floor(256 / Math.max(width, height)), frames ? Math.floor(Math.sqrt(4194304 / (frames * width * height))) : 8));
+// The finest a canvas may be drawn: at most BODIES_SIDE a side and, with `frames`, 4,194,304 pixels over them.
+const finest = (width, height, frames) => Math.max(1, Math.min(8, Math.floor(BODIES_SIDE / Math.max(width, height)), frames ? Math.floor(Math.sqrt(4194304 / (frames * width * height))) : 8));
 // The frames a recipe drawn n times finer holds: their pixels together at most 4,194,304, the exporter's limit.
 export function framesFit(frames, width, height, n, path) {
   const pixels = frames * width * n * height * n;
@@ -2221,7 +2223,7 @@ function readSource(source, frames) {
   if (source.format !== 'pixelforge-bodies' || source.version !== 1) fail('bodies', 'expected version-1 pixelforge-bodies');
   const palette = source.palette ?? {};
   if (!isObject(palette)) fail('bodies.palette', 'expected a palette object');
-  const width = integer(source.width, 'bodies.width', 4, 256), height = integer(source.height, 'bodies.height', 4, 256);
+  const width = integer(source.width, 'bodies.width', 4, BODIES_SIDE), height = integer(source.height, 'bodies.height', 4, BODIES_SIDE);
   // A recipe's frames share the exporter's pixels, so its hint counts them; a match written as video frames (bodiesFrames)
   // keeps none of them, and is held only to 256 a side.
   const n = readSubpixels(source.subpixels, 'bodies', width, height, frames === LIMITS.frames ? source.effects : undefined);

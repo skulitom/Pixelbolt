@@ -11,6 +11,10 @@ export const MAX_SEQUENCE_FRAMES = 18000;
 const MAX_UNIQUE_PIXELS = 4294967296;
 // The most grid pixels of different frames a repeated falling-sand clip shows: sixteen times what a recipe holds.
 const REPEATED_PIXELS = 67108864;
+// A sequence canvas is at most SEQUENCE_SIDE a side and SEQUENCE_CANVAS_PIXELS in all (placeSprite); mcp.js's
+// SEQUENCE_PIXELS is another thing, a whole clip's budget. The studio's Frames dialog keeps a copy of both in studio.js
+// sequenceScale, since the studio cannot load this module, and test/interfaces.test.js holds the copy equal.
+export const SEQUENCE_SIDE = 4096, SEQUENCE_CANVAS_PIXELS = 16777216;
 export const VIDEO_SIZES = { '720p': [1280, 720], '1080p': [1920, 1080], '1440p': [2560, 1440], '4k': [3840, 2160], vertical: [1080, 1920], square: [1080, 1080] };
 const ALIGN = { 'top-left': [0, 0], top: [1, 0], 'top-right': [2, 0], left: [0, 1], center: [1, 1], right: [2, 1], 'bottom-left': [0, 2], bottom: [1, 2], 'bottom-right': [2, 2] };
 const NTSC = { '23.976': [24000, 1001], '23.98': [24000, 1001], '29.97': [30000, 1001], '59.94': [60000, 1001], '119.88': [120000, 1001] };
@@ -104,14 +108,14 @@ export function placeSprite(width, height, { size, scale, fit = 'contain', align
   let canvas = null;
   if (size !== undefined) {
     canvas = typeof size === 'string' ? VIDEO_SIZES[size.toLowerCase()] ?? (/^(\d{1,4})x(\d{1,4})$/i.exec(size)?.slice(1).map(Number)) : size;
-    if (!Array.isArray(canvas) || canvas.length !== 2 || !canvas.every(n => Number.isInteger(n) && n >= 1 && n <= 4096) || canvas[0] * canvas[1] > 16777216) fail(`${path}.size`, `expected ${Object.keys(VIDEO_SIZES).join(', ')} or WIDTHxHEIGHT up to 4096 on a side`);
+    if (!Array.isArray(canvas) || canvas.length !== 2 || !canvas.every(n => Number.isInteger(n) && n >= 1 && n <= SEQUENCE_SIDE) || canvas[0] * canvas[1] > SEQUENCE_CANVAS_PIXELS) fail(`${path}.size`, `expected ${Object.keys(VIDEO_SIZES).join(', ')} or WIDTHxHEIGHT up to ${SEQUENCE_SIDE} on a side`);
   } else if (cover) fail(`${path}.fit`, 'cover needs a size to cover');
   if (canvas && !cover && (width > canvas[0] || height > canvas[1])) fail(`${path}.size`, `the ${width}×${height} sprite is larger than the ${canvas[0]}×${canvas[1]} canvas; use fit cover to crop it`);
   const inside = canvas ? Math.min(256, Math.floor(Math.min(canvas[0] / width, canvas[1] / height))) : 1, over = canvas ? Math.ceil(Math.max(canvas[0] / width, canvas[1] / height)) : 1;
   if (cover && over > 256) fail(`${path}.fit`, `covering ${canvas[0]}×${canvas[1]} would need a scale of ${over}, above the limit of 256`);
   const factor = integerOption(scale ?? (cover ? over : inside), `${path}.scale`, 1, 256), w = width * factor, h = height * factor;
   canvas ??= [w, h];
-  if (canvas[0] > 4096 || canvas[1] > 4096 || canvas[0] * canvas[1] > 16777216) fail(`${path}.scale`, `${w}×${h} is above the 4096-pixel limit; lower the scale`);
+  if (canvas[0] > SEQUENCE_SIDE || canvas[1] > SEQUENCE_SIDE || canvas[0] * canvas[1] > SEQUENCE_CANVAS_PIXELS) fail(`${path}.scale`, `${w}×${h} is above the ${SEQUENCE_SIDE}-pixel limit; lower the scale`);
   if (!cover && (w > canvas[0] || h > canvas[1])) fail(`${path}.scale`, `at scale ${factor} the ${width}×${height} sprite is ${w}×${h} and does not fit the ${canvas[0]}×${canvas[1]} canvas; the largest scale that fits is ${inside}, or use fit cover to crop`);
   if (!Object.hasOwn(ALIGN, align)) fail(`${path}.align`, `expected one of ${Object.keys(ALIGN).join(', ')}`);
   if (!Array.isArray(offset) || offset.length !== 2 || !offset.every(n => Number.isInteger(n) && Math.abs(n) <= 4096)) fail(`${path}.offset`, 'expected [x, y] in whole canvas pixels');

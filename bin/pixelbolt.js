@@ -4,7 +4,7 @@ import path from 'node:path';
 import { inspectMotion } from '../src/motion.js';
 import { expandPoses } from '../src/authoring.js';
 import { compileWaves } from '../src/wave.js';
-import { isObject } from '../src/core.js';
+import { PixelError, isObject, largestScale, columnsOfCall, meant, frameTotalProblem } from '../src/core.js';
 import { readExpect, checkDelivery, briefCheck } from '../src/check.js';
 import { readSize, resizeRecipe, resizeWarning, resizeMargins, keepFrames, keepAnimations } from '../src/resize.js';
 import { embedBundleRecipe, sameFiles, outputSummary, describeAnimations } from '../src/export.js';
@@ -37,13 +37,15 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            Preview edits; writes only --out and --image
   pixelbolt render <file.json|-> --out dir [--scale 1-16] [--columns n] [--look] [--gif | --gif-scale 1-16]
                     [--normal <file>]      Export a complete asset bundle. --scale enlarges every exported pixel that
-                                           many times (the recipe's sheet.scale, for this export); --columns n lays
-                                           the sheet out n frames across, 1 to the frame count (sheet.columns, for
-                                           this export: a one-row strip is --columns <frame count>); --look also writes
-                                           look.png there, the frames enlarged to look at; --gif a GIF of each
-                                           animation in gifs/, at the frames' own size or --gif-scale times it;
-                                           --normal a normal recipe or a pixelforge-normals source of this recipe,
-                                           exported beside the sheet with a Godot CanvasTexture that lights it
+                                           many times (the recipe's sheet.scale, for this export; the largest depends
+                                           on frame size and count); --columns n lays the sheet out n frames across,
+                                           1 to the frame count (sheet.columns, for this export: a one-row strip is
+                                           --columns <frame count>); --look also writes look.png there, a contact
+                                           sheet to look at, enlarged when the frames are small (inspect --region
+                                           zooms into a big one); --gif a GIF of each animation in gifs/, at the
+                                           frames' own size or --gif-scale times it; --normal a normal recipe or a
+                                           pixelforge-normals source of this recipe, exported beside the sheet with a
+                                           Godot CanvasTexture that lights it
                                            --expect '{"width":32,"height":32,"frames":8}' (or a .json file) checks it
                                            against the request; --animation <name> checks only that animation
   pixelbolt share <file.json|->           Print a playground link for the resolved source recipe
@@ -81,8 +83,9 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                                            what share of the drawing a cut leaves out (--metadata keeps where the
                                            window starts)
                                            --frames (any compile) keeps that many evenly spaced frames of each
-                                           animation that has more, playing as long as before: the way to fewer
-                                           frames (lowering frames in a source cuts the effect short instead);
+                                           animation that has more, playing as long as before (a count dividing a
+                                           loop's frames keeps its step even): the way to fewer frames (lowering
+                                           frames in a source cuts the effect short instead);
                                            --animation <name> keeps only that animation of a source that makes
                                            several (a,b for more than one)
   pixelbolt presets [name] [--full]        List the presets, a line each (size, frames, loop, colours, what each is
@@ -97,7 +100,8 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
                     [--guides json]        One enlarged view at one time; depth lists who covers whom
   pixelbolt overlay <recipe.json> --changes edits.json --out fixes.json [--selections regions.json]
   pixelbolt import <image.png> --out recipe.json [--atlas atlas.json | --frame 24x24 [--padding 1] [--frames N]] [--name imported]
-                                           A sprite sheet becomes its frames by its atlas, or by the size of one frame
+                                           A sprite sheet becomes its frames by its atlas, or by the size of one frame;
+                                           an image given neither is one frame (a still up to 4096 a side)
                     [--embedded]         Recover the recipe carried inside the PNG instead of its pixels
   pixelbolt preview [file.json] [--port N] [--open]
                                            Studio for a recipe or scene; sources open as their compiled recipe.
@@ -130,9 +134,11 @@ recipe (its first frame without :name) under every cell, repeated: a sprite on t
 --palette lists each palette key with its colour, its pixels and the layers or pose parts it colours (ramps
 together, dark to light): which keys to change for a colour variant;
 --beside b.json,c.json draws the same view of up to eight more recipes under this one, in the one image, each
-under its file name, to compare variants (the reply's stack says where each starts);
---native adds a 1x PNG; --diagnostics adds advisory evidence (past 8 frames, totals and the three frames with the
-most to clean up; --full lists every frame).
+under its file name, to compare variants (the reply's stack says where each starts); at the automatic scale the
+stack is kept within 8,000 px tall, by a lower scale or fewer cells, and an explicit --scale past it is refused;
+--native adds a 1x PNG (none when the sheet is 1x already); --diagnostics adds advisory evidence (past 8 frames,
+totals and the three frames with the most to clean up, their findings, and the rest of the findings counted; --full
+lists every frame).
 --guides '{"horizon":40,"vanish":[[64,40]],"iso":{"tile":[32,16]}}' (or a file) draws perspective guides over the
 enlarged sheet; scene --image takes the same.
 --motion name --speed px/s reviews contacts, ground, pose spread, loop seam and gait, and draws the limb arcs.
@@ -224,7 +230,9 @@ function commandHelp(command) {
   }
   return [lines[0], '', ...usage, '', ...notes, 'pixelbolt help lists every command.', ''].join('\n');
 }
-function parseArgs(args) {
+// An option a command does not take, with the one of its own it most likely meant (--frame for --frames).
+const optionMiss = (key, command) => { const guess = meant(key, OPTIONS[command] ?? [...KNOWN]); return guess === undefined ? '' : `; did you mean --${guess}?`; };
+function parseArgs(args, command) {
   const positional = [], options = {};
   for (let i = 0; i < args.length; i++) {
     const key = args[i].startsWith('--') ? args[i].slice(2) : null;
@@ -232,7 +240,7 @@ function parseArgs(args) {
     // A flag given twice says the same thing once more, so it is taken; a value given twice is refused, since keeping
     // either one would drop the other without a word.
     else if (FLAGS.has(key)) options[key] = true;
-    else if (!KNOWN.has(key)) throw new Error(`Unknown option: ${args[i]}`);
+    else if (!KNOWN.has(key)) throw new Error(`Unknown option: ${args[i]}${optionMiss(key, command)}`);
     else {
       if (!valueFollows(args, i)) throw new Error(`--${key} requires a value`);
       const value = args[++i];
@@ -411,6 +419,9 @@ function rowsJSON(value, indent = '', key) {
   return [open, lines.map(line => inner + line).join(',\n'), indent + close].join('\n');
 }
 const print = value => console.log(rowsJSON(value));
+// What a contact sheet that was evenly sampled shows, for a reply that names the sheet (a GIF's --sheet, render's
+// look.png): {[key]: "12 of the 64 frames, ..."}, or nothing when it shows every frame.
+const sheetShows = (key, view) => view?.sampling ? { [key]: `${view.sampling.shown} of the ${view.sampling.total} frames, ${view.sampling.method}` } : {};
 // A path as a reply names it: from the working directory when it is inside it, as the caller wrote it, with forward
 // slashes; anywhere else, in full.
 const shown = file => { const from = path.relative(process.cwd(), file); return from && !from.startsWith('..') && !path.isAbsolute(from) ? from.split(path.sep).join('/') : file; };
@@ -423,6 +434,13 @@ const referenced = input => input.resolution.files.length ? { resolved: input.re
 const engineVersion = async () => JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 // `presets [name] [--full]`, and `help presets [--full]` or `help preset <name>`: every preset, a line each or in full,
 // or one preset's source. A shell has no time limit, so every preset is measured.
+// A source or a scene given where a recipe goes: what to run instead. Read as a recipe, its format field was "unknown",
+// which reads as a broken file. `own` are the formats the command reads itself (inspect compiles poses and waves).
+function recipeOnly(command, document, file, own = []) {
+  const format = typeof document?.format === 'string' && document.format.startsWith('pixelforge-') && !own.includes(document.format) ? document.format : null;
+  if (format === 'pixelforge-scene') throw new PixelError('project.format', `this is a scene, not a recipe: use pixelbolt scene on it (--out <folder>, or --image <view.png> for one view) or pixelbolt gif (--out <new.gif>)`);
+  if (format && Object.hasOwn(COMPILERS, format)) throw new PixelError('project.format', `this is a ${format} source: compile it first (pixelbolt compile ${file} --out <new.json>), then ${command} the recipe it writes`);
+}
 // Whether a file holds a scene, which `gif` writes whole where it writes one animation of a recipe.
 async function holdsScene(file) {
   if (!file || file === '-') return false;
@@ -449,13 +467,13 @@ async function presetsText(name, full, find, out, force) {
 // `help <topic> [section]`: what MCP pixel_help returns for the topic, so a shell reads one section of a long guide
 // instead of the whole file. A section name may be quoted or not.
 async function helpTopic([asked, ...words]) {
-  const { TOPICS, SECTIONED, isSchema, helpText, resolveTopic } = await import('../src/help.js');
+  const { TOPICS, SECTIONED, isSchema, helpText, resolveTopic, unknownTopic } = await import('../src/help.js');
   const [topic, name] = resolveTopic(asked, words.length ? words.join(' ') : undefined);
   if (['quickstart', 'quick-start', 'start'].includes(topic)) {
     if (name !== undefined) throw new Error('the quick start has no sections; run pixelbolt help quickstart');
     return helpText(undefined, undefined, 'cli');
   }
-  if (!TOPICS.includes(topic)) throw new Error(`Unknown help topic "${topic}"; topics: quickstart, ${TOPICS.join(', ')}`);
+  if (!TOPICS.includes(topic)) throw new Error(unknownTopic(topic, Object.keys(OPTIONS)));
   if (topic === 'presets' || topic === 'preset') {
     // `help preset --full` is `help presets --full`, as `help preset` alone is `help presets`.
     const full = name === '--full';
@@ -474,12 +492,12 @@ try {
   else if (['help', '--help', '-h'].includes(command)) process.stdout.write(HELP);
   else if (asksForHelp(rest)) process.stdout.write(commandHelp(command));
   else {
-    const { positional, options } = parseArgs(rest);
+    const { positional, options } = parseArgs(rest, command);
     // presets --find water splash: the words after the first belong to the search, quoted or not.
     if (command === 'presets' && typeof options.find === 'string' && positional.length) options.find = [options.find, ...positional.splice(0)].join(' ');
     if (positional.length > 1) throw new Error('Too many positional arguments');
     if (!Object.hasOwn(OPTIONS, command)) throw new Error(`Unknown command: ${command}. Run pixelbolt help.`);
-    for (const key of Object.keys(options)) if (!OPTIONS[command].includes(key)) throw new Error(`--${key} is not supported by ${command}`);
+    for (const key of Object.keys(options)) if (!OPTIONS[command].includes(key)) throw new Error(`--${key} is not supported by ${command}${optionMiss(key, command)}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     // Two inputs named - are refused before anything is read or made (import's file is a PNG, never stdin).
     if (positional[0] === '-' && command !== 'import') takeStdin(INPUT_FILE);
@@ -574,7 +592,8 @@ try {
         input = await readResolved(positional[0]);
         // A preset may be a plain recipe, which compiles to itself.
         const compile = command === 'autotile' ? compileAutotile : options.preset !== undefined ? compilePreset : COMPILERS[input.document?.format] ?? compilePoses;
-        const compiled = compile(input.document);
+        // An effect is budgeted for the frames --frames keeps and the animations --animation keeps (compilePreset).
+        const compiled = compile === compilePreset || compile === COMPILERS['pixelforge-fx'] ? compilePreset(input.document, { frames: options.frames === undefined ? undefined : frameCount(options.frames), animation: options.animation?.split(','), animationPath: '--animation' }) : compile(input.document);
         // A plain recipe preset compiles to itself and has no metadata to save.
         if (options.metadata && compiled.metadata === undefined) throw new Error(`${options.preset} is a plain recipe preset, which has no metadata; omit --metadata`);
         metadata = compiled.metadata; warnings = compiled.warnings ?? []; preview = compiled.preview;
@@ -656,26 +675,28 @@ try {
       if (!options.motion && ['speed', 'ground', 'metadata'].some(key => options[key] !== undefined)) throw new Error('--speed, --ground and --metadata require --motion');
       if (options.full && !options.diagnostics) throw new Error('--full goes with --diagnostics: it lists the counts of every frame');
       if (options.motion) for (const key of ['frames', 'animation', 'region', 'grid', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference', 'beside', 'palette', 'guides']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --motion`);
-      const input = await readResolved(positional[0]), compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : input.document.format === 'pixelforge-wave' ? compileWaves(input.document) : null;
+      const input = await readResolved(positional[0]);
+      recipeOnly('inspect', input.document, positional[0], ['pixelforge-poses', 'pixelforge-wave']);
+      const compiled = input.document.format === 'pixelforge-poses' ? compilePoses(input.document) : input.document.format === 'pixelforge-wave' ? compileWaves(input.document) : null;
       if (input.document.format === 'pixelforge-wave' && options.motion) throw new Error('--motion reviews character poses; inspect a wave without --motion');
       if (compiled && options.metadata) throw new Error('A pose source supplies its own metadata; omit --metadata');
       const recipe = compiled?.recipe ?? input.document, project = renderProject(recipe, { ...layerOptions, ...((options.view === 'parts' || options.palette) && { owners: true }) });
       const comparison = options.reference ? compareProjects(renderProject((await readResolved(options.reference, '--reference')).document, layerOptions), project) : undefined;
       const { image: referenceImage, ...comparisonReport } = comparison ?? {};
+      const besideFiles = options.beside === undefined ? [] : options.beside.split(',').filter(Boolean), share = besideFiles.length ? { sheets: Math.min(9, besideFiles.length + 1) } : undefined;
       const view = options.motion ? inspectMotion(project, { animation: options.motion, metadata: compiled?.metadata ?? (options.metadata ? await readProject(options.metadata, '--metadata') : undefined),
         ...Object.fromEntries(['speed', 'ground', 'scale'].filter(key => options[key] !== undefined).map(key => [key, Number(options[key])])),
-        ...(options.background !== undefined && { background: options.background }) }) : inspectProject(project, { ...inspectOptions(options), ...(options.guides !== undefined && { guides: await readGuidesOption(options.guides) }), ...(options.under !== undefined && { under: await readUnder(options.under, layerOptions) }) });
+        ...(options.background !== undefined && { background: options.background }) }) : inspectProject(project, { ...inspectOptions(options), ...(options.guides !== undefined && { guides: await readGuidesOption(options.guides) }), ...(options.under !== undefined && { under: await readUnder(options.under, layerOptions) }) }, share);
       // --beside: the same view of more recipes under this one, in one image.
-      let drawn = view, besideFiles = [];
+      let drawn = view;
       if (options.beside !== undefined) {
         if (options.native || options.grid) throw new Error('--beside draws several recipes in one sheet; --native and --grid read one recipe at a time');
-        besideFiles = options.beside.split(',').filter(Boolean);
         if (!besideFiles.length || besideFiles.length > 8) throw new Error('--beside takes one to eight recipe files, separated by commas');
         const others = [];
         for (const file of besideFiles) {
           const { document } = await readResolved(file, '--beside'), other = renderProject(Object.hasOwn(COMPILERS, document?.format ?? '') ? COMPILERS[document.format](document).recipe : document, layerOptions);
           let view;
-          try { view = inspectProject(other, inspectOptions(options)); } catch (error) { throw Object.assign(new Error(`--beside ${file}: ${error.message}`), { path: error.path }); }
+          try { view = inspectProject(other, inspectOptions(options), share); } catch (error) { throw Object.assign(new Error(`--beside ${file}: ${error.message}`), { path: error.path }); }
           others.push({ ...view, name: path.basename(file) });
         }
         drawn = stackViews([{ ...view, name: positional[0] === '-' ? project.name : path.basename(positional[0]) }, ...others]);
@@ -683,9 +704,9 @@ try {
       const { data, ...sheet } = drawn.sheet;
       if (options.out && !/\.png$/i.test(options.out)) throw new Error('inspect --out must name a .png file');
       const written = await writeOutputs(options.out ? { image: [options.out, encodePNG(data, sheet.width, sheet.height), '--out'], ...(view.nativeSheet && { nativeImage: [options.out.replace(/\.png$/i, '.native.png'), encodePNG(view.nativeSheet.data, view.nativeSheet.width, view.nativeSheet.height), 'The --native sheet beside --out'] }), ...(referenceImage && { referenceImage: [options.out.replace(/\.png$/i, '.reference.png'), encodePNG(referenceImage.sheet.data, referenceImage.sheet.width, referenceImage.sheet.height), 'The --reference comparison beside --out'] }) } : {}, options.force, [...inputsOf(input), ...filesRead(options.reference, options.metadata, ...besideFiles)]);
-      if (view.diagnostics && !options.full) view.diagnostics = briefDiagnostics(view.diagnostics);
+      if (drawn.diagnostics && !options.full) drawn.diagnostics = briefDiagnostics(drawn.diagnostics);
       // Grid rows line up for reading; a short row of a table (a cell, a frame's counts, a box) stays on one line.
-      print({ ok: true, ...summary(project, recipe), ...drawn, cells: briefCells(view.cells), warnings: [...(compiled?.warnings ?? []), ...project.warnings], sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(options.palette && { palette: paletteUse(project) }), ...(comparison && { comparison: briefComparison(comparisonReport) }), ...written, ...referenced(input) });
+      print({ ok: true, ...summary(project, recipe), ...drawn, cells: briefCells(drawn.cells), warnings: [...(compiled?.warnings ?? []), ...project.warnings], sheet, nativeSheet: view.nativeSheet ? { ...view.nativeSheet, data: undefined } : undefined, ...(options.palette && { palette: paletteUse(project) }), ...(comparison && { comparison: briefComparison(comparisonReport) }), ...written, ...referenced(input) });
     } else if (command === 'patch') {
       if (!options.changes) throw new Error('patch requires --changes <file.json|->');
       if (options.out && !/\.json$/i.test(options.out)) throw new Error('patch --out must name a .json file');
@@ -710,7 +731,8 @@ try {
       // Pose, autotile, effect and fluid sources become the recipe they compile to; a scene is rendered moment by moment,
       // and a bodies match or a falling-sand clip frame after frame (so it may run past a recipe's 256 frames).
       const bodies = input.document?.format === 'pixelforge-bodies', powder = input.document?.format === 'pixelforge-powder';
-      const document = bodies || powder ? input.document : Object.hasOwn(COMPILERS, input.document?.format ?? '') ? COMPILERS[input.document.format](input.document).recipe : input.document;
+      // An effect is budgeted for the one animation --animation plays (compilePreset).
+      const document = bodies || powder ? input.document : input.document?.format === 'pixelforge-fx' ? compilePreset(input.document, { animation: options.animation, animationPath: '--animation' }).recipe : Object.hasOwn(COMPILERS, input.document?.format ?? '') ? COMPILERS[input.document.format](input.document).recipe : input.document;
       const numeric = key => options[key] === undefined ? {} : { [key]: Number(options[key]) }, text = key => options[key] === undefined ? {} : { [key]: options[key] };
       const settings = { ...text('fps'), ...text('animation'), ...text('size'), ...numeric('scale'), ...text('fit'), ...text('align'), ...(options.offset !== undefined && { offset: options.offset.split(',').map(Number) }), ...text('background'), ...numeric('loops'), ...numeric('seconds'), ...numeric('step') };
       // A match or a clip is simulated, drawn and written a frame at a time, so its length isn't bounded by memory.
@@ -728,34 +750,55 @@ try {
       const input = await readResolved(positional[0]), { data, sheet: view, ...gif } = sceneGIF(prepareScene(input.document), { ...(options.fps !== undefined && { fps: options.fps }), ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.background !== undefined && { background: options.background }), sheet: options.sheet !== undefined });
       // --sheet: the frames as the GIF holds them, as a recipe's gif --sheet draws them; a long scene's evenly sampled.
       const written = await writeOutputs({ file: [options.out, data, '--out'], ...(view && { sheet: [options.sheet, encodePNG(view.sheet.data, view.sheet.width, view.sheet.height), '--sheet'] }) }, options.force, inputsOf(input));
-      print({ ok: true, name: input.document.name, width: gif.width, height: gif.height, frames: gif.frames, fps: gif.fps.label, duration: gif.duration, colors: gif.colors, bytes: data.length, ...written, ...(view?.sampling && { sheetShows: `${view.sampling.shown} of the ${view.sampling.total} frames, ${view.sampling.method}` }), ...(gif.notes.length && { notes: gif.notes }), ...referenced(input) });
+      print({ ok: true, name: input.document.name, width: gif.width, height: gif.height, frames: gif.frames, fps: gif.fps.label, duration: gif.duration, colors: gif.colors, bytes: data.length, ...written, ...sheetShows('sheetShows', view), ...(gif.notes.length && { notes: gif.notes }), ...referenced(input) });
     } else if (command === 'gif') {
       if (options.fps !== undefined) throw new Error('--fps goes with a scene\'s GIF; a recipe\'s frames carry their own durations');
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif requires --out <new.gif>');
       if (options.sheet !== undefined && !/\.png$/i.test(options.sheet)) throw new Error('--sheet must name a new .png file');
-      // --preset: a shipped preset straight to its GIF, compiled as compile --preset compiles it.
-      const input = await readResolved(positional[0]), compiled = options.preset !== undefined ? compilePreset(input.document) : null, warnings = [...(compiled?.warnings ?? [])];
+      // --preset: a shipped preset straight to its GIF, compiled as compile --preset compiles it. Every animation is
+      // compiled, as main does, so --size places the window by all of them and the reply lists them; only when that is
+      // refused (an fx source's frame total or operations, counted over every effect) is --animation compiled alone.
+      const input = await readResolved(positional[0]), warnings = [];
+      let compiled = null;
+      if (options.preset !== undefined) {
+        const settings = { frames: options.frames === undefined ? undefined : frameCount(options.frames) };
+        try { compiled = compilePreset(input.document, settings); }
+        catch (error) {
+          if (options.animation === undefined) throw error;
+          compiled = compilePreset(input.document, { ...settings, animation: options.animation, animationPath: '--animation' });
+        }
+        warnings.push(...(compiled.warnings ?? []));
+      }
       let recipe = compiled ? compiled.recipe : input.document, resized, kept;
+      // The recipe's animations, named in the reply even when --size keeps one of them. An empty list (stills) names none,
+      // so it reaches the GIF's stills refusal.
+      const listed = isObject(recipe?.animations) && Object.keys(recipe.animations).length ? Object.keys(recipe.animations) : null;
       if (options.frames !== undefined) {
         const thinned = keepFrames(recipe, frameCount(options.frames), '--frames');
         ({ recipe, kept } = thinned); warnings.push(...thinned.notes);
       }
       if (options.size !== undefined) {
+        // The window is placed by every frame's drawing, as for the whole recipe. Only when all the frames are too many
+        // for the new canvas does the one animation a GIF plays move alone, its frames counted in the total (a recipe
+        // that names none plays every frame as "default", the one animation it has).
+        const [width, height] = readSize(options.size, '--size');
+        if (options.animation !== undefined && listed && Array.isArray(recipe.frames) && frameTotalProblem(recipe.frames.length, width, height)) recipe = keepAnimations(recipe, [options.animation], '--animation').recipe;
         ({ recipe, resized } = resizeRecipe(recipe, options.size, '--size'));
         const cut = resizeWarning(resized, [recipe.width, recipe.height]);
         if (cut) warnings.push(cut);
       }
-      const project = renderProject(recipe), names = Object.keys(project.animations);
+      const project = renderProject(recipe), names = listed ?? Object.keys(project.animations);
       const { data, ...gif } = animationGIF(project, options.animation, { ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.background !== undefined && { background: options.background }) });
       // --sheet: the frames of that animation as a contact sheet, to look at before delivering, drawn as the GIF shows
       // them (blended onto --background, or with 1-bit transparency) so what is judged is what is delivered.
       const under = gifBackground(options.background, project.palette);
       const shown = { ...project, frames: project.frames.map(frame => ({ ...frame, data: asGIFShows(frame.data, under) })) };
-      const sheet = options.sheet !== undefined ? inspectProject(shown, { animation: gif.animation }).sheet : null;
+      // A long play order of big frames is evenly sampled to fit the sheet, as a scene's is.
+      const view = options.sheet !== undefined ? inspectProject(shown, { animation: gif.animation }) : null, sheet = view?.sheet;
       const written = await writeOutputs({ file: [options.out, data, '--out'], ...(sheet && { sheet: [options.sheet, encodePNG(sheet.data, sheet.width, sheet.height), '--sheet'] }) }, options.force, inputsOf(input));
       // The cut is already said once: the clipping it causes is not a second problem.
       const margins = resized && resizeMargins(resized, [project.width, project.height]);
-      print({ ok: true, name: project.name, ...gif, ...(names.length > 1 && { animations: names }), ...(margins && { margins }), ...(kept && { kept }), ...written, warnings: [...warnings, ...project.warnings.filter(text => !(resized?.cut && text.startsWith('Some drawing falls outside the canvas')))], ...(options.preset === undefined && referenced(input)) });
+      print({ ok: true, name: project.name, ...gif, ...(names.length > 1 && { animations: names }), ...(margins && { margins }), ...(kept && { kept }), ...written, ...sheetShows('sheetShows', view), warnings: [...warnings, ...project.warnings.filter(text => !(resized?.cut && text.startsWith('Some drawing falls outside the canvas')))], ...(options.preset === undefined && referenced(input)) });
     } else if (command === 'gif-frames') {
       if (!positional[0] || positional[0] === '-') throw new Error('gif-frames requires a folder of numbered PNG frames');
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif-frames requires --out <new.gif>');
@@ -766,13 +809,12 @@ try {
       print({ ok: true, ...gif, bytes: data.length, ...written });
     } else {
       const input = await readResolved(positional[0]);
-      // A source is not a recipe: read as one, its first field was "unknown", which reads as a broken file.
-      if (command === 'validate' && Object.hasOwn(COMPILERS, input.document?.format ?? '')) throw new Error(`validate checks a recipe, and this is a ${input.document.format} source; pixelbolt compile ${positional[0]} --out <new.json> checks it and writes the recipe it makes`);
+      recipeOnly(command, input.document, positional[0]);
       if (command === 'validate') { const project = renderProject(input.document); print({ ok: true, ...summary(project, input.document), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }), ...referenced(input) }); }
       else {
         if (!options.out) throw new Error('render requires --out <directory>');
         folderOut('render', options.out, 'name a new folder: the sheet, atlas and animations are written inside it (the sheet as <name>.png); for one GIF use pixelbolt gif --out <new.gif>');
-        const expect = options.expect === undefined ? undefined : readExpect(await readJSONOption(options.expect));
+        const expect = options.expect === undefined ? undefined : readExpect(await readJSONOption(options.expect), input.document);
         // --gif also writes a GIF of every animation into gifs/, at the frames' own size or --gif-scale times it, as MCP
         // pixel_render's gif does. They are encoded, and the check run, before anything is written, so a refused GIF or
         // an unknown --animation writes nothing.
@@ -785,28 +827,39 @@ try {
         if (options.columns !== undefined && !/^[1-9]\d{0,2}$/.test(options.columns)) throw new Error('--columns expects a whole number from 1 to the frame count: how many frames across the sheet');
         if (options.columns !== undefined && input.document?.sheet?.trim === true) throw new Error('--columns lays the sheet out as a grid, and this recipe\'s sheet.trim packs each frame by its visible bounds, which ignores columns; patch {"set": "sheet.trim", "value": false} first');
         const forExport = { ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.columns !== undefined && { columns: Math.min(Number(options.columns), 256) }) };
+        // The recipe's own scale, under --scale: the check says to drop --scale where that is the fix.
+        const recipeScale = Number.isInteger(input.document?.sheet?.scale) ? input.document.sheet.scale : 1;
         if (Object.keys(forExport).length && isObject(input.document) && (input.document.sheet === undefined || isObject(input.document.sheet))) input.document = { ...input.document, sheet: { ...input.document.sheet, ...forExport } };
         // --normal: a normal recipe aligned with this one, or the pixelforge-normals source that derives it, exported
         // beside the colour sheet with what Godot needs to light it.
         const lit = options.normal === undefined ? null : await readResolved(options.normal, '--normal');
         const normal = !lit ? undefined : lit.document?.format === 'pixelforge-normals' ? COMPILERS['pixelforge-normals'](lit.document).recipe : lit.document;
-        const bundle = await createBundle(input.document, { normal }), scale = options['gif-scale'] === undefined ? undefined : Number(options['gif-scale']);
+        const bundle = await createBundle(input.document, { normal }).catch(error => { throw options.columns === undefined ? error : columnsOfCall(error, '--columns'); });
+        const scale = options['gif-scale'] === undefined ? undefined : Number(options['gif-scale']);
         if (options.columns !== undefined && Number(options.columns) > bundle.project.frames.length) throw new Error(`--columns expects a whole number from 1 to the frame count, ${bundle.project.frames.length}: --columns ${bundle.project.frames.length} is a one-row strip`);
         // Stills have no animation to make a GIF of: none is written, with one note.
         const asked = options.gif || scale !== undefined;
         if (asked && bundle.project.stills) bundle.project.warnings.push(STILLS_GIF_NOTE);
+        // One render's GIFs hold 67,108,864 pixels in all, a GIF frame per played frame: checked before any is encoded.
+        if (asked && !bundle.project.stills) {
+          const played = Object.values(bundle.project.animations).reduce((sum, item) => sum + item.frames.length, 0) * bundle.project.width * bundle.project.height, at = scale ?? 1;
+          if (played * at * at > 67108864) {
+            const fits = largestScale(played, 67108864, at);
+            throw new PixelError(scale === undefined ? '--gif' : '--gif-scale', `the GIFs of every animation at scale ${at} pass the 67,108,864 pixels one render's GIFs hold; ${fits ? `--gif-scale ${fits} is the largest that fits` : 'shorten the animations'}`);
+          }
+        }
         const gifs = asked && !bundle.project.stills ? Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, { ...(scale !== undefined && { scale }) })) : undefined;
-        if (gifs && gifs.reduce((sum, item) => sum + item.frames * item.width * item.height, 0) > 67108864) throw new Error('--gif-scale: all animations at this scale exceed 67,108,864 pixels; use a lower scale');
-        const check = checkDelivery(bundle.project, { recipe: input.document, gifs, expect, animation: options.animation, call: 'cli' });
+        const check = checkDelivery(bundle.project, { recipe: input.document, gifs, expect, animation: options.animation, call: 'cli', scale: forExport.scale, recipeScale });
         if (options['embed-recipe']) await embedBundleRecipe(bundle, input.document, await engineVersion());
         for (const item of gifs ?? []) bundle.files.set(`gifs/${item.animation}.gif`, Buffer.from(item.data));
         // --look: look.png in the folder, the frames enlarged as a contact sheet. The sprite sheet is drawn at its own
         // size for a game, too small to judge by eye.
-        if (options.look) { const sheet = inspectProject(bundle.project, options.animation !== undefined ? { animation: options.animation } : {}).sheet; bundle.files.set('look.png', encodePNG(sheet.data, sheet.width, sheet.height)); }
+        const look = options.look ? inspectProject(bundle.project, options.animation !== undefined ? { animation: options.animation } : {}) : null;
+        if (look) bundle.files.set('look.png', encodePNG(look.sheet.data, look.sheet.width, look.sheet.height));
         const expectFile = options.expect !== undefined && !String(options.expect).trimStart().startsWith('{') ? filesRead(options.expect) : [];
         const files = await writeBundle(bundle, options.out, { force: options.force, inputs: [...inputsOf(input), ...expectFile, ...(lit ? inputsOf(lit) : [])] });
         const notes = (gifs ?? []).flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16);
-        print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), ...(gifs?.length && { gifs: { scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(notes.length && { notes }) } }), ...(options.look && { look: shown(path.join(path.resolve(options.out), 'look.png')) }), check: briefCheck(check), ...referenced(input) });
+        print({ ok: true, ...summary(bundle.project, input.document), ...bundleFiles(path.resolve(options.out), files, options), ...(gifs?.length && { gifs: { scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(notes.length && { notes }) } }), ...(look && { look: shown(path.join(path.resolve(options.out), 'look.png')), ...sheetShows('lookShows', look) }), check: briefCheck(check), ...referenced(input) });
       }
     }
   }

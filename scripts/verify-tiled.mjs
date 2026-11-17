@@ -179,6 +179,9 @@ const everyTileMap = (model, tsx) => {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<map version="1.10" orientation="orthogonal" renderorder="right-down" width="${columns}" height="${rows}" tilewidth="${tileWidth}" tileheight="${tileHeight}" infinite="0" nextlayerid="2" nextobjectid="1">\n <tileset firstgid="1" source="${tsx}"/>\n <layer id="1" name="every tile" width="${columns}" height="${rows}">\n  <data encoding="csv">\n${data}\n</data>\n </layer>\n</map>\n`;
 };
 
+const TILED_SCREEN = { version: 1, name: 'screen', width: 320, height: 180, palette: { k: '#102030', s: '#a0c0f0', r: '#e04030' },
+  frames: Array.from({ length: 6 }, (_, i) => ({ name: `f${i}`, duration: 100, ops: [{ op: 'rect', x: 0, y: 0, w: 320, h: 180, color: 'k' }, { op: 'rect', x: 20 + i * 48, y: 60, w: 32, h: 32, color: 'r' }, { op: 'line', x: i * 8, y: 0, x2: 319 - i * 8, y2: 179, color: 's' }] })),
+  animations: { sweep: { frames: ['f0', 'f1', 'f2', 'f3', 'f4', 'f5'] } } };
 export async function verifyTiled({ tiled = findTiled(), keep = false, log = console.log } = {}) {
   if (!tiled) throw new Error('Tiled was not found: pass --tiled <path> or set TILED');
   const rasterizer = [path.join(path.dirname(tiled), process.platform === 'win32' ? 'tmxrasterizer.exe' : 'tmxrasterizer')].find(existsSync) ?? 'tmxrasterizer';
@@ -202,11 +205,12 @@ export async function verifyTiled({ tiled = findTiled(), keep = false, log = con
       const files = [...bundle.files].filter(([file]) => file === `${name}.png` || file === `${name}.tsx` || file.startsWith('frames/'));
       await add(name, recipe, files, { tsx: `${name}.tsx`, png: `${name}.png`, atlas: JSON.parse(bundle.files.get(`${name}.atlas.json`)), paints: GODOT_LAYERED_MAPS.map(rows => ({ set: 0, rows, keys })) });
     }
-    // A scene's tile-set assets, each a tileset of its own beside its colour pass.
+    // A scene's assets, each a tileset of its own beside its colour pass: three tile sets, and a screen-sized animation
+    // (320x180 frames, past the 256 an animation frame once stopped at) whose frames are its tiles.
     const [fence, ledge, moss] = [{ ...GODOT_TILE_SOURCES[1], sheet: { scale: 3 } }, GODOT_TILE_SOURCES[3], GODOT_TILE_SOURCES[4]].map(godotTileRecipe);
-    const scene = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'tiles', width: 16, height: 16, assets: { fence, ledge, moss }, instances: [] });
+    const scene = await createSceneBundle({ format: 'pixelforge-scene', version: 1, name: 'tiles', width: 16, height: 16, assets: { fence, ledge, moss, screen: TILED_SCREEN }, instances: [] });
     assert.deepEqual(scene.warnings, [], 'scene export warnings');
-    for (const [i, recipe] of [fence, ledge, moss].entries()) {
+    for (const [i, recipe] of [fence, ledge, moss, TILED_SCREEN].entries()) {
       const folder = `assets/${i}`, frames = [...(await createBundle(recipe)).files].filter(([file]) => file.startsWith('frames/'));
       assert.ok(scene.files.has(`${folder}/tileset.tsx`), `the scene export has no ${folder}/tileset.tsx`);
       await add(`scene-${recipe.name}`, recipe, [['tileset.tsx', scene.files.get(`${folder}/tileset.tsx`)], ['color.png', scene.files.get(`${folder}/color.png`)], ...frames], { tsx: 'tileset.tsx', png: 'color.png', atlas: JSON.parse(scene.files.get(`${folder}/atlas.json`)) });

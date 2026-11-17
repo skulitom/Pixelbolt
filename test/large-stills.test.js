@@ -130,7 +130,7 @@ test('rewrite keeps its order: a mix of rules, turns, chance, limits and steps r
 test('normals refuse a colour recipe over 256 a side up front, naming the limit', () => {
   const source = recipe => ({ format: 'pixelforge-normals', version: 1, recipe });
   for (const [w, h] of [[300, 40], [40, 300], [4096, 1024]]) {
-    assert.throws(() => compileNormals(source(filled(w, h))), error => error instanceof PixelError && error.path === 'normals.recipe' && /at most 256×256/.test(error.message) && error.message.includes(`${w}×${h}`), `${w}×${h}`);
+    assert.throws(() => compileNormals(source(filled(w, h))), error => error instanceof PixelError && error.path === 'normals.recipe' && /a pass made by the normals compiler keeps 256 pixels a side/.test(error.message) && error.message.includes(`${w}×${h}`), `${w}×${h}`);
   }
   const edge = compileNormals(source(filled(256, 256)));
   assert.deepEqual([edge.recipe.width, edge.recipe.height, edge.recipe.frames[0].ops[0].rows.length], [256, 256, 256]);

@@ -21,7 +21,7 @@ test('shape painting has a work budget, refused at the layer that crosses it', (
   const wide = Array.from({ length: 4 }, () => ({ kind: 'stream', at: [5, 5], through, width: 256, taper: [2, 2] }));
   refused(effect(wide, { frames: 64, width: 256, height: 256 }), 'fx.effects.e.layers[2]', new RegExp(`would visit more than ${SHAPE_WORK.toLocaleString('en-US')} pixels`));
   // Too many frames for one recipe is refused before anything is simulated or painted.
-  refused(effect([{ kind: 'ring', at: [128, 128], radius: 400, noise: 1 }], { frames: 256, width: 256, height: 256 }), 'fx.effects', /256 frames of 256×256, more than the 4,194,304 pixels/);
+  refused(effect([{ kind: 'ring', at: [128, 128], radius: 400, noise: 1 }], { frames: 256, width: 256, height: 256 }), 'fx.effects', /256 frames of 256×256 are 16,777,216 pixels; a recipe's frames hold at most 4,194,304 in all, so 64 frames of 256×256 fit/);
 });
 
 test('shape layers refuse settings that would do nothing or leak', () => {

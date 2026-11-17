@@ -1,5 +1,5 @@
 // Optional authoring compilers. All output is ordinary, editable version-1 recipe data.
-import { PixelError, CANVAS_SIDE, parseColor, paletteOverride, renderProject, describeStampRecipe, readRows, pictureSheet, fail, sameWidth } from './core.js';
+import { PixelError, POSE_SIDE, parseColor, paletteOverride, renderProject, describeStampRecipe, readRows, pictureSheet, fail, sameWidth } from './core.js';
 import { AUTOTILE_MODES, MODE_MASKS, MODE_BITS, tilePieces, templatePiece } from './autotile.js';
 import { terrainTemplate, mergeTerrain, normalTerrain, readTerrain, templateSeams, seamWarnings, testMapRecipe, layeredTestMapRecipe } from './terrain.js';
 import { slopeTiles, slopeCollision, slopeLegend, SLOPE_MAP } from './slopes.js';
@@ -58,7 +58,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const VIEW_KEY = /^(0|[1-9][0-9]{0,2})$/;
 function checkView(view, path, part, palette) {
   fields(view, ['rows', 'anchor', 'points'], path);
-  readRows(view.rows, `${path}.rows`, palette);
+  readRows(view.rows, `${path}.rows`, palette, POSE_SIDE);
   point(view.anchor, `${path}.anchor`);
   if (view.points !== undefined) fields(view.points, Object.keys(part.points ?? {}), `${path}.points`);
   for (const key of Object.keys(part.points ?? {})) point(view.points?.[key], `${path}.points.${key}`);
@@ -172,7 +172,7 @@ export function compilePoses(source, within) {
   fields(source, ['format', 'version', 'name', 'width', 'height', 'palette', 'ramps', 'light', 'innerLines', 'rig', 'motionInfo', 'parts', 'poses', 'animations', 'sheet'], 'poses');
   if (source.format !== 'pixelforge-poses' || source.version !== 1) fail('poses', 'expected version-1 pixelforge-poses');
   // Before anything is sized by it: the pass that shades inner lines made its arrays from a width nothing had checked.
-  for (const side of ['width', 'height']) if (!Number.isInteger(source[side]) || source[side] < 1 || source[side] > 256) fail(`project.${side}`, `${source[side] === undefined ? 'missing; ' : ''}expected an integer from 1 to 256`);
+  for (const side of ['width', 'height']) if (!Number.isInteger(source[side]) || source[side] < 1 || source[side] > POSE_SIDE) fail(`project.${side}`, `${source[side] === undefined ? 'missing; ' : ''}expected an integer from 1 to ${POSE_SIDE}`);
   if (source.light !== undefined && (!Number.isInteger(source.light) || source.light < 0 || source.light > 359)) fail('poses.light', 'expected whole degrees from 0 to 359');
   if (source.innerLines !== undefined && !['shade', 'outline'].includes(source.innerLines)) fail('poses.innerLines', 'expected shade (the default) or outline');
   if (source.ramps !== undefined && (!Array.isArray(source.ramps) || source.ramps.length > 64)) fail('poses.ramps', 'expected at most 64 colour ramps');
@@ -281,7 +281,7 @@ export function compilePoses(source, within) {
       if (Object.hasOwn(source.parts, symbol) || symbol.length > 64) fail(where, `a rotated part needs the symbol name ${symbol}; rename that part definition or shorten ${name}`);
       const rows = flipX ? definition.rows.map(row => [...row].reverse().join('')) : definition.rows;
       const turned = rotateRows(rows, angle, local(anchor), { cleanup: tidy });
-      if (turned.rows.length > 256 || turned.rows[0].length > 256) fail(where, `rotating ${name} by ${angle}° exceeds 256×256 pixels`);
+      if (turned.rows.length > POSE_SIDE || turned.rows[0].length > POSE_SIDE) fail(where, `rotating ${name} by ${angle}° exceeds ${POSE_SIDE}×${POSE_SIDE} pixels`);
       symbols[symbol] = turned.rows;
       shapes.set(key, { symbol, flipX: false, anchor: turned.pivot, point: p => turned.map(local(p)) });
     }
@@ -728,7 +728,7 @@ export function draftViews(source, request, { sheet: drawSheet = true } = {}) {
     const path = `draftViews.${name}`, part = Object.hasOwn(source.parts, name) ? source.parts[name] : undefined;
     if (!part) fail(path, `no part named ${name}; the source defines ${nameList(Object.keys(source.parts), 8) || 'none'}`);
     if (part.rows === undefined) fail(path, `${name} is a ${part.bone ? 'bone' : 'mass'} part, which the compiler draws afresh at every angle; drafts are for grid parts (rows)`);
-    readRows(part.rows, `poses.parts.${name}.rows`, palette);
+    readRows(part.rows, `poses.parts.${name}.rows`, palette, POSE_SIDE);
     if (part.rows.length > DRAFT_LIMITS.side || part.rows[0].length > DRAFT_LIMITS.side) fail(`poses.parts.${name}.rows`, `drafts are for small parts, at most ${DRAFT_LIMITS.side}×${DRAFT_LIMITS.side} pixels; this one is ${part.rows[0].length}×${part.rows.length}`);
     const anchor = point(part.anchor ?? [0, 0], `poses.parts.${name}.anchor`);
     if (part.points !== undefined && (!part.points || typeof part.points !== 'object' || Array.isArray(part.points))) fail(`poses.parts.${name}.points`, 'expected named attachment points');
@@ -1219,6 +1219,8 @@ const encodeNormal = vector => '#' + vector.map(v => Math.round((v + 1) * 127.5)
 // cylinder instead of a cushion: with "vertical" (a barrel, a pillar, a trunk standing up) each row of a shape is
 // rounded from its left end to its right, so the surface leans left and right and never up or down; "horizontal" (a
 // log lying down) rounds each column.
+// A normal pass keeps 256 a side, whatever an animation frame may be: its shading is not budgeted per frame.
+const NORMALS_SIDE = 256;
 export function compileNormals(source) {
   fields(source, ['format', 'version', 'name', 'recipe', 'bevel', 'detail', 'faces', 'axis'], 'normals');
   if (source.axis !== undefined && !['vertical', 'horizontal'].includes(source.axis)) fail('normals.axis', 'expected vertical (a barrel or a pillar standing up) or horizontal (a log lying down); omit it to round each shape like a cushion');
@@ -1227,9 +1229,9 @@ export function compileNormals(source) {
   if (typeof spec === 'string' || (spec && typeof spec === 'object' && spec.revision !== undefined && spec.version === undefined)) fail('normals.recipe', 'file and revision references are resolved by the CLI and MCP; inline the recipe to compile here');
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) fail('normals.recipe', 'expected the colour recipe, inline or as a file reference');
   if (spec.format !== undefined) fail('normals.recipe', `expected a recipe, not a ${spec.format} source; compile it first and derive normals from the result`);
-  // A normal pass lights scene assets, which are at most 256 a side, so a larger still is refused here rather than as
-  // an error in a grid the user never wrote.
-  if ([spec.width, spec.height].some(side => typeof side === 'number' && side > CANVAS_SIDE)) fail('normals.recipe', `the colour recipe is ${spec.width}×${spec.height}; a normal pass is at most ${CANVAS_SIDE}×${CANVAS_SIDE} (it lights scene assets, which keep that limit), so derive normals from a recipe of at most ${CANVAS_SIDE} a side`);
+  // A normal pass is at most NORMALS_SIDE a side, so a larger recipe is refused here rather than as an error in a grid
+  // the user never wrote.
+  if ([spec.width, spec.height].some(side => typeof side === 'number' && side > NORMALS_SIDE)) fail('normals.recipe', `the colour recipe is ${spec.width}×${spec.height}; a pass made by the normals compiler keeps ${NORMALS_SIDE} pixels a side, so derive normals from a recipe of at most ${NORMALS_SIDE} a side; a larger scene asset takes a normal pass drawn as a recipe of its own size`);
   if (source.bevel !== undefined && (!Number.isInteger(source.bevel) || source.bevel < 1 || source.bevel > 64)) fail('normals.bevel', 'expected 1–64 pixels from the edge to the flat top; omit it to round each shape up to its thickest point');
   const detail = source.detail ?? 0;
   if (typeof detail !== 'number' || !Number.isFinite(detail) || detail < 0 || detail > 1) fail('normals.detail', 'expected 0 (shape only) to 1');

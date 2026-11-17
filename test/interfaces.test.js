@@ -14,7 +14,7 @@ import { startStudio, STUDIO_PATHS, REFUSED_PORTS } from '../src/server.js';
 import { renderProject, inspectProject } from '../src/core.js';
 import { resolveTopic } from '../src/help.js';
 import { encodePNG } from '../src/png.js';
-import { createSequence } from '../src/sequence.js';
+import { createSequence, SEQUENCE_SIDE, SEQUENCE_CANVAS_PIXELS } from '../src/sequence.js';
 import { readZip } from '../scripts/build-studio.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -431,6 +431,14 @@ test('studio returns frames for a video editor as one ZIP, built as the sequence
   assert.equal((await post({ project: strip, sequence: { fps: 10 } }, { Origin: 'https://evil.example' })).status, 403);
   // The address only answers a POST: reading it finds nothing, and other methods are refused.
   assert.deepEqual([(await fetch(base + '/api/sequence')).status, (await fetch(base + '/api/sequence', { method: 'PUT', headers: { Origin: base } })).status], [404, 405]);
+});
+test('the studio\'s copy of the sequence canvas limits matches sequence.js', async () => {
+  // studio.js cannot import sequence.js (it encodes PNGs with node:zlib), so its Frames dialog keeps a copy of
+  // placeSprite's limits; a change to either side that leaves the other behind fails here.
+  const script = await readFile(path.join(root, 'studio', 'studio.js'), 'utf8');
+  const copy = script.match(/^const SEQUENCE_SIDE = (\d+), SEQUENCE_CANVAS_PIXELS = (\d+);$/m);
+  assert.ok(copy, 'studio.js declares SEQUENCE_SIDE and SEQUENCE_CANVAS_PIXELS on one line');
+  assert.deepEqual(copy.slice(1).map(Number), [SEQUENCE_SIDE, SEQUENCE_CANVAS_PIXELS]);
 });
 test('every sample the studio lists is served, and the sidebar counts the list itself', async () => {
   const script = await readFile(path.join(root, 'studio', 'studio.js'), 'utf8'), page = await readFile(path.join(root, 'studio', 'index.html'), 'utf8');

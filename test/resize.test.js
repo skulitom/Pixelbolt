@@ -84,11 +84,14 @@ function layered(seed) {
   };
 }
 
-test('a size is two whole sides within the canvas limit', () => {
+test('a size is two whole sides within an animation frame: 1024 a side and 262,144 pixels', () => {
   assert.deepEqual(readSize('32x48'), [32, 48]);
   assert.deepEqual(readSize(' 16×16 '), [16, 16]);
   assert.deepEqual(readSize([8, 9]), [8, 9]);
-  for (const bad of ['32', '0x8', '32x257', '32 by 32', [32], [1.5, 2], 32, null]) assert.throws(() => readSize(bad), /expected a canvas size such as "32x32"/);
+  assert.deepEqual(readSize('320x180'), [320, 180]);
+  assert.deepEqual(readSize('1024x256'), [1024, 256]);
+  for (const bad of ['32', '0x8', '32x1025', '32 by 32', [32], [1.5, 2], 32, null]) assert.throws(() => readSize(bad), /expected a canvas size such as "32x32"/);
+  assert.throws(() => readSize('1024x512'), { message: 'size: a 1024×512 frame is 524,288 pixels; an animation frame is at most 1024 pixels a side and 262,144 in all (320×180, 480×270, 640×360 and 512×512 fit)' });
 });
 
 test('a smaller canvas is the window with the most drawing, and a larger one centres or keeps a touched edge', () => {
@@ -241,7 +244,7 @@ test('a recipe whose operations read the whole canvas says so instead of drawing
   refuse({ ...plain(8, 8, [dot(1, 1)]), frames: [{ name: 'one', ops: [dot(1, 1)] }, { name: 'two', ops: [{ op: 'copy', from: 'one', x: 2, y: 2 }] }] }, /frames\[1\]\.ops\[0\] is a copy from another frame/);
   refuse(plain(8, 8, [dot(1, 1)], { translate: [1, 0] }), /frames.0..translate is tied to the canvas size/);
   refuse(plain(8, 8, [dot(1, 1)], { flipX: true }), /frames\[0\]\.flipX is tied to the canvas size/);
-  assert.throws(() => resizeRecipe({ ...plain(8, 8, [dot(1, 1)]), frames: Array.from({ length: 70 }, (_, index) => ({ name: `f${index}`, ops: [dot(1, 1)] })) }, '256x256'), /size: 70 frames of 256×256 pixels exceed the 4,194,304-pixel limit/);
+  assert.throws(() => resizeRecipe({ ...plain(8, 8, [dot(1, 1)]), frames: Array.from({ length: 70 }, (_, index) => ({ name: `f${index}`, ops: [dot(1, 1)] })) }, '256x256'), /^PixelError: size: 70 frames of 256×256 are 4,587,520 pixels; a recipe's frames hold at most 4,194,304 in all, so 64 frames of 256×256 fit/);
 });
 
 test('presets of every kind move to another canvas pixel for pixel', async () => {

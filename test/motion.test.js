@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { compilePoses } from '../src/authoring.js';
-import { renderProject, scalePixels } from '../src/core.js';
+import { PixelError, renderProject, scalePixels } from '../src/core.js';
 import { inspectMotion } from '../src/motion.js';
 import { skinkRig } from '../scripts/figure-rigs.mjs';
 
@@ -28,6 +32,18 @@ test('motion measures planted movement, signed height and pose differences in pi
   assert.deepEqual(bad.review().motion.poseSpread[0], { from: 'f0', to: 'f1', changed: 2, opaque: 2, share: 1, minimum: .2, pass: true });
   assert.equal(fixture([[2, 12], [4, 12]]).review({ speed: -20 }).motion.slide[0].pixels, 0);
   assert.deepEqual(f.metadata, before);
+});
+
+test('metadata from a resized canvas (resized.offset) is moved onto it, without editing the metadata', () => {
+  const f = fixture([[8, 12], [6, 12]]), before = structuredClone(f.metadata);
+  // The drawing moved 2 right and 1 up: the canvas starts at [-2, 1] in the old one.
+  const moved = fixture([[10, 11], [8, 11]]), metadata = { ...f.metadata, rig: { ground: 12 }, resized: { from: [16, 16], offset: [-2, 1], cut: 0 } };
+  const review = inspectMotion(moved.project, { animation: 'move', metadata, speed: 0 }).motion;
+  assert.deepEqual([review.ground, review.slide[0].samples.map(s => s.at), review.groundErrors.map(e => e.pixels)], [11, [[10, 11], [8, 11]], [0, 0]]);
+  assert.deepEqual(f.metadata, before);
+  assert.throws(() => inspectMotion(moved.project, { animation: 'move', metadata: { ...metadata, resized: { offset: [1.5, 0] } } }), /resized\.offset must be two integers/);
+  // A ground the resize put outside the canvas says so.
+  assert.throws(() => inspectMotion(moved.project, { animation: 'move', metadata: { ...metadata, resized: { offset: [0, -4] } } }), /row 16 on this canvas after its resize, is outside it; pass ground/);
 });
 
 test('contact phases merge across a loop seam, split on lifts and include the next cycle for continuously planted feet', () => {
@@ -74,7 +90,7 @@ test('motion reports missing information instead of claiming contacts or angles 
   assert.equal(unknown.nativeSheet.scale, 1); assert.equal(unknown.sheet.scale, 4);
   assert.deepEqual(unknown.sheet.data, scalePixels(unknown.nativeSheet.data, unknown.nativeSheet.width, unknown.nativeSheet.height, 4));
   const many = fixture(Array.from({ length: 40 }, () => [4, 12]), { durations: Array(40).fill(60000) }).review({ speed: 4096, scale: 16 });
-  assert.equal(many.cells.length, 32); assert.equal(many.omitted, 8); assert.equal(many.trajectory.shown, false);
+  assert.equal(many.cells.length, 32); assert.deepEqual(many.sampling, { total: 40, shown: 32, omitted: 8, method: 'evenly spaced, including endpoints: at most 32' }); assert.equal(many.trajectory.shown, false);
   assert.ok(many.sheet.width * many.sheet.height <= 4194304);
   for (const options of [{ speed: Infinity }, { speed: '48' }, { ground: 16 }, { scale: 0 }, { animation: 'absent' }, { metadata: {} }, { frames: ['f0'] }]) assert.throws(() => f.review(options), /motion\./);
   f.metadata.poses.f0.contacts = ['absent']; assert.throws(() => f.review(), /invalid contacts/);
@@ -134,4 +150,22 @@ test('old skink fails pose spread while the bone skink passes every run motion c
   const view = inspectMotion(project, { animation: 'run', speed: 48, metadata });
   assert.deepEqual(view.motion.checks, { slide: true, ground: true, poseSpread: true, loopSeam: true, armSwing: null, contactLegs: null, kneeLift: null });
   assert.equal(Math.max(...view.motion.slide.map(p => p.pixels)), .16);
+});
+
+test('a still whose one timing cell passes the image limit fails as motion.image, saying what to review instead', async t => {
+  // A one-frame animation: 2040 a side is the largest square whose cell (8 more with its border) fits 4,194,304 pixels.
+  const still = side => ({ version: 1, name: 'still', width: side, height: side, palette: { k: '#102030' },
+    frames: [{ name: 'f0', duration: 100, ops: [{ op: 'rect', x: 0, y: 0, w: side, h: side, color: 'k' }] }], animations: { hold: { frames: ['f0'] } } });
+  const fits = inspectMotion(renderProject(still(2040)), { animation: 'hold' });
+  assert.deepEqual([fits.nativeSheet.width, fits.nativeSheet.height], [2048, 2048]);
+  const message = 'motion.image: motion strip exceeds 4,194,304 pixels: one 2048×2048 frame takes 2056×2056 with its border; review the motion of an animation (frames up to 1024 a side always fit), or inspect a region of this frame instead';
+  assert.throws(() => inspectMotion(renderProject(still(2048)), { animation: 'hold', speed: 20 }), error => error instanceof PixelError && error.path === 'motion.image' && error.message === message);
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-motion-still-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await writeFile(path.join(dir, 'still.json'), JSON.stringify(still(2048)));
+  const bin = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin', 'pixelbolt.js');
+  const run = spawnSync(process.execPath, [bin, 'inspect', 'still.json', '--motion', 'hold', '--out', 'still.png'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(run.status, 1);
+  assert.match(run.stderr + run.stdout, /motion strip exceeds 4,194,304 pixels: one 2048×2048 frame takes 2056×2056/);
+  assert.doesNotMatch(run.stderr + run.stdout, /TypeError/);
 });

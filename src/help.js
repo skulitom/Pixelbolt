@@ -11,6 +11,9 @@ export const HELP_TOPICS = {
   poses: '../poses.schema.json', scenes: '../scene.schema.json', autotile: '../autotile.schema.json', fx: '../fx.schema.json', fluid: '../fluid.schema.json', wave: '../wave.schema.json', crystal: '../crystal.schema.json', powder: '../powder.schema.json', bodies: '../bodies.schema.json', normals: '../normals.schema.json'
 };
 export const TOPICS = [...Object.keys(HELP_TOPICS), 'presets', 'preset'];
+// A topic that is none, with the topics. A shell's command name (`help inspect`) also says where the command's options
+// are, which a cold run looked for in the topics and found only a call later in `inspect --help`.
+export const unknownTopic = (topic, commands = []) => `Unknown help topic "${topic}"; topics: quickstart, ${TOPICS.join(', ')}${commands.includes(topic) ? `; for a command's options run pixelbolt ${topic} --help` : ''}`;
 // Words an agent reaches for that are a topic under another name, or one part of a topic: [topic, its part]. They
 // are taken wherever a topic is and are not listed among the topics, so the listing stays short. (Agents drawing
 // ground tiles from another project read terrain.js for the fills, where `help terrain` answered "unknown topic".)

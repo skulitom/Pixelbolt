@@ -468,6 +468,43 @@ try {
     }
     return `${bytes} bytes, 128 frames`;
   });
+  await check('a 640 × 360 animation opens fitted without the 1× preview, its GIF and Frames call stay within their limits, and a sprite gets its zoom back', async () => {
+    // A full-screen overlay at a pixel-game screen size: animation frames reach 1024 a side and 262,144 pixels.
+    const width = 640, height = 360, recipe = { version: 1, name: 'screen-rain', width, height, palette: { s: '#1b2238', r: '#8fb7ff', m: '#f3e9c6' },
+      frames: [0, 1, 2].map(i => ({ name: `rain-${i + 1}`, duration: 100, ops: [{ op: 'fill', color: 's' }, { op: 'ellipse', x: 448, y: 72, w: 40, h: 40, color: 'm' }, ...Array.from({ length: 24 }, (_, k) => ({ op: 'rect', x: (k * 97 + i * 13) % 630, y: (k * 53 + i * 29) % 350, w: 1, h: 8, color: 'r' }))] })),
+      animations: { rain: { frames: ['rain-1', 'rain-2', 'rain-3'], loop: true } } };
+    assert.equal(renderProject(recipe).frames.length, 3);
+    const file = path.join(kept, 'screen-rain.pixel.json'), sprite = await evaluate(`document.getElementById('zoom').value`);
+    await writeFile(file, JSON.stringify(recipe, null, 2));
+    const { root: { nodeId } } = await studio.page('DOM.getDocument'), input = await studio.page('DOM.querySelector', { nodeId, selector: '#file' });
+    try {
+      await studio.page('DOM.setFileInputFiles', { files: [file], nodeId: input.nodeId });
+      await until(`document.getElementById('project-name').textContent === 'Screen rain'`, 'the 640 × 360 animation');
+      const view = () => evaluate(`({ zoom: document.getElementById('zoom').value, native: document.getElementById('native-canvas').parentElement.hidden, smooth: [...document.querySelectorAll('#timeline .frame img')].map(image => image.classList.contains('smooth')), error: document.getElementById('error').hidden, dimensions: document.getElementById('dimensions').textContent, overflow: document.documentElement.scrollWidth - innerWidth, fits: (() => { const board = document.getElementById('artboard').getBoundingClientRect(), shown = document.getElementById('canvas').getBoundingClientRect(); return shown.width <= board.width && shown.height <= board.height; })() })`);
+      const opened = await view();
+      assert.deepEqual(opened, { zoom: 'fit', native: true, smooth: [true, true, true], error: true, dimensions: '640 × 360 px', overflow: 0, fits: true });
+      const fitted = await canvas(); assert.deepEqual([fitted.width, fitted.height], [width, height]); assert.ok(fitted.colors.includes('8fb7ff'), 'the rain is not drawn');
+      await studio.shot('screen-rain');
+      // The export sheet keeps all three frames in one row: 1920 px, within 4096 at scale 1.
+      await click('#sheet-view'); assert.equal((await canvas()).width, width * 3); await click('#animation-view');
+      await choose('zoom', '1');
+      const gif = await download(() => click('#gif')), bytes = await readFile(gif);
+      const decoded = await evaluate(`(async () => { const decoder = new ImageDecoder({ data: Uint8Array.from(atob(${JSON.stringify(bytes.toString('base64'))}), c => c.charCodeAt(0)), type: 'image/gif' }); try { await decoder.tracks.ready; await decoder.completed; const { image } = await decoder.decode({ frameIndex: 0 }); try { return { frames: decoder.tracks.selectedTrack.frameCount, width: image.displayWidth, height: image.displayHeight }; } finally { image.close(); } } finally { decoder.close(); } })()`);
+      assert.deepEqual(decoded, { frames: 3, width, height });
+      // At 12× the frames would be 7680 px wide; the Frames call asks for the largest scale sequence makes, 6.
+      await choose('zoom', '12');
+      const open = `document.getElementById('frames-dialog').open`;
+      await click('#frames'); await until(open, 'the frames dialog'); await choose('frames-size', '');
+      assert.ok((await text('frames-call')).includes('--scale 6 '), await text('frames-call'));
+      await key('Escape', 27); await until(`!${open}`, 'Escape to close the dialog');
+    } finally {
+      await studio.page('DOM.setFileInputFiles', { files: [savedRecipe], nodeId: input.nodeId });
+      await until(`document.getElementById('project-name').textContent === 'Forest spirit'`, 'the saved recipe to be restored');
+    }
+    // The sprite comes back at the zoom it had, with its 1× preview.
+    assert.deepEqual([await evaluate(`document.getElementById('zoom').value`), await evaluate(`document.getElementById('native-canvas').parentElement.hidden`)], [sprite, false]);
+    return 'fit, sheet 1920 px, GIF 640 × 360, Frames at --scale 6';
+  });
   await check('Export assets downloads a ZIP whose preview.html shows every animation from disk', async () => {
     const zip = await download(() => click('#export')), entries = readZip(await readFile(zip)), folder = path.join(kept, 'exported');
     assert.equal(path.basename(zip), 'forest-spirit.zip');

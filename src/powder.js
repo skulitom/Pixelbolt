@@ -14,7 +14,7 @@
 // Left and right are alike to the cells: where a cell could go either way, a draw or the cells round it choose (the
 // nearer drop, the nearer bank), never the parity of its row or of the frame, and each row is read left to right or
 // right to left by a draw. So a source drawn mirrored runs the mirrored way as often, though not cell for cell.
-import { parseColor, renderProject, CANVAS_SIDE, FRAME_AREA, fail, isObject } from './core.js';
+import { parseColor, renderProject, FRAME_AREA, fail, isObject } from './core.js';
 import { hash, ditherThreshold, sinDeg, cosDeg } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { createBodyWorld, polygonPart, areaBeyond, turnBetween } from './bodies.js';
@@ -2070,13 +2070,15 @@ export const CLIP_FRAMES = 18000;
 // is every clip, within a recipe's canvas, frames and pixels. For video frames it is one clip (`only` names it; null
 // is the first), which may run CLIP_FRAMES frames on a grid of any size a runner takes. Either way the steps and the
 // work are those of the clips played.
+// A compiled grid keeps 256 a side, whatever an animation frame may be: a simulation's per-frame cost is not budgeted.
+const GRID_SIDE = 256;
 function readClips(source, only) {
   const video = only !== undefined;
   if (!isObject(source)) fail('powder', 'expected a pixelforge-powder source object');
   if (source.version !== 1) fail('powder.version', 'expected 1');
   const name = recipeName(source.name, 'powder.name');
   const live = createLivePowder(source), { width: W, height: H } = live;
-  if (!video && (W > CANVAS_SIDE || H > CANVAS_SIDE)) fail(W > CANVAS_SIDE ? 'powder.width' : 'powder.height', `a compiled powder grid is an animation, at most ${CANVAS_SIDE} pixels a side; use a smaller grid, write a larger one as numbered video frames (pixelbolt sequence), or run it live in a page or game (createLivePowder)`);
+  if (!video && (W > GRID_SIDE || H > GRID_SIDE)) fail(W > GRID_SIDE ? 'powder.width' : 'powder.height', `a compiled powder grid is an animation, at most ${GRID_SIDE} pixels a side; use a smaller grid, write a larger one as numbered video frames (pixelbolt sequence), or run it live in a page or game (createLivePowder)`);
   // Clips: each a one-shot animation.
   const given = source.clips ?? { [name]: {} };
   if (!isObject(given) || !Object.keys(given).length || Object.keys(given).length > LIMITS.clips) fail('powder.clips', `expected 1 to ${LIMITS.clips} named clips: { start, frames, every, duration }`);

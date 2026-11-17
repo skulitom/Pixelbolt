@@ -1,5 +1,5 @@
 import { RECIPE_LIMIT } from './share.js';
-import { advancePlayback, editGuard, engineOverride, filterExamples, formatSize, safeName, timeLimit } from './lib.js';
+import { advancePlayback, editGuard, engineOverride, filterExamples, fitScale, formatSize, framePNGScale, safeName, timeLimit } from './lib.js';
 
 export const PINNED_VERSION = '0.17.0';
 const REQUEST_TIMEOUT = timeLimit(location.href);
@@ -134,23 +134,33 @@ const animation = () => rendered?.animations[$('animation').value];
 const frameIndex = () => animation()?.frames[position] ?? 0;
 function gifSize() {
   if (!rendered) return;
-  const scale = Number($('gif-scale').value);
-  $('gif-size').textContent = rendered.stills ? `No GIF: the frames are stills. Frame PNGs at scale ${scale}.` : `GIF: ${rendered.width * scale}×${rendered.height * scale} px, ${animation().frames.length} frames, scale ${scale}`;
+  const scale = Number($('gif-scale').value), most = framePNGScale(rendered.width, rendered.height);
+  // Past the scale one PNG holds, the line says so before the download is asked for (a GIF may still be made).
+  const pngs = scale > most ? `Frame PNGs at this size stop at scale ${most}.` : '';
+  $('gif-size').textContent = rendered.stills ? `No GIF: the frames are stills. ${pngs || `Frame PNGs at scale ${scale}.`}` : `GIF: ${rendered.width * scale}×${rendered.height * scale} px, ${animation().frames.length} frames, scale ${scale}${pngs ? `. ${pngs}` : ''}`;
 }
-// Until someone picks a zoom, the art gets the largest whole zoom (1 to 16) that fits the preview box.
-function fitZoom() {
-  if (zoomChosen || !rendered || typeof getComputedStyle !== 'function') return;
+// The scale "Fit" shows: the largest whole zoom (1 to 16) that fits the preview box, or below 1× when the art is
+// larger than the box at 1× (a 640 × 360 frame on a phone, a large still), scaled down smoothly.
+function fittedScale() {
+  if (typeof getComputedStyle !== 'function') return 1;
   const box = $('artboard'), style = getComputedStyle(box);
   const width = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
   const height = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-  if (!(width > 0 && height > 0)) return;
-  $('zoom').value = String(Math.max(1, Math.min(16, Math.floor(Math.min(width / rendered.width, height / rendered.height)))));
+  return width > 0 && height > 0 ? fitScale(width, height, rendered.width, rendered.height) : 1;
+}
+// Until someone picks a zoom, the art gets the largest whole zoom that fits the preview box, or Fit when even 1× does
+// not fit.
+function fitZoom() {
+  if (zoomChosen || !rendered) return;
+  const scale = fittedScale();
+  $('zoom').value = scale >= 1 ? String(scale) : 'fit';
 }
 function draw() {
   if (!rendered) return;
-  const frame = rendered.frames[frameIndex()], zoom = Number($('zoom').value);
+  const frame = rendered.frames[frameIndex()], zoom = $('zoom').value === 'fit' ? fittedScale() : Number($('zoom').value);
   canvas.width = rendered.width; canvas.height = rendered.height;
   canvas.style.width = `${rendered.width * zoom}px`; canvas.style.height = `${rendered.height * zoom}px`;
+  canvas.classList.toggle('smooth', zoom < 1);
   context.imageSmoothingEnabled = false;
   context.putImageData(new ImageData(new Uint8ClampedArray(frame.data), rendered.width, rendered.height), 0, 0);
   canvas.setAttribute('aria-label', `${rendered.name}, frame ${frame.name}`);
@@ -329,7 +339,7 @@ $('step-back').addEventListener('click', () => step(-1));
 $('step-forward').addEventListener('click', () => step(1));
 $('animation').addEventListener('change', () => { position = 0; nextAt = 0; draw(); });
 $('zoom').addEventListener('change', () => { zoomChosen = true; draw(); });
-addEventListener('resize', () => { if (!zoomChosen && rendered) { fitZoom(); draw(); } });
+addEventListener('resize', () => { if (!rendered) return; fitZoom(); if (!zoomChosen || $('zoom').value === 'fit') draw(); });
 $('gif-scale').addEventListener('change', gifSize);
 canvas.addEventListener('keydown', event => {
   if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
@@ -366,6 +376,7 @@ function openHash() {
 addEventListener('hashchange', openHash);
 
 async function boot() {
+  { const option = document.createElement('option'); option.value = 'fit'; option.textContent = 'Fit'; $('zoom').append(option); }
   for (const id of ['zoom', 'gif-scale']) for (let scale = 1; scale <= 16; scale++) {
     const option = document.createElement('option'); option.value = String(scale); option.textContent = `${scale}×`; $(id).append(option);
   }

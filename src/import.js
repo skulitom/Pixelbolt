@@ -4,9 +4,12 @@
 import { inflateSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { crc32 } from './png.js';
-import { PixelError, renderProject, isObject } from './core.js';
+import { PixelError, renderProject, isObject, FRAME_LIMIT, CANVAS_SIDE, FRAME_PIXELS, STILL_SIDE, FRAME_AREA, frameFits, frameAreaProblem, frameTotalProblem } from './core.js';
 
 const fail = message => { throw new PixelError('import', message); };
+// An imported frame is an animation frame (one grid op holds it whole): core's frameFits, said by frameAreaProblem. A
+// PNG imported whole, with no frame or atlas, may instead be a still, up to a still's limits (STILL_SIDE a side and
+// FRAME_AREA), as a recipe may: its grid is cut into tiles a grid op holds.
 // Per PNG colour type: its name, samples per pixel and allowed bit depths.
 const COLOR_TYPES = { 0: ['greyscale', 1, [1, 2, 4, 8, 16]], 2: ['RGB', 3, [8, 16]], 3: ['indexed', 1, [1, 2, 4, 8]], 4: ['greyscale with alpha', 2, [8, 16]], 6: ['RGBA', 4, [8, 16]] };
 
@@ -27,7 +30,9 @@ export function decodePNG(bytes) {
     if (type === 'IHDR') {
       if (header || length !== 13) fail('invalid IHDR');
       const width = data.readUInt32BE(0), height = data.readUInt32BE(4), depth = data[8], kind = COLOR_TYPES[data[9]];
-      if (!width || !height || width > 4096 || height > 4096) fail('PNG dimensions exceed 4096 per side or 16,777,216 pixels');
+      // As large as any PNG Pixelbolt writes (png.js holds each to 16,777,216 pixels): a 1024-pixel frame at scale 16
+      // is 16384 a side, so an export's frames/ and sheet read back.
+      if (!width || !height || width > 16384 || height > 16384 || width * height > 16777216) fail('PNG dimensions exceed 16384 per side or 16,777,216 pixels');
       if (!kind || !kind[2].includes(depth) || data[10] || data[11] || data[12] > 1) fail('invalid IHDR: unknown colour type, bit depth, compression, filter or interlace method');
       if (depth === 16) fail(`16-bit ${kind[0]} PNG is unsupported: Pixelbolt keeps 8 bits per channel and does not round colours; export 8 bits per channel`);
       if (data[12]) fail('interlaced PNG is unsupported; save it without interlacing');
@@ -116,7 +121,8 @@ export function decodePNG(bytes) {
 // 0 to 8 that makes the frames tile the image exactly.
 function gridFrames(image, name, frame, padding, count) {
   const [w, h] = frame ?? [];
-  if (!Array.isArray(frame) || frame.length !== 2 || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1 || w > 256 || h > 256) fail('frame: expected the size of one frame, [width, height], each 1–256');
+  if (!Array.isArray(frame) || frame.length !== 2 || !Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1) fail(`frame: expected the size of one frame, [width, height]; ${FRAME_LIMIT}`);
+  if (!frameFits(w, h)) fail(`frame: ${frameAreaProblem(w, h)}, and an imported frame is one`);
   if (padding !== undefined && (!Number.isInteger(padding) || padding < 0 || padding > 64)) fail('padding: expected the empty border round each frame, a whole number from 0 to 64');
   if (count !== undefined && (!Number.isInteger(count) || count < 1 || count > 256)) fail('frames: expected a whole number from 1 to 256');
   const fits = p => image.width % (w + 2 * p) === 0 && image.height % (h + 2 * p) === 0;
@@ -202,7 +208,12 @@ export function importPNG(bytes, { name = 'imported', atlas, frame, padding, fra
   if (!entries.length || entries.length > 256) fail('expected 1–256 atlas frames');
   const first = entries[0][1]?.frame, width = first?.w, height = first?.h, names = importNames(entries.map(([frameName]) => frameName)), renamed = new Map();
   entries.forEach(([frameName], i) => { if (!renamed.has(frameName)) renamed.set(frameName, names[i]); });
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > 256 || height > 256 || width * height * entries.length > 4194304) fail('frames must fit the 256×256 canvas and total 4,194,304 source pixel limit');
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) fail('atlas frames need a whole-number width and height');
+  const still = atlas === undefined && !frameFits(width, height);
+  if (still && (width > STILL_SIDE || height > STILL_SIDE || width * height > FRAME_AREA)) fail(`a ${width}×${height} image is past a still's ${STILL_SIDE} pixels a side and ${FRAME_AREA.toLocaleString('en-US')} in all; give frame, the size of one frame in a sheet, to split it into an animation`);
+  if (!still && !frameFits(width, height)) fail(`${frameAreaProblem(width, height)}, and an imported frame is one`);
+  const total = frameTotalProblem(entries.length, width, height);
+  if (total) fail(total);
   const frames = entries.map(([, entry], i) => {
     const rect = entry?.frame;
     if (!rect || !Number.isInteger(rect.x) || !Number.isInteger(rect.y) || rect.x < 0 || rect.y < 0 || rect.w !== width || rect.h !== height || rect.x + width > image.width || rect.y + height > image.height || entry.rotated || entry.trimmed) fail('atlas needs equal-size, untrimmed, unrotated rectangles inside the PNG');
@@ -233,9 +244,21 @@ export function importPNG(bytes, { name = 'imported', atlas, frame, padding, fra
       if (!pixel.color.endsWith('00')) rows[pixel.y][pixel.x] = colors.get(pixel.color);
       else if (pixel.color !== '#00000000') hidden.push(pixel); // Preserve meaningful RGB even under alpha zero.
     }
-    frame.ops = [{ op: 'grid', rows: rows.map(row => row.join('')) }];
+    // A still past what one grid holds is tiles of it, each at most CANVAS_SIDE rows of CANVAS_SIDE cells and
+    // FRAME_PIXELS cells in all, the empty ones left out.
+    const across = Math.min(width, CANVAS_SIDE), down = Math.min(height, CANVAS_SIDE, Math.floor(FRAME_PIXELS / across)), ops = [];
+    if (!still) ops.push({ op: 'grid', rows: rows.map(row => row.join('')) });
+    else for (let y = 0; y < height; y += down) for (let x = 0; x < width; x += across) {
+      const tile = rows.slice(y, y + down).map(row => row.slice(x, x + across).join(''));
+      if (tile.some(row => /[^.]/.test(row))) ops.push({ op: 'grid', x, y, rows: tile });
+    }
+    frame.ops = ops;
     if (hidden.length) frame.pixels = hidden; else delete frame.pixels;
   }
+  // Pixels a grid cannot carry (past 256 colours, or a colour hidden under full transparency) are a list, which holds
+  // an animation frame's worth.
+  const listed = frames[0].pixels?.length ?? 0;
+  if (still && listed > FRAME_PIXELS) fail(`a ${width}×${height} still has ${listed.toLocaleString('en-US')} pixels that ${compact ? 'keep a colour under full transparency' : 'need more than 256 colours'}, past the ${FRAME_PIXELS.toLocaleString('en-US')} a frame lists; give frame, the size of one frame in a sheet, to split it into an animation`);
   const animations = atlasAnimations(atlas, frames, name, renamed), pivot = atlas?.meta?.pixelfx?.pivot, grid = frame !== undefined && atlas.grid;
   const anchor = Array.isArray(pivot) && pivot.length === 2 && [pivot[0], pivot[1]].every((v, i) => Number.isInteger(v) && v >= 0 && v <= [width, height][i]) ? pivot : undefined;
   const recipe = { version: 1, name, width, height, ...(compact && { palette: Object.fromEntries([...colors].map(([color, key]) => [key, color])) }), frames, ...(animations && { animations }), ...(anchor && { anchor }) };
