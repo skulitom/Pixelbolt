@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Pixel FX Designer alternatives: 9 pixel-art effect tools compared (October–November 2026)</title>
-<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct, Codixel 15 Nov: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel and Pixelbolt, with Pixelbolt and Codixel measured.">
+<title>Pixel FX Designer alternatives: 10 pixel-art effect tools compared (October–November 2026)</title>
+<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct, Codixel 15 Nov, pixelfx 17 Nov: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt, with Pixelbolt, Codixel and pixelfx measured.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 9 tools compared",
-  "description": "By the Pixelbolt maintainers: nine tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt and Codixel measured; the others read from their own pages.",
+  "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 10 tools compared",
+  "description": "By the Pixelbolt maintainers: ten tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt, Codixel and pixelfx measured; the others read from their own pages.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-11-15",
+  "dateModified": "2026-11-17",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
@@ -29,7 +29,8 @@
     {"@type": "SoftwareApplication", "name": "PHOSPHOR VFX", "url": "https://sinopskyd.itch.io/phosphor", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "BlastFX", "url": "https://mnkytech.itch.io/blastfx", "applicationCategory": "MultimediaApplication"},
     {"@type": "SoftwareApplication", "name": "Pixel VFX Forge", "url": "https://www.scenario.com/explorations/pixel-vfx-forge/", "applicationCategory": "MultimediaApplication"},
-    {"@type": "SoftwareApplication", "name": "Codixel", "url": "https://github.com/mankidev/codixel", "applicationCategory": "MultimediaApplication"}
+    {"@type": "SoftwareApplication", "name": "Codixel", "url": "https://github.com/mankidev/codixel", "applicationCategory": "MultimediaApplication"},
+    {"@type": "SoftwareApplication", "name": "pixelfx", "url": "https://github.com/patch-gg/pixelfx", "applicationCategory": "MultimediaApplication"}
   ]
 }
 </script>
@@ -46,7 +47,7 @@ h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
 .meta, .muted { color: var(--muted); font-size: 0.92rem; }
 .note { background: var(--note); border: 1px solid var(--rule); border-radius: 6px; padding: 0.6rem 0.9rem; }
 .wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 1rem 0; }
-table { border-collapse: collapse; font-size: 0.86rem; min-width: 76rem; }
+table { border-collapse: collapse; font-size: 0.86rem; min-width: 84rem; }
 table.small { min-width: 44rem; }
 caption { text-align: left; color: var(--muted); font-size: 0.9rem; padding-bottom: 0.4rem; }
 th, td { border: 1px solid var(--rule); padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
@@ -62,37 +63,44 @@ footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem;
 </head>
 <body>
 <main>
-<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 9 tools compared</h1>
+<h1>Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 10 tools compared</h1>
 
-<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt and updated on 27 October and 15
+<p class="lead"><strong>Checked on 19 October 2026 by the makers of Pixelbolt and updated on 27 October and 15 and 17
 November: alternatives to Pixel FX Designer (CodeManu's particle-effect app, US$9.99 on Steam) include its maker's
 SpriteMancer and Fluid FX, the node-based Pixel Composer, the free browser apps PHOSPHOR and Pixel VFX Forge, BlastFX,
-the free Claude Code skill Codixel, and Pixelbolt; we read every tool's pages and docs and ran two, Pixelbolt 0.17.0
-and Codixel. Five of the eight alternatives (SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR and Pixelbolt) run a
-fluid or material simulation, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised layers such as
-slashes, beams, shockwaves and lightning instead, and Codixel draws its flame and smoke from moving noise and its fire
-wall from a Doom-style heat grid.</strong> A liquid simulation keeps
+the free Claude Code skill Codixel, Patch's free effects library pixelfx, and Pixelbolt; we read every tool's pages and docs and ran three,
+Pixelbolt 0.17.0, Codixel and pixelfx. Five of the nine alternatives (SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR
+and Pixelbolt) run a fluid or material simulation, which Pixel FX Designer does not; Pixel VFX Forge stacks stylised
+layers such as slashes, beams, shockwaves and lightning instead, Codixel draws its flame and smoke from moving noise and
+its fire wall from a Doom-style heat grid, and pixelfx's 244 ready-made effects are code that draws each frame or
+steps particles.</strong> A liquid simulation keeps
 track of the water: in Pixelbolt 0.17.0's dam-break preset, measured on 15 November 2026, 400 pixels of water let out
 from behind a plank stayed between 392 and 407 pixels in all 70 frames, never covered a pixel of the rock, basin or
 plank, and ended in all 64 columns, past the rock and resting on the basin floor. Pixelbolt is free and MIT-licensed
-like PHOSPHOR and Codixel, and of the nine, only Pixelbolt documents an MCP server that makes the effects (Pixel VFX Forge's agent skill renders with a Node script and uses
+like PHOSPHOR, Codixel and pixelfx, and of the ten, only Pixelbolt documents an MCP server that makes the effects (Pixel VFX Forge's agent skill renders with a Node script and uses
 Scenario's MCP server for character art). Measured on one Windows PC on 15 November 2026, its 0.17.0 release from npm
 compiled each of its 37 fluid presets (fire, smoke, explosions, magic, water, thick liquids, sand and lightning) three
 times to byte-identical files in 0.20–1.55 s per command and to the same recipes in Chromium, Firefox and WebKit, and
 Pillow, a decoder independent of Pixelbolt's code, found only palette colours in every exported frame.
-Pixel Composer, PHOSPHOR and Pixel VFX Forge also document a way to render effects from a script, and Codixel's effects
-are functions that an agent's script calls; the others are used through their own window. We read seven of the other
-eight tools' pages and docs without running them (for Pixel VFX Forge, also its agent skill's source); Codixel we read
-and ran, and four of its effects each gave byte-identical files twice. Method, sources and data are below.</p>
+Pixel Composer, PHOSPHOR, Pixel VFX Forge and pixelfx also document a way to render effects from a script, and
+Codixel's effects are functions that an agent's script calls; the others are used through their own window. We read
+seven of the other nine tools' pages and docs without running them (for Pixel VFX Forge, also its agent skill's
+source); Codixel and pixelfx we read and ran: four of Codixel's effects and six of pixelfx's each gave byte-identical
+files twice. Method, sources and data are below.</p>
 
 <p class="note"><strong>We make Pixelbolt.</strong> Read this as a vendor's page: our own numbers come from runs you can
 repeat, and everything about the other tools links to the page we read it on. We are not affiliated with CodeManu
 (Pixel FX Designer, SpriteMancer, Fluid FX) or with the makers of the other tools here. Pixelbolt borrowed several
-ideas from Pixel Composer's node set, adapted to text recipes, and its README credits them. If we got something wrong,
+ideas from Pixel Composer's node set, adapted to text recipes, and its README credits them. On 30 October 2026
+Pixelbolt also adapted three ideas from pixelfx, one of the tools compared here: effect layers drawn behind and in
+front of a character, a warning when an effect is cut off at the canvas edge, and see-through poison gas
+(<a href="https://github.com/skulitom/Pixelbolt/commit/9dc66c813bc1266630408d1355f8f0c94644225d">commit</a>);
+the 0.17.0 release measured here includes them. If we got something wrong,
 <a href="https://github.com/skulitom/Pixelbolt/issues/new">open an issue</a> and we will correct it.</p>
 
 <p class="meta">Last checked: 19 October 2026 (UK time) · Pixel VFX Forge added 27 October 2026 · Codixel added 15 November
-2026 (read and run at commit <code>604a9dc</code>) · Re-checked on 15 November 2026: the Steam prices and latest
+2026 (read and run at commit <code>604a9dc</code>) · pixelfx added 17 November 2026 (read and run at commit
+<code>5294518</code>) · Re-checked on 15 November 2026: the Steam prices and latest
 versions of Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer and BlastFX, and Pixel VFX Forge's skill
 download; itch.io pages, PHOSPHOR's included, answered our reader with a bot check and were not re-checked ·
 Pixelbolt's rows (its column, presets, measurements and limits) re-measured on its 0.17.0 npm release (14 November
@@ -125,6 +133,14 @@ to draw effects (flame, smoke, fire wall, fire breath, beams) and whole scenes w
 each step with you:</strong> Codixel (free, MIT; a Claude Code skill created on 31 October 2026, with no releases yet).
 Its flame, smoke and fire are drawn from noise and a heat grid, not a fluid simulation, and none of its effects takes
 obstacles.</li>
+<li><strong>You want a large library of ready-made effects (244 in 21 categories, from fire, explosions, water,
+lightning and magic to UI, pickups, transitions and critters) that you recolour, reseed and play live in a browser game
+or export as sprite sheets with Aseprite-style JSON, plus a Claude Code skill that makes new ones:</strong> pixelfx (by
+Patch; free, MIT; created on 30 October 2026, version 0.3.1, no releases). Its smoke and glows are soft: in the transparent
+frames of the six effects we ran (what its sprite sheets are made from), 88–98% of the visible pixels were partly
+see-through, much of it its additive glow. It runs no fluid simulation and has no palette
+lock. Since 9 November its README and skill also offer to publish a browser game made with it on Patch, its maker's
+site where people play and remix browser games.</li>
 <li><strong>You want an AI agent (Claude Code, Codex, Cursor, Claude Desktop) to make and revise the effect over MCP (or a
 command line), seeing each result as an image, with the same files on every run and no colour outside your
 palette:</strong> Pixelbolt (free, MIT). You or the agent describe the effect in JSON; apart from its Powder lab,
@@ -136,13 +152,14 @@ where you paint falling-sand materials live, there is no hand-drawing editor for
 the docs and schemas in its npm package, on 15 November 2026. The other
 columns come from each tool's store pages, docs and source, read on 19 October 2026 (Pixel VFX Forge on 27 October)
 and linked under <a href="#sources">Sources</a>; we did not run them. Codixel's column comes from its source at commit
-<code>604a9dc</code>, read on 15 November 2026, and from our run of it (<a href="#codixel-measured">below</a>). "Not
-stated" means the pages we read don't say.</p>
+<code>604a9dc</code>, read on 15 November 2026, and from our run of it (<a href="#codixel-measured">below</a>).
+pixelfx's column comes from its source at commit <code>5294518</code>, read on 17 November 2026, and from our run of it
+(<a href="#patchgg-pixelfx-measured">below</a>). "Not stated" means the pages we read don't say.</p>
 <div class="wrap" tabindex="0" role="region" aria-label="Side-by-side table, scrolls sideways">
 <table>
-<caption>Nine tools for pixel-art effects, as of 19 October 2026 (Pixel VFX Forge: 27 October; Codixel and Pixelbolt 0.17.0: 15 November)</caption>
+<caption>Ten tools for pixel-art effects, as of 19 October 2026 (Pixel VFX Forge: 27 October; Codixel and Pixelbolt 0.17.0: 15 November; pixelfx: 17 November)</caption>
 <thead>
-<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th><th scope="col">Pixel VFX Forge</th><th scope="col">Codixel</th></tr>
+<tr><td></td><th scope="col">Pixelbolt</th><th scope="col">Pixel FX Designer</th><th scope="col">SpriteMancer</th><th scope="col">Fluid FX</th><th scope="col">Pixel Composer</th><th scope="col">PHOSPHOR</th><th scope="col">BlastFX</th><th scope="col">Pixel VFX Forge</th><th scope="col">Codixel</th><th scope="col">pixelfx (Patch)</th></tr>
 </thead>
 <tbody>
 <tr><th scope="row">How effects are made</th>
@@ -164,7 +181,11 @@ with words or an inspector in a browser, or a JSON recipe rendered by its agent 
 <td>A JavaScript library (<code>core/pixel.js</code>) that Claude Code calls from its own script, guided by a SKILL.md:
 the flame and smoke give each pixel a value from a shape plus moving noise, cut into flat bands of a colour ramp with
 a 4×4 Bayer dither strip where bands meet; the fire wall and fire breath spread heat on a grid the way Doom's fire
-does; beams are lines with a bloom</td></tr>
+does; beams are lines with a bloom</td>
+<td>A library of 244 ready-made effects in 21 categories, each one JavaScript file with no images: either a function
+that draws the frame at time <i>t</i>, or particles, debris and lights stepped at 120 Hz. Each draws opaque, dithered
+(4×4 Bayer) or truly translucent pixels, plus additive light on top. A Claude Code skill makes new ones by drafting,
+rendering and looking at a contact sheet</td></tr>
 <tr><th scope="row">Fluid simulation</th>
 <td>Yes: gases with a grid solver (stable fluids, vorticity, buoyancy) and liquids as FLIP particles (APIC optional),
 which may be viscous, have a yield stress or be granular sand; one grid cell per world pixel, up to 128×128 cells (a
@@ -180,7 +201,12 @@ described</td>
 <td>None described; fire and smoke are noise-shaped layers</td>
 <td>None: nothing in <code>core/pixel.js</code> solves for a fluid's velocity or pressure (we read the whole file);
 water in scenes is mirrored rows with ripples (<code>P.reflect</code>). No effect takes obstacles; fire breath takes a
-floor line it draws nothing below</td></tr>
+floor line it draws nothing below</td>
+<td>None: its files never mention a fluid, and nothing in <code>src/core</code> solves for a velocity or pressure field.
+Smoke, vapour and fire are either particles stepped by <code>src/core/sim.js</code> or puffs, flame tongues and noise
+drawn from the time alone (most of the fire effects, the campfire included); water effects are particles, noise and
+drawn shapes. No
+effect takes obstacle shapes; some bounce particles off a floor line</td></tr>
 <tr><th scope="row">Runs on</th>
 <td>Node.js 20 or newer on Windows, macOS or Linux (its CI tests all three, and its release job runs them on the
 tagged commit; we measured on Windows); portable Studio builds bundle Node.js for all three</td>
@@ -192,7 +218,10 @@ tagged commit; we measured on Windows); portable Studio builds bundle Node.js fo
 <td>Windows, macOS, Linux</td>
 <td>A browser (it renders in module workers); the agent skill's script needs Node.js 18 or newer</td>
 <td>Node.js (no version stated; we ran it on 24.19.0 on Windows) or a browser, with no dependencies; installed as a
-Claude Code skill</td></tr>
+Claude Code skill</td>
+<td>Node.js 18 or newer (we ran it on 24.19.0 on Windows), or a browser game, as ES modules with no dependencies;
+ffmpeg for GIF and MP4 previews; installed as a Claude Code plugin, by <code>npm i github:patch-gg/pixelfx</code>, or by
+copying files. Its gallery runs in a browser</td></tr>
 <tr><th scope="row">Price (US list price; sales on 19 Oct 2026)</th>
 <td>Free</td>
 <td>US$9.99 on Steam (US$6.99 in a week-long Steam deal that ran until 19 Oct); US$19.95 on itch.io (US$14.96 in a sale on 19 Oct, due to end 10 Nov 2026), with a Steam key</td>
@@ -203,6 +232,7 @@ Claude Code skill</td></tr>
 <td>US$19.99 on Steam or itch.io (itch.io includes a Steam key)</td>
 <td>Free, with no account for the web page; the agent skill's optional character art through Scenario's MCP server is
 paid</td>
+<td>Free</td>
 <td>Free</td></tr>
 <tr><th scope="row">Source code</th>
 <td>MIT</td>
@@ -214,7 +244,9 @@ paid</td>
 <td>No source offered</td>
 <td>The skill download is readable JavaScript (engine, prompt interpreter, render script) with no licence file or
 notice; Scenario's MIT-licensed skills repository on GitHub doesn't include it</td>
-<td>MIT on GitHub (since 1 November 2026; GPL-3.0-or-later from the evening of 31 October, its first day)</td></tr>
+<td>MIT on GitHub (since 1 November 2026; GPL-3.0-or-later from the evening of 31 October, its first day)</td>
+<td>MIT on GitHub, "code and effects", copyright Patch and Hugo Duprez; parts adapted from Sprite Fusion's and Hollow
+Crown's MIT code; the gallery's Patch Pixel font is not MIT</td></tr>
 <tr><th scope="row">Exports</th>
 <td>Measured: PNG sprite sheet with atlas JSON (with Aseprite frame tags), numbered PNG frames, animated PNG, GIF
 (on-or-off transparency at 50% alpha, or blended onto a <code>--background</code> colour), CSS, a Canvas player and a Godot 4 SpriteFrames <code>.tres</code>; its docs add numbered frames for video editors, with
@@ -233,7 +265,13 @@ skill: sprite sheet, atlas JSON with the impact frame and pivot, GIF, PNG frames
 image</td>
 <td>Measured: RGBA PNG frames, a PNG sprite sheet laid out as a plain grid (its frame size, columns and count come back
 in code, not in a file) and GIF (on-or-off transparency, as in any GIF; its SKILL.md says to fill the background
-first). No atlas or engine files. Its SKILL.md suggests ffmpeg for MP4</td></tr>
+first). No atlas or engine files. Its SKILL.md suggests ffmpeg for MP4</td>
+<td>Measured: a transparent PNG sprite sheet laid out as a grid, with Aseprite-style JSON (frame rectangles, durations,
+a frame tag, fps, loop, columns and pivot); in the sheet, partly see-through pixels had their colour multiplied by
+their alpha, so they come out darker than in the effect. GIF previews through ffmpeg (drawn on a backdrop, not
+see-through) and contact sheets. From its README and code, not run by us: MP4 previews through ffmpeg and sheets of an
+act with the character. No single-frame files and no engine files of its own; its README says Phaser's atlas loader
+and Aseprite importers for Godot and Unity read the JSON</td></tr>
 <tr><th scope="row">Palette control</th>
 <td>Colours come only from the source's palette (measured on all 37 fluid presets: no other colour in any frame), with
 ordered dither</td>
@@ -247,7 +285,10 @@ ordered dither</td>
 PICO-8, Sweetie 16, Endesga 32, Game Boy, 1-bit or your own list (nearest in OKLab)</td>
 <td>Measured: each effect takes a colour list. The flame used only the 5 colours given; the fire wall, smoke and beams
 made 32, 5 and 75 colours from 5, 2 and 2 given (ramp steps, alpha and blends). <code>P.quantize</code> maps frames to
-a palette you give: after it, every pixel was one of the 16 PICO-8 colours</td></tr>
+a palette you give: after it, every pixel was one of the 16 PICO-8 colours</td>
+<td>Every effect takes a <code>palette</code> ramp (27 named ones, or your own), and some take more ramps; no palette
+lock. Measured: given 4 or 5 PICO-8 colours, six effects used 0 to 4 of them and 5,835 to 190,063 other colours, from
+blends, translucency and light</td></tr>
 <tr><th scope="row">Without the GUI</th>
 <td>An MCP server (8 tools, measured), a command line, a JavaScript API, and an agent skill it can install on its
 own</td>
@@ -261,7 +302,10 @@ for AI agents; its page mentions no MCP server</td>
 <td>None stated</td>
 <td>A SKILL.md and a Node script that renders a recipe, or a prompt in its fixed vocabulary; no MCP server for effects
 (the skill uses Scenario's MCP server for character art)</td>
-<td>It has no GUI: a SKILL.md for Claude Code and a JavaScript API; no command line or MCP server</td></tr>
+<td>It has no GUI: a SKILL.md for Claude Code and a JavaScript API; no command line or MCP server</td>
+<td>No editor: a JavaScript API, command-line scripts that render, export, check and list effects, and a Claude Code
+plugin with a skill; no MCP server. Its gallery site plays each effect with options, a palette and a seed, and makes
+its sprite sheet</td></tr>
 <tr><th scope="row">Same output every run</th>
 <td>Measured: byte-identical across runs (37 fluid presets compiled three times and exported twice; 45 other effect
 examples compiled twice), and the same fluid recipes in Node, Chromium, Firefox and WebKit</td>
@@ -276,7 +320,11 @@ examples compiled twice), and the same fluid recipes in Node, Chromium, Firefox 
 GIFs (Node.js 24 on Windows), and the same frames in headless Chromium 156, Firefox 157 and WebKit 26.6. It seeds its
 own random numbers. Its beams, fire breath and flame shape use <code>Math.sin</code>, <code>atan2</code>,
 <code>exp</code> and <code>pow</code>, which the JavaScript standard lets engines round differently, but the three
-engines we tried agreed</td></tr>
+engines we tried agreed</td>
+<td>Measured: six built-in effects, each made twice in separate processes, gave byte-identical frames, sprite sheets,
+JSON and GIFs (Node.js 24 on Windows), and the same 697 frames in headless Chromium 156, Firefox 157 and WebKit 26.6.
+Its README says every random number comes from the effect's seed, and its check script flags
+<code>Math.random</code></td></tr>
 <tr><th scope="row">GPU</th>
 <td>Not used</td>
 <td>Steam minimum lists a GeForce GTX 670</td>
@@ -286,7 +334,8 @@ engines we tried agreed</td></tr>
 <td>None stated (Canvas 2D)</td>
 <td>OpenGL 3.3</td>
 <td>Not used (its skill says no GPU)</td>
-<td>Not used (plain JavaScript on the CPU)</td></tr>
+<td>Not used (plain JavaScript on the CPU)</td>
+<td>Not used (plain JavaScript on the CPU; the gallery draws with Canvas 2D)</td></tr>
 <tr><th scope="row">Latest version</th>
 <td>0.17.0, 14 November 2026</td>
 <td>1.1.8.0, April 2024 (a 2.0 beta from 2022)</td>
@@ -297,7 +346,9 @@ engines we tried agreed</td></tr>
 <td>0.1 (its devlog is from August 2026)</td>
 <td>2.0.6, posted on Steam on 16 September 2026 (a Mac fix after 2.0.5 on 5 August)</td>
 <td>Engine version 1; announced 26 October 2026</td>
-<td>No releases or tags; the latest commit is <code>604a9dc</code>, 2 November 2026</td></tr>
+<td>No releases or tags; the latest commit is <code>604a9dc</code>, 2 November 2026</td>
+<td>0.3.1 in its <code>package.json</code> (9 November 2026); no releases or tags; the latest commit is
+<code>5294518</code>, 12 November 2026</td></tr>
 </tbody>
 </table>
 </div>
@@ -480,9 +531,92 @@ node package/bin/pixelbolt.js compile package/examples/dam-break.fluid.json --ou
 node pixelbolt_dambreak.mjs dam-break.recipe.json dam-break.meta.json dam-break-check.json</pre></li>
 </ul>
 
+<h2 id="patchgg-pixelfx-measured">What we measured on pixelfx</h2>
+<p>On 17 November 2026 we cloned pixelfx (patch-gg/pixelfx) at commit <code>5294518</code> (its newest; it has no
+releases) and ran six of its 244 effects, a fire, a smoke, an explosion, water, lightning and magic, on the same Windows
+PC with Node.js 24.19.0. It met our rules for running another tool: it is MIT-licensed; its library and effects import
+only each other, with no network calls, GPU use or unseeded randomness; its render script uses only Node's own modules
+and starts one outside program, ffmpeg, for GIF and MP4 previews; and it has no install scripts (we installed nothing).
+We ran its own documented command, <code>node tools/render.mjs &lt;id&gt; --sheet</code>, which writes a contact sheet,
+a transparent PNG sprite sheet and its JSON, and the same command with <code>--gif</code> for the GIF preview. Its
+command line saves no single frames, so our script <a href="data/patchgg-pixelfx_frames.mjs">patchgg-pixelfx_frames.mjs</a>
+calls the functions that command uses (<code>loadEffect</code>, <code>renderFrames</code> and its PNG writer) to save
+each frame as its own PNG. Every effect ran with its own default settings (its size, length, 30 fps and seed), and no AI
+agent was involved. Each effect was made twice, each time in a new folder and process, and decoded with Pillow 12.0.0
+(<a href="data/patchgg-pixelfx_measure.py">patchgg-pixelfx_measure.py</a>,
+<a href="data/patchgg-pixelfx-effects-5294518.json">results</a>,
+<a href="data/patchgg-pixelfx-run-5294518.txt">run log</a>; in the results our work folder is shown as
+<code>&lt;work&gt;</code>). These <code>patchgg-pixelfx_</code> scripts are ours; the older <code>pixelfx_</code> files
+in the same folder are Pixelbolt's own.</p>
+<div class="wrap" tabindex="0" role="region" aria-label="pixelfx effects table, scrolls sideways">
+<table class="small">
+<caption>Six of pixelfx's effects, measured on 17 November 2026</caption>
+<thead>
+<tr><th scope="col">Effect</th><th scope="col">Id</th><th scope="col">Frame</th><th scope="col">Frames</th><th scope="col">Colours used</th><th scope="col">Visible pixels partly see-through</th><th scope="col">Same bytes twice</th><th scope="col">One command, 3 rounds (s)</th></tr>
+</thead>
+<tbody>
+<tr><td>Campfire (loop)</td><td><code>fire/campfire</code></td><td>128×128</td><td>90</td><td>72,700</td><td>91%</td><td>Yes (95 files)</td><td>0.86 / 0.82 / 0.82</td></tr>
+<tr><td>Smoke bomb</td><td><code>explosions/smoke-bomb</code></td><td>260×176</td><td>151</td><td>41,723</td><td>98%</td><td>Yes (156 files)</td><td>1.66 / 1.64 / 1.63</td></tr>
+<tr><td>Big explosion</td><td><code>explosions/big-explosion</code></td><td>360×300</td><td>217</td><td>449,379</td><td>91%</td><td>Yes (222 files)</td><td>6.69 / 6.36 / 7.49</td></tr>
+<tr><td>Splash</td><td><code>water/splash</code></td><td>176×100</td><td>76</td><td>14,382</td><td>92%</td><td>Yes (81 files)</td><td>0.61 / 0.60 / 0.60</td></tr>
+<tr><td>Lightning strike</td><td><code>lightning/lightning-strike</code></td><td>240×264</td><td>91</td><td>81,005</td><td>94%</td><td>Yes (96 files)</td><td>1.87 / 1.88 / 1.87</td></tr>
+<tr><td>Portal (loop)</td><td><code>arcane/portal</code></td><td>152×116</td><td>72</td><td>26,152</td><td>88%</td><td>Yes (77 files)</td><td>1.41 / 1.44 / 1.38</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong>Files:</strong> each run wrote a PNG per frame (our script) and, from pixelfx's two commands, a PNG sprite
+sheet, its JSON (one entry per frame at 33 ms, a frame tag, and the fps, loop, columns and pivot), two contact sheets
+and a GIF. Every file was byte-identical in the two runs. "Colours used" counts distinct colours, alpha included, among
+visible pixels in all frames.</li>
+<li><strong>Soft alpha:</strong> 88–98% of the visible pixels were partly see-through (alpha 1 to 254, read from the
+RGBA bytes). Much of it is pixelfx's additive light, which over a transparent background becomes colour with alpha:
+with its documented option <code>light: 0</code> the share fell to 46% for the campfire, 51% for the splash, 86% for
+the big explosion and 87% for the lightning, and to 0% for the portal (13 opaque colours), while the smoke bomb stayed
+at 98% (<a href="data/patchgg-pixelfx_light0.py">script</a>, <a href="data/patchgg-pixelfx-light0-5294518.json">data</a>).
+Blended edges and light are also why the colour counts run to tens of thousands.</li>
+<li><strong>Sprite sheet:</strong> opaque pixels in the sheet matched the frames exactly. Every pixel that differed was
+partly see-through in the frame, kept its alpha, and had its colour multiplied by that alpha (a pixel at half alpha kept
+half its colour): from 259,375 pixels in the splash's sheet to 2,804,733 in the big explosion's, and only 0 to 15 of
+each effect's frames matched their cell exactly. PNG stores colour that is not multiplied by alpha, so in a game those
+pixels draw darker from the sheet than in the effect itself. The cause is how its sheet writer pastes frames onto a
+transparent canvas (<code>tools/lib/fxlib.mjs</code>, lines 170–172);
+<a href="https://github.com/patch-gg/pixelfx/issues/4">an issue open on its repository since 3 November</a> reports the
+same.</li>
+<li><strong>GIF:</strong> the GIF preview is made by ffmpeg from the frames drawn on the effect's backdrop, so it is not
+see-through, scaled 2× or 3×, with 249 to 254 colours and frame delays of 30 and 40 ms (a GIF counts in hundredths of
+a second, so 30 fps can't be exact); the two looping effects are written out twice.</li>
+<li><strong>Palette:</strong> with each effect's <code>palette</code> set to four or five PICO-8 colours (as
+<code>--opts</code> in its command line), the six effects used 0 to 4 of the colours given and 5,835 to 190,063 others,
+from blends, translucency and light. pixelfx has no palette lock to map frames to a fixed set.</li>
+<li><strong>Time:</strong> one <code>render.mjs --sheet</code> command took 0.60 s (the splash) to 7.49 s (the big
+explosion, 217 frames of 360×300 pixels), Node's start-up and the contact sheet included, in three rounds that took the
+six effects in turn (<a href="data/patchgg-pixelfx_timing.py">script</a>,
+<a href="data/patchgg-pixelfx-timing-5294518.json">data</a>). In the measuring run some of the same commands were
+slower (up to 6.9 s for the lightning strike) while the PC was busy with other work; those times are in the results
+file.</li>
+<li><strong>The same in browsers:</strong> the same six effects with the same settings, rendered in headless Chromium
+156, Firefox 157 and WebKit 26.6, gave the same hash as Node for every one of the 697 frames
+(<a href="data/patchgg-pixelfx_engines.mjs">script</a>, <a href="data/patchgg-pixelfx-engines-5294518.json">data</a>).
+pixelfx's files reached the browsers from our local copy through Playwright, with no network request.</li>
+<li><strong>Not measured:</strong> how good the effects look, the other 238 effects, the acts with the character, and
+the skill. We did not give its SKILL.md to Claude, so making new effects with it is described from its docs, not run by
+us, and we did not install or run Patch's command line.</li>
+<li><strong>To repeat it</strong>, from a folder holding the <code>patchgg-pixelfx_</code> scripts, with ffmpeg on the
+PATH (for the GIF) and Pillow and numpy for Python:
+<pre>git -c core.autocrlf=false clone https://github.com/patch-gg/pixelfx src
+git -C src checkout 5294518ce7c72e48b6100a744596e0acf57f2826
+python -I patchgg-pixelfx_measure.py src patchgg-pixelfx_frames.mjs run patchgg-pixelfx-effects.json
+python -I patchgg-pixelfx_timing.py src run-timing patchgg-pixelfx-timing.json
+python -I patchgg-pixelfx_light0.py src patchgg-pixelfx_frames.mjs run-light0 patchgg-pixelfx-light0.json
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node patchgg-pixelfx_engines.mjs src patchgg-pixelfx-engines.json</pre>
+For the browser line, set <code>CHROMIUM_EXE</code> and <code>FIREFOX_EXE</code> if Playwright's own builds are
+missing.</li>
+</ul>
+
 <h2>Each tool, and when to choose it over Pixelbolt</h2>
 <p class="muted">From each tool's own pages, read on 19 October 2026 (Pixel VFX Forge on 27 October); not run by us,
-except Codixel, read and run on 15 November 2026.</p>
+except Codixel, read and run on 15 November 2026, and pixelfx, read and run on 17 November 2026.</p>
 
 <h3 id="pixel-fx-designer">Pixel FX Designer (CodeManu)</h3>
 <p>A desktop app for particle effects: emitters, motion, a timeline, physics such as attractors and gravity points,
@@ -609,12 +743,49 @@ whole scenes in code (trees, rock, water reflections, skies, gems). It is one re
 in a browser, and its smoke fades through five alpha levels: every visible smoke pixel in our run was partly
 see-through, while all 37 of Pixelbolt 0.17.0's fluid presets used only opaque pixels in our run.</p>
 
+<h3 id="patchgg-pixelfx">pixelfx (Patch)</h3>
+<p>Added on 17 November 2026: a free, MIT-licensed library of pixel-art effects with a Claude Code plugin (not related
+to CodeManu's Pixel FX Designer), on GitHub as patch-gg/pixelfx, created on 30 October 2026 (7,929 stars and 1,038 forks on 17 November). It has no releases or tags;
+its <code>package.json</code> says 0.3.1. We read and ran its newest commit, <code>5294518</code> from 12 November. It
+holds 244 effects in 21 categories (moves, fire, explosions, water, ice, lightning, sci-fi, melee, impacts,
+projectiles, spawn and death, arcane, holy, shadow, status, nature, weather, UI, pickups, transitions and critters),
+each one JavaScript file with no images. An effect either draws the frame at a time <i>t</i> from <i>t</i> alone, so
+its loops close, or steps particles, debris and lights at 120 Hz from a seed. It draws opaque, dithered or truly
+translucent pixels into one buffer and additive light into another, and every effect takes a palette ramp, a seed, a
+flip, an angle and its own options. The 61 effects with a character, and 12 "moves" that chain effects into whole
+attacks, also say what a stock 24×38 character does around them: a wind-up, a freeze on contact, a target that rocks
+back. You play effects live in a browser game, or render them with its command-line scripts to a contact sheet, a
+transparent PNG sprite sheet with Aseprite-style JSON (frame rectangles and durations, plus fps, loop, columns, pivot
+and the act's timing), which its README says Phaser's atlas loader and the Aseprite importers for Godot and Unity read,
+or GIF and MP4 previews made through ffmpeg. Its README credits the method to Hugo
+Duprez's article on making pixel-art effects with Claude, and its particle code and some effects (the campfire among
+them) adapt his open-source effects at Sprite Fusion. Nothing in it simulates a fluid, and no effect takes obstacle shapes
+(some bounce particles off a floor line). Its skill, installed as a Claude Code plugin from the repository's own
+marketplace or by copying a folder, tells Claude to look for an existing effect first and to make new ones by
+drafting, rendering, looking at the contact sheet and refining; a check script flags unseeded randomness, loop seams
+and slow frames. pixelfx is made by Patch, a site where people play and remix browser games. Since 9 November its
+README and skill say how to publish a browser game made with the effects on Patch, with Patch's command line
+(<code>pch</code>) and Patch Desktop open on a Windows PC; the skill tells Claude to offer this once and to go ahead
+only on the person's yes. Since 12 November its README also links a pixelfx page on Patch for starting a browser game
+from an effect. Nothing in the library, its effects or its render scripts contacts Patch or any other network service.
+We ran six of its effects; the numbers are <a href="#patchgg-pixelfx-measured">above</a>.</p>
+<p><strong>Choose it over Pixelbolt</strong> when you want a large library of ready-made effects for a whole game rather
+than a few to build on: 244 of them in 21 categories, including melee swings, impacts, projectiles, status effects, UI
+pop-ups, pickups, screen transitions and critters (Pixelbolt 0.17.0 ships 37 fluid presets and 45 other effect
+examples). You can drop them into a browser game as code and recolour, mirror, turn or reseed them as it runs, or
+export sprite sheets with JSON, and 61 of them, with the 12 moves, carry the timing of a character's wind-up, the
+freeze on contact and the target's knock-back. Its smoke and glows are soft, with additive light that Pixelbolt does not
+have: 88–98% of the visible pixels in the six effects we ran were partly see-through, while all 37 of Pixelbolt
+0.17.0's fluid presets used only opaque pixels in our run (its see-through poison gas, an effect example, uses
+three fixed translucent colours).</p>
+
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
 <p>When an AI agent should make, check and change the effect over MCP, seeing each result as an image: the agent writes
 a few kilobytes of JSON (palette, obstacles, emitters and how fields map to colours), compiles it, looks at the contact
 sheet it gets back, and changes one setting at a time, with the same file every time. (PHOSPHOR and Pixel VFX Forge
 also take agent-written JSON, through command-line scripts rather than MCP; Codixel's agent writes JavaScript that
-calls its library.) The result is an ordinary Pixelbolt recipe, so
+calls its library, and pixelfx's skill has the agent write or edit an effect's JavaScript file and render it with a
+command-line script.) The result is an ordinary Pixelbolt recipe, so
 the same agent can inspect it, patch single pixels, and export sprite sheets, atlases, GIFs or frames for a video
 editor. It is free and needs only Node.js: no account, API key or network service. Install it from the
 <a href="https://github.com/skulitom/Pixelbolt">GitHub repository</a>, or as <code>pixelbolt.mcpb</code> for Claude
@@ -689,7 +860,8 @@ more while researching the tools. Pixelbolt appeared in none of the eight whose 
 kind of tool: "Pixel FX Designer alternatives", "pixel art fire smoke explosion effect generator free", "codixel pixel
 art effects claude skill", "claude code skill pixel art particle effects" and "pixel art vfx tool for AI agents". No
 page of ours appeared in any of them, and nor did Codixel's repository (skills directories listing it did). Their
-results also named tools we have not read yet, such as the PixelFX skill and Sprite Dust; all are in
+results also named tools we had not read: the PixelFX skill, which is patch-gg's pixelfx and was added on 17 November,
+and Sprite Dust and EffectForge, which we have not read yet; all are in
 <a href="data/searches-2026-11-15.txt">searches-2026-11-15.txt</a>.</li>
 <li><strong>Which tools.</strong> We compared tools that generate effects, rather than animate existing sprites or sell
 finished art, and whose own pages describe pixel-art output control (a palette, pixelation or palette mapping). Fluid
@@ -699,17 +871,26 @@ of these controls. Two tools meet the rule and were left out for scope: Heos Exp
 makes explosions only) and glideengine's Particles Editor (Mac and iOS App Stores; it exports PNG textures and source
 code). Pixel VFX Forge, announced on 26 October 2026, meets the rule and was added on 27 October. Codixel, a Claude
 Code skill created on 31 October 2026, meets it too (its effects take a colour list, and <code>P.quantize</code> maps
-frames to a palette) and was added on 15 November.</li>
+frames to a palette) and was added on 15 November. pixelfx, a library and Claude Code skill created on 30 October 2026,
+meets it as well (every effect takes a <code>palette</code> ramp, and its painter can fade pixels with a 4×4 Bayer
+dither) and was added on 17 November.</li>
 <li><strong>The other tools</strong> were read from their store pages, docs, devlogs and (for Pixel Composer) source,
 on 19 October 2026. We did not download or run them. That was a choice of scope: PHOSPHOR is free and runs in a
 browser, and the five paid tools have free demos (BlastFX's can't export). So nothing here compares speed or output
-quality between tools; apart from Codixel's run below, the measured numbers are Pixelbolt's. No page we read restricts
-comparisons.</li>
+quality between tools; apart from Codixel's and pixelfx's runs below, the measured numbers are Pixelbolt's. No page we
+read restricts comparisons.</li>
 <li><strong>Codixel</strong> was read on 15 November 2026 from its repository at commit <code>604a9dc</code> (README,
 SKILL.md, <code>core/pixel.js</code> and LICENSE) and from GitHub's API (creation date, stars, commits, tags, releases
 and issues: none of the last three). It met our rules for running another tool, so we ran it as described under
 <a href="#codixel-measured">What we measured on Codixel</a>, on the same PC with Python 3.13.9 and Pillow 12.0.0. We
 did not run its SKILL.md with an AI agent.</li>
+<li><strong>pixelfx</strong> was read on 17 November 2026 from its repository at commit <code>5294518</code> (README,
+<code>skills/pixelfx/SKILL.md</code>, <code>docs/AUTHORING.md</code>, <code>.claude-plugin/</code>, LICENSE, NOTICE.md,
+<code>package.json</code>, <code>src/core</code>, the effects we ran and <code>tools/</code>) and from GitHub's API
+(creation date, stars, forks, commits, tags, releases and issues; no tags or releases). It met our rules for running another
+tool, so we ran it as described under <a href="#patchgg-pixelfx-measured">What we measured on pixelfx</a>, on the same
+PC with Python 3.13.9, Pillow 12.0.0 and numpy. We did not run its skill with an AI agent, and we did not install or run
+Patch's command line.</li>
 <li><strong>Pixel VFX Forge</strong> was read on 27 October 2026 from its page and its illustrated making-of. We also
 downloaded its agent skill, a 49,821-byte ZIP whose SHA-256 (<code>f5284ec0…7d23cd2c</code>) matches the hash in its
 download address, and read its source and recipe reference; we did not run it.</li>
@@ -720,7 +901,11 @@ records as built from commit <code>e1eb580</code>. Its column was read from the 
 help in that package. The compile-time comparison with 0.9.0 was run on 15 November on a <code>git archive</code> of tag
 v0.9.0 (GitHub's archive of the tag, as in the block below, builds the same ten recipes); the page's earlier 0.9.0 measurements, of 19 October, are cited only for the tool list's size, and their data
 files stay in this folder.</li>
-<li><strong>Scripts</strong>, next to this page:
+<li><strong>Scripts</strong>, next to this page. The ones whose names start <code>pixelfx_</code> are Pixelbolt's own
+measuring scripts, written for this page on 19 October and 15 November, after Pixelbolt had its current name; they have nothing to
+do with patch-gg's pixelfx. Our
+scripts for patch-gg's pixelfx start <code>patchgg-pixelfx_</code> and are listed under
+<a href="#patchgg-pixelfx-measured">What we measured on pixelfx</a>.
 <ul>
 <li><a href="data/pixelfx_measure-0.17.0.mjs">pixelfx_measure-0.17.0.mjs</a> compiles every fluid preset three times
 through the command line, then renders and exports each GIF twice, hashing every file. It is
@@ -758,7 +943,7 @@ If Playwright's own browser builds are missing, as ours were, set <code>CHROMIUM
 </ul>
 
 <h2 id="sources">Sources</h2>
-<p class="muted">Read on 19 October 2026, except Pixel VFX Forge (27 October) and Codixel (15 November). Steam's store data and news (prices and latest
+<p class="muted">Read on 19 October 2026, except Pixel VFX Forge (27 October), Codixel (15 November) and pixelfx (17 November). Steam's store data and news (prices and latest
 versions), Pixel Composer's GitHub releases and Pixel VFX Forge's page were read again on 15 November 2026.</p>
 <ul>
 <li>Pixel FX Designer: <a href="https://codemanu.itch.io/particle-fx-designer">itch.io page</a>,
@@ -774,7 +959,7 @@ exporting, rendering), <a href="https://codemanu.itch.io/spritemancer/devlog/168
 devlog</a>.</li>
 <li>Fluid FX: <a href="https://codemanu.itch.io/fluid-fx">itch.io page</a>,
 <a href="https://store.steampowered.com/app/1853880/Fluid_FX/">Steam page</a>,
-<a href="https://marketplace.gamemaker.io/assets/5402/fluid-dynamics-gm-studio-2">Mytino's Fluid Dynamics</a>.</li>
+<a href="https://marketplace.gamemaker.io/assets/5402/now-free-fluid-dynamics-gm-studio-2">Mytino's Fluid Dynamics</a>.</li>
 <li>CodeManu's other tools: <a href="https://store.steampowered.com/bundle/16552/FX_Tools/">FX Tools bundle</a>,
 <a href="https://store.steampowered.com/app/1046770/Juice_FX/">Juice FX</a>,
 <a href="https://store.steampowered.com/app/1228760/Smear_FX/">Smear FX</a>.</li>
@@ -813,6 +998,25 @@ its licence history in commits <a href="https://github.com/mankidev/codixel/comm
 (GPL-3.0-or-later, 31 October) and <a href="https://github.com/mankidev/codixel/commit/32caa0d70ae1a8ccbd61d6e5b20002e7c0890481"><code>32caa0d</code></a>
 (MIT, 1 November); our run: <a href="data/codixel-run-604a9dc.txt">log</a> and
 <a href="data/codixel-effects-604a9dc.json">results</a>.</li>
+<li>pixelfx, read on 17 November 2026: <a href="https://github.com/patch-gg/pixelfx">GitHub repository</a> (stars,
+forks, creation date, commits, tags, releases and issues through GitHub's API;
+<a href="https://github.com/patch-gg/pixelfx/issues/4">issue #4</a>, open since 3 November) and, at commit <code>5294518</code>, its
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/README.md">README</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/skills/pixelfx/SKILL.md">SKILL.md</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/docs/AUTHORING.md">AUTHORING.md</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/.claude-plugin/plugin.json">plugin.json</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/package.json">package.json</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/LICENSE">LICENSE</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/NOTICE.md">NOTICE.md</a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/src/core/fx.js"><code>src/core/fx.js</code></a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/src/core/sim.js"><code>src/core/sim.js</code></a>,
+<a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/src/core/color.js"><code>src/core/color.js</code></a>
+and <a href="https://github.com/patch-gg/pixelfx/blob/5294518ce7c72e48b6100a744596e0acf57f2826/tools/lib/fxlib.mjs"><code>tools/lib/fxlib.mjs</code></a>;
+the commits that added the Patch text, <a href="https://github.com/patch-gg/pixelfx/commit/044e12a45dc9cc312cec50ee606dfc98afe5adc2"><code>044e12a</code></a>
+(9 November) and <a href="https://github.com/patch-gg/pixelfx/commit/5294518ce7c72e48b6100a744596e0acf57f2826"><code>5294518</code></a>
+(12 November); its <a href="https://patch-gg.github.io/pixelfx/">gallery</a> (its source in <code>gallery/</code>, not
+opened in a browser); our run: <a href="data/patchgg-pixelfx-run-5294518.txt">log</a> and
+<a href="data/patchgg-pixelfx-effects-5294518.json">results</a>.</li>
 <li>Read again on 15 November 2026: the US prices on Steam's store data for Pixel FX Designer, SpriteMancer, Fluid FX,
 Pixel Composer and BlastFX; their Steam news, read through Steam's public news API (for example
 <a href="https://store.steampowered.com/news/app/2299510">Pixel Composer's</a> 1.22.1–1.22.3 betas and its
@@ -845,7 +1049,7 @@ files linked in <a href="#measured">What we measured</a>.</li>
 </ul>
 
 <footer class="muted">
-<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. Codixel added 15 November 2026, when we also re-checked the Steam prices and latest versions (not the itch.io pages) and re-measured Pixelbolt's rows on its 0.17.0 release. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. Codixel added 15 November 2026, when we also re-checked the Steam prices and latest versions (not the itch.io pages) and re-measured Pixelbolt's rows on its 0.17.0 release. pixelfx added 17 November 2026, read and run at commit <code>5294518</code>. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·

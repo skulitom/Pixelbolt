@@ -1,0 +1,945 @@
+{
+ "pixelfx_commit": "5294518ce7c72e48b6100a744596e0acf57f2826",
+ "node": "v24.19.0",
+ "ffmpeg": "ffmpeg version 7.0-full_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers",
+ "pillow": "12.0.0",
+ "effects": {
+  "fire/campfire": {
+   "settings": {
+    "name": "Campfire",
+    "w": 128,
+    "h": 128,
+    "frames": 90,
+    "fps": 30,
+    "loop": true,
+    "duration_s": 3,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#4a1712",
+     "#8a1f17",
+     "#c9281f",
+     "#f2561d",
+     "#ff8a2a",
+     "#ffc23d",
+     "#ffe26b",
+     "#fff3a6",
+     "#ffffff"
+    ],
+    "wood": [
+     "#0e080a",
+     "#24130f",
+     "#3b2216",
+     "#5a3520",
+     "#8a5a34",
+     "#b9884f"
+    ],
+    "height": 22,
+    "seed": 3
+   },
+   "wall_s": {
+    "sheet": [
+     3.48,
+     1.566
+    ],
+    "gif": [
+     8.284,
+     1.175
+    ],
+    "frames": [
+     3.187,
+     0.883
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 611.7,
+     "write_png": 793
+    },
+    {
+     "render": 299.5,
+     "write_png": 491.6
+    }
+   ],
+   "files": 95,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/fire/campfire/anim.gif": "8344da4e847a6859",
+    "gif/fire/campfire/contact.png": "11a6e7f09d59d16a",
+    "sheet/fire/campfire/campfire.json": "68bbf06379632014",
+    "sheet/fire/campfire/campfire.png": "f21206bb721dbf76",
+    "sheet/fire/campfire/contact.png": "11a6e7f09d59d16a"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    128,
+    128
+   ],
+   "frame_files": 90,
+   "check": {
+    "pixels": 1474560,
+    "visible": 749028,
+    "visible_share": 0.508,
+    "colours_rgba": 72700,
+    "colours_rgb": 41808,
+    "alpha_values_count": 255,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 680113,
+    "partly_see_through_share_of_visible": 0.908
+   },
+   "sheet": {
+    "size": [
+     1280,
+     1152
+    ],
+    "mode": "RGBA",
+    "json_frames": 90,
+    "durations_ms": [
+     33
+    ],
+    "columns": 10,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "campfire",
+      "from": 0,
+      "to": 89,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 0,
+    "cells": 90,
+    "pixels_differing": 680113,
+    "differing_pixels_with_partial_alpha_in_frame": 680113,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 680113,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 180,
+    "size": [
+     384,
+     384
+    ],
+    "colours": 252,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "fire/campfire  90 frames  ->  <work>\\fire-campfire\\run1\\sheet\\fire\\campfire\\contact.png  <work>\\fire-campfire\\run1\\sheet\\fire\\campfire\\campfire.png  <work>\\fire-campfire\\run1\\sheet\\fire\\campfire\\campfire.json",
+    "gif": "fire/campfire  90 frames  ->  <work>\\fire-campfire\\run1\\gif\\fire\\campfire\\contact.png  <work>\\fire-campfire\\run1\\gif\\fire\\campfire\\anim.gif"
+   }
+  },
+  "explosions/smoke-bomb": {
+   "settings": {
+    "name": "Smoke bomb",
+    "w": 260,
+    "h": 176,
+    "frames": 151,
+    "fps": 30,
+    "loop": false,
+    "duration_s": 5,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#0e0b14",
+     "#1e1828",
+     "#30283e",
+     "#463c58",
+     "#62567a",
+     "#867a9e",
+     "#aea4c4"
+    ],
+    "canister": [
+     "#16121e",
+     "#2a2434",
+     "#443c52",
+     "#686078",
+     "#9c94ac"
+    ],
+    "sparks": [
+     "#fff3a6",
+     "#ffe26b",
+     "#ff8a2a",
+     "#f2561d"
+    ],
+    "seed": 3
+   },
+   "wall_s": {
+    "sheet": [
+     1.662,
+     1.627
+    ],
+    "gif": [
+     0.926,
+     0.895
+    ],
+    "frames": [
+     1.754,
+     1.726
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 398.2,
+     "write_png": 1274.6
+    },
+    {
+     "render": 398.1,
+     "write_png": 1247.2
+    }
+   ],
+   "files": 156,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/explosions/smoke-bomb/anim.gif": "eb51d92b37876800",
+    "gif/explosions/smoke-bomb/contact.png": "6a87f5fe4c64fb5e",
+    "sheet/explosions/smoke-bomb/contact.png": "6a87f5fe4c64fb5e",
+    "sheet/explosions/smoke-bomb/smoke-bomb.json": "9e266d2dc5fd49a0",
+    "sheet/explosions/smoke-bomb/smoke-bomb.png": "5da0a627691cabca"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    260,
+    176
+   ],
+   "frame_files": 151,
+   "check": {
+    "pixels": 6909760,
+    "visible": 727073,
+    "visible_share": 0.1052,
+    "colours_rgba": 41723,
+    "colours_rgb": 5449,
+    "alpha_values_count": 255,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 714013,
+    "partly_see_through_share_of_visible": 0.982
+   },
+   "sheet": {
+    "size": [
+     2860,
+     2464
+    ],
+    "mode": "RGBA",
+    "json_frames": 151,
+    "durations_ms": [
+     33
+    ],
+    "columns": 11,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "smoke-bomb",
+      "from": 0,
+      "to": 150,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 6,
+    "cells": 151,
+    "pixels_differing": 500338,
+    "differing_pixels_with_partial_alpha_in_frame": 500338,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 500338,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 151,
+    "size": [
+     520,
+     352
+    ],
+    "colours": 249,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "explosions/smoke-bomb  151 frames  ->  <work>\\explosions-smoke-bomb\\run1\\sheet\\explosions\\smoke-bomb\\contact.png  <work>\\explosions-smoke-bomb\\run1\\sheet\\explosions\\smoke-bomb\\smoke-bomb.png  <work>\\explosions-smoke-bomb\\run1\\sheet\\explosions\\smoke-bomb\\smoke-bomb.json",
+    "gif": "explosions/smoke-bomb  151 frames  ->  <work>\\explosions-smoke-bomb\\run1\\gif\\explosions\\smoke-bomb\\contact.png  <work>\\explosions-smoke-bomb\\run1\\gif\\explosions\\smoke-bomb\\anim.gif"
+   }
+  },
+  "explosions/big-explosion": {
+   "settings": {
+    "name": "Big explosion",
+    "w": 360,
+    "h": 300,
+    "frames": 217,
+    "fps": 30,
+    "loop": false,
+    "duration_s": 7.2,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#4a1712",
+     "#c9281f",
+     "#f2561d",
+     "#ff8a2a",
+     "#ffc23d",
+     "#ffe26b",
+     "#fff3a6",
+     "#ffffff"
+    ],
+    "stone": "#4a3f69",
+    "seed": 11
+   },
+   "wall_s": {
+    "sheet": [
+     6.338,
+     5.97
+    ],
+    "gif": [
+     3.09,
+     3.057
+    ],
+    "frames": [
+     5.803,
+     5.728
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 1540.2,
+     "write_png": 4160
+    },
+    {
+     "render": 1487.8,
+     "write_png": 4131.7
+    }
+   ],
+   "files": 222,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/explosions/big-explosion/anim.gif": "21790de4a1b41ac4",
+    "gif/explosions/big-explosion/contact.png": "539233d5af5c076c",
+    "sheet/explosions/big-explosion/big-explosion.json": "542f092647625d58",
+    "sheet/explosions/big-explosion/big-explosion.png": "10c221247399925f",
+    "sheet/explosions/big-explosion/contact.png": "539233d5af5c076c"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    360,
+    300
+   ],
+   "frame_files": 217,
+   "check": {
+    "pixels": 23436000,
+    "visible": 3294937,
+    "visible_share": 0.1406,
+    "colours_rgba": 449379,
+    "colours_rgb": 189381,
+    "alpha_values_count": 255,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 2993179,
+    "partly_see_through_share_of_visible": 0.9084
+   },
+   "sheet": {
+    "size": [
+     5040,
+     4800
+    ],
+    "mode": "RGBA",
+    "json_frames": 217,
+    "durations_ms": [
+     33
+    ],
+    "columns": 14,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "big-explosion",
+      "from": 0,
+      "to": 216,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 15,
+    "cells": 217,
+    "pixels_differing": 2804733,
+    "differing_pixels_with_partial_alpha_in_frame": 2804733,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 2804733,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 217,
+    "size": [
+     720,
+     600
+    ],
+    "colours": 253,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "explosions/big-explosion  217 frames  ->  <work>\\explosions-big-explosion\\run1\\sheet\\explosions\\big-explosion\\contact.png  <work>\\explosions-big-explosion\\run1\\sheet\\explosions\\big-explosion\\big-explosion.png  <work>\\explosions-big-explosion\\run1\\sheet\\explosions\\big-explosion\\big-explosion.json",
+    "gif": "explosions/big-explosion  217 frames  ->  <work>\\explosions-big-explosion\\run1\\gif\\explosions\\big-explosion\\contact.png  <work>\\explosions-big-explosion\\run1\\gif\\explosions\\big-explosion\\anim.gif"
+   }
+  },
+  "water/splash": {
+   "settings": {
+    "name": "Splash",
+    "w": 176,
+    "h": 100,
+    "frames": 76,
+    "fps": 30,
+    "loop": false,
+    "duration_s": 2.5,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#0a1630",
+     "#123063",
+     "#1b5596",
+     "#2a7fc4",
+     "#45a9e3",
+     "#86d3f5",
+     "#cdf1ff",
+     "#ffffff"
+    ],
+    "stone": true,
+    "seed": 3
+   },
+   "wall_s": {
+    "sheet": [
+     0.545,
+     0.543
+    ],
+    "gif": [
+     0.371,
+     0.37
+    ],
+    "frames": [
+     0.418,
+     0.403
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 112.3,
+     "write_png": 234.9
+    },
+    {
+     "render": 104,
+     "write_png": 228
+    }
+   ],
+   "files": 81,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/water/splash/anim.gif": "dd7dc0997853b26f",
+    "gif/water/splash/contact.png": "d21128a5bee8c9af",
+    "sheet/water/splash/contact.png": "d21128a5bee8c9af",
+    "sheet/water/splash/splash.json": "1d55d64b1fcc92af",
+    "sheet/water/splash/splash.png": "3162ffbd9c85ee2a"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    176,
+    100
+   ],
+   "frame_files": 76,
+   "check": {
+    "pixels": 1337600,
+    "visible": 282305,
+    "visible_share": 0.2111,
+    "colours_rgba": 14382,
+    "colours_rgb": 5540,
+    "alpha_values_count": 229,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 259375,
+    "partly_see_through_share_of_visible": 0.9188
+   },
+   "sheet": {
+    "size": [
+     1232,
+     1100
+    ],
+    "mode": "RGBA",
+    "json_frames": 76,
+    "durations_ms": [
+     33
+    ],
+    "columns": 7,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "splash",
+      "from": 0,
+      "to": 75,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 14,
+    "cells": 76,
+    "pixels_differing": 259375,
+    "differing_pixels_with_partial_alpha_in_frame": 259375,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 259375,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 76,
+    "size": [
+     352,
+     200
+    ],
+    "colours": 254,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "water/splash  76 frames  ->  <work>\\water-splash\\run1\\sheet\\water\\splash\\contact.png  <work>\\water-splash\\run1\\sheet\\water\\splash\\splash.png  <work>\\water-splash\\run1\\sheet\\water\\splash\\splash.json",
+    "gif": "water/splash  76 frames  ->  <work>\\water-splash\\run1\\gif\\water\\splash\\contact.png  <work>\\water-splash\\run1\\gif\\water\\splash\\anim.gif"
+   }
+  },
+  "lightning/lightning-strike": {
+   "settings": {
+    "name": "Lightning strike",
+    "w": 240,
+    "h": 264,
+    "frames": 91,
+    "fps": 30,
+    "loop": false,
+    "duration_s": 3,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#120a33",
+     "#2a1b78",
+     "#4630c0",
+     "#5a62f0",
+     "#58a6ff",
+     "#9ed8ff",
+     "#e4f6ff",
+     "#ffffff"
+    ],
+    "sparks": [
+     "#ffffff",
+     "#c8f8ff",
+     "#7ff3ff",
+     "#1ab8e6"
+    ],
+    "seed": 5
+   },
+   "wall_s": {
+    "sheet": [
+     4.075,
+     6.91
+    ],
+    "gif": [
+     4.065,
+     7.735
+    ],
+    "frames": [
+     2.791,
+     5.853
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 837,
+     "write_png": 1400.7
+    },
+    {
+     "render": 1096.6,
+     "write_png": 1554.9
+    }
+   ],
+   "files": 96,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/lightning/lightning-strike/anim.gif": "0fcd485e607c6f50",
+    "gif/lightning/lightning-strike/contact.png": "d4f1ac484641a868",
+    "sheet/lightning/lightning-strike/contact.png": "d4f1ac484641a868",
+    "sheet/lightning/lightning-strike/lightning-strike.json": "a28a6082f9d26ca7",
+    "sheet/lightning/lightning-strike/lightning-strike.png": "219bd9e7c581d7a2"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    240,
+    264
+   ],
+   "frame_files": 91,
+   "check": {
+    "pixels": 5765760,
+    "visible": 1152801,
+    "visible_share": 0.1999,
+    "colours_rgba": 81005,
+    "colours_rgb": 39375,
+    "alpha_values_count": 255,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 1083844,
+    "partly_see_through_share_of_visible": 0.9402
+   },
+   "sheet": {
+    "size": [
+     2640,
+     2376
+    ],
+    "mode": "RGBA",
+    "json_frames": 91,
+    "durations_ms": [
+     33
+    ],
+    "columns": 11,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "lightning-strike",
+      "from": 0,
+      "to": 90,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 2,
+    "cells": 91,
+    "pixels_differing": 1083844,
+    "differing_pixels_with_partial_alpha_in_frame": 1083844,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 1083844,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 91,
+    "size": [
+     480,
+     528
+    ],
+    "colours": 254,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "lightning/lightning-strike  91 frames  ->  <work>\\lightning-lightning-strike\\run1\\sheet\\lightning\\lightning-strike\\contact.png  <work>\\lightning-lightning-strike\\run1\\sheet\\lightning\\lightning-strike\\lightning-strike.png  <work>\\lightning-lightning-strike\\run1\\sheet\\lightning\\lightning-strike\\lightning-strike.json",
+    "gif": "lightning/lightning-strike  91 frames  ->  <work>\\lightning-lightning-strike\\run1\\gif\\lightning\\lightning-strike\\contact.png  <work>\\lightning-lightning-strike\\run1\\gif\\lightning\\lightning-strike\\anim.gif"
+   }
+  },
+  "arcane/portal": {
+   "settings": {
+    "name": "Portal",
+    "w": 152,
+    "h": 116,
+    "frames": 72,
+    "fps": 30,
+    "loop": true,
+    "duration_s": 2.4,
+    "actor": false
+   },
+   "default_options": {
+    "palette": [
+     "#140a26",
+     "#2b1252",
+     "#481c88",
+     "#6b2cc0",
+     "#9a48ec",
+     "#c684ff",
+     "#ecc8ff",
+     "#ffffff"
+    ],
+    "width": 17,
+    "height": 29,
+    "seed": 4
+   },
+   "wall_s": {
+    "sheet": [
+     5.604,
+     1.674
+    ],
+    "gif": [
+     2.322,
+     1.174
+    ],
+    "frames": [
+     1.466,
+     0.91
+    ]
+   },
+   "in_process_ms_frames_script": [
+    {
+     "render": 706.8,
+     "write_png": 565.9
+    },
+    {
+     "render": 319.7,
+     "write_png": 508.2
+    }
+   ],
+   "files": 77,
+   "bytes_identical": true,
+   "files_differing": [],
+   "sha256": {
+    "gif/arcane/portal/anim.gif": "4f78ffcc135ee485",
+    "gif/arcane/portal/contact.png": "de58c11ac8777167",
+    "sheet/arcane/portal/contact.png": "de58c11ac8777167",
+    "sheet/arcane/portal/portal.json": "3d169f33a9c1bbc4",
+    "sheet/arcane/portal/portal.png": "12118abcc9a9c548"
+   },
+   "frames_png_modes": [
+    "RGBA"
+   ],
+   "frame_size": [
+    152,
+    116
+   ],
+   "frame_files": 72,
+   "check": {
+    "pixels": 1269504,
+    "visible": 1220368,
+    "visible_share": 0.9613,
+    "colours_rgba": 26152,
+    "colours_rgb": 16012,
+    "alpha_values_count": 208,
+    "alpha_min_max": [
+     1,
+     255
+    ],
+    "partly_see_through_visible": 1079666,
+    "partly_see_through_share_of_visible": 0.8847
+   },
+   "sheet": {
+    "size": [
+     1216,
+     1044
+    ],
+    "mode": "RGBA",
+    "json_frames": 72,
+    "durations_ms": [
+     33
+    ],
+    "columns": 8,
+    "pixelfx_meta_keys": [
+     "columns",
+     "fps",
+     "frameSize",
+     "frames",
+     "id",
+     "loop",
+     "name",
+     "pivot"
+    ],
+    "frame_tags": [
+     {
+      "name": "portal",
+      "from": 0,
+      "to": 71,
+      "direction": "forward"
+     }
+    ],
+    "cells_identical_to_frames": 0,
+    "cells": 72,
+    "pixels_differing": 1079666,
+    "differing_pixels_with_partial_alpha_in_frame": 1079666,
+    "differing_pixels_opaque_in_frame": 0,
+    "differing_pixels_alpha_changed": 0,
+    "differing_pixels_explained_by_premultiplied_rgb": 1079666,
+    "largest_rgb_drop_on_partial_pixels": 254
+   },
+   "gif": {
+    "frames": 144,
+    "size": [
+     456,
+     348
+    ],
+    "colours": 253,
+    "delays_ms": [
+     30,
+     40
+    ],
+    "loop": 0
+   },
+   "stdout": {
+    "sheet": "arcane/portal  72 frames  ->  <work>\\arcane-portal\\run1\\sheet\\arcane\\portal\\contact.png  <work>\\arcane-portal\\run1\\sheet\\arcane\\portal\\portal.png  <work>\\arcane-portal\\run1\\sheet\\arcane\\portal\\portal.json",
+    "gif": "arcane/portal  72 frames  ->  <work>\\arcane-portal\\run1\\gif\\arcane\\portal\\contact.png  <work>\\arcane-portal\\run1\\gif\\arcane\\portal\\anim.gif"
+   }
+  }
+ },
+ "palette": {
+  "fire/campfire": {
+   "palette_given": [
+    "#7e2553",
+    "#ff004d",
+    "#ffa300",
+    "#ffec27",
+    "#fff1e8"
+   ],
+   "colours_rgba": 77671,
+   "colours_rgb": 49770,
+   "given_colours_used": 2,
+   "colours_outside_given": 49768,
+   "partly_see_through_share_of_visible": 0.908,
+   "wall_s": 2.248
+  },
+  "explosions/smoke-bomb": {
+   "palette_given": [
+    "#1d2b53",
+    "#5f574f",
+    "#83769c",
+    "#c2c3c7"
+   ],
+   "colours_rgba": 34319,
+   "colours_rgb": 5838,
+   "given_colours_used": 3,
+   "colours_outside_given": 5835,
+   "partly_see_through_share_of_visible": 0.982,
+   "wall_s": 3.585
+  },
+  "explosions/big-explosion": {
+   "palette_given": [
+    "#7e2553",
+    "#ff004d",
+    "#ffa300",
+    "#ffec27",
+    "#fff1e8"
+   ],
+   "colours_rgba": 435619,
+   "colours_rgb": 190067,
+   "given_colours_used": 4,
+   "colours_outside_given": 190063,
+   "partly_see_through_share_of_visible": 0.9084,
+   "wall_s": 10.46
+  },
+  "water/splash": {
+   "palette_given": [
+    "#1d2b53",
+    "#29adff",
+    "#c2c3c7",
+    "#fff1e8"
+   ],
+   "colours_rgba": 10343,
+   "colours_rgb": 6013,
+   "given_colours_used": 3,
+   "colours_outside_given": 6010,
+   "partly_see_through_share_of_visible": 0.9243,
+   "wall_s": 0.606
+  },
+  "lightning/lightning-strike": {
+   "palette_given": [
+    "#1d2b53",
+    "#29adff",
+    "#ffec27",
+    "#fff1e8"
+   ],
+   "colours_rgba": 90162,
+   "colours_rgb": 40991,
+   "given_colours_used": 3,
+   "colours_outside_given": 40988,
+   "partly_see_through_share_of_visible": 0.9411,
+   "wall_s": 1.548
+  },
+  "arcane/portal": {
+   "palette_given": [
+    "#1d2b53",
+    "#7e2553",
+    "#83769c",
+    "#ff77a8",
+    "#fff1e8"
+   ],
+   "colours_rgba": 22923,
+   "colours_rgb": 16015,
+   "given_colours_used": 0,
+   "colours_outside_given": 16015,
+   "partly_see_through_share_of_visible": 0.8827,
+   "wall_s": 1.036
+  }
+ }
+}

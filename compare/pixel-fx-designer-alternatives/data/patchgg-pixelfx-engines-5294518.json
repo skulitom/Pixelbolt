@@ -1,0 +1,155 @@
+{
+ "node": "v24.19.0",
+ "copyMatchesRenderFrames": {
+  "fire/campfire": true,
+  "explosions/smoke-bomb": true,
+  "explosions/big-explosion": true,
+  "water/splash": true,
+  "lightning/lightning-strike": true,
+  "arcane/portal": true
+ },
+ "frames": {
+  "fire/campfire": 90,
+  "explosions/smoke-bomb": 151,
+  "explosions/big-explosion": 217,
+  "water/splash": 76,
+  "lightning/lightning-strike": 91,
+  "arcane/portal": 72
+ },
+ "nodeHashFirstLast": {
+  "fire/campfire": [
+   "8026cc56ae8f9687",
+   "bfb021299d2b62f0"
+  ],
+  "explosions/smoke-bomb": [
+   "221200e5227f963c",
+   "73472cc56f820886"
+  ],
+  "explosions/big-explosion": [
+   "5bfd86754f1fc3b6",
+   "601b4f4568605786"
+  ],
+  "water/splash": [
+   "f00f696d0a07e16f",
+   "c5d2d4c56478a086"
+  ],
+  "lightning/lightning-strike": [
+   "c68d6c70a9d71e4c",
+   "086263c52f2a1906"
+  ],
+  "arcane/portal": [
+   "2fa27762d5e244e5",
+   "5baaab8a89d3b06f"
+  ]
+ },
+ "engines": {
+  "chromium": {
+   "version": "156.0.8078.4",
+   "cmp": {
+    "fire/campfire": {
+     "framesMatching": 90,
+     "frames": 90,
+     "browserFrames": 90
+    },
+    "explosions/smoke-bomb": {
+     "framesMatching": 151,
+     "frames": 151,
+     "browserFrames": 151
+    },
+    "explosions/big-explosion": {
+     "framesMatching": 217,
+     "frames": 217,
+     "browserFrames": 217
+    },
+    "water/splash": {
+     "framesMatching": 76,
+     "frames": 76,
+     "browserFrames": 76
+    },
+    "lightning/lightning-strike": {
+     "framesMatching": 91,
+     "frames": 91,
+     "browserFrames": 91
+    },
+    "arcane/portal": {
+     "framesMatching": 72,
+     "frames": 72,
+     "browserFrames": 72
+    }
+   },
+   "requestsOutsideOrigin": 0
+  },
+  "firefox": {
+   "version": "157.0",
+   "cmp": {
+    "fire/campfire": {
+     "framesMatching": 90,
+     "frames": 90,
+     "browserFrames": 90
+    },
+    "explosions/smoke-bomb": {
+     "framesMatching": 151,
+     "frames": 151,
+     "browserFrames": 151
+    },
+    "explosions/big-explosion": {
+     "framesMatching": 217,
+     "frames": 217,
+     "browserFrames": 217
+    },
+    "water/splash": {
+     "framesMatching": 76,
+     "frames": 76,
+     "browserFrames": 76
+    },
+    "lightning/lightning-strike": {
+     "framesMatching": 91,
+     "frames": 91,
+     "browserFrames": 91
+    },
+    "arcane/portal": {
+     "framesMatching": 72,
+     "frames": 72,
+     "browserFrames": 72
+    }
+   },
+   "requestsOutsideOrigin": 0
+  },
+  "webkit": {
+   "version": "26.6",
+   "cmp": {
+    "fire/campfire": {
+     "framesMatching": 90,
+     "frames": 90,
+     "browserFrames": 90
+    },
+    "explosions/smoke-bomb": {
+     "framesMatching": 151,
+     "frames": 151,
+     "browserFrames": 151
+    },
+    "explosions/big-explosion": {
+     "framesMatching": 217,
+     "frames": 217,
+     "browserFrames": 217
+    },
+    "water/splash": {
+     "framesMatching": 76,
+     "frames": 76,
+     "browserFrames": 76
+    },
+    "lightning/lightning-strike": {
+     "framesMatching": 91,
+     "frames": 91,
+     "browserFrames": 91
+    },
+    "arcane/portal": {
+     "framesMatching": 72,
+     "frames": 72,
+     "browserFrames": 72
+    }
+   },
+   "requestsOutsideOrigin": 0
+  }
+ }
+}

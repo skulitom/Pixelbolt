@@ -1,0 +1,43 @@
+{
+ "options": {
+  "light": 0
+ },
+ "effects": {
+  "fire/campfire": {
+   "visible_share": 0.0864,
+   "colours_rgba": 23233,
+   "colours_rgb": 3288,
+   "partly_see_through_share_of_visible": 0.4595
+  },
+  "explosions/smoke-bomb": {
+   "visible_share": 0.1007,
+   "colours_rgba": 36377,
+   "colours_rgb": 1581,
+   "partly_see_through_share_of_visible": 0.9812
+  },
+  "explosions/big-explosion": {
+   "visible_share": 0.093,
+   "colours_rgba": 137325,
+   "colours_rgb": 28956,
+   "partly_see_through_share_of_visible": 0.8619
+  },
+  "water/splash": {
+   "visible_share": 0.0349,
+   "colours_rgba": 6222,
+   "colours_rgb": 1164,
+   "partly_see_through_share_of_visible": 0.5094
+  },
+  "lightning/lightning-strike": {
+   "visible_share": 0.0832,
+   "colours_rgba": 4263,
+   "colours_rgb": 1264,
+   "partly_see_through_share_of_visible": 0.8651
+  },
+  "arcane/portal": {
+   "visible_share": 0.1108,
+   "colours_rgba": 13,
+   "colours_rgb": 13,
+   "partly_see_through_share_of_visible": 0.0
+  }
+ }
+}
