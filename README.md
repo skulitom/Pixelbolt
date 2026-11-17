@@ -47,6 +47,8 @@ cd Pixelbolt
 node bin/pixelbolt.js preview --open
 ```
 
+No Node.js? [Download Pixelbolt Studio](https://github.com/skulitom/Pixelbolt/releases/latest): a portable build for Windows, macOS and Linux that brings its own Node.js runtime. Unpack it and start the studio; nothing is installed ([portable builds](#pixelbolt-studio-portable-builds)).
+
 **Give it to your agent.** For Claude Code, one line installs the pixel art skill, with nothing to clone and no MCP server (Pixelbolt 0.9.2 or later):
 
 ```sh
@@ -519,6 +521,8 @@ The studio binds to `127.0.0.1`, serves an explicit asset allowlist, rejects for
 ## Pixelbolt Studio: portable builds
 
 `scripts/build-studio.mjs` packs the toolkit, the official Node.js 24 LTS runtime and a few small launcher scripts into one archive per system, for people who have no Node.js, git or administrator rights: a ZIP for 64-bit Windows, and a `.tar.gz` that keeps execute permissions for Linux (x64 and ARM64) and macOS (Apple silicon and Intel). Nothing is installed, and deleting the folder removes everything.
+
+**Download:** each release's page carries the five archives and a `PixelboltStudio-<version>-SHA256SUMS.txt` list, from 0.17.0 on: [the latest release](https://github.com/skulitom/Pixelbolt/releases/latest). `.github/workflows/studio-assets.yml` builds, checks and attaches them once the Release workflow has finished. To check a download, run `sha256sum -c --ignore-missing PixelboltStudio-<version>-SHA256SUMS.txt` in its folder, or compare `Get-FileHash` on Windows.
 
 | | Studio | Command line | Connect an agent |
 | --- | --- | --- | --- |
