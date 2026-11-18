@@ -543,7 +543,7 @@ test('emitters can fall off toward their rim, orbit on an ellipse and lay a smoo
 
 test('smoke cut by an open canvas edge gets no lit or shaded line along it', () => {
   // Even smoke over the whole canvas has no rim: every pixel is the plain smoke colour, whichever way the light falls.
-  const rows = (effect = {}) => compileFluid({ ...gas(null), width: 24, height: 24, effects: { plume: { frames: 1, buoyancy: 0, dissipation: 0, substeps: 1,
+  const rows = effect => compileFluid({ ...gas(null), width: 24, height: 24, effects: { plume: { frames: 1, buoyancy: 0, dissipation: 0, substeps: 1,
     emitters: [{ at: [12, 12], area: [40, 40], burst: 1, density: 1 }],
     look: [{ field: 'density', colors: ['s'], thresholds: [0.3], dither: 0 }, { field: 'light', colors: ['w'], thresholds: [0.5], dither: 0 }, { field: 'shadow', colors: ['k'], thresholds: [0.5], dither: 0 }], ...effect } } }).recipe.frames[0].ops.find(op => op.op === 'grid').rows;
   const count = (grid, char) => grid.join('').split(char).length - 1;

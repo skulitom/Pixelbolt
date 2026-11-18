@@ -39,7 +39,6 @@ jobs:
       version: ${{ steps.plan.outputs.version }}
       sha: ${{ steps.plan.outputs.sha }}
       dry_run: ${{ steps.plan.outputs.dry_run }}
-      release_run: ${{ steps.plan.outputs.release_run }}
       expected: ${{ steps.plan.outputs.expected }}
     steps:
       - name: Find the published release and its checked hashes
@@ -120,7 +119,7 @@ jobs:
             catch (error) { if (!unavailable(error)) throw error; summary(`${target}: no Release-run log to compare with (expired, HTTP 404/410).`); continue; }
             expected[target] = printedHash(log, `PixelboltStudio-${version}-${target}.${target === 'win-x64' ? 'zip' : 'tar.gz'}`);
           }
-          output({ go: 'true', tag, version, sha, dry_run: env.DRY_RUN === 'true', release_run: run || '', expected: JSON.stringify(expected) });
+          output({ go: 'true', tag, version, sha, dry_run: env.DRY_RUN === 'true', expected: JSON.stringify(expected) });
           summary(`Planned ${tag} at ${sha}; Release run: ${run || 'unavailable'}. Dry run: ${env.DRY_RUN === 'true'}.`);
           NODE
 

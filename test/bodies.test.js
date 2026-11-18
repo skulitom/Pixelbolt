@@ -28,7 +28,7 @@ const run = source => { const { recipe, metadata } = compileBodies(source); retu
 // A source run to its end: what broke, and how low its lowest pixel is in the last frame.
 const bodiesWorld = source => { const match = bodiesFrames(source); let image; for (let f = 0; f < match.frames; f++) image = match.image(f); let lowest = -1; for (let i = 3; i < image.length; i += 4) if (image[i]) lowest = Math.floor((i >> 2) / match.width); return { broken: match.figures().broken ?? [], lowest }; };
 const refused = (source, where, pattern) => assert.throws(() => compileBodies(source), error => error instanceof PixelError && error.path === where && pattern.test(error.message), where);
-// The highest point (smallest y) a path reaches after `from`, between bounces.
+// The highest point (smallest y) a path reaches between bounces.
 const apexes = path => { const out = []; for (let i = 1; i + 1 < path.length; i++) if (path[i][1] < path[i - 1][1] && path[i][1] <= path[i + 1][1]) out.push(path[i][1]); return out; };
 
 test('bodies sources are read strictly, with paths and the fix in each message', () => {
