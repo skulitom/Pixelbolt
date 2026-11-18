@@ -186,7 +186,8 @@ const END_ONLY = '[-] is the end of a list and can only end an insert path';
 // Returns the path of each match. An item that lacks what the rest of the path names (a frame without that layer, or
 // for a remove without that field) is passed over; no match at all is an error. An insert's path ends at a place in a
 // list, frames[*].ops[0], and matches every item that has the list, or that may start it ([0] or [-] of a list an
-// insert creates): a prop drawn behind every frame of a compiled effect.
+// insert creates): a prop drawn behind every frame of a compiled effect. A path that ends at a named item,
+// frames[*].layers[cape], matches only the lists that hold one, whatever the verb (an insert goes before it).
 function everyMatch(root, segments, where, verb) {
   if (segments.at(-1).any) fail(where, '[*] is followed by what to change in each item, such as frames[*].duration');
   if (segments.some((segment, i) => segment.end && (verb !== 'insert' || i !== segments.length - 1))) fail(where, END_ONLY);
@@ -200,8 +201,10 @@ function everyMatch(root, segments, where, verb) {
       if (!Array.isArray(node)) fail(where, `[*] needs a list, and ${text(taken) || 'the project'} is not one`);
       node.forEach((item, index) => walk(item, i + 1, [...taken, { index }]));
     } else if (i === segments.length - 1) {
-      if (verb === 'insert') { if (Array.isArray(node)) matches.push(`${text(taken)}${segment.end ? '[-]' : text([segment])}`); }
-      else if (verb === 'set' ? isObject(node) || Array.isArray(node) : child(node, segment) !== undefined) matches.push(text([...taken, segment]));
+      const named = Array.isArray(node) && segment.name !== undefined;
+      if (named ? child(node, segment) !== undefined : verb === 'insert' ? Array.isArray(node) : verb === 'set' ? isObject(node) || Array.isArray(node) : child(node, segment) !== undefined) {
+        matches.push(segment.end ? `${text(taken)}[-]` : text([...taken, segment]));
+      }
     } else if (child(node, segment) !== undefined) walk(child(node, segment), i + 1, [...taken, segment]);
     else if (verb === 'insert' && i === segments.length - 2 && isObject(node) && (segments[i + 1].end || segments[i + 1].index === 0)) matches.push(`${text([...taken, segment])}${segments[i + 1].end ? '[-]' : '[0]'}`);
   };

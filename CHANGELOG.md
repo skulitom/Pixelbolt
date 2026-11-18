@@ -5,6 +5,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ## Unreleased
 
 - **Exports deflate four to five times faster.** Every PNG and animated PNG was compressed at zlib's level 9, and deflate took most of a big export: `render --out` of a recipe at the full 4,194,304-pixel frame total that barely compresses (16 frames of 1024 × 256 noise) took 11 s. They are now compressed at level 6, zlib's default, and the same render takes 2.4 s. Over the shipped examples deflate is 4.3 times faster and the PNGs 8% larger (15% for the noise); the pixels are the same, checked with Pillow and ffmpeg, but the files' bytes differ from earlier releases. `scripts/bench.mjs` has a budget case for that render (`export/bundle-full-total`).
+- **A `[*]` patch that ends at a named item passes over the lists without it.** `{"insert": "frames[*].layers[target]"}` (and a `set` of the same path) stopped the whole patch with `frames[1].layers has no item named "target"` when one frame had layers but none of that name; such frames are passed over now, as a `remove` already did and the guide says. An insert through `[*]` that ended in a key (`frames[*].layers.top`) named a garbled path (`frames[0].layerstop[-]`); it gets the plain path's message.
 
 ### Poke the pixels: a live fluid toy
 

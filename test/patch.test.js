@@ -177,6 +177,14 @@ test('[*] in a set, remove or insert reaches every item of a list, and passes ov
   const hatted = patchRecipe(recipe, [{ insert: 'frames[*].layers[-]', value: layer('hat', 'p') }, { insert: 'frames[*].layers[0]', value: layer('shadow', 'p') }]);
   assert.deepEqual(hatted.edits, [{ insert: 'frames[*].layers[-]', matched: 3 }, { insert: 'frames[*].layers[0]', matched: 3 }]);
   assert.deepEqual(hatted.recipe.frames.map(frame => frame.layers.map(each => each.name).join(' ')), ['shadow coat plume hat', 'shadow coat hat', 'shadow plume coat hat']);
+  // A place named by an item ([plume]) is in the lists that hold one: frame b has no plume and is passed over by an
+  // insert (before it) and a set (in its place), as by a remove; it stopped the whole patch.
+  const named = patchRecipe(recipe, [{ insert: 'frames[*].layers[plume]', value: layer('glow', 'p') }, { set: 'frames[*].layers["plume"]', value: layer('plume', 'p') }]);
+  assert.deepEqual(named.edits, [{ insert: 'frames[*].layers[plume]', matched: 2 }, { set: 'frames[*].layers["plume"]', matched: 2 }]);
+  assert.deepEqual(named.recipe.frames.map(frame => frame.layers.map(each => `${each.name}:${each.ops[0].color}`).join(' ')), ['coat:r glow:p plume:p', 'coat:r', 'glow:p plume:p coat:r']);
+  assert.throws(() => patchRecipe(recipe, [{ insert: 'frames[*].layers[cape]', value: layer('cape', 'p') }]), /changes\[0\]\.insert: no item has what this path names/);
+  // A key where a list needs an item gets the plain path's message, with the path as written (it read layerstop[-]).
+  assert.throws(() => patchRecipe(recipe, [{ insert: 'frames[*].layers.top', value: {} }]), /changes\[0\]\.insert: frames\[0\]\.layers is a list; select an item with \[index\] or \[name\]$/);
   // A frame without the list gets one from [0] or [-], as a plain insert makes it; a place further in passes it over.
   const bare = { ...recipe, frames: [{ name: 'a', ops: [{ op: 'pixel', x: 0, y: 0, color: 'r' }] }, { name: 'b' }] };
   const behind = patchRecipe(bare, [{ insert: 'frames[*].ops[0]', value: { op: 'rect', x: 0, y: 0, w: 4, h: 2, color: 'p' } }]);
