@@ -4,6 +4,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+- **`pixelbolt/terrain`'s `layeredTestMapRecipe(recipe, layers)` works without its options again.** 0.17.0 gave it a `rows` option and dropped the default for the options object, so a library call with two arguments threw `Cannot destructure property 'background' of 'undefined'`; the CLI and MCP server always passed one and were not affected.
 - **Exports deflate four to five times faster.** Every PNG and animated PNG was compressed at zlib's level 9, and deflate took most of a big export: `render --out` of a recipe at the full 4,194,304-pixel frame total that barely compresses (16 frames of 1024 × 256 noise) took 11 s. They are now compressed at level 6, zlib's default, and the same render takes 2.4 s. Over the shipped examples deflate is 4.3 times faster and the PNGs 8% larger (15% for the noise); the pixels are the same, checked with Pillow and ffmpeg, but the files' bytes differ from earlier releases. `scripts/bench.mjs` has a budget case for that render (`export/bundle-full-total`).
 
 ### Poke the pixels: a live fluid toy

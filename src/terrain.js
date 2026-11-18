@@ -444,7 +444,7 @@ export function layeredTestMap(n) {
 // A test map's name: the set's own, cut to leave room for "-test-map" in the 64 characters a recipe's name may have
 // (a set named with 56 or more drew no test map, and MCP pixel_compile always draws one).
 const testMapName = name => `${name.slice(0, 64 - '-test-map'.length)}-test-map`;
-export function layeredTestMapRecipe(recipe, layers, { background, rows: level }) {
+export function layeredTestMapRecipe(recipe, layers, { background, rows: level } = {}) {
   // `rows`: a map of the caller's own, a layer's key in each cell, drawn in place of the test map.
   const tile = recipe.width, map = level ? level.map(row => [...row].map(key => layers.findIndex(layer => layer.key === key))) : layeredTestMap(layers.length), rows = map.map(row => row.map(i => layers[i].key).join(''));
   const width = rows[0].length * tile, height = rows.length * tile;

@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { renderProject } from '../src/core.js';
 import { compileAutotile } from '../src/authoring.js';
 import { neighbourMask, tilePieces, expandTilemap, autotileFrames, CORNER_MASKS } from '../src/autotile.js';
-import { JOINS, TEST_MAP, layeredTestMap } from '../src/terrain.js';
+import { JOINS, TEST_MAP, layeredTestMap, layeredTestMapRecipe } from '../src/terrain.js';
 import { createBundle } from '../src/export.js';
 import { prepareScene, renderScene } from '../src/scene.js';
 import { checkDelivery } from '../src/check.js';
@@ -184,6 +184,14 @@ test('a layered map draws the same from the compiled tiles as from one map per t
   assert.throws(place({ rows: ['ws', 'w.'], legend: { w: { frame: 'shore-{corners}', autotile: 'corner' }, s: { frame: 'shore-{corners}', autotile: 'corner' } } }), /tilemap\.rows\[1\]\[1\]: is empty, but \{corners\} names a layered tile/);
   assert.throws(place({ rows: ['wx'], legend: { w: { frame: 'shore-{corners}', autotile: 'corner' }, x: 'shore-wwww' } }), /frame "shore-wxwx" does not exist \(corners w x w x: every cell around a layered tile is one of the set's keys\)/);
   assert.throws(place({ rows: ['w'], legend: { w: { frame: 'shore-{corners}', autotile: 'blob' } } }), /\{corners\} names a layered set's tile by the characters of the four cells around it; it goes with autotile corner/);
+});
+
+test('pixelbolt/terrain\'s layeredTestMapRecipe draws the compile\'s test map with its options left out', () => {
+  // A library call with two arguments threw "Cannot destructure property 'background'" in 0.17.0 and 0.18.0.
+  const source = { ...shore, layers: shore.layers.map(({ variants, weight, ...layer }) => layer) };
+  const { recipe, preview } = compileAutotile(source), layers = source.layers.map(({ name, key }) => ({ name, key }));
+  assert.deepEqual(layeredTestMapRecipe(recipe, layers), preview);
+  assert.deepEqual(layeredTestMapRecipe(recipe, layers, {}), preview);
 });
 
 test('a layered set exports one Godot corner terrain set, the ground unset, every tile once per centre terrain', async () => {
