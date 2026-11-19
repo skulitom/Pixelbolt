@@ -1867,7 +1867,9 @@ export function stackViews(views) {
   const { sheets, t, pad, band, labels, width, height } = measureStack(views), stack = [];
   if (width * height > PNG_PIXELS) fail('beside', `the ${views.length} sheets stacked would be ${width}×${height} pixels, past the ${grouped(PNG_PIXELS)} one PNG holds; compare fewer recipes, or show fewer cells (maxCells), a smaller region or a lower scale`);
   const data = new Uint8ClampedArray(width * height * 4);
-  for (let i = 0; i < data.length; i += 4) data.set(gutterColor, i);
+  // The gutter colour is written once and doubled with copyWithin, as drawSheet does, not set pixel by pixel.
+  data.set(gutterColor, 0);
+  for (let filled = 4; filled < data.length; filled *= 2) data.copyWithin(filled, 0, Math.min(filled, data.length - filled));
   let y = 0;
   sheets.forEach((sheet, index) => {
     const text = labels[index], top = y + 2 * t + text.top * t;

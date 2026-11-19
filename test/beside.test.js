@@ -29,6 +29,9 @@ test('stacked views keep every sheet whole, each under the one before and under 
   // The names are written in the bands, in a light colour on the sheet's background, and nowhere else in them.
   const lit = top => { let count = 0; for (let y = top; y < top + band; y++) for (let x = 0; x < stacked.sheet.width; x++) if (pixel(stacked.sheet, x, y)[0] > 200) count++; return count; };
   assert.ok(lit(0) > 12 && lit(band + red.height) > 16 && lit(band + red.height) > lit(0), `${lit(0)} ${lit(band + red.height)}`);
+  // Everything else, the bands round the names and what the narrower sheet leaves, is that background, to the last row.
+  const inSheet = (x, y) => [[red, band], [blue, 2 * band + red.height]].some(([sheet, top]) => y >= top && y < top + sheet.height && x < sheet.width);
+  for (let y = 0; y < stacked.sheet.height; y++) for (let x = 0; x < stacked.sheet.width; x++) if (!inSheet(x, y) && pixel(stacked.sheet, x, y)[0] <= 200) assert.deepEqual(pixel(stacked.sheet, x, y), pixel(red, 0, 0), `${x},${y}`);
   assert.deepEqual([stacked.cells, stacked.name], [views[0].cells, undefined]);
 });
 
