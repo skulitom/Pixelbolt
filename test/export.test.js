@@ -151,6 +151,13 @@ test('a forced export removes the lit SpriteFrames, CanvasTexture and normal map
   await writeFile(canvas, (await readFile(canvas, 'utf8')).replace('[gd_resource type="CanvasTexture" format=3]', '[gd_resource type="CanvasTexture" format=3 uid="uid://c4x"]'));
   assert.equal(await removed(animated), undefined);
   for (const file of lit) await access(path.join(dir, file));
+  // A lit SpriteFrames Godot has saved over stays, and so does the CanvasTexture it draws through, with its normal maps,
+  // though that is still the text Pixelbolt wrote: removing them would leave the kept SpriteFrames with no texture.
+  await writeBundle(await createBundle(animated, { normal }), dir, { force: true });
+  const frames = path.join(dir, 'sq.tres');
+  await writeFile(frames, (await readFile(frames, 'utf8')).replace('[gd_resource type="SpriteFrames" format=3]', '[gd_resource type="SpriteFrames" format=3 uid="uid://f2x"]').replace('path="sq.canvas.tres"', 'uid="uid://c4x" path="res://art/sq.canvas.tres"'));
+  assert.deepEqual(await removed(stills), ['animations/blink.png', 'player.js', 'sq.css']);
+  for (const file of [...lit, 'sq.tres']) await access(path.join(dir, file));
 });
 test('a forced export removes only what its own earlier export wrote, never another recipe\'s export in the same folder', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));

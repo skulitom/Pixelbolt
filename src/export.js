@@ -154,15 +154,15 @@ export async function createBundle(spec, { normal } = {}) {
 // this recipe wrote it: the text Pixelbolt writes there, naming this recipe's sheet (or, with a normal pass, its
 // CanvasTexture), which an editor that saves the file over changes. A forced export over an earlier one removes those it
 // no longer writes; `pairs` are written only beside their file and go with it (the normal maps are binary, so the
-// CanvasTexture that names them speaks for them). player.js is every sprite's in the folder, so it goes only when no
-// other export is there.
+// CanvasTexture that names them speaks for them), and a file stays while `usedBy`, a file this export keeps, still names
+// it. player.js is every sprite's in the folder, so it goes only when no other export is there.
 const bundleResources = name => {
   const sheet = image => `\n[ext_resource type="Texture2D" path="${image}" id="1_sheet"]\n`, tileset = /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<tileset version="[\d.]+" name="([^"]*)" /;
   return [
     { file: `${name}.tileset.tres`, wrote: text => text.startsWith('[gd_resource type="TileSet" format=3]\n') && text.includes(sheet(`${name}.png`)) },
     { file: `${name}.tsx`, wrote: text => tileset.exec(text)?.[1] === name && text.includes(`\n <image source="${name}.png" `) && !text.includes('tiledversion=') },
     { file: `${name}.tres`, wrote: text => text.startsWith('[gd_resource type="SpriteFrames" format=3]\n') && (text.includes(sheet(`${name}.png`)) || text.includes(sheet(`${name}.canvas.tres`))) },
-    { file: `${name}.canvas.tres`, wrote: text => text === canvasTexture({ diffuse: `${name}.png`, normal: `${name}.normal_y_up.png` }), pairs: [`${name}.normal.png`, `${name}.normal_y_up.png`] },
+    { file: `${name}.canvas.tres`, wrote: text => text === canvasTexture({ diffuse: `${name}.png`, normal: `${name}.normal_y_up.png` }), pairs: [`${name}.normal.png`, `${name}.normal_y_up.png`], usedBy: { file: `${name}.tres`, uses: text => text.includes(`"${name}.canvas.tres"`) || text.includes(`/${name}.canvas.tres"`) } },
     { file: `${name}.css`, wrote: text => text.startsWith('/* Pixelbolt: ') && text.includes(`\n.pf-${name} {\n`) },
     { file: 'player.js', shared: true, wrote: async text => text === await readFile(new URL('./runtime.js', import.meta.url), 'utf8') }
   ];
@@ -394,10 +394,14 @@ async function leftovers(bundle, root) {
   // Top-level files the earlier export wrote and this one doesn't, each known by the text Pixelbolt writes there.
   const writes = new Set([...bundle.files.keys()].map(fileKey));
   const isFile = file => stat(path.join(root, file)).then(info => info.isFile(), () => false);
-  for (const { file, wrote, shared, pairs = [] } of owns.resources ?? []) {
+  const readText = file => stat(path.join(root, file)).then(info => (info.isFile() && info.size <= 16777216 ? readFile(path.join(root, file), 'utf8') : null), () => null);
+  for (const { file, wrote, shared, pairs = [], usedBy } of owns.resources ?? []) {
     if (writes.has(fileKey(file)) || (shared && peers.length)) continue;
-    const text = await stat(path.join(root, file)).then(info => (info.isFile() && info.size <= 16777216 ? readFile(path.join(root, file), 'utf8') : null), () => null);
+    const text = await readText(file);
     if (text === null || !await wrote(text)) continue;
+    // A file that stays (one an editor saved over, so it is no longer the earlier export's) and still names this one
+    // keeps it, and its pairs: a SpriteFrames Godot saved draws through the CanvasTexture.
+    if (usedBy && !writes.has(fileKey(usedBy.file)) && !found.includes(usedBy.file) && usedBy.uses(await readText(usedBy.file) ?? '')) continue;
     found.push(file);
     for (const pair of pairs) if (!writes.has(fileKey(pair)) && await isFile(pair)) found.push(pair);
   }
