@@ -6,7 +6,7 @@ Shapes drawn once and moved as parts: filled polygons, layers that move together
 - **Inspection:** `alpha-blend` names the off-palette colours that translucent paint or layer opacity made; `palette` keeps the ones drawn directly. `inspect --beside` fills a stack's gutters in one pass (about 140 ms to 7 ms for a full stack).
 - **Faster exports:** every PNG and animated PNG is compressed at zlib's level 6 instead of 9: a render at the full frame total that barely compresses went from 11 s to 2.4 s, with the same pixels.
 - **The skill is found for effects:** its description names fire, explosions, splashes, smoke, water, magic spells and sparks first, and says to use it before writing a drawing script by hand.
-- **Reported faults:** `gif.scale` past 16 is refused at once (0.18.0 could run a call to its 50 s limit); a forced re-export removes the lit SpriteFrames, CanvasTexture and normal maps it no longer writes; a `[*]` patch that ends at a named item passes over the lists without it; `pixelbolt/terrain`'s `layeredTestMapRecipe(recipe, layers)` works without its options again.
+- **Reported faults:** `gif.scale` past 16 is refused at once (0.18.0 could run a call to its 50 s limit); a forced re-export removes the lit SpriteFrames it no longer writes; a `[*]` patch that ends at a named item passes over the lists without it; `pixelbolt/terrain`'s `layeredTestMapRecipe(recipe, layers)` works without its options again.
 
 Changed since 0.18.0, check before upgrading:
 - Exported PNG files are about 8% larger (15% for noisy art) and their bytes differ from earlier releases; the pixels are the same. Re-hash anything that pins a PNG's bytes.
@@ -14,6 +14,7 @@ Changed since 0.18.0, check before upgrading:
 - `--gif-scale` takes 1 to 16; 0 and 17 to 99 are refused by the CLI's own message.
 
 Known issues:
+- A forced re-export that drops the normal pass leaves `<name>.canvas.tres`, `<name>.normal.png` and `<name>.normal_y_up.png` in the folder: a TileSet or SpriteFrames saved in Godot may still use them, so delete them by hand if nothing does.
 - In Godot's `scene.tscn`, a placement that moves, follows `sequence` cues or changes anchor between frames is drawn as it is at the scene's start; the export warns and names it.
 - Pose, bodies, crystal, normals and falling-sand sources keep 256 pixels a side, and fluid and wave sources 128.
 - Where an effect is too long for its frame total, following the reply's "own frames" route can end in a second refusal about an emitter's `start`, and its "once the loop has N frames" route in a particle limit.
