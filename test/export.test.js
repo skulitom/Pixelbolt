@@ -158,6 +158,11 @@ test('a forced export removes the lit SpriteFrames, CanvasTexture and normal map
   await writeFile(frames, (await readFile(frames, 'utf8')).replace('[gd_resource type="SpriteFrames" format=3]', '[gd_resource type="SpriteFrames" format=3 uid="uid://f2x"]').replace('path="sq.canvas.tres"', 'uid="uid://c4x" path="res://art/sq.canvas.tres"'));
   assert.deepEqual(await removed(stills), ['animations/blink.png', 'player.js', 'sq.css']);
   for (const file of [...lit, 'sq.tres']) await access(path.join(dir, file));
+  // A SpriteFrames too big to read (past 16 MiB) stays and may name the CanvasTexture, so that stays too.
+  await writeBundle(await createBundle(animated, { normal }), dir, { force: true });
+  await writeFile(frames, Buffer.alloc(16777217, 0x20));
+  assert.deepEqual(await removed(stills), ['animations/blink.png', 'player.js', 'sq.css']);
+  for (const file of [...lit, 'sq.tres']) await access(path.join(dir, file));
 });
 test('a forced export removes only what its own earlier export wrote, never another recipe\'s export in the same folder', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));

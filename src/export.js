@@ -400,8 +400,12 @@ async function leftovers(bundle, root) {
     const text = await readText(file);
     if (text === null || !await wrote(text)) continue;
     // A file that stays (one an editor saved over, so it is no longer the earlier export's) and still names this one
-    // keeps it, and its pairs: a SpriteFrames Godot saved draws through the CanvasTexture.
-    if (usedBy && !writes.has(fileKey(usedBy.file)) && !found.includes(usedBy.file) && usedBy.uses(await readText(usedBy.file) ?? '')) continue;
+    // keeps it, and its pairs: a SpriteFrames Godot saved draws through the CanvasTexture. One too big to read may name
+    // it, so it keeps it too.
+    if (usedBy && !writes.has(fileKey(usedBy.file)) && !found.includes(usedBy.file)) {
+      const user = await readText(usedBy.file);
+      if (user === null ? await isFile(usedBy.file) : usedBy.uses(user)) continue;
+    }
     found.push(file);
     for (const pair of pairs) if (!writes.has(fileKey(pair)) && await isFile(pair)) found.push(pair);
   }
