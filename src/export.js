@@ -150,16 +150,19 @@ export async function createBundle(spec, { normal } = {}) {
   return { project, atlas, files, notes, still, owns: { marker: `${name}.atlas.json`, folders: ['frames', 'animations'], match: /^(?:frames|animations)\/[^/]+\.png$/, listed: atlasFiles, peers: /\.atlas\.json$/, resources: bundleResources(name) } };
 }
 // The top-level files an export writes only sometimes (a tile set's TileSet and Tiled tileset; an animated recipe's
-// SpriteFrames, CSS and player), each with how to tell that an export of this recipe wrote it: the text Pixelbolt writes
-// there, naming this recipe's sheet, which an editor that saves the file over changes. A forced export over an earlier
-// one removes those it no longer writes. player.js is every sprite's in the folder, so it goes only when no other
-// export is there.
+// SpriteFrames, CSS and player; a normal pass's CanvasTexture and normal maps), each with how to tell that an export of
+// this recipe wrote it: the text Pixelbolt writes there, naming this recipe's sheet (or, with a normal pass, its
+// CanvasTexture), which an editor that saves the file over changes. A forced export over an earlier one removes those it
+// no longer writes; `pairs` are written only beside their file and go with it (the normal maps are binary, so the
+// CanvasTexture that names them speaks for them). player.js is every sprite's in the folder, so it goes only when no
+// other export is there.
 const bundleResources = name => {
-  const sheet = `\n[ext_resource type="Texture2D" path="${name}.png" id="1_sheet"]\n`, tileset = /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<tileset version="[\d.]+" name="([^"]*)" /;
+  const sheet = image => `\n[ext_resource type="Texture2D" path="${image}" id="1_sheet"]\n`, tileset = /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<tileset version="[\d.]+" name="([^"]*)" /;
   return [
-    { file: `${name}.tileset.tres`, wrote: text => text.startsWith('[gd_resource type="TileSet" format=3]\n') && text.includes(sheet) },
+    { file: `${name}.tileset.tres`, wrote: text => text.startsWith('[gd_resource type="TileSet" format=3]\n') && text.includes(sheet(`${name}.png`)) },
     { file: `${name}.tsx`, wrote: text => tileset.exec(text)?.[1] === name && text.includes(`\n <image source="${name}.png" `) && !text.includes('tiledversion=') },
-    { file: `${name}.tres`, wrote: text => text.startsWith('[gd_resource type="SpriteFrames" format=3]\n') && text.includes(sheet) },
+    { file: `${name}.tres`, wrote: text => text.startsWith('[gd_resource type="SpriteFrames" format=3]\n') && (text.includes(sheet(`${name}.png`)) || text.includes(sheet(`${name}.canvas.tres`))) },
+    { file: `${name}.canvas.tres`, wrote: text => text === canvasTexture({ diffuse: `${name}.png`, normal: `${name}.normal_y_up.png` }), pairs: [`${name}.normal.png`, `${name}.normal_y_up.png`] },
     { file: `${name}.css`, wrote: text => text.startsWith('/* Pixelbolt: ') && text.includes(`\n.pf-${name} {\n`) },
     { file: 'player.js', shared: true, wrote: async text => text === await readFile(new URL('./runtime.js', import.meta.url), 'utf8') }
   ];
@@ -390,10 +393,13 @@ async function leftovers(bundle, root) {
   const extensions = new Set([...bundle.files.keys()].map(name => path.posix.extname(name))), found = [];
   // Top-level files the earlier export wrote and this one doesn't, each known by the text Pixelbolt writes there.
   const writes = new Set([...bundle.files.keys()].map(fileKey));
-  for (const { file, wrote, shared } of owns.resources ?? []) {
+  const isFile = file => stat(path.join(root, file)).then(info => info.isFile(), () => false);
+  for (const { file, wrote, shared, pairs = [] } of owns.resources ?? []) {
     if (writes.has(fileKey(file)) || (shared && peers.length)) continue;
     const text = await stat(path.join(root, file)).then(info => (info.isFile() && info.size <= 16777216 ? readFile(path.join(root, file), 'utf8') : null), () => null);
-    if (text !== null && await wrote(text)) found.push(file);
+    if (text === null || !await wrote(text)) continue;
+    found.push(file);
+    for (const pair of pairs) if (!writes.has(fileKey(pair)) && await isFile(pair)) found.push(pair);
   }
   for (const folder of typeof owns.folders === 'function' ? owns.folders(earlier ?? []) : owns.folders) {
     let entries;
