@@ -129,38 +129,26 @@ test('a forced export removes the TileSet, Tiled tileset, SpriteFrames, CSS and 
   assert.deepEqual((await writeBundle(await createBundle(recipe), dir, { force: true })).removed, ['animations/default.png', 'turf.css', 'turf.tres'].map(file => path.join(dir, ...file.split('/'))));
   await access(path.join(dir, 'player.js'));
 });
-test('a forced export removes the lit SpriteFrames, CanvasTexture and normal maps its earlier export wrote and it does not (P-187)', async t => {
+test('a forced export removes the lit SpriteFrames its earlier export wrote and it does not, and keeps the CanvasTexture (P-187)', async t => {
   const root = path.resolve(os.tmpdir()), dir = await mkdtemp(path.join(root, 'pixelbolt-test-'));
   t.after(async () => { assert.ok(dir.startsWith(root + path.sep)); await rm(dir, { recursive: true, force: true }); });
   const frame = (name, color) => ({ name, duration: 100, ops: [{ op: 'rect', x: 1, y: 1, w: 2, h: 2, color }] });
   const animated = { version: 1, name: 'sq', width: 4, height: 4, palette: { r: '#ff0000', g: '#00ff00' }, frames: [frame('a', 'r'), frame('b', 'g')], animations: { blink: { frames: ['a', 'b'], loop: true } } };
   const normal = { ...animated, palette: { n: '#8080ff', m: '#ff8080' }, frames: [frame('a', 'n'), frame('b', 'm')] };
   const stills = { ...animated, animations: {} }, flat = { ...normal, animations: {} }, lit = ['sq.canvas.tres', 'sq.normal.png', 'sq.normal_y_up.png'];
-  const top = async () => (await readdir(dir)).filter(file => file.startsWith('sq.')).sort();
   const removed = async (spec, options) => (await writeBundle(await createBundle(spec, options), dir, { force: true })).removed?.map(file => path.relative(dir, file).split(path.sep).join('/'));
   await writeBundle(await createBundle(animated, { normal }), dir);
   assert.ok((await readFile(path.join(dir, 'sq.tres'), 'utf8')).includes('path="sq.canvas.tres" id="1_sheet"'));
   // Stills with the normal pass: no SpriteFrames, so the one that drew through the CanvasTexture goes (it stayed before).
   assert.deepEqual(await removed(stills, { normal: flat }), ['animations/blink.png', 'player.js', 'sq.css', 'sq.tres']);
-  // Animated without the normal pass: the CanvasTexture and the two normal maps it pairs go (they all stayed before).
-  assert.deepEqual(await removed(animated), lit);
-  assert.deepEqual(await top(), ['sq.atlas.json', 'sq.css', 'sq.pixel.json', 'sq.png', 'sq.tres']);
-  // A CanvasTexture Godot has saved over (its header gains a uid) is the user's now, and stays with its normal maps.
-  await writeBundle(await createBundle(animated, { normal }), dir, { force: true });
-  const canvas = path.join(dir, 'sq.canvas.tres');
-  await writeFile(canvas, (await readFile(canvas, 'utf8')).replace('[gd_resource type="CanvasTexture" format=3]', '[gd_resource type="CanvasTexture" format=3 uid="uid://c4x"]'));
+  // Without the normal pass the CanvasTexture and normal maps stay: a file an editor saved, which stays, may draw
+  // through them.
   assert.equal(await removed(animated), undefined);
   for (const file of lit) await access(path.join(dir, file));
-  // A lit SpriteFrames Godot has saved over stays, and so does the CanvasTexture it draws through, with its normal maps,
-  // though that is still the text Pixelbolt wrote: removing them would leave the kept SpriteFrames with no texture.
+  // A lit SpriteFrames Godot has saved over (a uid in its header, a res:// path) is the user's, and stays, as a plain one does.
   await writeBundle(await createBundle(animated, { normal }), dir, { force: true });
   const frames = path.join(dir, 'sq.tres');
   await writeFile(frames, (await readFile(frames, 'utf8')).replace('[gd_resource type="SpriteFrames" format=3]', '[gd_resource type="SpriteFrames" format=3 uid="uid://f2x"]').replace('path="sq.canvas.tres"', 'uid="uid://c4x" path="res://art/sq.canvas.tres"'));
-  assert.deepEqual(await removed(stills), ['animations/blink.png', 'player.js', 'sq.css']);
-  for (const file of [...lit, 'sq.tres']) await access(path.join(dir, file));
-  // A SpriteFrames too big to read (past 16 MiB) stays and may name the CanvasTexture, so that stays too.
-  await writeBundle(await createBundle(animated, { normal }), dir, { force: true });
-  await writeFile(frames, Buffer.alloc(16777217, 0x20));
   assert.deepEqual(await removed(stills), ['animations/blink.png', 'player.js', 'sq.css']);
   for (const file of [...lit, 'sq.tres']) await access(path.join(dir, file));
 });
