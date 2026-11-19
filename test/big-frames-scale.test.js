@@ -172,3 +172,20 @@ test('a trimmed sheet\'s normal pass is not refused for an atlas of its own that
   const { files } = await createBundle(plain, { normal: flat }), alone = buildAtlas(renderProject({ ...flat, sheet: { scale: 1 } }));
   assert.deepEqual(size(files.get('lit.normal.png')), [alone.width, alone.height]);
 });
+
+test('gif.scale past 16 gets the encoder\'s 1 to 16 refusal at once, never a search for a smaller scale (P-188)', async t => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-gif-range-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const run = createToolRunner({ directory: dir, root: dir, version: '0.0.0' });
+  const pair = screen(64, 64, 2, { animations: { a: { frames: ['f0', 'f1'] } } }), range = 'gif.scale: expected a whole number from 1 to 16';
+  // Before: the budget came first and named "gif.scale 90 is the largest that fits", which the encoder then refused.
+  const past = await run('pixel_render', { project: pair, gif: { scale: 99 } });
+  assert.deepEqual([past.isError, JSON.parse(past.content[0].text).error], [true, range]);
+  // Before: the search counted down from 1e20 one at a time, k-- left it unchanged, and the call ran to its time limit.
+  const huge = await run('pixel_render', { project: pair, gif: { scale: 1e20 } });
+  assert.deepEqual([huge.isError, JSON.parse(huge.content[0].text).error], [true, range]);
+  // 16 is still checked against the budget, and 17 on a small sprite still gets the range refusal.
+  const tall = screen(640, 360, 12, { animations: { a: { frames: Array.from({ length: 12 }, (_, i) => `f${i}`) } } });
+  assert.match(JSON.parse((await run('pixel_render', { project: tall, gif: { scale: 16 } })).content[0].text).error, /^gif: the GIFs of every animation at scale 16 .* gif\.scale 4 is the largest that fits$/);
+  assert.equal(JSON.parse((await run('pixel_render', { project: screen(8, 8, 2), gif: { scale: 17 } })).content[0].text).error, range);
+});

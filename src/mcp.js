@@ -474,10 +474,11 @@ export function createToolRunner({ directory, root, version }) {
         if (gif !== undefined && bundle.project.stills) bundle.project.warnings.push(STILLS_GIF_NOTE);
         // One render's GIFs hold 67,108,864 pixels in all, a GIF frame per played frame: checked before any is encoded, as
         // the CLI does, so the scale named fits them all. (One animation's own refusal knows only its GIF, and the scale
-        // it named was refused by the next call.) A scale that is no whole number is left to the encoder's own message.
+        // it named was refused by the next call.) A scale that is no whole number from 1 to 16 is left to the encoder's own
+        // message: past 16 the search for a smaller one names a scale the encoder refuses, and at 1e20 it never ends.
         if (gif !== undefined && !bundle.project.stills) {
           const scale = gif.scale ?? 1, played = Object.values(bundle.project.animations).reduce((sum, item) => sum + item.frames.length, 0) * bundle.project.width * bundle.project.height;
-          if (Number.isInteger(scale) && scale >= 1 && played * scale * scale > 67108864) {
+          if (Number.isInteger(scale) && scale >= 1 && scale <= 16 && played * scale * scale > 67108864) {
             const fits = largestScale(played, 67108864, scale);
             throw new PixelError('gif', `the GIFs of every animation at scale ${scale} pass the 67,108,864 pixels one render's GIFs hold; ${fits ? `gif.scale ${fits} is the largest that fits` : 'shorten the animations'}`);
           }

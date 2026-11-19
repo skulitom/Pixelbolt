@@ -392,3 +392,14 @@ test('a scene GIF at the default rate names the even rate when its frames would 
   const coinEven = sceneGIF(prepareScene({ ...timed([110, 330, 110]), duration: 1100 }), { fps: '100/11' });
   assert.deepEqual([coinEven.frames, coinEven.delays], [10, { 110: 10 }]);
 });
+
+test('--gif-scale takes 1 to 16 before the GIF budget, so a refusal never names a scale past 16 (P-188)', async t => {
+  const dir = await folder(t);
+  await writeFile(path.join(dir, 'pair.json'), JSON.stringify(screen(64, 64, 2, { animations: { a: { frames: ['f0', 'f1'] } } })));
+  const range = '--gif-scale expects a whole number from 1 to 16, such as --gif-scale 4';
+  // Before: 99 passed the two-digit check and the budget named "--gif-scale 90 is the largest that fits"; 0 and 17
+  // reached the encoder, whose refusal named gif.scale, an MCP field.
+  for (const scale of ['99', '17', '0', '00']) assert.equal(pixelbolt(['render', 'pair.json', '--out', `at-${scale}`, '--gif-scale', scale], dir).error, range, scale);
+  const sixteen = pixelbolt(['render', 'pair.json', '--out', 'sixteen', '--gif-scale', '16'], dir);
+  assert.deepEqual([sixteen.ok, sixteen.gifs.width], [true, 1024]);
+});
