@@ -1,26 +1,19 @@
-# 0.18.0
+# 0.19.0
 
-Effects that arrive finished: light that spreads from what shines and falls on what is near it, twelve presets drawn as whole assets, frames up to 1024 pixels a side for full-screen overlays, and a compile that says when a one-shot is cut off.
+Shapes drawn once and moved as parts: filled polygons, layers that move together, and a wing drawn once that beats on a keyed track. Exports compress four to five times faster.
 
-- **Light, not an aura:** `shine` on a fluid effect or a particle effect floods light from what shines through the picture on every frame. A solid thing is lit on its near side, dark further in, and shadows what is behind it, and the light has no shape of its own. `pixelbolt help workflow "Light in an effect"` has the guide.
-- **Twelve finished presets:** the fluid effects `wall-torch`, `chimney-smoke`, `campfire-stones`, `fireball-explosion` and `cannon-smoke`, and the particle effects `stone-portal`, `frost-nova`, `teleport-in`, `coin-sparkle`, `electric-arc`, `ice-crystal` and `forest-waterfall`. Each draws the thing its effect comes from, at 64 to 144 pixels a side, and compiles as it ships: `pixelbolt gif --preset frost-nova --out frost-nova.gif`.
-- **One-shots that end:** a one-shot particle effect whose last frame still draws is cut off where a game ends it. The compile now warns and names what can reach the last frame; `residue: true` accepts a last frame that is meant to stay. Thirteen shipped effects were given the frames to end empty.
-- **Bigger frames:** an animation frame, a scene asset and an imported frame may be up to 1024 pixels a side and 262,144 pixels, so a 320 × 180, 480 × 270 or 640 × 360 overlay (rain, snow, fog) is one recipe. A scale too big for a sheet or a GIF names the largest that fits, and an effect too long for its frame total names a frame count that compiles.
-- **A scene in Godot plays its animations:** `scene.tscn` plays a placement that stands still and animates (a rain overlay, a torch) on an `AnimatedSprite2D` over its asset's `sprite_frames.tres`, where it comes in drawing order, as `scene.tmx` already did in Tiled. It was baked into a plane as its first frame.
-- **One call where there were several:** `render --columns` for a one-row strip; `inspect --stack` and `--under` to see frames laid over one another as a game draws them; `import --atlas` for Aseprite-style atlases, with their tags as animations; `drawFrame` with `rotate` in the Canvas runtime; a falling-sand clip straight to video frames, past 256 frames (`pixelbolt sequence`).
-- **MCP:** the server answers the 2026-07-28 handshake (`server/discover`, then stateless requests) beside the older one. A render's reply lists its frames folder in `files`.
-- **Reported faults:** a trimmed sheet's normal map lines up with its colour sheet; `saveAs` never writes over a normal pass's files; a frame palette that changes nothing says so; an autotile variant that names a longer palette key renders its test map again.
-- **Found by the review before this release:** `inspect --beside` refits stacks that fit, where it refused some that 0.17.0 drew; stills on a trimmed sheet have an export budget; a fluid's light lies on the pixels a rigid body is drawn on; `saveAs` knows a lit export's Godot CanvasTexture; and refusals that named a scale, a count or an option the next call refused name one that works.
+- **Polygons and parts:** a `polygon` operation draws a filled or outlined shape from editable vertices. A part drawn once in the project's `parts` is placed on any number of layers around its `pivot`, mirrored with `flipX` or `flipY`, and scaled per axis by a number or a named track in `scaleTracks`, keyed in milliseconds with easing and a per-layer `delay`. A frame's `groups` move several layers together. The Midnight Ramen and Eclipse Moth showcases use them.
+- **Inspection:** `alpha-blend` names the off-palette colours that translucent paint or layer opacity made; `palette` keeps the ones drawn directly. `inspect --beside` fills a stack's gutters in one pass (about 140 ms to 7 ms for a full stack).
+- **Faster exports:** every PNG and animated PNG is compressed at zlib's level 6 instead of 9: a render at the full frame total that barely compresses went from 11 s to 2.4 s, with the same pixels.
+- **The skill is found for effects:** its description names fire, explosions, splashes, smoke, water, magic spells and sparks first, and says to use it before writing a drawing script by hand.
+- **Reported faults:** `gif.scale` past 16 is refused at once (0.18.0 could run a call to its 50 s limit); a forced re-export removes the lit SpriteFrames, CanvasTexture and normal maps it no longer writes; a `[*]` patch that ends at a named item passes over the lists without it; `pixelbolt/terrain`'s `layeredTestMapRecipe(recipe, layers)` works without its options again.
 
-Changed since 0.17.0, check before upgrading:
-- A render's reply has no `folders` field. Read `frames` and `animations` for the counts.
-- A one-shot particle effect of yours that ends with pixels on screen now warns when compiled.
-- Thirteen shipped one-shot effects are one to four frames longer (the fire explosion 16 to 19, the healing circle 18 to 21, the hero's teleport 14 to 18), so re-export where a game holds their frame counts.
-- A scene export's `scene.tscn` names `assets/` as well as `planes/` once the scene has an animated placement: copy both folders beside it.
-- An export whose frames, written whole to `frames/`, pass 67,108,864 pixels is refused with the scale that fits. Stills on a trimmed sheet at a large scale were exported whatever their size.
+Changed since 0.18.0, check before upgrading:
+- Exported PNG files are about 8% larger (15% for noisy art) and their bytes differ from earlier releases; the pixels are the same. Re-hash anything that pins a PNG's bytes.
+- Off-palette colours made by translucent paint or layer opacity are reported as `alpha-blend` in inspection, no longer as `palette`.
+- `--gif-scale` takes 1 to 16; 0 and 17 to 99 are refused by the CLI's own message.
 
 Known issues:
-- A render at the full frame total (4,194,304 pixels of frames) takes about a minute, most of it compressing the PNG.
 - In Godot's `scene.tscn`, a placement that moves, follows `sequence` cues or changes anchor between frames is drawn as it is at the scene's start; the export warns and names it.
 - Pose, bodies, crystal, normals and falling-sand sources keep 256 pixels a side, and fluid and wave sources 128.
 - Where an effect is too long for its frame total, following the reply's "own frames" route can end in a second refusal about an emitter's `start`, and its "once the loop has N frames" route in a particle limit.
