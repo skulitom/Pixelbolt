@@ -831,7 +831,7 @@ try {
         // --gif also writes a GIF of every animation into gifs/, at the frames' own size or --gif-scale times it, as MCP
         // pixel_render's gif does. They are encoded, and the check run, before anything is written, so a refused GIF or
         // an unknown --animation writes nothing.
-        if (options['gif-scale'] !== undefined && !/^\d{1,2}$/.test(options['gif-scale'])) throw new Error('--gif-scale expects a whole number from 1 to 16, such as --gif-scale 4');
+        if (options['gif-scale'] !== undefined && !/^(?:[1-9]|1[0-6])$/.test(options['gif-scale'])) throw new Error('--gif-scale expects a whole number from 1 to 16, such as --gif-scale 4');
         if (options.scale !== undefined && !/^(?:[1-9]|1[0-6])$/.test(options.scale)) throw new Error('--scale expects a whole number from 1 to 16: how many times to enlarge every exported pixel');
         // --scale: sheet.scale for this export, so "a PNG at 4x" needs no patch first. The bundle's copy of the recipe carries it.
         // --columns: sheet.columns for this export the same way, so a one-row strip needs no patch. Its range is the
