@@ -352,8 +352,14 @@ export function inlineSharedPalette(document, { palette, ramps = null }) {
 }
 
 // Emit disjoint inclusive spans, so translucent edges and shared vertices paint each pixel once.
-// Interior spans pair crossings at pixel centres (even-odd). Trace each boundary from its upper
-// endpoint so a Bresenham tie selects the same pixel when the vertex order is reversed.
+// Vertices and the traced boundary sit on pixel centres, so the interior must be sampled on the
+// same grid: crossings are taken on the row itself (each side counts from its upper end up to,
+// not including, its lower end) and pair up even-odd, and an interior span holds the centres
+// strictly between a pair. Sampled anywhere else, the fill shifts against the outline: half a row
+// lower left a pinhole inside every right edge sloping down-left and a stray pixel outside every
+// left edge sloping that way. Every boundary pixel lies within half a pixel of its crossing, so
+// the boundary and interior meet with no gap. Trace each boundary from its upper endpoint so a
+// Bresenham tie selects the same pixel when the vertex order is reversed.
 function polygonSpans(points, filled, spend, visit) {
   const ys = points.map(([, y]) => y), top = Math.min(...ys), bottom = Math.max(...ys);
   const sides = points.map(([x, y], i) => {
@@ -368,7 +374,7 @@ function polygonSpans(points, filled, spend, visit) {
       if (row < y || row > endY) continue;
       if (!dy) { edges.push([x, endX]); continue; }
       const k = row - y;
-      if (filled && row < endY) crossings.push(x + step * dx * (k + .5) / dy);
+      if (filled && row < endY) crossings.push(x + step * dx * k / dy);
       // A steep line visits one column on this row. For a shallow line, collect all
       // major-axis steps whose rounded minor-axis coordinate is k (the line op's ties).
       if (dy >= dx) {
@@ -382,7 +388,7 @@ function polygonSpans(points, filled, spend, visit) {
     }
     crossings.sort((a, b) => a - b);
     for (let i = 0; i < crossings.length; i += 2) {
-      const left = Math.ceil(crossings[i] - .5), right = Math.ceil(crossings[i + 1] - .5) - 1;
+      const left = Math.floor(crossings[i]) + 1, right = Math.ceil(crossings[i + 1]) - 1;
       if (left <= right) edges.push([left, right]);
     }
     edges.sort((a, b) => a[0] - b[0]);

@@ -90,7 +90,7 @@ test('unused definitions, hidden instances and invalid keyframes report their so
   }
 });
 
-test('the Eclipse Moth shoulder preserves its 3,818 pixels and a single key retimes both decorated pairs', () => {
+test('the Eclipse Moth shoulder preserves its 3,825 pixels and a single key retimes both decorated pairs', () => {
   const source = JSON.parse(readFileSync(new URL('../showcase/eclipse-moth/eclipse-moth.json', import.meta.url)));
   const layers = source.frames[0].layers.filter(l => l.part);
   const sample = (r, layer, time) => renderProject({ ...r, frames: [{ name: 'pose', time, groups: { hover: [0, 0] }, layers: [layer] }], animations: {} }).frames[0];
@@ -101,7 +101,7 @@ test('the Eclipse Moth shoulder preserves its 3,818 pixels and a single key reti
     : { ...op, x: op.x + x, y: op.y + y, x2: op.x2 + x, y2: op.y2 + y });
   const baked = sample(source, { ops: shift(left.x - wing.pivot[0], left.y - wing.pivot[1]) }, 0);
   assert.deepEqual(open.data, baked.data);
-  assert.equal(open.data.reduce((count, c, i) => count + (i % 4 === 3 && c !== 0), 0), 3818);
+  assert.equal(open.data.reduce((count, c, i) => count + (i % 4 === 3 && c !== 0), 0), 3825);
   const clipped = sample(source, { ops: shift(-wing.pivot[0], -wing.pivot[1]), x: left.x, y: left.y }, 0);
   assert.equal(clipped.data.reduce((count, c, i) => count + (i % 4 === 3 && c !== 0), 0), 2);
   const edit = patchRecipe(source, [{ set: 'scaleTracks.wingbeat.keys[2].at', value: 1280 }]).recipe;

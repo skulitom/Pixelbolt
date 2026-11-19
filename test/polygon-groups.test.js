@@ -22,6 +22,32 @@ test('a concave polygon includes its pixel boundary, fills only its interior and
   assert.throws(() => draw({ ...rect, filled: 1 }), /ops\[0\]\.filled/);
 });
 
+test('a filled polygon is its outline plus every pixel centre inside it, for edges sloping either way', () => {
+  // Even-odd at a pixel centre; a centre on an edge may land either way, and the outline holds it.
+  const inside = (points, px, py) => points.reduce((odd, [ax, ay], i) => {
+    const [bx, by] = points[(i + 1) % points.length];
+    return (ay > py) !== (by > py) && px < ax + (py - ay) * (bx - ax) / (by - ay) ? !odd : odd;
+  }, false);
+  const shapes = {
+    // Right edges sloping down-left once left a pinhole on every row (x + y = 84 here), and left edges sloping
+    // the same way a stray pixel outside.
+    triangle: [[45, 9], [76, 9], [45, 40]],
+    hexagon: [[124, 47], [141, 47], [150, 58], [150, 59], [141, 70], [124, 70], [115, 59], [115, 58]],
+    plate: [[12, 45], [39, 45], [42, 48], [42, 68], [39, 71], [12, 71], [9, 68], [9, 48]]
+  };
+  const draw = (points, filled) => renderProject({ ...recipe([{ name: 'f', ops: [{ op: 'polygon', points, color: 'b', filled }] }]),
+    width: 160, height: 80 }).frames[0].data;
+  for (const [name, points] of Object.entries(shapes)) {
+    const fill = draw(points, true), outline = draw(points, false), wrong = [];
+    for (let y = 0; y < 80; y++) for (let x = 0; x < 160; x++) {
+      const at = (y * 160 + x) * 4 + 3;
+      if (!fill[at] !== !(outline[at] || inside(points, x, y))) wrong.push([x, y]);
+    }
+    assert.deepEqual(wrong, [], name);
+    assert.deepEqual(draw(points.toReversed(), true), fill, `${name} reversed`);
+  }
+});
+
 test('sloping polygon outlines use the line rasterizer’s pixel steps in either winding', () => {
   for (let x = 0; x < 8; x++) for (let y = 0; y < 6; y++) {
     const line = { op: 'line', x: 4, y: 0, x2: x, y2: y, color: 'b' };
