@@ -47,8 +47,8 @@ jobs:
   studio:
     name: Portable Studio / ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
-    # The Intel build runs the whole suite on a translated runtime, which has taken from 7 to over 16 minutes of
-    # this job on different runners: at 20 minutes a slow runner cut a passing run short (1b9a14a).
+    # The Intel build's job is the slowest: under Rosetta its whole suite took from 7 to over 16 minutes on different
+    # runners, and at 20 minutes a slow runner cut a passing run short (1b9a14a).
     timeout-minutes: ${{ matrix.target == 'darwin-x64' && 35 || 20 }}
     strategy:
       fail-fast: false
@@ -58,8 +58,10 @@ jobs:
           - { os: ubuntu-latest, target: linux-x64 }
           - { os: ubuntu-24.04-arm, target: linux-arm64 }
           - { os: macos-latest, target: darwin-arm64 }
-          # The Intel build runs through Rosetta on the Apple silicon runner.
-          - { os: macos-latest, target: darwin-x64 }
+          # The Intel build runs natively on an Intel Mac runner. Through Rosetta on the Apple silicon runner, and on
+          # that job alone, a simulation sometimes came out differently from the same commit's other runs (P-114: one
+          # held the 0.19.0 release) and a spawned command wrote a stray line or nothing (P-186).
+          - { os: macos-26-intel, target: darwin-x64 }
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -113,9 +115,6 @@ jobs:
           $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot;$env:SystemRoot\System32\WindowsPowerShell\v1.0"
           if (Get-Command node, git -ErrorAction SilentlyContinue) { throw 'Node.js or git is still on PATH' }
           & $node scripts/verify-studio.mjs $zip
-      - name: Make sure Rosetta is there for the Intel build
-        if: matrix.target == 'darwin-x64'
-        run: softwareupdate --install-rosetta --agree-to-license || true
       # The script gives everything it starts a PATH with no Node.js, npm or git, wherever this system keeps them.
       - name: Verify the archive on its own runtime (macOS and Linux)
         if: runner.os != 'Windows'
@@ -138,8 +137,8 @@ jobs:
           $build = (Get-Item "$env:RUNNER_TEMP/studio/*").FullName
           & "$build/runtime/node.exe" scripts/qa-studio.mjs --app "$build/app" --out "$env:RUNNER_TEMP/studio-qa"
       # The ARM Linux runner may have no Chromium-based browser; the script then says so and exits with 3. The
-      # Intel Mac job is left out: its studio files are the same as the Apple silicon build's, and a browser started
-      # from the translated runtime is translated too and does not come up in time.
+      # Intel Mac job is left out: its studio files are the same as the Apple silicon build's (it was left out while it
+      # ran under Rosetta, whose translated browser did not come up in time, and the release record still says so).
       - name: Walk the studio in the runner's browser (macOS and Linux)
         if: runner.os != 'Windows' && matrix.target != 'darwin-x64'
         run: |

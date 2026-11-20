@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { cliReply } from './fixtures/cli-reply.js';
 import { renderProject, inspectProject, analyzeProject, wildcard } from '../src/core.js';
 
 const pixel = (sheet, x, y) => [...sheet.data.slice((y * sheet.width + x) * 4, (y * sheet.width + x) * 4 + 4)];
@@ -112,13 +113,13 @@ test('frame-name patterns match as * and ? always did, in time proportional to p
 });
 test('CLI inspect takes --step and --offset', () => {
   const run = (...args) => spawnSync(process.execPath, ['bin/pixelbolt.js', 'inspect', 'examples/forest-spirit.json', ...args], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });
-  const view = JSON.parse(run('--animation', 'idle', '--step', '2', '--offset', '1').stdout);
+  const view = cliReply(run('--animation', 'idle', '--step', '2', '--offset', '1'));
   assert.deepEqual([view.cells.flatMap(line => line.split(':')[0].split(', ')), view.sampling.positions], [['rise', 'blink', 'fall'], [1, 3, 5]]);
-  assert.match(JSON.parse(run('--step', '2x').stderr).error, /--step expects a whole number/);
-  assert.match(JSON.parse(run('--offset', '1.5').stderr).error, /--offset expects a whole number/);
+  assert.match(cliReply(run('--step', '2x'), 'stderr').error, /--step expects a whole number/);
+  assert.match(cliReply(run('--offset', '1.5'), 'stderr').error, /--offset expects a whole number/);
   // --frames and --animation pick cells two ways: the help says so, and the refusal says what each does.
   assert.match(run('--help').stdout, /--frames a,b or --animation name \(one or the other\) picks cells/);
-  assert.match(JSON.parse(run('--frames', 'rest', '--animation', 'idle').stderr).error, /not both: frames picks the named frames in the order named, animation one animation's frames in play order/);
+  assert.match(cliReply(run('--frames', 'rest', '--animation', 'idle'), 'stderr').error, /not both: frames picks the named frames in the order named, animation one animation's frames in play order/);
 });
 
 test('diagnostics give a loop its boundary and leave it out of a one-shot, which never plays its last frame into its first', () => {

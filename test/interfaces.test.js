@@ -3,6 +3,7 @@ import { heroRig, skinkRig } from '../scripts/figure-rigs.mjs';
 import { compilePoses } from '../src/authoring.js';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { cliReply } from './fixtures/cli-reply.js';
 import http from 'node:http';
 import { readFile, writeFile, readdir, mkdtemp, rm, access, realpath } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
@@ -458,7 +459,7 @@ test('CLI render --look writes the frames enlarged, and --gif a GIF of each anim
   const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-look-')); t.after(() => rm(dir, { recursive: true, force: true }));
   const cli = (...args) => spawnSync(process.execPath, [path.join(root, 'bin', 'pixelbolt.js'), ...args], { cwd: dir, encoding: 'utf8' });
   const coin = path.join(root, 'examples', 'coin.json');
-  const made = JSON.parse(cli('render', coin, '--out', 'made', '--look', '--gif-scale', '4', '--expect', '{"width":24,"height":24,"gifScale":4}').stdout);
+  const made = cliReply(cli('render', coin, '--out', 'made', '--look', '--gif-scale', '4', '--expect', '{"width":24,"height":24,"gifScale":4}'));
   assert.deepEqual([made.look, made.gifs, made.check.ok, made.check.delivered.gifs], ['made/look.png', { scale: 4, width: 96, height: 96 }, true, [96, 96]]);
   assert.ok(made.files.includes('look.png') && made.files.includes('gifs/spin.gif'));
   // look.png is the contact sheet inspect draws; the sprite sheet beside it stays at the frames' own size.
@@ -467,16 +468,16 @@ test('CLI render --look writes the frames enlarged, and --gif a GIF of each anim
   assert.ok(look.readUInt32BE(16) > (await readFile(path.join(dir, 'made', 'coin.png'))).readUInt32BE(16));
   assert.equal((await readFile(path.join(dir, 'made', 'gifs', 'spin.gif'))).subarray(0, 6).toString('latin1'), 'GIF89a');
   // --gif alone is the frames' own size, and a GIF of another size than expect's gifScale asks for is a problem with its fix.
-  const plain = JSON.parse(cli('render', coin, '--out', 'plain', '--gif', '--expect', '{"width":24,"height":24,"gifScale":4}').stdout);
+  const plain = cliReply(cli('render', coin, '--out', 'plain', '--gif', '--expect', '{"width":24,"height":24,"gifScale":4}'));
   assert.deepEqual([plain.gifs, plain.look, plain.check.ok, plain.check.problems[0].file], [{ scale: 1, width: 24, height: 24 }, undefined, false, 'gifs/spin.gif']);
   // Without either, the folder and the reply are as they were.
-  const bare = JSON.parse(cli('render', coin, '--out', 'bare').stdout);
+  const bare = cliReply(cli('render', coin, '--out', 'bare'));
   assert.deepEqual([bare.gifs, bare.look, bare.files.some(file => file.startsWith('gifs/') || file === 'look.png')], [undefined, undefined, false]);
   assert.match(cli('render', coin, '--out', 'bad', '--gif-scale', 'big').stderr, /--gif-scale expects a whole number from 1 to 16/);
   // A recipe named "look" exports its sprite sheet as look.png, which --look drew its contact sheet over.
   await writeFile(path.join(dir, 'look.json'), JSON.stringify({ ...JSON.parse(await readFile(coin, 'utf8')), name: 'look' }));
-  assert.match(JSON.parse(cli('render', 'look.json', '--out', 'named', '--look').stderr).error, /--look writes look\.png, which this export already has \(the sprite sheet of a recipe named "look"\)/);
-  assert.equal(JSON.parse(cli('render', 'look.json', '--out', 'named').stdout).sheet, 'look.png');
+  assert.match(cliReply(cli('render', 'look.json', '--out', 'named', '--look'), 'stderr').error, /--look writes look\.png, which this export already has \(the sprite sheet of a recipe named "look"\)/);
+  assert.equal(cliReply(cli('render', 'look.json', '--out', 'named')).sheet, 'look.png');
   assert.match(cli('render', coin, '--out', 'bad', '--gif-scale', '40').stderr, /scale/);
   assert.match(cli('validate', coin, '--gif').stderr, /--gif is not supported by validate/);
 });
