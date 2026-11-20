@@ -1,7 +1,7 @@
 import { RECIPE_LIMIT } from './share.js';
 import { advancePlayback, editGuard, engineOverride, filterExamples, fitScale, formatSize, framePNGScale, safeName, timeLimit } from './lib.js';
 
-export const PINNED_VERSION = '0.18.0';
+export const PINNED_VERSION = '0.19.0';
 const REQUEST_TIMEOUT = timeLimit(location.href);
 const $ = id => document.getElementById(id);
 const editor = $('recipe'), canvas = $('preview'), context = canvas.getContext('2d');
