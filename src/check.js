@@ -132,8 +132,8 @@ function sheetProblem(project, expect, recipe, call) {
 // no whole scale makes the size. A still's canvas is held to a still's limits (STILL_SIDE, FRAME_AREA), an animation's
 // to a frame's. The budgets count the frames expect asks for when it asks for more than the recipe has, so a fix still
 // holds once the frames are added. `given`, when the call set the scale, says each scale as the call's option.
-function largeSizeFix(expect, project, recipe, reason = FRAME_LIMIT, given = null) {
-  const { width, height, frames, sheet } = project, wanted = askedFrames(expect, project);
+function largeSizeFix(expect, project, recipe, reason = FRAME_LIMIT, given) {
+  const { width, height, sheet } = project, wanted = askedFrames(expect, project);
   const counted = wanted === project ? project : { ...project, frames: wanted.frames, animations: wanted.animations };
   const one = counted.frames.length === 1, most = one ? STILL_SIDE : CANVAS, scaleName = given ? given.option : 'sheet.scale';
   const fits = (w, h) => one ? w <= STILL_SIDE && h <= STILL_SIDE && w * h <= FRAME_AREA : frameFits(w, h);

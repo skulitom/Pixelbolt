@@ -242,7 +242,7 @@ export function importPNG(bytes, { name = 'imported', atlas, frame, padding, fra
     const rows = Array.from({ length: height }, () => Array(width).fill('.')), hidden = [];
     for (const pixel of frame.pixels) {
       if (!pixel.color.endsWith('00')) rows[pixel.y][pixel.x] = colors.get(pixel.color);
-      else if (pixel.color !== '#00000000') hidden.push(pixel); // Preserve meaningful RGB even under alpha zero.
+      else hidden.push(pixel); // Preserve meaningful RGB even under alpha zero.
     }
     // A still past what one grid holds is tiles of it, each at most CANVAS_SIDE rows of CANVAS_SIDE cells and
     // FRAME_PIXELS cells in all, the empty ones left out.

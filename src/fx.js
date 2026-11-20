@@ -385,7 +385,7 @@ const evenAngle = ([from, to], k, count) => (to - from >= 360 ? from + 360 * k /
 // with that share (simulate's shareHolds). Where it does not, smaller shares are simulated, halving and then
 // bisecting; a smaller share releases a subset of the same pixels, and their children a subset of theirs. When even a
 // share of 0 does not fit, the other emitters alone take the limit, and null leaves that for the caller to say.
-function releaseAdvice(e, index, guess, fits, holds = fits) {
+function releaseAdvice(e, index, guess, fits, holds) {
   if (!fits(0) || !holds(0)) return null;
   const cells = e.sprite.frames[0].cells.length, share = e.release.share;
   let low = 0, high = fits(share) ? Math.min(share, Math.max(0, guess)) : share;
@@ -920,7 +920,7 @@ const crude = (n, loops) => n <= 3 && loops.some(([, F]) => F > n && F >= LONG_L
 // The loops (`loops`: [name, frames]) a count n would thin unevenly, each given a multiple of n ([name, frames, new
 // frames]): the one below its own frames, so it simulates and delivers no more, unless that cuts it by more than a
 // quarter and the one above keeps the frames the effects make (`within`, with that change) at most 256.
-function evenLoops(n, loops, within = () => true) {
+function evenLoops(n, loops, within) {
   const below = loops.filter(([, F]) => F > n && F % n).map(([name, F]) => [name, F, n * Math.floor(F / n)]);
   const near = below.map(([name, F, to]) => [name, F, to * 4 < F * 3 ? to + n : to]);
   return within(near) ? near : below;
@@ -936,7 +936,7 @@ function evenLoops(n, loops, within = () => true) {
 // so only where it compiled nothing to know it (trialCompile), and the counts below it may leave that loop alone (a
 // loop of a prime count is changed only by counts that divide none of the others' frames). Every other answer is a
 // trial, so one refusal compiles the source again at most ROUTE_TRIALS times.
-function evenFrames(most, loops, fits = () => true, within = () => true, holds = m => fits(m), given) {
+function evenFrames(most, loops, fits = () => true, within, holds = m => fits(m), given) {
   if (most < 1) return null;
   const rough = m => m !== given && crude(m, loops);
   let n = most;

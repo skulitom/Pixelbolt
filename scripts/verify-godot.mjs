@@ -898,7 +898,7 @@ export async function verifyGodotParallax({ godot = findGodot(), keep = false, l
     const sheet = file => { if (!sheets.has(file)) sheets.set(file, decodePNG(bundle.files.get(file.replace('res://parallax/', '')))); return sheets.get(file); };
     let exact = 0, near = 0, drawn = '';
     // Pixelbolt's unlit view with the camera here and the sprite's animation at `time`.
-    const compare = (camera, got, what, time = 0) => {
+    const compare = (camera, got, what, time) => {
       const panned = prepareScene({ ...source, camera }), view = renderScene(panned, { lit: false, draws: true, time }), blended = new Uint8Array(scene.width * scene.height);
       for (const draw of view.draws) {
         const project = panned.assets[draw.asset].recipe, data = project.frames[draw.frame].data, s = draw.scale;

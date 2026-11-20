@@ -1070,7 +1070,7 @@ function layerVariants(layer, { lp, rows, terrain, tile, mode, palette, drawing,
 const QUARTERS = [['tl', 0, 0], ['tr', 1, 0], ['bl', 0, 1], ['br', 1, 1]];
 function plainTile(rows, tile) {
   const q = tile / 2, pieces = tilePieces('corner', 15), out = Array.from({ length: tile }, () => '');
-  for (const [position, qx, qy] of QUARTERS) {
+  for (const [position, , qy] of QUARTERS) {
     const [sx, sy] = templatePiece(tile, pieces[position].from, pieces[position].piece);
     for (let y = 0; y < q; y++) out[qy * q + y] += rows[sy + y].slice(sx, sx + q);
   }
