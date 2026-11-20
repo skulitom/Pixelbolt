@@ -71,12 +71,19 @@ try {
   // process and exit at once (Edge does on Windows), so its exit says nothing; the file does.
   let complaints = '';
   browser.stderr.on('data', chunk => { complaints += chunk; }); browser.once('error', error => { complaints += error.message; });
+  // A loaded CI runner once took longer than 30 seconds (P-192), so the wait is 90, and a start past 10 is noted to
+  // show how much of the margin is left.
   const endpoint = await (async () => {
-    for (const start = Date.now(); Date.now() - start < 30000; await sleep(100)) {
+    const start = Date.now(), limit = 90000;
+    for (; Date.now() - start < limit; await sleep(100)) {
       const [port, address] = (await readFile(path.join(profile, 'DevToolsActivePort'), 'utf8').catch(() => '')).split('\n');
-      if (address) return `ws://127.0.0.1:${port}${address}`;
+      if (!address) continue;
+      const took = Date.now() - start;
+      if (took > 10000) note(`the browser took ${(took / 1000).toFixed(1)} seconds to open its DevTools port`);
+      return `ws://127.0.0.1:${port}${address}`;
     }
-    throw new Error(`the browser did not open its DevTools port within 30 seconds:\n${complaints}`);
+    const started = browser.exitCode === null && browser.signalCode === null ? 'is still running' : `has exited (${browser.exitCode ?? browser.signalCode}), which a browser that hands over to another process does at once`;
+    throw new Error(`the browser did not open its DevTools port within ${limit / 1000} seconds; the program started ${started}:\n${complaints}`);
   })();
   // One connection to the browser; each page is a session on it. `pending` holds the requests not yet answered, and
   // `waits` what else is waiting on the browser (a download). When the connection closes or fails, all of them are
