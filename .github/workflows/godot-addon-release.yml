@@ -1,0 +1,219 @@
+name: Godot addon release zip
+run-name: Godot addon release zip for ${{ inputs.tag || github.event.workflow_run.head_branch }}
+
+# Attaches pixelbolt-godot-<version>.zip (the editor addon, addons/pixelbolt/ at its root) and its .sha256 to each
+# published release, built from the release's own tag and tested in a real headless Godot first. A release made with
+# GITHUB_TOKEN fires no release event, so this follows the Release workflow's runs, as studio-assets.yml does. Tags
+# made before the addon existed have no godot/addons/pixelbolt and end green with nothing to attach.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag, in the form vX.Y.Z'
+        required: true
+        type: string
+      dry_run:
+        description: 'Build and test without attaching release assets'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-addon-release-${{ inputs.tag || github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.repository == 'skulitom/Pixelbolt'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      go: ${{ steps.plan.outputs.go }}
+      tag: ${{ steps.plan.outputs.tag }}
+      version: ${{ steps.plan.outputs.version }}
+      sha: ${{ steps.plan.outputs.sha }}
+      dry_run: ${{ steps.plan.outputs.dry_run }}
+    steps:
+      - name: Find the published release and whether its tag holds the addon
+        id: plan
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_REPO: ${{ github.event.workflow_run.repository.full_name }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          // BEGIN plan checks
+          export const unavailable = error => /\bHTTP 404\b/.test(String(error.stderr));
+          export const stableTag = tag => /^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(tag);
+          // END plan checks
+          const env = process.env, repo = 'skulitom/Pixelbolt', tag = env.TAG;
+          const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+          const api = endpoint => JSON.parse(gh('api', `repos/${repo}/${endpoint}`));
+          const summary = message => appendFileSync(env.GITHUB_STEP_SUMMARY, message + '\n');
+          const output = values => { for (const [key, value] of Object.entries(values)) appendFileSync(env.GITHUB_OUTPUT, `${key}=${value}\n`); };
+          output({ go: 'false' });
+          if (env.EVENT === 'workflow_run' && (!['push', 'workflow_dispatch'].includes(env.RUN_EVENT) || env.RUN_REPO !== repo)) {
+            throw new Error('The triggering Release run must belong to this repository and be a push or dispatch');
+          }
+          if (!stableTag(tag)) { summary('Skipped: the Release ref is not a stable vX.Y.Z tag.'); process.exit(0); }
+          let object = api(`git/ref/tags/${tag}`).object;
+          const seen = new Set();
+          while (object.type === 'tag') {
+            if (seen.has(object.sha)) throw new Error('Cyclic annotated tag');
+            seen.add(object.sha);
+            object = api(`git/tags/${object.sha}`).object;
+          }
+          if (object.type !== 'commit' || !/^[a-f0-9]{40}$/.test(object.sha)) throw new Error('Tag must resolve to a commit');
+          const sha = object.sha, version = tag.slice(1);
+          if (env.EVENT === 'workflow_run' && sha !== env.RUN_SHA) throw new Error('Tag commit differs from the triggering Release run');
+          let release;
+          try { release = api(`releases/tags/${tag}`); }
+          catch (error) { if (!unavailable(error)) throw error; summary(`Skipped ${tag}: no GitHub release exists.`); process.exit(0); }
+          if (release.draft || !release.published_at) { summary(`Skipped ${tag}: the GitHub release is not published (draft).`); process.exit(0); }
+          try { api(`contents/godot/addons/pixelbolt/plugin.cfg?ref=${sha}`); }
+          catch (error) {
+            if (!unavailable(error)) throw error;
+            summary(`Nothing to attach: ${tag} (${sha}) has no godot/addons/pixelbolt; the addon ships from the first tag made after it was added.`);
+            process.exit(0);
+          }
+          output({ go: 'true', tag, version, sha, dry_run: env.DRY_RUN === 'true' });
+          summary(`Planned ${tag} at ${sha}. Dry run: ${env.DRY_RUN === 'true'}.`);
+          NODE
+
+  build:
+    name: Build and test the zip
+    needs: plan
+    if: needs.plan.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      PLANNED_SHA: ${{ needs.plan.outputs.sha }}
+      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
+      GODOT_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ needs.plan.outputs.tag }}
+          persist-credentials: false
+      - name: Check the tag has not moved and names this version
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PLANNED_SHA"
+          test "$(node -p "require('./package.json').version")" = "$VERSION"
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Get the pinned Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 "https://github.com/godotengine/godot/releases/download/4.7.2-stable/$GODOT_ZIP" -o godot.zip
+          echo "$GODOT_SHA512  godot.zip" | sha512sum -c
+          unzip -q godot.zip -d godot
+          touch godot/._sc_
+          chmod +x godot/Godot_v4.7.2-stable_linux.x86_64
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --version
+      - name: Build the zip, and again to compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-godot-addon.mjs --out dist
+          node scripts/build-godot-addon.mjs --out dist --check
+      - name: Test the addon in Godot, then install the zip in a fresh project
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-godot-addon.mjs --godot "$GODOT"
+          node scripts/verify-godot-addon.mjs --godot "$GODOT" --install-zip "dist/pixelbolt-godot-$VERSION.zip"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pixelbolt-godot
+          path: |
+            dist/pixelbolt-godot-${{ needs.plan.outputs.version }}.zip
+            dist/pixelbolt-godot-${{ needs.plan.outputs.version }}.zip.sha256
+          retention-days: 1
+          if-no-files-found: error
+
+  # The only job with write rights; it runs nothing from the checkout. Existing assets are never replaced.
+  upload:
+    needs: [plan, build]
+    if: needs.plan.outputs.go == 'true' && needs.plan.outputs.dry_run == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: pixelbolt-godot
+          path: artifacts
+      - name: Match the checksum and attach only missing assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, mkdirSync, appendFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          // BEGIN upload checks
+          export function checkedFiles(version, read) {
+            const zip = `pixelbolt-godot-${version}.zip`, bytes = read(`artifacts/${zip}`), sums = read(`artifacts/${zip}.sha256`);
+            const hash = createHash('sha256').update(bytes).digest('hex');
+            if (sums.toString() !== `${hash}  ${zip}\n`) throw new Error(`Checksum file does not match ${zip}`);
+            return new Map([[zip, { file: `artifacts/${zip}`, hash }], [`${zip}.sha256`, { file: `artifacts/${zip}.sha256`, hash: createHash('sha256').update(sums).digest('hex') }]]);
+          }
+          export function requireIdentical(name, expected, bytes) {
+            if (createHash('sha256').update(bytes).digest('hex') !== expected) throw new Error(`Release asset ${name} has a different SHA-256; refusing to replace it`);
+          }
+          // END upload checks
+          try {
+            const { TAG: tag, VERSION: version } = process.env, repo = 'skulitom/Pixelbolt';
+            const files = checkedFiles(version, readFileSync);
+            const gh = (...args) => execFileSync('gh', args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+            const release = JSON.parse(gh('release', 'view', tag, '-R', repo, '--json', 'assets,isDraft,publishedAt'));
+            if (release.isDraft || !release.publishedAt) throw new Error('Release is no longer published');
+            mkdirSync('existing');
+            const missing = [], skipped = [];
+            for (const [name, { file, hash }] of files) {
+              if (release.assets.some(asset => asset.name === name)) {
+                gh('release', 'download', tag, '-R', repo, '--pattern', name, '--dir', 'existing');
+                requireIdentical(name, hash, readFileSync(`existing/${name}`));
+                skipped.push(name);
+              } else missing.push(file);
+            }
+            if (missing.length) gh('release', 'upload', tag, ...missing, '-R', repo);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, [
+              `Godot addon for ${tag}:`, ...missing.map(file => `- Uploaded: ${file.split('/').at(-1)}`),
+              ...skipped.map(name => `- Skipped identical asset: ${name}`), ''
+            ].join('\n'));
+          } catch (error) {
+            console.error(`::error::${String(error.message).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')}`);
+            process.exitCode = 1;
+          }
+          NODE

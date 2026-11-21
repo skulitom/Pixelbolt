@@ -1,0 +1,100 @@
+name: Godot addon
+
+# The Godot editor addon (godot/) checked in a real headless Godot: it imports recipes as SpriteFrames and TileSets
+# that match the CLI's own .tres field by field, and the release zip is built here exactly as the release job builds
+# it, then installed in a fresh project. A separate workflow from Tests, so a Godot download can never hold a release.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'godot/**'
+      - 'src/godot.js'
+      - 'src/tiled.js'
+      - 'src/export.js'
+      - 'bin/**'
+      - 'scripts/verify-godot.mjs'
+      - 'scripts/verify-godot-addon.mjs'
+      - 'scripts/build-godot-addon.mjs'
+      - '.github/workflows/godot-addon.yml'
+  pull_request:
+    paths:
+      - 'godot/**'
+      - 'src/godot.js'
+      - 'src/tiled.js'
+      - 'src/export.js'
+      - 'bin/**'
+      - 'scripts/verify-godot.mjs'
+      - 'scripts/verify-godot-addon.mjs'
+      - 'scripts/build-godot-addon.mjs'
+      - '.github/workflows/godot-addon.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-addon-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Godot 4.7.2 / ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      GODOT_ZIP: Godot_v4.7.2-stable_linux.x86_64.zip
+      GODOT_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      # The official build, checked against the SHA-512 in the release's SHA512-SUMS.txt. The ._sc_ file beside it
+      # keeps Godot's editor data in that folder (self-contained mode).
+      - name: Get the pinned Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 "https://github.com/godotengine/godot/releases/download/4.7.2-stable/$GODOT_ZIP" -o godot.zip
+          echo "$GODOT_SHA512  godot.zip" | sha512sum -c
+          unzip -q godot.zip -d godot
+          touch godot/._sc_
+          chmod +x godot/Godot_v4.7.2-stable_linux.x86_64
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/godot/Godot_v4.7.2-stable_linux.x86_64" --headless --version
+      - name: Check the CLI's own Godot exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-godot.mjs --godot "$GODOT"
+      - name: Test the addon in Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-godot-addon.mjs --godot "$GODOT"
+      - name: Build the release zip as the release job does, and again to compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/build-godot-addon.mjs --out dist
+          node scripts/build-godot-addon.mjs --out dist --check
+      - name: Install the zip in a fresh project and import the hero
+        shell: bash
+        run: |
+          set -euo pipefail
+          zips=(dist/pixelbolt-godot-*.zip)
+          node scripts/verify-godot-addon.mjs --godot "$GODOT" --install-zip "${zips[0]}"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pixelbolt-godot-zip
+          path: |
+            dist/pixelbolt-godot-*.zip
+            dist/pixelbolt-godot-*.zip.sha256
+          retention-days: 14
+          if-no-files-found: error

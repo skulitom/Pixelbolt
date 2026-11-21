@@ -121,10 +121,11 @@ test('store numbers has the required guards and the Studio upload pin', async ()
   assert.equal(checked.action, studio.match(/uses: (actions\/upload-artifact@[a-f0-9]{40})/)[1]);
 });
 
-// A sixth workflow would be outside both workflow tests: name it here once a test holds it.
+// A new workflow would be outside every workflow test: name it here once a test holds it. The two godot-addon files
+// are held by test/godot-addon.test.js.
 test('every workflow file is one that a test holds', async () => {
   const files = (await readdir(path.join(root, '.github/workflows'))).sort();
-  assert.deepEqual(files, ['publish-registry.yml', 'release.yml', 'store-numbers.yml', 'studio-assets.yml', 'test.yml']);
+  assert.deepEqual(files, ['godot-addon-release.yml', 'godot-addon.yml', 'publish-registry.yml', 'release.yml', 'store-numbers.yml', 'studio-assets.yml', 'test.yml']);
 });
 
 test('store numbers structure rejects unsafe mutations', async t => {
