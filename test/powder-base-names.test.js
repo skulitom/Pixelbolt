@@ -19,6 +19,9 @@ test("a material that breaks one of the starter table's reactions is named, with
   assert.throws(() => compilePowder({ ...hopper, materials: { wood: solidWood }, reactions: own }), wood);
   // The live grid reads sources the same way.
   assert.throws(() => createLivePowder({ ...hopper, materials: { wood: solidWood } }), wood);
+  // Both materials of the reaction replaced: the path is the one the error is about, and the other is named with it.
+  assert.throws(() => compilePowder({ ...hopper, materials: { fire: { state: 'gas', colors: ['#ff8800'] }, wood: solidWood } }),
+    error => error.path === 'powder.materials.wood' && error.message.startsWith("powder.materials.wood: this replaces the starter table's wood and fire whole (with powder.materials.fire), and the table's reaction of fire and wood (its ignite) then fails: wood does not burn"));
   // Oil burns in the table too: the first of the table's reactions it breaks is the one named.
   assert.throws(() => compilePowder({ ...hopper, materials: { oil: { state: 'liquid', colors: ['#332211'] } } }), replaced('oil', 'fire and oil', 'ignite', 'oil does not burn; give it a burn'));
 });

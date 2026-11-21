@@ -118,7 +118,9 @@ function tableReactionError(error, r, n, given) {
   const at = `powder.reactions[${n}]`, field = error.path.startsWith(at) ? error.path.slice(at.length).replace(/^\./, '') : '';
   const said = error.message.startsWith(`${error.path}: `) ? error.message.slice(error.path.length + 2) : error.message;
   const used = [r.a, r.b, ...(Array.isArray(r.into) ? r.into : [])];
-  const replaced = used.filter((name, i) => typeof name === 'string' && used.indexOf(name) === i && Object.hasOwn(SANDBOX.materials, name) && isObject(given.materials) && Object.hasOwn(given.materials, name));
+  const words = said.split(/[^a-z0-9-]+/), named = name => (words.includes(name) ? 0 : 1);
+  // The material the error is about comes first, so it is the path.
+  const replaced = used.filter((name, i) => typeof name === 'string' && used.indexOf(name) === i && Object.hasOwn(SANDBOX.materials, name) && isObject(given.materials) && Object.hasOwn(given.materials, name)).sort((x, y) => named(x) - named(y));
   const reaction = `the table's reaction of ${r.a} and ${r.b}${field ? ` (its ${field})` : ''}`;
   const fix = `Rename your material, give it what that reaction needs, or write your own reaction for ${r.a} and ${r.b}, which replaces the table's`;
   if (!replaced.length) return new PixelError('powder.base', `the starter ${reaction.slice(4)} fails: ${said}`);
