@@ -367,7 +367,7 @@ const autotile = {
     animation: { type: 'string', pattern: '\\{mask\\}', description: 'Optional per-mask animation over the variants, in order.' },
     slopes: { ...object({ frame: { type: 'string', pattern: '\\{slope\\}', description: 'Frame name template; {slope} becomes up, down, gentle-up-low, gentle-up-high, gentle-down-high, gentle-down-low, and <slope>-foot for the tile under a slope\'s low end.' } }, ['frame']),
       description: 'A side-view blob or cardinal set\'s slopes, 45° and gentle (a cell up over two), cut from its top edge and fill so they meet its flat ground; solid under their line with collision. metadata.slopes gives a scene legend for them.' },
-    preview: { ...object({ background: color, rows: { ...array({ type: 'string' }, 256), minItems: 1, description: 'A map of your own drawn in place of the test map: # terrain, . nothing, and the slope characters.' } }), description: 'The test map: background is drawn under it (the ground a transparent-edged set sits on).' },
+    preview: { ...object({ background: color, rows: { ...array({ type: 'string', minLength: 1, maxLength: 256 }, 256), minItems: 1, description: 'A map of your own drawn in place of the test map: # terrain, . nothing, and the slope characters (in a layered set, the keys of its layers). At most 256 rows of 256 characters, and at most 4096 pixels a side.' } }), description: 'The test map: background is drawn under it (the ground a transparent-edged set sits on).' },
     sheet: schema.properties.sheet
   }, ['format', 'version', 'name', 'tile', 'frame']), anyOf: [{ required: ['template'] }, { required: ['terrain'] }, { required: ['ops'] }],
   // The recipe's definitions that operations use; frames, layers and pixel corrections have no place here.

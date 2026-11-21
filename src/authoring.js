@@ -913,6 +913,7 @@ export function compileAutotile(source) {
     const known = `#.${(slopes ?? []).map(slope => slope.char).join('')}`, said = [...known].join(' ');
     if (!Array.isArray(level) || !level.length || level.length > 256 || level.some(row => typeof row !== 'string') || !level[0].length) fail('autotile.preview.rows', `expected 1–256 equal-width text rows of ${said}`);
     sameWidth(level, 'autotile.preview.rows');
+    if (level[0].length > 256) fail('autotile.preview.rows', `rows are ${level[0].length} characters wide; a preview map holds at most 256 tiles a row (and 256 rows), as a scene's tilemap does`);
     level.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (!known.includes(row[x])) fail(`autotile.preview.rows[${y}]`, `character ${JSON.stringify(row[x])} at column ${x} is not one this set draws: ${said}${slopes ? '' : ' (a set with slopes has a character for each)'}`); });
     if (level[0].length * tile > 4096 || level.length * tile > 4096 || level[0].length * level.length * tile * tile > 4194304) fail('autotile.preview.rows', `${level[0].length} by ${level.length} tiles of ${tile} pixels is more than one picture holds (4096 a side, 4,194,304 pixels)`);
   }
@@ -993,6 +994,7 @@ function compileLayers(source, { tile, mode, palette }) {
     const keys = read.map(layer => layer.key), said = keys.map((key, i) => `${key} for ${read[i].name}`).join(', ');
     if (!Array.isArray(level) || !level.length || level.length > 256 || level.some(row => typeof row !== 'string') || !level[0].length) fail('autotile.preview.rows', `expected 1–256 equal-width text rows of the layers' keys: ${said}`);
     sameWidth(level, 'autotile.preview.rows');
+    if (level[0].length > 256) fail('autotile.preview.rows', `rows are ${level[0].length} characters wide; a preview map holds at most 256 tiles a row (and 256 rows), as a scene's tilemap does`);
     level.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (!keys.includes(row[x])) fail(`autotile.preview.rows[${y}]`, `character ${JSON.stringify(row[x])} at column ${x} is no layer's key: ${said}`); });
     if (level[0].length * tile > 4096 || level.length * tile > 4096 || level[0].length * level.length * tile * tile > 4194304) fail('autotile.preview.rows', `${level[0].length} by ${level.length} tiles of ${tile} pixels is more than one picture holds (4096 a side, 4,194,304 pixels)`);
   }
