@@ -20,8 +20,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = path.join(ROOT, 'bin/pixelbolt.js');
 const slash = value => value.replaceAll('\\', '/');
 const quote = value => JSON.stringify(slash(value));
+// Linux keeps a killed process as a zombie (state Z) until its new parent reaps it; it runs nothing, so it counts as
+// ended. What a survivor is, for the failure message.
+const procState = pid => { try { return readFileSync(`/proc/${pid}/stat`, 'utf8').replace(/^.*\) /s, '').split(' ')[0]; } catch { return null; } };
 const running = pid => {
-  try { process.kill(pid, 0); return true; } catch (error) { if (error.code === 'ESRCH') return false; throw error; }
+  try { process.kill(pid, 0); } catch (error) { if (error.code === 'ESRCH') return false; throw error; }
+  return procState(pid) !== 'Z';
+};
+const described = pid => {
+  if (process.platform !== 'linux') return String(pid);
+  let command = '';
+  try { command = readFileSync(`/proc/${pid}/cmdline`, 'utf8').replaceAll('\0', ' ').trim(); } catch {}
+  return `${pid} (state ${procState(pid) ?? 'gone'}${command ? `, ${command}` : ''})`;
 };
 
 function killTree(pid) {
@@ -459,9 +469,9 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
         // Output line arrives. Wait for exit, not for an assumed number of frames.
         const deadline = Date.now() + 5000;
         while (pids.some(running) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
-        const survivors = pids.filter(running);
+        const survivors = pids.filter(running).map(pid => ({ pid, what: described(pid), parent: pid === pids[0] }));
         // A failed termination must fail below, but never leak the fixture.
-        for (const pid of survivors) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+        for (const { pid } of survivors) { try { process.kill(pid, 'SIGKILL'); } catch {} }
         return survivors;
       })();
     } });
@@ -471,8 +481,8 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
     assert.match(timeoutLines[0], /CLI timed out.*Previous import kept/);
     assert.deepEqual(await readFile(resource), beforeTimeout, 'Timeout replaced the previous import');
     await check([fixture]);
-    if (survivors?.length) say('FAIL timeout: Windows process-tree termination unavailable; test cleaned up surviving fixture processes.');
-    assert.deepEqual(survivors, [], 'Timed-out processes survived (taskkill /T may be denied by the environment); fixture processes were cleaned up');
+    if (survivors?.length) say('FAIL timeout: the timed-out CLI or its child survived: ' + survivors.map(item => `${item.parent ? 'CLI' : 'child'} ${item.what}`).join('; ') + '; the test cleaned them up.');
+    assert.deepEqual(survivors, [], 'Timed-out processes survived (on Windows taskkill /T may be denied by the environment); the fixture processes were cleaned up');
     say('failure timeout: one diagnostic; previous resource unchanged and loadable; parent and child terminated.');
     say('PASS: all addon checks passed.');
     return { version, summaries, dir: keep ? root : null };
