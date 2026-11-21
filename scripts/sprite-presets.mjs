@@ -40,10 +40,7 @@ export const spriteWalk = {
         ".ma.",
         ".mia"
       ],
-      "anchor": [
-        1,
-        0
-      ]
+      "anchor": [1, 0]
     },
     "farForeArt": {
       "rows": [
@@ -52,10 +49,7 @@ export const spriteWalk = {
         ".iia",
         ".aa."
       ],
-      "anchor": [
-        1,
-        0
-      ]
+      "anchor": [1, 0]
     },
     "farThighArt": {
       "rows": [
@@ -64,10 +58,7 @@ export const spriteWalk = {
         "qsa..",
         "qsa.."
       ],
-      "anchor": [
-        1,
-        0
-      ]
+      "anchor": [1, 0]
     },
     "farBoot": {
       "rows": [
@@ -75,10 +66,7 @@ export const spriteWalk = {
         "noooa",
         "aaaaa"
       ],
-      "anchor": [
-        1,
-        1
-      ]
+      "anchor": [1, 1]
     },
     "torso": {
       "rows": [
@@ -96,24 +84,8 @@ export const spriteWalk = {
         ".aanoppaaa..",
         "..aqrrsqsa.."
       ],
-      "anchor": [
-        6,
-        11
-      ],
-      "points": {
-        "neck": [
-          6,
-          1
-        ],
-        "nearShoulder": [
-          4,
-          3
-        ],
-        "farShoulder": [
-          10,
-          3
-        ]
-      }
+      "anchor": [6, 11],
+      "points": { "neck": [6, 1], "nearShoulder": [4, 3], "farShoulder": [10, 3] }
     },
     "nearThighArt": {
       "rows": [
@@ -122,10 +94,7 @@ export const spriteWalk = {
         "aqrra",
         "aqrra"
       ],
-      "anchor": [
-        2,
-        0
-      ]
+      "anchor": [2, 0]
     },
     "nearBoot": {
       "rows": [
@@ -133,10 +102,7 @@ export const spriteWalk = {
         "aoppa",
         "aaaaa"
       ],
-      "anchor": [
-        2,
-        1
-      ]
+      "anchor": [2, 1]
     },
     "head": {
       "rows": [
@@ -151,10 +117,7 @@ export const spriteWalk = {
         "..aaeihfffa..",
         "...aihhhhaa.."
       ],
-      "anchor": [
-        6,
-        10
-      ]
+      "anchor": [6, 10]
     },
     "nearUpperArt": {
       "rows": [
@@ -163,10 +126,7 @@ export const spriteWalk = {
         "jkkjl",
         "ljjjl"
       ],
-      "anchor": [
-        2,
-        0
-      ]
+      "anchor": [2, 0]
     },
     "nearForeArt": {
       "rows": [
@@ -175,126 +135,27 @@ export const spriteWalk = {
         "ljhfg",
         "ljhhf"
       ],
-      "anchor": [
-        0,
-        0
-      ]
+      "anchor": [0, 0]
     },
     "hips": {
-      "mass": {
-        "size": [
-          2,
-          2
-        ],
-        "ramp": 0,
-        "base": 0
-      },
-      "points": {
-        "hip": [
-          0,
-          0
-        ],
-        "neck": [
-          0,
-          -11
-        ],
-        "shoulder": [
-          0,
-          -9
-        ],
-        "root": [
-          0,
-          0
-        ]
-      }
+      "mass": { "size": [2, 2], "ramp": 0, "base": 0 },
+      "points": { "hip": [0, 0], "neck": [0, -11], "shoulder": [0, -9], "root": [0, 0] }
     },
     "thigh": {
-      "bone": {
-        "length": 3,
-        "width": [
-          1,
-          1
-        ],
-        "ramp": 0,
-        "base": 0,
-        "caps": [
-          "flat",
-          "flat"
-        ]
-      },
-      "points": {
-        "end": "end",
-        "start": [
-          0,
-          0
-        ]
-      }
+      "bone": { "length": 3, "width": [1, 1], "ramp": 0, "base": 0, "caps": ["flat", "flat"] },
+      "points": { "end": "end", "start": [0, 0] }
     },
     "shin": {
-      "bone": {
-        "length": 3,
-        "width": [
-          1,
-          1
-        ],
-        "ramp": 0,
-        "base": 0,
-        "caps": [
-          "flat",
-          "flat"
-        ]
-      },
-      "points": {
-        "end": "end",
-        "start": [
-          0,
-          0
-        ]
-      }
+      "bone": { "length": 3, "width": [1, 1], "ramp": 0, "base": 0, "caps": ["flat", "flat"] },
+      "points": { "end": "end", "start": [0, 0] }
     },
     "upper": {
-      "bone": {
-        "length": 4,
-        "width": [
-          1,
-          1
-        ],
-        "ramp": 0,
-        "base": 0,
-        "caps": [
-          "flat",
-          "flat"
-        ]
-      },
-      "points": {
-        "end": "end",
-        "start": [
-          0,
-          0
-        ]
-      }
+      "bone": { "length": 4, "width": [1, 1], "ramp": 0, "base": 0, "caps": ["flat", "flat"] },
+      "points": { "end": "end", "start": [0, 0] }
     },
     "fore": {
-      "bone": {
-        "length": 3,
-        "width": [
-          1,
-          1
-        ],
-        "ramp": 0,
-        "base": 0,
-        "caps": [
-          "flat",
-          "flat"
-        ]
-      },
-      "points": {
-        "end": "end",
-        "start": [
-          0,
-          0
-        ]
-      }
+      "bone": { "length": 3, "width": [1, 1], "ramp": 0, "base": 0, "caps": ["flat", "flat"] },
+      "points": { "end": "end", "start": [0, 0] }
     },
     "nearShinArt": {
       "rows": [
@@ -302,10 +163,7 @@ export const spriteWalk = {
         "aqrra",
         "anppa"
       ],
-      "anchor": [
-        2,
-        1
-      ]
+      "anchor": [2, 1]
     },
     "farShinArt": {
       "rows": [
@@ -313,222 +171,87 @@ export const spriteWalk = {
         "qsa..",
         "noa.."
       ],
-      "anchor": [
-        1,
-        1
-      ]
+      "anchor": [1, 1]
     }
   },
   "poses": [
     {
       "name": "stand",
-      "origin": [
-        16,
-        30
-      ],
+      "origin": [16, 30],
       "duration": 200,
       "parts": [
-        {
-          "name": "hips",
-          "part": "hips",
-          "at": [
-            0,
-            -7
-          ]
-        },
-        {
-          "name": "farUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "farShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "farFore",
-          "part": "fore",
-          "attach": {
-            "part": "farUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "hips", "part": "hips", "at": [0, -7] },
+        { "name": "farUpper", "part": "upper", "attach": { "part": "torso", "point": "farShoulder" }, "angle": 90 },
+        { "name": "farFore", "part": "fore", "attach": { "part": "farUpper", "point": "end" }, "angle": 0 },
         {
           "name": "farUpperArt",
           "part": "farUpperArt",
-          "attach": {
-            "part": "farUpper",
-            "point": "start"
-          },
+          "attach": { "part": "farUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farForeArt",
           "part": "farForeArt",
-          "attach": {
-            "part": "farFore",
-            "point": "start"
-          },
+          "attach": { "part": "farFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farThigh",
-          "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            2,
-            0
-          ],
-          "angle": 90
-        },
-        {
-          "name": "farShin",
-          "part": "shin",
-          "attach": {
-            "part": "farThigh",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "farThigh", "part": "thigh", "attach": { "part": "hips", "point": "hip" }, "at": [2, 0], "angle": 90 },
+        { "name": "farShin", "part": "shin", "attach": { "part": "farThigh", "point": "end" }, "angle": 0 },
         {
           "name": "farThighArt",
           "part": "farThighArt",
-          "attach": {
-            "part": "farThigh",
-            "point": "start"
-          },
+          "attach": { "part": "farThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farShinArt",
           "part": "farShinArt",
-          "attach": {
-            "part": "farShin",
-            "point": "start"
-          },
+          "attach": { "part": "farShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farBoot",
-          "part": "farBoot",
-          "attach": {
-            "part": "farShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "torso",
-          "part": "torso",
-          "attach": {
-            "part": "hips",
-            "point": "root"
-          },
-          "at": [
-            0,
-            -1
-          ]
-        },
+        { "name": "farBoot", "part": "farBoot", "attach": { "part": "farShin", "point": "end" } },
+        { "name": "torso", "part": "torso", "attach": { "part": "hips", "point": "root" }, "at": [0, -1] },
         {
           "name": "nearThigh",
           "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            -2,
-            0
-          ],
+          "attach": { "part": "hips", "point": "hip" },
+          "at": [-2, 0],
           "angle": 90
         },
-        {
-          "name": "nearShin",
-          "part": "shin",
-          "attach": {
-            "part": "nearThigh",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "nearShin", "part": "shin", "attach": { "part": "nearThigh", "point": "end" }, "angle": 0 },
         {
           "name": "nearThighArt",
           "part": "nearThighArt",
-          "attach": {
-            "part": "nearThigh",
-            "point": "start"
-          },
+          "attach": { "part": "nearThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearShinArt",
           "part": "nearShinArt",
-          "attach": {
-            "part": "nearShin",
-            "point": "start"
-          },
+          "attach": { "part": "nearShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "nearBoot",
-          "part": "nearBoot",
-          "attach": {
-            "part": "nearShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "head",
-          "part": "head",
-          "attach": {
-            "part": "torso",
-            "point": "neck"
-          }
-        },
-        {
-          "name": "nearUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "nearShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "nearFore",
-          "part": "fore",
-          "attach": {
-            "part": "nearUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "nearBoot", "part": "nearBoot", "attach": { "part": "nearShin", "point": "end" } },
+        { "name": "head", "part": "head", "attach": { "part": "torso", "point": "neck" } },
+        { "name": "nearUpper", "part": "upper", "attach": { "part": "torso", "point": "nearShoulder" }, "angle": 90 },
+        { "name": "nearFore", "part": "fore", "attach": { "part": "nearUpper", "point": "end" }, "angle": 0 },
         {
           "name": "nearUpperArt",
           "part": "nearUpperArt",
-          "attach": {
-            "part": "nearUpper",
-            "point": "start"
-          },
+          "attach": { "part": "nearUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearForeArt",
           "part": "nearForeArt",
-          "attach": {
-            "part": "nearFore",
-            "point": "start"
-          },
+          "attach": { "part": "nearFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         }
@@ -536,213 +259,81 @@ export const spriteWalk = {
     },
     {
       "name": "walk-rest",
-      "origin": [
-        16,
-        30
-      ],
+      "origin": [16, 30],
       "duration": 200,
       "parts": [
-        {
-          "name": "hips",
-          "part": "hips",
-          "at": [
-            0,
-            -7
-          ]
-        },
-        {
-          "name": "farUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "farShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "farFore",
-          "part": "fore",
-          "attach": {
-            "part": "farUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "hips", "part": "hips", "at": [0, -7] },
+        { "name": "farUpper", "part": "upper", "attach": { "part": "torso", "point": "farShoulder" }, "angle": 90 },
+        { "name": "farFore", "part": "fore", "attach": { "part": "farUpper", "point": "end" }, "angle": 0 },
         {
           "name": "farUpperArt",
           "part": "farUpperArt",
-          "attach": {
-            "part": "farUpper",
-            "point": "start"
-          },
+          "attach": { "part": "farUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farForeArt",
           "part": "farForeArt",
-          "attach": {
-            "part": "farFore",
-            "point": "start"
-          },
+          "attach": { "part": "farFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farThigh",
-          "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            0,
-            0
-          ],
-          "angle": 90
-        },
-        {
-          "name": "farShin",
-          "part": "shin",
-          "attach": {
-            "part": "farThigh",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "farThigh", "part": "thigh", "attach": { "part": "hips", "point": "hip" }, "at": [0, 0], "angle": 90 },
+        { "name": "farShin", "part": "shin", "attach": { "part": "farThigh", "point": "end" }, "angle": 0 },
         {
           "name": "farThighArt",
           "part": "farThighArt",
-          "attach": {
-            "part": "farThigh",
-            "point": "start"
-          },
+          "attach": { "part": "farThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farShinArt",
           "part": "farShinArt",
-          "attach": {
-            "part": "farShin",
-            "point": "start"
-          },
+          "attach": { "part": "farShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farBoot",
-          "part": "farBoot",
-          "attach": {
-            "part": "farShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "torso",
-          "part": "torso",
-          "attach": {
-            "part": "hips",
-            "point": "root"
-          },
-          "at": [
-            0,
-            -1
-          ]
-        },
+        { "name": "farBoot", "part": "farBoot", "attach": { "part": "farShin", "point": "end" } },
+        { "name": "torso", "part": "torso", "attach": { "part": "hips", "point": "root" }, "at": [0, -1] },
         {
           "name": "nearThigh",
           "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            0,
-            0
-          ],
+          "attach": { "part": "hips", "point": "hip" },
+          "at": [0, 0],
           "angle": 90
         },
-        {
-          "name": "nearShin",
-          "part": "shin",
-          "attach": {
-            "part": "nearThigh",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "nearShin", "part": "shin", "attach": { "part": "nearThigh", "point": "end" }, "angle": 0 },
         {
           "name": "nearThighArt",
           "part": "nearThighArt",
-          "attach": {
-            "part": "nearThigh",
-            "point": "start"
-          },
+          "attach": { "part": "nearThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearShinArt",
           "part": "nearShinArt",
-          "attach": {
-            "part": "nearShin",
-            "point": "start"
-          },
+          "attach": { "part": "nearShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "nearBoot",
-          "part": "nearBoot",
-          "attach": {
-            "part": "nearShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "head",
-          "part": "head",
-          "attach": {
-            "part": "torso",
-            "point": "neck"
-          }
-        },
-        {
-          "name": "nearUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "nearShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "nearFore",
-          "part": "fore",
-          "attach": {
-            "part": "nearUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "nearBoot", "part": "nearBoot", "attach": { "part": "nearShin", "point": "end" } },
+        { "name": "head", "part": "head", "attach": { "part": "torso", "point": "neck" } },
+        { "name": "nearUpper", "part": "upper", "attach": { "part": "torso", "point": "nearShoulder" }, "angle": 90 },
+        { "name": "nearFore", "part": "fore", "attach": { "part": "nearUpper", "point": "end" }, "angle": 0 },
         {
           "name": "nearUpperArt",
           "part": "nearUpperArt",
-          "attach": {
-            "part": "nearUpper",
-            "point": "start"
-          },
+          "attach": { "part": "nearUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearForeArt",
           "part": "nearForeArt",
-          "attach": {
-            "part": "nearFore",
-            "point": "start"
-          },
+          "attach": { "part": "nearFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         }
@@ -751,426 +342,160 @@ export const spriteWalk = {
     {
       "name": "idle-rest",
       "duration": 400,
-      "tween": {
-        "from": "stand",
-        "to": "stand",
-        "t": 0
-      },
+      "tween": { "from": "stand", "to": "stand", "t": 0 },
       "markers": [
-        {
-          "name": "nearShinFoot",
-          "part": "nearShin",
-          "point": "end"
-        },
-        {
-          "name": "farShinFoot",
-          "part": "farShin",
-          "point": "end"
-        }
+        { "name": "nearShinFoot", "part": "nearShin", "point": "end" },
+        { "name": "farShinFoot", "part": "farShin", "point": "end" }
       ],
-      "contacts": [
-        "nearShinFoot",
-        "farShinFoot"
-      ]
+      "contacts": ["nearShinFoot", "farShinFoot"]
     },
     {
       "name": "idle-inhale",
-      "origin": [
-        16,
-        30
-      ],
+      "origin": [16, 30],
       "duration": 400,
       "parts": [
-        {
-          "name": "hips",
-          "part": "hips",
-          "at": [
-            0,
-            -7
-          ],
-          "squash": 1
-        },
-        {
-          "name": "farUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "farShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "farFore",
-          "part": "fore",
-          "attach": {
-            "part": "farUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "hips", "part": "hips", "at": [0, -7], "squash": 1 },
+        { "name": "farUpper", "part": "upper", "attach": { "part": "torso", "point": "farShoulder" }, "angle": 90 },
+        { "name": "farFore", "part": "fore", "attach": { "part": "farUpper", "point": "end" }, "angle": 0 },
         {
           "name": "farUpperArt",
           "part": "farUpperArt",
-          "attach": {
-            "part": "farUpper",
-            "point": "start"
-          },
+          "attach": { "part": "farUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farForeArt",
           "part": "farForeArt",
-          "attach": {
-            "part": "farFore",
-            "point": "start"
-          },
+          "attach": { "part": "farFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farThigh",
-          "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            2,
-            0
-          ],
-          "angle": 90
-        },
+        { "name": "farThigh", "part": "thigh", "attach": { "part": "hips", "point": "hip" }, "at": [2, 0], "angle": 90 },
         {
           "name": "farShin",
           "part": "shin",
-          "attach": {
-            "part": "farThigh",
-            "point": "end"
-          },
-          "reach": [
-            18,
-            29
-          ],
+          "attach": { "part": "farThigh", "point": "end" },
+          "reach": [18, 29],
           "bend": "forward"
         },
         {
           "name": "farThighArt",
           "part": "farThighArt",
-          "attach": {
-            "part": "farThigh",
-            "point": "start"
-          },
+          "attach": { "part": "farThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "farShinArt",
           "part": "farShinArt",
-          "attach": {
-            "part": "farShin",
-            "point": "start"
-          },
+          "attach": { "part": "farShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "farBoot",
-          "part": "farBoot",
-          "attach": {
-            "part": "farShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "torso",
-          "part": "torso",
-          "attach": {
-            "part": "hips",
-            "point": "root"
-          },
-          "at": [
-            0,
-            -2
-          ]
-        },
+        { "name": "farBoot", "part": "farBoot", "attach": { "part": "farShin", "point": "end" } },
+        { "name": "torso", "part": "torso", "attach": { "part": "hips", "point": "root" }, "at": [0, -2] },
         {
           "name": "nearThigh",
           "part": "thigh",
-          "attach": {
-            "part": "hips",
-            "point": "hip"
-          },
-          "at": [
-            -2,
-            0
-          ],
+          "attach": { "part": "hips", "point": "hip" },
+          "at": [-2, 0],
           "angle": 90
         },
         {
           "name": "nearShin",
           "part": "shin",
-          "attach": {
-            "part": "nearThigh",
-            "point": "end"
-          },
-          "reach": [
-            14,
-            29
-          ],
+          "attach": { "part": "nearThigh", "point": "end" },
+          "reach": [14, 29],
           "bend": "forward"
         },
         {
           "name": "nearThighArt",
           "part": "nearThighArt",
-          "attach": {
-            "part": "nearThigh",
-            "point": "start"
-          },
+          "attach": { "part": "nearThigh", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearShinArt",
           "part": "nearShinArt",
-          "attach": {
-            "part": "nearShin",
-            "point": "start"
-          },
+          "attach": { "part": "nearShin", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
-        {
-          "name": "nearBoot",
-          "part": "nearBoot",
-          "attach": {
-            "part": "nearShin",
-            "point": "end"
-          }
-        },
-        {
-          "name": "head",
-          "part": "head",
-          "attach": {
-            "part": "torso",
-            "point": "neck"
-          }
-        },
-        {
-          "name": "nearUpper",
-          "part": "upper",
-          "attach": {
-            "part": "torso",
-            "point": "nearShoulder"
-          },
-          "angle": 90
-        },
-        {
-          "name": "nearFore",
-          "part": "fore",
-          "attach": {
-            "part": "nearUpper",
-            "point": "end"
-          },
-          "angle": 0
-        },
+        { "name": "nearBoot", "part": "nearBoot", "attach": { "part": "nearShin", "point": "end" } },
+        { "name": "head", "part": "head", "attach": { "part": "torso", "point": "neck" } },
+        { "name": "nearUpper", "part": "upper", "attach": { "part": "torso", "point": "nearShoulder" }, "angle": 90 },
+        { "name": "nearFore", "part": "fore", "attach": { "part": "nearUpper", "point": "end" }, "angle": 0 },
         {
           "name": "nearUpperArt",
           "part": "nearUpperArt",
-          "attach": {
-            "part": "nearUpper",
-            "point": "start"
-          },
+          "attach": { "part": "nearUpper", "point": "start" },
           "angle": -90,
           "cleanup": false
         },
         {
           "name": "nearForeArt",
           "part": "nearForeArt",
-          "attach": {
-            "part": "nearFore",
-            "point": "start"
-          },
+          "attach": { "part": "nearFore", "point": "start" },
           "angle": -90,
           "cleanup": false
         }
       ],
-      "contacts": [
-        "nearShinFoot",
-        "farShinFoot"
-      ],
+      "contacts": ["nearShinFoot", "farShinFoot"],
       "markers": [
-        {
-          "name": "nearShinFoot",
-          "part": "nearShin",
-          "point": "end"
-        },
-        {
-          "name": "farShinFoot",
-          "part": "farShin",
-          "point": "end"
-        }
+        { "name": "nearShinFoot", "part": "nearShin", "point": "end" },
+        { "name": "farShinFoot", "part": "farShin", "point": "end" }
       ]
     },
     {
       "name": "idle-settle",
       "duration": 400,
-      "tween": {
-        "from": "stand",
-        "to": "stand",
-        "t": 0
-      },
+      "tween": { "from": "stand", "to": "stand", "t": 0 },
       "markers": [
-        {
-          "name": "nearShinFoot",
-          "part": "nearShin",
-          "point": "end"
-        },
-        {
-          "name": "farShinFoot",
-          "part": "farShin",
-          "point": "end"
-        }
+        { "name": "nearShinFoot", "part": "nearShin", "point": "end" },
+        { "name": "farShinFoot", "part": "farShin", "point": "end" }
       ],
-      "contacts": [
-        "nearShinFoot",
-        "farShinFoot"
-      ]
+      "contacts": ["nearShinFoot", "farShinFoot"]
     },
     {
       "name": "idle-exhale",
       "duration": 400,
-      "tween": {
-        "from": "stand",
-        "to": "stand",
-        "t": 0
-      },
+      "tween": { "from": "stand", "to": "stand", "t": 0 },
       "markers": [
-        {
-          "name": "nearShinFoot",
-          "part": "nearShin",
-          "point": "end"
-        },
-        {
-          "name": "farShinFoot",
-          "part": "farShin",
-          "point": "end"
-        }
+        { "name": "nearShinFoot", "part": "nearShin", "point": "end" },
+        { "name": "farShinFoot", "part": "farShin", "point": "end" }
       ],
-      "contacts": [
-        "nearShinFoot",
-        "farShinFoot"
-      ]
+      "contacts": ["nearShinFoot", "farShinFoot"]
     },
-    {
-      "name": "walk-left-contact-a",
-      "mirror": "walk-contact-a"
-    },
-    {
-      "name": "walk-left-down-a",
-      "mirror": "walk-down-a"
-    },
-    {
-      "name": "walk-left-passing-a",
-      "mirror": "walk-passing-a"
-    },
-    {
-      "name": "walk-left-up-a",
-      "mirror": "walk-up-a"
-    },
-    {
-      "name": "walk-left-contact-b",
-      "mirror": "walk-contact-b"
-    },
-    {
-      "name": "walk-left-down-b",
-      "mirror": "walk-down-b"
-    },
-    {
-      "name": "walk-left-passing-b",
-      "mirror": "walk-passing-b"
-    },
-    {
-      "name": "walk-left-up-b",
-      "mirror": "walk-up-b"
-    },
-    {
-      "name": "idle-left-rest",
-      "mirror": "idle-rest"
-    },
-    {
-      "name": "idle-left-inhale",
-      "mirror": "idle-inhale"
-    },
-    {
-      "name": "idle-left-settle",
-      "mirror": "idle-settle"
-    },
-    {
-      "name": "idle-left-exhale",
-      "mirror": "idle-exhale"
-    }
+    { "name": "walk-left-contact-a", "mirror": "walk-contact-a" },
+    { "name": "walk-left-down-a", "mirror": "walk-down-a" },
+    { "name": "walk-left-passing-a", "mirror": "walk-passing-a" },
+    { "name": "walk-left-up-a", "mirror": "walk-up-a" },
+    { "name": "walk-left-contact-b", "mirror": "walk-contact-b" },
+    { "name": "walk-left-down-b", "mirror": "walk-down-b" },
+    { "name": "walk-left-passing-b", "mirror": "walk-passing-b" },
+    { "name": "walk-left-up-b", "mirror": "walk-up-b" },
+    { "name": "idle-left-rest", "mirror": "idle-rest" },
+    { "name": "idle-left-inhale", "mirror": "idle-inhale" },
+    { "name": "idle-left-settle", "mirror": "idle-settle" },
+    { "name": "idle-left-exhale", "mirror": "idle-exhale" }
   ],
-  "animations": {
-    "stand": {
-      "frames": [
-        "stand"
-      ]
-    }
-  },
-  "sheet": {
-    "columns": 8,
-    "padding": 0
-  },
-  "ramps": [
-    [
-      "Y",
-      "Z"
-    ]
-  ],
+  "animations": { "stand": { "frames": ["stand"] } },
+  "sheet": { "columns": 8, "padding": 0 },
+  "ramps": [["Y", "Z"]],
   "rig": {
     "body": "hips",
     "head": "head",
     "rest": "walk-rest",
     "ground": 29,
-    "legs": [
-      [
-        "nearThigh",
-        "nearShin"
-      ],
-      [
-        "farThigh",
-        "farShin"
-      ]
-    ],
-    "arms": [
-      [
-        "nearUpper",
-        "nearFore"
-      ],
-      [
-        "farUpper",
-        "farFore"
-      ]
-    ]
+    "legs": [["nearThigh", "nearShin"], ["farThigh", "farShin"]],
+    "arms": [["nearUpper", "nearFore"], ["farUpper", "farFore"]]
   },
   "motions": {
-    "walk": {
-      "template": "walk"
-    },
-    "idle": {
-      "template": "idle",
-      "breath": 0,
-      "duration": 400
-    },
-    "walk-left": {
-      "template": "walk",
-      "speed": -24
-    },
-    "idle-left": {
-      "template": "idle",
-      "breath": 0,
-      "duration": 400
-    }
+    "walk": { "template": "walk" },
+    "idle": { "template": "idle", "breath": 0, "duration": 400 },
+    "walk-left": { "template": "walk", "speed": -24 },
+    "idle-left": { "template": "idle", "breath": 0, "duration": 400 }
   }
 };
