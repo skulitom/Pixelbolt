@@ -12,7 +12,8 @@ tile properties. All generated data is embedded under `.godot/`.
 
 Use `.pixelbolt` on Godot 4.3+. Godot 4.5+ also supports `.pixel.json`,
 including `hero.poses.pixel.json`. Ordinary `.json` files are never claimed.
-Tested headlessly on Godot 4.3, 4.7.2 and 4.8-beta4.
+Tested headlessly on Windows with Godot 4.3, 4.7.2 and 4.8-beta4, and on Linux
+with 4.7.2; not yet on macOS.
 
 Project Settings, with **Advanced Settings** enabled:
 
