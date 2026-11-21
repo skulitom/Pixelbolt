@@ -377,9 +377,9 @@ test('with air on, a sealed bottle glugs as it pours; without, it empties in one
   const water = air => grids(compileFluid(bottleSource(air)).recipe, 24, 48).map(grid => inBox(grid, 6, 17, 2, 26));
   // Without air the water pours out freely: 240 pixels of it are gone by frame 40.
   assert.ok(water(null)[40] <= 5);
-  // With air the space it leaves at the top stretches and holds the rest back until air pushes up the neck as a bubble,
-  // and then it pours again: more than half is still in the bottle at frame 40, the level stands still for a while
-  // between pours, and it keeps pouring.
+  // With air the space it leaves at the top stretches and holds the rest back, and the water leaves only as fast as the
+  // pocket draws air up the neck (unseen here, with no bubbles to show it): more than half is still in the bottle at
+  // frame 40, the level stands still for a while between pours, and it keeps pouring.
   const glug = water({ stiffness: 40 });
   assert.ok(glug[40] >= 120, `${glug[40]} left at frame 40`);
   let hold = 0;
@@ -390,13 +390,13 @@ test('with air on, a sealed bottle glugs as it pours; without, it empties in one
 
 test('the last of a glugging bottle runs out: nothing draws it back up to the roof', async () => {
   // The glug preset's bottle (inside x 13–26, y 2–33) over three seeds, drawn by its density alone (its strand layer
-  // would count a film one particle thick as a row of water). Its air went missing
+  // would count a film one particle thick as a row of water; a bubble in the water is water). Its air went missing
   // twice over: a pocket that split off a piece as that piece opened to the outside shared its air by the pieces' sizes,
   // so all outdoors took nearly all of it, and one that closed round open air and a small pocket kept only the small
   // pocket's. Left at the hardest pull the gas law gives, the bottle drew its last plug of water up to its roof (seed 3:
   // ten pixels of water back in the dry upper part). And a film between two pockets at different pressures was shot up
   // the bottle (seeds 1 and 4: the level leapt 12 and 26 rows in a frame) until thin films let air through.
-  const source = await read('examples/glug.fluid.json'), wet = char => char === 'b' || char === 'c';
+  const source = await read('examples/glug.fluid.json'), wet = char => char === 'b' || char === 'c' || char === 'w';
   const row = (grid, y) => { let n = 0; for (let x = 13; x <= 26; x++) if (wet(grid[y][x])) n++; return n; };
   for (const seed of [1, 3, 4]) {
     const frames = grids(compileFluid({ ...source, effects: { glug: { ...source.effects.glug, seed, look: source.effects.glug.look.filter(layer => layer.field !== 'strand') } } }).recipe, 40, 56);
@@ -412,10 +412,36 @@ test('the last of a glugging bottle runs out: nothing draws it back up to the ro
   }
 });
 
+test('a bottle draws air up its neck as bubbles: its level only falls, and it never hollows out', async () => {
+  // The glug preset's bottle (its body inside x 13–26, y 2–23) over three seeds, drawn by its density, bubbles counted as
+  // water. Air used to get in only as one finger up the neck that stayed joined to the outside: the bottle hollowed out
+  // under a cap of water hanging from its stretched pocket (167–184 dry pixels under the level), and as the finger let
+  // the pocket's pull go, the soft air threw the cap back up (the level climbed 11–13 rows in all). Now the pocket draws
+  // air through the water as bubbles: the water stays at the bottom with the air over it.
+  const source = await read('examples/glug.fluid.json'), wet = char => char === 'b' || char === 'c' || char === 'w';
+  const row = (grid, y) => { let n = 0; for (let x = 13; x <= 26; x++) if (wet(grid[y][x])) n++; return n; };
+  for (const seed of [1, 3, 4]) {
+    const frames = grids(compileFluid({ ...source, effects: { glug: { ...source.effects.glug, seed, look: source.effects.glug.look.filter(layer => layer.field !== 'strand') } } }).recipe, 40, 56);
+    const level = frames.map(grid => { for (let y = 2; y <= 33; y++) if (row(grid, y) >= 8) return y; return 34; });
+    let climbs = 0, hollow = 0;
+    frames.forEach((grid, f) => {
+      if (f && level[f] < level[f - 1]) climbs += level[f - 1] - level[f];
+      let dry = 0;
+      for (let y = level[f]; y <= 23; y++) dry += 14 - row(grid, y);
+      hollow = Math.max(hollow, dry);
+    });
+    assert.ok(climbs <= 3, `seed ${seed}: the level climbs ${climbs} rows in all`);
+    assert.ok(hollow <= 40, `seed ${seed}: ${hollow} dry pixels under the level`);
+    // It pours the whole time: half its 352 pixels of water are out by frame 45, and it is not empty before frame 70.
+    const left = f => { let n = 0; for (let y = 2; y <= 33; y++) n += row(frames[f], y); return n; };
+    assert.ok(left(45) <= 176 && left(70) > 0, `seed ${seed}: ${left(45)} pixels left at frame 45, ${left(70)} at frame 70`);
+  }
+});
+
 test('the glug preset draws its pour all the way down, and the glass holds it', async () => {
-  // After the first gush the water falls as trickles a particle wide, which the density does not draw: the glass filled
-  // with nothing falling into it (134 pixels of water left the bottle unseen). The strand layer draws them. And the
-  // bottle held more than the glass, which ran over onto the table.
+  // Where the water falls as a trickle a particle wide the density does not draw it: the glass filled with nothing
+  // falling into it (134 pixels of water left the bottle unseen). The strand layer draws them. And the bottle held more
+  // than the glass, which ran over onto the table.
   const source = await read('examples/glug.fluid.json'), wet = char => char === 'b' || char === 'c';
   const glass = source.effects.glug.obstacles.find(obstacle => obstacle.symbol === 'glass'), across = source.symbols.glass[0].length;
   const frames = grids(compileFluid(source).recipe, 40, 56);

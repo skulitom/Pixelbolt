@@ -79,7 +79,7 @@
       "seed": 3,
       "walls": ["left", "right", "bottom"],
       "flip": 0.7,
-      "air": { "stiffness": 40, "bubbles": { "colors": ["w"], "rise": 0.6, "wobble": 0.3 } },
+      "air": { "stiffness": 40, "bubbles": { "colors": ["w"], "rise": 2.5, "wobble": 0.3 } },
       "obstacles": [
         { "symbol": "bottle", "x": 12, "y": 1 },
         { "symbol": "glass", "x": 5, "y": 39 },

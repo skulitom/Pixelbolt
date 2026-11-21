@@ -2608,7 +2608,21 @@ function stepLiquid(state, effect, dt) {
 // thickness lying over or under the air, nothing standing beside it), so nothing at rest loses air by it. (Pocket air is
 // soft, so a pocket's pull is worth many cells of air: the last thin plug in a bottle's neck, or a film between a
 // stretched pocket and a fresh one, was shot up the bottle instead.)
-const POCKET_START = 12, POCKET_END = 3, SEAL = 4;
+// A pocket draws air up through liquid that hangs under it. Liquid held under a pocket with air beneath it (a bottle
+// upside down, the open air at its mouth; a cap of water over a hollow) does not stay: air climbs through it. The grid
+// shows that only as one finger as wide as the opening, which climbs slowly and stays joined to the air it came from. So
+// a bottle never glugged: it hollowed out under a cap of water that hung from its stretched pocket, and each time the
+// finger let the pocket's pull go, the soft air threw the cap back up to the roof. Instead the air passes, as it does
+// through a film, and bubbles show it. Down each column (along gravity) from a pocket, through liquid, to air that
+// pulls less than the pocket, air passes at the rate an opening that wide trades air for liquid: DRAW × w × √(gravity ×
+// w) square pixels a frame over the w columns between the two, and no more than evens their pressures. A column counts
+// only where its liquid is held, not falling: its pressure climbs towards its foot by half its weight or more over
+// HANG cells (in free fall nothing is lighter than anything else, so no air climbs a falling stream), and, with
+// `air.bubbles`, it runs down slower than the bubbles rise. The pocket has the air at once, as a bottle's does when a
+// bubble pushes in at its mouth and the water it moves aside squeezes the pocket. Every GULP square pixels, a bubble
+// holding that much starts at the foot of one of the columns, in turn, and rises to be seen; it has given its air
+// already (its `passed`) and adds nothing where it ends.
+const POCKET_START = 12, POCKET_END = 3, SEAL = 4, DRAW = 2, GULP = 4, HANG = 3;
 function sealAir(state, effect, dt) {
   const { g, fluid, cells, air } = state, { W, H, N, solid, uFixed, vFixed } = g, X = W + 1, room = g.geo ? g.geo.open : null;
   const label = air.before, before = air.label, { stack, pressure } = air, old = air.regions, regions = [];
@@ -2617,7 +2631,7 @@ function sealAir(state, effect, dt) {
   const open = c => !solid[c] && !fluid[c] && label[c] < 0;
   for (let c0 = 0; c0 < N; c0++) {
     if (!open(c0)) continue;
-    const id = regions.length, region = { volume: 0, open: false, x: 0, y: 0, cells: 0, air: 0, tracked: false, spent: false, edge: -1 };
+    const id = regions.length, region = { volume: 0, open: false, x: 0, y: 0, cells: 0, air: 0, owed: 0, tracked: false, spent: false, edge: -1 };
     regions.push(region);
     let top = 0;
     stack[top++] = c0; label[c0] = id;
@@ -2646,7 +2660,7 @@ function sealAir(state, effect, dt) {
   }
   // What each region holds of the last step's air, by the cells they share: how many of each pocket's cells (`links`,
   // out of the `kept` cells of that pocket that are still air), how many that stood in open air (`fresh`), and whether
-  // any of a region that has let its air go.
+  // any of a region that has let its air go. The air it has drawn but not yet shown (`owed`, see DRAW) goes with it.
   const links = new Map(), from = regions.map(() => []), kept = new Float64Array(old.length), fresh = new Float64Array(regions.length);
   for (let c = 0; c < N; c++) {
     const r = label[c], q = before[c];
@@ -2663,7 +2677,7 @@ function sealAir(state, effect, dt) {
   const release = (region, volume) => {
     region.spent = true;
     const e = region.edge;
-    if (effect.air.bubbles && volume > 0.5 && e >= 0 && cells[e] >= PER_CELL / 2) air.release.push(e % W + 0.5, Math.floor(e / W) + 0.5, volume);
+    if (effect.air.bubbles && volume > 0.5 && e >= 0 && cells[e] >= PER_CELL / 2) air.release.push(e % W + 0.5, Math.floor(e / W) + 0.5, volume, 0);
   };
   old.forEach((q, n) => { if (q.tracked && !kept[n]) release(q, q.volume); });
   // Bubbles that gathered under a ceiling into a pocket's worth (see carvePocket) bring their air to the region their cells
@@ -2674,7 +2688,7 @@ function sealAir(state, effect, dt) {
   regions.forEach((region, r) => {
     if (region.open) return;
     if (from[r].length) {
-      for (const q of from[r]) region.air += old[q].air * links.get(q * N + r) / kept[q];
+      for (const q of from[r]) { const share = links.get(q * N + r) / kept[q]; region.air += old[q].air * share; region.owed += old[q].owed * share; }
       region.air += made[r] + fresh[r];
       region.tracked = true;
     } else if (made[r]) { region.air = made[r]; region.tracked = true; }
@@ -2685,6 +2699,7 @@ function sealAir(state, effect, dt) {
   // Thin seals (see SEAL): the thinnest between each pair of regions, found from each air cell rightwards and downwards,
   // and then the air that passes, pair by pair in the order found. The open air gives and takes without changing.
   const stiffness = effect.air.stiffness, seals = new Map(), holds = r => regions[r].tracked || regions[r].open;
+  const at = r => (regions[r].tracked ? stiffness * (regions[r].air / regions[r].volume - 1) : 0);
   for (let c = 0; c < N; c++) {
     const r = label[c];
     if (r < 0 || !holds(r)) continue;
@@ -2706,17 +2721,56 @@ function sealAir(state, effect, dt) {
   }
   for (const [key, thick] of seals) {
     const b = key % regions.length, a = (key - b) / regions.length;
-    const at = r => (regions[r].tracked ? stiffness * (regions[r].air / regions[r].volume - 1) : 0), gap = at(a) - at(b);
+    const gap = at(a) - at(b);
     if (Math.abs(gap) <= thick) continue;
     const from = regions[gap > 0 ? a : b], to = regions[gap > 0 ? b : a];
     const passes = (Math.abs(gap) - thick) / (stiffness * ((from.tracked ? 1 / from.volume : 0) + (to.tracked ? 1 / to.volume : 0)));
     if (from.tracked) from.air -= passes;
     if (to.tracked) to.air += passes;
   }
+  // Drawn air (see DRAW): down each column from a pocket, along gravity, through liquid that is held to air that pulls
+  // less; then way by way, in the order found. `head` is a pixel of depth in the solver's pressure.
+  const [gx, gy] = effect.gravity, pull = Math.sqrt(gx * gx + gy * gy), head = dt * Math.max(0.05, pull);
+  if (pull > 0) {
+    const vertical = Math.abs(gy) >= Math.abs(gx), fall = vertical ? (gy > 0 ? W : -W) : gx > 0 ? 1 : -1, rise = effect.air.bubbles ? effect.air.bubbles.rise : null;
+    const shut = d => { const i = d % W, j = (d - i) / W; return vertical ? (gy > 0 ? j === H - 1 || vFixed[d + W] : j === 0 || vFixed[d]) : gx > 0 ? i === W - 1 || uFixed[j * X + i + 1] : i === 0 || uFixed[j * X + i]; };
+    // How fast the liquid in a cell ran along gravity at the end of the last step.
+    const runs = d => { const i = d % W, j = (d - i) / W; return vertical ? 0.5 * (state.vOld[d] + state.vOld[d + W]) * Math.sign(gy) : 0.5 * (state.uOld[j * X + i] + state.uOld[j * X + i + 1]) * Math.sign(gx); };
+    const ways = new Map();
+    for (let c = 0; c < N; c++) {
+      const r = label[c];
+      if (r < 0 || !regions[r].tracked) continue;
+      for (let d = c, thick = 0; !shut(d);) {
+        d += fall;
+        if (solid[d]) break;
+        const q = label[d];
+        if (q < 0) { thick++; continue; }
+        const foot = d - fall, span = Math.min(HANG, thick - 1);
+        if (thick && q !== r && holds(q) && (rise === null || runs(foot) < rise) && g.p[foot] - g.p[foot - fall * span] >= 0.5 * span * head) {
+          const key = r * regions.length + q, way = ways.get(key);
+          if (way) way.push(foot); else ways.set(key, [foot]);
+        }
+        break;
+      }
+    }
+    for (const [key, feet] of ways) {
+      const q = key % regions.length, r = (key - q) / regions.length, upper = regions[r], lower = regions[q], gap = at(q) - at(r), w = feet.length;
+      if (!(gap > 0)) continue;
+      let passes = Math.min(DRAW * w * Math.sqrt(pull * w) * dt, gap / (stiffness * (1 / upper.volume + (lower.tracked ? 1 / lower.volume : 0))));
+      if (lower.tracked) { passes = Math.min(passes, lower.air / 2); lower.air -= passes; }
+      upper.air += passes;
+      if (!effect.air.bubbles) continue;
+      upper.owed += passes;
+      if (upper.owed < GULP) continue;
+      air.turn = ((air.turn ?? 0) + 1) % 1024;
+      const e = feet[(7 * air.turn) % w];
+      air.release.push(e % W + 0.5, Math.floor(e / W) + 0.5, upper.owed, 1);
+      upper.owed = 0;
+    }
+  }
   // The gas law, in pixels of head, scaled to the solver's pressure (gravity × depth per step): Pn now and its slope P'.
   // A pocket inside the law's range is an unknown of the solve (see projectLiquid); one squeezed or stretched past four
   // times pushes no harder and holds that pressure, so a nearly closed pocket cannot fling the liquid.
-  const [gx, gy] = effect.gravity, head = dt * Math.max(0.05, Math.sqrt(gx * gx + gy * gy));
   const index = regions.map(() => -1), Pn = [], C = [];
   pressure.fill(0);
   regions.forEach((region, r) => {
@@ -3620,6 +3674,7 @@ function mergeBubbles(list, g, total, gather) {
       if (q.life - q.age > p.life - p.age) { p.age = q.age; p.life = q.life; }
       p.x = x; p.y = y; p.vol = vol; p.size = size; q.gone = true;
       if (q.steam) p.steam = (p.steam ?? 0) + q.steam;
+      if (q.passed) p.passed = (p.passed ?? 0) + q.passed;
       if (q.vol > p.vol - q.vol && q.born !== undefined) p.born = q.born;
     }
   }
@@ -4525,15 +4580,16 @@ function addAir(state, i, j, amount) {
   }
   return false;
 }
-// A bubble that rises into a pocket gives it its air.
-const bubbleEnded = state => p => { if (p.end === 'air') addAir(state, Math.floor(p.x), Math.floor(p.y), p.vol); };
+// A bubble that rises into a pocket gives it its air, less what a pocket has had of it already (`passed`: drawn air,
+// see sealAir).
+const bubbleEnded = state => p => { if (p.end === 'air') addAir(state, Math.floor(p.x), Math.floor(p.y), p.vol - (p.passed ?? 0)); };
 // With air pockets on, bubbles waiting under a ceiling that touch and hold more air together than a bubble can (see
 // mergeBubbles) become a pocket there (physics-model.md section 7): carvePocket clears the cells under the ceiling for
 // their air. A boil's bubbles, which carry vapour, stay bubbles. Null without pockets.
 const gatherOf = run => {
   const { state } = run;
   if (!state.air) return null;
-  return (p, q) => !p.steam && !q.steam && carvePocket(state, run.gravity, (p.x * p.vol + q.x * q.vol) / (p.vol + q.vol), (p.y * p.vol + q.y * q.vol) / (p.vol + q.vol), p.vol + q.vol);
+  return (p, q) => !p.steam && !q.steam && !p.passed && !q.passed && carvePocket(state, run.gravity, (p.x * p.vol + q.x * q.vol) / (p.vol + q.vol), (p.y * p.vol + q.y * q.vol) / (p.vol + q.vol), p.vol + q.vol);
 };
 // Clears a pocket for `vol` square pixels of air at (x, y), under a ceiling: as many whole cells as the air fills, the
 // highest first (against `gravity`, the nearest axis, as a bubble rises) and then the nearest along the ceiling, each
@@ -4585,15 +4641,16 @@ function carvePocket(state, gravity, x, y, vol) {
 // The air of pockets that this frame's steps let go rises as bubbles from where each pocket was: up to nine square pixels
 // of air (a bubble 3 pixels across) each, side by side along the row, drawing from their own random stream. For its first
 // two frames a bubble lives on where the gap it came from has not closed yet. `born` tags a loop's bubbles with their frame.
+// `air.release` holds x, y, the air and whether a pocket has had that air already (drawn air, see sealAir) for each.
 const POCKETS = 3000;
 function releaseAir(air, effect, list, cycle, total, born) {
   const s = effect.air.bubbles, out = air.release;
-  for (let k = 0, n = 0; k < out.length; k += 3) {
+  for (let k = 0, n = 0; k < out.length; k += 4) {
     let volume = out[k + 2];
     for (let m = 0; volume > 0.5; m++, n++) {
       const vol = Math.min(9, volume), r = salt => random(effect.seed, POCKETS, cycle, n, salt);
       volume -= vol;
-      if (!addBubble(list, total, s, out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), out[k + 1], r, { vol, size: bubbleSize(vol), fresh: 2, ...(born !== undefined && { born }) })) return false;
+      if (!addBubble(list, total, s, out[k] + 3 * (m % 2 ? (m + 1) / 2 : -m / 2), out[k + 1], r, { vol, size: bubbleSize(vol), fresh: 2, ...(out[k + 3] && { passed: vol }), ...(born !== undefined && { born }) })) return false;
     }
   }
   out.length = 0;

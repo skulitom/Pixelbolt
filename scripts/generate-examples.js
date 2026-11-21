@@ -940,11 +940,12 @@ const honeyDipper = fluidSource('honey-dipper', 40, 60, { H: '#fff3b0', y: '#f7c
   jar
 });
 // A bottle turned upside down over a glass glugs as it pours (air pockets): the air at its top keeps its amount, so as
-// water leaves, it stretches and holds the rest back until outside air pushes up the neck as a big bubble that rises
-// through the water and joins it, and the next pour follows. Air the pour drives into the glass rises as bubbles (or,
-// where a lot is trapped at once, as a pocket). One-shot: it ends with the bottle empty and the glass settled.
-// After the first gush the water runs down the neck's sides and falls as two trickles a particle wide, thinner than the
-// density draws, so the glass filled with nothing falling into it: the strand layer draws them down to the glass.
+// water leaves, it stretches and holds the rest back, and draws air up through the neck as bubbles that climb to it; the
+// level falls as fast as they come. The bubbles rise faster than the water runs out of the neck (rise 2.5): slower ones
+// crowd in the neck instead of climbing through the body. Air the pour drives into the glass rises as bubbles (or,
+// where a lot is trapped at once, as a pocket). One-shot: it ends with the bottle empty and the glass settled. The
+// stream thins to a particle wide as the bottle empties, thinner than the density draws, so the strand layer draws it
+// down to the glass.
 const glugBottle = shapeRows(16, 33, (x, y) => {
   if (y === 0) return 'G';
   if (y <= 22) return x === 0 || x === 15 ? (x === 0 && y > 2 && y < 20 ? 'h' : 'G') : null;
@@ -953,7 +954,7 @@ const glugBottle = shapeRows(16, 33, (x, y) => {
 });
 const glug = fluidSource('glug', 40, 56, { ...water, G: '#3f7f5f', h: '#bfe8cf', q: '#c7d6e6', Q: '#8fa4bd', t: '#5a4638' }, {
   kind: 'liquid', frames: 124, duration: 60, seed: 3, walls: ['left', 'right', 'bottom'], flip: 0.7,
-  air: { stiffness: 40, bubbles: { colors: ['w'], rise: 0.6, wobble: 0.3 } },
+  air: { stiffness: 40, bubbles: { colors: ['w'], rise: 2.5, wobble: 0.3 } },
   obstacles: [{ symbol: 'bottle', x: 12, y: 1 }, { symbol: 'glass', x: 5, y: 39 }, { symbol: 'table', x: 0, y: 55 }],
   fill: [{ x: 13, y: 4, w: 14, h: 20 }, { x: 14, y: 24, w: 12, h: 1 }, { x: 15, y: 25, w: 10, h: 1 }, { x: 16, y: 26, w: 8, h: 1 }, { x: 17, y: 27, w: 6, h: 1 }, { x: 17, y: 28, w: 6, h: 6 }], emitters: [],
   look: [{ field: 'density', colors: ['b'], thresholds: [0.5], dither: 0 }, { field: 'depth', colors: ['c', 'b'], thresholds: [1, 2], dither: 0 }, { field: 'strand', colors: ['b'], thresholds: [0.5], dither: 0 }], cleanup: { strays: true }
