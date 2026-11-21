@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { rootCertificates } from 'node:tls';
 import { GODOT_FIXTURE, GODOT_TILE_SOURCES, findGodot } from './verify-godot.mjs';
 import { readZip } from './build-studio.mjs';
+import { stampVersion } from './build-godot-addon.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CLI = path.join(ROOT, 'bin/pixelbolt.js');
@@ -153,6 +154,13 @@ async function snapshot(dir, prefix = '') {
   return entries;
 }
 
+// The copied addon says this checkout's version, as a release zip of it does (scripts/build-godot-addon.mjs stamps
+// plugin.cfg), so the checks hold when package.json has moved on and the checked-in plugin.cfg has not.
+async function stampAddon(project, version) {
+  const cfg = path.join(project, 'addons/pixelbolt/plugin.cfg');
+  await writeFile(cfg, stampVersion((await readFile(cfg, 'utf8')).replaceAll('\r\n', '\n'), version));
+}
+
 // On Windows, a copy of the editor in self-contained mode with its own editor settings, so the user's Godot settings
 // never apply and a restricted runner needs no access to the system's certificate store.
 async function isolatedGodot(godot, root, version) {
@@ -174,6 +182,19 @@ async function godotVersion(godot) {
   return probe.output.trim().split(/\r?\n/)[0];
 }
 
+// A release zip's entries, every name checked before anything is written: each lands inside `dir`'s
+// addons/pixelbolt/, so no entry can write outside the throwaway project.
+export function addonZipEntries(bytes, dir) {
+  const entries = readZip(bytes), addon = path.join(path.resolve(dir), 'addons', 'pixelbolt') + path.sep;
+  assert.ok(entries.has('addons/pixelbolt/plugin.cfg'), 'The zip has no addons/pixelbolt/plugin.cfg at its root');
+  for (const name of entries.keys()) {
+    assert.match(name, /^addons\/pixelbolt\/[^/]/, `Every file in the zip is under addons/pixelbolt/: ${name}`);
+    assert.ok(!name.includes('\\') && !name.includes(':') && name.split('/').every(part => part && part !== '.' && part !== '..'), `Unsafe name in the zip: ${name}`);
+    assert.ok(path.resolve(dir, name).startsWith(addon), `Unsafe name in the zip: ${name}`);
+  }
+  return entries;
+}
+
 // The release zip as a user installs it: unzipped into a fresh project, which then holds only addons/pixelbolt/ from
 // the zip, the project file that enables it and one recipe, the shipped hero. Godot must import it with no error or
 // warning, as a SpriteFrames equal to the CLI's own, field by field and pixel by pixel.
@@ -188,12 +209,8 @@ export async function verifyAddonZip({ godot = findGodot(), zip, work = os.tmpdi
   const dir = path.join(root, 'zip project');
   try {
     godot = await isolatedGodot(godot, root, version);
-    const entries = readZip(await readFile(zip));
-    assert.ok(entries.has('addons/pixelbolt/plugin.cfg'), 'The zip has no addons/pixelbolt/plugin.cfg at its root');
-    for (const [name, entry] of entries) {
-      assert.match(name, /^addons\/pixelbolt\/[^/]/, 'Every file in the zip is under addons/pixelbolt/');
-      await put(dir, name, entry.read());
-    }
+    const entries = addonZipEntries(await readFile(zip), dir);
+    for (const [name, entry] of entries) await put(dir, name, entry.read());
     assert.match(entries.get('addons/pixelbolt/plugin.cfg').read().toString(), new RegExp(`^version="${packageVersion.replaceAll('.', '\\.')}"$`, 'm'));
     await sandboxSettings(dir);
     await put(dir, 'project.godot', projectText());
@@ -250,6 +267,7 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
     await mkdir(dir, { recursive: true });
     await sandboxSettings(dir);
     await cp(path.join(ROOT, 'godot/addons/pixelbolt'), path.join(dir, 'addons/pixelbolt'), { recursive: true });
+    await stampAddon(dir, packageVersion);
     assert.deepEqual(await readFile(path.join(dir, 'addons/pixelbolt/LICENSE')), await readFile(path.join(ROOT, 'LICENSE')));
     await cp(path.join(ROOT, 'godot/tests/check.gd'), path.join(dir, 'check.gd'));
     await cp(path.join(ROOT, 'godot/tests/discovery.gd'), path.join(dir, 'discovery.gd'));
@@ -412,6 +430,7 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
     await mkdir(demo);
     await sandboxSettings(demo);
     for (const name of ['project.godot', 'demo', 'addons']) await cp(path.join(ROOT, 'godot', name), path.join(demo, name), { recursive: true });
+    await stampAddon(demo, packageVersion);
     let demoProject = await readFile(path.join(demo, 'project.godot'), 'utf8');
     demoProject = demoProject.replace(/^cli\/path=.*$/m, 'cli/path=' + quote(CLI));
     await put(demo, 'project.godot', demoProject);

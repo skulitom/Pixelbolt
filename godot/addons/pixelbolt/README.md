@@ -18,17 +18,17 @@ Project Settings, with **Advanced Settings** enabled:
 
 | Setting under Pixelbolt | Default and meaning |
 | --- | --- |
-| CLI / Path | Empty. A CLI executable or `bin/pixelbolt.js`, absolute or relative to the project. |
-| CLI / Node Path | Empty: `node` on PATH. Used for JavaScript CLI scripts. |
-| CLI / Allow Npx | Off. Explicit opt-in to downloading and executing a pinned npm package. |
-| CLI / Npx Version | This addon's version; an exact version, never `latest`. |
+| Cli / Path | Empty. A CLI executable or `bin/pixelbolt.js`, absolute or relative to the project. |
+| Cli / Node Path | Empty: `node` on PATH. Used for JavaScript CLI scripts. |
+| Cli / Allow Npx | Off. Explicit opt-in to downloading and executing a pinned npm package. |
+| Cli / Npx Version | This addon's version; an exact version, never `latest`. |
 | Import / Timeout Seconds | 120, shared by compile and render. |
 
 Discovery order: configured CLI, project `node_modules/pixelbolt/bin/pixelbolt.js`,
 `pixelbolt` on PATH, then opt-in `npx`. Windows npm global scripts are run
 directly through Node when available; other `.cmd`/`.bat` files use `cmd.exe`.
 Batch commands reject paths containing `%`, `^`, quotes or newlines to prevent
-shell expansion; point CLI / Path directly at `bin/pixelbolt.js` in that case.
+shell expansion; point Cli / Path directly at `bin/pixelbolt.js` in that case.
 The resolved package version and source path are saved in the resource's
 `pixelbolt` metadata. Unidentifiable executable versions are `unknown`.
 
@@ -45,6 +45,6 @@ resolved from the recipe's folder.
 
 If Node is missing in an editor launched from a desktop shortcut, set its full
 path. If a tile recipe has no animations, choose the TileSet importer. On timeout
-the CLI is terminated (including its process tree on Windows), and the temporary
-render folder is removed. A failed import is intentionally not an editor warning:
-its single Output line says whether the previous import was kept.
+the CLI and every process it started are terminated, and the temporary
+render folder is removed. A failed import prints one red line in the Output, which
+Godot counts as an error, and says whether the previous import was kept.

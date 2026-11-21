@@ -91,11 +91,15 @@ static func kill_tree(pid: int) -> void:
 		# Direct termination also closes the 4.3 reader pipes if system helpers failed.
 		if OS.is_process_running(pid):
 			OS.kill(pid)
+		var until := Time.get_ticks_msec() + 5000
+		while OS.is_process_running(pid) and Time.get_ticks_msec() < until:
+			OS.delay_msec(10)
 	else:
+		# Godot starts the CLI in a session of its own (setsid), so its process group id is its pid: end the whole
+		# group (an npx or shell wrapper's node child too), then OS.kill reaps the CLI itself. Never ask about this pid
+		# again afterwards: OS.kill has reaped it without telling Godot, which would log an error on the next query.
+		OS.execute("kill", PackedStringArray(["-KILL", "--", "-%d" % pid]))
 		OS.kill(pid)
-	var until := Time.get_ticks_msec() + 5000
-	while OS.is_process_running(pid) and Time.get_ticks_msec() < until:
-		OS.delay_msec(10)
 
 static func run(command: Dictionary, arguments: PackedStringArray, deadline: int) -> Dictionary:
 	var program: String = command["exe"]
@@ -145,7 +149,7 @@ static func run(command: Dictionary, arguments: PackedStringArray, deadline: int
 			kill_tree(pid)
 			break
 		OS.delay_msec(10)
-	var code := OS.get_process_exit_code(pid)
+	var code := -1 if timed_out else OS.get_process_exit_code(pid)
 	if modern:
 		for i in 2:
 			while true:
@@ -166,8 +170,12 @@ static func run(command: Dictionary, arguments: PackedStringArray, deadline: int
 	var errors: String = buffers[1].get_string_from_utf8()
 	if code != 0:
 		if parser.parse(errors) == OK and parser.data is Dictionary and parser.data.has("error"):
-			return {"error": "%s%s; fix the recipe and reimport." % [
-				str(parser.data["path"]) + ": " if parser.data.has("path") else "", str(parser.data["error"])]}
+			# Pixelbolt's message usually starts with its path already; name the path only when it doesn't.
+			var message := str(parser.data["error"])
+			var where := str(parser.data.get("path", ""))
+			if not where.is_empty() and not message.begins_with(where):
+				message = where + ": " + message
+			return {"error": message + "; fix the recipe and save it."}
 		return {"error": "CLI exited %d: %s; check the CLI installation and recipe." % [code, errors.left(1000)]}
 	if parser.parse(output) != OK or not parser.data is Dictionary or parser.data.get("ok") != true:
 		return {"error": "Unreadable CLI reply; use a supported Pixelbolt CLI and reimport."}
