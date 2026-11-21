@@ -24,10 +24,10 @@ test('a preview row wider than 256 tiles is refused at compile, by the path the 
     assert.throws(() => compileAutotile({ ...blob, preview: { rows: ['#'.repeat(width)] } }), refused(width));
     assert.throws(() => compileAutotile({ ...layered, preview: { rows: ['g'.repeat(width), 'd'.repeat(width)] } }), refused(width));
   }
-  // Rows of different widths keep their own message, and a wide row with a character the set doesn't draw is refused for its width first.
+  // Rows of different widths and characters the set doesn't draw keep their own messages.
   assert.throws(() => compileAutotile({ ...blob, preview: { rows: ['#'.repeat(257), '#'.repeat(256)] } }), /autotile\.preview\.rows\[1\]: all rows must be 257 characters wide/);
-  assert.throws(() => compileAutotile({ ...blob, preview: { rows: ['x'.repeat(300)] } }), refused(300));
-  // At 16 pixels a tile the picture's own cap (4096 a side) and the row cap meet: 256 tiles fit, 257 are refused for the row.
+  assert.throws(() => compileAutotile({ ...blob, preview: { rows: ['x'.repeat(300)] } }), /autotile\.preview\.rows\[0\]: character "x" at column 0 is not one this set draws/);
+  // At 16 pixels a tile the picture's own cap (4096 a side) and the row cap meet: 256 tiles fit, and 257 keep the picture's message.
   assert.equal(compileAutotile({ ...blob, tile: 16, preview: { rows: ['#'.repeat(256)] } }).preview.width, 4096);
-  assert.throws(() => compileAutotile({ ...blob, tile: 16, preview: { rows: ['#'.repeat(257)] } }), refused(257));
+  assert.throws(() => compileAutotile({ ...blob, tile: 16, preview: { rows: ['#'.repeat(257)] } }), /257 by 1 tiles of 16 pixels is more than one picture holds/);
 });
