@@ -54,7 +54,9 @@ test('an agent inspects a socket sweep, reuses the model by id and gets the same
   t.after(() => { mcp.input.end(); return mcp.running; });
   await mcp.init();
   const source = { format:'pixelforge-stack', version:1, name:'rotor', slices:[['k.','..']], palette:{k:'#fff'},
-    sockets:{bit:{at:[1,1,2],axis:'x'}}, facets:[{socket:'bit',color:'k',points:[[1,0,0],[3,3,0],[3,2,1]],twoSided:true}] };
+    sockets:{bit:{at:[1,1,2],axis:'x'}}, facets:[{socket:'bit',color:'k',points:[[1,0,0],[3,3,0],[3,2,1]],twoSided:true}],
+    contours:{lip:[[0,0,1],[1,0,2],[3,1,2]],chin:[[0,1,0],[2,2,0],[3,1,2]]},
+    lofts:[{socket:'bit',contours:['lip','chin'],bands:['k'],mirror:'x',twoSided:true}] };
   const rotate = { socket:'bit', heading:35, degrees:[0,45,90] };
   const first = await mcp.call('pixel_inspect',{source,rotate,scale:1});
   assert.ok(first.info.ok, first.info.error);

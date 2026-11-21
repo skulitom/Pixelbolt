@@ -1,4 +1,4 @@
-// Model-space sockets and flat faces for sprite stacks. Rasterize at pixel centres with a
+// Model-space sockets, flat faces and lofts between named contours for sprite stacks. Rasterize at pixel centres with a
 // half-open edge rule, then depth-sort glass and solid hits together with the voxel traversal.
 import { fail, isObject, portableName } from './core.js';
 import { fields, number, integer, boolean } from './authoring.js';
@@ -61,7 +61,69 @@ export function stackGeometry(source) {
       })
     };
   });
+  appendLofts(source, facets, readSocket);
   return { sockets, facets };
+}
+
+// Each band joins corresponding vertices with the same diagonal. Reflection keeps
+// that diagonal and reverses winding. Shared seam faces are emitted only once.
+function appendLofts(source, facets, readSocket) {
+  const definitions = source.contours ?? {};
+  if (!isObject(definitions) || Object.keys(definitions).length > 128)
+    fail('stack.contours', 'expected up to 128 named contours');
+  const contours = new Map();
+  for (const [name, points] of Object.entries(definitions)) {
+    const path = 'stack.contours.' + name;
+    portableName(name, path);
+    if (!Array.isArray(points) || points.length < 2 || points.length > 32)
+      fail(path, 'expected 2–32 points in matching order');
+    contours.set(name, points.map((p, i) => triple(p, path + '[' + i + ']')));
+  }
+  const lofts = source.lofts ?? [];
+  if (!Array.isArray(lofts) || lofts.length > 128) fail('stack.lofts', 'expected up to 128 lofts');
+  for (const [index, loft] of lofts.entries()) {
+    const path = 'stack.lofts[' + index + ']';
+    fields(loft, ['contours', 'bands', 'closed', 'mirror', 'socket', 'twoSided'], path);
+    const refs = loft.contours;
+    if (!Array.isArray(refs) || refs.length < 2 || refs.length > 32)
+      fail(path + '.contours', 'expected 2–32 named contours');
+    const closed = boolean(loft.closed ?? false, path + '.closed');
+    const rows = refs.map((name, i) => {
+      const p = path + '.contours[' + i + ']';
+      const row = contours.get(name);
+      if (!row) fail(p, 'unknown contour');
+      if (i && name === refs[i - 1]) fail(p, 'adjacent contours must differ');
+      if (row.length !== contours.get(refs[0]).length) fail(p, 'contours must have matching point counts');
+      if (closed && row.length < 3) fail(p, 'a closed contour needs at least three points');
+      return row;
+    });
+    const socket = readSocket(loft.socket, path + '.socket');
+    const twoSided = boolean(loft.twoSided ?? false, path + '.twoSided');
+    const mirror = ['x', 'y', 'z'].indexOf(loft.mirror);
+    if (loft.mirror !== undefined && mirror < 0) fail(path + '.mirror', 'expected x, y or z');
+    const spans = rows[0].length - (closed ? 0 : 1);
+    if (!Array.isArray(loft.bands) || loft.bands.length !== rows.length - 1)
+      fail(path + '.bands', 'give one palette band per pair of contours');
+    function emit(vertices, ink) {
+      if (facets.length >= 2048) fail(path, 'lofts and facets together exceed 2,048 faces');
+      facets.push({ ink, twoSided, points: vertices.map(xyz => ({ xyz, socket })) });
+    }
+    for (const [r, colors] of loft.bands.entries()) {
+      if (typeof colors !== 'string' || (colors.length !== 1 && colors.length !== spans) ||
+          [...colors].some(c => !Object.hasOwn(source.palette, c)))
+        fail(path + '.bands[' + r + ']', 'give one palette key or one per span (' + spans + ')');
+      for (let i = 0; i < spans; i++) {
+        const j = (i + 1) % rows[r].length;
+        const vertices = [rows[r][i], rows[r][j], rows[r + 1][j], rows[r + 1][i]];
+        const ink = colors[colors.length === 1 ? 0 : i].charCodeAt(0);
+        emit(vertices, ink);
+        if (mirror >= 0 && vertices.some(p => p[mirror] !== 0)) {
+          const reversed = [vertices[0], vertices[3], vertices[2], vertices[1]];
+          emit(reversed.map(p => p.map((v, axis) => axis === mirror ? -v : v)), ink);
+        }
+      }
+    }
+  }
 }
 
 export function socketPose(sockets, heading) {

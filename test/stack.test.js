@@ -269,6 +269,73 @@ test('two crossing faces swap visibility with depth and a triangulated glass squ
   for(const frame of single.frames) assert.equal(frame.data.filter((v,i)=>i%4===3&&v===128).length,16*16);
 });
 
+test('lofts paint matching spans and mirror the same diagonal on a moving socket', () => {
+  const a = [[0,0,0], [2,1,1], [4,-1,2]], b = [[0,0,4], [2,2,3], [4,1,5]];
+  const c = a.map(([x,y,z]) => [x, y + 1, z + 6]);
+  const base = { ...block, headings: [0,31,90,180,225,315], resolution: 3,
+    palette: { ...block.palette, g: '#98bfdf80' },
+    sockets: { head: { at: [1,1,3], axis: 'y', keys: [{heading:0},{heading:180,angle:30}] } } };
+  for (const mirror of ['x','y','z']) {
+    const axis = 'xyz'.indexOf(mirror);
+    const reflect = p => p.map((v, i) => i === axis ? -v : v);
+    const facets = [];
+    const expected = (p, q, r, s, color) => {
+      facets.push({ socket: 'head', color, points: [p,q,r,s] });
+      facets.push({ socket: 'head', color, points: [p,s,r,q].map(reflect) });
+    };
+    expected(a[0],a[1],b[1],b[0],'g');
+    expected(a[1],a[2],b[2],b[1],'k');
+    expected(a[2],a[0],b[0],b[2],'s');
+    expected(b[0],b[1],c[1],c[0],'s');
+    expected(b[1],b[2],c[2],c[1],'s');
+    expected(b[2],b[0],c[0],c[2],'s');
+    const lofts = [{ socket:'head', contours:['a','b','c'], bands:['gks','s'], closed:true, mirror }];
+    assert.deepEqual(compileStack({ ...base, contours:{a,b,c}, lofts }).recipe,
+      compileStack({ ...base, facets }).recipe);
+  }
+  // A translucent panel lying entirely on its mirror plane must be emitted once.
+  const source = { ...base, contours:{ a:[[0,-2,0],[0,1,0]], b:[[0,-2,3],[0,1,3]] } };
+  const panel = { socket:'head', contours:['a','b'], bands:['g'], twoSided:true };
+  assert.deepEqual(compileStack({ ...source, lofts:[{...panel, mirror:'x'}] }).recipe,
+    compileStack({ ...source, lofts:[panel] }).recipe);
+});
+
+test('lofts reject unmatched landmarks, invalid bands and excess geometry at the source field', () => {
+  const a = [[0,0,0],[1,1,1]], b = [[0,0,2],[1,1,2]];
+  const contours = { a, b, long: [...a,[2,0,1]] };
+  const loft = { contours:['a','b'], bands:['k'] };
+  for (const [edit,field] of [
+    [{contours:['a','missing']}, 'contours'], [{contours:['a','long']}, 'contours'],
+    [{contours:['a','a']}, 'contours'], [{closed:true}, 'closed contour'],
+    [{bands:[]}, 'bands'], [{bands:['z']}, 'bands'], [{bands:['kk']}, 'bands'],
+    [{mirror:'w'}, 'mirror'], [{socket:'typo'}, 'socket'], [{twoSided:3}, 'twoSided']
+  ]) assert.throws(() => prepareStack({ ...block, contours, lofts:[{...loft,...edit}] }), new RegExp(field));
+  assert.throws(() => prepareStack({ ...block, contours:{ a:[[0,0,0]] } }), /contours.a/);
+  const faces = Array(2048).fill({ color:'s', points:[[0,0,0],[1,1,1],[2,0,1]] });
+  assert.throws(() => prepareStack({ ...block, contours, lofts:[loft], facets:faces }), /2,048/);
+});
+
+test('Rimefiend keeps both outer lids and the mouth visible from profile to profile', async () => {
+  const source = JSON.parse(await readFile(new URL('../showcase/rimefiend/rimefiend.stack.json',import.meta.url)));
+  const [mouth, eye] = source.lofts;
+  // Mark only the outer four eye spans. A visible inner corner cannot mask a lost outer rim.
+  Object.assign(source.palette, { U:'#ff00ff', V:'#00ff00', W:'#00ffff', X:'#ffff00' });
+  eye.bands[1] = eye.bands[1].slice(0,-4) + 'UUUU';
+  eye.bands[6] = eye.bands[6].slice(0,-4) + 'VVVV';
+  mouth.bands[2] = 'W'; // recessed opening between the gum and the throat
+  mouth.bands[4] = 'X'; // lower lip to jaw ridge
+  source.headings = Array.from({length:31}, (_, i) => (225 + i * 6) % 360);
+  const colors = [0xff00ff, 0x00ff00, 0x00ffff, 0xffff00];
+  for (const {name, data} of renderProject(compileStack(source).recipe).frames) {
+    const counts = [0,0,0,0];
+    for (let i=0; i<data.length; i+=4) {
+      const index = colors.indexOf((data[i] << 16) | (data[i+1] << 8) | data[i+2]);
+      if (index >= 0 && data[i+3] === 255) counts[index]++;
+    }
+    assert.ok(counts.every(n => n >= 5), name + ' visible feature pixels: ' + counts);
+  }
+});
+
 test('invalid sources and excessive projections are refused before drawing', () => {
   for (const [change, field] of [
     [{ resolution: 1.5 }, 'resolution'], [{ projection: 'iso', squash: 1 }, 'squash'],
@@ -325,7 +392,8 @@ golden.test('Rimefiend keeps the crystal nail and painted wing webs registered t
   const source=JSON.parse(await readFile(new URL('../showcase/rimefiend/rimefiend.stack.json',import.meta.url)));
   const hand=JSON.parse(await readFile(new URL('../showcase/rimefiend/index-study.json',import.meta.url)));
   const model=prepareStack(source);
-  for(const [name,request] of [['index',hand],['wings',{poses:['open','folded'],headings:[315,153]}]]) {
+  for(const [name,request] of [['index',hand],['wings',{poses:['open','folded'],headings:[315,153]}],
+    ['face',{poses:['open'],headings:[225,315,45]}]]) {
     const recipe=model.poseStudy(request), pixels=createHash('sha256');
     for (const frame of renderProject(recipe).frames) pixels.update(frame.data);
     golden.equal('rimefiend-'+name,pixels.digest('hex'),{recipe});

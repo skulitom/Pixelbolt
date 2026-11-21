@@ -286,6 +286,31 @@ Give `pixelbolt inspect model.stack.json --pose-sheet study.json --out poses.png
 
 Over MCP call `pixel_inspect` with `source` and the same object as `poseSheet`. Reuse `sourceRevision` for another study, or inspect the returned baked `revision` as ordinary frames.
 
+### Named contours and lofts
+
+Use a contour for a line of landmarks that several surfaces share. On a face, run each row from the centre of the muzzle to the corner of the mouth. Move the corner back along the cheek in model coordinates so the lip still turns the corner in profile.
+
+```json
+{
+  "contours": {
+    "upperLip": [[0,5,4],[2,5,4],[3,3,4]],
+    "mouth":    [[0,4,3],[2,4,3],[3,3,4]],
+    "lowerLip": [[0,5,2],[2,5,2],[3,3,4]]
+  },
+  "lofts": [{
+    "contours": ["upperLip","mouth","lowerLip"],
+    "bands": ["kd","d"],
+    "socket": "head", "mirror": "x", "twoSided": true
+  }]
+}
+```
+
+Here the stack supplies a `head` socket and palette keys `k` and `d`. A loft joins successive rows with quads. Give each row the same number of points, ordered from the same end. A band is one palette key for the whole strip or one key per span along it. The three rows above form two bands with two spans each. The last landmarks coincide to taper the mouth closed. A contour can appear in several lofts, so editing its points moves both adjoining surfaces.
+
+Points are in socket-local coordinates when the loft names a socket and in model coordinates otherwise. `mirror` adds a reflected copy across the local x, y or z zero plane, preserving the outward winding. By default a quad faces out along the winding from the first row's first point to its next point, then across to the next row. Use `twoSided` for an open fold visible from either side. Set `closed:true` to join the last point of each row back to its first. This adds one paint span per band and leaves the ends uncapped.
+
+A stack accepts up to 128 named contours and 128 lofts. A contour has 2–32 points (at least three for closed rows). A loft joins 2–32 rows. Its quads, including mirror copies, use the same 2,048-face budget as facets, paths and membranes. [Rimefiend's profile study](../showcase/rimefiend/README.md) uses the same mouth and eyelid contours across the turn.
+
 ### Facets and moving attachments
 
 For a crisp beam or gem, add a `facets` entry such as `{"color":"g","points":[[0,0,1],[3,0,1],[0,3,1]]}`. Vertices are in model units from the minimum footprint corner, z pointing up. A face has 3–16 vertices in boundary order, forming a triangle fan. An outward counterclockwise face draws on its front. Use `twoSided:true` for an open plate. A glass shell made from outward-facing facets draws its visible faces once. Plates, glass, and voxels occlude one another per pixel. In a depth tie facets follow voxels, then file order. The side-painting panel edits the voxel portion.

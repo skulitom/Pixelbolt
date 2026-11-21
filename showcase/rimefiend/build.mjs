@@ -27,7 +27,7 @@ const round=p=>p.map(n=>+n.toFixed(3));
 const clamp=(x,l,h)=>Math.max(l,Math.min(h,x));
 const light=unit([-.57,.54,.76]);
 const width=52, depth=30, height=51, origin=[25.5,9.5,0];
-const facets=[];
+const facets=[], contours={}, lofts=[];
 const wings={}, paths={}, membranes=[];
 const poses={open:{},half:{},curled:{},folded:{}};
 function face(points,color,socket='body',twoSided=false) {
@@ -169,27 +169,107 @@ for(const s of [-1,1]) {
   mark(side([[1.52,8.29,52.79],[2.75,7.45,52.87],[2.24,8.19,52.4]]),'7');
   relief(side([[3.38,4.15,51.28],[4.31,3.62,52.54],[5.42,4.42,52.78],[4.34,6.32,51.84],[3.42,7.42,51.15]]),[s*4.25,5.61,52.65],'23456');
   relief(side([[3.9,8.7,46.63],[5.08,7.2,46.88],[5.01,6.23,44.62],[3.37,8.94,43.04],[2.15,10.04,42.94],[3.0,10.16,44.37]]),[s*4.25,9.18,45.21],'123456');
-  const socket=side([[.56,9.98,48.2],[1.95,10.03,49.36],[4.27,8.98,49.93],[4.0,9.61,48.34],[2.02,10.2,47.72]]);
-  mark(socket,'k');
-  mark(side([[.92,10.11,48.42],[2.16,10.14,48.96],[3.74,9.52,49.24],[3.02,9.97,48.56],[1.69,10.22,48.22]]),'E');
-  mark(side([[1.65,10.25,48.55],[2.02,10.25,48.8],[2.36,10.18,48.79],[2.07,10.24,48.42]]),'Q');
-  relief(side([[.22,9.94,48.37],[.59,9.27,50.2],[3.7,7.92,51.25],[5.35,6.6,50.1],[3.95,9.14,49.48],[1.4,10.26,48.72]]),[s*2.22,10.45,49.65],'234678');
-  relief(side([[2.8,10.08,47.95],[4.7,8.9,48.6],[5.35,7.9,47.25],[3.45,10.06,45.9],[2.65,10.43,46.29]]),[s*3.85,10.51,47.15],'23567');
+  // A brow ledge casts a painted dark underside onto an inset, amber eye.
+  // The lateral end turns back along the temple instead of ending on the front plane.
+  const draw=(points,c)=>mark(side(points),c);
+  const raised=(points,peak,ramp)=>relief(side(points),[s*peak[0],peak[1],peak[2]],ramp);
+  raised([[.46,10.25,48.77],[1.06,9.6,50.44],[3.46,8.02,51.01],[5.12,6.21,50.55],[5.52,6.87,49.5],[4.32,9.1,49.35],[1.23,11.15,48.51]],
+         [2.41,11.45,50.1],'2345678');
+  // Zygomatic arch sweeps outward and back to the hinge of the jaw.
+  raised([[1.65,10.34,47.69],[3.65,9.78,48.32],[5.32,7.15,49.03],[5.73,5.7,48.25],[5.76,6.33,46.6],[4.29,9.46,45.77],[3.34,10.62,45.97]],
+         [4.38,10.85,47.51],'1234567');
+  raised([[3.78,9.89,46.54],[5.58,7.45,47.41],[5.36,6.84,45.41],[4.5,7.97,43.7],[3.94,9.84,43.43],[3.89,10.65,44.77]],
+         [4.83,9.63,45.42],'12345');
+  // The rim, concha and tragus form a folded ear with thickness in profile.
+  raised([[4.08,5.11,48.73],[5.63,3.95,50.12],[8.37,.18,50.78],[7.76,.77,48.91],[6.48,2.38,47.35],[5.16,4.51,46.67]],
+         [6.76,3.84,49.01],'345667');
+  draw([[5.37,4.88,48.95],[6.42,3.89,49.52],[8.04,.87,50.25],[7.03,2.66,48.43],[5.82,4.53,47.51]],'2');
+  draw([[5.42,4.93,48.85],[6.49,4.03,49.32],[7.5,2.11,49.7],[6.27,4.14,48.91]],'6');
+  raised([[5.72,4.75,48.62],[6.37,4.25,48.58],[5.88,4.72,47.57],[5.38,4.94,47.17]],
+         [6.08,5.35,48.18],'33456');
+  // Far end of the jaw has a masseter muscle under the cheekbone.
+  raised([[5.12,7.65,47.1],[5.63,6.04,47.29],[5.54,4.64,46.35],[4.83,4.85,43.02],[4.05,7.11,42],[4.36,9.17,43.85]],
+         [5.72,6.57,44.81],'223456');
+  draw([[5.62,6.15,46.62],[5.89,6.57,45.91],[5.48,7.42,44.38],[5.61,6.89,45.65]],'3');
+  // Flaring nostril wings sit forward of the cheek; the black opening is on
+  // the front/side plane and the warm lip catches a two-pixel highlight.
+  raised([[.32,12.04,47.53],[1.1,11.48,48.03],[1.96,10.67,47.62],[2.31,10.77,46.75],[1.78,11.83,46.44],[.67,12.49,46.55]],
+         [1.45,13.02,47.2],'234567');
+  draw([[.79,12.74,46.92],[1.45,13.06,47.15],[1.98,12.25,47.13],[1.72,12.45,46.62],[1.09,12.75,46.55]],'k');
+  draw([[0,12.3,43.01],[1.61,12.12,43.17],[2.34,11.96,43.48],[.54,11.92,43.62],[0,11.95,43.48]],'i');
+  // A round base and hooked tip let the canine read against the lips even edge-on.
+  const tooth=(x,y,z,length,radius)=>{
+    const tip=[s*(x-.28),y+.35,z-length];
+    const vertices=Array.from({length:5},(_,i)=>[s*(x+radius*cosDeg(i*72)),y+.83*radius*sinDeg(i*72),z]);
+    for(let i=0;i<5;i++) mark([vertices[i],vertices[(i+1)%5],tip],['y','w','w','a','g'][s>0?i:4-i]);
+  };
+  tooth(2.7,12.38,46.03,2.52,.65);
+  tooth(1.39,12.69,45.8,.76,.37);
+  tooth(.45,12.62,45.82,.64,.39);
+  tooth(3.62,11.55,46.03,.76,.38);
+  // A curled lower lip leaves a dark break above the angular chin pad.
+  draw([[.12,12.52,42.68],[1.24,12.59,42.81],[2.38,12.17,43.19],[2.13,12.38,42.75],[.73,12.71,42.41]],'l');
+  raised([[.13,12.42,42.19],[1.73,12.14,42.44],[2.72,11.24,42.11],[1.62,11.82,40.69],[.19,12.05,40.67]],
+         [1.09,13,41.59],'234566');
+  draw([[.04,12.56,41.97],[.29,12.75,41.71],[.17,12.42,41.03]],'2');
+  tooth(3.15,11.49,43.61,-1.56,.50);
+  tooth(1.55,12.13,43.05,-.64,.34);
 }
-relief([[-1.32,10.15,47.2],[-.55,9.95,49.05],[.52,9.95,49.05],[1.45,10.15,47.05],[.65,10.93,46.69],[-.64,10.93,46.69]],[0,11.48,47.26],'124568');
-const maw=[[-3.6,9.94,46.24],[-2.08,10.47,46.23],[-.85,10.72,46.02],[0,10.82,46.18],[1.4,10.63,46.03],[3.5,9.98,46.4],[3.05,10.12,44.5],[1.76,10.57,43.43],[0,10.7,43.12],[-1.9,10.56,43.52],[-2.94,10.23,44.38]];
-relief(maw,[0,10.98,44.8],'m');
-mark([[-1.92,10.72,43.85],[0,10.96,43.5],[1.68,10.7,43.8],[.43,10.99,44.3],[-.65,10.96,44.38]],'j');
-for(const s of [-1,1]) for(const [x,z,len,w] of [[2.45,46.18,1.97,1.12],[1.18,46.02,.89,.75],[.42,46.05,.63,.58],[2.05,43.86,-1.18,.8],[.97,43.54,-.62,.68]]) {
-  const y=11.12-.12*x;
-  mark([[s*(x-w/2),y,z],[s*(x+w/2),y-.08,z+.12],[s*(x-.16),y+.15,z-len]],len>1?'w':'y');
+relief([[-.48,10.34,49.62],[.48,10.34,49.62],[1.16,11.85,47.59],[.68,13.11,46.89],[-.67,13.09,46.89],[-1.16,11.85,47.59]],
+       [0,13.5,47.46],'234568');
+
+// Matching landmarks travel from the centreline to the mouth corner. The gum
+// and the adjoining front wall of the muzzle share the same upper lip.
+contours.snout=[[0,12.05,46.87],[1.18,11.88,46.76],[2.37,11.43,46.68],[3.46,10.68,46.69],[4.32,9.4,46.92],[4.95,7.81,46.98]];
+contours.upperLip=[[0,13.03,46.14],[1.17,13.12,46.09],[2.36,12.76,46.27],[3.48,12.03,46.29],[4.6,10.39,46.59],[5.24,7.8,46.8]];
+contours.gum=contours.upperLip.map(([x,y,z],i)=>[x,y-.12,z-[.34,.39,.53,.49,.34,.12][i]]);
+contours.lowerLip=[[0,12.36,42.7],[1.18,12.42,42.84],[2.42,11.97,43.26],[3.59,11.08,43.75],[4.65,9.9,44.77],[5.24,7.8,46.52]];
+contours.throat=contours.lowerLip.map(([x,y,z],i)=>[x,y-[1.29,1.29,1.17,.93,.52,.12][i],z+[1.02,.98,.86,.66,.42,.12][i]]);
+contours.jawRidge=[[0,12.32,41.73],[1.23,12.17,41.78],[2.55,11.49,42.04],[3.72,10.44,42.71],[4.85,8.62,43.87],[5.1,6.37,45.64]];
+contours.jawBase=[[0,10.83,40.32],[1.19,10.83,40.49],[2.42,10.38,40.88],[3.61,9.34,41.78],[4.48,7.64,43.54],[4.64,6.05,45.31]];
+contours.underChin=[[0,8.45,41.72],[1.2,8.4,41.61],[2.4,8.06,41.94],[3.47,7.18,42.76],[4.2,6.17,44],[4.4,5.17,45.4]];
+lofts.push({socket:'body',mirror:'x',twoSided:true,
+  contours:['snout','upperLip','gum','throat','lowerLip','jawRidge','jawBase','underChin'],
+  bands:['66554','jijj2','m','jjmm1','55543','34332','22111']});
+
+// Stations run from the tear duct around the eye to the temple. The outer
+// rim projects sideways. Both rims sit proud of the amber iris.
+const orbit=[
+  [.82,10.85,48.18,.12,0],[1.48,10.97,48.33,.44,10],[2.26,10.85,48.48,.55,16],
+  [2.53,10.83,48.63,.66,22],[3.30,10.43,48.79,.76,28],[3.97,10.17,48.91,.69,38],
+  [4.87,9.46,48.91,.58,52],[5.64,8.13,48.96,.50,70],[5.93,6.97,49.04,.34,83],[6.1,5.97,49.16,0,90]
+];
+function lidContour(height,offset,lift) {
+  return orbit.map(([x,y,z,half,angle])=>{
+    const taper=Math.min(1,half/.52);
+    return round([x+taper*offset*sinDeg(angle),y+taper*offset*cosDeg(angle),z+height*half+taper*lift]);
+  });
 }
+contours.browFold=lidContour(1,-.27,.95);
+contours.upperLid=lidContour(1,.44,.32);
+contours.upperLash=lidContour(1,.38,-.07);
+contours.irisTop=lidContour(1,.03,-.12);
+contours.irisMiddle=lidContour(0,.09,.06);
+contours.irisBottom=lidContour(-1,0,.08);
+contours.lidWaterline=lidContour(-1,.25,-.04);
+contours.lowerLid=lidContour(-1,.40,-.27);
+contours.cheekFold=lidContour(-1,-.27,-.75);
+lofts.push({socket:'body',mirror:'x',twoSided:true,
+  contours:['browFold','upperLid','upperLash','irisTop','irisMiddle','irisBottom','lidWaterline','lowerLid','cheekFold'],
+  bands:['567766544','332222323','k','aEQkEEya3','aEEkEEag2','211212323','455676554','334443332']});
 for(const s of [-1,1]) {
   const side=nodes=>nodes.map(([x,y,z,...rest])=>[s*x,y,z,...rest]);
   sweep(side([[3.14,4.72,50.65,2.64],[4.48,4.25,52.4,2.22]]),'23456',{sides:8});
   crystal(side([[3.92,4.52,51.5,2.48],[5.98,3.94,53.2,2.34],[7.74,2.48,55.26,1.96],[8.32,.36,57.66,1.52],[7.77,-1.22,59.68,1.04],[5.7,-2.48,61.12,.015]]),{phase:17});
   crystal(side([[4.25,2.7,49.6,1.52],[6.5,1.25,50.53,1.3],[8.55,-.1,52.03,.82],[9.7,-1.7,54.05,.02]]),{phase:3});
 }
+
+// At the outer corner the two lids meet. A short raised fold runs back into
+// the temple, giving the hood a readable end in both side views.
+contours.templeFold=[[5.86,7.59,49.54],[6.1,6.47,49.57],[6.20,5.49,49.5],[5.98,4.75,49.49]];
+contours.templeRidge=[[6.04,7.53,49.29],[6.22,6.48,49.34],[6.35,5.49,49.32],[5.98,4.75,49.49]];
+contours.templeCrease=[[6.01,7.50,49.09],[6.18,6.46,49.09],[6.31,5.47,49.14],[5.98,4.75,49.49]];
+lofts.push({socket:'body',mirror:'x',twoSided:true,contours:['templeFold','templeRidge','templeCrease'],bands:['655','232']});
 
 // Five separate rays of the outstretched hand, with softer flesh up to the nail bed.
 function talon(name, finger, nail, radius) {
@@ -283,9 +363,7 @@ for(const s of [-1,1]) {
   mark([[s*3.81,4.03,22.54],[s*3.59,4.27,22.48],[s*2.81-.45,4.96,14.27],[s*3.02-.45,4.84,14.64]],'g');
   mark([[s*2.31,4.75,20.81],[s*.98-.22,5.29,19.82],[-.22,5.28,20.04],[s*.79-.22,5.35,19.1]],'a');
   mark([[s*1.72-.26,4.99,18.92],[s*.85-.28,5.38,18.37],[-.32,5.37,18.66],[s*.63-.32,5.41,17.85]],'g');
-  mark([[s*.14,11.4,47.18],[s*1.06,10.93,47.23],[s*.93,10.99,46.93],[s*.4,11.29,46.91]],'1');
 }
-relief([[-1.94,10.36,43.32],[0,10.73,42.93],[1.86,10.36,43.26],[1.21,9.56,42.18],[0,8.7,41.48],[-1.31,9.55,42.2]],[0,10.56,42.46],'23456');
 
 // Trace scars and the vertebral ridge on the actual voxel surface so the marks
 // follow the skin as it turns. Sample only the local muscle to keep the wing roots free.
@@ -319,7 +397,7 @@ for(const z of [42,39.45,36.9,34.35,31.8,29.25,26.85]) {
 
 const source={format:'pixelforge-stack',version:1,name:'rimefiend',projection:'iso',resolution:3,
   pivot:[25,9],headings:Array.from({length:60},(_,i)=>(297+6*i)%360),duration:70,palette,slices,
-  sockets:{body:{at:origin},...wings},facets,paths,membranes,poses,
+  sockets:{body:{at:origin},...wings},facets,contours,lofts,paths,membranes,poses,
   poseKeys:[[0,'curled'],[60,'half'],[120,'open'],[180,'folded'],[240,'open'],[297,'open'],[330,'half'],[360,'curled']]
     .map(([heading,pose])=>({heading,pose}))};
 if (!process.argv[2]) throw Error('Supply a new .stack.json filename.');
