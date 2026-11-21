@@ -14,7 +14,7 @@
 // Left and right are alike to the cells: where a cell could go either way, a draw or the cells round it choose (the
 // nearer drop, the nearer bank), never the parity of its row or of the frame, and each row is read left to right or
 // right to left by a draw. So a source drawn mirrored runs the mirrored way as often, though not cell for cell.
-import { parseColor, renderProject, FRAME_AREA, fail, isObject } from './core.js';
+import { PixelError, parseColor, renderProject, FRAME_AREA, fail, isObject } from './core.js';
 import { hash, ditherThreshold, sinDeg, cosDeg } from './craft.js';
 import { atan2Deg } from './shapes.js';
 import { createBodyWorld, polygonPart, areaBeyond, turnBetween } from './bodies.js';
@@ -109,6 +109,20 @@ function withBase(source) {
   if (isObject(source.air)) merged.air = { ...base.air, ...source.air, ...(isObject(source.air.flow) && { flow: { ...base.air.flow, ...source.air.flow } }) };
   delete merged.base;
   return merged;
+}
+
+// An error in the starter table's reaction at merged index n, said as what broke it: the source's own material of a
+// name the table uses, which replaced the table's whole (P-182).
+function tableReactionError(error, r, n, given) {
+  if (!(error instanceof PixelError)) return error;
+  const at = `powder.reactions[${n}]`, field = error.path.startsWith(at) ? error.path.slice(at.length).replace(/^\./, '') : '';
+  const said = error.message.startsWith(`${error.path}: `) ? error.message.slice(error.path.length + 2) : error.message;
+  const used = [r.a, r.b, ...(Array.isArray(r.into) ? r.into : [])];
+  const replaced = used.filter((name, i) => typeof name === 'string' && used.indexOf(name) === i && Object.hasOwn(SANDBOX.materials, name) && isObject(given.materials) && Object.hasOwn(given.materials, name));
+  const reaction = `the table's reaction of ${r.a} and ${r.b}${field ? ` (its ${field})` : ''}`;
+  const fix = `Rename your material, give it what that reaction needs, or write your own reaction for ${r.a} and ${r.b}, which replaces the table's`;
+  if (!replaced.length) return new PixelError('powder.base', `the starter ${reaction.slice(4)} fails: ${said}`);
+  return new PixelError(`powder.materials.${replaced[0]}`, `this replaces the starter table's ${replaced.join(' and ')} whole${replaced.length > 1 ? ` (with powder.materials.${replaced.slice(1).join(' and powder.materials.')})` : ''}, and ${reaction} then fails: ${said}. ${fix}`);
 }
 
 // Reads a pixelforge-powder source into flat tables, one entry per material id (0 is empty air).
@@ -359,7 +373,7 @@ function readPowder(given) {
   // the reaction wait until that side burns.
   const reactions = source.reactions ?? [];
   if (!Array.isArray(reactions) || reactions.length > LIMITS.reactions) fail('powder.reactions', `expected a list of at most ${LIMITS.reactions} reactions`);
-  reactions.forEach((r, n) => {
+  const readReaction = (r, n) => {
     const path = `powder.reactions[${n}]`;
     if (!isObject(r)) fail(path, 'expected { a, b, into, chance, heat, ignite, douse, burning }');
     known(r, ['a', 'b', 'into', 'chance', 'heat', 'ignite', 'douse', 'burning'], path);
@@ -381,6 +395,14 @@ function readPowder(given) {
     t.pair[a * M + b] = index * 2;
     if (a !== b) t.pair[b * M + a] = index * 2 + 1;
     t.reactive[a] = 1; t.reactive[b] = 1;
+  };
+  // withBase lists the source's own reactions first and the starter table's after them. Only a material the source
+  // names again (it replaces the table's whole) can break one of the table's, so an error there names that material
+  // and the table's reaction, not an index into a list the source never wrote.
+  const own = given.base === undefined ? reactions.length : Array.isArray(given.reactions) ? given.reactions.length : 0;
+  reactions.forEach((r, n) => {
+    if (n < own) return readReaction(r, n);
+    try { readReaction(r, n); } catch (error) { throw tableReactionError(error, r, n, given); }
   });
   t.reactive[0] = 0;
 
