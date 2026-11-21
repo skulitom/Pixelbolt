@@ -26,18 +26,22 @@ cp.spawnSync = (command, args, options) => {
   return { stdout: JSON.stringify({ id, root, frames: 61, hash: 'identical-listing', ms: Array(runs).fill(ms), peakRssMB: 1 }) };
 };
 syncBuiltinESMExports();`);
-  for (const ms of [17000, 20000, 21000]) {
-    const reportFile = path.join(dir, `report-${ms}.json`);
-    const { stdout } = await promisify(execFile)(process.execPath, ['--import', pathToFileURL(preload).href, bench, '--budgets', '--only', 'presets/cold', '--json', reportFile], {
+  // 45 s: CI's runners list at 30 to 40 s, and at fifteen runs after three warm-ups 40 s filled the whole guard (P-196).
+  // The case names its own counts; --runs and --warmup on the command line still win.
+  for (const [ms, counts, runs, warmup] of [[17000, [], 3, 1], [20000, [], 3, 1], [21000, [], 3, 1], [45000, [], 3, 1], [21000, ['--runs', '2', '--warmup', '0'], 2, 0]]) {
+    const reportFile = path.join(dir, `report-${ms}-${runs}.json`);
+    const { stdout } = await promisify(execFile)(process.execPath, ['--import', pathToFileURL(preload).href, bench, '--budgets', '--only', 'presets/cold', ...counts, '--json', reportFile], {
       env: { ...process.env, PRESET_BENCH_TEST_MS: String(ms), GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: '' }
     });
     const report = JSON.parse(await readFile(reportFile, 'utf8')), result = report.cases['presets/cold'].B;
-    assert.equal(report.runs, 15);
-    assert.equal(report.warmup, 3);
-    assert.equal(result.runsMs[0].length, report.runs);
+    assert.equal(report.runs, counts.length ? runs : 15);
+    assert.equal(report.warmup, counts.length ? warmup : 3);
+    assert.equal(report.cases['presets/cold'].runs, runs);
+    assert.equal(report.cases['presets/cold'].warmup, warmup);
+    assert.equal(result.runsMs[0].length, runs);
     assert.equal(result.medianMs, ms);
     assert.equal(result.budgetMs, 20000);
     assert.equal(result.withinBudget, ms <= 20000);
-    if (ms > 20000) assert.match(stdout, /::warning title=Speed budget of presets\/cold/);
+    if (ms > 20000) assert.match(stdout, new RegExp(`::warning title=Speed budget of presets/cold::.*\\(median of ${runs} runs\\), over its 20000 ms budget`));
   }
 });

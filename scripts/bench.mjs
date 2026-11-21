@@ -6,10 +6,10 @@
 //   node scripts/bench.mjs --compare <root>    interleaved A/B: <root> (A, the base) against this checkout (B)
 //   node scripts/bench.mjs --list              list the cases
 //   node scripts/bench.mjs --budgets           only the cases with a speed budget, each median against its budget
-// Options: --runs <n> timed runs per process (5, or 15 with --budgets), --warmup <n> untimed runs first (2, or 3 with
-// --budgets; 0 also times cold caches such as craft.js's drawing cache), --rounds <n> processes per case and side (1, or
-// 5 with --compare, the fewest that gives a verdict), --json <new file> to keep the report (an existing file is never
-// overwritten).
+// Options: --runs <n> timed runs per process (5, or 15 with --budgets; a slow case may name fewer), --warmup <n> untimed
+// runs first (2, or 3 with --budgets; 0 also times cold caches such as craft.js's drawing cache), --rounds <n> processes
+// per case and side (1, or 5 with --compare, the fewest that gives a verdict), --json <new file> to keep the report (an
+// existing file is never overwritten).
 //
 // Speed budgets are the figure workflow's targets (docs/reports/figures-in-motion.md) and a few loose limits. The test
 // suite once asserted them, and a busy CI runner failed it with nothing broken, so they live here: a median over its
@@ -93,10 +93,14 @@ const busySandbox = (sandboxSource, width, height) => {
 
 // A case: setup (untimed, once per process) returns the state; fresh(state), if given, makes each run's own state
 // untimed; run(state) is timed and returns { frames, hash }. `budget`, where given, is the most its median may take,
-// in milliseconds a run.
+// in milliseconds a run. `runs` and `warmup`, where given, replace the default counts for that case (not --runs or
+// --warmup given on the command line).
 const shipped = suffix => readdirSync(path.join(here, 'examples')).filter(name => name.endsWith(suffix)).sort();
 const CASES = [
-  { id: 'presets/cold', what: 'listPresets without a cache', budget: 20000,
+  // A listing takes 30 to 40 s on CI's runners, about twice its budget, and its runs agree within 3%. Three after one
+  // warm-up give the same verdict as fifteen after three, in under a quarter of the time, and stay well inside the
+  // hang guard; eighteen at twice the budget filled the whole guard and turned the advisory job red.
+  { id: 'presets/cold', what: 'listPresets without a cache', budget: 20000, runs: 3, warmup: 1,
     setup: async load => ({ listPresets: (await load('src/presets.js')).listPresets }),
     run: async ({ listPresets }) => {
       const listing = await listPresets({ budget: Infinity }), failed = listing.presets.filter(entry => entry.error || entry.unmeasured);
@@ -261,15 +265,16 @@ const describe = root => {
 // Budgets are advisory: one over its budget is reported, never a failure. On GitHub Actions each also becomes a
 // warning on the run and the job summary gets the table.
 function reportBudgets(budgeted, runs) {
-  const over = budgeted.filter(item => !item.withinBudget);
-  console.log(`\n${over.length ? `${over.length} of ${budgeted.length}` : `None of the ${budgeted.length}`} cases with a speed budget ${over.length === 1 ? 'is' : 'are'} over it (the median of ${runs} runs).${over.length ? ' A slow or busy machine can do this; re-run with --only <case>, or against main with --compare, before acting on it.' : ''}`);
+  const over = budgeted.filter(item => !item.withinBudget), own = budgeted.filter(item => item.runs !== runs);
+  const of = `the median of ${runs} runs${own.length ? `; ${own.map(item => `${item.id} ${item.runs}`).join(', ')}` : ''}`;
+  console.log(`\n${over.length ? `${over.length} of ${budgeted.length}` : `None of the ${budgeted.length}`} cases with a speed budget ${over.length === 1 ? 'is' : 'are'} over it (${of}).${over.length ? ' A slow or busy machine can do this; re-run with --only <case>, or against main with --compare, before acting on it.' : ''}`);
   if (process.env.GITHUB_ACTIONS === 'true') {
     // A title can't hold ":" or ",", which end it.
-    for (const item of over) console.log(`::warning title=Speed budget of ${item.id}::${item.what} took ${item.medianMs} ms (median of ${runs} runs), over its ${item.budgetMs} ms budget. This never fails CI; check it with npm run bench -- --only ${item.id} --compare <main checkout>.`);
+    for (const item of over) console.log(`::warning title=Speed budget of ${item.id}::${item.what} took ${item.medianMs} ms (median of ${item.runs} runs), over its ${item.budgetMs} ms budget. This never fails CI; check it with npm run bench -- --only ${item.id} --compare <main checkout>.`);
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = budgeted.map(item => `| ${item.id} | ${item.what} | ${item.medianMs} | ${item.budgetMs} | ${item.withinBudget ? 'within' : '**over**'} |`);
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, [`### Speed budgets (advisory, median of ${runs} runs)`, '', '| case | what | median ms | budget ms | |', '| --- | --- | ---: | ---: | --- |', ...rows, ''].join('\n') + '\n');
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, [`### Speed budgets (advisory, ${of})`, '', '| case | what | median ms | budget ms | |', '| --- | --- | ---: | ---: | --- |', ...rows, ''].join('\n') + '\n');
   }
 }
 
@@ -284,8 +289,10 @@ async function main() {
   if (out && existsSync(out)) stop(`${out} already exists; name a new file`);
   if (out && !statSync(path.dirname(path.resolve(out)), { throwIfNoEntry: false })?.isDirectory()) stop(`${path.dirname(path.resolve(out))} is not a folder`);
   if (base && !statSync(path.join(path.resolve(base), 'src', 'core.js'), { throwIfNoEntry: false })) stop(`${path.resolve(base)} is not a Pixelbolt checkout (no src/core.js)`);
-  // A budget is a warmed median: three untimed runs, then the median of fifteen.
+  // A budget is a warmed median: three untimed runs, then the median of fifteen, unless the case names its own counts.
   const runs = count('--runs', budgets ? 15 : 5), warmup = count('--warmup', budgets ? 3 : 2, 0), rounds = count('--rounds', base ? 5 : 1);
+  const counts = item => ({ runs: args.includes('--runs') ? runs : item.runs ?? runs, warmup: args.includes('--warmup') ? warmup : item.warmup ?? warmup });
+  const own = cases.filter(item => counts(item).runs !== runs || counts(item).warmup !== warmup).map(item => `${item.id} ${counts(item).runs} after ${counts(item).warmup}`);
   // Below 5 processes a side, identical code shows a difference by chance too often (1 in 3 at 2) to call one.
   const judged = rounds >= 5;
   const sides = base ? [{ label: 'A', ...describe(path.resolve(base)) }, { label: 'B', ...describe(here) }] : [{ label: 'B', ...describe(here) }];
@@ -302,16 +309,16 @@ async function main() {
       for (const name of needed) writeFileSync(path.join(inputs, `${name}.json`), JSON.stringify(await PREPARED[name]()));
     }
     for (const side of sides) report.baseline[side.label] = spawnCase('baseline', side.root, 1, 0).peakRssMB ?? null;
-    console.log(`Node ${process.version}, ${report.cpu}; ${runs} timed runs after ${warmup} warm-up runs, ${rounds} process${rounds === 1 ? '' : 'es'} per case${base ? ' and side, A and B interleaved' : ''}.`);
+    console.log(`Node ${process.version}, ${report.cpu}; ${runs} timed runs after ${warmup} warm-up runs${own.length ? ` (${own.join(', ')})` : ''}, ${rounds} process${rounds === 1 ? '' : 'es'} per case${base ? ' and side, A and B interleaved' : ''}.`);
     for (const side of sides) console.log(`${side.label}: ${side.root} at ${side.commit?.slice(0, 12) ?? 'unknown'}${side.dirty ? ' (uncommitted changes)' : ''}; baseline ${report.baseline[side.label]} MB`);
     if (base && !judged) console.log(`With ${rounds} process${rounds === 1 ? '' : 'es'} a side there is no verdict; use --rounds 5 or more.`);
     console.log(base ? `\n${'case'.padEnd(26)} ${'frames'.padStart(6)} ${'A ms'.padStart(9)} ${'B ms'.padStart(9)} ${'change'.padStart(7)}  ${'A MB'.padStart(6)} ${'B MB'.padStart(6)}  verdict`
       : `\n${'case'.padEnd(26)} ${'frames'.padStart(6)} ${'median ms'.padStart(10)} ${'ms/frame'.padStart(9)} ${'run range ms'.padStart(17)} ${'peak MB'.padStart(8)}  ${'output'.padEnd(20)}  budget`);
     for (const item of cases) {
-      const results = Object.fromEntries(sides.map(side => [side.label, []]));
+      const results = Object.fromEntries(sides.map(side => [side.label, []])), { runs: n, warmup: w } = counts(item);
       // Alternate which side goes first in each round, so drift (heat, background work) falls on both alike.
-      for (let r = 0; r < rounds; r++) for (const side of (r % 2 ? [...sides].reverse() : sides)) results[side.label].push(spawnCase(item.id, side.root, runs, warmup));
-      const summary = {};
+      for (let r = 0; r < rounds; r++) for (const side of (r % 2 ? [...sides].reverse() : sides)) results[side.label].push(spawnCase(item.id, side.root, n, w));
+      const summary = { runs: n, warmup: w };
       for (const [label, list] of Object.entries(results)) {
         const error = list.find(entry => entry.error)?.error;
         if (error) { summary[label] = { error }; failed = true; continue; }
@@ -322,7 +329,7 @@ async function main() {
       report.cases[item.id] = summary;
       const b = summary.B, a = summary.A;
       if (!base) {
-        if (item.budget !== undefined && !b.error) { b.budgetMs = item.budget; b.withinBudget = b.medianMs <= item.budget; budgeted.push({ id: item.id, what: item.what, ...b }); }
+        if (item.budget !== undefined && !b.error) { b.budgetMs = item.budget; b.withinBudget = b.medianMs <= item.budget; budgeted.push({ id: item.id, what: item.what, runs: n, ...b }); }
         const budget = b.budgetMs === undefined ? '' : `${b.withinBudget ? 'within' : 'OVER'} ${b.budgetMs} ms`;
         console.log(b.error ? `${item.id.padEnd(26)} error: ${b.error}` : `${item.id.padEnd(26)} ${String(b.frames).padStart(6)} ${b.medianMs.toFixed(1).padStart(10)} ${(b.medianMs / b.frames).toFixed(2).padStart(9)} ${`${b.runMinMs.toFixed(1)}-${b.runMaxMs.toFixed(1)}`.padStart(17)} ${b.peakRssMB.toFixed(1).padStart(8)}  ${(Array.isArray(b.hash) ? 'DIFFERS BETWEEN RUNS' : b.hash).padEnd(20)}  ${budget}`.trimEnd());
         continue;
