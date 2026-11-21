@@ -1,0 +1,15 @@
+[remap]
+
+importer="pixelbolt.sprite_frames"
+type="SpriteFrames"
+uid="uid://citi7qaj4cjxf"
+path="res://.godot/imported/hero.pixel.json-a41a20d0643ba84e2e525ffd93eddf4f.res"
+
+[deps]
+
+source_file="res://demo/hero.pixel.json"
+dest_files=["res://.godot/imported/hero.pixel.json-a41a20d0643ba84e2e525ffd93eddf4f.res"]
+
+[params]
+
+texture_filter=0
