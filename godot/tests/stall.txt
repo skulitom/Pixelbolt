@@ -1,0 +1,12 @@
+// Copied to a .js file only inside a throwaway project's .godot directory.
+// Both pipes exceed pipe capacity before waiting; the child must die with its parent.
+(async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { spawn } = await import('node:child_process');
+  const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+  fs.writeFileSync(path.join(path.dirname(process.argv[1]), 'stall-pids.json'), JSON.stringify([process.pid, child.pid]));
+  process.stdout.write('x'.repeat(262144));
+  process.stderr.write('y'.repeat(262144));
+  setInterval(() => {}, 1000);
+})();
