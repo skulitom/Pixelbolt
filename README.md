@@ -485,7 +485,7 @@ A game drawing many sprites into one canvas can use the same module's helpers. `
 </script>
 ```
 
-For Godot 4, put `name.png` and `name.tres` in one folder of the project and use the `.tres` as an `AnimatedSprite2D`'s Sprite Frames. For another engine, use the atlas rectangles or individual PNGs. For regular-grid importers, set `sheet.padding` to `0` and use the exported frame dimensions. Phaser accepts the JSON-hash frame layout via `load.atlas`; named animation sequences are in the extra `animations` field. See [game integration notes](docs/game-integration.md).
+For Godot 4, put `name.png` and `name.tres` in one folder of the project and use the `.tres` as an `AnimatedSprite2D`'s Sprite Frames, or install the [Godot addon](docs/game-integration.md#the-editor-addon-recipes-as-spriteframes), which imports `*.pixel.json` recipes as SpriteFrames and renders them again when they change. For another engine, use the atlas rectangles or individual PNGs. For regular-grid importers, set `sheet.padding` to `0` and use the exported frame dimensions. Phaser accepts the JSON-hash frame layout via `load.atlas`; named animation sequences are in the extra `animations` field. See [game integration notes](docs/game-integration.md).
 
 ## JavaScript API
 
