@@ -895,11 +895,13 @@
         "rows": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
           },
           "maxItems": 256,
           "minItems": 1,
-          "description": "A map of your own drawn in place of the test map: # terrain, . nothing, and the slope characters."
+          "description": "A map of your own drawn in place of the test map: # terrain, . nothing, and the slope characters (in a layered set, the keys of its layers). At most 256 rows of 256 characters, and at most 4096 pixels a side."
         }
       },
       "required": [],

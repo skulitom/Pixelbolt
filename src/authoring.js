@@ -915,6 +915,7 @@ export function compileAutotile(source) {
     sameWidth(level, 'autotile.preview.rows');
     level.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (!known.includes(row[x])) fail(`autotile.preview.rows[${y}]`, `character ${JSON.stringify(row[x])} at column ${x} is not one this set draws: ${said}${slopes ? '' : ' (a set with slopes has a character for each)'}`); });
     if (level[0].length * tile > 4096 || level.length * tile > 4096 || level[0].length * level.length * tile * tile > 4194304) fail('autotile.preview.rows', `${level[0].length} by ${level.length} tiles of ${tile} pixels is more than one picture holds (4096 a side, 4,194,304 pixels)`);
+    if (level[0].length > 256) fail('autotile.preview.rows', `rows are ${level[0].length} characters wide; a preview map holds at most 256 tiles a row (and 256 rows), as a scene's tilemap does`);
   }
   const preview = testMapRecipe(shown, { ...(level && { rows: level }), templates: [...share.keys()], ...(weighted && { weights: [...share.values()].map(sum => Math.max(1, Math.round(sum * Math.min(1, 1000 / most)))) }), mode, background: source.preview?.background, ...(slopes && { slopes }) });
   // For maps with slopes: a scene legend that draws the set (# its terrain, a foot under each slope that has one) and the
@@ -995,6 +996,7 @@ function compileLayers(source, { tile, mode, palette }) {
     sameWidth(level, 'autotile.preview.rows');
     level.forEach((row, y) => { for (let x = 0; x < row.length; x++) if (!keys.includes(row[x])) fail(`autotile.preview.rows[${y}]`, `character ${JSON.stringify(row[x])} at column ${x} is no layer's key: ${said}`); });
     if (level[0].length * tile > 4096 || level.length * tile > 4096 || level[0].length * level.length * tile * tile > 4194304) fail('autotile.preview.rows', `${level[0].length} by ${level.length} tiles of ${tile} pixels is more than one picture holds (4096 a side, 4,194,304 pixels)`);
+    if (level[0].length > 256) fail('autotile.preview.rows', `rows are ${level[0].length} characters wide; a preview map holds at most 256 tiles a row (and 256 rows), as a scene's tilemap does`);
   }
   // Codes count in base n, NW the lowest digit.
   const n = read.length, places = [1, n, n * n, n * n * n], frames = [], variantFrames = [], weighed = weight => (weight !== 1 ? { weight } : {});
