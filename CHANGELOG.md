@@ -34,6 +34,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 - **Animate a sprite you already have** ([guide](docs/animate-your-sprite.md)): the `sprite-walk` example turns one 32 × 32 side-view PNG into a walk and an idle facing right and left, by a recipe whose rest pose is the PNG pixel for pixel. Its drawn parts hang on invisible carrier bones, since the motion templates move only a mass body and bone limbs. The guide gives every command, from `import` to the sheet, atlas and Godot `.tres`, and the two review workarounds a left walk and a renamed frame need today.
 
+### Fixes
+
+- A tile set's own preview map (`preview.rows`) is refused at compile when a row is wider than 256 tiles, the most a preview or a scene's tilemap holds. With tiles under 16 pixels such a row used to pass compile's checks and then fail the preview's render (which `pixel_compile` always draws) with an error naming `project.frames[0].ops[0].rows`, a path the source never wrote. The schema gives the limit.
+
 ## 0.19.0 (2026-11-20)
 
 - Recipes can draw filled or outlined polygons from editable vertices. A frame can move several layers together with named `groups` offsets. In inspection, `alpha-blend` identifies off-palette colours made by translucent paint or layer opacity, with `palette` reserved for directly drawn colours. The [Midnight Ramen recipe and animation](showcase/midnight-ramen/README.md) use all three features.
