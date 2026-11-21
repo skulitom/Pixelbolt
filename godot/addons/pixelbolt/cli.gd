@@ -95,11 +95,34 @@ static func kill_tree(pid: int) -> void:
 		while OS.is_process_running(pid) and Time.get_ticks_msec() < until:
 			OS.delay_msec(10)
 	else:
-		# Godot starts the CLI in a session of its own (setsid), so its process group id is its pid: end the whole
-		# group (an npx or shell wrapper's node child too), then OS.kill reaps the CLI itself. Never ask about this pid
-		# again afterwards: OS.kill has reaped it without telling Godot, which would log an error on the next query.
-		OS.execute("kill", PackedStringArray(["-KILL", "--", "-%d" % pid]))
+		# Every process the CLI started (an npx or shell wrapper's node, a render's own children) is found in ps's table
+		# while the tree is still whole, and killed; then OS.kill ends and reaps the CLI itself. A process group would
+		# not do: Godot 4.3 to 4.5 start the CLI in Godot's own group. Never ask about this pid again afterwards:
+		# OS.kill has reaped it without telling Godot, which would log an error on the next query.
+		for child in descendants(pid):
+			OS.kill(child)
 		OS.kill(pid)
+
+# The pids below `pid` in the process tree, from `ps -A -o pid=,ppid=` (Linux and macOS alike).
+static func descendants(pid: int) -> Array:
+	var output := []
+	OS.execute("ps", PackedStringArray(["-A", "-o", "pid=,ppid="]), output)
+	var children := {}
+	for line in (str(output[0]) if not output.is_empty() else "").split("\n", false):
+		var fields := line.strip_edges().split(" ", false)
+		if fields.size() == 2 and fields[0].is_valid_int() and fields[1].is_valid_int():
+			var parent := int(fields[1])
+			if not children.has(parent):
+				children[parent] = []
+			children[parent].append(int(fields[0]))
+	var found := []
+	var queue := [pid]
+	while not queue.is_empty():
+		for child in children.get(queue.pop_back(), []):
+			if child != pid and not found.has(child):
+				found.append(child)
+				queue.append(child)
+	return found
 
 static func run(command: Dictionary, arguments: PackedStringArray, deadline: int) -> Dictionary:
 	var program: String = command["exe"]
