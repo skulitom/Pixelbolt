@@ -127,8 +127,12 @@ function checkCommon(text, jobs, writers) {
 
 function checkTestWorkflow(text) {
   const jobs = jobsOf(text);
-  assert.deepEqual(Object.keys(jobs), ['test']);
+  assert.deepEqual(Object.keys(jobs), ['test', 'oldest']);
   checkCommon(text, jobs, []);
+  // The oldest supported Godot: its own pipe reader runs only on this version, so a Unix run of it stays.
+  assert.match(jobs.oldest, /GODOT_ZIP: Godot_v4\.3-stable_linux\.x86_64\.zip\n      GODOT_SHA512: fd52bb4b[0-9a-f]{120}\n/);
+  assert.match(jobs.oldest, /releases\/download\/4\.3-stable\/\$GODOT_ZIP" -o godot\.zip\n {10}echo "\$GODOT_SHA512  godot\.zip" \| sha512sum -c\n/);
+  assert.match(jobs.oldest, /node scripts\/verify-godot-addon\.mjs --godot "\$GODOT"\n/);
   const list = PATHS.map(item => `      - '${item}'\n`).join('');
   assert.ok(text.includes(`  push:\n    branches: [main]\n    paths:\n${list}  pull_request:\n    paths:\n${list}  workflow_dispatch:\n`), 'push and pull_request run on the addon\'s paths');
   assert.equal([...text.matchAll(/github\.repository\s*==/g)].length, 0);

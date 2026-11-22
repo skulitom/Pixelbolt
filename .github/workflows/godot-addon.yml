@@ -98,3 +98,40 @@ jobs:
             dist/pixelbolt-godot-*.zip.sha256
           retention-days: 14
           if-no-files-found: error
+
+  # The oldest Godot the addon supports, on Unix. Godot 4.3's pipes differ from every later version's: they block, and
+  # their error flag doesn't mark the end of the stream, so the addon's 4.3 reader needs its own run here.
+  oldest:
+    name: Godot 4.3 / ubuntu-latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      GODOT_ZIP: Godot_v4.3-stable_linux.x86_64.zip
+      GODOT_SHA512: fd52bb4ba8acc30ca5accd1c566d470ad7282f891ccc0995dfafabcf92bcf76280ce182bf9d80ebd885f3ed2165d01e1fc3f2928436b15498dfbd98656c2a45a
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Get the pinned Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 "https://github.com/godotengine/godot/releases/download/4.3-stable/$GODOT_ZIP" -o godot.zip
+          echo "$GODOT_SHA512  godot.zip" | sha512sum -c
+          unzip -q godot.zip -d godot
+          touch godot/._sc_
+          chmod +x godot/Godot_v4.3-stable_linux.x86_64
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v4.3-stable_linux.x86_64" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/godot/Godot_v4.3-stable_linux.x86_64" --headless --version
+      - name: Test the addon in Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-godot-addon.mjs --godot "$GODOT"
