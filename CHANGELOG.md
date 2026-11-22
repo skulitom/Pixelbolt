@@ -4,7 +4,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
-- Agent Plugins 1.0.0 clients can load the repository's new `plugin.json` and `mcp.json`; the skill now lives in `skills/pixelbolt-pixel-art/`. `pixelbolt mcp --roots` uses the client's workspace for file references and exports, falling back to the plugin's persistent data folder when launched through this package.
+- Agent Plugins 1.0.0 clients, such as Codex and GitHub Copilot CLI, can load the repository's new `plugin.json` and `mcp.json`; that server keeps its files in the plugin's data folder, and `pixel_render` replies with their absolute paths. The skill now lives in `skills/pixelbolt-pixel-art/`, the folder name the Agent Skills spec requires for its name.
 
 ### Rotating sprite stacks
 

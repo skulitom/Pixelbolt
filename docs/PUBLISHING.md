@@ -66,11 +66,9 @@ Check the listing at <https://registry.modelcontextprotocol.io/v0.1/servers?sear
 
 ## Agent Plugins package
 
-The repository root carries Agent Plugins 1.0.0 `plugin.json` and `mcp.json`, with the skill discovered at `skills/pixelbolt-pixel-art/SKILL.md`. The MCP entry runs `mcp --roots --root ${PLUGIN_DATA} --out ${PLUGIN_DATA}/output`; these root manifests are not part of the npm package.
+The repository root carries Agent Plugins 1.0.0 `plugin.json` and `mcp.json`, with the skill discovered at `skills/pixelbolt-pixel-art/SKILL.md`; neither file is in the npm package. `plugin.json` repeats `.claude-plugin/plugin.json`'s metadata, so its version is bumped with the others and checked at the tag.
 
-`pixelbolt mcp [--roots] [--root directory] [--out directory] [--time-limit seconds]` opts into MCP workspace roots only with `--roots`. After initialization and each roots change notification, it selects the first usable local directory from `roots/list`, resolving file references there and exporting into its `output/`. Unsupported roots, errors, empty or unusable lists, and a lookup unanswered after 10 seconds use `--root` and `--out` (their defaults are the process working directory and its `output/`). File calls wait for the pending lookup; discovery and ping stay available. A changed root affects later calls; a running call finishes in its original workspace, and revisions under the old export folder's `.revisions` are not carried over. Stderr reports the chosen root and export folder; render replies already include the absolute export directory.
-
-MCP's 2026-07-28 revision deprecates roots (SEP-2577) and has the server ask for them inside a tool call's retry instead of with a `roots/list` request; this server sends the older request, so it learns a root only from clients that offer roots on an earlier protocol version. Every other client gets the fallback.
+Agent Plugins clients start a plugin's server in the plugin's own folder (spec section 7.2.1), which an update can replace, so the MCP entry runs `mcp --root ${PLUGIN_DATA} --out ${PLUGIN_DATA}/output`: file references, renders and `saveAs` copies stay in the persistent data folder the client keeps for the plugin, and `pixel_render` replies with the export folder and saved copies as absolute paths. The format has no placeholder for the user's project, and MCP roots, which could name it, are deprecated in the 2026-07-28 revision (SEP-2577), so the entry doesn't try to write there. Claude Code ignores these files and keeps `.claude-plugin/plugin.json`, whose server starts in the project folder.
 
 ## Gemini CLI extension gallery
 

@@ -351,7 +351,7 @@ A scene's view and each of its assets, an effect source and an imported frame ha
 
 ## Connect an agent through MCP
 
-The repository root is also an Agent Plugins 1.0.0 package (`plugin.json`, `mcp.json`): its MCP server uses the client's workspace from MCP roots and otherwise writes to the plugin's persistent data folder.
+The repository root is also an Agent Plugins 1.0.0 package (`plugin.json`, `mcp.json`) for clients such as Codex and GitHub Copilot CLI. That format starts a plugin's server in the plugin's own folder, so this entry keeps file references, renders and `saveAs` copies in the plugin's persistent data folder; `pixel_render` replies with the export folder and saved copies as absolute paths.
 
 **Claude Code plugin.** One command installs the MCP server and the pixel art skill, with nothing to clone (Claude Code 2.1.292 or later):
 

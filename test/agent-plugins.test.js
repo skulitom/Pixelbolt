@@ -1,15 +1,12 @@
-// Agent Plugins 1.0.0 packaging and workspace selection, without a client installation or schema dependency.
+// Agent Plugins 1.0.0 packaging, checked without a client installation or a schema dependency.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from 'node:fs/promises';
-import { PassThrough } from 'node:stream';
-import { Worker } from 'node:worker_threads';
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, stat } from 'node:fs/promises';
 import { once } from 'node:events';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { startMCP } from '../src/mcp.js';
+import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const read = file => readFile(path.join(root, file), 'utf8');
@@ -44,7 +41,7 @@ test('root plugin.json conforms to Agent Plugins 1.0.0 and matches the Claude pl
   assert.deepEqual(Object.keys(manifest).sort(), ['$schema', ...shared].sort(), 'only the shared metadata ships');
 });
 
-test('root mcp.json is a closed stdio config with portable placeholders and a persistent fallback', async () => {
+test('root mcp.json is a closed stdio config with portable placeholders that keeps files in PLUGIN_DATA', async () => {
   const config = await json('mcp.json'), manifest = await json('plugin.json');
   closed(config, ['$schema', 'mcpServers']);
   assert.equal(config.$schema, 'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json');
@@ -61,7 +58,6 @@ test('root mcp.json is a closed stdio config with portable placeholders and a pe
     const expanded = expand(server.args[0], root);
     assert.ok((await stat(expanded)).isFile(), 'args[0] names the shipped entry point');
     assert.ok(!(path.relative(root, await realpath(expanded))).startsWith('..'));
-    assert.ok(server.args.includes('--roots'));
     if (server.env !== undefined) {
       object(server.env);
       for (const [key, value] of Object.entries(server.env)) {
@@ -80,7 +76,7 @@ test('root mcp.json is a closed stdio config with portable placeholders and a pe
   }
   assert.deepEqual(config.mcpServers.pixelbolt, {
     type: 'stdio', command: 'node',
-    args: ['${PLUGIN_ROOT}/bin/pixelbolt.js', 'mcp', '--roots', '--root', '${PLUGIN_DATA}', '--out', '${PLUGIN_DATA}/output']
+    args: ['${PLUGIN_ROOT}/bin/pixelbolt.js', 'mcp', '--root', '${PLUGIN_DATA}', '--out', '${PLUGIN_DATA}/output']
   });
   for (const file of ['plugin.json', 'mcp.json']) {
     const text = await read(file);
@@ -109,282 +105,43 @@ test('every discovered skill has an Agent Skills name matching its immediate dir
   assert.ok(count > 0, 'the package ships a discoverable skill');
 });
 
-// A line-based client keeps server requests separate from responses, so roots/list can be answered while a tool waits.
-function client(input, output) {
+// Launches the server as an Agent Plugins client does: placeholders expanded, cwd = the plugin root, PLUGIN_* set.
+test('the Agent Plugins launch lists the tools and keeps renders and saveAs copies in PLUGIN_DATA, never the plugin folder', { timeout: 30000 }, async t => {
+  const base = await mkdtemp(path.join(await realpath(os.tmpdir()), 'pixelbolt-agent-plugins-'));
+  const data = path.join(base, 'data');
+  await mkdir(data);
+  const server = (await json('mcp.json')).mcpServers.pixelbolt;
+  const child = spawn(server.command, server.args.map(arg => expand(arg, data)), { cwd: root, env: { ...process.env, PLUGIN_ROOT: root, PLUGIN_DATA: data }, stdio: ['pipe', 'pipe', 'inherit'] });
+  const exited = once(child, 'exit');
+  t.after(async () => { child.kill(); await exited; await rm(base, { recursive: true, force: true }); });
+  await once(child, 'spawn');
   let buffer = '', id = 0;
-  const messages = [], inbox = [], waiting = [];
-  output.setEncoding('utf8');
-  output.on('data', chunk => {
+  const waiting = new Map();
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', chunk => {
     buffer += chunk;
     for (let end; (end = buffer.indexOf('\n')) !== -1;) {
       const message = JSON.parse(buffer.slice(0, end)); buffer = buffer.slice(end + 1);
-      messages.push(message);
-      const index = waiting.findIndex(item => item.matches(message));
-      if (index === -1) inbox.push(message); else waiting.splice(index, 1)[0].resolve(message);
+      waiting.get(message.id)?.(message);
     }
   });
-  const next = matches => {
-    const index = inbox.findIndex(matches);
-    if (index !== -1) return Promise.resolve(inbox.splice(index, 1)[0]);
-    return new Promise(resolve => waiting.push({ matches, resolve }));
-  };
-  const send = message => input.write(JSON.stringify({ jsonrpc: '2.0', ...message }) + '\n');
-  const request = (method, params) => { const current = ++id; send({ id: current, method, params }); return next(message => message.id === current && !message.method); };
-  return {
-    messages, send, request,
-    roots: () => next(message => message.method === 'roots/list'),
-    notify: method => send({ method }),
-    init: capabilities => request('initialize', { protocolVersion: '2025-11-25', capabilities, clientInfo: { name: 'agent-plugins-test', version: '1' } }),
-    call: async args => {
-      const response = await request('tools/call', { name: 'pixel_render', arguments: args });
-      assert.ok(response.result, JSON.stringify(response));
-      const info = JSON.parse(response.result.content[0].text);
-      assert.equal(info.ok, true, JSON.stringify(info));
-      return info;
-    }
-  };
-}
-
-async function session(t, { roots = true, local = false } = {}) {
-  const base = await mkdtemp(path.join(await realpath(os.tmpdir()), 'pixelbolt-agent-plugins-'));
-  const data = path.join(base, 'data'), workspace = path.join(base, 'workspace'), other = path.join(base, 'other');
-  let stop = async () => {};
-  t.after(async () => { await stop(); await rm(base, { recursive: true, force: true }); });
-  await Promise.all([data, workspace, other].map(folder => mkdir(folder)));
-  const server = (await json('mcp.json')).mcpServers.pixelbolt;
-  let input, output, stderr = '';
-  if (local) {
-    input = new PassThrough(); output = new PassThrough();
-    const running = startMCP({ roots, root: data, directory: path.join(data, 'output'), input, output });
-    stop = async () => { input.end(); await running; };
-  } else {
-    const args = server.args.filter(arg => roots || arg !== '--roots').map(arg => expand(arg, data));
-    const child = spawn(server.command, args, { cwd: root, env: { ...process.env, PLUGIN_ROOT: root, PLUGIN_DATA: data }, stdio: ['pipe', 'pipe', 'pipe'] });
-    input = child.stdin; output = child.stdout;
-    child.stderr.setEncoding('utf8'); child.stderr.on('data', chunk => { stderr += chunk; });
-    const exited = once(child, 'exit');
-    stop = async () => { child.kill(); await exited; };
-    await once(child, 'spawn');
-  }
-  const connection = client(input, output);
-  const project = { version: 1, name: `agent-art-${path.basename(base)}`, width: 2, height: 2, palette: { k: '#fff' }, frames: [{ name: 'still', ops: [{ op: 'pixel', x: 0, y: 0, color: 'k' }] }] };
-  return { ...connection, data, workspace, other, project, stderr: () => stderr };
-}
-
-const directories = async folder => readdir(folder).catch(error => { if (error.code === 'ENOENT') return []; throw error; });
-async function exported(info, folder, project) {
-  assert.equal(path.isAbsolute(info.directory), true, 'the existing reply locates fallback exports without new fields');
-  assert.equal(path.dirname(info.directory), path.join(folder, 'output'));
-  assert.ok((await stat(path.join(info.directory, `${project.name}.png`))).isFile());
-  assert.ok((await stat(path.join(folder, 'output', '.revisions'))).isDirectory());
-  assert.deepEqual((await directories(path.join(root, 'output'))).filter(name => name.startsWith(project.name)), [], 'no export in the plugin checkout');
-}
-const rootResult = (...folders) => ({ roots: folders.map(folder => ({ uri: pathToFileURL(folder).href })) });
-async function choose(mcp, ...folders) {
-  const request = await mcp.roots();
-  assert.equal(typeof request.id, 'string');
-  assert.deepEqual(Object.keys(request).sort(), ['id', 'jsonrpc', 'method']);
-  mcp.send({ id: request.id, result: rootResult(...folders) });
-}
-const timeout = { timeout: 20000 };
-
-test('Agent Plugins launch without roots capability lists tools and exports in PLUGIN_DATA, never the repo', timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({}); mcp.notify('notifications/initialized');
-  assert.ok((await mcp.request('tools/list')).result.tools.some(tool => tool.name === 'pixel_render'));
-  await exported(await mcp.call({ project: mcp.project }), mcp.data, mcp.project);
-  assert.equal(mcp.messages.some(message => message.method === 'roots/list'), false);
-  assert.ok(mcp.stderr().includes(JSON.stringify(path.join(mcp.data, 'output'))));
-});
-
-test('--roots reports and uses the plugin data fallback for stateless clients without initialize', timeout, async t => {
-  const mcp = await session(t);
-  const reply = await mcp.request('tools/call', { name: 'pixel_render', arguments: { project: mcp.project },
-    _meta: { 'io.modelcontextprotocol/protocolVersion': '2026-07-28', 'io.modelcontextprotocol/clientCapabilities': {} } });
+  const request = (method, params) => new Promise(resolve => { waiting.set(++id, resolve); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
+  assert.equal((await request('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'agent-plugins-test', version: '1' } })).result.serverInfo.name, 'pixelbolt');
+  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+  assert.ok((await request('tools/list')).result.tools.some(tool => tool.name === 'pixel_render'));
+  const name = `agent-art-${path.basename(base)}`;
+  const project = { version: 1, name, width: 2, height: 2, palette: { k: '#fff' }, frames: [{ name: 'still', ops: [{ op: 'pixel', x: 0, y: 0, color: 'k' }] }] };
+  const reply = await request('tools/call', { name: 'pixel_render', arguments: { project, saveAs: { sheet: 'assets/sheet.png' } } });
   assert.ok(reply.result, JSON.stringify(reply));
   const info = JSON.parse(reply.result.content[0].text);
   assert.equal(info.ok, true, JSON.stringify(info));
-  await exported(info, mcp.data, mcp.project);
-  assert.ok(mcp.stderr().includes(JSON.stringify(path.join(mcp.data, 'output'))));
-  assert.equal(mcp.messages.some(message => message.method === 'roots/list'), false);
-});
-
-test('--roots waits for the workspace answer while discovery and ping remain available, then saveAs writes there', timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({ roots: {}, extensions: { 'io.modelcontextprotocol/ui': { mimeTypes: ['text/html;profile=mcp-app'] } } });
-  assert.equal(mcp.messages.some(message => message.method === 'roots/list'), false, 'wait for initialized notification');
-  mcp.notify('notifications/initialized');
-  const request = await mcp.roots();
-  let finished = false;
-  const rendered = mcp.call({ project: mcp.project, saveAs: { sheet: 'assets/sheet.png' } }).then(info => { finished = true; return info; });
-  assert.ok((await mcp.request('tools/list')).result.tools.length);
-  assert.ok((await mcp.request('resources/list')).result.resources.length);
-  assert.deepEqual((await mcp.request('ping')).result, {});
-  assert.equal((await mcp.init({})).result.serverInfo.name, 'pixelbolt');
-  assert.equal(finished, false, 'the tool waits for roots instead of writing into the fallback');
-  assert.deepEqual(await directories(path.join(mcp.data, 'output')), []);
-  mcp.send({ id: request.id, result: rootResult(mcp.workspace) });
-  const info = await rendered;
-  await exported(info, mcp.workspace, mcp.project);
-  assert.ok((await stat(path.join(mcp.workspace, 'assets/sheet.png'))).isFile());
-  assert.deepEqual(await directories(path.join(mcp.data, 'output')), []);
-  assert.ok(mcp.stderr().includes(JSON.stringify(mcp.workspace)));
-  assert.equal(mcp.messages.filter(message => message.method === 'roots/list').length, 1);
-});
-
-for (const [label, answer] of [
-  ['an error', { error: { code: -32601, message: 'No roots here' } }],
-  ['an empty list', { result: { roots: [] } }],
-  ['no usable root', { result: { roots: [{ uri: 'https://example.com/project' }, { uri: 'file:///%zz' }, { uri: 42 }] } }]
-]) test(`--roots uses the configured fallback after ${label}`, timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
-  const request = await mcp.roots();
-  mcp.send({ id: request.id, ...answer });
-  await exported(await mcp.call({ project: mcp.project, saveAs: { sheet: 'assets/fallback.png' } }), mcp.data, mcp.project);
-  assert.ok((await stat(path.join(mcp.data, 'assets/fallback.png'))).isFile());
-  assert.deepEqual(await directories(path.join(mcp.workspace, 'output')), []);
-});
-
-test('--roots skips non-file, missing and non-directory roots for the next usable directory', timeout, async t => {
-  const mcp = await session(t);
-  const file = path.join(mcp.workspace, 'file'); await writeFile(file, 'not a directory');
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
-  const request = await mcp.roots();
-  mcp.send({ id: request.id, result: { roots: [{ uri: 'https://example.com' }, ...rootResult(path.join(mcp.workspace, 'missing'), file, mcp.workspace, mcp.other).roots] } });
-  await exported(await mcp.call({ project: mcp.project }), mcp.workspace, mcp.project);
-  assert.deepEqual(await directories(path.join(mcp.other, 'output')), []);
-});
-
-test('--roots list_changed moves later calls and revisions to the new workspace, then an empty list restores fallback', timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({ roots: { listChanged: true } }); mcp.notify('notifications/initialized');
-  await choose(mcp, mcp.workspace);
-  const first = await mcp.call({ project: mcp.project }); await exported(first, mcp.workspace, mcp.project);
-  mcp.notify('notifications/roots/list_changed'); await choose(mcp, mcp.other);
-  const missing = await mcp.request('tools/call', { name: 'pixel_validate', arguments: { revision: first.revision } });
-  assert.equal(missing.result.isError, true, 'revisions are not carried over');
-  await exported(await mcp.call({ project: mcp.project, saveAs: { sheet: 'later.png' } }), mcp.other, mcp.project);
-  assert.ok((await stat(path.join(mcp.other, 'later.png'))).isFile());
-  mcp.notify('notifications/roots/list_changed'); await choose(mcp);
-  await exported(await mcp.call({ project: mcp.project }), mcp.data, mcp.project);
-  assert.equal(mcp.messages.filter(message => message.method === 'roots/list').length, 3);
-});
-
-test('--roots ignores unknown response ids without answering them and still rejects genuinely invalid messages', timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({});
-  const before = mcp.messages.length;
-  mcp.send({ id: 'unknown', result: { roots: [] } });
-  mcp.send({ id: 'unknown-error', error: { code: -32601, message: 'Unknown' } });
-  await mcp.request('tools/list');
-  assert.equal(mcp.messages.length, before + 1, 'only tools/list gets a reply');
-  mcp.send({ id: 'broken' });
-  const help = await mcp.request('tools/call', { name: 'pixel_help', arguments: {} });
-  assert.ok(help.result.content.length);
-  assert.equal(mcp.messages.at(-2).error.code, -32600);
-});
-
-test('without --roots a roots-capable client never receives roots/list and keeps the configured paths', timeout, async t => {
-  const mcp = await session(t, { roots: false });
-  await mcp.init({ roots: { listChanged: true } });
-  mcp.notify('notifications/initialized'); mcp.notify('notifications/roots/list_changed');
-  await exported(await mcp.call({ project: mcp.project }), mcp.data, mcp.project);
-  assert.equal(mcp.messages.some(message => message.method === 'roots/list'), false);
-  assert.equal(mcp.stderr(), '');
-});
-
-test('--roots times out after 10 seconds despite overlapping notifications, releases waiting calls and ignores late answers', timeout, async t => {
-  const mcp = await session(t, { local: true });
-  await mcp.init({ roots: {} });
-  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
-  mcp.notify('notifications/initialized'); const request = await mcp.roots();
-  let finished = false;
-  const rendered = mcp.call({ project: mcp.project }).then(info => { finished = true; return info; });
-  t.mock.timers.tick(9000);
-  mcp.notify('notifications/roots/list_changed'); const newer = await mcp.roots();
-  t.mock.timers.tick(999);
-  await mcp.request('ping');
-  assert.equal(finished, false);
-  assert.deepEqual(await directories(path.join(mcp.data, 'output')), []);
-  t.mock.timers.tick(1); t.mock.timers.reset();
-  await exported(await rendered, mcp.data, mcp.project);
-  mcp.send({ id: request.id, result: rootResult(mcp.workspace) });
-  mcp.send({ id: newer.id, result: rootResult(mcp.other) });
-  await exported(await mcp.call({ project: mcp.project }), mcp.data, mcp.project);
-});
-
-test('--roots accepts only the newest overlapping list response', timeout, async t => {
-  const mcp = await session(t);
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
-  const old = await mcp.roots();
-  mcp.notify('notifications/roots/list_changed'); const latest = await mcp.roots();
-  assert.notEqual(latest.id, old.id);
-  mcp.send({ id: latest.id, result: rootResult(mcp.other) });
-  mcp.send({ id: old.id, result: rootResult(mcp.workspace) });
-  await exported(await mcp.call({ project: mcp.project }), mcp.other, mcp.project);
-  assert.deepEqual(await directories(path.join(mcp.workspace, 'output')), []);
-});
-
-test('--roots lets an in-flight worker finish in its original workspace and starts queued calls in the new one', timeout, async t => {
-  let release, started;
-  t.after(() => { release?.(); });
-  const mcp = await session(t, { local: true });
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized'); await choose(mcp, mcp.workspace);
-  const held = new Promise(resolve => { started = resolve; });
-  const post = Worker.prototype.postMessage;
-  const mocked = t.mock.method(Worker.prototype, 'postMessage', function (message, ...rest) {
-    if (message.name === 'pixel_render' && !release) {
-      release = () => post.call(this, message, ...rest); started();
-    } else return post.call(this, message, ...rest);
-  });
-  const first = mcp.call({ project: mcp.project }); await held;
-  // Wait for root validation itself, without relying on rendering speed or a sleep.
-  const applied = new Promise(resolve => {
-    const write = process.stderr.write;
-    const mock = t.mock.method(process.stderr, 'write', function (chunk, ...args) {
-      const result = write.call(this, chunk, ...args);
-      if (String(chunk).includes(JSON.stringify(mcp.other))) { mock.mock.restore(); resolve(); }
-      return result;
-    });
-  });
-  mcp.notify('notifications/roots/list_changed'); await choose(mcp, mcp.other);
-  const second = mcp.call({ project: mcp.project });
-  await applied;
-  mocked.mock.restore(); const resume = release; release = null; resume();
-  await exported(await first, mcp.workspace, mcp.project);
-  await exported(await second, mcp.other, mcp.project);
-});
-
-test('--roots finishes checking an answer already received when the client closes its input', timeout, async t => {
-  const base = await mkdtemp(path.join(await realpath(os.tmpdir()), 'pixelbolt-agent-plugins-eof-'));
-  t.after(() => rm(base, { recursive: true, force: true }));
-  const data = path.join(base, 'data'), workspace = path.join(base, 'workspace');
-  await Promise.all([data, workspace].map(folder => mkdir(folder)));
-  const input = new PassThrough(), output = new PassThrough();
-  const running = startMCP({ roots: true, root: data, directory: path.join(data, 'output'), input, output });
-  t.after(async () => { input.end(); await running; });
-  const mcp = client(input, output);
-  const project = { version: 1, name: 'agent-art-eof', width: 2, height: 2, palette: { k: '#fff' }, frames: [{ name: 'still', ops: [{ op: 'pixel', x: 0, y: 0, color: 'k' }] }] };
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
-  const request = await mcp.roots();
-  // The answer, the last call and the end of input arrive together, while the answer's folder is still being checked.
-  mcp.send({ id: request.id, result: rootResult(workspace) });
-  const rendered = mcp.call({ project });
-  input.end();
-  await exported(await rendered, workspace, project);
-  assert.deepEqual(await directories(path.join(data, 'output')), []);
-});
-
-test('--roots keeps reading for the roots answer while more calls than the queue bound wait for it', { timeout: 60000 }, async t => {
-  const mcp = await session(t, { local: true });
-  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
-  const request = await mcp.roots();
-  // More than MAX_WAITING (256) calls queue behind the lookup before the answer is sent.
-  const helps = Array.from({ length: 300 }, () => mcp.request('tools/call', { name: 'pixel_help', arguments: {} }));
-  mcp.send({ id: request.id, result: rootResult(mcp.workspace) });
-  const rendered = mcp.call({ project: mcp.project });
-  for (const reply of await Promise.all(helps)) assert.ok(reply.result, JSON.stringify(reply).slice(0, 300));
-  await exported(await rendered, mcp.workspace, mcp.project);
-  assert.deepEqual(await directories(path.join(mcp.data, 'output')), []);
+  // An agent outside the data folder finds every file from the reply alone.
+  assert.equal(path.isAbsolute(info.directory), true);
+  assert.equal(path.dirname(info.directory), path.join(data, 'output'));
+  assert.ok((await stat(path.join(info.directory, `${name}.png`))).isFile());
+  assert.deepEqual(info.saved.map(item => item.path), [path.join(data, 'assets', 'sheet.png')]);
+  assert.ok((await stat(path.join(data, 'assets', 'sheet.png'))).isFile());
+  const inRepo = await readdir(path.join(root, 'output')).catch(error => { if (error.code === 'ENOENT') return []; throw error; });
+  assert.deepEqual(inRepo.filter(entry => entry.startsWith(name)), [], 'no export in the plugin folder');
+  await assert.rejects(stat(path.join(root, 'assets', 'sheet.png')), { code: 'ENOENT' });
 });
