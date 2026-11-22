@@ -336,6 +336,9 @@ test('terminating a listing worker also closes every running pool thread', { tim
   // Transfer each port all the way to its pool thread. No port remains in the listing worker, so these close
   // events witness the nested threads' own teardown, independent of CPU usage or how busy the CI runner is.
   const channels = [new MessageChannel(), new MessageChannel()];
+  // A port with only a 'close' listener doesn't hold the event loop, so without this keep-alive a slow teardown lets
+  // the loop empty and node:test cancels the test (P-206). Each port stops holding it when it closes.
+  for (const { port1 } of channels) port1.on('message', () => {});
   const started = channels.map(({ port1 }) => once(port1, 'message'));
   let closed = 0;
   const stopped = channels.map(({ port1 }) => once(port1, 'close').then(() => { closed++; }));
