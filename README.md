@@ -366,7 +366,7 @@ codex plugin marketplace add skulitom/Pixelbolt
 codex plugin add pixelbolt@pixelbolt
 ```
 
-Codex and other Agent Plugins 1.0.0 clients read the repository's root `plugin.json` and `mcp.json`. That format starts a plugin's server in the plugin's own folder unless the entry names another, so this entry keeps file references, renders and `saveAs` copies in the plugin's persistent data folder, and `pixel_render` replies with the export folder and saved copies as absolute paths. For exports in a folder you choose, use the `npx` configuration under **Other MCP clients** with an absolute `--out`.
+Codex and other Agent Plugins 1.0.0 clients read the repository's root `plugin.json` and `mcp.json`. That format starts a plugin's server only in the plugin's own folder or its data folder, so this entry keeps file references, renders and `saveAs` copies in the plugin's persistent data folder, and `pixel_render` replies with the export folder and saved copies as absolute paths. Cursor doesn't expand the format's `${PLUGIN_ROOT}` and `${PLUGIN_DATA}`, so this entry isn't expected to start there. For exports in a folder you choose, use the `npx` configuration under **Other MCP clients** with an absolute `--out`.
 
 **Other MCP clients.** The npm package runs the server, with nothing to clone (Node.js 20 or newer). Add it to your agent's MCP configuration and replace `/absolute/path/to/pixelbolt-output` with the folder where exports should go. Use an absolute path, because clients start servers in different folders; on Windows use forward slashes, for example `C:/Art/pixelbolt-output`:
 
