@@ -175,7 +175,7 @@ Os arquivos APNG usam a extensão `.png` de propósito. No Godot 4, coloque `nam
 - [README em inglês](https://github.com/skulitom/Pixelbolt/blob/main/README.md): todos os comandos, as exportações, os quadros para editores de vídeo, a API JavaScript e as versões portáteis
 - [Guia de criação](https://github.com/skulitom/Pixelbolt/blob/main/docs/agent-guide.md): campos da receita, operações de desenho e limites
 - [Fluxo de trabalho artístico](https://github.com/skulitom/Pixelbolt/blob/main/docs/art-workflow.md): revisão de silhueta e valores, poses e movimento, autotiles, cenas, fluidos e corpos rígidos
-- [Skill de pixel art](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixel-art/SKILL.md): um fluxo reutilizável para criar e revisar
+- [Skill de pixel art](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixelbolt-pixel-art/SKILL.md): um fluxo reutilizável para criar e revisar
 - [Exemplos](https://github.com/skulitom/Pixelbolt/tree/main/examples) e [como a galeria foi feita](https://github.com/skulitom/Pixelbolt/blob/main/showcase/gallery/README.md)
 - [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt): índice da documentação para agentes
 - [CONTRIBUTING.md](https://github.com/skulitom/Pixelbolt/blob/main/CONTRIBUTING.md) e [AGENTS.md](https://github.com/skulitom/Pixelbolt/blob/main/AGENTS.md): como contribuir. Relate erros nas [GitHub Issues](https://github.com/skulitom/Pixelbolt/issues)

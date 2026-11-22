@@ -238,7 +238,7 @@ Use Pixelbolt to create or revise pixel sprites, tiles, icons, effects and short
 | Entry point | Purpose |
 | --- | --- |
 | [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt) | Compact documentation index with direct links for agents |
-| [Pixel art skill](skills/pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow; `npx -y pixelbolt@latest skill install` installs it on its own |
+| [Pixel art skill](skills/pixelbolt-pixel-art/SKILL.md) | Reusable authoring and visual inspection workflow; `npx -y pixelbolt@latest skill install` installs it on its own |
 | [Authoring guide](docs/agent-guide.md) | Recipe fields, drawing operations and limits |
 | [JSON Schema](schema.json) | Machine-readable recipe structure |
 | [Examples](examples/) | Complete forest spirit, campfire, coin and shrine recipes, an isometric tile set and the scene that lays it out, a caption with pixel text, a rotated sword swing, a rigged hero with walk, run, jump and attack templates, the same hero swinging a sword that turns with the arm, a red fox that walks, trots and gallops on four legs, a hermit crab in a treasure chest posed from drawn parts with no rig, a particle effects source, fifteen spell effects (slash hit, fire explosion, a looping fireball in eight directions, lightning strike, healing circle, a swirling vortex, a falling meteor, a shield bubble, a portal that lights its stone arch, a frost nova, a teleport-in, a coin sparkle, an electric arc that lights its prongs, an ice crystal with a pulse of cold light, a forest waterfall), a teleport and a spirit aura on the rigged hero, a sword smear that follows the swing's blade tip, a simulated explosion under spell-shape flashes, a spell library (fire, ice, lightning, water, poison, holy and shadow, each a projectile in eight directions, an impact, an area effect and a buff), five cel-shaded water effects, 42 fluid presets, fourteen rigid-body scenes (crates that topple or smash, a blade, a territory match, ropes, a ragdoll and cloth) and four crystal growths (a geode, a quartz cluster, pyrite and snowflakes) |
@@ -351,6 +351,8 @@ A scene's view and each of its assets, an effect source and an imported frame ha
 
 ## Connect an agent through MCP
 
+The repository root is also an Agent Plugins 1.0.0 package (`plugin.json`, `mcp.json`): its MCP server uses the client's workspace from MCP roots and otherwise writes to the plugin's persistent data folder.
+
 **Claude Code plugin.** One command installs the MCP server and the pixel art skill, with nothing to clone (Claude Code 2.1.292 or later):
 
 ```
@@ -438,7 +440,7 @@ Send a recipe once. Each successful recipe-tool response includes a `revision` i
 
 The server implements newline-delimited stdio MCP with initialization, version negotiation, ping and tool discovery/calls. It supports protocol versions 2024-11-05, 2025-03-26, 2025-06-18 and 2025-11-25 through initialization, plus 2026-07-28 through `server/discover` and stateless requests carrying protocol version and client capabilities in `_meta`. It uses no HTTP transport or external services. See the [MCP stdio specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports).
 
-An agent can also use the CLI directly. The reusable [agent skill](skills/pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md) explain the complete format; `npx -y pixelbolt@latest skill install` gives Claude Code the skill with its guides, schemas and examples and no server. [schema.json](schema.json) supports editor completion and structural validation; the rasterizer additionally validates references, matching row widths and resource limits.
+An agent can also use the CLI directly. The reusable [agent skill](skills/pixelbolt-pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md) explain the complete format; `npx -y pixelbolt@latest skill install` gives Claude Code the skill with its guides, schemas and examples and no server. [schema.json](schema.json) supports editor completion and structural validation; the rasterizer additionally validates references, matching row widths and resource limits.
 
 ## Inline previews (MCP Apps)
 

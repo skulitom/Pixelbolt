@@ -20,7 +20,7 @@ Rights stay with the jobs that need them, and those jobs run only this repositor
 
 ## Release
 
-1. Bump `package.json`, the metadata-only `server.json`, the Claude Code plugin's `.claude-plugin/plugin.json` and the Gemini CLI extension's `gemini-extension.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
+1. Bump `package.json`, the metadata-only `server.json`, the Claude Code plugin's `.claude-plugin/plugin.json`, the Agent Plugins manifest `plugin.json` and the Gemini CLI extension's `gemini-extension.json` to the same `X.Y.Z` in one reviewed commit. Leave `mcpb/manifest.json` without a version; the builder inserts it. Version 0.8.0 is the first release under the Pixelbolt name. Update `mcpb/RELEASE_NOTES.md` with the changes and asset names for each release.
 2. Tag that commit and push the tag (substitute the version):
 
    ```sh
@@ -63,6 +63,12 @@ gh workflow run publish-registry.yml -R skulitom/Pixelbolt -f tag=vX.Y.Z
 The publish workflow requires the release, verifies the bundle's Release-workflow attestation, checks the tag and all versions, hashes the downloaded bytes, validates the entry with the pinned publisher, and reads back its published checksum. If a release lacks its bundle, rerun Release to attach it before publishing. Use the dispatch form's `metadata_only` checkbox only when deliberately accepting the permanent loss of installation for that version; an attached bundle always takes precedence.
 
 Check the listing at <https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.skulitom/pixelbolt> and read the workflow's step summary.
+
+## Agent Plugins package
+
+The repository root carries Agent Plugins 1.0.0 `plugin.json` and `mcp.json`, with the skill discovered at `skills/pixelbolt-pixel-art/SKILL.md`. The MCP entry runs `mcp --roots --root ${PLUGIN_DATA} --out ${PLUGIN_DATA}/output`; these root manifests are not part of the npm package.
+
+`pixelbolt mcp [--roots] [--root directory] [--out directory] [--time-limit seconds]` opts into MCP workspace roots only with `--roots`. After initialization and each roots change notification, it selects the first usable local directory from `roots/list`, resolving file references there and exporting into its `output/`. Unsupported roots, errors, empty or unusable lists, and a lookup unanswered after 10 seconds use `--root` and `--out` (their defaults are the process working directory and its `output/`). File calls wait for the pending lookup; discovery and ping stay available. A changed root affects later calls; a running call finishes in its original workspace, and revisions under the old export folder's `.revisions` are not carried over. Stderr reports the chosen root and export folder; render replies already include the absolute export directory.
 
 ## Gemini CLI extension gallery
 

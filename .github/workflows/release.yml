@@ -69,6 +69,8 @@ jobs:
           // The Claude Code plugin carries the version too, and the release notes become the GitHub release's body.
           const plugin = JSON.parse(readFileSync('.claude-plugin/plugin.json'));
           if (plugin.version !== pkg.version) throw new Error(`.claude-plugin/plugin.json says ${plugin.version}; set it to ${pkg.version}.`);
+          const agentPlugin = JSON.parse(readFileSync('plugin.json'));
+          if (agentPlugin.version !== pkg.version) throw new Error(`plugin.json says ${agentPlugin.version}; set it to ${pkg.version}.`);
           // So does the Gemini CLI extension: Gemini CLI shows its version, and its docs ask that it match the tag.
           const gemini = JSON.parse(readFileSync('gemini-extension.json'));
           if (gemini.version !== pkg.version) throw new Error(`gemini-extension.json says ${gemini.version}; set it to ${pkg.version}.`);
@@ -88,7 +90,7 @@ jobs:
           import { readFileSync } from 'node:fs';
           const [{ files, entryCount }] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
           const paths = files.map(file => file.path);
-          const needed = ['package.json', 'README.md', 'LICENSE', 'bin/pixelbolt.js', 'src/index.js', 'src/mcp.js', 'skills/pixel-art/SKILL.md', 'schema.json', 'studio/index.html'];
+          const needed = ['package.json', 'README.md', 'LICENSE', 'bin/pixelbolt.js', 'src/index.js', 'src/mcp.js', 'skills/pixelbolt-pixel-art/SKILL.md', 'schema.json', 'studio/index.html'];
           const missing = needed.filter(file => !paths.includes(file));
           // Only package.json's `files` list ships: never tests, scripts, evals, showcase art, builds or local output.
           const stray = paths.filter(file => /^(test|scripts|evals|showcase|dist|output|packaging|mcpb|\.github)\//.test(file));

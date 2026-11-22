@@ -149,7 +149,7 @@ More
 In the "app" folder:
 
     docs/agent-guide.md          recipe format and limits
-    skills/pixel-art/SKILL.md    a skill for agents
+    skills/pixelbolt-pixel-art/SKILL.md    a skill for agents
     examples                     the samples
     README.md                    full documentation
 

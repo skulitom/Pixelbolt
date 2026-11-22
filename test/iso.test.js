@@ -193,7 +193,7 @@ test('the isometric examples: a tile set on 32x16 diamonds, and a scene that lay
   const same = (a, b) => a.data.every((value, i) => value === b.data[i]);
   assert.ok(same(renderScene(scene, { time: source.duration }), view) && !same(renderScene(scene, { time: 330 }), view), 'the scene moves and comes back to its first frame');
 
-  for (const doc of ['skills/pixel-art/SKILL.md', 'docs/agent-craft.md', 'docs/art-workflow.md', 'llms.txt']) {
+  for (const doc of ['skills/pixelbolt-pixel-art/SKILL.md', 'docs/agent-craft.md', 'docs/art-workflow.md', 'llms.txt']) {
     const text = readFileSync(new URL(`../${doc}`, import.meta.url), 'utf8');
     for (const file of ['examples/iso-tiles.json', 'examples/iso-glade.scene.json']) assert.ok(text.includes(file), `${doc} cites ${file}`);
   }

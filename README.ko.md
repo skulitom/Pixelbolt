@@ -173,7 +173,7 @@ APNG 파일의 확장자는 일부러 `.png`로 되어 있습니다. Godot 4에�
 - [영어 README](https://github.com/skulitom/Pixelbolt/blob/main/README.md): 명령, 내보내기, 영상 편집용 프레임, JavaScript API, 포터블 빌드에 대한 전체 설명
 - [작성 가이드](https://github.com/skulitom/Pixelbolt/blob/main/docs/agent-guide.md): 레시피 필드, 그리기 연산, 제한
 - [아트 워크플로](https://github.com/skulitom/Pixelbolt/blob/main/docs/art-workflow.md): 실루엣과 명암 검토, 포즈와 동작, 오토타일, 장면, 유체와 강체
-- [픽셀 아트 스킬](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixel-art/SKILL.md): 재사용할 수 있는 제작과 검토 절차
+- [픽셀 아트 스킬](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixelbolt-pixel-art/SKILL.md): 재사용할 수 있는 제작과 검토 절차
 - [예제](https://github.com/skulitom/Pixelbolt/tree/main/examples)와 [갤러리 제작 과정](https://github.com/skulitom/Pixelbolt/blob/main/showcase/gallery/README.md)
 - [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt): 에이전트를 위한 문서 색인
 - [CONTRIBUTING.md](https://github.com/skulitom/Pixelbolt/blob/main/CONTRIBUTING.md)와 [AGENTS.md](https://github.com/skulitom/Pixelbolt/blob/main/AGENTS.md): 기여 방법. 버그는 [GitHub Issues](https://github.com/skulitom/Pixelbolt/issues)로 알려 주세요

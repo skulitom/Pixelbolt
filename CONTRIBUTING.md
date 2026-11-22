@@ -15,7 +15,7 @@ There are no dependencies to install and no build step. The preview studio opens
 
 Optional quality-lab browser checks use `PIXELBOLT_BROWSER_CHANNEL` to select an installed browser channel. The portable builder uses `PIXELBOLT_STUDIO_PACKER` internally to prevent relaunching the pinned packer. Both variables accept their `PIXELFORGE_` equivalents as a fallback only when the new name is unset.
 
-Read [AGENTS.md](AGENTS.md) for the architecture and project constraints. Agents authoring artwork should also read the [pixel art skill](skills/pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md).
+Read [AGENTS.md](AGENTS.md) for the architecture and project constraints. Agents authoring artwork should also read the [pixel art skill](skills/pixelbolt-pixel-art/SKILL.md) and [authoring reference](docs/agent-guide.md).
 
 ## Propose a change
 

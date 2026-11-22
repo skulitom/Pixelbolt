@@ -50,7 +50,7 @@ test('the fx canvas size says a source with more frames than fit compiles with f
 test('every doc that says --frames thins a loop says when it is even: a count that divides its frames', async () => {
   const said = { 'docs/art-workflow.md': /A loop keeps an even step only when the count divides its frames \(a 96-frame loop to 48 or 32, not 72\); otherwise the compile warns/,
     'docs/agent-quick-start.md': /a loop at an even step if 8 divides its frames \(fx warns otherwise\)/, 'docs/agent-craft.md': /a loop at an even step when 8 divides its frames \(an fx source warns otherwise\)/,
-    'skills/pixel-art/SKILL.md': /`--frames 8` down to 8 frames \(an even step when 8 divides a loop's frames\)/ };
+    'skills/pixelbolt-pixel-art/SKILL.md': /`--frames 8` down to 8 frames \(an even step when 8 divides a loop's frames\)/ };
   for (const [file, sentence] of Object.entries(said)) {
     const text = await read(file);
     assert.match(text, sentence, file);
@@ -88,10 +88,10 @@ test('a small region of a few frames is enlarged by itself, and --scale zooms th
   // Before: "up to about 128 px a side by itself", which held for a few frames only: the sheet stays within 1024
   // pixels, so a 64-pixel region of 64 frames shows at scale 1.
   const said = /by itself for a small region of a few frames[^.;]*`--scale 4`/;
-  assert.match(await read('skills/pixel-art/SKILL.md'), said);
+  assert.match(await read('skills/pixelbolt-pixel-art/SKILL.md'), said);
   assert.match(await read('docs/agent-quick-start.md'), said);
   assert.match(await read('docs/agent-guide.md'), /A small region of a few frames is enlarged by itself, each cell up to 256 pixels within a sheet of 1024 \(a 64-pixel region of 4 frames at scale 4, of 64 frames at scale 1\); otherwise pass `scale` \(CLI `--scale`\)\./);
-  for (const file of ['skills/pixel-art/SKILL.md', 'docs/agent-quick-start.md', 'docs/agent-guide.md']) assert.doesNotMatch(await read(file), /about 128/, file);
+  for (const file of ['skills/pixelbolt-pixel-art/SKILL.md', 'docs/agent-quick-start.md', 'docs/agent-guide.md']) assert.doesNotMatch(await read(file), /about 128/, file);
   const at = (frames, w, h, scale) => inspectProject(renderProject(recipe('rain', 320, 180, frames)), { region: { x: 0, y: 0, w, h }, scale }).sheet.scale;
   assert.deepEqual([at(4, 120, 80), at(4, 128, 72), at(4, 160, 80), at(4, 160, 80, 4)], [2, 2, 1, 4]);
   assert.deepEqual([at(4, 64, 64), at(64, 64, 64), at(64, 64, 64, 4)], [4, 1, 4]);

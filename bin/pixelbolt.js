@@ -106,7 +106,9 @@ const HELP = `Pixelbolt — text to pixels, without dependencies
   pixelbolt preview [file.json] [--port N] [--open]
                                            Studio for a recipe or scene; sources open as their compiled recipe.
                                            Port 4747, or a free one when it is in use; --open starts your browser
-  pixelbolt mcp [--out directory] [--root directory] [--time-limit seconds]  Run the MCP server over stdio
+  pixelbolt mcp [--out directory] [--root directory] [--roots] [--time-limit seconds]
+                                           Run the MCP server over stdio; --roots uses the client's workspace,
+                                           falling back to --root and --out if no usable MCP root arrives
   pixelbolt schema                         Print the JSON Schema
   pixelbolt skill install [--project | --dir folder] [--force]
                                            Install the pixel art skill on its own, with no checkout or MCP server:
@@ -175,7 +177,7 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 
 // The options each command takes: the one place an option is listed. One named in FLAGS takes no value; every other
 // takes the argument after it.
-const FLAGS = new Set(['force', 'grid', 'native', 'diagnostics', 'palette', 'open', 'expand', 'embed-recipe', 'embedded', 'project', 'list-files', 'full', 'gif', 'look']);
+const FLAGS = new Set(['force', 'grid', 'native', 'diagnostics', 'palette', 'open', 'expand', 'embed-recipe', 'embedded', 'project', 'list-files', 'full', 'gif', 'look', 'roots']);
 const OPTIONS = {
   init: ['force'],
   validate: ['fps'],
@@ -186,7 +188,7 @@ const OPTIONS = {
   'gif-frames': ['out', 'fps', 'loops', 'background', 'prefix', 'force'],
   sequence: ['out', 'fps', 'animation', 'size', 'scale', 'fit', 'align', 'offset', 'background', 'loops', 'seconds', 'step', 'force'],
   preview: ['port', 'open'],
-  mcp: ['out', 'root', 'time-limit'],
+  mcp: ['out', 'root', 'roots', 'time-limit'],
   schema: [],
   compile: ['out', 'metadata', 'preview', 'force', 'expand', 'preset', 'draft-views', 'size', 'frames', 'animation'],
   autotile: ['out', 'metadata', 'preview', 'force'],
@@ -542,7 +544,7 @@ try {
       // A tool call that runs longer is stopped and answered with an error; the default is 50 seconds.
       const limit = options['time-limit'] === undefined ? undefined : Number(options['time-limit']);
       if (limit !== undefined && !(limit >= 1 && limit <= 3600)) throw new Error('--time-limit must be 1 to 3600 seconds');
-      await startMCP({ directory: options.out, ...(options.root !== undefined && { root: path.resolve(options.root) }), ...(limit !== undefined && { timeLimit: limit * 1000 }) });
+      await startMCP({ directory: options.out, ...(options.root !== undefined && { root: path.resolve(options.root) }), ...(options.roots && { roots: true }), ...(limit !== undefined && { timeLimit: limit * 1000 }) });
     } else if (command === 'preview') {
       const { startStudio, openBrowser, STUDIO_PORT } = await import('../src/server.js');
       const port = options.port === undefined ? STUDIO_PORT : Number(options.port);

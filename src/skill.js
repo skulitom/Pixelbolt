@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const SKILL_SOURCE = 'skills/pixel-art/SKILL.md';
+const SKILL_SOURCE = 'skills/pixelbolt-pixel-art/SKILL.md';
 export const SKILL_NAME = 'pixelbolt-pixel-art';
 export const SKILL_MANIFEST = '.pixelbolt-skill.json';
 // The agent-facing guides the skill and the quick start cite; a test fails when the skill names one not listed here.

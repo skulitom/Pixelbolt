@@ -128,7 +128,7 @@ Pixelbolt は公式 MCP Registry に `io.github.skulitom/pixelbolt` として登
 
 - [英語版 README](https://github.com/skulitom/Pixelbolt/blob/main/README.md)：コマンド、書き出し、JavaScript API、ポータブル版の詳しい説明
 - [オーサリングガイド](https://github.com/skulitom/Pixelbolt/blob/main/docs/agent-guide.md)：レシピのフィールド、描画操作、制限
-- [ピクセルアートのスキル](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixel-art/SKILL.md)：再利用できる制作と確認の手順
+- [ピクセルアートのスキル](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixelbolt-pixel-art/SKILL.md)：再利用できる制作と確認の手順
 - [サンプル](https://github.com/skulitom/Pixelbolt/tree/main/examples)と[ギャラリー](https://github.com/skulitom/Pixelbolt/blob/main/showcase/gallery/README.md)
 - [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt)：エージェント向けのドキュメント索引
 

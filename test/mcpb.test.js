@@ -46,6 +46,7 @@ test('registry source is metadata-only with a short description', async () => {
   // Every file a release names its version in agrees, as the release workflow's tag check requires.
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
   assert.equal(JSON.parse(await readFile(path.join(root, '.claude-plugin', 'plugin.json'))).version, pkg.version, '.claude-plugin/plugin.json version');
+  assert.equal(JSON.parse(await readFile(path.join(root, 'plugin.json'))).version, pkg.version, 'plugin.json version');
   assert.equal(JSON.parse(await readFile(path.join(root, 'gemini-extension.json'))).version, pkg.version, 'gemini-extension.json version');
   assert.equal((await readFile(path.join(root, 'mcpb', 'RELEASE_NOTES.md'), 'utf8')).split('\n')[0].trim(), `# ${pkg.version}`);
   assert.deepEqual(pkg.bin, { pixelbolt: './bin/pixelbolt.js', pixelforge: './bin/pixelforge.js' });
@@ -80,7 +81,7 @@ test('the Gemini CLI extension runs its own copy of the server in the user\'s fo
   assert.deepEqual(server.args.slice(0, 2), ['${extensionPath}${/}bin${/}pixelbolt.js', 'mcp']);
   assert.equal(Object.hasOwn(server, 'cwd'), false);
   // Gemini CLI loads skills from skills/<name>/SKILL.md beside the manifest.
-  assert.match(await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8'), /^---\nname: /);
+  assert.match(await readFile(path.join(root, 'skills/pixelbolt-pixel-art/SKILL.md'), 'utf8'), /^---\nname: /);
 });
 
 const ITCH_TARGET = 'skulitom/pixelforge-studio:windows';
@@ -484,7 +485,7 @@ test('release rights stay in jobs that run only this repository\'s code, after t
   // is recorded before npx runs.
   assert.match(jobs.release, /node scripts\/build-mcpb\.mjs\n[\s\S]*"\$actual" != "\$VERIFIED_SHA256"[\s\S]*attest-build-provenance/);
   assert.ok(jobs.build.indexOf('id: bundle') < jobs.build.indexOf('npx --yes'));
-  for (const file of ['package.json', 'server.json', '.claude-plugin/plugin.json', 'gemini-extension.json', 'mcpb/RELEASE_NOTES.md']) assert.ok(jobs.build.includes(`'${file}'`), `the tag check reads ${file}`);
+  for (const file of ['package.json', 'server.json', '.claude-plugin/plugin.json', 'plugin.json', 'gemini-extension.json', 'mcpb/RELEASE_NOTES.md']) assert.ok(jobs.build.includes(`'${file}'`), `the tag check reads ${file}`);
 });
 
 test('MCPB builds are byte-identical, including across CRLF and LF checkouts', async () => {

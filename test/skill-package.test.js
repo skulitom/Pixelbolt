@@ -21,7 +21,7 @@ test('the npm package holds every file skill install copies', async () => {
   // npm packs package.json's `files` (folders and files) plus package.json; the installer reads from the package
   // itself, so a file it copies that the package lacks would break `npx pixelbolt skill install` after publishing.
   const packed = file => file === 'package.json' || pkg.files.some(entry => file === entry || file.startsWith(`${entry}/`));
-  const copied = [...(await skillFiles(pkg.version)).keys()].map(file => file === 'SKILL.md' ? 'skills/pixel-art/SKILL.md' : file);
+  const copied = [...(await skillFiles(pkg.version)).keys()].map(file => file === 'SKILL.md' ? 'skills/pixelbolt-pixel-art/SKILL.md' : file);
   assert.ok(copied.length > 20);
   assert.deepEqual(copied.filter(file => !packed(file)), []);
 });

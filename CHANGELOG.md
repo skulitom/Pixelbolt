@@ -4,6 +4,8 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+- Agent Plugins 1.0.0 clients can load the repository's new `plugin.json` and `mcp.json`; the skill now lives in `skills/pixelbolt-pixel-art/`. `pixelbolt mcp --roots` uses the client's workspace for file references and exports, falling back to the plugin's persistent data folder when launched through this package.
+
 ### Rotating sprite stacks
 
 - Tapered paths bend at named joints and carry attachments in the fingertip frame. Wing membranes follow two posed ribs and keep their veins painted on the surface. Use CLI `inspect --pose-sheet` or MCP `pixel_inspect.poseSheet` to compare named poses across fixed camera headings. [Rimefiendâ€™s crystal index claw](showcase/rimefiend/README.md)

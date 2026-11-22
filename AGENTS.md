@@ -1,6 +1,6 @@
 # Pixelbolt
 
-To **use** Pixelbolt for artwork, start with [the pixel art skill](skills/pixel-art/SKILL.md) and [the quick start](docs/agent-quick-start.md), then [the authoring guide](docs/agent-guide.md) and [schema.json](schema.json) as needed. [llms.txt](llms.txt) indexes the public documentation; [README.md](README.md) includes CLI and MCP setup. The instructions below apply when **contributing to the toolkit**.
+To **use** Pixelbolt for artwork, start with [the pixel art skill](skills/pixelbolt-pixel-art/SKILL.md) and [the quick start](docs/agent-quick-start.md), then [the authoring guide](docs/agent-guide.md) and [schema.json](schema.json) as needed. [llms.txt](llms.txt) indexes the public documentation; [README.md](README.md) includes CLI and MCP setup. The instructions below apply when **contributing to the toolkit**.
 
 This is an agent-first pixel art toolkit. Keep the core and runtime free of dependencies. Use standard Node.js APIs for the CLI, PNG/APNG encoding, ZIP and the local server. No build step is required.
 
@@ -45,8 +45,8 @@ Simulated and drawn output is pinned by golden hashes in `test/goldens/<set>.jso
 - **Replies are shaped in one place each**: `briefCells`, `briefDiagnostics`, `briefComparison` and `errorReply` in `core.js`, `briefCheck` in `check.js`, and the CLI's one printer (`print`) and option table (`OPTIONS`) in `bin/pixelbolt.js`. A reply says a thing once, and a field that is noise beside a clean result is left out.
 - **Browser-compatible modules import no Node API.** The renderer never reads files: `resolve.js` does, on the Node side.
 - **New fluid, powder or body physics follows [docs/physics-model.md](docs/physics-model.md)**: looks and satisfying motion first, then one set of units, one heat scale, one solid layer, one notion of air, one step order and a matter ledger, so features written apart still agree.
-- **MCP tool code keeps no state between calls** other than files on disk; only `ping` and cancellations skip the queue.
-- **`skills/pixel-art/SKILL.md` stays a short router.** A checklist for one kind of job goes in a section of `docs/agent-craft.md`; when the skill cites a new guide, add it to `DOCS` in `src/skill.js`.
+- **MCP tool code keeps no state between calls** other than files on disk; `ping` and cancellations skip the queue, as do roots replies and discovery with `mcp --roots`.
+- **`skills/pixelbolt-pixel-art/SKILL.md` stays a short router.** A checklist for one kind of job goes in a section of `docs/agent-craft.md`; when the skill cites a new guide, add it to `DOCS` in `src/skill.js`.
 - **Draft recovery in the studio stays in the browser**, never a server endpoint. Studio buttons mirror a CLI or MCP call.
 - **Packaging adds nothing to `package.json`'s dependencies or `files`**, and its scripts only print or serve: they never edit a user's configuration. `scripts/deploy-playground.mjs` prepares a site change and never pushes.
 

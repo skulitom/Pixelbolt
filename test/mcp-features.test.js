@@ -211,7 +211,7 @@ test('the instructions, the quick start and the skill ask the agent to look and 
   const effects = (await mcp.request('tools/call', { name: 'pixel_help', arguments: { topic: 'craft', name: 'Effects' } })).result.content[0].text;
   assert.ok(!effects.includes('Deliver the preset as shipped first'));
   assert.match(effects, /A preset is a first draft: deliver it as it ships when it shows what was asked, or when the user named it; otherwise edit its source\./);
-  const skill = await readFile(path.join(root, 'skills/pixel-art/SKILL.md'), 'utf8');
+  const skill = await readFile(path.join(root, 'skills/pixelbolt-pixel-art/SKILL.md'), 'utf8');
   assert.ok(!skill.includes('Deliver it as shipped first'));
   assert.match(skill, /A preset is a first draft: compare it with the request \(step 6 below\) and tune what differs before you deliver\./);
   assert.match(skill, /\n5\. \*\*GIF, when asked\.\*\*[^\n]*\n6\. \*\*Look and refine\.\*\* [^\n]*at least two rounds for an effect or an animation\.[^\n]*\n7\. \*\*Deliver\*\* /);

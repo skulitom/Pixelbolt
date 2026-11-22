@@ -175,7 +175,7 @@ node bin/pixelbolt.js gif output/campfire.json --scale 4 --out output/campfire.g
 - [README на английском](https://github.com/skulitom/Pixelbolt/blob/main/README.md): все команды, экспорт, кадры для видеоредакторов, JavaScript API и переносные сборки
 - [Руководство по созданию](https://github.com/skulitom/Pixelbolt/blob/main/docs/agent-guide.md): поля рецепта, операции рисования и ограничения
 - [Художественный процесс](https://github.com/skulitom/Pixelbolt/blob/main/docs/art-workflow.md): проверка силуэта и тона, позы и движение, автотайлы, сцены, жидкости и твёрдые тела
-- [Навык пиксель-арта](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixel-art/SKILL.md): повторяемый процесс создания и проверки
+- [Навык пиксель-арта](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixelbolt-pixel-art/SKILL.md): повторяемый процесс создания и проверки
 - [Примеры](https://github.com/skulitom/Pixelbolt/tree/main/examples) и [как делалась галерея](https://github.com/skulitom/Pixelbolt/blob/main/showcase/gallery/README.md)
 - [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt): указатель документации для агентов
 - [CONTRIBUTING.md](https://github.com/skulitom/Pixelbolt/blob/main/CONTRIBUTING.md) и [AGENTS.md](https://github.com/skulitom/Pixelbolt/blob/main/AGENTS.md): как внести вклад. Об ошибках сообщайте в [GitHub Issues](https://github.com/skulitom/Pixelbolt/issues)

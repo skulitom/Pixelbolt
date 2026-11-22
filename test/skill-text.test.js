@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 const read = name => readFileSync(new URL(`../${name}`, import.meta.url), 'utf8');
 
 test("the skill's craft sections are the craft notes' own headings", () => {
-  const listed = /`help craft "<section>"`: one short checklist\. Sections: ([^\n]*)/.exec(read('skills/pixel-art/SKILL.md'));
+  const listed = /`help craft "<section>"`: one short checklist\. Sections: ([^\n]*)/.exec(read('skills/pixelbolt-pixel-art/SKILL.md'));
   assert.ok(listed, 'SKILL.md lists the craft sections');
   const names = [...listed[1].replace(/\([^)]*\)/g, '').matchAll(/`([^`]+)`/g)].map(match => match[1]);
   const headings = [...read('docs/agent-craft.md').matchAll(/^## (.+)$/gm)].map(match => match[1].trim());
@@ -15,8 +15,8 @@ test("the skill's craft sections are the craft notes' own headings", () => {
 });
 
 test('what Pixelbolt is not for leaves room for redrawing a logo as pixel art', () => {
-  assert.match(read('skills/pixel-art/SKILL.md'), /^description: [^\n]*can redraw a logo or icon as pixel art/m);
-  const texts = ['skills/pixel-art/SKILL.md', 'docs/agent-craft.md', 'docs/agent-quick-start.md', 'docs/agent-guide.md', 'README.md', 'llms.txt']
+  assert.match(read('skills/pixelbolt-pixel-art/SKILL.md'), /^description: [^\n]*can redraw a logo or icon as pixel art/m);
+  const texts = ['skills/pixelbolt-pixel-art/SKILL.md', 'docs/agent-craft.md', 'docs/agent-quick-start.md', 'docs/agent-guide.md', 'README.md', 'llms.txt']
     .concat(readdirSync(new URL('../src/', import.meta.url)).filter(name => name.endsWith('.js')).map(name => `src/${name}`));
   for (const name of texts) assert.doesNotMatch(read(name), /not for (?:vector or )?SVG logos/i, name);
 });

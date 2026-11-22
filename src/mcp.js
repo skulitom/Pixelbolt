@@ -1,6 +1,9 @@
+// Stdio MCP with one tool call at a time in a worker. Optional client roots switch future calls only; replies to
+// roots/list bypass the queue so a call waiting for its workspace cannot block the answer it needs.
 import { readFile, writeFile, appendFile, mkdir, mkdtemp, lstat, realpath, stat, rename, rm, copyFile, link, constants } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
 import { PixelError, MAX_REQUEST_BYTES, CANVAS_SIDE, errorReply, isObject, renderProject, inspectProject, stackViews, paletteUse, compareProjects, briefDiagnostics, briefCells, briefComparison, stillsHaveNoAnimation, largestScale, columnsOfCall } from './core.js';
@@ -670,7 +673,7 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
   return { run, close: async () => { await worker?.thread.terminate(); } };
 }
 
-export async function startMCP({ directory = 'output', root = process.cwd(), input = process.stdin, output = process.stdout, timeLimit = TOOL_TIME_LIMIT, memoryLimit = TOOL_MEMORY_LIMIT } = {}) {
+export async function startMCP({ directory = 'output', root = process.cwd(), roots = false, input = process.stdin, output = process.stdout, timeLimit = TOOL_TIME_LIMIT, memoryLimit = TOOL_MEMORY_LIMIT } = {}) {
   const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
   // The recipe's full JSON Schema is about 30 KB; repeated in four tool listings it cost every client about 30,000
   // tokens before the first call. The server checks recipes itself and names the path of any mistake, so the tools
@@ -752,9 +755,59 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Renders a pixelforge-scene manifest (placements, autotiled tilemaps, cues, motion, ground sorting, camera and parallax, haze, lights and shadows; pixel_help topic scenes) at a time in milliseconds and returns the image, placements, lights and warnings. Assets may be inline recipes, files under the server root or {"revision": id}. view: depth shows who covers whom; export: true writes a replayable scene bundle; gif: {} the whole scene as one looping GIF.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16 }, fps: { type: ['number', 'string'], description: 'Default 25.' }, background: { type: 'string', description: 'Opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write the whole scene as one looping GIF, through its duration once ({} for defaults).' }, sequence: { type: 'object', required: ['fps'], description: 'Also write numbered PNG frames for a video editor: pixel_render\'s sequence options, without animation and step.' } }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution PNG (RGB, RGBA, greyscale or indexed, up to 8 bits per channel; a sprite sheet sliced by its unscaled atlas, an Aseprite or TexturePacker JSON array or hash, or by frame, the size of one frame) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Saves the recipe as a revision.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' }, frame: { type: 'string', description: 'A sheet with no atlas: the size of one frame, such as "24x24".' }, padding: { type: 'integer', minimum: 0, maximum: 64, description: 'With frame: the empty border round each frame; found when left out.' }, frames: { type: 'integer', minimum: 1, maximum: 256, description: 'With frame: keep the first N cells, including empty frames.' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }
   ];
-  const host = createToolHost({ directory: path.resolve(directory), root: path.resolve(root), version, timeLimit, memoryLimit });
+  const fallback = { directory: path.resolve(directory), root: path.resolve(root) }, hosts = new Set();
+  const newHost = location => { const host = createToolHost({ ...location, version, timeLimit, memoryLimit }); hosts.add(host); return host; };
+  const closeHost = async host => { try { await host.close(); } finally { hosts.delete(host); } };
+  let location = fallback, host = newHost(location), runningHost = null;
   const send = value => output.write(JSON.stringify(value) + '\n');
   let initialized = false, ui = false, protocol = versions[0];
+  let rootsCapable = false, rootsReady = false, rootsRequest = null, rootsId = 0, rootsReported = false;
+  function applyRoot(next, reason) {
+    if (next.root !== location.root || next.directory !== location.directory) {
+      const previous = host;
+      location = next; host = newHost(location);
+      // An active call keeps its worker and revision store until its reply is complete.
+      if (previous !== runningHost) closeHost(previous).catch(() => {});
+    }
+    rootsReported = true;
+    process.stderr.write(`Pixelbolt MCP ${reason}: root ${JSON.stringify(next.root)}, exports ${JSON.stringify(next.directory)}\n`);
+  }
+  function finishRoots(pending, next = fallback) {
+    if (rootsRequest !== pending) return;
+    clearTimeout(pending.timer); rootsRequest = null;
+    applyRoot(next, next === fallback ? 'using fallback' : 'applied client root');
+    pending.resolve();
+  }
+  function requestRoots() {
+    if (!rootsCapable || !rootsReady) return;
+    // A newer list supersedes an unanswered one; late replies must not restore an older workspace.
+    // Keep the first lookup's deadline so repeated notifications cannot hold a waiting call indefinitely.
+    const deadline = rootsRequest?.deadline ?? Date.now() + 10000;
+    if (rootsRequest) { clearTimeout(rootsRequest.timer); rootsRequest.resolve(); }
+    const pending = { id: `pixelbolt-roots-${++rootsId}`, deadline };
+    pending.done = new Promise(resolve => { pending.resolve = resolve; });
+    rootsRequest = pending;
+    pending.timer = setTimeout(() => finishRoots(pending), Math.max(0, deadline - Date.now()));
+    send({ jsonrpc: '2.0', id: pending.id, method: 'roots/list' });
+  }
+  async function receiveRoots(response) {
+    const pending = rootsRequest;
+    if (!pending || response.id !== pending.id || pending.answered) return;
+    pending.answered = true;
+    if (!Object.hasOwn(response, 'error') && Array.isArray(response.result?.roots)) {
+      for (const candidate of response.result.roots) {
+        if (rootsRequest !== pending) return;
+        try {
+          if (typeof candidate?.uri !== 'string') continue;
+          const url = new URL(candidate.uri);
+          if (url.protocol !== 'file:') continue;
+          const root = fileURLToPath(url);
+          if ((await stat(root)).isDirectory()) { finishRoots(pending, { root, directory: path.join(root, 'output') }); return; }
+        } catch { /* An unusable root does not prevent trying the next one. */ }
+      }
+    }
+    finishRoots(pending);
+  }
   // One request, already parsed and checked by receive(), answered in arrival order.
   async function handle(request, signal) {
     const { id, method, params } = request;
@@ -769,6 +822,10 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       // told since (its tool list, whether the viewer is there) still holds.
       if (!initialized) {
         initialized = true;
+        if (roots) {
+          rootsCapable = isObject(params.capabilities?.roots);
+          if (rootsCapable) requestRoots(); else applyRoot(fallback, 'using fallback');
+        }
         const mimeTypes = params.capabilities?.extensions?.['io.modelcontextprotocol/ui']?.mimeTypes;
         ui = Array.isArray(mimeTypes) && mimeTypes.includes(UI_MIME);
         if (versions.includes(params.protocolVersion)) protocol = params.protocolVersion;
@@ -797,15 +854,21 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     if (unknown.length) { error(-32602, `Invalid tool arguments: ${tool.name} has no option ${unknown.map(key => JSON.stringify(key)).join(', ')}; its options are ${Object.keys(tool.inputSchema.properties).join(', ')}`); return; }
     try { ({ args, parsed } = parseTextArguments(args, tool.inputSchema.properties)); } catch (cause) { result({ isError: true, content: [textContent({ error: cause.message, path: cause.path })] }); return; }
     if (deeperThan(args, MAX_ARGUMENT_DEPTH)) { error(-32602, `Invalid tool arguments: nested more than ${MAX_ARGUMENT_DEPTH} levels deep`); return; }
+    while (rootsRequest) await rootsRequest.done;
+    if (signal.aborted) return;
+    // Stateless clients need no initialize; their first file call still reports that it uses the fallback.
+    if (roots && !rootsReported) applyRoot(fallback, 'using fallback');
+    const current = runningHost = host;
     let reply;
-    try { reply = await host.run(params.name, args, signal, showUI); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    try { reply = await current.run(params.name, args, signal, showUI); } catch (cause) { error(-32603, `Internal error: ${cause.message}`); return; }
+    finally { runningHost = null; if (current !== host) await closeHost(current); }
     // A cancelled call gets no response: the client has stopped waiting for it (MCP cancellation).
     if (signal.aborted) return;
     result(parsed.length ? { ...reply, content: [...reply.content, textContent({ note: `${parsed.join('; ')}. Send JSON values as they are, not inside strings.` })] } : reply);
   }
   // Requests are answered one at a time in arrival order, so initialization comes first and two calls never share
-  // memory. Only ping and cancellations skip the queue, so a client can check the server and stop a call while one
-  // runs. `waiting` holds the requests queued or running, oldest first.
+  // memory. Ping and cancellations skip the queue; with --roots, roots replies and discovery do too, so a waiting
+  // call cannot block its workspace lookup. `waiting` holds the requests queued or running, oldest first.
   const waiting = [];
   let queuedBytes = 0, last = Promise.resolve();
   function enqueue(id, method, bytes, work) {
@@ -820,16 +883,26 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   function receive(line, bytes) {
     let request;
     try { request = JSON.parse(line); } catch { reply(bytes, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }); return; }
+    // Responses are never requests, including replies to an expired or unknown server request.
+    if (roots && isObject(request) && request.jsonrpc === '2.0' && !Object.hasOwn(request, 'method') &&
+        (request.id === null || typeof request.id === 'string' || (typeof request.id === 'number' && Number.isFinite(request.id))) &&
+        (Object.hasOwn(request, 'result') !== Object.hasOwn(request, 'error')) &&
+        (!Object.hasOwn(request, 'error') || (isObject(request.error) && Number.isInteger(request.error.code) && typeof request.error.message === 'string'))) {
+      receiveRoots(request).catch(() => { if (rootsRequest?.id === request.id) finishRoots(rootsRequest); });
+      return;
+    }
     if (!request || typeof request !== 'object' || Array.isArray(request) || request.jsonrpc !== '2.0' || typeof request.method !== 'string' || ('id' in request && typeof request.id !== 'string' && !(typeof request.id === 'number' && Number.isFinite(request.id)))) {
       reply(bytes, { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Invalid request' } }); return;
     }
     if (!Object.hasOwn(request, 'id')) {
+      if (roots && request.method === 'notifications/initialized' && !rootsReady) { rootsReady = true; requestRoots(); }
+      if (roots && request.method === 'notifications/roots/list_changed') requestRoots();
       // A cancelled request still waiting is skipped; a running one is stopped. initialize can't be cancelled.
       const target = request.method === 'notifications/cancelled' ? request.params?.requestId : undefined;
       if (typeof target === 'string' || typeof target === 'number') for (const entry of waiting) if (entry.id === target && entry.method !== 'initialize') entry.controller.abort();
       return;
     }
-    if (request.method === 'ping') { handle(request).catch(cause => send({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: `Internal error: ${cause.message}` } })); return; }
+    if (request.method === 'ping' || (roots && ['initialize', 'server/discover', 'tools/list', 'resources/list', 'resources/templates/list', 'resources/read'].includes(request.method))) { handle(request).catch(cause => send({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: `Internal error: ${cause.message}` } })); return; }
     enqueue(request.id, request.method, bytes, signal => handle(request, signal));
   }
   const tooLarge = prefix => reply(0, { jsonrpc: '2.0', id: leadingId(prefix), error: { code: -32600, message: `Request exceeds ${MAX_REQUEST_BYTES} bytes. Send a recipe once and reuse its revision id, or split the work.` } });
@@ -852,6 +925,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
   }
   if (discarding !== null) tooLarge(discarding);
   else if (pending.trim()) receive(pending, Buffer.byteLength(pending));
+  if (rootsRequest) finishRoots(rootsRequest);
   await last;
-  await host.close();
+  await Promise.all([...hosts].map(closeHost));
 }

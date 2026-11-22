@@ -96,7 +96,7 @@ test('the installed skill reaches every guide, schema and example it names, and 
     }
   }
   // The shipped skill keeps its checkout and plugin layout; only the copy changes.
-  const shipped = await readFile(path.join(root, 'skills', 'pixel-art', 'SKILL.md'), 'utf8');
+  const shipped = await readFile(path.join(root, 'skills', 'pixelbolt-pixel-art', 'SKILL.md'), 'utf8');
   assert.match(shipped, /two directories above this skill's directory/);
   assert.match(shipped, /node bin\/pixelbolt\.js validate/);
   // `npx skills add` copies SKILL.md alone, so the shipped file says how to run and read Pixelbolt without a checkout;
@@ -173,7 +173,7 @@ test('skill install keeps a changed copy unless --force, updates its own, keeps 
   assert.equal(await readFile(path.join(foreign, 'SKILL.md'), 'utf8'), 'hand-made\n');
   assert.equal(ok(cli(['skill', 'install', '--dir', 'skills', '--force'], where)).status, 'replaced');
 
-  // A skill folder that is a link (a checkout's skills/pixel-art, say) is never written through, even with --force.
+  // A skill folder that is a link (a checkout's skills/pixelbolt-pixel-art, say) is never written through, even with --force.
   const target = path.join(where.dir, 'checkout-skill'), linked = path.join(where.project, 'linked', SKILL_NAME);
   await mkdir(target); await writeFile(path.join(target, 'SKILL.md'), 'checkout\n'); await mkdir(path.dirname(linked));
   try { await symlink(target, linked, process.platform === 'win32' ? 'junction' : 'dir'); } catch (error) { t.diagnostic(`no folder link here (${error.code})`); return; }

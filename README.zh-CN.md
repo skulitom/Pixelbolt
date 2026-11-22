@@ -160,7 +160,7 @@ Pixelbolt 已收录在官方 MCP Registry 中，名称为 `io.github.skulitom/pi
 
 - [英文 README](https://github.com/skulitom/Pixelbolt/blob/main/README.md)：完整的命令、导出、JavaScript API 和便携版说明
 - [创作指南](https://github.com/skulitom/Pixelbolt/blob/main/docs/agent-guide.md)：配方字段、绘图操作和限制
-- [像素画技能](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixel-art/SKILL.md)：可复用的创作与检查流程
+- [像素画技能](https://github.com/skulitom/Pixelbolt/blob/main/skills/pixelbolt-pixel-art/SKILL.md)：可复用的创作与检查流程
 - [示例](https://github.com/skulitom/Pixelbolt/tree/main/examples)和[作品展示](https://github.com/skulitom/Pixelbolt/blob/main/showcase/gallery/README.md)
 - [llms.txt](https://github.com/skulitom/Pixelbolt/blob/main/llms.txt)：面向智能体的文档索引
 
