@@ -1,0 +1,17 @@
+// Copied to a .js file only inside a throwaway project's .godot directory. Runs the real CLI, then answers in two
+// writes with a pause between them and more than a pipe holds in all, so a reader that stops early loses the reply.
+(async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { spawnSync } = await import('node:child_process');
+  const cli = fs.readFileSync(path.join(path.dirname(process.argv[1]), 'long-reply-cli.txt'), 'utf8');
+  const real = spawnSync(process.execPath, [cli, ...process.argv.slice(2)], { maxBuffer: 16 * 1024 * 1024 });
+  const writeAll = (fd, bytes) => { for (let at = 0; at < bytes.length;) at += fs.writeSync(fd, bytes, at); };
+  writeAll(2, real.stderr);
+  // JSON allows trailing spaces, so the padding leaves the reply's meaning alone.
+  const reply = Buffer.concat([real.stdout, Buffer.alloc(200000, 0x20)]);
+  writeAll(1, reply.subarray(0, 100));
+  await new Promise(resolve => setTimeout(resolve, 300));
+  writeAll(1, reply.subarray(100));
+  process.exitCode = real.status;
+})();

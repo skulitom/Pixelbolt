@@ -457,6 +457,21 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
     await assertNoLeftovers(demo);
     say('demo: imported and ran 360 headless frames clean' + (multipart ? '.' : ' (throwaway recipe renamed to .pixelbolt for 4.3).'));
 
+    // Godot 4.3's blocking pipes have their own reader: a reply in pieces, longer than a pipe holds, is read to its end.
+    await cp(path.join(ROOT, 'godot/tests/long-reply.txt'), path.join(dir, '.godot/long-reply.js'));
+    await put(dir, '.godot/long-reply-cli.txt', CLI);
+    await put(dir, 'project.godot', projectText({ 'cli/path': path.join(dir, '.godot/long-reply.js') }));
+    await put(dir, source, JSON.stringify(edited) + '\n');
+    const longReply = await reimport();
+    assert.ok(longReply.includes('Pixelbolt unknown: imported ' + fixture.source), longReply);
+    fixture.version = 'unknown';
+    await check([fixture]);
+    delete fixture.version;
+    await put(dir, 'project.godot', projectText());
+    await put(dir, source, JSON.stringify(edited));
+    await reimport();
+    say('long reply: a CLI reply in two writes, longer than a pipe holds, is read to its end.');
+
     await put(dir, 'project.godot', projectText({ 'cli/path': path.join(dir, '.godot/stall.js'), 'import/timeout_seconds': 2 }));
     await put(dir, source, JSON.stringify({ ...edited, name: 'timeout-edited' }));
     const beforeTimeout = await readFile(resource);

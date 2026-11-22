@@ -50,7 +50,7 @@ $Hero.play("walk")
 - **Tile sets.** To import an autotile recipe as its `TileSet`, select the file and pick **Import As → Pixelbolt TileSet** in the Import dock. Godot remembers the choice. Give a `TileMapLayer` the result, as with an exported `.tileset.tres` ([Tile sets](#tile-sets)).
 - **What it writes.** Nothing beside your recipe but Godot's own `.import` file. The import lives in Godot's own `.godot/imported/` folder, with the sheet inside it, and each render runs in a fresh folder that is removed afterwards. The resource's `pixelbolt` metadata names the Pixelbolt version that rendered it.
 - **When a render fails.** If Node.js or the CLI isn't found, the recipe is invalid, or a render passes the timeout, the Output panel shows one line starting `Pixelbolt:` with Pixelbolt's own message, and the previous import stays in use, so no scene loses its sprite. Fix the recipe and save. After installing Node.js or changing a setting, use **Project → Tools → Pixelbolt: Reimport all recipes**, since no file changed.
-- **Tested** with Godot 4.3, 4.7.2 and 4.8-beta4 on Windows, and 4.7.2 on Linux in CI (not yet on macOS), where every frame, time and pixel is compared with the CLI's own `.tres` (`node scripts/verify-godot-addon.mjs --godot <path>`).
+- **Tested** with Godot 4.3, 4.7.2 and 4.8-beta4 on Windows, and 4.3 and 4.7.2 on Linux in CI (not yet on macOS), where every frame, time and pixel is compared with the CLI's own `.tres` (`node scripts/verify-godot-addon.mjs --godot <path>`).
 - **A demo.** Open the repository's `godot/` folder in Godot 4.5 or later. It renders `demo/hero.pixel.json`, the shipped hero, with the checkout's own CLI, and plays its animations in turn.
 
 ### Tile sets
