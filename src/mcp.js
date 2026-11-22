@@ -918,13 +918,17 @@ export async function startMCP({ directory = 'output', root = process.cwd(), roo
       if (bytes > MAX_REQUEST_BYTES) { tooLarge(line.slice(0, 4096)); continue; }
       if (line.trim()) receive(line, bytes);
       // Reading pauses while more than one request's worth waits, so a client can't queue without bound. ping and
-      // cancellations sent meanwhile are read once the queue is short again.
-      while (queuedBytes > MAX_REQUEST_BYTES || waiting.length > MAX_WAITING) await waiting[0].done;
+      // cancellations sent meanwhile are read once the queue is short again. While a roots lookup is pending the
+      // queued calls wait for an answer only reading can deliver, so the bound doubles until it ends (10 s at most).
+      const over = factor => queuedBytes > MAX_REQUEST_BYTES * factor || waiting.length > MAX_WAITING * factor;
+      while (over(rootsRequest ? 2 : 1)) await (rootsRequest ? Promise.race([waiting[0].done, rootsRequest.done]) : waiting[0].done);
     }
     if (Buffer.byteLength(pending) > MAX_REQUEST_BYTES) { if (discarding === null) discarding = pending.slice(0, 4096); pending = ''; }
   }
   if (discarding !== null) tooLarge(discarding);
   else if (pending.trim()) receive(pending, Buffer.byteLength(pending));
+  // An answer already received finishes its checks; a lookup the closed client can no longer answer falls back.
+  if (rootsRequest?.answered) await rootsRequest.done;
   if (rootsRequest) finishRoots(rootsRequest);
   await last;
   await Promise.all([...hosts].map(closeHost));

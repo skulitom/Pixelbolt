@@ -355,3 +355,36 @@ test('--roots lets an in-flight worker finish in its original workspace and star
   await exported(await first, mcp.workspace, mcp.project);
   await exported(await second, mcp.other, mcp.project);
 });
+
+test('--roots finishes checking an answer already received when the client closes its input', timeout, async t => {
+  const base = await mkdtemp(path.join(await realpath(os.tmpdir()), 'pixelbolt-agent-plugins-eof-'));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const data = path.join(base, 'data'), workspace = path.join(base, 'workspace');
+  await Promise.all([data, workspace].map(folder => mkdir(folder)));
+  const input = new PassThrough(), output = new PassThrough();
+  const running = startMCP({ roots: true, root: data, directory: path.join(data, 'output'), input, output });
+  t.after(async () => { input.end(); await running; });
+  const mcp = client(input, output);
+  const project = { version: 1, name: 'agent-art-eof', width: 2, height: 2, palette: { k: '#fff' }, frames: [{ name: 'still', ops: [{ op: 'pixel', x: 0, y: 0, color: 'k' }] }] };
+  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
+  const request = await mcp.roots();
+  // The answer, the last call and the end of input arrive together, while the answer's folder is still being checked.
+  mcp.send({ id: request.id, result: rootResult(workspace) });
+  const rendered = mcp.call({ project });
+  input.end();
+  await exported(await rendered, workspace, project);
+  assert.deepEqual(await directories(path.join(data, 'output')), []);
+});
+
+test('--roots keeps reading for the roots answer while more calls than the queue bound wait for it', { timeout: 60000 }, async t => {
+  const mcp = await session(t, { local: true });
+  await mcp.init({ roots: {} }); mcp.notify('notifications/initialized');
+  const request = await mcp.roots();
+  // More than MAX_WAITING (256) calls queue behind the lookup before the answer is sent.
+  const helps = Array.from({ length: 300 }, () => mcp.request('tools/call', { name: 'pixel_help', arguments: {} }));
+  mcp.send({ id: request.id, result: rootResult(mcp.workspace) });
+  const rendered = mcp.call({ project: mcp.project });
+  for (const reply of await Promise.all(helps)) assert.ok(reply.result, JSON.stringify(reply).slice(0, 300));
+  await exported(await rendered, mcp.workspace, mcp.project);
+  assert.deepEqual(await directories(path.join(mcp.data, 'output')), []);
+});
