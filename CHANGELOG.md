@@ -37,6 +37,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 ### Fixes
 
 - A tile set's own preview map (`preview.rows`) is refused at compile when a row is wider than 256 tiles, the most a preview or a scene's tilemap holds. With tiles under 16 pixels such a row used to pass compile's checks and then fail the preview's render (which `pixel_compile` always draws) with an error naming `project.frames[0].ops[0].rows`, a path the source never wrote. The schema gives the limit.
+- A falling-sand source on the `sandbox` base that names one of the starter materials (say `wood`) replaces it whole, as before; when the replacement breaks one of the starter table's own reactions, the error now names your material and that reaction ("powder.materials.wood: this replaces the starter table's wood whole, and the table's reaction of fire and wood (its ignite) then fails: wood does not burn ...") with the three ways out. It used to name `powder.reactions[1]`, an index into a list the source never wrote.
 
 ## 0.19.0 (2026-11-20)
 
