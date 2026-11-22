@@ -351,8 +351,6 @@ A scene's view and each of its assets, an effect source and an imported frame ha
 
 ## Connect an agent through MCP
 
-The repository root is also an Agent Plugins 1.0.0 package (`plugin.json`, `mcp.json`) for clients such as Codex and GitHub Copilot CLI. That format starts a plugin's server in the plugin's own folder, so this entry keeps file references, renders and `saveAs` copies in the plugin's persistent data folder; `pixel_render` replies with the export folder and saved copies as absolute paths.
-
 **Claude Code plugin.** One command installs the MCP server and the pixel art skill, with nothing to clone (Claude Code 2.1.292 or later):
 
 ```
@@ -360,6 +358,15 @@ claude plugin install pixelbolt --marketplace skulitom/Pixelbolt
 ```
 
 Inside a session, `/plugin install pixelbolt --marketplace skulitom/Pixelbolt` does the same from Claude Code 2.1.275. On older versions, add the marketplace first with `claude plugin marketplace add skulitom/Pixelbolt`, then run `claude plugin install pixelbolt@pixelbolt`. The plugin runs its own copy of `bin/pixelbolt.js` with your Node.js (20 or later), in the project folder you open in Claude Code: file references resolve inside that folder and exports go to its `output/` folder. Restart Claude Code after installing.
+
+**Codex plugin.** Codex installs the same repository as a plugin (checked with Codex 0.164):
+
+```
+codex plugin marketplace add skulitom/Pixelbolt
+codex plugin add pixelbolt@pixelbolt
+```
+
+Codex and other Agent Plugins 1.0.0 clients read the repository's root `plugin.json` and `mcp.json`. That format starts a plugin's server in the plugin's own folder, so this entry keeps file references, renders and `saveAs` copies in the plugin's persistent data folder, and `pixel_render` replies with the export folder and saved copies as absolute paths. For exports in a folder you choose, use the `npx` configuration under **Other MCP clients** with an absolute `--out`.
 
 **Other MCP clients.** The npm package runs the server, with nothing to clone (Node.js 20 or newer). Add it to your agent's MCP configuration and replace `/absolute/path/to/pixelbolt-output` with the folder where exports should go. Use an absolute path, because clients start servers in different folders; on Windows use forward slashes, for example `C:/Art/pixelbolt-output`:
 
