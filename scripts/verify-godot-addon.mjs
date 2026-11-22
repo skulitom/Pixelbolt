@@ -460,7 +460,7 @@ export async function verifyGodotAddon({ godot = findGodot(), work = os.tmpdir()
     // Godot 4.3's blocking pipes have their own reader: a reply in pieces, longer than a pipe holds, is read to its end.
     await cp(path.join(ROOT, 'godot/tests/long-reply.txt'), path.join(dir, '.godot/long-reply.js'));
     await put(dir, '.godot/long-reply-cli.txt', CLI);
-    await put(dir, 'project.godot', projectText({ 'cli/path': path.join(dir, '.godot/long-reply.js') }));
+    await put(dir, 'project.godot', projectText({ 'cli/path': path.join(dir, '.godot/long-reply.js'), 'import/timeout_seconds': 30 }));
     await put(dir, source, JSON.stringify(edited) + '\n');
     const longReply = await reimport();
     assert.ok(longReply.includes('Pixelbolt unknown: imported ' + fixture.source), longReply);

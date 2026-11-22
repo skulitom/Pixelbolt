@@ -130,7 +130,7 @@ function checkTestWorkflow(text) {
   assert.deepEqual(Object.keys(jobs), ['test', 'oldest']);
   checkCommon(text, jobs, []);
   // The oldest supported Godot: its own pipe reader runs only on this version, so a Unix run of it stays.
-  assert.match(jobs.oldest, /GODOT_ZIP: Godot_v4\.3-stable_linux\.x86_64\.zip\n      GODOT_SHA512: fd52bb4b[0-9a-f]{120}\n/);
+  assert.match(jobs.oldest, /GODOT_ZIP: Godot_v4\.3-stable_linux\.x86_64\.zip\n      GODOT_SHA512: fd52bb4ba8acc30ca5accd1c566d470ad7282f891ccc0995dfafabcf92bcf76280ce182bf9d80ebd885f3ed2165d01e1fc3f2928436b15498dfbd98656c2a45a\n/);
   assert.match(jobs.oldest, /releases\/download\/4\.3-stable\/\$GODOT_ZIP" -o godot\.zip\n {10}echo "\$GODOT_SHA512  godot\.zip" \| sha512sum -c\n/);
   assert.match(jobs.oldest, /node scripts\/verify-godot-addon\.mjs --godot "\$GODOT"\n/);
   const list = PATHS.map(item => `      - '${item}'\n`).join('');

@@ -1,5 +1,6 @@
-# Finds the user's CLI on every import and drains both pipes with a bounded wait.
-# 4.3 pipes block, so each has its own reader thread; newer pipes are nonblocking.
+# Finds the user's CLI on every import, drains both pipes and ends it at the import's time limit.
+# 4.3 pipes block, so each has its own reader thread; newer pipes are nonblocking. On 4.3 a process the CLI left
+# running that still holds a pipe delays the import until it exits.
 @tool
 extends RefCounted
 
