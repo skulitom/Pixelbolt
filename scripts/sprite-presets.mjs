@@ -1,4 +1,4 @@
-// The imported-sprite walk for examples/: a 32 x 32 side-view drawing (examples/sprite-walk.png, CC0) cut into grid
+// The imported-sprite walk for examples/: a 32 x 32 side-view drawing (examples/sprite-walk.png, drawn for it) cut into grid
 // parts hung on invisible carrier bones, so the walk and idle templates move it while its `stand` pose stays the PNG
 // pixel for pixel. scripts/generate-examples.js writes it as examples/sprite-walk.poses.json; docs/animate-your-sprite.md
 // walks through it (brief: examples/sprite-walk.brief.md) and test/sprite-walk-example.test.js pins it.

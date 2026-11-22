@@ -1,8 +1,8 @@
 # Animate a sprite you already have
 
-Start from a native-resolution PNG with transparency. This page uses a CC0 [32 × 32 side-view sprite](../examples/sprite-walk.png), its [pose recipe](../examples/sprite-walk.poses.json) and its [art brief](../examples/sprite-walk.brief.md). The recipe makes a side walk (8 frames) and an idle (4 frames) facing right, and both again facing left. Its `stand` pose is the PNG pixel for pixel (0 of 1,024 pixels differ).
+Start from a native-resolution PNG with transparency. This page uses a [32 × 32 side-view sprite](../examples/sprite-walk.png) drawn for it, its [pose recipe](../examples/sprite-walk.poses.json) and its [art brief](../examples/sprite-walk.brief.md). The recipe makes a side walk (8 frames) and an idle (4 frames) facing right, and both again facing left. Its `stand` pose is the PNG pixel for pixel (0 of 1,024 pixels differ).
 
-Run the commands from the repository root (in the npm package, from its folder); each writes under `output/sprite-walk/`, and the CLI makes the folders. Use a new folder for another run: the CLI never overwrites a file.
+Run the commands from the repository root (in the npm package, from its folder); each writes under `output/sprite-walk/`, and the CLI makes the folders. Use a new folder for another run: the CLI won't write over a file unless you pass `--force`.
 
 ## Import, cut and attach
 
@@ -90,7 +90,7 @@ node bin/pixelbolt.js gif output/sprite-walk/sprite-walk.pixel.json --animation 
 node bin/pixelbolt.js gif output/sprite-walk/sprite-walk.pixel.json --animation idle-left --out output/sprite-walk/idle-left.gif --scale 4
 ```
 
-The bundle holds the sheet `sprite-walk.png`, its `sprite-walk.atlas.json` and a Godot 4 `sprite-walk.tres`, with each frame and animation on its own. The sheet stays at native size; the review GIFs are 128 × 128.
+`render` also notes that three of the idle's frames are the same drawing: that is the held rest the brief describes. The bundle holds the sheet `sprite-walk.png`, its `sprite-walk.atlas.json` and a Godot 4 `sprite-walk.tres`, with each frame and animation on its own. The sheet stays at native size; the review GIFs are 128 × 128.
 
 ## What this doesn't do
 

@@ -123,6 +123,9 @@ test('the presets listing covers every source and looping recipe in examples/, m
   // A figure holding a prop is listed as one, so an agent asked for a character with a sword finds it.
   const sword = presets.find(entry => entry.name === 'hero-sword');
   if (sword && !sword.unmeasured) assert.match(sword.for, /idle, walk, attack, with sword in hand\.$/);
+  // A drawing hung along the hand bone from its start is the forearm itself, not a prop (the imported sprite's).
+  const sprite = presets.find(entry => entry.name === 'sprite-walk');
+  if (sprite && !sprite.unmeasured) assert.equal(sprite.for, 'A character rig whose motion templates make walk, idle.');
   // The measurements are kept in the export directory for the next listing (presets-cache.test.js), so pixel_help
   // writes files and must not tell clients it is read-only (P-074): some run read-only tools without asking. Its
   // first listing wrote the file, and what was measured here went into the same one.

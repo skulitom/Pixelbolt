@@ -111,6 +111,25 @@ test('the documented mirrored-rest review leaves every played frame unchanged', 
   assert.equal(motion.gait.lift.largest.degrees, 34);
 });
 
+test("the guide's numbers are the motion review's own, so a change to the review or the recipe shows on the page", () => {
+  const page = read('docs/animate-your-sprite.md').toString('utf8');
+  const review = (animation, extra = {}) => inspectMotion(project, { animation, metadata: compiled.metadata, ...extra }).motion;
+  const walk = review('walk'), left = review('walk-left'), fast = review('walk', { speed: 32 });
+  const slide = motion => [...new Set(motion.slide.map(foot => foot.pixels))];
+  assert.deepEqual(slide(walk), [0.32]);
+  assert.ok(page.includes(`slide ${slide(walk)[0]} px a foot`));
+  assert.deepEqual([left.checks.kneeLift, left.gait.lift.largest.degrees, left.gait.lift.maximum], [false, 170, 45]);
+  assert.deepEqual(Object.entries(left.checks).filter(([, pass]) => !pass).map(([name]) => name), ['kneeLift']);
+  assert.ok(page.includes(`\`kneeLift: false\` (${left.gait.lift.largest.degrees}° against a limit of ${left.gait.lift.maximum}°)`));
+  assert.ok(page.includes(`knee lift of ${walk.gait.lift.largest.degrees}°`));
+  assert.deepEqual([fast.checks.slide, slide(fast)], [false, [2.24]]);
+  assert.ok(page.includes(`slide ${slide(fast)[0]} px and the slide check fails`));
+  assert.ok(page.includes(`here ${walk.speed} px/s (${left.speed} for the left walk)`));
+  // The commands name real views and animations.
+  for (const [, view] of page.matchAll(/--view (\S+)/g)) assert.ok(['onion'].includes(view), view);
+  for (const [, name] of page.matchAll(/--(?:animation|motion) (\S+)/g)) assert.ok(Object.hasOwn(project.animations, name), name);
+});
+
 test('the tutorial commands read existing files or outputs made earlier in the page', () => {
   const page = read('docs/animate-your-sprite.md').toString('utf8');
   const produced = new Set(), commands = new Set(), out = 'output/sprite-walk/';
@@ -144,7 +163,11 @@ test('the tutorial commands read existing files or outputs made earlier in the p
   assert.deepEqual([...commands].sort(), ['compile', 'gif', 'import', 'inspect', 'render', 'validate']);
   assert.ok(checked >= 20, `check all command inputs, including the saved scripts (${checked})`);
   assert.ok([...produced].every(name => name.startsWith(out)), 'every output goes under output/sprite-walk/');
-  for (const link of page.matchAll(/\]\((\.\.\/examples\/[^)]+)\)/g)) {
-    assert.ok(existsSync(new URL(link[1], new URL('../docs/', import.meta.url))), link[1]);
+  // Every relative link on the page, in the brief and in the guide that points here leads to a file, and the page ships
+  // in the npm package, where the brief and art-workflow.md link to it.
+  for (const [file, folder] of [['docs/animate-your-sprite.md', 'docs/'], ['examples/sprite-walk.brief.md', 'examples/'], ['docs/art-workflow.md', 'docs/']]) {
+    const links = [...read(file).toString('utf8').matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)].map(match => match[1]).filter(link => !/^[a-z]+:/.test(link));
+    for (const link of links) assert.ok(existsSync(new URL(link, new URL(folder, root))), `${file}: ${link}`);
   }
+  assert.ok(JSON.parse(read('package.json')).files.includes('docs/animate-your-sprite.md'));
 });

@@ -32,7 +32,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Examples
 
-- **Animate a sprite you already have** ([guide](docs/animate-your-sprite.md)): the `sprite-walk` example turns one 32 × 32 side-view PNG into a walk and an idle facing right and left, by a recipe whose rest pose is the PNG pixel for pixel. Its drawn parts hang on invisible carrier bones, since the motion templates move only a mass body and bone limbs. The guide gives every command, from `import` to the sheet, atlas and Godot `.tres`, and the two review workarounds a left walk and a renamed frame need today.
+- **Animate a sprite you already have** ([guide](docs/animate-your-sprite.md)): the `sprite-walk` example turns one 32 × 32 side-view PNG into a walk and an idle facing right and left, by a recipe whose rest pose is the PNG pixel for pixel. Its drawn parts hang on invisible carrier bones, since the motion templates move only a mass body and bone limbs. The guide gives every command, from `import` to the sheet, atlas and Godot `.tres`, and the two review workarounds a left walk and a renamed frame need today. The presets listing no longer calls a drawing hung along a hand bone from its start a prop "in hand": only one attached at the bone's end is held.
 
 ### Fixes
 

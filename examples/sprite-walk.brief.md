@@ -1,6 +1,6 @@
 # Sprite walk: art brief
 
-An existing side-view drawing turned into a walk and a quiet idle. The brown-haired character wears a teal tunic, dark trousers and brown boots, facing right. The original drawing and this example's artwork are our own, dedicated to the public domain under CC0 1.0 Universal.
+An existing side-view drawing turned into a walk and a quiet idle. The brown-haired character wears a teal tunic, dark trousers and brown boots, facing right. The drawing is our own, made for this example.
 
 - **Canvas and display:** 32 × 32, origin `[16, 30]`. The ankle markers use `rig.ground: 29`; the boot soles sit on row 30. Review at 1× and 4×. `sprite-walk.png` is the original PNG, unchanged; the exported `stand` matches all 1,024 RGBA pixels.
 - **Construction:** grids cut from the drawing: head, torso, near and far upper arms, forearms, thighs, shins and boots. A transparent 2 × 2 mass carries transparent two-bone limbs. The motion templates require these structural parts; they cannot use the grids directly as their body or limbs. `Y` and `Z` form the invisible ramp. Grids attach at the bones' start or end; `angle: -90` cancels the standing carrier angle. The boots stay upright.
