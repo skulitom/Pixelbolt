@@ -143,3 +143,27 @@ test('a match drawn larger keeps to a still\'s size, takes its options as an obj
   const keys = new Set(); for (let i = 0; i < image.length; i += 4) if (image[i + 3]) keys.add(`${image[i]},${image[i + 1]},${image[i + 2]}`);
   assert.equal(keys.size, 2, 'the ball and its trail are both drawn');
 });
+
+test('a looping cloth keeps cycling in a direct sequence, frame for frame as its compiled recipe does', async () => {
+  const bytes = sequence => pngs(sequence.files).map(([, data]) => data);
+  for (const preset of ['flag', 'banner']) {
+    const source = await example(preset), project = renderProject(compileBodies(source).recipe), { frames, duration } = source.effects[Object.keys(source.effects)[0]];
+    const seconds = frames * duration * 2 / 1000;
+    // 25 and 30 show each pass in order; 24 and 7 skip frames that a later pass shows first, out of the simulation's order.
+    for (const fps of [25, 30, 24, 7]) assert.deepEqual(bytes(createBodiesSequence(source, { fps, seconds })), bytes(createSequence(project, { fps, seconds })), `${preset} at ${fps} fps`);
+    const twice = createBodiesSequence(source, { fps: 25, loops: 2 });
+    assert.deepEqual(bytes(twice), bytes(createSequence(project, { fps: 25, loops: 2 })), `${preset}, two loops`);
+    assert.deepEqual([twice.info.frames, twice.info.differentFrames, twice.info.loop.loops, twice.info.loop.plays], [Math.ceil(seconds * 25), frames, 2, 'loops']);
+  }
+});
+
+test('a looping cloth is written a frame at a time only while no frame comes back', async () => {
+  const source = await example('flag'), { frames, duration } = source.effects[Object.keys(source.effects)[0]], pass = frames * duration / 1000;
+  const lazy = sequence => [...sequence.files].filter(([name]) => name.endsWith('.png')).every(([, file]) => typeof file === 'function');
+  assert.equal(lazy(createBodiesSequence(source, { fps: 25, seconds: pass }, { stream: true })), true, 'one pass streams');
+  assert.equal(lazy(createBodiesSequence(source, { fps: 25, seconds: pass * 2 }, { stream: true })), false, 'a second pass reuses the first');
+  for (const loops of [0, 1.5, '2', null]) assert.throws(() => createBodiesSequence(source, { fps: 25, loops }), error => error.path === 'sequence.loops', `loops ${loops}`);
+  // A pass that does not fit the frame grid says so, as a compiled loop's sequence does.
+  assert.match(createBodiesSequence(source, { fps: 24 }).info.notes.join(' '), /does not end exactly where the loop does/);
+  assert.doesNotMatch(createBodiesSequence(source, { fps: 25 }).info.notes.join(' '), /does not end exactly/);
+});
