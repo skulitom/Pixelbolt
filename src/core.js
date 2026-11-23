@@ -1680,7 +1680,7 @@ function cellsThatFit(count, w, h, scale, room = NO_ROOM) {
   return low;
 }
 // `layoutOnly`: the layout with no pixels (data null), for stackEvery's search.
-function drawSheet(sources, width, region, { scale, background = null, columns, where = 'inspect', room = NO_ROOM, layoutOnly = false } = {}) {
+function drawSheet(sources, width, region, { scale, background = null, columns, where = 'inspect', room = NO_ROOM, layoutOnly = false }) {
   const measure = (c, s) => {
     const rows = Math.ceil(sources.length / c), gap = Math.max(2, s);
     return { columns: c, rows, scale: s, gap, width: c * region.w * s + (c + 1) * gap, height: rows * region.h * s + (rows + 1) * gap };

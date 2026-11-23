@@ -117,7 +117,7 @@ export function createToolRunner({ directory, root, version }) {
     try { text = await readFile(sourcesFile(id), 'utf8'); } catch (error) { if (error.code === 'ENOENT') return []; throw error; }
     return [...new Set(text.split('\n').flatMap(line => { try { const item = JSON.parse(line); return typeof item === 'string' ? [item] : []; } catch { return []; } }))];
   };
-  const keep = async (recipe, sources = []) => {
+  const keep = async (recipe, sources) => {
     // Each file as named and as resolved, so a link that is later removed or moved still leaves the real file named.
     const named = sources.map(file => path.resolve(root, file)), resolved = await Promise.all(named.map(file => canonical(file).catch(() => file)));
     const id = await remember(recipe), known = new Set(await sourcesOf(id)), added = [...new Set([...named, ...resolved])].filter(item => !known.has(item));
