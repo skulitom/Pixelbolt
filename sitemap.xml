@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/</loc>
-    <lastmod>2026-11-11</lastmod>
+    <lastmod>2026-11-23</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/compare/pixel-art-mcp-servers-for-ai-agents/</loc>
@@ -24,7 +24,7 @@
     <loc>https://skulitom.github.io/Pixelbolt/compare/</loc>
     <lastmod>2026-11-17</lastmod>
   </url>
-  <url><loc>https://skulitom.github.io/Pixelbolt/playground/</loc><lastmod>2026-10-25</lastmod></url>
+  <url><loc>https://skulitom.github.io/Pixelbolt/playground/</loc><lastmod>2026-11-23</lastmod></url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/</loc>
     <lastmod>2026-11-10</lastmod>
@@ -51,7 +51,7 @@
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-explosion/</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-23</lastmod>
   </url>
   <url>
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-smoke-and-steam/</loc>
@@ -69,5 +69,6 @@
     <loc>https://skulitom.github.io/Pixelbolt/guides/pixel-art-magic-effects/</loc>
     <lastmod>2026-11-10</lastmod>
   </url>
-  <url><loc>https://skulitom.github.io/Pixelbolt/playground/fluids/</loc><lastmod>2026-10-28</lastmod></url>
+  <url><loc>https://skulitom.github.io/Pixelbolt/playground/fluids/</loc><lastmod>2026-11-23</lastmod></url>
+  <url><loc>https://skulitom.github.io/Pixelbolt/playground/explosion-generator/</loc><lastmod>2026-11-23</lastmod></url>
 </urlset>

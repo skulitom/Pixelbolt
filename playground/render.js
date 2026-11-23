@@ -61,9 +61,11 @@ export function renderRecipe(engine, document) {
   if (kind !== 'project' && typeof compilers[document.format] !== 'function') throw new Error(`This engine was loaded without its ${kind} compiler; load the ${kind} module too.`);
   const recipe = kind === 'project' ? document : compilers[document.format](document).recipe;
   const project = engine.core.renderProject(recipe);
+  // `stills`: the frames are stills ("animations": {}), whose flipbook is for stepping through, not an animation to
+  // pick or a GIF to make. `recipe` is what the atlas download writes its still rule from.
   return { kind, name: project.name, width: project.width, height: project.height,
     frames: project.frames.map(frame => ({ ...frame, width: project.width, height: project.height })),
-    animations: project.animations, warnings: project.warnings, project };
+    animations: project.animations, ...(project.stills && { stills: true }), warnings: project.warnings, project, recipe };
 }
 
 export async function framesDigest(frames) {
