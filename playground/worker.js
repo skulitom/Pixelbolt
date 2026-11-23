@@ -1,7 +1,7 @@
 import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
 import { encodePNG } from './png.js';
 import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
-import { compareVersions, engineAllowed, engineBase, examplePath, inlineExample, jsonErrorLocation, safeName } from './lib.js';
+import { compareVersions, engineAllowed, engineBase, examplePath, framePNGScale, inlineExample, jsonErrorLocation, PNG_PIXELS, safeName } from './lib.js';
 
 let loadedBase, loadedEngine, cached;
 // These compilers shipped after the first supported engine. Import only the one this source needs, so older links
@@ -111,7 +111,7 @@ export async function handleRequest(request, onSource = () => {}) {
   }
   const item = await render(text, version, override), { result, source, engine } = item;
   if (type !== 'export') {
-    const { project, ...preview } = result;
+    const { project, recipe, ...preview } = result;
     // Retain the worker's pixels for export; only the copies cross the boundary and are detached.
     return { ...preview, version, digest: item.digest, frames: result.frames.map(frame => ({ ...frame, data: frame.data.slice() })) };
   }
@@ -130,14 +130,19 @@ export async function handleRequest(request, onSource = () => {}) {
   if (request.export === 'frame') {
     const frame = result.frames[request.frame];
     if (!frame) throw new Error('Choose an available frame.');
-    const scale = request.scale;
+    // Checked before the frame is enlarged: a 640 × 360 frame at 16× would hold 59 million pixels (236 MB) only for
+    // the PNG encoder to refuse it, and a 4096-pixel still about 17 GB.
+    const scale = request.scale, most = framePNGScale(result.width, result.height);
+    if (Number.isInteger(scale) && scale > most) throw new Error(`At scale ${scale} this ${result.width}×${result.height} frame would be ${result.width * scale}×${result.height * scale}, more than the ${PNG_PIXELS.toLocaleString('en')} pixels one PNG holds. Choose scale ${most} or lower.`);
     files.push(await pngFile({ width: result.width * scale, height: result.height * scale,
       data: engine.core.scalePixels(frame.data, result.width, result.height, scale) }, `${name}-${safeName(frame.name)}.png`));
   } else if (request.export === 'sheet' || request.export === 'atlas') {
     if (request.export === 'atlas' && !result.project) throw new Error('Scenes are sampled images and have no sprite atlas metadata. Download the sheet instead.');
     const atlas = result.project ? engine.core.buildAtlas(result.project) : sceneSheet(result);
     files.push(await pngFile(atlas, `${name}.png`));
-    if (request.export === 'atlas') files.push(jsonFile(`${name}.atlas.json`, atlas.metadata));
+    // Stills and a still tile set list their frames alone, as a bundle's atlas does (core's exportAtlas; an engine
+    // from before stills has none, and no stills).
+    if (request.export === 'atlas') files.push(jsonFile(`${name}.atlas.json`, engine.core.exportAtlas ? engine.core.exportAtlas(result.recipe, result.project, atlas.metadata) : atlas.metadata));
   } else if (request.export === 'gif') {
     const project = result.project ?? { ...result, palette: {} };
     const gif = engine.gif.animationGIF(project, request.animation, { scale: request.scale, background: 'transparent' });

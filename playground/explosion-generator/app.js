@@ -1,0 +1,397 @@
+import { RECIPE_LIMIT } from './share.js';
+import { advancePlayback, editGuard, engineOverride, filterExamples, fitScale, formatSize, framePNGScale, safeName, timeLimit } from './lib.js';
+
+export const PINNED_VERSION = '0.19.0';
+const REQUEST_TIMEOUT = timeLimit(location.href);
+const $ = id => document.getElementById(id);
+const editor = $('recipe'), canvas = $('preview'), context = canvas.getContext('2d');
+const override = engineOverride(location.href), reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+let version = PINNED_VERSION, worker, pending, requestId = 0, debounce, editGeneration = 0;
+// What the page shows of its state comes from four things, in controls(), so its parts cannot disagree: `pending` (the
+// request in flight), `valid` (the render on screen is the editor's text), `failure` (why that text has no render:
+// { message, line }, kept until it renders or changes) and `rendered` (the last good render).
+let manifest = [], rendered = null, valid = false, failure = null, position = 0, playing = false, nextAt = 0;
+let downloadURLs = [], downloadTimer, zoomChosen = false, shownExample = '', shownHash = '', acting = null, making = '', owed = '';
+const edits = editGuard({ ask: message => confirm(message), target: globalThis });
+// One-shot animations hold their last frame this long before playing again, as the studio's Fluid lab does.
+const HOLD = 600;
+const SOURCES = ['render', 'example', 'open', 'link'];
+const aborted = () => Object.assign(new Error('Superseded'), { name: 'AbortError' });
+// What came of a download or a link stays said until the next edit or click: while a render that waited behind it is
+// still owed (the editor's text has neither a render nor a failure), `owed` leads that render's messages, so the
+// render does not wipe away the answer to a click.
+const setStatus = message => { $('status').textContent = owed ? `${owed} ${message}` : message; };
+function say(message) { owed = ''; setStatus(message); if (!valid && !failure) owed = message; }
+function outcome(message) { setStatus(message); owed = ''; }
+
+function controls() {
+  const busy = Boolean(pending), ready = valid && !busy, message = failure?.message ?? '';
+  // Before anything was asked for, the page is still loading; text with no render and no failure is waiting for one.
+  document.body.dataset.state = busy ? (['example', 'link'].includes(pending.type) ? 'loading' : 'rendering')
+    : valid ? 'ready' : failure ? 'error' : editGeneration ? 'rendering' : 'loading';
+  // The alert is written only when it changes, so stepping through frames beside it does not announce it again.
+  if ($('error').textContent !== message) $('error').textContent = message;
+  $('error').hidden = !failure; editor.setAttribute('aria-invalid', String(Boolean(failure)));
+  // A JSON error names its line; the button selects that line in the editor without moving the caret while you type.
+  $('show-error').hidden = !failure?.line;
+  if (failure?.line) { $('show-error').textContent = `Go to line ${failure.line}`; $('show-error').dataset.line = String(failure.line); }
+  for (const id of ['copy-link', 'export-frame', 'export-sheet', 'export-gif']) $(id).disabled = !ready;
+  // Stills ("animations": {}) have no animation to pick or make a GIF of: the picker is hidden and GIF is off.
+  const stills = rendered?.stills === true;
+  if (stills) $('export-gif').disabled = true;
+  $('export-gif').title = stills ? 'The frames are stills ("animations": {}), so there is no animation to make a GIF of.' : '';
+  $('animation').hidden = stills; $('animation-label').hidden = stills;
+  $('export-atlas').disabled = !ready || rendered?.kind === 'scene';
+  $('export-atlas').title = rendered?.kind === 'scene' ? 'Scenes have no sprite atlas metadata. Download the sheet instead.' : 'Download the sheet PNG and its atlas JSON';
+  $('atlas-help').hidden = rendered?.kind !== 'scene';
+  $('export-recipe').disabled = busy || !editor.value.trim();
+  for (const id of ['animation', 'play', 'step-back', 'step-forward']) $(id).disabled = !rendered;
+  $('cancel').hidden = !busy;
+  $('retry').hidden = busy || valid || !editor.value.trim();
+  $('play').textContent = playing ? 'Pause' : 'Play';
+  $('play').setAttribute('aria-pressed', String(playing));
+  $('artboard').setAttribute('aria-busy', String(busy));
+}
+// The editor's text has no render, and this is why. A download or a link that fails is not that: see say().
+function fail(message, line) {
+  valid = false; playing = false; failure = { message, line };
+  outcome(rendered ? 'The last good render is still shown.' : 'No render yet.');
+  controls();
+}
+function examplesList() {
+  const selected = $('examples').value, groups = new Map();
+  const placeholder = document.createElement('option'); placeholder.value = ''; placeholder.textContent = 'Choose an example…';
+  $('examples').replaceChildren(placeholder);
+  const labels = { project: 'Sprites and tiles', poses: 'Poses', fluid: 'Fluid effects', fx: 'Particle effects', scene: 'Scenes', normals: 'Normal passes', autotile: 'Autotiles' };
+  for (const entry of filterExamples(manifest, version)) {
+    if (!groups.has(entry.kind)) { const group = document.createElement('optgroup'); group.label = labels[entry.kind] ?? entry.kind; groups.set(entry.kind, group); $('examples').append(group); }
+    const option = document.createElement('option'); option.value = entry.file; option.textContent = entry.title; groups.get(entry.kind).append(option);
+  }
+  if ([...$('examples').options].some(option => option.value === selected)) $('examples').value = selected;
+}
+function versionLabel() {
+  const shownVersion = rendered?.version ?? version;
+  $('engine-version').textContent = `Pixelbolt ${shownVersion}${shownVersion !== version ? ' (last good render)' : ''}${override.base ? ' (local test engine override)' : ''}`;
+  $('active-engine').textContent = `Engine ${version}`;
+  $('version-notice').hidden = version === PINNED_VERSION;
+  $('version-message').textContent = `This recipe was made with Pixelbolt ${version}.`;
+  $('use-pin').textContent = `Render on ${PINNED_VERSION} instead`;
+  examplesList();
+}
+function sourceChanged(text, nextVersion) {
+  editor.value = text; version = nextVersion; valid = false; edits.set(false); versionLabel();
+  $('recipe-size').textContent = formatSize(new TextEncoder().encode(text).length);
+}
+function stopWorker(reason = aborted()) {
+  worker?.terminate(); worker = null;
+  if (pending) { const item = pending; pending = null; clearTimeout(item.timer); item.reject(reason); }
+  controls();
+}
+function ensureWorker() {
+  if (worker) return;
+  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  const started = worker;
+  worker.onmessage = ({ data }) => {
+    if (!pending || data.id !== pending.id) return;
+    if (data.source) { sourceChanged(data.source.text, data.source.version); linked(pending.type === 'link' ? pending.hash : ''); return; }
+    const item = pending; pending = null; clearTimeout(item.timer);
+    if (data.error) item.reject(Object.assign(new Error(data.error.message), { name: data.error.name, path: data.error.path, line: data.error.line }));
+    else item.resolve(data.result);
+  };
+  worker.onerror = event => { event.preventDefault(); if (worker === started) stopWorker(new Error(event.message || 'The render worker could not start. Use a static HTTP server and a browser with module worker support.')); };
+  worker.onmessageerror = () => { if (worker === started) stopWorker(new Error('The render worker could not return its result. Try rendering again.')); };
+}
+// A download or a link is made from the text as it was when clicked, and is finished, never dropped: from the click
+// until the page has shown what came of it (`acting`), whatever would render or replace the recipe waits here, and
+// goes ahead only if nothing has replaced it meanwhile. Only Cancel, the time limit and leaving the page stop one.
+function act(run) {
+  const done = run().finally(() => { if (acting === done) acting = null; });
+  acting = done; return done;
+}
+async function request(type, extra) {
+  const source = SOURCES.includes(type);
+  if (source) {
+    const generation = editGeneration;
+    while (acting) await acting.catch(() => {});
+    if (generation !== editGeneration) throw aborted();
+    valid = false; playing = false;
+  } else owed = '';
+  if (pending) stopWorker();
+  const doing = type === 'export' ? 'preparing the download' : type === 'share' ? 'making the link' : 'rendering';
+  if (!source) making = type === 'export' ? 'Preparing download…' : 'Preparing share link…';
+  setStatus(source ? 'Loading engine and rendering…' : making);
+  return new Promise((resolve, reject) => {
+    try {
+      ensureWorker();
+      const id = ++requestId;
+      pending = { id, type, source, hash: extra.hash, resolve, reject, timer: setTimeout(() => stopWorker(new Error(`Stopped: ${doing} took longer than ${REQUEST_TIMEOUT / 1000} s.`)), REQUEST_TIMEOUT) };
+      controls();
+      worker.postMessage({ id, type, text: editor.value, version, override: override.base, ...extra }, extra.png ? [extra.png] : []);
+    } catch (error) { stopWorker(error); reject(error); }
+  });
+}
+const animation = () => rendered?.animations[$('animation').value];
+const frameIndex = () => animation()?.frames[position] ?? 0;
+function gifSize() {
+  if (!rendered) return;
+  const scale = Number($('gif-scale').value), most = framePNGScale(rendered.width, rendered.height);
+  // Past the scale one PNG holds, the line says so before the download is asked for (a GIF may still be made).
+  const pngs = scale > most ? `Frame PNGs at this size stop at scale ${most}.` : '';
+  $('gif-size').textContent = rendered.stills ? `No GIF: the frames are stills. ${pngs || `Frame PNGs at scale ${scale}.`}` : `GIF: ${rendered.width * scale}×${rendered.height * scale} px, ${animation().frames.length} frames, scale ${scale}${pngs ? `. ${pngs}` : ''}`;
+}
+// The scale "Fit" shows: the largest whole zoom (1 to 16) that fits the preview box, or below 1× when the art is
+// larger than the box at 1× (a 640 × 360 frame on a phone, a large still), scaled down smoothly.
+function fittedScale() {
+  if (typeof getComputedStyle !== 'function') return 1;
+  const box = $('artboard'), style = getComputedStyle(box);
+  const width = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  const height = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  return width > 0 && height > 0 ? fitScale(width, height, rendered.width, rendered.height) : 1;
+}
+// Until someone picks a zoom, the art gets the largest whole zoom that fits the preview box, or Fit when even 1× does
+// not fit.
+function fitZoom() {
+  if (zoomChosen || !rendered) return;
+  const scale = fittedScale();
+  $('zoom').value = scale >= 1 ? String(scale) : 'fit';
+}
+function draw() {
+  if (!rendered) return;
+  const frame = rendered.frames[frameIndex()], zoom = $('zoom').value === 'fit' ? fittedScale() : Number($('zoom').value);
+  canvas.width = rendered.width; canvas.height = rendered.height;
+  canvas.style.width = `${rendered.width * zoom}px`; canvas.style.height = `${rendered.height * zoom}px`;
+  canvas.classList.toggle('smooth', zoom < 1);
+  context.imageSmoothingEnabled = false;
+  context.putImageData(new ImageData(new Uint8ClampedArray(frame.data), rendered.width, rendered.height), 0, 0);
+  canvas.setAttribute('aria-label', `${rendered.name}, frame ${frame.name}`);
+  $('frame-counter').textContent = `${position + 1} / ${animation().frames.length}`;
+  $('empty-preview').hidden = true;
+  gifSize();
+}
+function acceptRender(result) {
+  const previous = $('animation').value;
+  rendered = result; valid = true; position = 0; nextAt = 0;
+  version = result.version; versionLabel();
+  $('animation').replaceChildren(...Object.keys(result.animations).map(name => {
+    const option = document.createElement('option'); option.value = name; option.textContent = name; return option;
+  }));
+  if (Object.hasOwn(result.animations, previous)) $('animation').value = previous;
+  playing = !reducedMotion.matches && animation().frames.length > 1;
+  failure = null; document.body.dataset.digest = result.digest;
+  $('digest').textContent = result.digest; $('kind').textContent = result.kind;
+  $('dimensions').textContent = `${result.width}×${result.height} px`;
+  $('frame-count').textContent = String(result.frames.length);
+  $('warnings').textContent = result.warnings.length ? result.warnings.join('\n') : 'None';
+  fitZoom(); draw(); controls();
+  const animations = result.stills ? 0 : Object.keys(result.animations).length;
+  outcome(`Rendered ${result.name} · ${result.frames.length} ${result.stills ? 'stills' : 'frames'}${animations > 1 ? ` in ${animations} animations` : ''}${result.warnings.length ? ' · see warnings in About this render' : ''}.`);
+}
+async function runRender(type = 'render', extra = {}) {
+  clearTimeout(debounce);
+  try { acceptRender(await request(type, extra)); }
+  catch (error) { if (error.name !== 'AbortError') fail(error.message, error.line); }
+}
+function renderEdit() {
+  if (editor.value.length > RECIPE_LIMIT || new TextEncoder().encode(editor.value).length > RECIPE_LIMIT) {
+    fail(`The recipe is larger than ${RECIPE_LIMIT.toLocaleString('en')} bytes.`); return;
+  }
+  runRender();
+}
+// The editor's text changed, or is about to be replaced: its render and its failure are no longer its own. A render
+// in flight is stopped; a download or a link in flight is left to finish (see act).
+function invalidate() {
+  editGeneration++; clearTimeout(debounce);
+  if (pending?.source) stopWorker();
+  valid = false; playing = false; failure = null; owed = '';
+  $('share-link').value = ''; $('share-error').hidden = true;
+  controls();
+}
+editor.addEventListener('input', () => {
+  invalidate(); edits.set(true); $('examples').value = ''; shownExample = '';
+  $('recipe-size').textContent = formatSize(new TextEncoder().encode(editor.value).length);
+  // A download or link under way goes on while its recipe is typed over, and the status keeps saying so: "Waiting for
+  // edits…" alone read as if it had stopped, and Cancel then cancelled what the status no longer named.
+  setStatus(acting ? `${making} Your edit renders after it.` : 'Waiting for edits…'); debounce = setTimeout(renderEdit, 300);
+});
+$('examples').addEventListener('change', () => {
+  if (!$('examples').value) return;
+  // A keyboard arrow on the closed menu also changes it, so edits are never dropped silently.
+  if (edits.keep()) { $('examples').value = shownExample; return; }
+  shownExample = $('examples').value;
+  invalidate(); runRender('example', { file: shownExample });
+});
+$('show-error').addEventListener('click', () => {
+  const line = Number($('show-error').dataset.line), lines = editor.value.split('\n');
+  const start = lines.slice(0, line - 1).reduce((sum, text) => sum + text.length + 1, 0);
+  editor.focus(); editor.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+  editor.scrollTop = Math.max(0, (line - 4) * (parseFloat(getComputedStyle(editor).lineHeight) || 20));
+});
+$('use-pin').addEventListener('click', () => { invalidate(); version = PINNED_VERSION; versionLabel(); renderEdit(); });
+// Cancelling a download or a link stops only that: the render on screen is as valid as it was. A cancelled render
+// leaves the text with none.
+$('cancel').addEventListener('click', () => {
+  if (pending && !pending.source) { const what = pending.type === 'share' ? 'Link' : 'Download'; stopWorker(); say(`${what} cancelled.`); return; }
+  editGeneration++; clearTimeout(debounce); stopWorker(); fail('Stopped: rendering cancelled.');
+});
+$('retry').addEventListener('click', renderEdit);
+
+async function openFile(file) {
+  if (!file || edits.keep()) return;
+  invalidate(); const generation = editGeneration;
+  try {
+    if (/\.png$/i.test(file.name) || file.type === 'image/png') {
+      // Bound the input allocation too; recipe decompression has its own stricter limit in share.js.
+      if (file.size > 96 * 1024 * 1024) throw new Error('Choose a PNG no larger than 96 MiB.');
+      const png = await file.arrayBuffer();
+      if (generation === editGeneration) await runRender('open', { png });
+    } else if (/\.json$/i.test(file.name) || file.type === 'application/json') {
+      if (file.size > RECIPE_LIMIT) throw new Error(`The recipe is larger than ${RECIPE_LIMIT.toLocaleString('en')} bytes.`);
+      const text = await file.text();
+      if (generation === editGeneration) await runRender('open', { text });
+    } else throw new Error('Open a .json recipe or a .png exported by the playground.');
+  } catch (error) { if (generation === editGeneration) fail(error.message); }
+}
+$('open-button').addEventListener('click', () => $('open-file').click());
+$('open-file').addEventListener('change', () => { openFile($('open-file').files[0]); $('open-file').value = ''; });
+let dragDepth = 0;
+document.addEventListener('dragenter', event => {
+  if (!event.dataTransfer.types.includes('Files')) return;
+  event.preventDefault(); dragDepth++; document.body.classList.add('dragging');
+});
+document.addEventListener('dragover', event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } });
+document.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('drop', event => {
+  if (!event.dataTransfer.files.length) return;
+  event.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging'); openFile(event.dataTransfer.files[0]);
+});
+
+$('copy-link').addEventListener('click', async () => {
+  const generation = editGeneration;
+  const link = await act(async () => {
+    try {
+      const result = await request('share', { base: location.origin + location.pathname });
+      // The link is the recipe as it was when clicked, which the editor no longer holds: not its link to hand out.
+      if (generation !== editGeneration) throw new Error('The recipe changed while its link was being made. Copy the link again once it has rendered.');
+      $('share-link').value = result.link;
+      // The link holds the edits, so they are kept, and the address now names them.
+      history.replaceState(null, '', result.link); shownHash = location.hash; edits.set(false);
+      controls(); $('share-error').hidden = true;
+      return result.link;
+    } catch (error) {
+      // Cancel says so itself.
+      if (error.name === 'AbortError') return;
+      // A link that is too long is about sharing, not the recipe: the render stays valid and on screen.
+      $('share-error').textContent = error.message; $('share-error').hidden = false;
+      controls(); say('No link made; see the note under Share link.');
+    }
+  });
+  if (!link) return;
+  try { await navigator.clipboard.writeText(link); if (generation === editGeneration) say('Share link copied.'); }
+  catch { if (generation === editGeneration) { $('share-link').focus(); $('share-link').select(); say('The link is selected. Press Ctrl+C or Command+C to copy it.'); } }
+});
+function clearDownloads() {
+  clearTimeout(downloadTimer);
+  for (const url of downloadURLs) URL.revokeObjectURL(url);
+  downloadURLs = []; $('download-links').replaceChildren(); $('download-links').hidden = true;
+}
+function download(files) {
+  clearDownloads();
+  for (const file of files) {
+    const url = URL.createObjectURL(new Blob([file.data], { type: file.type })); downloadURLs.push(url);
+    const link = document.createElement('a'); link.href = url;
+    // Preserve known extension separators; no recipe text can supply a path or HTML filename.
+    const filename = file.name.split('.').map(part => safeName(part)).join('.');
+    link.download = filename; link.textContent = `Save ${filename} (${formatSize(file.data.length)})`;
+    $('download-links').append(link);
+    const automatic = document.createElement('a'); automatic.href = url; automatic.download = filename;
+    document.body.append(automatic); automatic.click(); automatic.remove();
+  }
+  $('download-links').hidden = false;
+  // Some browsers block the second automatic file. Keep explicit links briefly, then release all blobs.
+  downloadTimer = setTimeout(clearDownloads, 120000);
+}
+// A download that fails says why in the status, where a ready one is announced, and Cancel says so itself. Neither
+// changes whether the recipe renders, so the render and its error stay as they were.
+for (const kind of ['frame', 'sheet', 'gif', 'atlas', 'recipe']) $(`export-${kind}`).addEventListener('click', () => act(async () => {
+  const generation = editGeneration;
+  try {
+    const result = await request('export', { export: kind, frame: frameIndex(), animation: $('animation').value, scale: Number($('gif-scale').value) });
+    download(result.files); controls();
+    // The file holds the text as it was when clicked: edits made since are not kept by it.
+    if (kind === 'recipe' && generation === editGeneration) edits.set(false);
+    say(`Download ready.${kind === 'atlas' ? ' If only one file downloaded, use the file links below (available for two minutes).' : ''}${result.warnings.length ? ` ${result.warnings.join(' ')}` : ''}`);
+    if (result.warnings.length) $('warnings').textContent = [...(rendered?.warnings ?? []), ...result.warnings].join('\n');
+  } catch (error) { if (error.name !== 'AbortError') { controls(); say(`No download. ${error.message}`); } }
+}));
+
+function step(delta) {
+  if (!rendered) return;
+  playing = false; position = (position + delta + animation().frames.length) % animation().frames.length; nextAt = 0; controls(); draw();
+}
+function togglePlay() {
+  if (!rendered) return;
+  playing = !playing; nextAt = 0;
+  if (playing && position === animation().frames.length - 1) position = 0;
+  controls(); draw();
+}
+$('play').addEventListener('click', togglePlay);
+$('step-back').addEventListener('click', () => step(-1));
+$('step-forward').addEventListener('click', () => step(1));
+$('animation').addEventListener('change', () => { position = 0; nextAt = 0; draw(); });
+$('zoom').addEventListener('change', () => { zoomChosen = true; draw(); });
+addEventListener('resize', () => { if (!rendered) return; fitZoom(); if (!zoomChosen || $('zoom').value === 'fit') draw(); });
+$('gif-scale').addEventListener('change', gifSize);
+canvas.addEventListener('keydown', event => {
+  if ([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    event.preventDefault();
+    if (event.key === ' ') togglePlay(); else step(['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1);
+  }
+});
+function tick(now) {
+  if (playing && rendered && !document.hidden) {
+    const sequence = animation(), step = advancePlayback({ position, nextAt, now, durations: sequence.frames.map(index => rendered.frames[index].duration), loop: sequence.loop, hold: HOLD });
+    position = step.position; nextAt = step.nextAt;
+    if (step.moved) draw();
+  }
+  requestAnimationFrame(tick);
+}
+document.addEventListener('visibilitychange', () => { nextAt = 0; });
+reducedMotion.addEventListener('change', () => { if (reducedMotion.matches) { playing = false; controls(); } });
+addEventListener('pagehide', () => { clearDownloads(); stopWorker(); });
+// The address names a link only while the editor's recipe came from it. `shownHash` is that link, recorded when it
+// has decoded and its recipe is in the editor, never before; an example or a file that takes the editor takes the
+// fragment away (replaceState: no navigation, no history entry). Typing leaves it: the address still says where the
+// recipe came from, the unsaved-edits guard covers what was typed, and Copy link puts the edited recipe's link there.
+function linked(hash) {
+  shownHash = hash;
+  if (location.hash !== hash) history.replaceState(null, '', hash || location.pathname + location.search);
+}
+// A link pasted into this tab, or Back and Forward between links, opens that recipe, but never over edits without
+// asking: keeping them puts the address back as it was, which opens nothing.
+function openHash() {
+  if (!location.hash) return false;
+  if (edits.keep()) { history.replaceState(null, '', shownHash || location.pathname + location.search); return false; }
+  invalidate(); runRender('link', { hash: location.hash }); return true;
+}
+addEventListener('hashchange', openHash);
+
+async function boot() {
+  { const option = document.createElement('option'); option.value = 'fit'; option.textContent = 'Fit'; $('zoom').append(option); }
+  for (const id of ['zoom', 'gif-scale']) for (let scale = 1; scale <= 16; scale++) {
+    const option = document.createElement('option'); option.value = String(scale); option.textContent = `${scale}×`; $(id).append(option);
+  }
+  $('zoom').value = '8'; $('gif-scale').value = '1';
+  $('notice').textContent = override.notice; $('notice').hidden = !override.notice;
+  versionLabel(); controls(); requestAnimationFrame(tick);
+  if (!globalThis.Worker || !globalThis.CompressionStream || !globalThis.DecompressionStream || !globalThis.crypto?.subtle) {
+    fail('This playground needs module workers, CompressionStream and Web Crypto. Use a current browser over HTTPS or localhost.'); return;
+  }
+  const opened = openHash(), generation = editGeneration;
+  try {
+    const response = await fetch(new URL('./examples.json', import.meta.url), { signal: AbortSignal.timeout(REQUEST_TIMEOUT) });
+    if (!response.ok) throw new Error(`Examples could not be loaded: HTTP ${response.status}. Paste or open a recipe instead.`);
+    manifest = await response.json(); examplesList();
+    if (!opened && generation === editGeneration) { $('examples').value = 'forest-spirit.json'; await runRender('example', { file: 'forest-spirit.json' }); }
+  } catch (error) { $('notice').textContent = [override.notice, error.message].filter(Boolean).join(' '); $('notice').hidden = false; if (!opened && generation === editGeneration) fail('Examples could not be loaded. Paste or open a recipe to start.'); }
+}
+boot();

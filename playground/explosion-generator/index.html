@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Make a pixel art explosion in your browser: pick a blast, tweak it, download a sprite sheet, GIF or atlas. Free, no account, nothing to install.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; worker-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Pixel art explosion generator: free, in your browser</title>
+  <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/playground/explosion-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pixelbolt">
+  <meta property="og:title" content="Pixel art explosion generator: free, in your browser">
+  <meta property="og:description" content="Make a pixel art explosion in your browser: pick a blast, tweak it, download a sprite sheet, GIF or atlas. Free, no account, nothing to install.">
+  <meta property="og:url" content="https://skulitom.github.io/Pixelbolt/playground/explosion-generator/">
+  <meta property="og:image" content="https://skulitom.github.io/Pixelbolt/guides/pixel-art-explosion/preview.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pixel art explosion fireball with sparks, and a small spark burst, rendered by Pixelbolt">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./playground.css">
+  <link rel="stylesheet" href="./generator.css">
+  <script src="./start.js"></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body data-state="loading">
+  <main>
+    <header>
+      <p class="eyebrow">Pixelbolt <span id="active-engine" class="muted"></span></p>
+      <h1>Pixel art explosion generator: free, in your browser</h1>
+      <p>Pick an explosion, tweak its recipe, and download a PNG sprite sheet, a GIF, or a sheet with an atlas JSON. No install, no account. It runs on <a href="../../">Pixelbolt</a>, the <a href="https://github.com/skulitom/Pixelbolt">open-source</a> pixel art engine we make.</p>
+    </header>
+    <p id="notice" class="notice" role="status" hidden></p>
+    <p id="version-notice" class="notice" hidden><span id="version-message"></span> <button id="use-pin" type="button">Render on the default version</button></p>
+    <nav class="presets" aria-label="Explosions">
+      <span class="control-label">Explosions</span>
+      <a href="#v=0.19.0&amp;r=xZfdjuo4DMffxXtrqjRJS-ljnF1pLhAXoU0hmtCgJMyHRrz7yilw2oWZM6NF4gKpbqjz-9uJnXxA5_xORahhb9607Zzf6FlnD6YFhBftg3E91DlCr3YaauiM12tl7Uy_7a1Lowivpo1bqBclwlabzTYOz3tldYwa6g94ghr-6rpurUtAeB-sVkiaxQ1WpfgaEDxZbSlZsn6RVXVccQ0Igax5O19UKn359zBarRdNxQDhH7IX84VQspGAoC6eVc4BQQ_2Yi5k3gFCN9iqlDL53wz2uiqUZHBE0F2nmxhIwQ3h9NarnQ5QC4bQHryK6X1RIAStW6jnCOuDe1d98w41y_IK4fUUoRnLmER4cT6axsQ0LgqE1oRg9idPLMtzhMY5a_pNMkuE1qvhGUHvTIzaB6iXH5cUWRW2pD5CvZQVFnyF4FVrDgHqeVYQkg8xZTXq3V57FQ9eQ82zEqGzpnnWnvzLI16crq0KcZaP3YqsGDku6ZGSTVR9C7VAaHUfTsqqq7kqhE5Z67qOxksE_bZX9KFMIntnAnn7D1NxxcTPTKKcSpUk9cIUovLxN52c0NFqneDlWfkpn8hy_gM-ceYrGcryT3z8Jp-8wpN3opNnuqLICiz5JKcim38RwmmCi-sQfsrIMyF_wFhcVl2BUnw3w2O8PBPXeMUXfD9ZgOUFj1EI83EAr_HECa-YRE_wKzxefo7Hqm_xNc7r6Z4d74_F53A5u7VdR7x8wjam4V_T8DHNOFRFVt1KJjsTFVcBok07QqJ_fIupHDG1eu1NmLFLDaEUynGU8mnB_L1Nw17559QaGnfoh-BZ02molznDvFpR3bYu1WZ4Sl1v-LnU5VYI0StjoY7-oBFUv7Hp24ohl2xFE6QWshS0qtK-3Hj1ktQuGbKMonduBdRJOmete4WaHa8FjheBeKQ8LhkKdm95l1VVFo_On2AMRXlvgWIisHykQIZ3VydHq3P-SG0lw5zfW10xKS4PzV3O6eP_KXCFYJ17TkfOzmjbJqlDHR5jhXRCp1M54Wy9DltnWxpi1MCoibBM0tStidtUmyl4Z5fjaj92--uicOqSJ3d87G4o9X9y6E6he7rhdI45NZY8W0wwKYBb0-vhCuB2NNccoTtYmzoTgteq2ULN6TynqAulP4Sde6Y8gEq3EbqB0K3jhhjSgtT1WVZdaYLGatUf9jR9iF69hyHRx-Px-C8">Fireball explosion</a>
+      <a href="#v=0.19.0&amp;r=xZbdbuMoFMff5eztKcKAP8pjzFz0IuoFiXGCQkwEuJ2oyruvwG1CNtluZ7ZSLixxsPnzOx8c8waD8zsVQcLe_NJ2cH6tHwY7mR4QXrQPxo0gK4RR7TRI0L_21uVJhFfTxw3IRiBstFlv4jzeK6tj1CDf4Akk_DUMw1I3gHCYrZ6LJO5mq1NsCQg-WX0jaLZ-JKsbmGIaEEKyllzVKq37md81bdcxQNgmq1ZC10s4Iuhh0KsY0t5nUvkGg1c7HUByhtBPXsU831CEoHUPskVYTu6gxtUBJCVVh_D67tIDJVQgvDgfzcrE_J4j9CYEs38XoqTibY2wcs6acZ0nGoTeq3mMoHcmRu0DyMXbRywHq8IGEFL4F5whb58RvOrNFEDWiciHmIMf9W6vvYqT1yAZaRAGa1Zb7ZO6OOJJcmlViA9VKdoVoiINU2oS0diDTI7oMWS32NU-HaYoqvwhYQijMyEt_gdAfQXAPgCYuPSKFwAhKh_PKKJEIeIKRpxhsvFlGP4BIyhy_jkMuwFzFf8_BRGntLQoRAHCSP3vcSlTVF3H5QxTpXx9GaY-wVDk1ddSVKLwGykqI_MbKM2pWloUZYLYNQp_R6kLFJocv0CpytLNAF-A6fXSm3A-PFWNnJO64KnIxak810zYK7_NXWflpjHNkRbBmkGDXDxilURWzrp8_uEp98L5cbn3PSNEr4wFGf2kEdS4tmlp1XTIKvacdsh9asGxzkhrr16y8wuKlORPProN5QiDs9a9gqTHawfPh5Mia-_q3mOHTHyze6fjzhpk1T3dY6xD1n6ze-cm0pAaGbtvgbKmQ_7dBXpqTYLfuUDZY4f8uwv01O5Ei1zc0z3OOuT_s0CfEaxz23yvGYy2fXZ07swl1TZTbLwOG2f7NEUJTXeT3sTN3IybdHdMt6Qx_RrUQXsBKXyfyf7M98NraYaUiPpSvi71X5Sd9IV82Kjevf4nNL8QFZ9r2nyHLCVvwTa_I1n-6ErhHznVc8pTjJ5uRaVDSmqssCItMiIu9r0VnlRYVqtx2qfqC9GrQ5ir6Hg8Hv8G">Explosion</a>
+      <a href="#v=0.19.0&amp;r=jZTPbuMgEMbfZfY6scDGf8JjdA89RD7gGCcotskCbhtVfvfV4MRJ093VHiJ5hjD8-OYbPqGzblABJJzNh-476w56030Awpt23tgRJEcY1aBBQmec3uiPc2_jCsK7acMR5LZAOGpzOIbl-6x6HYIG-QmvIOFH13WNLgDhskRtJlpAsEtUqbQBBEdRWwgWoxeKqi5VqQYET1GTqVzRvp9xrSirKgWEE0W5EjqnfS1FWZNxwWBG8Jehsb0nEj002m0acwC5g8srnX-BGpd8zK3RpjUDZew9o8eWMg7qGUF3nd6HWPVJEso4NWgPkm8R2smpsObtAFLkCMGC5IwhaOVJVjNGVK1bkCVCb-0p1vZHuz_Rx9721vmFiEREeCWycHTaH23f0hJL0hxZQr-KGAns696XKDL-swavkCVZiiwRBbKkEFROUD0_2NNTwVPsxfciGbKkzGuE3oSvO_yfsGP1o2q_Vf8DXk5_tlPozUjKtTDPCPteq3E6L9vdqGl_cJNG8MGpyzWaEXp1iYu7TzgZaig4Mx5gkRzkVXAEmoedqLBIa1z7ueNY1QhOtWaKIUNR1OsM7LaYY1Yj-F-T8sf4f5YIqjBaQ31mSZUj-L3qNcgc4Wzfo_F4FGxLwtczrmg-KHdHi-28k-XFIxnD9JEsLZCLmg4wI7m0ukOKiBhNSUB3Cp6kCPuJRG2sHeABpJmcD_9Nsn3SKBWYFo8ilH8RIUee8JuF03qOo2dCuHXs-gYtPryfL6gpymkFcpely8UXYskrjCoGkAJBjQc6c5cKhhlj1KlzHLmrYwn84NSbCZd4kQ1LGJm4depA3Jz83OnlVssxvW3IdDf3XMnW2wsssMIyybFEQffmSVHPpOwX8W60YqXld1q-ZZjlj7Q8qTBLiidaMs-dlWUrbIk8uri31oEsK4TGTuM-tiKLg3eOnXt4H29v4uNr-PgO0lw6Zfp1XmmQyCB6PJDL-DzX8zz_Bg">Fire explosion (particles)</a>
+    </nav>
+    <section class="preview-panel" aria-labelledby="preview-title">
+        <div class="panel-heading"><h2 id="preview-title">Preview</h2><label for="zoom">Zoom <select id="zoom"></select></label></div>
+        <div id="artboard" class="artboard">
+          <canvas id="preview" width="1" height="1" tabindex="0" aria-label="Pixel art preview" aria-describedby="preview-help">Your browser needs Canvas to show the preview.</canvas>
+          <p id="empty-preview" class="muted">Your pixels will appear here.</p>
+        </div>
+        <div class="control-row playback">
+          <label for="animation" id="animation-label">Animation</label><select id="animation" disabled></select>
+          <button id="step-back" type="button" aria-label="Previous frame" disabled>←</button>
+          <button id="play" type="button" aria-pressed="false" disabled>Play</button>
+          <button id="step-forward" type="button" aria-label="Next frame" disabled>→</button>
+          <span id="frame-counter">0 / 0</span>
+        </div>
+        <p id="preview-help" class="hint">Zoom fits the art until you choose one. Focus the preview: Space plays or pauses; arrow keys step.</p>
+      </section>
+    <section class="get-it" aria-label="Downloads">
+      <div class="control-row downloads" role="group" aria-label="Download files">
+        <span class="control-label">Download</span>
+        <button id="export-frame" type="button" disabled>Frame PNG</button>
+        <button id="export-sheet" type="button" disabled>Sheet PNG</button>
+        <button id="export-gif" type="button" disabled>GIF</button>
+        <button id="export-atlas" type="button" aria-describedby="atlas-help" disabled>Atlas PNG + JSON</button>
+        <button id="export-recipe" type="button" disabled>Recipe JSON</button>
+        <span class="pair"><label for="gif-scale">Scale for Frame PNG and GIF</label>
+        <select id="gif-scale" aria-describedby="gif-size"></select></span>
+      </div>
+      <p id="gif-size" class="hint">GIF: waiting for a render. Scale starts at 1.</p>
+      <p id="atlas-help" class="hint" hidden>Scenes have no sprite atlas metadata. Download their frame sheet instead.</p>
+    </section>
+    <div class="status-row"><p id="status" role="status" aria-live="polite">Loading the playground…</p><button id="cancel" type="button" hidden>Cancel</button><button id="retry" type="button" hidden>Render again</button></div>
+    <div id="download-links" class="control-row" role="group" aria-label="Last download files" hidden></div>
+    <p class="muted">The <a href="../../guides/pixel-art-explosion/">explosion guide</a> explains the Explosion preset's settings, <a href="../../gallery/">the gallery</a> shows other effects, and this page is part of the <a href="../">Pixelbolt playground</a>.</p>
+    <section class="toolbar" aria-label="Recipes">
+      <div class="control-row">
+        <label for="examples">Examples</label>
+        <select id="examples"><option value="">Choose an example…</option></select>
+        <button id="open-button" type="button">Open file</button>
+        <input id="open-file" type="file" accept=".json,.png,application/json,image/png" aria-label="Open a JSON recipe or playground PNG" hidden>
+        <button id="copy-link" type="button" disabled>Copy link</button>
+      </div>
+      <div class="share-row">
+        <label for="share-link">Share link</label>
+        <input id="share-link" type="text" readonly placeholder="Your last copied link" aria-describedby="link-help">
+      </div>
+      <p id="link-help" class="hint">Links allow 16,384 characters. For larger recipes, share a recipe file or a playground PNG.</p>
+      <p id="share-error" class="share-error" role="alert" hidden></p>
+    </section>
+    <div class="workspace">
+      <section class="editor-panel" aria-labelledby="recipe-label">
+        <div class="panel-heading"><label id="recipe-label" for="recipe">Recipe JSON</label><span id="recipe-size" class="muted"></span></div>
+        <textarea id="recipe" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-describedby="editor-help error"></textarea>
+        <p id="editor-help" class="hint">Edits render automatically. Tab moves to the next control.</p>
+        <p id="error" role="alert" hidden></p>
+        <button id="show-error" type="button" hidden>Go to the line</button>
+      </section>
+    </div>
+    <details>
+      <summary>About this render</summary>
+      <dl>
+        <dt>Engine</dt><dd id="engine-version">Loading…</dd>
+        <dt>Kind</dt><dd id="kind">—</dd>
+        <dt>Size</dt><dd id="dimensions">—</dd>
+        <dt>Frames</dt><dd id="frame-count">—</dd>
+        <dt>Warnings</dt><dd id="warnings">None</dd>
+        <dt>Pixels SHA-256</dt><dd><code id="digest">—</code></dd>
+      </dl>
+      <p class="hint">The digest identifies the unscaled RGBA frames, including their dimensions. Scenes are sampled every 100 ms, up to 240 frames.</p>
+    </details>
+    <footer><p>Recipes stay in your browser. The engine and examples load from jsDelivr. Share links keep the recipe in the URL fragment; every exported PNG carries its source recipe and engine version.</p></footer>
+    <noscript>This playground needs JavaScript and a browser with module workers and CompressionStream support.</noscript>
+  </main>
+</body>
+</html>

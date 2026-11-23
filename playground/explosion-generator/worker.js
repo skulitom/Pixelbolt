@@ -1,0 +1,161 @@
+import { loadEngine, renderRecipe, framesDigest, sceneSheet, assertInline } from './render.js';
+import { encodePNG } from './png.js';
+import { checkVersion, recipeKind, RECIPE_LIMIT, EMBED_LIMIT, shareLink, readShareLink, embedRecipe, readEmbeddedRecipe } from './share.js';
+import { compareVersions, engineAllowed, engineBase, examplePath, framePNGScale, inlineExample, jsonErrorLocation, PNG_PIXELS, safeName } from './lib.js';
+
+let loadedBase, loadedEngine, cached;
+// These compilers shipped after the first supported engine. Import only the one this source needs, so older links
+// keep loading without requesting modules their release never shipped.
+const SOURCE_ENGINES = { wave: ['0.9.2', 'Wave'], crystal: ['0.13.0', 'Crystal'], powder: ['0.14.0', 'Falling-sand'], bodies: ['0.12.0', 'Rigid-body'] };
+const encoder = new TextEncoder();
+function checkText(text) {
+  if (typeof text !== 'string') throw new Error('Expected recipe text.');
+  if (text.length > RECIPE_LIMIT || encoder.encode(text).length > RECIPE_LIMIT) throw new Error(`The recipe is larger than ${RECIPE_LIMIT.toLocaleString('en')} bytes.`);
+  return text;
+}
+// The most lines a recipe is indented to in the editor. A textarea takes about 4 ms per 1,000 lines to show its text
+// and over 1 ms per 1,000 to answer each key, so a 6 KB link that unpacked to 2.4 million indented lines froze the
+// page for 20 s. Examples, compiled fluids included, indent to a few thousand lines; a larger recipe is shown compact,
+// which costs about what opening the same file does.
+export const EDITOR_LINES = 50000;
+function sourceText(document, lines = Infinity) {
+  const pretty = JSON.stringify(document, null, 2);
+  let count = 1;
+  for (let at = pretty.indexOf('\n'); at !== -1 && count <= lines; at = pretty.indexOf('\n', at + 1)) count++;
+  // Whitespace must not stop a compact link or PNG recipe from reopening near the input limit.
+  if (count <= lines && pretty.length <= RECIPE_LIMIT && encoder.encode(pretty).length <= RECIPE_LIMIT) return pretty;
+  return checkText(JSON.stringify(document));
+}
+function parse(text) {
+  checkText(text);
+  const clean = text.replace(/^\uFEFF/, '');
+  try { return JSON.parse(clean); }
+  catch (error) {
+    const location = jsonErrorLocation(clean, error);
+    // The line and column lead the message, so drop the parser's own position wording (V8 and SpiderMonkey).
+    const detail = location.line ? location.message.replace(/^JSON\.parse:\s*/, '').replace(/\s*(?:in JSON\s+)?at position \d+(?:\s*\(line \d+ column \d+\))?/i, '').replace(/\s*at line \d+ column \d+ of the JSON data/i, '') : location.message;
+    const text = detail.charAt(0).toUpperCase() + detail.slice(1);
+    throw Object.assign(new Error(`${location.line ? `Line ${location.line}${location.column ? `, column ${location.column}` : ''}: ` : ''}${text}`), { line: location.line });
+  }
+}
+// Running as a worker, the engine's address is checked again here (see engineAllowed); Node tests call handleRequest
+// directly with file: engines, and have no worker address to check against.
+const workerURL = typeof self !== 'undefined' && self.location ? self.location.href : null;
+function checkedBase(version, override) {
+  const base = engineBase(version, override);
+  if (workerURL && !engineAllowed(base, workerURL)) throw new Error('This engine address is refused: use jsDelivr, this page’s origin, or loopback on both URLs.');
+  return base;
+}
+async function engineFor(version, override, kind) {
+  checkVersion(version);
+  const required = SOURCE_ENGINES[kind];
+  if (required && compareVersions(version, required[0]) < 0) {
+    throw new Error(`${required[1]} sources need Pixelbolt ${required[0]} or newer; the engine selected here is ${version}.`);
+  }
+  const base = checkedBase(version, override);
+  try {
+    if (loadedBase !== base) {
+      loadedEngine = null; loadedBase = null;
+      loadedEngine = await loadEngine(base); loadedBase = base;
+    }
+    if (required && !loadedEngine[kind]) Object.assign(loadedEngine, await loadEngine(base, [kind]));
+  } catch { throw new Error(override ? 'The local test engine could not be loaded. Check the engine URL and static server.' : `Pixelbolt ${version} could not be loaded from jsDelivr. Is it a published version?`); }
+  return loadedEngine;
+}
+async function render(text, version, override) {
+  const source = parse(text), base = engineBase(version, override);
+  const kind = recipeKind(source); assertInline(source);
+  if (cached?.text === text && cached.version === version && cached.base === base) return cached;
+  const engine = await engineFor(version, override, kind), result = renderRecipe(engine, source);
+  cached = { text, version, base, source, engine, result, digest: await framesDigest(result.frames) };
+  return cached;
+}
+const jsonFile = (name, value) => ({ name, type: 'application/json', data: encoder.encode(JSON.stringify(value, null, 2) + '\n') });
+
+// Exported for Node tests; the worker message adapter below supplies transfer lists, never engine objects.
+export async function handleRequest(request, onSource = () => {}) {
+  const { type, override } = request;
+  let { text, version } = request;
+  checkVersion(version);
+  if (type === 'link') {
+    const opened = await readShareLink(request.hash);
+    text = sourceText(opened.recipe, EDITOR_LINES); version = opened.version;
+  } else if (type === 'open') {
+    if (request.png) {
+      const opened = await readEmbeddedRecipe(new Uint8Array(request.png));
+      if (!opened) throw new Error('This PNG carries no Pixelbolt recipe.');
+      text = sourceText(opened.recipe, EDITOR_LINES); version = opened.version;
+    } else { parse(text); }
+  } else if (type === 'example') {
+    const base = new URL('../examples/', checkedBase(version, override)), reads = new Map();
+    const read = async file => {
+      examplePath(file);
+      if (!reads.has(file)) reads.set(file, (async () => {
+        const response = await fetch(new URL(file, base), { credentials: 'omit', redirect: 'error' });
+        if (!response.ok) throw new Error(`Could not load example ${file}: HTTP ${response.status}.`);
+        return parse(await response.text());
+      })());
+      return reads.get(file);
+    };
+    const file = examplePath(request.file), source = await inlineExample(await read(file), file, read);
+    text = sourceText(source, EDITOR_LINES);
+  }
+  checkText(text);
+  if (['link', 'open', 'example'].includes(type)) onSource({ text, version });
+  if (type === 'share') return { link: await shareLink(parse(text), version, { base: request.base }) };
+  if (type === 'export' && request.export === 'recipe') {
+    // Indented when that still fits the reopen limit, compact otherwise, so a downloaded recipe always reopens.
+    const source = parse(text), kind = recipeKind(source), body = sourceText(source), bytes = encoder.encode(body);
+    const data = bytes.length < RECIPE_LIMIT ? encoder.encode(`${body}\n`) : bytes;
+    return { files: [{ name: `${safeName(source.name ?? source.recipe?.name)}.${kind === 'project' ? 'pixel' : kind}.json`, type: 'application/json', data }], warnings: [] };
+  }
+  const item = await render(text, version, override), { result, source, engine } = item;
+  if (type !== 'export') {
+    const { project, recipe, ...preview } = result;
+    // Retain the worker's pixels for export; only the copies cross the boundary and are detached.
+    return { ...preview, version, digest: item.digest, frames: result.frames.map(frame => ({ ...frame, data: frame.data.slice() })) };
+  }
+  const name = safeName(result.name), files = [], warnings = [];
+  // Every PNG carries its recipe, except one too large to carry and still open in Pillow (embedRecipe refuses it):
+  // that PNG is written without it, and a warning says so.
+  const pngFile = async (pixels, filename) => {
+    const png = await encodePNG(pixels.data, pixels.width, pixels.height);
+    try { return { name: filename, type: 'image/png', data: await embedRecipe(png, source, version) }; }
+    catch (error) {
+      if (error.code !== 'too-large') throw error;
+      warnings.push(`This PNG does not carry its recipe: at over ${EMBED_LIMIT.toLocaleString('en')} bytes, a PNG with it would not open in Pillow. Download the recipe to keep it.`);
+      return { name: filename, type: 'image/png', data: png };
+    }
+  };
+  if (request.export === 'frame') {
+    const frame = result.frames[request.frame];
+    if (!frame) throw new Error('Choose an available frame.');
+    // Checked before the frame is enlarged: a 640 × 360 frame at 16× would hold 59 million pixels (236 MB) only for
+    // the PNG encoder to refuse it, and a 4096-pixel still about 17 GB.
+    const scale = request.scale, most = framePNGScale(result.width, result.height);
+    if (Number.isInteger(scale) && scale > most) throw new Error(`At scale ${scale} this ${result.width}×${result.height} frame would be ${result.width * scale}×${result.height * scale}, more than the ${PNG_PIXELS.toLocaleString('en')} pixels one PNG holds. Choose scale ${most} or lower.`);
+    files.push(await pngFile({ width: result.width * scale, height: result.height * scale,
+      data: engine.core.scalePixels(frame.data, result.width, result.height, scale) }, `${name}-${safeName(frame.name)}.png`));
+  } else if (request.export === 'sheet' || request.export === 'atlas') {
+    if (request.export === 'atlas' && !result.project) throw new Error('Scenes are sampled images and have no sprite atlas metadata. Download the sheet instead.');
+    const atlas = result.project ? engine.core.buildAtlas(result.project) : sceneSheet(result);
+    files.push(await pngFile(atlas, `${name}.png`));
+    // Stills and a still tile set list their frames alone, as a bundle's atlas does (core's exportAtlas; an engine
+    // from before stills has none, and no stills).
+    if (request.export === 'atlas') files.push(jsonFile(`${name}.atlas.json`, engine.core.exportAtlas ? engine.core.exportAtlas(result.recipe, result.project, atlas.metadata) : atlas.metadata));
+  } else if (request.export === 'gif') {
+    const project = result.project ?? { ...result, palette: {} };
+    const gif = engine.gif.animationGIF(project, request.animation, { scale: request.scale, background: 'transparent' });
+    files.push({ name: `${name}-${safeName(request.animation)}.gif`, type: 'image/gif', data: gif.data });
+    warnings.push(...gif.notes.map(note => note.replace(" Pass a background colour to blend them instead.", '')));
+  } else throw new Error('Unknown export.');
+  return { files, warnings };
+}
+
+if (typeof self !== 'undefined') self.onmessage = async ({ data: request }) => {
+  try {
+    const result = await handleRequest(request, source => self.postMessage({ id: request.id, source }));
+    const buffers = result.frames?.map(frame => frame.data.buffer) ?? result.files?.map(file => file.data.buffer) ?? [];
+    self.postMessage({ id: request.id, result }, [...new Set(buffers)]);
+  } catch (error) { self.postMessage({ id: request.id, error: { message: error.message, name: error.name, path: error.path, line: error.line } }); }
+};

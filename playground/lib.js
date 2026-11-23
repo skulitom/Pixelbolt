@@ -5,6 +5,21 @@ export function compareVersions(a, b) {
 export const filterExamples = (entries, version) => entries.filter(entry => compareVersions(entry.minVersion, version) <= 0);
 export const formatSize = bytes => bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KiB` : `${(bytes / 1048576).toFixed(1)} MiB`;
 export const safeName = name => String(name ?? '').replace(/[^A-Za-z0-9_-]/g, '-').slice(0, 96) || 'recipe';
+// The most pixels one PNG holds: this page's encoder and the engine's both refuse more.
+export const PNG_PIXELS = 16777216;
+// The largest whole scale, 1 to 16, at which a width × height frame still makes one PNG. A 256 × 256 frame keeps all
+// 16; a 640 × 360 animation frame stops at 8 and a 4096-pixel still at 1. The worker checks it before it enlarges.
+export function framePNGScale(width, height) {
+  let scale = 16;
+  while (scale > 1 && width * scale * height * scale > PNG_PIXELS) scale--;
+  return scale;
+}
+// The zoom that fits art into a box: the largest whole number, at most 16, or below 1 (unrounded) when even 1× is
+// larger than the box, as a 640 × 360 frame is in a phone's preview.
+export function fitScale(boxWidth, boxHeight, width, height) {
+  const whole = Math.min(boxWidth / width, boxHeight / height);
+  return whole >= 1 ? Math.min(16, Math.floor(whole)) : Math.max(1 / 64, whole);
+}
 export const engineBase = (version, override = null) => override ?? `https://cdn.jsdelivr.net/npm/pixelbolt@${version}/src/`;
 
 export function engineOverride(pageURL) {

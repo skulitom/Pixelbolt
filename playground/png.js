@@ -1,4 +1,6 @@
 // PNG filter 0 and a zlib stream keep this encoder small and independent of the engine's Node encoder.
+import { PNG_PIXELS } from './lib.js';
+
 const crcTable = Uint32Array.from({ length: 256 }, (_, value) => {
   for (let bit = 0; bit < 8; bit++) value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
   return value >>> 0;
@@ -13,7 +15,7 @@ function chunk(type, data) {
   return out;
 }
 export async function encodePNG(rgba, width, height) {
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width * height > 16777216 || rgba?.length !== width * height * 4) {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width * height > PNG_PIXELS || rgba?.length !== width * height * 4) {
     throw new Error('PNG needs matching RGBA bytes and positive dimensions, at most 16,777,216 pixels.');
   }
   const stride = width * 4, rows = new Uint8Array((stride + 1) * height);

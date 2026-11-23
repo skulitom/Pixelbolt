@@ -1,0 +1,8 @@
+.presets { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .8rem 0 .6rem; }
+.presets a { display: inline-flex; align-items: center; min-height: 2.4rem; padding: .35rem .65rem; font-size: .85rem; font-weight: 550; text-decoration: none; border: 1px solid var(--rule); border-radius: 4px; }
+.presets a:hover { border-color: var(--link); background: var(--surface); }
+.presets a[aria-current] { border-color: var(--link); background: var(--surface); box-shadow: inset 0 0 0 1px var(--link); }
+.artboard { height: min(38vh, 26rem); min-height: 13rem; }
+.get-it { margin: .7rem 0 .2rem; }
+.workspace { grid-template-columns: minmax(0, 1fr); margin-top: 1rem; }
+@media (max-width: 480px) { .artboard { height: 32vh; min-height: 11rem; } }
