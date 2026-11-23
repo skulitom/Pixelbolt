@@ -181,6 +181,17 @@ test('the test map shows every tile, on the preview background', () => {
   assert.throws(() => compileAutotile(source({ tile: 86, template: [] })), /autotile\.tile: expected an even tile size from 2 to 84/);
 });
 
+test('a recoloured variant\'s copy on the test map leaves another variant\'s own template alone', () => {
+  // The recolour of `red` is drawn as the symbol template-as-red, the name a variant called `as-red` compiles to.
+  for (const other of ['moss', 'as-red']) {
+    const set = { format: 'pixelforge-autotile', version: 1, name: 'names', tile: 8, frame: 'names-{mask}-{variant}', palette: { g: '#884422', Z: '#00ff00' }, terrain: { fill: { color: 'g' } }, variants: [{ name: 'red', palette: { g: '#0000ff' } }, { name: other, terrain: { fill: { color: 'Z' } } }] };
+    const { data } = renderProject(compileAutotile(set).preview).frames[0], seen = new Set();
+    for (let i = 0; i < data.length; i += 4) if (data[i + 3]) seen.add(`${data[i]},${data[i + 1]},${data[i + 2]}`);
+    assert.ok(seen.has('0,0,255'), `${other}: the recolour shows`);
+    assert.ok(seen.has('0,255,0'), `${other}: the other variant's own template shows`);
+  }
+});
+
 test('CLI autotile writes the test map with --preview and suggests it otherwise', async t => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-terrain-'));
   t.after(() => rm(dir, { recursive: true, force: true }));

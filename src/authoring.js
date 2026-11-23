@@ -899,7 +899,10 @@ export function compileAutotile(source) {
     }
     if (Object.keys(shown.palette).length + fresh.length > 256) { for (const value of fresh) spares.delete(value); return base; }
     for (const value of fresh) shown.palette[spares.get(value)] = value;
-    const name = `${base}-as-${variant.name}`;
+    // Another variant may be named as-<this one>, and so own this symbol name already.
+    const wanted = `${base}-as-${variant.name}`;
+    let name = wanted;
+    for (let n = 2; Object.hasOwn(shown.symbols, name); n++) name = `${wanted}-${n}`;
     shown.symbols[name] = symbols[base].map(row => [...row].map(key => swap.get(key) ?? key).join(''));
     return name;
   };
