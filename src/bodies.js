@@ -2303,7 +2303,7 @@ export function compileBodies(source) {
 
 /** One effect of a pixelforge-bodies source stepped a frame at a time, for numbered video frames: a match may run up
  * to MATCH_FRAMES frames, past a recipe's 256, and none of it is kept as a recipe. Returns { name, effect, width,
- * height, scale, palette, frames, duration, image(f), figures() }: image(f) is frame f's RGBA (f must never go back),
+ * height, scale, palette, frames, duration, loop, image(f), figures() }: image(f) is frame f's RGBA (f must never go back),
  * and figures() the metadata a compiled effect carries, so far: each named body's path too, [x, y, angle] a frame.
  * `scale` (1 by default; a whole number, or a function of the match's width and height that returns one) is how many
  * times the frames will be enlarged for video: the image is then that many times larger each way, with the bodies
@@ -2324,7 +2324,7 @@ export function bodiesFrames(source, effectName, { scale = 1 } = {}) {
   const fine = k > 1 ? new Uint16Array(width * n * k * height * n * k) : null;
   const warnings = () => [...world.stats.overlaps.map(pair => `${pair}; they push apart on the first frame. Move it clear`), ...(effect.territory?.uneven ? [effect.territory.uneven] : [])];
   return {
-    name: source.name, effect: name, width: width * n * k, height: height * n * k, scale: k, palette, frames: effect.frames, duration: effect.duration,
+    name: source.name, effect: name, width: width * n * k, height: height * n * k, scale: k, palette, frames: effect.frames, duration: effect.duration, loop: effect.loop,
     image: f => {
       if (!Number.isInteger(f) || f < 0 || f < at || f >= effect.frames) fail('sequence', `frame ${f} is not ahead of frame ${at} within the match's ${effect.frames}`);
       // Every frame is drawn, shown or not, as compileBodies draws them: a body's drawn place and angle hold from frame
