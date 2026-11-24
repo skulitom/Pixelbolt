@@ -1,3 +1,5 @@
+> Machine summary of block 4 of the agent bench on https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/#agent-bench . Ids such as C-131, C-147 and amendment numbers refer to the bench's own plan records.
+
 # C-131 block 4: summary
 
 ## Run b4a (judged against block 2's pixelfx results; block 3's pair: b3a)

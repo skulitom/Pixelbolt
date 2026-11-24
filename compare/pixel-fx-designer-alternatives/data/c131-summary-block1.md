@@ -1,3 +1,5 @@
+> Machine summary of block 1 of the agent bench on https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/#agent-bench . Ids such as C-131, C-147 and amendment numbers refer to the bench's own plan records.
+
 ### Run a
 
 | model | arm | delivered | valid | valid without crisp | checks failed | used its tool | cost $ | median s | median turns | caps or errors |
