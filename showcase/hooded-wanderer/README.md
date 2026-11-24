@@ -19,7 +19,7 @@ node bin/pixelbolt.js render output/hooded-wanderer/slices.pixel.json --out outp
 node bin/pixelbolt.js inspect showcase/hooded-wanderer/hooded-wanderer.stack.json --diagnostics --palette --out output/hooded-wanderer/inspect.png
 ```
 
-With the released CLI, copy `hooded-wanderer.stack.json` to a folder outside a Pixelbolt checkout and run the same commands there with `npx -y pixelbolt@0.20.0` in place of `node bin/pixelbolt.js`. Inside a checkout, `npx -y pixelbolt@0.20.0` fails on Windows with "'pixelbolt' is not recognized", because the checkout's own package is named `pixelbolt`. When this page was written, 0.20.0 and the repository's CLI wrote byte-identical files for this stack.
+With the released CLI, make an empty folder outside a Pixelbolt checkout, copy `hooded-wanderer.stack.json` into `showcase/hooded-wanderer/` inside it, and run the same commands there with `npx -y pixelbolt@0.20.0` in place of `node bin/pixelbolt.js`. Inside a checkout, `npx -y pixelbolt@0.20.0` fails on Windows with "'pixelbolt' is not recognized", because the checkout's own package is named `pixelbolt`. When this page was written, 0.20.0 and the repository's CLI wrote byte-identical files for this stack.
 
 ## What you get
 
@@ -33,7 +33,7 @@ With the released CLI, copy `hooded-wanderer.stack.json` to a folder outside a P
 | `slices.meta.json` | The pivot the slices turn about (`[6.5, 6.5]`), `spacing` 1 and `squash` 0.65. |
 | `slices/hooded-wanderer.png` | The slice sheet, 208 × 13, with its atlas and `.tres`. |
 
-`inspect --diagnostics` reports no findings and no stray pixels at any heading. `--palette` lists the five ramps and the colours each one uses.
+`inspect --diagnostics` reports no findings and no stray pixels at any heading. `--palette` lists the five ramps and the colours each one uses. Rendering the slices notes that `slice-2` and `slice-3` are identical: they are two layers of the same robe, so keep both.
 
 ## Turning it at run time
 
