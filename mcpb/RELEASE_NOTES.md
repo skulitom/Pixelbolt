@@ -1,22 +1,16 @@
-# 0.20.0
+# 0.21.0
 
-Sprite stacks: draw a solid in slices and get it from every heading, with shaded faces, moving parts and animations, on the grid of an isometric map. Scenes stand things on map cells and terraces and export as isometric maps. Godot gets an editor addon.
+Walk cycles from drawings you already have: cut a PNG's feet and arms into moving parts, animate drawn front, back and side views in four directions, and review every step of a cutout walk for detached boots and gaps. A looping cloth keeps moving in video frames.
 
-- **Sprite stacks:** a new source format, `pixelforge-stack` (`pixelbolt help stack`), compiles a solid drawn as slices into a frame at every heading. `ramps` and one `light` shade its faces; `"projection": "iso", "cell": 1` draws it in the pixels of an isometric tile map; side paint, glass, facets, jointed paths, surface reliefs and contours add detail. `inspect --rotate`, `--pin` and `--pose-sheet` review a turn, and Studio paints faces and scrubs headings.
-- **Moving parts and animations:** a part rides a socket and turns about its axis (a lid, sails, a gun, a leg), and an animation keys sockets and poses by frame and is baked at every heading as `<name>-<heading>` or `<name>-<direction>`.
-- **Twelve stack presets:** `copper-rally`, `lodekeeper-faceted`, six shaded pieces for an isometric map (`iso-crate`, `iso-barrel`, `iso-pine`, `iso-cottage`, `iso-tower`, `iso-wall`) and four that move (`iso-windmill`, `iso-chest`, `iso-cannon`, and `iso-villager`, who walks and idles in eight directions).
-- **Scenes on isometric ground:** a placement stands on a map cell with `"on"` and `"cell"`, an iso map's `heights` raise cells into terraces, and what stands on a cell is drawn with it. `examples/iso-hamlet.scene.json` is a terraced hamlet placed by cell.
-- **For a game:** a recipe's `headings` say which frame and animation stand at each heading, and `player.js` (`nearestHeading`, `headingFrame`, `headingAnimation`, `headingToward`) and the Godot `SpriteFrames` metadata look them up. `compile --slices` writes a stack's slices as a sheet, which `drawStack` and the addon's `sprite_stack.gd` turn to any heading at run time. A scene on iso ground exports an isometric Tiled map (`scene.tmx`) and an isometric Godot TileSet (`tileset_iso.tres`).
-- **Pixelbolt for Godot:** `pixelbolt-godot-0.20.0.zip`, attached to this release, is an editor addon that imports `*.pixel.json` (Godot 4.5 and later) and `*.pixelbolt` (4.3 and later) files as `SpriteFrames` or a `TileSet`, using your own Pixelbolt CLI.
-- **Air pockets keep their air:** the last of a glugging bottle runs out instead of leaping back to the bottle's roof, a thin film of liquid lets air through, and a pocket draws air up through hanging liquid as bubbles.
-- **Other agents:** Agent Plugins 1.0.0 clients, such as Codex and GitHub Copilot CLI, load the repository's `plugin.json` and `mcp.json`.
-- **Animate a sprite you already have:** the `sprite-walk` example and its guide turn one side-view PNG into a walk and an idle.
-- **Reported faults:** a filled polygon is its outline plus every pixel centre inside it; a tile set's preview row wider than 256 tiles is refused at compile; a falling-sand source that breaks a starter reaction is told which material and reaction.
+- **Four-direction walks from drawn parts:** a pose source's `walkCycles` pairs each facing's standing pose with two feet and optional arms, and compiles eight editable steps a direction through the CLI or MCP; a side cycle can generate its mirror. Start from `pixelbolt presets four-way-knight --out knight.poses.json`. The walks export as Godot SpriteFrames like any other animation.
+- **Cutout walks from a PNG:** `pixelbolt import sprite.png --cutout cuts.json --out hero.poses.json` (`pixel_import` with `cutout`) makes the rectangles you mark into feet and arms and keeps the standing pixels and the ground point. `extendFeet` draws short boot shafts under a coat, and the exported `anchorPx` locates the same point on the source drawing.
+- **Review a whole walk:** `inspect hero.poses.json --view walks` (`pixel_inspect` with `view: "walks"`) scans every phase of a character's walks and gives native coordinates for concealed joint gaps, exposed boot shafts and ink that moves with the wrong part. `inspect --motion <walk> --track mask.json` (`track` on `pixel_inspect`) follows chosen standing pixels through the steps, and `keepWith` in the cut manifest gives an outline shared by equipment and a limb to the right part.
+- **A looping cloth keeps cycling in video frames:** a `loop: true` cloth made straight into frames (`pixelbolt sequence`, or `sequence` on `pixel_compile`) plays for as long as `--seconds` or `--loops` asks, as its compiled recipe does. In 0.20.0 the shipped `flag` held its last picture for the second half of a two-pass clip, and `--loops 2` was refused.
+- **Tile set previews:** a recoloured variant's copy on the test map no longer replaces the template of a variant named `as-<that variant>`. The exported tiles were never affected.
 
-Changed since 0.19.0, check before upgrading:
-- A filled `polygon` drawn by 0.19.0 gains the pinholes inside its down-left sloping right edges and loses a stray pixel outside the left ones. Review a piece that pins those pixels.
-- Liquids with trapped air (an upturned bottle, a pocket under a shelf that opens) play out differently, and the `glug` preset is redrawn. Every other fluid preset renders as before.
-- In the repository the skill's folder is `skills/pixelbolt-pixel-art/` (it was `skills/pixel-art/`); update anything that reads it from a checkout. `pixelbolt skill install` writes the same folder as before.
+Changed since 0.20.0, check before upgrading:
+- A `loop: true` cloth, such as the shipped `flag` and `banner`, gives different video frames from `sequence` after its first pass: it keeps moving where 0.20.0 held one picture. Its compiled recipe is unchanged.
+- The pose examples shipped in 0.20.0 compile to the same recipes as before.
 
 Known issues:
 - A slice sheet (`compile --slices`) leaves out moving parts, animations, facets and paths, and says so: those play from the baked frames.
