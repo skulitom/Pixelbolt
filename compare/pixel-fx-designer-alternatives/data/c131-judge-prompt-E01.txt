@@ -1,0 +1,21 @@
+You are judging two pixel-art game effects made for the same request. You don't know how either was made.
+
+The request was:
+"I need a looping wall torch for my dungeon levels in pixel art: a flame flickering on a wooden torch holder, and it should loop smoothly. Show just the effect, with no character in the frames."
+
+Read the four images in the current folder: A-dark.png and A-light.png show result A, B-dark.png and B-light.png show
+result B. Each shows the same frames of one result in playback order, left to right and then down, on a solid dark or a
+solid light backdrop. Long animations are shown as 12 frames: the first, the last, the fullest, the brightest and the
+rest evenly spaced. Small frames are enlarged by a whole number with sharp pixels.
+
+Judge the effect, not the file: ignore frame size, number of frames, number of colours, sheet layout and file names,
+and don't prefer a result for being larger. The frames are stills in playback order. Two backdrops are shown so
+transparent and bright pixels are visible; judge each result on the backdrop that suits the scene in the request.
+1. Does it show what was asked: the subject and its stages, and for a loop, would the last frame lead back into the
+   first?
+2. Does the motion have a clear shape over the frames (for a one-shot: a start, a peak and an end)?
+3. Craft as a pixel-art game effect: colour and light that suit the subject, a readable silhouette, clean, deliberate
+   pixel work (soft translucency is fine where the subject is soft).
+
+Say "Tie" only if neither is better overall. Reply with one line of JSON and nothing else:
+{"choice": "A" or "B" or "Tie", "reason": "one or two sentences"}

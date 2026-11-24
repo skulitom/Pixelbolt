@@ -1,0 +1,114 @@
+[
+ {
+  "id": "E01",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "torch",
+  "prompt": "I need a looping wall torch for my dungeon levels in pixel art: a flame flickering on a wooden torch holder, and it should loop smoothly. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, torch_sheet.png, with a JSON file beside it, torch_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E02",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "fireball_blast",
+  "prompt": "Please make a one-shot fireball explosion in pixel art for a wizard's spell: a bright flash that swells into a ball of flame and burns out, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, fireball_blast_sheet.png, with a JSON file beside it, fireball_blast_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E03",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "chimney_smoke",
+  "prompt": "Can you draw a looping animation of smoke drifting up from a cottage chimney in pixel art: a small brick chimney top with grey smoke curling upward and thinning out, looping seamlessly. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, chimney_smoke_sheet.png, with a JSON file beside it, chimney_smoke_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E04",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "cannon_smoke",
+  "prompt": "I want a one-shot cannon smoke effect in pixel art: a thick cloud of grey smoke blasting out of a cannon's muzzle and then spreading and fading, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, cannon_smoke_sheet.png, with a JSON file beside it, cannon_smoke_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E05",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "waterfall",
+  "prompt": "Make me a looping waterfall in pixel art for a forest level: water streaming over a rock ledge with foam and a bit of mist where it lands, and it loops. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, waterfall_sheet.png, with a JSON file beside it, waterfall_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E06",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "stone_splash",
+  "prompt": "I need a one-shot stone splash for my fishing game in pixel art: a stone drops into a pond, throws up a small splash with droplets, and the ripples settle, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, stone_splash_sheet.png, with a JSON file beside it, stone_splash_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E07",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "lava_bubble",
+  "prompt": "Draw me a one-shot lava bubble in pixel art: a blob of molten lava swells up on the surface of a lava pool, bursts, and flicks out a few embers, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, lava_bubble_sheet.png, with a JSON file beside it, lava_bubble_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E08",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "lava_pool",
+  "prompt": "Please make a looping lava pool in pixel art for a volcano level: a round pool of glowing molten rock seen from above, slowly churning, with a dark crust drifting over it and bright cracks shifting, and it loops seamlessly. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, lava_pool_sheet.png, with a JSON file beside it, lava_pool_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E09",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "lightning_strike",
+  "prompt": "I need a one-shot lightning strike in pixel art: a jagged bolt cracks down from the top of the frame to the ground with a bright flash and then fades, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, lightning_strike_sheet.png, with a JSON file beside it, lightning_strike_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E10",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "electric_arc",
+  "prompt": "Make a looping electric arc in pixel art for a sci-fi lab: crackling electricity jumping back and forth between two metal prongs, and it loops. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, electric_arc_sheet.png, with a JSON file beside it, electric_arc_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E11",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": false,
+  "stem": "ice_burst",
+  "prompt": "Can you make a one-shot ice shard burst in pixel art: a block of ice shatters and sharp shards fly outward and fade away, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, ice_burst_sheet.png, with a JSON file beside it, ice_burst_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E12",
+  "subject_from": "block 1 (C-131 11-10), format removed",
+  "loop": true,
+  "stem": "ice_crystal",
+  "prompt": "I'd like a looping ice crystal in pixel art for a frozen cave: a cluster of pale blue crystals with a slow pulse of cold light and a few sparkles twinkling across them, and it loops seamlessly. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, ice_crystal_sheet.png, with a JSON file beside it, ice_crystal_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E13",
+  "subject_from": "pixelfx's ground (README categories; E13/E14 from its SKILL.md examples)",
+  "loop": false,
+  "stem": "frost_nova",
+  "prompt": "I need a frost nova for my mage in pixel art: a burst of frost that spreads out in a ring from where the mage stands and then melts away, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, frost_nova_sheet.png, with a JSON file beside it, frost_nova_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E14",
+  "subject_from": "pixelfx's ground (README categories; E13/E14 from its SKILL.md examples)",
+  "loop": false,
+  "stem": "coin_pickup",
+  "prompt": "Make a coin pickup sparkle in pixel art: a quick burst of sparkles when the player grabs a coin, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, coin_pickup_sheet.png, with a JSON file beside it, coin_pickup_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E15",
+  "subject_from": "pixelfx's ground (README categories; E13/E14 from its SKILL.md examples)",
+  "loop": false,
+  "stem": "sword_hit",
+  "prompt": "I want a sword slash impact in pixel art for a melee attack: a curved slash trail with a bright hit flash where the blade connects, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, sword_hit_sheet.png, with a JSON file beside it, sword_hit_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ },
+ {
+  "id": "E16",
+  "subject_from": "pixelfx's ground (README categories; E13/E14 from its SKILL.md examples)",
+  "loop": false,
+  "stem": "teleport_in",
+  "prompt": "Please make a teleport-in effect in pixel art for when a character spawns: a column of light that gathers on the spot and then bursts away, and it plays once. Choose whatever frame size and number of frames suit the effect, and tell me its frame rate in one line of your final reply. Show just the effect, with no character in the frames. Save it as a sprite sheet PNG with a transparent background, teleport_in_sheet.png, with a JSON file beside it, teleport_in_sheet.json, that gives each frame's rectangle in playback order (Aseprite's or TexturePacker's JSON format is fine)."
+ }
+]

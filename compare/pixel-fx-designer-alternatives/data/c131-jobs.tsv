@@ -1,0 +1,401 @@
+block	run	model	arm	task	version	delivered	valid_block1	frames	frame_size	drawn_size	partly_transparent_share	turns	cost_usd	seconds
+1	a	haiku	pixelbolt	E01	0.15.0		True					6	0.01	47
+1	a	haiku	pixelfx	E01	0.3.1 (044e12a)		False					21	0.026	112
+1	a	haiku	without	E01	none		True					13	0.0117	69
+1	a	haiku	pixelbolt	E02	0.15.0		True					9	0.0071	52
+1	a	haiku	pixelfx	E02	0.3.1 (044e12a)		False					33	0.0349	133
+1	a	haiku	without	E02	none		True					10	0.0094	55
+1	a	haiku	pixelbolt	E03	0.15.0		False					6	0.0141	94
+1	a	haiku	pixelfx	E03	0.3.1 (044e12a)		False					40	0.0421	175
+1	a	haiku	without	E03	none		True					19	0.0105	57
+1	a	haiku	pixelbolt	E04	0.15.0		True					10	0.0074	36
+1	a	haiku	pixelfx	E04	0.3.1 (044e12a)		True					33	0.0373	166
+1	a	haiku	without	E04	none		True					22	0.0169	83
+1	a	haiku	pixelbolt	E05	0.15.0		False					6	0.0049	35
+1	a	haiku	pixelfx	E05	0.3.1 (044e12a)		False					34	0.0458	176
+1	a	haiku	without	E05	none		False					11	0.0104	58
+1	a	haiku	pixelbolt	E06	0.15.0		False					8	0.0061	35
+1	a	haiku	pixelfx	E06	0.3.1 (044e12a)		False					30	0.0254	99
+1	a	haiku	without	E06	none		False					14	0.0134	73
+1	a	haiku	pixelbolt	E07	0.15.0		False					9	0.0098	57
+1	a	haiku	pixelfx	E07	0.3.1 (044e12a)		True					49	0.0467	204
+1	a	haiku	without	E07	none		False					11	0.0103	65
+1	a	haiku	pixelbolt	E08	0.15.0		True					5	0.0117	75
+1	a	haiku	pixelfx	E08	0.3.1 (044e12a)		False					36	0.0383	148
+1	a	haiku	without	E08	none		True					13	0.0104	61
+1	a	haiku	pixelbolt	E09	0.15.0		False					9	0.0114	58
+1	a	haiku	pixelfx	E09	0.3.1 (044e12a)		False					30	0.0284	124
+1	a	haiku	without	E09	none		True					6	0.0073	45
+1	a	haiku	pixelbolt	E10	0.15.0		True					8	0.0107	49
+1	a	haiku	pixelfx	E10	0.3.1 (044e12a)		False					28	0.0304	134
+1	a	haiku	without	E10	none		True					8	0.0083	49
+1	a	haiku	pixelbolt	E11	0.15.0		False					12	0.0175	98
+1	a	haiku	pixelfx	E11	0.3.1 (044e12a)		False					49	0.0343	134
+1	a	haiku	without	E11	none		True					18	0.0132	80
+1	a	haiku	pixelbolt	E12	0.15.0		False					11	0.0251	141
+1	a	haiku	pixelfx	E12	0.3.1 (044e12a)		False					49	0.0377	137
+1	a	haiku	without	E12	none		True					15	0.0133	72
+1	a	sonnet	pixelbolt	E01	0.15.0		True					7	0.1828	65
+1	a	sonnet	pixelfx	E01	0.3.1 (044e12a)		False					22	0.2541	85
+1	a	sonnet	without	E01	none		True					11	0.1514	62
+1	a	sonnet	pixelbolt	E02	0.15.0		False					6	0.0601	25
+1	a	sonnet	pixelfx	E02	0.3.1 (044e12a)		True					17	0.2875	88
+1	a	sonnet	without	E02	none		True					8	0.0822	40
+1	a	sonnet	pixelbolt	E03	0.15.0		True					15	0.2927	107
+1	a	sonnet	pixelfx	E03	0.3.1 (044e12a)		True					35	0.4088	129
+1	a	sonnet	without	E03	none		True					13	0.1291	56
+1	a	sonnet	pixelbolt	E04	0.15.0		True					9	0.1125	43
+1	a	sonnet	pixelfx	E04	0.3.1 (044e12a)		True					42	0.3495	110
+1	a	sonnet	without	E04	none		True					16	0.1208	56
+1	a	sonnet	pixelbolt	E05	0.15.0		False					11	0.1618	71
+1	a	sonnet	pixelfx	E05	0.3.1 (044e12a)		True					16	0.2688	90
+1	a	sonnet	without	E05	none		False					16	0.154	69
+1	a	sonnet	pixelbolt	E06	0.15.0		True					7	0.103	47
+1	a	sonnet	pixelfx	E06	0.3.1 (044e12a)		False					36	0.342	107
+1	a	sonnet	without	E06	none		True					8	0.0842	42
+1	a	sonnet	pixelbolt	E07	0.15.0		False					10	0.2047	64
+1	a	sonnet	pixelfx	E07	0.3.1 (044e12a)		False					24	0.2637	97
+1	a	sonnet	without	E07	none		False					10	0.0969	45
+1	a	sonnet	pixelbolt	E08	0.15.0		True					15	0.2097	77
+1	a	sonnet	pixelfx	E08	0.3.1 (044e12a)		True					30	0.2838	92
+1	a	sonnet	without	E08	none		True					14	0.1209	56
+1	a	sonnet	pixelbolt	E09	0.15.0		True					9	0.1069	40
+1	a	sonnet	pixelfx	E09	0.3.1 (044e12a)		True					36	0.3422	112
+1	a	sonnet	without	E09	none		True					9	0.0863	40
+1	a	sonnet	pixelbolt	E10	0.15.0		True					8	0.1898	75
+1	a	sonnet	pixelfx	E10	0.3.1 (044e12a)		True					26	0.3253	89
+1	a	sonnet	without	E10	none		True					5	0.0911	43
+1	a	sonnet	pixelbolt	E11	0.15.0		False					13	0.2054	65
+1	a	sonnet	pixelfx	E11	0.3.1 (044e12a)		True					38	0.3763	107
+1	a	sonnet	without	E11	none		True					5	0.0922	42
+1	a	sonnet	pixelbolt	E12	0.15.0		True					13	0.3212	156
+1	a	sonnet	pixelfx	E12	0.3.1 (044e12a)		True					21	0.2671	81
+1	a	sonnet	without	E12	none		True					6	0.1053	51
+1	b	haiku	pixelbolt	E01	0.15.0		True					5	0.0078	45
+1	b	haiku	pixelfx	E01	0.3.1 (044e12a)		False					30	0.0287	129
+1	b	haiku	without	E01	none		True					7	0.0079	54
+1	b	haiku	pixelbolt	E02	0.15.0		False					14	0.0103	49
+1	b	haiku	pixelfx	E02	0.3.1 (044e12a)		True					27	0.0299	115
+1	b	haiku	without	E02	none		True					7	0.0074	49
+1	b	haiku	pixelbolt	E03	0.15.0		False					17	0.0235	111
+1	b	haiku	pixelfx	E03	0.3.1 (044e12a)		False					42	0.0368	135
+1	b	haiku	without	E03	none		True					7	0.0059	36
+1	b	haiku	pixelbolt	E04	0.15.0		True					8	0.0059	35
+1	b	haiku	pixelfx	E04	0.3.1 (044e12a)		False					31	0.0343	143
+1	b	haiku	without	E04	none		True					17	0.0121	65
+1	b	haiku	pixelbolt	E05	0.15.0		False					14	0.0107	53
+1	b	haiku	pixelfx	E05	0.3.1 (044e12a)		False					36	0.0302	116
+1	b	haiku	without	E05	none		True					11	0.0147	98
+1	b	haiku	pixelbolt	E06	0.15.0		False					12	0.0113	62
+1	b	haiku	pixelfx	E06	0.3.1 (044e12a)		False					51	0.0425	153
+1	b	haiku	without	E06	none		True					8	0.0088	55
+1	b	haiku	pixelbolt	E07	0.15.0		False					7	0.0087	49
+1	b	haiku	pixelfx	E07	0.3.1 (044e12a)		True					28	0.0308	142
+1	b	haiku	without	E07	none		True					7	0.0099	64
+1	b	haiku	pixelbolt	E08	0.15.0		True					15	0.0102	42
+1	b	haiku	pixelfx	E08	0.3.1 (044e12a)		False					34	0.0388	156
+1	b	haiku	without	E08	none		True					17	0.0161	86
+1	b	haiku	pixelbolt	E09	0.15.0		True					13	0.0088	46
+1	b	haiku	pixelfx	E09	0.3.1 (044e12a)		False					41	0.0349	137
+1	b	haiku	without	E09	none		True					8	0.0086	55
+1	b	haiku	pixelbolt	E10	0.15.0		True					14	0.0196	81
+1	b	haiku	pixelfx	E10	0.3.1 (044e12a)		False					26	0.0352	158
+1	b	haiku	without	E10	none		True					9	0.0084	50
+1	b	haiku	pixelbolt	E11	0.15.0		False					15	0.0214	111
+1	b	haiku	pixelfx	E11	0.3.1 (044e12a)		False					43	0.0326	125
+1	b	haiku	without	E11	none		True					11	0.0139	75
+1	b	haiku	pixelbolt	E12	0.15.0		True					14	0.0207	102
+1	b	haiku	pixelfx	E12	0.3.1 (044e12a)		False					33	0.0228	94
+1	b	haiku	without	E12	none		True					7	0.0099	66
+1	b	sonnet	pixelbolt	E01	0.15.0		False					8	0.0868	35
+1	b	sonnet	pixelfx	E01	0.3.1 (044e12a)		True					15	0.1847	66
+1	b	sonnet	without	E01	none		True					9	0.1058	49
+1	b	sonnet	pixelbolt	E02	0.15.0		False					5	0.0567	25
+1	b	sonnet	pixelfx	E02	0.3.1 (044e12a)		True					23	0.2961	95
+1	b	sonnet	without	E02	none		True					9	0.0971	45
+1	b	sonnet	pixelbolt	E03	0.15.0		False					9	0.114	41
+1	b	sonnet	pixelfx	E03	0.3.1 (044e12a)		True					23	0.2097	67
+1	b	sonnet	without	E03	none		True					6	0.0758	37
+1	b	sonnet	pixelbolt	E04	0.15.0		True					9	0.1144	39
+1	b	sonnet	pixelfx	E04	0.3.1 (044e12a)		False					32	0.3155	112
+1	b	sonnet	without	E04	none		True					6	0.0829	42
+1	b	sonnet	pixelbolt	E05	0.15.0		False					20	0.3981	163
+1	b	sonnet	pixelfx	E05	0.3.1 (044e12a)		False					34	0.387	133
+1	b	sonnet	without	E05	none		True					7	0.0969	47
+1	b	sonnet	pixelbolt	E06	0.15.0		False					6	0.1017	42
+1	b	sonnet	pixelfx	E06	0.3.1 (044e12a)		True					26	0.2473	107
+1	b	sonnet	without	E06	none		True					13	0.104	45
+1	b	sonnet	pixelbolt	E07	0.15.0		False					5	0.1142	48
+1	b	sonnet	pixelfx	E07	0.3.1 (044e12a)		False					27	0.3156	110
+1	b	sonnet	without	E07	none		False					6	0.0879	43
+1	b	sonnet	pixelbolt	E08	0.15.0		False					9	0.1571	66
+1	b	sonnet	pixelfx	E08	0.3.1 (044e12a)		False					41	0.5057	166
+1	b	sonnet	without	E08	none		True					7	0.0793	40
+1	b	sonnet	pixelbolt	E09	0.15.0		True					9	0.1689	62
+1	b	sonnet	pixelfx	E09	0.3.1 (044e12a)		True					24	0.2146	74
+1	b	sonnet	without	E09	none		True					8	0.0925	43
+1	b	sonnet	pixelbolt	E10	0.15.0		True					8	0.1789	60
+1	b	sonnet	pixelfx	E10	0.3.1 (044e12a)		True					22	0.2656	82
+1	b	sonnet	without	E10	none		False					6	0.0918	42
+1	b	sonnet	pixelbolt	E11	0.15.0		True					16	0.2877	95
+1	b	sonnet	pixelfx	E11	0.3.1 (044e12a)		True					36	0.3802	115
+1	b	sonnet	without	E11	none		True					9	0.1091	49
+1	b	sonnet	pixelbolt	E12	0.15.0		True					16	0.3743	167
+1	b	sonnet	pixelfx	E12	0.3.1 (044e12a)		False					32	0.3923	120
+1	b	sonnet	without	E12	none		True					9	0.1122	54
+2	b2a	haiku	pixelbolt	E01	0.15.0	True		8	16x32		0.0	11	0.0085	33
+2	b2a	haiku	pixelfx	E01	0.3.1 (044e12a)	True		60	72x120		0.931	17	0.0118	53
+2	b2a	sonnet	pixelbolt	E01	0.15.0	True		16	16x32		0.0	8	0.0775	29
+2	b2a	sonnet	pixelfx	E01	0.3.1 (044e12a)	True		60	72x120		0.931	11	0.0819	35
+2	b2a	haiku	pixelbolt	E02	0.15.0	True		11	48x48		0.0	12	0.0107	65
+2	b2a	haiku	pixelfx	E02	0.3.1 (044e12a)	True		17	96x96		0.678	23	0.0142	61
+2	b2a	sonnet	pixelbolt	E02	0.15.0	True		12	64x64		0.0	10	0.0933	30
+2	b2a	sonnet	pixelfx	E02	0.3.1 (044e12a)	True		25	128x128		0.7	23	0.2197	73
+2	b2a	haiku	pixelbolt	E03	0.15.0	True		24	24x32		0.0	15	0.0115	47
+2	b2a	haiku	pixelfx	E03	0.3.1 (044e12a)	True		36	48x80		0.817	18	0.0162	73
+2	b2a	sonnet	pixelbolt	E03	0.15.0	True		24	32x48		0.0	12	0.1308	44
+2	b2a	sonnet	pixelfx	E03	0.3.1 (044e12a)	True		24	48x80		0.648	27	0.2465	77
+2	b2a	haiku	pixelbolt	E04	0.15.0	True		16	64x40		0.0	15	0.0127	54
+2	b2a	haiku	pixelfx	E04	0.3.1 (044e12a)	True		37	136x96		1.0	21	0.0155	59
+2	b2a	sonnet	pixelbolt	E04	0.15.0	True		20	64x40		0.0	14	0.1734	55
+2	b2a	sonnet	pixelfx	E04	0.3.1 (044e12a)	True		27	160x120		1.0	28	0.2211	70
+2	b2a	haiku	pixelbolt	E05	0.15.0	True		24	48x64		0.0	7	0.0046	25
+2	b2a	haiku	pixelfx	E05	0.3.1 (044e12a)	True		60	144x136		0.64	25	0.0144	48
+2	b2a	sonnet	pixelbolt	E05	0.15.0	True		24	48x64		0.012	23	0.3812	150
+2	b2a	sonnet	pixelfx	E05	0.3.1 (044e12a)	True		60	144x136		0.64	14	0.0858	28
+2	b2a	haiku	pixelbolt	E06	0.15.0	True		40	48x40		0.0	10	0.0067	46
+2	b2a	haiku	pixelfx	E06	0.3.1 (044e12a)	True		76	176x100		0.919	18	0.0117	36
+2	b2a	sonnet	pixelbolt	E06	0.15.0	True		10	48x40		0.0	13	0.1305	42
+2	b2a	sonnet	pixelfx	E06	0.3.1 (044e12a)	True		76	176x100		0.919	9	0.0658	29
+2	b2a	haiku	pixelbolt	E07	0.15.0	True		8	16x16		0.0	14	0.0147	83
+2	b2a	haiku	pixelfx	E07	0.3.1 (044e12a)	True		13	48x40		0.751	21	0.0187	81
+2	b2a	sonnet	pixelbolt	E07	0.15.0	True		10	32x32		0.0	11	0.3008	116
+2	b2a	sonnet	pixelfx	E07	0.3.1 (044e12a)	True		31	96x76		0.79	25	0.3154	113
+2	b2a	haiku	pixelbolt	E08	0.15.0	True		12	32x32		0.0	24	0.0235	97
+2	b2a	haiku	pixelfx	E08	0.3.1 (044e12a)	True		24	56x56		0.105	31	0.0204	74
+2	b2a	sonnet	pixelbolt	E08	0.15.0	True		24	48x48		0.0	14	0.2258	82
+2	b2a	sonnet	pixelfx	E08	0.3.1 (044e12a)	True		24	96x96		0.101	22	0.214	65
+2	b2a	haiku	pixelbolt	E09	0.15.0	True		12	96x104		0.0	11	0.007	36
+2	b2a	haiku	pixelfx	E09	0.3.1 (044e12a)	True		12	160x144		0.894	29	0.0246	102
+2	b2a	sonnet	pixelbolt	E09	0.15.0	True		12	96x104		0.0	8	0.0823	31
+2	b2a	sonnet	pixelfx	E09	0.3.1 (044e12a)	True		16	160x200		0.94	21	0.2486	78
+2	b2a	haiku	pixelbolt	E10	0.15.0	True		8	32x20		0.0	11	0.0142	77
+2	b2a	haiku	pixelfx	E10	0.3.1 (044e12a)	True		60	64x56		0.621	26	0.021	88
+2	b2a	sonnet	pixelbolt	E10	0.15.0	True		8	48x32		0.0	15	0.2568	69
+2	b2a	sonnet	pixelfx	E10	0.3.1 (044e12a)	True		24	96x64		0.796	17	0.1866	60
+2	b2a	haiku	pixelbolt	E11	0.15.0	True		8	32x32		0.0	16	0.0146	84
+2	b2a	haiku	pixelfx	E11	0.3.1 (044e12a)	True		85	224x112		0.717	11	0.0083	33
+2	b2a	sonnet	pixelbolt	E11	0.15.0	True		12	48x48		0.0	18	0.2776	84
+2	b2a	sonnet	pixelfx	E11	0.3.1 (044e12a)	True		25	160x160		0.76	17	0.2214	65
+2	b2a	haiku	pixelbolt	E12	0.15.0	True		8	32x32		0.093	20	0.029	150
+2	b2a	haiku	pixelfx	E12	0.3.1 (044e12a)	True		24	80x60		0.435	21	0.0163	54
+2	b2a	sonnet	pixelbolt	E12	0.15.0	True		12	32x32		0.0	20	0.3624	138
+2	b2a	sonnet	pixelfx	E12	0.3.1 (044e12a)	True		48	64x64		0.502	18	0.1752	57
+2	b2a	haiku	pixelbolt	E13	0.15.0	True		12	48x48		0.0	9	0.0075	36
+2	b2a	haiku	pixelfx	E13	0.3.1 (044e12a)	True		24	96x64		0.861	26	0.0184	71
+2	b2a	sonnet	pixelbolt	E13	0.15.0	True		12	64x64		0.0	9	0.1363	40
+2	b2a	sonnet	pixelfx	E13	0.3.1 (044e12a)	True		52	288x192		0.753	14	0.1082	34
+2	b2a	haiku	pixelbolt	E14	0.15.0	True		5	24x24		0.0	12	0.0111	54
+2	b2a	haiku	pixelfx	E14	0.3.1 (044e12a)	True		6	40x40		0.873	22	0.0117	47
+2	b2a	sonnet	pixelbolt	E14	0.15.0	True		6	24x24		0.0	8	0.1176	44
+2	b2a	sonnet	pixelfx	E14	0.3.1 (044e12a)	True		34	112x108		0.908	18	0.141	43
+2	b2a	haiku	pixelbolt	E15	0.15.0	True		9	80x64		0.0	15	0.0093	44
+2	b2a	haiku	pixelfx	E15	0.3.1 (044e12a)	True		22	96x88		0.803	23	0.0183	60
+2	b2a	sonnet	pixelbolt	E15	0.15.0	True		9	80x64		0.0	8	0.0734	31
+2	b2a	sonnet	pixelfx	E15	0.3.1 (044e12a)	True		24	136x104		0.879	15	0.0954	30
+2	b2a	haiku	pixelbolt	E16	0.15.0	True		10	32x40		0.0	12	0.0111	62
+2	b2a	haiku	pixelfx	E16	0.3.1 (044e12a)	True		31	96x128		0.815	19	0.02	90
+2	b2a	sonnet	pixelbolt	E16	0.15.0	True		18	40x52		0.0	11	0.16	36
+2	b2a	sonnet	pixelfx	E16	0.3.1 (044e12a)	True		25	96x112		0.836	25	0.2799	81
+2	b2b	haiku	pixelbolt	E01	0.15.0	True		8	16x24		0.0	8	0.0102	67
+2	b2b	haiku	pixelfx	E01	0.3.1 (044e12a)	True		60	72x120		0.931	11	0.0065	31
+2	b2b	sonnet	pixelbolt	E01	0.15.0	True		16	16x32		0.0	8	0.077	29
+2	b2b	sonnet	pixelfx	E01	0.3.1 (044e12a)	True		60	72x120		0.931	9	0.079	23
+2	b2b	haiku	pixelbolt	E02	0.15.0	True		12	48x48		0.0	14	0.0095	57
+2	b2b	haiku	pixelfx	E02	0.3.1 (044e12a)	True		25	120x120		0.363	20	0.0182	75
+2	b2b	sonnet	pixelbolt	E02	0.15.0	True		16	96x96		0.0	7	0.069	22
+2	b2b	sonnet	pixelfx	E02	0.3.1 (044e12a)	True		25	128x128		0.776	33	0.3099	103
+2	b2b	haiku	pixelbolt	E03	0.15.0	True		24	24x32		0.0	18	0.016	65
+2	b2b	haiku	pixelfx	E03	0.3.1 (044e12a)	True		30	40x66		0.849	19	0.0144	55
+2	b2b	sonnet	pixelbolt	E03	0.15.0	True		24	32x48		0.0	12	0.1539	47
+2	b2b	sonnet	pixelfx	E03	0.3.1 (044e12a)	True		24	64x96		0.743	29	0.276	73
+2	b2b	haiku	pixelbolt	E04	0.15.0	True		16	48x36		0.0	19	0.0152	59
+2	b2b	haiku	pixelfx	E04	0.3.1 (044e12a)	True		19	96x72		0.0	23	0.0189	75
+2	b2b	sonnet	pixelbolt	E04	0.15.0	True		12	48x48		0.0	9	0.0906	26
+2	b2b	sonnet	pixelfx	E04	0.3.1 (044e12a)	True		33	144x112		1.0	15	0.1397	51
+2	b2b	haiku	pixelbolt	E05	0.15.0	True		24	48x64		0.0	9	0.0057	29
+2	b2b	haiku	pixelfx	E05	0.3.1 (044e12a)	True		60	144x136		0.64	12	0.0076	31
+2	b2b	sonnet	pixelbolt	E05	0.15.0	True		24	48x64		0.0	13	0.1768	64
+2	b2b	sonnet	pixelfx	E05	0.3.1 (044e12a)	True		60	144x136		0.64	10	0.069	23
+2	b2b	haiku	pixelbolt	E06	0.15.0	True		12	48x40		0.0	9	0.0059	29
+2	b2b	haiku	pixelfx	E06	0.3.1 (044e12a)	True		76	176x100		0.919	21	0.012	32
+2	b2b	sonnet	pixelbolt	E06	0.15.0	True		12	48x40		0.0	11	0.1157	40
+2	b2b	sonnet	pixelfx	E06	0.3.1 (044e12a)	True		76	176x100		0.919	13	0.086	34
+2	b2b	haiku	pixelbolt	E07	0.15.0	True		8	20x20		0.0	17	0.0127	74
+2	b2b	haiku	pixelfx	E07	0.3.1 (044e12a)	True		15	48x40		0.79	25	0.0231	88
+2	b2b	sonnet	pixelbolt	E07	0.15.0	True		11	32x32		0.0	14	0.3023	120
+2	b2b	sonnet	pixelfx	E07	0.3.1 (044e12a)	True		25	80x60		0.583	21	0.2343	75
+2	b2b	haiku	pixelbolt	E08	0.15.0	True		12	32x32		0.0	28	0.0783	137
+2	b2b	haiku	pixelfx	E08	0.3.1 (044e12a)	True		16	56x56		0.097	25	0.0148	59
+2	b2b	sonnet	pixelbolt	E08	0.15.0	True		16	48x48		0.0	22	0.2159	77
+2	b2b	sonnet	pixelfx	E08	0.3.1 (044e12a)	True		36	96x96		0.003	29	0.3138	100
+2	b2b	haiku	pixelbolt	E09	0.15.0	True		7	32x48		0.702	11	0.0132	58
+2	b2b	haiku	pixelfx	E09	0.3.1 (044e12a)	True		13	160x180		0.971	30	0.0188	87
+2	b2b	sonnet	pixelbolt	E09	0.15.0	True		12	96x104		0.0	9	0.1024	35
+2	b2b	sonnet	pixelfx	E09	0.3.1 (044e12a)	True		17	128x180		0.938	35	0.2868	102
+2	b2b	haiku	pixelbolt	E10	0.15.0	True		6	40x20		0.0	11	0.0142	69
+2	b2b	haiku	pixelfx	E10	0.3.1 (044e12a)	True		12	88x56		0.873	20	0.0144	61
+2	b2b	sonnet	pixelbolt	E10	0.15.0	True		8	48x32		0.0	13	0.3637	113
+2	b2b	sonnet	pixelfx	E10	0.3.1 (044e12a)	True		12	112x64		0.794	19	0.2062	61
+2	b2b	haiku	pixelbolt	E11	0.15.0	True		12	64x64		0.0	15	0.0113	52
+2	b2b	haiku	pixelfx	E11	0.3.1 (044e12a)	True		20	136x96		0.661	39	0.0239	77
+2	b2b	sonnet	pixelbolt	E11	0.15.0	True		12	48x48		0.0	11	0.2007	67
+2	b2b	sonnet	pixelfx	E11	0.3.1 (044e12a)	True		85	224x112		0.717	12	0.0944	30
+2	b2b	haiku	pixelbolt	E12	0.15.0	True		8	32x32		0.0	19	0.0292	145
+2	b2b	haiku	pixelfx	E12	0.3.1 (044e12a)	True		24	64x64		0.513	21	0.0159	58
+2	b2b	sonnet	pixelbolt	E12	0.15.0	True		12	32x32		0.0	17	0.3161	126
+2	b2b	sonnet	pixelfx	E12	0.3.1 (044e12a)	True		36	72x64		0.725	16	0.187	60
+2	b2b	haiku	pixelbolt	E13	0.15.0	True		16	48x48		0.0	13	0.0129	53
+2	b2b	haiku	pixelfx	E13	0.3.1 (044e12a)	True		13	64x48		0.753	28	0.019	82
+2	b2b	sonnet	pixelbolt	E13	0.15.0	True		12	64x64		0.0	9	0.1181	32
+2	b2b	sonnet	pixelfx	E13	0.3.1 (044e12a)	True		52	288x192		0.753	16	0.1074	32
+2	b2b	haiku	pixelbolt	E14	0.15.0	True		6	24x24		0.0	11	0.0103	52
+2	b2b	haiku	pixelfx	E14	0.3.1 (044e12a)	True		10	40x40		0.916	24	0.0158	61
+2	b2b	sonnet	pixelbolt	E14	0.15.0	True		6	24x24		0.0	10	0.1285	41
+2	b2b	sonnet	pixelfx	E14	0.3.1 (044e12a)	True		36	112x108		0.908	17	0.1272	40
+2	b2b	haiku	pixelbolt	E15	0.15.0	True		9	80x64		0.0	8	0.0056	28
+2	b2b	haiku	pixelfx	E15	0.3.1 (044e12a)	True		13	96x96		0.685	26	0.0209	97
+2	b2b	sonnet	pixelbolt	E15	0.15.0	True		9	80x64		0.0	9	0.0798	26
+2	b2b	sonnet	pixelfx	E15	0.3.1 (044e12a)	True		24	136x104		0.879	16	0.0952	39
+2	b2b	haiku	pixelbolt	E16	0.15.0	True		14	32x48		0.0	15	0.0151	61
+2	b2b	haiku	pixelfx	E16	0.3.1 (044e12a)	True		24	80x80		0.928	29	0.0192	73
+2	b2b	sonnet	pixelbolt	E16	0.15.0	True		11	32x48		0.0	22	0.3395	104
+2	b2b	sonnet	pixelfx	E16	0.3.1 (044e12a)	True		25	80x96		0.852	25	0.3049	90
+3	b3a	haiku	pixelbolt	E01	0.17.0	True		16	16x32		0.0	10	0.0074	29
+3	b3a	sonnet	pixelbolt	E01	0.17.0	True		16	16x32		0.0	8	0.1096	27
+3	b3a	haiku	pixelbolt	E02	0.17.0	True		10	72x72		0.0	15	0.0117	49
+3	b3a	sonnet	pixelbolt	E02	0.17.0	True		12	64x64		0.0	10	0.0967	36
+3	b3a	haiku	pixelbolt	E03	0.17.0	True		8	16x24		0.0	15	0.021	103
+3	b3a	sonnet	pixelbolt	E03	0.17.0	True		24	32x48		0.0	12	0.17	58
+3	b3a	haiku	pixelbolt	E04	0.17.0	True		16	48x32		0.0	19	0.0153	55
+3	b3a	sonnet	pixelbolt	E04	0.17.0	True		16	64x48		0.0	14	0.1736	59
+3	b3a	haiku	pixelbolt	E05	0.17.0	True		24	48x64		0.0	12	0.0078	34
+3	b3a	sonnet	pixelbolt	E05	0.17.0	True		24	48x64		0.0	16	0.2056	73
+3	b3a	haiku	pixelbolt	E06	0.17.0	True		40	48x40		0.0	10	0.0067	31
+3	b3a	sonnet	pixelbolt	E06	0.17.0	True		10	48x40		0.0	14	0.1674	82
+3	b3a	haiku	pixelbolt	E07	0.17.0	True		8	24x24		0.0	14	0.0134	68
+3	b3a	sonnet	pixelbolt	E07	0.17.0	True		12	32x32		0.0	14	0.2979	111
+3	b3a	haiku	pixelbolt	E08	0.17.0	True		24	40x40		0.0	16	0.0117	55
+3	b3a	sonnet	pixelbolt	E08	0.17.0	True		24	48x48		0.0	20	0.2541	99
+3	b3a	haiku	pixelbolt	E09	0.17.0	True		12	96x104		0.0	12	0.0078	41
+3	b3a	sonnet	pixelbolt	E09	0.17.0	True		12	96x104		0.0	11	0.1245	49
+3	b3a	haiku	pixelbolt	E10	0.17.0	True		8	40x24		0.0	15	0.022	96
+3	b3a	sonnet	pixelbolt	E10	0.17.0	True		8	48x32		0.0	15	0.1958	86
+3	b3a	haiku	pixelbolt	E11	0.17.0	True		11	32x32		0.0	24	0.0284	111
+3	b3a	sonnet	pixelbolt	E11	0.17.0	True		14	56x56		0.0	13	0.2318	77
+3	b3a	haiku	pixelbolt	E12	0.17.0	True		11	32x32		0.0	16	0.0308	152
+3	b3a	sonnet	pixelbolt	E12	0.17.0	True		8	32x32		0.515	18	0.3171	118
+3	b3a	haiku	pixelbolt	E13	0.17.0	True		8	40x40		0.332	28	0.0264	111
+3	b3a	sonnet	pixelbolt	E13	0.17.0	True		12	64x64		0.0	14	0.2619	99
+3	b3a	haiku	pixelbolt	E14	0.17.0	True		5	15x15		0.0	10	0.0109	54
+3	b3a	sonnet	pixelbolt	E14	0.17.0	True		8	32x32		0.0	10	0.1454	46
+3	b3a	haiku	pixelbolt	E15	0.17.0	True		9	80x64		0.0	13	0.0083	34
+3	b3a	sonnet	pixelbolt	E15	0.17.0	True		9	80x64		0.0	10	0.0917	17
+3	b3a	haiku	pixelbolt	E16	0.17.0	True		8	24x32		0.0	14	0.0113	49
+3	b3a	sonnet	pixelbolt	E16	0.17.0	True		10	32x48		0.0	13	0.1778	55
+3	b3b	haiku	pixelbolt	E01	0.17.0	True		16	16x32		0.0	12	0.0081	39
+3	b3b	sonnet	pixelbolt	E01	0.17.0	True		16	16x32		0.0	8	0.0796	72
+3	b3b	haiku	pixelbolt	E02	0.17.0	True		12	48x48		0.0	12	0.0099	48
+3	b3b	sonnet	pixelbolt	E02	0.17.0	True		12	64x64		0.0	9	0.0899	27
+3	b3b	haiku	pixelbolt	E03	0.17.0	True		8	16x32		0.0	12	0.0181	90
+3	b3b	sonnet	pixelbolt	E03	0.17.0	True		24	32x48		0.0	11	0.1383	39
+3	b3b	haiku	pixelbolt	E04	0.17.0	True		16	64x40		0.0	17	0.0145	59
+3	b3b	sonnet	pixelbolt	E04	0.17.0	True		20	64x48		0.0	11	0.1324	42
+3	b3b	haiku	pixelbolt	E05	0.17.0	True		24	48x64		0.0	10	0.0068	32
+3	b3b	sonnet	pixelbolt	E05	0.17.0	True		24	48x64		0.0	14	0.2746	96
+3	b3b	haiku	pixelbolt	E06	0.17.0	True		13	40x24		0.0	19	0.0183	79
+3	b3b	sonnet	pixelbolt	E06	0.17.0	True		13	40x32		0.0	14	0.3013	111
+3	b3b	haiku	pixelbolt	E07	0.17.0	True		9	24x24		0.0	19	0.0178	91
+3	b3b	sonnet	pixelbolt	E07	0.17.0	True		10	32x32		0.0	11	0.1808	75
+3	b3b	haiku	pixelbolt	E08	0.17.0	True		24	48x48		0.0	27	0.0222	96
+3	b3b	sonnet	pixelbolt	E08	0.17.0	True		10	32x32		0.0	30	0.9337	324
+3	b3b	haiku	pixelbolt	E09	0.17.0	True		12	96x104		0.0	9	0.0076	30
+3	b3b	sonnet	pixelbolt	E09	0.17.0	True		12	96x104		0.0	12	0.1587	53
+3	b3b	haiku	pixelbolt	E10	0.17.0	True		8	32x24		0.0	11	0.0157	75
+3	b3b	sonnet	pixelbolt	E10	0.17.0	True		8	48x32		0.0	13	0.3758	120
+3	b3b	haiku	pixelbolt	E11	0.17.0	True		9	32x32		0.193	13	0.0134	77
+3	b3b	sonnet	pixelbolt	E11	0.17.0	True		14	48x48		0.0	16	0.2784	81
+3	b3b	haiku	pixelbolt	E12	0.17.0	True		8	32x32		0.0	13	0.0195	105
+3	b3b	sonnet	pixelbolt	E12	0.17.0	True		8	32x32		0.0	16	0.2193	71
+3	b3b	haiku	pixelbolt	E13	0.17.0	True		9	32x32		0.0	17	0.0143	71
+3	b3b	sonnet	pixelbolt	E13	0.17.0	True		14	64x64		0.0	11	0.1558	41
+3	b3b	haiku	pixelbolt	E14	0.17.0	True		6	16x16		0.0	14	0.0123	60
+3	b3b	sonnet	pixelbolt	E14	0.17.0	True		6	24x24		0.0	10	0.1327	42
+3	b3b	haiku	pixelbolt	E15	0.17.0	True		8	80x64		0.0	11	0.0076	33
+3	b3b	sonnet	pixelbolt	E15	0.17.0	True		9	80x64		0.0	10	0.0941	26
+3	b3b	haiku	pixelbolt	E16	0.17.0	True		8	32x40		0.0	10	0.0085	43
+3	b3b	sonnet	pixelbolt	E16	0.17.0	True		10	32x48		0.0	15	0.2025	61
+4	b4a	haiku	pixelbolt	E01	0.19.0	True		32	40x80	21x80	0.0	15	0.0167	66
+4	b4a	sonnet	pixelbolt	E01	0.19.0	True		8	16x32	7x26	0.0	9	0.0856	29
+4	b4a	haiku	pixelbolt	E02	0.19.0	True		30	96x96	96x96	0.169	13	0.0092	35
+4	b4a	sonnet	pixelbolt	E02	0.19.0	True		20	96x96	96x96	0.166	8	0.0869	23
+4	b4a	haiku	pixelbolt	E03	0.19.0	True		32	64x96	30x94	0.321	11	0.0075	29
+4	b4a	sonnet	pixelbolt	E03	0.19.0	True		16	64x96	30x93	0.322	11	0.1032	28
+4	b4a	haiku	pixelbolt	E04	0.19.0	True		44	128x64	92x52	0.0	13	0.0109	45
+4	b4a	sonnet	pixelbolt	E04	0.19.0	True		16	96x64	77x55	0.538	12	0.1671	64
+4	b4a	haiku	pixelbolt	E05	0.19.0	True		24	96x112	92x105	0.053	16	0.0107	39
+4	b4a	sonnet	pixelbolt	E05	0.19.0	True		24	96x112	92x105	0.053	10	0.1019	45
+4	b4a	haiku	pixelbolt	E06	0.19.0	True		40	48x40	48x37	0.0	10	0.0068	34
+4	b4a	sonnet	pixelbolt	E06	0.19.0	True		20	48x40	48x37	0.0	13	0.1351	45
+4	b4a	haiku	pixelbolt	E07	0.19.0	True		8	32x32	31x24	0.0	13	0.0143	81
+4	b4a	sonnet	pixelbolt	E07	0.19.0	True		11	48x44	48x38	0.0	14	0.2697	112
+4	b4a	haiku	pixelbolt	E08	0.19.0	True		12	48x48	46x46	0.0	18	0.031	140
+4	b4a	sonnet	pixelbolt	E08	0.19.0	True		24	56x56	52x52	0.0	17	0.2628	95
+4	b4a	haiku	pixelbolt	E09	0.19.0	True		8	48x64	29x64	0.897	17	0.0214	81
+4	b4a	sonnet	pixelbolt	E09	0.19.0	True		12	96x104	63x104	0.0	9	0.1049	34
+4	b4a	haiku	pixelbolt	E10	0.19.0	True		8	40x24	36x18	0.0	12	0.0183	83
+4	b4a	sonnet	pixelbolt	E10	0.19.0	True		24	96x72	64x58	0.0	11	0.157	49
+4	b4a	haiku	pixelbolt	E11	0.19.0	True		10	32x32	27x24	0.0	13	0.0149	78
+4	b4a	sonnet	pixelbolt	E11	0.19.0	True		12	48x48	37x37	0.0	13	0.2422	80
+4	b4a	haiku	pixelbolt	E12	0.19.0	True		8	32x32	30x29	0.0	14	0.0183	68
+4	b4a	sonnet	pixelbolt	E12	0.19.0	True		16	96x80	73x61	0.0	9	0.0872	27
+4	b4a	haiku	pixelbolt	E13	0.19.0	True		24	144x96	133x68	0.544	12	0.0091	45
+4	b4a	sonnet	pixelbolt	E13	0.19.0	True		12	144x96	133x68	0.542	10	0.095	35
+4	b4a	haiku	pixelbolt	E14	0.19.0	True		8	64x64	52x51	0.0	14	0.0112	50
+4	b4a	sonnet	pixelbolt	E14	0.19.0	True		7	64x64	51x51	0.0	10	0.1004	28
+4	b4a	haiku	pixelbolt	E15	0.19.0	True		9	80x64	71x32	0.0	14	0.0092	42
+4	b4a	sonnet	pixelbolt	E15	0.19.0	True		9	80x64	71x32	0.0	8	0.0791	29
+4	b4a	haiku	pixelbolt	E16	0.19.0	True		23	96x128	91x127	0.401	10	0.006	47
+4	b4a	sonnet	pixelbolt	E16	0.19.0	True		23	96x128	91x127	0.401	9	0.086	28
+4	b4b	haiku	pixelbolt	E01	0.19.0	True		16	16x32	7x26	0.0	11	0.0081	34
+4	b4b	sonnet	pixelbolt	E01	0.19.0	True		16	16x32	7x26	0.0	11	0.1297	40
+4	b4b	haiku	pixelbolt	E02	0.19.0	True		30	96x96	96x96	0.169	13	0.0092	48
+4	b4b	sonnet	pixelbolt	E02	0.19.0	True		16	64x64	64x64	0.168	8	0.0843	28
+4	b4b	haiku	pixelbolt	E03	0.19.0	True		32	64x96	30x94	0.321	12	0.0077	35
+4	b4b	sonnet	pixelbolt	E03	0.19.0	True		16	64x96	30x93	0.322	9	0.0912	30
+4	b4b	haiku	pixelbolt	E04	0.19.0	True		18	72x40	54x32	0.0	16	0.0132	50
+4	b4b	sonnet	pixelbolt	E04	0.19.0	True		16	128x64	90x51	0.979	10	0.1329	43
+4	b4b	haiku	pixelbolt	E05	0.19.0	True		24	96x112	92x105	0.053	12	0.0081	31
+4	b4b	sonnet	pixelbolt	E05	0.19.0	True		24	96x112	92x105	0.053	11	0.1075	29
+4	b4b	haiku	pixelbolt	E06	0.19.0	True		40	48x40	48x37	0.0	14	0.0086	38
+4	b4b	sonnet	pixelbolt	E06	0.19.0	True		20	48x40	48x37	0.0	14	0.1465	53
+4	b4b	haiku	pixelbolt	E07	0.19.0	True		9	24x20	24x18	0.0	15	0.0216	118
+4	b4b	sonnet	pixelbolt	E07	0.19.0	True		12	32x32	32x32	0.0	14	0.2458	89
+4	b4b	haiku	pixelbolt	E08	0.19.0	True		12	32x32	28x28	0.0	20	0.0316	123
+4	b4b	sonnet	pixelbolt	E08	0.19.0	True		24	48x48	46x46	0.0	16	0.2121	65
+4	b4b	haiku	pixelbolt	E09	0.19.0	True		9	40x48	38x48	0.756	12	0.0164	67
+4	b4b	sonnet	pixelbolt	E09	0.19.0	True		13	96x104	61x102	0.0	10	0.0997	36
+4	b4b	haiku	pixelbolt	E10	0.19.0	True		24	96x72	64x58	0.0	15	0.0103	42
+4	b4b	sonnet	pixelbolt	E10	0.19.0	True		12	96x72	64x58	0.0	8	0.0818	30
+4	b4b	haiku	pixelbolt	E11	0.19.0	True		8	32x32	31x31	0.09	12	0.0165	88
+4	b4b	sonnet	pixelbolt	E11	0.19.0	True		10	64x64	45x46	0.148	29	0.504	142
+4	b4b	haiku	pixelbolt	E12	0.19.0	True		32	96x80	73x61	0.0	9	0.0051	23
+4	b4b	sonnet	pixelbolt	E12	0.19.0	True		16	96x80	73x61	0.0	7	0.0772	24
+4	b4b	haiku	pixelbolt	E13	0.19.0	True		24	144x96	133x68	0.544	10	0.0064	41
+4	b4b	sonnet	pixelbolt	E13	0.19.0	True		12	144x96	133x68	0.542	10	0.0962	31
+4	b4b	haiku	pixelbolt	E14	0.19.0	True		7	48x48	48x48	0.0	16	0.0109	45
+4	b4b	sonnet	pixelbolt	E14	0.19.0	True		10	64x64	52x51	0.0	10	0.0969	30
+4	b4b	haiku	pixelbolt	E15	0.19.0	True		9	80x64	71x32	0.0	13	0.0091	35
+4	b4b	sonnet	pixelbolt	E15	0.19.0	True		9	80x64	71x32	0.0	8	0.0802	27
+4	b4b	haiku	pixelbolt	E16	0.19.0	True		23	96x128	91x127	0.401	13	0.0093	34
+4	b4b	sonnet	pixelbolt	E16	0.19.0	True		23	96x128	91x127	0.401	7	0.0739	25
