@@ -236,9 +236,16 @@ try {
     await studio.shot(`sample-${sample.file.replace('/', '-')}`); return `${frames} frames, ${status.replace('● ', '')}`;
   });
 
+  // Opens a sample and waits for that load's own render, then for what it shows. When the sample is already open, the
+  // page shows it before the new load lands, and the load then resets the stack tools under the check (P-197: Copper
+  // Rally was the last sample above, and 2 of 8 runs lost the side stroke).
+  const open = async (file, shown, what) => {
+    await evaluate(`window.walkOpened = false; document.getElementById('source').addEventListener('pixelbolt:rendered', () => { window.walkOpened = true; }, { once: true })`);
+    await click(`#examples [data-file="${file}"]`);
+    await until(`window.walkOpened && ${shown}`, what);
+  };
   await check('the rally car keeps its heading while painting an editable side stroke', async () => {
-    await click('#examples [data-file="copper-rally.stack"]');
-    await until(`!document.getElementById('stack-tools').hidden && document.getElementById('timeline').children.length === 60`, 'the rally car to open');
+    await open('copper-rally.stack', `!document.getElementById('stack-tools').hidden && document.getElementById('timeline').children.length === 60`, 'the rally car to open');
     assert.equal(await evaluate(`document.getElementById('stack-lock').hidden`), true);
     await evaluate(`(() => { const slider = document.getElementById('stack-heading'); slider.value = '59'; slider.dispatchEvent(new Event('input')); })()`);
     assert.equal(await text('stack-angle'), '24°');
@@ -259,9 +266,8 @@ try {
   });
 
   await check('two brush gestures survive a held refresh; undo, erase, shared decals and pinned headings follow the source', async () => {
-    await click('#examples [data-file="copper-rally.stack"]');
+    await open('copper-rally.stack', `JSON.parse(document.getElementById('source').value).paint.length === 4`, 'the original four wheels');
     const state = () => evaluate(`JSON.parse(document.getElementById('source').value)`);
-    await until(`JSON.parse(document.getElementById('source').value).paint.length === 4`, 'the original four wheels');
     const at = async (x,y) => evaluate(`(() => {
       const c=document.getElementById('stack-side'); c.scrollIntoView({block:'center'});
       const b=c.getBoundingClientRect(); return {x:b.left+(${x}+.5)*b.width/c.width, y:b.top+(${y}+.5)*b.height/c.height};
@@ -319,8 +325,7 @@ try {
   });
 
   await check('Lodekeeper turns with real glass and an optional socket marker', async () => {
-    await click('#examples [data-file="lodekeeper-faceted.stack"]');
-    await until(`document.querySelectorAll('.frame').length === 72`, 'all crane headings');
+    await open('lodekeeper-faceted.stack', `document.querySelectorAll('.frame').length === 72`, 'all crane headings');
     await click('#timeline .frame:first-child');
     const first=await canvas();
     assert.equal(await evaluate(`(() => { const c=document.getElementById('canvas'), d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; return d.some((a,i)=>i%4===3 && a>0 && a<255); })()`),true);
