@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Pixel FX Designer alternatives: 10 pixel-art effect tools compared (October–November 2026)</title>
-<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct, Codixel 15 Nov, pixelfx 17 Nov: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt, with Pixelbolt, Codixel and pixelfx measured.">
+<meta name="description" content="Checked 19 Oct 2026 by Pixelbolt's makers, Pixel VFX Forge added 27 Oct, Codixel 15 Nov, pixelfx 17 Nov: Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt, with Pixelbolt, Codixel and pixelfx measured; agent bench against pixelfx 24 Nov.">
 <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Pixel FX Designer alternatives for pixel-art fire, smoke, explosions and water: 10 tools compared",
-  "description": "By the Pixelbolt maintainers: ten tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt, Codixel and pixelfx measured; the others read from their own pages.",
+  "description": "By the Pixelbolt maintainers: ten tools for pixel-art effects compared (Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer, PHOSPHOR, BlastFX, Pixel VFX Forge, Codixel, pixelfx and Pixelbolt): how each makes effects, fluid simulation, exports, palette control, price, and which can run without a GUI. Pixelbolt, Codixel and pixelfx measured, and a four-block agent bench of Pixelbolt against pixelfx; the others read from their own pages.",
   "datePublished": "2026-10-19",
-  "dateModified": "2026-11-17",
+  "dateModified": "2026-11-24",
   "inLanguage": "en",
   "url": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
   "mainEntityOfPage": "https://skulitom.github.io/Pixelbolt/compare/pixel-fx-designer-alternatives/",
@@ -57,6 +57,10 @@ code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-siz
 pre { background: var(--head); border: 1px solid var(--rule); border-radius: 6px; padding: 0.7rem; overflow-x: auto; font-size: 0.85rem; }
 li { margin: 0.25rem 0; }
 .stage { background: var(--stage); border-radius: 6px; padding: 12px; display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.bench-grid { display: grid; gap: 1.1rem; margin: 1rem 0; }
+.bench-grid figure { margin: 0; }
+.bench-grid img { display: block; width: 100%; max-width: 800px; height: auto; border-radius: 6px; }
+.bench-grid figcaption { color: var(--muted); font-size: 0.88rem; margin-top: 0.3rem; }
 .stage img { image-rendering: pixelated; image-rendering: crisp-edges; max-width: 100%; height: auto; }
 footer { border-top: 1px solid var(--rule); margin-top: 3rem; padding-top: 1rem; }
 </style>
@@ -86,7 +90,10 @@ Pixel Composer, PHOSPHOR, Pixel VFX Forge and pixelfx also document a way to ren
 Codixel's effects are functions that an agent's script calls; the others are used through their own window. We read
 seven of the other nine tools' pages and docs without running them (for Pixel VFX Forge, also its agent skill's
 source); Codixel and pixelfx we read and ran: four of Codixel's effects and six of pixelfx's each gave byte-identical
-files twice. Method, sources and data are below.</p>
+files twice. We also had Claude make sixteen effects with Pixelbolt and with pixelfx, in four blocks from 10 to 23
+November 2026: a blind judge preferred the results made with pixelfx in the first three, and the fourth, on Pixelbolt
+0.19.0, is reported <a href="#agent-bench">below</a> in the words we fixed before it ran. Method, sources and data are
+below.</p>
 
 <p class="note"><strong>We make Pixelbolt.</strong> Read this as a vendor's page: our own numbers come from runs you can
 repeat, and everything about the other tools links to the page we read it on. We are not affiliated with CodeManu
@@ -105,7 +112,8 @@ versions of Pixel FX Designer, SpriteMancer, Fluid FX, Pixel Composer and BlastF
 download; itch.io pages, PHOSPHOR's included, answered our reader with a bot check and were not re-checked ·
 Pixelbolt's rows (its column, presets, measurements and limits) re-measured on its 0.17.0 npm release (14 November
 2026) on 15 November 2026 · Prices are US list prices on Steam and itch.io; the table also gives the sales
-running on 19 October and when they end · Next check by 18 November 2026, or sooner when one of these tools releases.</p>
+running on 19 October and when they end · Agent bench against pixelfx added 24 November 2026 (run from 10 to 23
+November) · Next check by 15 December 2026, or sooner when one of these tools releases.</p>
 
 <h2>The short answer</h2>
 <ul>
@@ -599,9 +607,9 @@ file.</li>
 156, Firefox 157 and WebKit 26.6, gave the same hash as Node for every one of the 697 frames
 (<a href="data/patchgg-pixelfx_engines.mjs">script</a>, <a href="data/patchgg-pixelfx-engines-5294518.json">data</a>).
 pixelfx's files reached the browsers from our local copy through Playwright, with no network request.</li>
-<li><strong>Not measured:</strong> how good the effects look, the other 238 effects, the acts with the character, and
-the skill. We did not give its SKILL.md to Claude, so making new effects with it is described from its docs, not run by
-us, and we did not install or run Patch's command line.</li>
+<li><strong>Not measured in this run:</strong> how good the effects look, the other 238 effects, the acts with the
+character, and the skill. Claude used pixelfx's skill, at its earlier commit <code>044e12a</code>, in our
+<a href="#agent-bench">agent bench</a>; we did not install or run Patch's command line.</li>
 <li><strong>To repeat it</strong>, from a folder holding the <code>patchgg-pixelfx_</code> scripts, with ffmpeg on the
 PATH (for the GIF) and Pillow and numpy for Python:
 <pre>git -c core.autocrlf=false clone https://github.com/patch-gg/pixelfx src
@@ -612,6 +620,141 @@ python -I patchgg-pixelfx_light0.py src patchgg-pixelfx_frames.mjs run-light0 pa
 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node patchgg-pixelfx_engines.mjs src patchgg-pixelfx-engines.json</pre>
 For the browser line, set <code>CHROMIUM_EXE</code> and <code>FIREFOX_EXE</code> if Playwright's own builds are
 missing.</li>
+</ul>
+
+<h2 id="agent-bench">Agents making effects with Pixelbolt and with pixelfx: four blocks, losses first</h2>
+<p><strong>From 10 to 23 November 2026 we asked Claude Haiku 5.5 and Claude Sonnet 5.5, in Claude Code 2.1.302, for the
+same pixel-art game effects with Pixelbolt and with pixelfx, and a blind Claude Opus 5.5 judge chose the better of each
+pair, once in each order. In the first three blocks the judge preferred the effects made with pixelfx 0.3.1: 13 pairs
+to 7 and 14 to 5 with Pixelbolt 0.15.0 in its own fixed format, 21 to 7 and 20 to 8 with no format imposed (the rule we
+set before the run was met for pixelfx, p&nbsp;=&nbsp;0.0025), and 15 to 8 and 20 to 10 with Pixelbolt 0.17.0.</strong>
+After those losses Pixelbolt's maintainers added finished presets for ten of the sixteen effects, and the fourth block,
+on Pixelbolt 0.19.0, gives the reading we fixed before it ran, word for word:</p>
+<p class="note"><strong>Pixelbolt 0.19.0 (block 4, run on 23 November 2026) closes half the gap, beyond the judge's own
+noise, on the 10 effects Pixelbolt added presets for after this comparison (pair net &minus;27 &rarr; +24); on the other
+6 tasks, which had no gap to close, it fell by 2, within the judge's own noise for 24 pairs; pixelfx (0.3.1, results of
+12 November 2026) got no such tuning.</strong> This is not a claim that Pixelbolt makes better effects than pixelfx: the
+ten presets were made after these tasks' results were known and are named after them, and on the six tasks without one,
+agents still built Pixelbolt effects at the size and length they built before.</p>
+
+<div class="wrap" tabindex="0" role="region" aria-label="Agent bench blocks table, scrolls sideways">
+<table class="small">
+<caption>The four blocks. A pair is one task, one model, one run: Pixelbolt's result against pixelfx's.</caption>
+<thead>
+<tr><th scope="col">Block, date</th><th scope="col">Pixelbolt</th><th scope="col">pixelfx</th><th scope="col">Requests</th><th scope="col">Pairs judged, run 1 and run 2 (Pixelbolt / pixelfx / tie)</th><th scope="col">The rule fixed before the run</th></tr>
+</thead>
+<tbody>
+<tr><td>1, 10 Nov</td><td>0.15.0, its MCP server</td><td>0.3.1 (<code>044e12a</code>): a checkout with its SKILL.md in the job's folder, not loaded as a skill</td><td>12, in a fixed format (size, frames, colours, a one-row sheet and a GIF), which Pixelbolt exports directly and pixelfx doesn't</td><td>7 / 13 / 4 and 5 / 14 / 5</td><td>Not met (sign test p&nbsp;=&nbsp;0.26 and 0.064). Results that met the requested format, of 24: with no tool 19 and 22, Pixelbolt 13 and 11, pixelfx 11 and 9.</td></tr>
+<tr><td>2, 12 Nov</td><td>0.15.0, its MCP server and its skill</td><td>0.3.1 (<code>044e12a</code>), a checkout and its skill</td><td>16, no format imposed (each tool's own size and length; a transparent sheet and its JSON)</td><td>7 / 21 / 4 and 8 / 20 / 4</td><td><strong>Met for pixelfx:</strong> of 32 task-and-model cells over both runs, 21 to pixelfx, 5 to Pixelbolt, 6 even (p&nbsp;=&nbsp;0.0025). Both delivered 64 of 64.</td></tr>
+<tr><td>3, 15 Nov</td><td>0.17.0, its MCP server and its skill (adds a "look at it and refine" step)</td><td>block 2's 64 results, judged again</td><td>the same 16</td><td>8 / 15 / 9 and 10 / 20 / 2</td><td>Met for neither: cells 18 to pixelfx, 8 to Pixelbolt, 6 even (p&nbsp;=&nbsp;0.0755).</td></tr>
+<tr><td>4, 23 Nov</td><td>0.19.0, its MCP server and its skill (0.18.0 added the ten presets)</td><td>block 2's 64 results, judged again</td><td>the same 16</td><td>21 / 4 / 7 and 21 / 6 / 5</td><td>Delivery: passed (64 of 64 each). The look moved to pixelfx's size and softness: <strong>failed</strong>. Half the gap closed: passed (pair net &minus;17 in block 3, +32 here, over 64 pairs). Read as the sentence above.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="agent-bench-split">Where block 4's gain is, and where pixelfx still leads</h3>
+<div class="wrap" tabindex="0" role="region" aria-label="Block 4 split table, scrolls sideways">
+<table class="small">
+<caption>Pair nets (+ Pixelbolt, &minus; pixelfx) and the median Pixelbolt result, blocks 3 and 4, both runs and models</caption>
+<thead>
+<tr><th scope="col">Tasks</th><th scope="col">Pairs</th><th scope="col">Net, block 3 &rarr; 4</th><th scope="col">Longest side, block 3 &rarr; 4</th><th scope="col">Frames, block 3 &rarr; 4</th><th scope="col">Block 4 jobs with partly see-through pixels</th></tr>
+</thead>
+<tbody>
+<tr><td>10 with a preset added after the comparison: wall torch, fireball blast, chimney smoke, cannon smoke, waterfall, electric arc, ice crystal, frost nova, coin sparkle, teleport-in</td><td>40</td><td>&minus;27 &rarr; +24</td><td>44 &rarr; 96 px</td><td>10.5 &rarr; 19</td><td>22 of 40</td></tr>
+<tr><td>6 with no such preset: stone splash, lava bubble, lava pool, lightning strike, ice burst, sword hit</td><td>24</td><td>+10 &rarr; +8</td><td>48 &rarr; 48 px</td><td>12 &rarr; 11.5</td><td>4 of 24</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+<li><strong>pixelfx is still ahead</strong>, by task over both runs and models in block 4, on the wall torch (&minus;3), the
+lightning strike (&minus;1) and the electric arc (&minus;1); the lava bubble and the lava pool are even, and Pixelbolt is
+ahead on the other eleven. The torch and the arc have presets made for them and still did not win.</li>
+<li><strong>The look, medians over 64 jobs:</strong> longest side 48 px (block 3), 80 px (block 4) and 112 px (pixelfx);
+frames 11.5, 16 and 25; jobs with any partly see-through pixel 3, 26 and 63 of 64. The rule we set for block 4 asked
+for medians of 96 px and 20 frames, a drawn area of 72 px, and 32 jobs, so it failed: Pixelbolt's results did not take on pixelfx's larger, longer, softer
+look, and the gap can't be put down to that look.</li>
+<li><strong>What the judge said</strong> (every reason is in the data): against Pixelbolt in blocks 2 and 3, smoke as
+"a solid, blobby column" that "never really thins out" and a flame that is "clean but plain"; for pixelfx, soft smoke
+that fades, glow, embers and a torch "mounted in a proper wall bracket". Where Pixelbolt won, it named clear stages and
+shapes, such as a stone splash's fall, crown and settle, or a sword slash's bright hit flash.</li>
+<li><strong>In the presets' tasks the agents used them:</strong> in at least 34 of the 40 block 4 jobs on those ten
+tasks the agent compiled that task's own preset by name (16 of 20 on Haiku, 18 of 20 on Sonnet).</li>
+</ul>
+
+<h3 id="agent-bench-pictures">What the agents made, one pair per task</h3>
+<p class="muted">Each row is one task: Pixelbolt 0.17.0 (block 3), Pixelbolt 0.19.0 (block 4) and pixelfx 0.3.1 (block 2),
+all from Sonnet's first run (<code>b3a</code>, <code>b4a</code>, <code>b2a</code>), picked before we looked. Each shows
+the frame with the most visible pixels, enlarged by a whole number (one pixelfx frame, the frost nova's, halved) on a
+dark background. The judge saw up to 12 frames of each on a dark and a light background; one frame can't show motion,
+and pixelfx's faint glow hardly shows here. The verdicts are for these Sonnet pairs; each task has four pairs a block.</p>
+<div class="bench-grid">
+<figure><img src="data/c131-E01.png" width="800" height="272" loading="lazy" alt="Wall torch, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E01 Wall torch, loop (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 pixelfx.</figcaption></figure>
+<figure><img src="data/c131-E02.png" width="800" height="272" loading="lazy" alt="Fireball blast: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E02 Fireball blast (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 tie, block 4 tie.</figcaption></figure>
+<figure><img src="data/c131-E03.png" width="800" height="272" loading="lazy" alt="Chimney smoke, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E03 Chimney smoke, loop (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 tie.</figcaption></figure>
+<figure><img src="data/c131-E04.png" width="800" height="272" loading="lazy" alt="Cannon smoke: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E04 Cannon smoke (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E05.png" width="800" height="272" loading="lazy" alt="Waterfall, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E05 Waterfall, loop (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 tie, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E06.png" width="800" height="272" loading="lazy" alt="Stone splash: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E06 Stone splash (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 Pixelbolt, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E07.png" width="800" height="272" loading="lazy" alt="Lava bubble: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E07 Lava bubble (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 tie.</figcaption></figure>
+<figure><img src="data/c131-E08.png" width="800" height="272" loading="lazy" alt="Lava pool, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E08 Lava pool, loop (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 Pixelbolt, block 4 pixelfx.</figcaption></figure>
+<figure><img src="data/c131-E09.png" width="800" height="272" loading="lazy" alt="Lightning strike: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E09 Lightning strike (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 pixelfx.</figcaption></figure>
+<figure><img src="data/c131-E10.png" width="800" height="272" loading="lazy" alt="Electric arc, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E10 Electric arc, loop (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 tie, block 4 pixelfx.</figcaption></figure>
+<figure><img src="data/c131-E11.png" width="800" height="272" loading="lazy" alt="Ice shard burst: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E11 Ice shard burst (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 Pixelbolt, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E12.png" width="800" height="272" loading="lazy" alt="Ice crystal, loop: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E12 Ice crystal, loop (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E13.png" width="800" height="272" loading="lazy" alt="Frost nova: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E13 Frost nova (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E14.png" width="800" height="272" loading="lazy" alt="Coin pickup sparkle: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E14 Coin pickup sparkle (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 pixelfx, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E15.png" width="800" height="272" loading="lazy" alt="Sword slash impact: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E15 Sword slash impact (no preset made for it). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 Pixelbolt, block 4 Pixelbolt.</figcaption></figure>
+<figure><img src="data/c131-E16.png" width="800" height="272" loading="lazy" alt="Teleport-in: one frame each from Pixelbolt 0.17.0, Pixelbolt 0.19.0 and pixelfx 0.3.1, left to right"><figcaption>E16 Teleport-in (preset added in 0.18.0). Left to right: Pixelbolt 0.17.0, Pixelbolt 0.19.0, pixelfx 0.3.1. Judge: block 3 tie, block 4 Pixelbolt.</figcaption></figure>
+</div>
+
+<h3 id="agent-bench-limits">What this bench can't say</h3>
+<ul>
+<li><strong>Block 4's tasks are in-sample for Pixelbolt.</strong> The ten presets came in four commits, all in 0.18.0,
+and three of them name this comparison as their reason (<a href="https://github.com/skulitom/Pixelbolt/commit/64cacd6">64cacd6</a>,
+<a href="https://github.com/skulitom/Pixelbolt/commit/6b16f08">6b16f08</a>,
+<a href="https://github.com/skulitom/Pixelbolt/commit/b2172a2">b2172a2</a>; the fireball blast and cannon smoke came
+in <a href="https://github.com/skulitom/Pixelbolt/commit/836d3eb">836d3eb</a>). pixelfx's results were
+made on 12 November with its commit <code>044e12a</code> (9 November, version 0.3.1); its one newer commit,
+<code>5294518</code> (12 November, the one measured above), was not used in the bench.</li>
+<li><strong>Tasks picked because they lost also tend to do better on a re-run</strong> (regression to the mean), and the
+judge-noise figure doesn't cover that. The block also can't separate the presets from 0.19.0's other changes since
+0.17.0.</li>
+<li><strong>Block 2's cell rule, applied to block 4, reads 24 cells to Pixelbolt, 6 to pixelfx and 2 even
+(p&nbsp;=&nbsp;0.0014).</strong> It pools the ten tuned tasks, so it is not evidence of a general lead, and we don't
+quote it alone.</li>
+<li><strong>The judge's own noise:</strong> block 2's 16 Sonnet pairs judged a second time on 17 November gave the same
+verdict in 13, with no winner reversed and 3 moving between a win and a tie
+(<a href="data/c131-noise-check.md">noise check</a>).</li>
+<li><strong>Designed and run by Pixelbolt's makers.</strong> We set 12 of the 16 subjects (fire, smoke, water, lava,
+lightning, ice and so on), and a fresh agent that didn't know the tools' names wrote those requests; the other 4 come
+from pixelfx's own ground, two of them its own example requests. The judge's rubric (blocks 2 to 4) was written after
+block 1's verdicts; it tells the judge to ignore size, frame count, colours and layout.</li>
+<li><strong>Not measured:</strong> which tool an agent picks when not told; Opus as the maker; motion as a person sees it
+(the judge sees stills); importing the results into a game engine; Pixelbolt 0.20.0 (23 November).</li>
+</ul>
+
+<h3 id="agent-bench-method">How it ran, and the data</h3>
+<ul>
+<li><strong>Jobs:</strong> each job was one Claude Code session in its own folder, given one request, with the tool named
+in the prompt and set up as it ships: Pixelbolt as its MCP server (from the npm release) plus its skill; pixelfx as a
+checkout of its repository plus its skill. In block 1 no skill was loaded (Pixelbolt's MCP server alone, pixelfx's
+SKILL.md in the folder) and a third arm had no tool. Haiku and Sonnet, two runs each; no job was re-run, cut or
+dropped. Blocks 3 and 4 ran only Pixelbolt's jobs and judged them against block 2's pixelfx results,
+run for run.</li>
+<li><strong>Judge:</strong> a fresh Claude Opus 5.5 session for each order, shown each result as up to 12 frames on a
+dark and a light background (block 1: a sprite rubric on a light checkerboard), asked which result is the better game
+effect for the request, or a tie (<a href="data/c131-judge-prompt-E01.txt">the prompt for one task</a>). A pair goes
+to a tool only when both orders choose it; a split or any tie is a tie.</li>
+<li><strong>Rules fixed before each block:</strong> each block's plan, with its rules, was hashed before its first
+paid job. Blocks 2 to 4's plans were reviewed by a fresh agent before they ran (block 1's review came mid-run, and its
+findings shaped block 2); block 4's plan, with the wording allowed for each outcome, went through four fresh reviews,
+two of which sent it back.</li>
+<li><strong>Data:</strong> <a href="data/c131-tasks.json">the 16 requests</a> (block 1's 12:
+<a href="data/c131-tasks-block1.json">here</a>), <a href="data/c131-pairs.tsv">every judged pair</a> with both orders'
+choices and reasons, <a href="data/c131-jobs.tsv">every job</a> (delivery, frames, size, partly see-through share,
+turns, cost and seconds; block 1's rows give its format check, turns, cost and seconds), and the summary of each block
+(<a href="data/c131-summary-block1.md">1</a>, <a href="data/c131-summary-block2.md">2</a>,
+<a href="data/c131-summary-block3.md">3</a>, <a href="data/c131-summary-block4.md">4</a>). Repeating it needs Claude
+API credit and our job harness, which isn't published; the requests, the judge prompt and every result's measures are.</li>
 </ul>
 
 <h2>Each tool, and when to choose it over Pixelbolt</h2>
@@ -777,7 +920,9 @@ export sprite sheets with JSON, and 61 of them, with the 12 moves, carry the tim
 freeze on contact and the target's knock-back. Its smoke and glows are soft, with additive light that Pixelbolt does not
 have: 88–98% of the visible pixels in the six effects we ran were partly see-through, while all 37 of Pixelbolt
 0.17.0's fluid presets used only opaque pixels in our run (its see-through poison gas, an effect example, uses
-three fixed translucent colours).</p>
+three fixed translucent colours). In our <a href="#agent-bench">agent bench</a>, a blind judge preferred the effects
+Claude made with pixelfx over those made with Pixelbolt 0.15.0 and 0.17.0, and still preferred pixelfx's wall torch,
+lightning strike and electric arc to Pixelbolt 0.19.0's.</p>
 
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
 <p>When an AI agent should make, check and change the effect over MCP, seeing each result as an image: the agent writes
@@ -793,6 +938,10 @@ Desktop from the <a href="https://github.com/skulitom/Pixelbolt/releases/latest"
 
 <h2>Pixelbolt's limits</h2>
 <ul>
+<li><strong>Small and short where no preset fits.</strong> In our
+<a href="#agent-bench">agent bench</a>, on the six tasks with no finished preset, agents using Pixelbolt 0.19.0
+built effects with a median longest side of 48 px and 11.5 frames; the results made with pixelfx had medians of
+112 px and 25 frames over all sixteen tasks.</li>
 <li><strong>No hand-editing tool for new effects.</strong> A new effect is a JSON source that you or an agent write.
 The studio's Fluid lab and Effects lab (in its docs; not used for this page) run a preset in your browser with a few
 sliders and download the result, and its Powder lab lets you paint falling-sand materials live, but there is no
@@ -1049,7 +1198,7 @@ files linked in <a href="#measured">What we measured</a>.</li>
 </ul>
 
 <footer class="muted">
-<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. Codixel added 15 November 2026, when we also re-checked the Steam prices and latest versions (not the itch.io pages) and re-measured Pixelbolt's rows on its 0.17.0 release. pixelfx added 17 November 2026, read and run at commit <code>5294518</code>. A plain static page: no JavaScript, trackers or cookies.
+<p>Last checked 19 October 2026; Pixel VFX Forge added 27 October 2026. Codixel added 15 November 2026, when we also re-checked the Steam prices and latest versions (not the itch.io pages) and re-measured Pixelbolt's rows on its 0.17.0 release. pixelfx added 17 November 2026, read and run at commit <code>5294518</code>. Agent bench against pixelfx added 24 November 2026. A plain static page: no JavaScript, trackers or cookies.
 <a href="https://skulitom.github.io/Pixelbolt/">Pixelbolt</a> ·
 <a href="https://skulitom.github.io/Pixelbolt/compare/">All comparisons</a> ·
 <a href="https://github.com/skulitom/Pixelbolt">GitHub</a> ·
