@@ -129,6 +129,34 @@ test('gif <scene> and pixel_scene gif write the whole scene as one looping GIF',
   assert.equal((await readFile(viewed.info.gif.file)).subarray(0, 6).toString('latin1'), 'GIF89a');
 });
 
+test('gif - reads a scene from stdin and writes the same GIF as its file', async t => {
+  const dir = await folder(t), run = cli(dir);
+  await writeFile(path.join(dir, 'lamp.json'), JSON.stringify(sprite));
+  const scene = { format: 'pixelforge-scene', version: 1, name: 'porch', width: 16, height: 12, duration: 200, background: '#101020', assets: { lamp: 'lamp.json' }, instances: [{ name: 'lamp', asset: 'lamp', at: [4, 2], animation: 'glow' }] };
+  const input = JSON.stringify(scene);
+  await writeFile(path.join(dir, 'porch.scene.json'), input);
+  const made = run('gif', 'porch.scene.json', '--out', 'file.gif', '--scale', '3');
+  assert.equal(made.status, 0, made.said);
+  const piped = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'gif', '-', '--out', 'stdin.gif', '--scale', '3'], { input, encoding: 'utf8', cwd: dir });
+  assert.equal(piped.status, 0, piped.stdout + piped.stderr);
+  assert.deepEqual({ ...JSON.parse(piped.stdout), file: made.info.file }, made.info);
+  assert.deepEqual(await readFile(path.join(dir, 'stdin.gif')), await readFile(path.join(dir, 'file.gif')));
+});
+
+test('gif - reads a recipe from stdin and writes the same GIF as its file', async t => {
+  const dir = await folder(t), run = cli(dir), input = JSON.stringify(sprite);
+  await writeFile(path.join(dir, 'lamp.json'), input);
+  const made = run('gif', 'lamp.json', '--out', 'file.gif', '--animation', 'glow', '--scale', '2');
+  assert.equal(made.status, 0, made.said);
+  const piped = spawnSync(process.execPath, [path.join(root, 'bin/pixelbolt.js'), 'gif', '-', '--out', 'stdin.gif', '--animation', 'glow', '--scale', '2'], { input, encoding: 'utf8', cwd: dir });
+  assert.equal(piped.status, 0, piped.stdout + piped.stderr);
+  assert.deepEqual({ ...JSON.parse(piped.stdout), file: made.info.file }, made.info);
+  const bytes = await readFile(path.join(dir, 'stdin.gif'));
+  assert.deepEqual(bytes, await readFile(path.join(dir, 'file.gif')));
+  const gif = decodeGIF(bytes);
+  assert.deepEqual([gif.width, gif.height, gif.frames.length], [16, 16, 2]);
+});
+
 test('gif <scene> takes --background and --sheet as a recipe\'s GIF does: blended frames, and a sheet of them as the GIF holds them', async t => {
   const dir = await folder(t), run = cli(dir);
   // A see-through scene: a lamp with a half-transparent glow over nothing, as a rain overlay is.

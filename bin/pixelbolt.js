@@ -462,9 +462,12 @@ function recipeOnly(command, document, file, own = []) {
   if (format === 'pixelforge-scene') throw new PixelError('project.format', `this is a scene, not a recipe: use pixelbolt scene on it (--out <folder>, or --image <view.png> for one view) or pixelbolt gif (--out <new.gif>)`);
   if (format && Object.hasOwn(COMPILERS, format)) throw new PixelError('project.format', `this is a ${format} source: compile it first (pixelbolt compile ${file} --out <new.json>), then ${command} the recipe it writes`);
 }
-// Whether a file holds a scene, which `gif` writes whole where it writes one animation of a recipe.
+// Whether a file or stdin holds a scene, which `gif` writes whole where it writes one animation of a recipe.
+// Keep stdin's resolved input for either branch: it can only be read once.
+let gifInput;
 async function holdsScene(file) {
-  if (!file || file === '-') return false;
+  if (!file) return false;
+  if (file === '-') return (gifInput = await readResolved(file)).document?.format === 'pixelforge-scene';
   try { return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, '')).format === 'pixelforge-scene'; } catch { return false; }
 }
 async function presetsText(name, full, find, out, force) {
@@ -811,7 +814,7 @@ try {
       if (options.scale !== undefined && !/^\d{1,2}$/.test(options.scale)) throw new Error('--scale expects a whole number from 1 to 16');
       if (options.sheet !== undefined && !/\.png$/i.test(options.sheet)) throw new Error('--sheet must name a new .png file');
       const { sceneGIF } = await import('../src/scene-export.js');
-      const input = await readResolved(positional[0]), { data, sheet: view, ...gif } = sceneGIF(prepareScene(input.document), { ...(options.fps !== undefined && { fps: options.fps }), ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.background !== undefined && { background: options.background }), sheet: options.sheet !== undefined });
+      const input = gifInput ?? await readResolved(positional[0]), { data, sheet: view, ...gif } = sceneGIF(prepareScene(input.document), { ...(options.fps !== undefined && { fps: options.fps }), ...(options.scale !== undefined && { scale: Number(options.scale) }), ...(options.background !== undefined && { background: options.background }), sheet: options.sheet !== undefined });
       // --sheet: the frames as the GIF holds them, as a recipe's gif --sheet draws them; a long scene's evenly sampled.
       const written = await writeOutputs({ file: [options.out, data, '--out'], ...(view && { sheet: [options.sheet, encodePNG(view.sheet.data, view.sheet.width, view.sheet.height), '--sheet'] }) }, options.force, inputsOf(input));
       print({ ok: true, name: input.document.name, width: gif.width, height: gif.height, frames: gif.frames, fps: gif.fps.label, duration: gif.duration, colors: gif.colors, bytes: data.length, ...written, ...sheetShows('sheetShows', view), ...(gif.notes.length && { notes: gif.notes }), ...referenced(input) });
@@ -822,7 +825,7 @@ try {
       // --preset: a shipped preset straight to its GIF, compiled as compile --preset compiles it. Every animation is
       // compiled, as main does, so --size places the window by all of them and the reply lists them; only when that is
       // refused (an fx source's frame total or operations, counted over every effect) is --animation compiled alone.
-      const input = await readResolved(positional[0]), warnings = [];
+      const input = gifInput ?? await readResolved(positional[0]), warnings = [];
       let compiled = null;
       if (options.preset !== undefined || input.document?.format === 'pixelforge-stack') {
         const settings = { frames: options.frames === undefined ? undefined : frameCount(options.frames) };
