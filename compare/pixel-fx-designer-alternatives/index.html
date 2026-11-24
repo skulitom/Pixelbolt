@@ -150,7 +150,8 @@ Patch; free, MIT; created on 30 October 2026, version 0.3.1, no releases). Its s
 frames of the six effects we ran (what its sprite sheets are made from), 88–98% of the visible pixels were partly
 see-through, much of it its additive glow. It runs no fluid simulation and has no palette
 lock. Since 9 November its README and skill also offer to publish a browser game made with it on Patch, its maker's
-site where people play and remix browser games.</li>
+site where people play and remix browser games. In our <a href="#agent-bench">agent bench</a>, a blind judge preferred
+the effects Claude made with it to those made with Pixelbolt 0.15.0 and 0.17.0.</li>
 <li><strong>You want an AI agent (Claude Code, Codex, Cursor, Claude Desktop) to make and revise the effect over MCP (or a
 command line), seeing each result as an image, with the same files on every run and no colour outside your
 palette:</strong> Pixelbolt (free, MIT). You or the agent describe the effect in JSON; apart from its Powder lab,
@@ -638,7 +639,7 @@ on Pixelbolt 0.19.0, gives the reading we fixed before it ran, word for word:</p
 noise, on the 10 effects Pixelbolt added presets for after this comparison (N3m -27 -&gt; N4m 24); on the other 6
 tasks, which had no gap to close, it fell by 2, within the judge's own noise for 24 pairs (s 2.121); pixelfx (0.3.1,
 results of 12 November 2026) got no such tuning</strong> (N3m and N4m are the pair nets, + for Pixelbolt, on those 10
-tasks in blocks 3 and 4; s is how far the judge alone moves a net over 24 pairs). This is not a claim that Pixelbolt makes better effects than pixelfx: the
+tasks in blocks 3 and 4; s is the typical amount, one standard deviation, by which judging the same results again moves a net over 24 pairs). This is not a claim that Pixelbolt makes better effects than pixelfx: the
 ten presets were made after these tasks' results were known and are named after them, and on the six tasks without one,
 agents still built Pixelbolt effects at the size and length they built before.</p>
 
@@ -652,7 +653,7 @@ agents still built Pixelbolt effects at the size and length they built before.</
 <tr><td>1, 10 Nov</td><td>0.15.0, its MCP server</td><td>0.3.1 (<code>044e12a</code>): a checkout with its SKILL.md in the job's folder, not loaded as a skill</td><td>12, in a fixed format (size, frames, colours, a one-row sheet and a GIF), which Pixelbolt exports directly and pixelfx doesn't</td><td>7 / 13 / 4 and 5 / 14 / 5</td><td>Not met (sign test p&nbsp;=&nbsp;0.26 and 0.064). Results that met the requested format, of 24: with no tool 19 and 22, Pixelbolt 13 and 11, pixelfx 11 and 9.</td></tr>
 <tr><td>2, 12 Nov</td><td>0.15.0, its MCP server and its skill</td><td>0.3.1 (<code>044e12a</code>), a checkout and its skill</td><td>16, no format imposed (each tool's own size and length; a transparent sheet and its JSON)</td><td>7 / 21 / 4 and 8 / 20 / 4</td><td><strong>Met for pixelfx:</strong> of 32 task-and-model cells over both runs, 21 to pixelfx, 5 to Pixelbolt, 6 even (p&nbsp;=&nbsp;0.0025). Both delivered 64 of 64.</td></tr>
 <tr><td>3, 15 Nov</td><td>0.17.0, its MCP server and its skill (adds a "look at it and refine" step)</td><td>block 2's 64 results, judged again</td><td>the same 16</td><td>8 / 15 / 9 and 10 / 20 / 2</td><td>Met for neither: cells 18 to pixelfx, 8 to Pixelbolt, 6 even (p&nbsp;=&nbsp;0.0755).</td></tr>
-<tr><td>4, 23 Nov</td><td>0.19.0, its MCP server and its skill (0.18.0 added the ten presets)</td><td>block 2's 64 results, judged again</td><td>the same 16</td><td>21 / 4 / 7 and 21 / 6 / 5</td><td>Delivery: passed (64 of 64 each). The look moved to pixelfx's size and softness: <strong>failed</strong>. Half the gap, pooled over 64 pairs: bar met (pair net &minus;17 &rarr; +32), and the plan lets that be read only as the split sentence above: half the gap on the 10 tuned tasks, while the other 6 fell by 2.</td></tr>
+<tr><td>4, 23 Nov</td><td>0.19.0, its MCP server and its skill (0.18.0 added the ten presets)</td><td>block 2's 64 results, judged again</td><td>the same 16</td><td>21 / 4 / 7 and 21 / 6 / 5</td><td>Delivery: passed (64 of 64 each). The look moved to pixelfx's size and softness: <strong>failed</strong>. Half the gap, pooled over 64 pairs: bar met (pair net &minus;17 &rarr; +32); the plan lets that be read only as the boxed sentence above.</td></tr>
 </tbody>
 </table>
 </div>
@@ -698,99 +699,99 @@ verdicts are for these Sonnet pairs; each task has four pairs a block (<a href="
 which</a>).</p>
 <details><summary>E01 Wall torch, loop (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 pixelfx.</summary>
 <div class="panels">
-<figure><img src="data/c131-E01-b3a-pixelbolt.png" width="428" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this wall torch, up to 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 16 frames of 16&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E01-b4a-pixelbolt.png" width="428" height="450" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this wall torch, up to 12 of its 8 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 8 frames of 16&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E01-b2a-pixelfx.png" width="620" height="790" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this wall torch, up to 12 of its 60 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 60 frames of 72&times;120 px</figcaption></figure>
+<figure><img src="data/c131-E01-b3a-pixelbolt.png" width="428" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this wall torch, 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 16 frames of 16&times;32 px, shown &times;6</figcaption></figure>
+<figure><img src="data/c131-E01-b4a-pixelbolt.png" width="428" height="450" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this wall torch, all of its 8 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 8 frames of 16&times;32 px, shown &times;6</figcaption></figure>
+<figure><img src="data/c131-E01-b2a-pixelfx.png" width="620" height="790" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this wall torch, 12 of its 60 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 60 frames of 72&times;120 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E02 Fireball blast (preset added in 0.18.0). Judge, Sonnet's first run: block 3 tie, block 4 tie.</summary>
 <div class="panels">
-<figure><img src="data/c131-E02-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this fireball blast, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 64&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E02-b4a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this fireball blast, up to 12 of its 20 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 20 frames of 96&times;96 px</figcaption></figure>
-<figure><img src="data/c131-E02-b2a-pixelfx.png" width="1068" height="838" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this fireball blast, up to 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 128&times;128 px</figcaption></figure>
+<figure><img src="data/c131-E02-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this fireball blast, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 64&times;64 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E02-b4a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this fireball blast, 12 of its 20 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 20 frames of 96&times;96 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E02-b2a-pixelfx.png" width="1068" height="838" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this fireball blast, 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 128&times;128 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E03 Chimney smoke, loop (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 tie.</summary>
 <div class="panels">
-<figure><img src="data/c131-E03-b3a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this chimney smoke, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 32&times;48 px</figcaption></figure>
-<figure><img src="data/c131-E03-b4a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this chimney smoke, up to 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 64&times;96 px</figcaption></figure>
-<figure><img src="data/c131-E03-b2a-pixelfx.png" width="428" height="550" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this chimney smoke, up to 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 48&times;80 px</figcaption></figure>
+<figure><img src="data/c131-E03-b3a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this chimney smoke, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 32&times;48 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E03-b4a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this chimney smoke, 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 64&times;96 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E03-b2a-pixelfx.png" width="428" height="550" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this chimney smoke, 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 48&times;80 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E04 Cannon smoke (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E04-b3a-pixelbolt.png" width="812" height="502" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this cannon smoke, up to 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 16 frames of 64&times;48 px</figcaption></figure>
-<figure><img src="data/c131-E04-b4a-pixelbolt.png" width="812" height="454" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this cannon smoke, up to 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 96&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E04-b2a-pixelfx.png" width="684" height="430" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this cannon smoke, up to 12 of its 27 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 27 frames of 160&times;120 px</figcaption></figure>
+<figure><img src="data/c131-E04-b3a-pixelbolt.png" width="812" height="502" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this cannon smoke, 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 16 frames of 64&times;48 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E04-b4a-pixelbolt.png" width="812" height="454" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this cannon smoke, 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 96&times;64 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E04-b2a-pixelfx.png" width="684" height="430" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this cannon smoke, 12 of its 27 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 27 frames of 160&times;120 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E05 Waterfall, loop (preset added in 0.18.0). Judge, Sonnet's first run: block 3 tie, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E05-b3a-pixelbolt.png" width="620" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this waterfall, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 48&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E05-b4a-pixelbolt.png" width="812" height="742" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this waterfall, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 96&times;112 px</figcaption></figure>
-<figure><img src="data/c131-E05-b2a-pixelfx.png" width="620" height="478" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this waterfall, up to 12 of its 60 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 60 frames of 144&times;136 px</figcaption></figure>
+<figure><img src="data/c131-E05-b3a-pixelbolt.png" width="620" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this waterfall, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 48&times;64 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E05-b4a-pixelbolt.png" width="812" height="742" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this waterfall, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 96&times;112 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E05-b2a-pixelfx.png" width="620" height="478" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this waterfall, 12 of its 60 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 60 frames of 144&times;136 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E06 Stone splash (no preset made for it). Judge, Sonnet's first run: block 3 Pixelbolt, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E06-b3a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this stone splash, up to 12 of its 10 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 10 frames of 48&times;40 px</figcaption></figure>
-<figure><img src="data/c131-E06-b4a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this stone splash, up to 12 of its 20 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 20 frames of 48&times;40 px</figcaption></figure>
-<figure><img src="data/c131-E06-b2a-pixelfx.png" width="748" height="370" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this stone splash, up to 12 of its 76 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 76 frames of 176&times;100 px</figcaption></figure>
+<figure><img src="data/c131-E06-b3a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this stone splash, all of its 10 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 10 frames of 48&times;40 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E06-b4a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this stone splash, 12 of its 20 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 20 frames of 48&times;40 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E06-b2a-pixelfx.png" width="748" height="370" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this stone splash, 12 of its 76 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 76 frames of 176&times;100 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E07 Lava bubble (no preset made for it). Judge, Sonnet's first run: block 3 pixelfx, block 4 tie.</summary>
 <div class="panels">
-<figure><img src="data/c131-E07-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lava bubble, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 32&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E07-b4a-pixelbolt.png" width="812" height="598" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lava bubble, up to 12 of its 11 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 11 frames of 48&times;44 px</figcaption></figure>
-<figure><img src="data/c131-E07-b2a-pixelfx.png" width="812" height="526" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lava bubble, up to 12 of its 31 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 31 frames of 96&times;76 px</figcaption></figure>
+<figure><img src="data/c131-E07-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lava bubble, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 32&times;32 px, shown &times;6</figcaption></figure>
+<figure><img src="data/c131-E07-b4a-pixelbolt.png" width="812" height="598" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lava bubble, all of its 11 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 11 frames of 48&times;44 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E07-b2a-pixelfx.png" width="812" height="526" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lava bubble, 12 of its 31 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 31 frames of 96&times;76 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E08 Lava pool, loop (no preset made for it). Judge, Sonnet's first run: block 3 Pixelbolt, block 4 pixelfx.</summary>
 <div class="panels">
-<figure><img src="data/c131-E08-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lava pool, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 48&times;48 px</figcaption></figure>
-<figure><img src="data/c131-E08-b4a-pixelbolt.png" width="716" height="574" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lava pool, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 56&times;56 px</figcaption></figure>
-<figure><img src="data/c131-E08-b2a-pixelfx.png" width="812" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lava pool, up to 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 96&times;96 px</figcaption></figure>
+<figure><img src="data/c131-E08-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lava pool, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 24 frames of 48&times;48 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E08-b4a-pixelbolt.png" width="716" height="574" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lava pool, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 56&times;56 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E08-b2a-pixelfx.png" width="812" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lava pool, 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 96&times;96 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E09 Lightning strike (no preset made for it). Judge, Sonnet's first run: block 3 pixelfx, block 4 pixelfx.</summary>
 <div class="panels">
-<figure><img src="data/c131-E09-b3a-pixelbolt.png" width="812" height="694" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lightning strike, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 96&times;104 px</figcaption></figure>
-<figure><img src="data/c131-E09-b4a-pixelbolt.png" width="812" height="694" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lightning strike, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 96&times;104 px</figcaption></figure>
-<figure><img src="data/c131-E09-b2a-pixelfx.png" width="684" height="670" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lightning strike, up to 12 of its 16 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 16 frames of 160&times;200 px</figcaption></figure>
+<figure><img src="data/c131-E09-b3a-pixelbolt.png" width="812" height="694" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this lightning strike, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 96&times;104 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E09-b4a-pixelbolt.png" width="812" height="694" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this lightning strike, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 96&times;104 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E09-b2a-pixelfx.png" width="684" height="670" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this lightning strike, 12 of its 16 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 16 frames of 160&times;200 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E10 Electric arc, loop (preset added in 0.18.0). Judge, Sonnet's first run: block 3 tie, block 4 pixelfx.</summary>
 <div class="panels">
-<figure><img src="data/c131-E10-b3a-pixelbolt.png" width="812" height="322" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this electric arc, up to 12 of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 48&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E10-b4a-pixelbolt.png" width="812" height="502" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this electric arc, up to 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 96&times;72 px</figcaption></figure>
-<figure><img src="data/c131-E10-b2a-pixelfx.png" width="812" height="454" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this electric arc, up to 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 96&times;64 px</figcaption></figure>
+<figure><img src="data/c131-E10-b3a-pixelbolt.png" width="812" height="322" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this electric arc, all of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 48&times;32 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E10-b4a-pixelbolt.png" width="812" height="502" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this electric arc, 12 of its 24 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 24 frames of 96&times;72 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E10-b2a-pixelfx.png" width="812" height="454" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this electric arc, 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 96&times;64 px, shown &times;2</figcaption></figure>
 </div></details>
 <details><summary>E11 Ice shard burst (no preset made for it). Judge, Sonnet's first run: block 3 Pixelbolt, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E11-b3a-pixelbolt.png" width="716" height="574" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this ice shard burst, up to 12 of its 14 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 14 frames of 56&times;56 px</figcaption></figure>
-<figure><img src="data/c131-E11-b4a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this ice shard burst, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 48&times;48 px</figcaption></figure>
-<figure><img src="data/c131-E11-b2a-pixelfx.png" width="684" height="550" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this ice shard burst, up to 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 160&times;160 px</figcaption></figure>
+<figure><img src="data/c131-E11-b3a-pixelbolt.png" width="716" height="574" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this ice shard burst, 12 of its 14 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 14 frames of 56&times;56 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E11-b4a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this ice shard burst, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 48&times;48 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E11-b2a-pixelfx.png" width="684" height="550" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this ice shard burst, 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 160&times;160 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E12 Ice crystal, loop (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E12-b3a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this ice crystal, up to 12 of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 32&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E12-b4a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this ice crystal, up to 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 96&times;80 px</figcaption></figure>
-<figure><img src="data/c131-E12-b2a-pixelfx.png" width="812" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this ice crystal, up to 12 of its 48 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 48 frames of 64&times;64 px</figcaption></figure>
+<figure><img src="data/c131-E12-b3a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this ice crystal, all of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 32&times;32 px, shown &times;6</figcaption></figure>
+<figure><img src="data/c131-E12-b4a-pixelbolt.png" width="812" height="550" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this ice crystal, 12 of its 16 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 16 frames of 96&times;80 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E12-b2a-pixelfx.png" width="812" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this ice crystal, 12 of its 48 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 48 frames of 64&times;64 px, shown &times;3</figcaption></figure>
 </div></details>
 <details><summary>E13 Frost nova (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E13-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this frost nova, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 64&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E13-b4a-pixelbolt.png" width="620" height="358" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this frost nova, up to 12 of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 144&times;96 px</figcaption></figure>
-<figure><img src="data/c131-E13-b2a-pixelfx.png" width="1196" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this frost nova, up to 12 of its 52 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 52 frames of 288&times;192 px</figcaption></figure>
+<figure><img src="data/c131-E13-b3a-pixelbolt.png" width="812" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this frost nova, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 12 frames of 64&times;64 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E13-b4a-pixelbolt.png" width="620" height="358" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this frost nova, all of its 12 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 12 frames of 144&times;96 px, shown &times;1</figcaption></figure>
+<figure><img src="data/c131-E13-b2a-pixelfx.png" width="1196" height="646" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this frost nova, 12 of its 52 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 52 frames of 288&times;192 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E14 Coin pickup sparkle (preset added in 0.18.0). Judge, Sonnet's first run: block 3 pixelfx, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E14-b3a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this coin pickup sparkle, up to 12 of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 32&times;32 px</figcaption></figure>
-<figure><img src="data/c131-E14-b4a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this coin pickup sparkle, up to 12 of its 7 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 7 frames of 64&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E14-b2a-pixelfx.png" width="940" height="718" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this coin pickup sparkle, up to 12 of its 34 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 34 frames of 112&times;108 px</figcaption></figure>
+<figure><img src="data/c131-E14-b3a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this coin pickup sparkle, all of its 8 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 8 frames of 32&times;32 px, shown &times;6</figcaption></figure>
+<figure><img src="data/c131-E14-b4a-pixelbolt.png" width="812" height="450" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this coin pickup sparkle, all of its 7 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 7 frames of 64&times;64 px, shown &times;3</figcaption></figure>
+<figure><img src="data/c131-E14-b2a-pixelfx.png" width="940" height="718" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this coin pickup sparkle, 12 of its 34 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 34 frames of 112&times;108 px, shown &times;2</figcaption></figure>
 </div></details>
-<details><summary>E15 Sword slash impact (no preset made for it). Judge, Sonnet's first run: block 3 Pixelbolt, block 4 Pixelbolt. The two Pixelbolt sheets share several frames.</summary>
+<details><summary>E15 Sword slash impact (no preset made for it). Judge, Sonnet's first run: block 3 Pixelbolt, block 4 Pixelbolt. The two Pixelbolt sheets are almost the same: 6 of their 9 frames are identical.</summary>
 <div class="panels">
-<figure><img src="data/c131-E15-b3a-pixelbolt.png" width="684" height="454" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this sword slash impact, up to 12 of its 9 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 9 frames of 80&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E15-b4a-pixelbolt.png" width="684" height="454" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this sword slash impact, up to 12 of its 9 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 9 frames of 80&times;64 px</figcaption></figure>
-<figure><img src="data/c131-E15-b2a-pixelfx.png" width="588" height="382" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this sword slash impact, up to 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 136&times;104 px</figcaption></figure>
+<figure><img src="data/c131-E15-b3a-pixelbolt.png" width="684" height="454" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this sword slash impact, all of its 9 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 9 frames of 80&times;64 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E15-b4a-pixelbolt.png" width="684" height="454" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this sword slash impact, all of its 9 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 9 frames of 80&times;64 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E15-b2a-pixelfx.png" width="588" height="382" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this sword slash impact, 12 of its 24 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 24 frames of 136&times;104 px, shown &times;1</figcaption></figure>
 </div></details>
 <details><summary>E16 Teleport-in (preset added in 0.18.0). Judge, Sonnet's first run: block 3 tie, block 4 Pixelbolt.</summary>
 <div class="panels">
-<figure><img src="data/c131-E16-b3a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this teleport-in, up to 12 of its 10 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 10 frames of 32&times;48 px</figcaption></figure>
-<figure><img src="data/c131-E16-b4a-pixelbolt.png" width="812" height="838" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this teleport-in, up to 12 of its 23 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 23 frames of 96&times;128 px</figcaption></figure>
-<figure><img src="data/c131-E16-b2a-pixelfx.png" width="812" height="742" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this teleport-in, up to 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 96&times;112 px</figcaption></figure>
+<figure><img src="data/c131-E16-b3a-pixelbolt.png" width="556" height="646" loading="lazy" alt="Pixelbolt 0.17.0, block 3: the judge's panel of this teleport-in, all of its 10 frames on a dark background"><figcaption>Pixelbolt 0.17.0, block 3: 10 frames of 32&times;48 px, shown &times;4</figcaption></figure>
+<figure><img src="data/c131-E16-b4a-pixelbolt.png" width="812" height="838" loading="lazy" alt="Pixelbolt 0.19.0, block 4: the judge's panel of this teleport-in, 12 of its 23 frames on a dark background"><figcaption>Pixelbolt 0.19.0, block 4: 23 frames of 96&times;128 px, shown &times;2</figcaption></figure>
+<figure><img src="data/c131-E16-b2a-pixelfx.png" width="812" height="742" loading="lazy" alt="pixelfx 0.3.1, block 2: the judge's panel of this teleport-in, 12 of its 25 frames on a dark background"><figcaption>pixelfx 0.3.1, block 2: 25 frames of 96&times;112 px, shown &times;2</figcaption></figure>
 </div></details>
 
 <h3 id="agent-bench-limits">What this bench can't say</h3>
@@ -831,8 +832,8 @@ dark and a light background (block 1: a sprite rubric on a light checkerboard), 
 effect for the request, or a tie (<a href="data/c131-judge-prompt-E01.txt">the prompt for one task</a>). A pair goes
 to a tool only when both orders choose it; a split or any tie is a tie.</li>
 <li><strong>Rules fixed before each block:</strong> each block's plan, with its rules, was hashed before its first
-job whose result counts (pilots and one budget probe ran before it and count for nothing). Blocks 2 to 4's plans were reviewed by a fresh agent before they ran (block 1's review came mid-run, and its
-findings shaped block 2); block 4's plan, with the wording allowed for each outcome, went through four fresh reviews,
+job whose result counts; pilots and one budget probe, which count for nothing, ran earlier. Blocks 2 to 4's plans were reviewed by a fresh agent before they ran (block 1's review came mid-run, and its
+findings narrowed block 1's rules before any result was scored and shaped block 2); block 4's plan, with the wording allowed for each outcome, went through four fresh reviews,
 two of which sent it back.</li>
 <li><strong>Data:</strong> <a href="data/c131-tasks.json">the 16 requests</a> (block 1's 12:
 <a href="data/c131-tasks-block1.json">here</a>), <a href="data/c131-pairs.tsv">every judged pair</a> with both orders'
@@ -1008,7 +1009,7 @@ have: 88–98% of the visible pixels in the six effects we ran were partly see-t
 0.17.0's fluid presets used only opaque pixels in our run (its see-through poison gas, an effect example, uses
 three fixed translucent colours). In our <a href="#agent-bench">agent bench</a>, a blind judge preferred the effects
 Claude made with pixelfx over those made with Pixelbolt 0.15.0 and 0.17.0, and still preferred pixelfx's wall torch,
-lightning strike and electric arc to Pixelbolt 0.19.0's.</p>
+lightning strike and electric arc to Pixelbolt 0.19.0's (the torch by 3 pairs of 4, the other two by 2 pairs to 1).</p>
 
 <h3 id="pixelbolt">When to choose Pixelbolt</h3>
 <p>When an AI agent should make, check and change the effect over MCP, seeing each result as an image: the agent writes
