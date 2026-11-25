@@ -18,6 +18,8 @@ For Codex, Cursor and the other agents the open [skills CLI](https://skills.sh) 
 
 [Try it in your browser](https://skulitom.github.io/Pixelbolt/playground/): render, export and share recipes with nothing installed.
 
+[Pixel art explosion generator](https://skulitom.github.io/Pixelbolt/playground/explosion-generator/): pick one of three explosions, tweak its recipe, and download a PNG sprite sheet, a GIF, or a sheet with an atlas JSON.
+
 [Poke the pixels](https://skulitom.github.io/Pixelbolt/playground/fluids/): blow on a live pixel-art campfire, pour honey and slime, then save a GIF or share a link that replays exactly what you did.
 
 [Effect guides](https://skulitom.github.io/Pixelbolt/guides/): fire, explosions, smoke and steam, water, slime and honey, and magic, each with recipes that open in the playground. Using Unreal Engine? [Import the sheets into Paper2D, with flipbooks](https://skulitom.github.io/Pixelbolt/guides/unreal-paper2d-sprite-sheets/) (tested in 5.8.4). Need ground tiles? [Free autotile tile sets for Godot 4 and Tiled](https://skulitom.github.io/Pixelbolt/guides/tileset-generator-godot-tiled/), drawn from a terrain description (tested in Godot 4.7.2 and Tiled 1.12.2). Just want files? [Six free pixel art waterfall sprite sheets](https://skulitom.github.io/Pixelbolt/guides/pixel-art-waterfall-animation/): one simulated waterfall in stone, lava, slime and moonlit, with Godot 4 files.
