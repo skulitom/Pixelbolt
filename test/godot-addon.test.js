@@ -4,7 +4,7 @@
 // against mutations. scripts/verify-godot-addon.mjs runs the addon itself in a real headless Godot.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, writeFile, mkdir, mkdtemp, rm, readdir, cp } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm, readdir, cp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { runInNewContext } from 'node:vm';
@@ -26,7 +26,7 @@ async function walk(folder) {
 }
 
 // A checkout with only what the builder reads, so its rules can be tried on changed copies.
-async function fixture(change = async () => {}) {
+async function fixture(change) {
   const base = await mkdtemp(path.join(os.tmpdir(), 'pixelbolt-godot-zip-'));
   await cp(path.join(root, ADDON), path.join(base, ADDON), { recursive: true });
   await writeFile(path.join(base, 'package.json'), await readFile(path.join(root, 'package.json')));

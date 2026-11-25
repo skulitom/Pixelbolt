@@ -136,7 +136,7 @@ function projectText(settings = {}, toggle = false) {
     Object.entries(values).map(([key, value]) => key + '=' + (typeof value === 'string' ? quote(value) : JSON.stringify(value))).join('\n') + '\n';
 }
 
-async function seedImport(dir, source, { tiles = false, inherit = false } = {}) {
+async function seedImport(dir, source, { tiles = false, inherit = false }) {
   await put(dir, source + '.import', '[remap]\nimporter="pixelbolt.' + (tiles ? 'tile_set' : 'sprite_frames') +
     '"\ntype="' + (tiles ? 'TileSet' : 'SpriteFrames') + '"\n[params]\ntexture_filter=' + (inherit ? '1' : '0') + '\n');
 }
