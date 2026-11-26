@@ -2,9 +2,11 @@
 // import it: test/fluid-controls.test.js checks that every shipped preset's settings fit these sliders exactly and come
 // back unchanged, so a preset always shows and restores its own values.
 export const FLUID_PRESETS = [
-  { file: 'campfire', title: 'Campfire', note: 'Gas · loop' }, { file: 'explosion', title: 'Explosion', note: 'Gas · one-shot' },
+  { file: 'campfire', title: 'Campfire', note: 'A flame on a bed of logs with dark smoke rising (no stones or firelight); for a fire in a ring of stones with firelight on the ground, use campfire-stones · loop' },
+  { file: 'explosion', title: 'Explosion', note: 'Gas · one-shot' },
   { file: 'smoke-puff', title: 'Smoke puff', note: 'Gas · one-shot' }, { file: 'steam-vent', title: 'Steam vent', note: 'Gas · loop' },
-  { file: 'magic-swirl', title: 'Magic swirl', note: 'Gas · loop' }, { file: 'torch', title: 'Torch', note: 'Gas · loop' },
+  { file: 'magic-swirl', title: 'Magic swirl', note: 'Gas · loop' },
+  { file: 'torch', title: 'Torch', note: 'A small flame on a bare wooden torch with an iron cap (no bracket, smoke or light on a wall); for a torch mounted on a wall, use wall-torch · loop' },
   { file: 'wall-torch', title: 'Wall torch', note: 'Flame, see-through smoke, embers and light on the wall, in an iron bracket · loop' },
   { file: 'chimney-smoke', title: 'Chimney smoke', note: 'See-through smoke curling up from a brick chimney and thinning out · loop' },
   { file: 'fireball-explosion', title: 'Fireball explosion', note: 'A flash that swells into a ball of flame, throws sparks and burns out from its edge inward · one-shot' },

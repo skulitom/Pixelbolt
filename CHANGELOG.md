@@ -6,6 +6,7 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ### Fixes
 
+- A preset search for `torch` or `campfire` (`pixel_help` with `"topic": "presets"` and `find`, or `pixelbolt presets --find`) lists the small `torch` and `campfire` presets with lines that say what they lack and name `wall-torch` and `campfire-stones`. Their lines read only "Torch: gas." and "Campfire: gas.", and asked for a wall torch, three of four agent jobs compiled the 16 x 32 `torch`. Studio's Fluid lab shows the same notes.
 - `pixelbolt gif - --out <new.gif>` takes a scene on stdin and writes the whole scene, as `gif <scene.json>` does. It read stdin as a recipe and stopped with `project.format: unknown field`.
 
 ### Poke the pixels: a live fluid toy

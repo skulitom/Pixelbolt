@@ -313,6 +313,23 @@ test('finding presets by words lists the names that hold the most of them, else 
   assert.throws(() => findListing(listing, '--'), /find: expected words/);
 });
 
+// A one-word search lists a bare preset beside the finished one whose name holds it. Asked for a wall torch, three of
+// four agent jobs compiled `torch` from "Torch: gas." (PIXELBOLT-BUGS P-224), so the bare one says what it lacks and
+// names the one to use.
+test('a bare torch or campfire found by its name says what it lacks and names the finished preset', async () => {
+  const shipped = ['torch', 'wall-torch', 'campfire', 'campfire-stones'];
+  const listing = await listPresets({ only: entry => shipped.includes(entry.name), concurrency: 1 });
+  for (const [bare, finished] of [['torch', 'wall-torch'], ['campfire', 'campfire-stones']]) {
+    const found = findListing(listing, bare).presets;
+    assert.deepEqual(Object.keys(found), [bare, finished]);
+    assert.match(found[bare], new RegExp(`; for a .+, use ${finished}\\.$`));
+    assert.doesNotMatch(found[bare], /: gas\./);
+    // Both words of the finished one's name still find it alone.
+    assert.deepEqual(Object.keys(findListing(listing, finished.replace('-', ' ')).presets), [finished]);
+  }
+  assert.match(findListing(listing, 'torch').presets.torch, /no bracket, smoke or light on a wall/);
+});
+
 test('a search word that names a kind of preset has that kind\'s presets named beside the name matches', () => {
   const entry = (name, kind) => ({ name, kind, size: '8x8', frames: 4, plays: 'loop', colors: 3, for: `${name}.`, animations: { [name]: 4 } });
   const listing = { guide: 'g', presets: [entry('sand-gate', 'fluid'), entry('hut-fire', 'powder'), entry('lava-falls', 'powder'), entry('portal', 'wave'), entry('campfire', 'fluid')] };
