@@ -1,4 +1,6 @@
 import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { DITHER_PATTERNS, EASINGS } from '../src/craft.js';
 import { FLUID_KINDS, FLUID_FIELDS, FLUID_WALLS } from '../src/fluid.js';
 import { FX_EVENTS, SPRITE_PIXELS, EMITTER_DEPTHS, EDGE_SIDES } from '../src/fx.js';
@@ -161,8 +163,6 @@ const schema = {
     ] }
   }
 };
-await writeFile(new URL('../schema.json', import.meta.url), JSON.stringify(schema, null, 2) + '\n');
-
 // Sidecar formats evolve independently; compiled sprite recipes remain version 1.
 const structuralColor = {
   ramp: int(0, 63, 'Index of a source ramp; structural parts use one-character palette keys.'),
@@ -1074,4 +1074,11 @@ const normals = {
   description: 'Derives a lighting normal pass from a colour recipe and compiles it to an ordinary recipe aligned with it (same size, frame names and durations, animations and atlas layout), ready for a scene asset\'s normal and editable like any recipe. Each separate shape is rounded from its silhouette, lighter colours can be raised by detail, and every pixel takes the nearest of 17 directions: palette key 5 faces the viewer, the keypad digits 1–4 and 6–9 lean 30° the way they sit around 5, and q w e a d z x c lean 60° the same way.',
   ...object(normalsFields, ['format', 'version', 'recipe']), $defs: { ...schema.$defs, recipe: recipeSchema }
 };
-for (const [file, value] of [['stack.schema.json', stack], ['poses.schema.json', poses], ['scene.schema.json', scene], ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave], ['crystal.schema.json', crystal], ['powder.schema.json', powder], ['bodies.schema.json', bodies], ['normals.schema.json', normals]]) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');
+export const SCHEMAS = [
+  ['schema.json', schema], ['stack.schema.json', stack], ['poses.schema.json', poses], ['scene.schema.json', scene],
+  ['autotile.schema.json', autotile], ['fx.schema.json', fx], ['fluid.schema.json', fluid], ['wave.schema.json', wave],
+  ['crystal.schema.json', crystal], ['powder.schema.json', powder], ['bodies.schema.json', bodies], ['normals.schema.json', normals]
+];
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  for (const [file, value] of SCHEMAS) await writeFile(new URL(`../${file}`, import.meta.url), JSON.stringify(value, null, 2) + '\n');
+}

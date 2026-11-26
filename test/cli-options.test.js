@@ -156,8 +156,8 @@ test('every source that can link a shared palette compiles to a recipe that keep
   const dir = await temp(t, 'palette-link'), at = name => path.join(dir, name);
   const examples = { stack: 'copper-rally.stack.json', poses: 'slime-idle.poses.json', autotile: 'ground.autotile.json', fx: 'slash-hit.fx.json', fluid: 'smoke-puff.fluid.json', wave: 'portal.wave.json', crystal: 'pyrite.crystal.json', bodies: 'bouncing-pixel.bodies.json', powder: 'rain-on-fire.powder.json' };
   // The kinds src/resolve.js resolves a palette for: a kind added there has to be added here.
-  const sidecars = /const sidecars = \{([^}]+)\}/.exec(await readFile(path.join(root, 'src/resolve.js'), 'utf8'))[1];
-  assert.deepEqual([...sidecars.matchAll(/'pixelforge-[a-z]+': '([a-z]+)'/g)].map(match => match[1]).sort(), Object.keys(examples).sort());
+  const { SIDECARS } = await import('../src/resolve.js');
+  assert.deepEqual(Object.values(SIDECARS).sort(), Object.keys(examples).sort());
   for (const [kind, file] of Object.entries(examples)) {
     const source = JSON.parse(await readFile(path.join(root, 'examples', file), 'utf8'));
     if (kind === 'powder') {

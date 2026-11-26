@@ -3,7 +3,15 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { renderProject, PixelError } from '../src/core.js';
 import { prepareScene } from '../src/scene.js';
-import { compilePoses } from '../src/authoring.js';
+import { compilePoses, compileAutotile, compileNormals } from '../src/authoring.js';
+import { compileEffects } from '../src/fx.js';
+import { compileFluid } from '../src/fluid.js';
+import { compileWaves } from '../src/wave.js';
+import { compileCrystals } from '../src/crystal.js';
+import { compilePowder } from '../src/powder.js';
+import { compileBodies } from '../src/bodies.js';
+import { compileStack } from '../src/stack.js';
+import { SCHEMAS } from '../scripts/generate-schema.js';
 
 const read = async file => JSON.parse(await readFile(new URL(`../${file}`, import.meta.url), 'utf8'));
 // Runs `attempt` with one field present and reports whether the renderer rejected that field as unknown.
@@ -64,8 +72,15 @@ test('scene fields in the schema match what prepareScene accepts', async () => {
   assert.equal(unknown(() => prepareScene(scene({ instances: [{ asset: 't', at: [0, 0], notAField: 0 }] })), 'scene.instances[0].notAField'), true);
 });
 
+test('committed *.schema.json files match scripts/generate-schema.js byte for byte', async () => {
+  for (const [file, value] of SCHEMAS) {
+    const onDisk = await readFile(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.equal(onDisk, JSON.stringify(value, null, 2) + '\n', `${file} is out of date; run node scripts/generate-schema.js`);
+  }
+});
+
 test('every generated schema defines each definition it references, and carries none it does not', async () => {
-  for (const file of ['schema.json', 'poses.schema.json', 'scene.schema.json', 'autotile.schema.json', 'fx.schema.json', 'normals.schema.json']) {
+  for (const [file] of SCHEMAS) {
     const { $defs = {}, ...root } = await read(file), reached = new Set(), pending = [root];
     while (pending.length) for (const [, name] of JSON.stringify(pending.pop()).matchAll(/"\$ref":"#\/\$defs\/([^"]+)"/g)) {
       assert.ok(Object.hasOwn($defs, name), `${file} references #/$defs/${name}, which it does not define`);
@@ -73,4 +88,58 @@ test('every generated schema defines each definition it references, and carries 
     }
     assert.deepEqual(Object.keys($defs).filter(name => !reached.has(name)), [], `${file} carries definitions nothing references`);
   }
+});
+
+test('all source-format schemas match the top-level and key sub-object fields their compilers accept', async () => {
+  const tiny = { version: 1, name: 't', width: 2, height: 2, palette: { k: '#000' }, frames: [{ name: 'f', ops: [{ op: 'pixel', x: 0, y: 0, color: 'k' }] }] };
+  const probe = (compile, make, select, properties, where) => {
+    for (const key of [...Object.keys(properties), 'notAField']) {
+      const doc = make(), target = select(doc);
+      // Leave fields already populated on the base probe alone so validation reaches the field check cleanly.
+      if (!(key in target)) target[key] = 0;
+      assert.equal(unknown(() => compile(doc), `${where}.${key}`), key === 'notAField', `${where}.${key}`);
+    }
+  };
+  const autotile = await read('autotile.schema.json');
+  probe(compileAutotile, () => ({ format: 'pixelforge-autotile', version: 1, name: 'a', tile: 4, palette: { k: '#000' }, template: Array(12).fill('kkkkkkkkkkkk') }), d => d, autotile.properties, 'autotile');
+
+  const fx = await read('fx.schema.json');
+  const makeFx = () => ({ format: 'pixelforge-fx', version: 1, name: 'a', width: 8, height: 8, palette: { k: '#000' }, effects: { e: { frames: 2, emitters: [{ at: [4, 4], colors: ['k'] }] } } });
+  probe(compileEffects, makeFx, d => d, fx.properties, 'fx');
+  probe(compileEffects, makeFx, d => d.effects.e, fx.properties.effects.additionalProperties.properties, 'fx.effects.e');
+
+  const fluid = await read('fluid.schema.json');
+  const makeFluid = () => ({ format: 'pixelforge-fluid', version: 1, name: 'a', width: 8, height: 8, palette: { k: '#000' }, effects: { e: { frames: 2, emitters: [{ at: [4, 4] }], look: [{ colors: ['k'] }] } } });
+  probe(compileFluid, makeFluid, d => d, fluid.properties, 'fluid');
+  probe(compileFluid, makeFluid, d => d.effects.e, fluid.properties.effects.additionalProperties.properties, 'fluid.effects.e');
+  probe(compileFluid, makeFluid, d => d.effects.e.emitters[0], fluid.properties.effects.additionalProperties.properties.emitters.items.properties, 'fluid.effects.e.emitters[0]');
+
+  const wave = await read('wave.schema.json');
+  const makeWave = () => ({ format: 'pixelforge-wave', version: 1, name: 'a', width: 8, height: 8, palette: { k: '#000' }, effects: { e: { frames: 2, sources: [{ kind: 'radial', at: [4, 4] }], look: [{ colors: ['k'] }] } } });
+  probe(compileWaves, makeWave, d => d, wave.properties, 'wave');
+  probe(compileWaves, makeWave, d => d.effects.e, wave.properties.effects.additionalProperties.properties, 'wave.effects.e');
+
+  const crystal = await read('crystal.schema.json');
+  const makeCrystal = () => ({ format: 'pixelforge-crystal', version: 1, name: 'a', width: 8, height: 8, palette: { a: '#111', b: '#fff' }, looks: { a: { colors: ['a', 'b'] } }, effects: { e: { frames: 2, crystals: [{ habit: 'cube', at: [4, 4], size: 3, look: 'a' }] } } });
+  probe(compileCrystals, makeCrystal, d => d, crystal.properties, 'crystal');
+  probe(compileCrystals, makeCrystal, d => d.effects.e, crystal.properties.effects.additionalProperties.properties, 'crystal.effects.e');
+
+  const powder = await read('powder.schema.json');
+  const makePowder = () => ({ format: 'pixelforge-powder', version: 1, name: 'a', width: 8, height: 8, base: 'sandbox', clips: { c: { frames: 2 } } });
+  probe(compilePowder, makePowder, d => d, powder.properties, 'powder');
+  probe(compilePowder, makePowder, d => d.clips.c, powder.properties.clips.additionalProperties.properties, 'powder.clips.c');
+
+  const bodies = await read('bodies.schema.json');
+  const makeBodies = () => ({ format: 'pixelforge-bodies', version: 1, name: 'a', width: 8, height: 8, palette: { k: '#000' }, effects: { e: { frames: 2, bodies: [{ shape: 'circle', at: [4, 4], radius: 2, color: 'k' }] } } });
+  probe(compileBodies, makeBodies, d => d, bodies.properties, 'bodies');
+  probe(compileBodies, makeBodies, d => d.effects.e, bodies.properties.effects.additionalProperties.properties, 'bodies.effects.e');
+
+  const stack = await read('stack.schema.json');
+  probe(compileStack, () => ({ format: 'pixelforge-stack', version: 1, name: 'a', palette: { k: '#000' }, slices: [Array(4).fill('kkkk')] }), d => d, stack.properties, 'stack');
+
+  const normals = await read('normals.schema.json');
+  const makeNormals = () => ({ format: 'pixelforge-normals', version: 1, recipe: tiny, detail: { amount: 0.5 } });
+  probe(compileNormals, makeNormals, d => d, normals.properties, 'normals');
+  const detailObject = normals.properties.detail.oneOf.find(branch => branch.type === 'object');
+  probe(compileNormals, makeNormals, d => d.detail, detailObject.properties, 'normals.detail');
 });

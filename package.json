@@ -15,6 +15,7 @@
   "scripts": {
     "test": "node --test",
     "test:related": "node scripts/related-tests.mjs",
+    "lint:undef": "npx --yes eslint@10.0.0 --config scripts/eslint-undef.config.mjs src bin studio scripts playground",
     "goldens": "node scripts/goldens.mjs",
     "start": "node bin/pixelbolt.js preview",
     "demo": "node bin/pixelbolt.js render examples/forest-spirit.json --out output/forest-spirit",

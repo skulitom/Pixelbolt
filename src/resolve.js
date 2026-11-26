@@ -142,6 +142,8 @@ async function resolveScene(scene, baseDir, context) {
   }
   return { ...scene, assets };
 }
+// Sidecar source formats whose top-level palette references are resolved by resolveReferences.
+export const SIDECARS = { 'pixelforge-stack': 'stack', 'pixelforge-poses': 'poses', 'pixelforge-autotile': 'autotile', 'pixelforge-fx': 'fx', 'pixelforge-fluid': 'fluid', 'pixelforge-wave': 'wave', 'pixelforge-crystal': 'crystal', 'pixelforge-powder': 'powder', 'pixelforge-bodies': 'bodies' };
 /**
  * Returns the document with references inlined, plus the files it read. Works for recipes, pose sources,
  * autotile templates, effect, fluid, crystal and body sources, normal sources and scenes. `revisions(id)` supplies saved recipes for
@@ -149,12 +151,11 @@ async function resolveScene(scene, baseDir, context) {
  * source-format scene assets to ordinary recipes on the Node side.
  */
 export async function resolveReferences(document, { baseDir = process.cwd(), root, revisions, compilers } = {}) {
-  const sidecars = { 'pixelforge-stack': 'stack', 'pixelforge-poses': 'poses', 'pixelforge-autotile': 'autotile', 'pixelforge-fx': 'fx', 'pixelforge-fluid': 'fluid', 'pixelforge-wave': 'wave', 'pixelforge-crystal': 'crystal', 'pixelforge-powder': 'powder', 'pixelforge-bodies': 'bodies' };
-  const context = { root, revisions, compilers, sidecars, files: new Set(), palettes: [] };
+  const context = { root, revisions, compilers, sidecars: SIDECARS, files: new Set(), palettes: [] };
   const resolved = document?.format === 'pixelforge-scene' ? await resolveScene(document, baseDir, context)
     : document?.format === 'pixelforge-normals' && document.recipe !== undefined ? { ...document, recipe: await loadRecipe(document.recipe, baseDir, context, 'normals.recipe') }
       : document?.format === 'pixelforge-fx' ? await resolveEffects(document, baseDir, context)
-        : await resolvePalette(document, baseDir, context, sidecars[document?.format] ?? 'project');
+        : await resolvePalette(document, baseDir, context, SIDECARS[document?.format] ?? 'project');
   return { document: resolved, files: [...context.files], palettes: context.palettes };
 }
 /**
