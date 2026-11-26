@@ -1,6 +1,7 @@
 // Node-side reference resolution. The renderer only sees inline data; this module inlines shared palette files
 // (`palette: { "$ref": "palette.json", ...local entries }`) and scene asset files or saved revisions. Relative
-// paths resolve from `baseDir`; when `root` is set (the MCP server), every referenced file must stay inside it.
+// paths resolve from `baseDir`; when `root` is set (the MCP server), every referenced file must stay inside it and be
+// no larger than a request may be. The CLI sets no root and reads a referenced file of any size, as it reads its input.
 import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { inlineSharedPalette, fail, isObject, MAX_REQUEST_BYTES } from './core.js';
@@ -16,12 +17,12 @@ export async function assertInside(file, root, where, message = `must stay insid
   const real = await realpath(file).catch(() => null);
   if (real !== null && !within(await realpath(root), real)) fail(where, `${message}; ${path.resolve(file)} is a link that leads out of it`);
 }
-async function readJSON(file, where) {
+async function readJSON(file, where, root) {
   let text;
   try {
     const info = await stat(file);
     if (!info.isFile()) fail(where, `${file} is not a regular file`);
-    if (info.size > MAX_REQUEST_BYTES) fail(where, `${file} exceeds ${MAX_REQUEST_BYTES} bytes`);
+    if (root !== undefined && info.size > MAX_REQUEST_BYTES) fail(where, `${file} exceeds ${MAX_REQUEST_BYTES} bytes`);
     text = await readFile(file, 'utf8');
   } catch (error) {
     if (error.path === where) throw error;
@@ -38,7 +39,7 @@ async function locate(reference, baseDir, root, where) {
 // A shared palette file is either a flat map of names to colours or any JSON document with a `palette` map, which may
 // also list `ramps` (palette keys from dark to light) for the recipes and pose sources that link it.
 async function sharedPalette(reference, baseDir, context, where) {
-  const file = await locate(reference, baseDir, context.root, where), loaded = await readJSON(file, where);
+  const file = await locate(reference, baseDir, context.root, where), loaded = await readJSON(file, where, context.root);
   const palette = isObject(loaded?.palette) ? loaded.palette : loaded;
   if (!isObject(palette) || Object.values(palette).some(value => typeof value !== 'string')) fail(where, `${reference} must contain a palette object of colour strings`);
   if (Object.hasOwn(palette, '$ref')) fail(where, 'nested palette references are not supported');
@@ -61,7 +62,7 @@ async function loadRecipe(entry, baseDir, context, where) {
   if (typeof entry === 'string') {
     const file = await locate(entry, baseDir, context.root, where);
     context.files.add(file);
-    return resolvePalette(await readJSON(file, where), path.dirname(file), context, where);
+    return resolvePalette(await readJSON(file, where, context.root), path.dirname(file), context, where);
   }
   if (isObject(entry) && Object.keys(entry).length === 1 && typeof entry.revision === 'string') {
     if (!context.revisions) fail(where, 'revision references are only available through the MCP server');
@@ -105,7 +106,7 @@ async function loadSceneAsset(entry, baseDir, context, where) {
   if (typeof entry === 'string') {
     const file = await locate(entry, baseDir, context.root, where);
     context.files.add(file);
-    doc = await readJSON(file, where);
+    doc = await readJSON(file, where, context.root);
     dir = path.dirname(file);
   } else if (isObject(entry) && Object.keys(entry).length === 1 && typeof entry.revision === 'string') {
     if (!context.revisions) fail(where, 'revision references are only available through the MCP server');
@@ -125,7 +126,7 @@ async function loadNormal(entry, baseDir, context, where) {
   if (typeof entry === 'string') {
     const file = await locate(entry, baseDir, context.root, where);
     context.files.add(file);
-    source = await readJSON(file, where);
+    source = await readJSON(file, where, context.root);
     dir = path.dirname(file);
   }
   if (isObject(source) && source.format === 'pixelforge-normals') {

@@ -374,7 +374,7 @@ const scene = {
       description: 'Atmospheric haze for placements with haze: each colour fades as a whole, never per pixel, so each becomes one colour and keeps its place among the others.' },
     lighting: object({ ambient: { type: 'number', minimum: 0, maximum: 1 }, bands: int(2, 16),
       dither: num(0, 1, 'Feather each lighting band into the next across this share of the step using pattern, keeping the exact same colour count (0 hard rings, default; 0.5–1 smooth dithered falloff).'),
-      pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dither pattern for lighting.dither: bayer4 (default), bayer2, bayer8, noise, value or a matrix of ranks. Anchored to scene coordinates.' },
+      pattern: { oneOf: [{ enum: DITHER_PATTERNS }, { ...array({ ...array(int(0, 255), 16), minItems: 1 }, 16), minItems: 1 }], description: 'Dither pattern for lighting.dither: bayer4 (default), bayer2, bayer8, noise, value or a matrix of ranks. Anchored to scene coordinates, in the pixels of each placement (one rank per block of a scaled one).' },
       scope: { enum: ['passes', 'all'], description: 'passes (default) lights only assets with normal/emissive passes; all also lights plain assets as flat surfaces.' },
       mode: { enum: ['multiply', 'ramp'], description: 'multiply (default) scales colours by the light; ramp moves each colour along its recipe\'s ramps instead, so the lit scene keeps its palette (light colour then only sets brightness).' },
       steps: int(1, 8, 'Ramp lighting: steps per unit of brightness away from 1; default 2.'),

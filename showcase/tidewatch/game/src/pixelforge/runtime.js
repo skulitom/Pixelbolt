@@ -76,7 +76,9 @@ const anchorPixels = entry => entry.anchorPx ?? entry.anchor ?? { x: 0, y: 0 };
 /**
  * Draws one atlas frame into any 2D context, for games that draw many sprites into one canvas.
  * (x, y) is the frame's anchor when the atlas has one (pass anchor: false to ignore it), otherwise the top-left of
- * the full source canvas. Trimmed frames are offset back into place; flipX mirrors around the source canvas.
+ * the full source canvas. Trimmed frames are offset back into place. flipX mirrors about (x, y), as a compiled
+ * `mirror` pose does about its origin: a frame anchored at its feet turns round on the spot, and one with no anchor
+ * (or drawn with anchor: false) lands to the left of x, so add the frame's width to x to flip it where it stands.
  * Positions snap to the nearest whole pixel of the context, so a sprite moving by fractions of a pixel stays crisp:
  * a canvas blends the edges of an image drawn between pixels, even with smoothing off.
  * rotate turns the frame about (x, y), in radians, clockwise. A turned sprite keeps clean square pixels only where
@@ -91,9 +93,8 @@ export function drawFrame(context, sheet, name, x, y, { scale = 1, flipX = false
   if (!Object.hasOwn(sheet.atlas.frames, name)) throw new Error(`Unknown frame: ${name}`);
   const entry = sheet.atlas.frames[name], { frame } = entry;
   const source = entry.sourceSize ?? { w: frame.w, h: frame.h }, offset = entry.spriteSourceSize ?? { x: 0, y: 0, w: frame.w, h: frame.h };
-  const hasAnchor = anchor && Boolean(entry.anchorPx ?? entry.anchor);
-  const origin = hasAnchor ? anchorPixels(entry) : { x: 0, y: 0 };
-  const left = Math.round(x) - (hasAnchor ? (flipX ? source.w - origin.x : origin.x) : 0) * scale, top = Math.round(y) - origin.y * scale;
+  const origin = anchor ? anchorPixels(entry) : { x: 0, y: 0 };
+  const left = Math.round(x) - (flipX ? source.w - origin.x : origin.x) * scale, top = Math.round(y) - origin.y * scale;
   const dx = flipX ? source.w - offset.x - offset.w : offset.x;
   context.imageSmoothingEnabled = false;
   if (rotate) {
@@ -102,8 +103,7 @@ export function drawFrame(context, sheet, name, x, y, { scale = 1, flipX = false
     context.translate(Math.round(x), Math.round(y));
     context.rotate(rotate);
     if (flipX) context.scale(-1, 1);
-    const drawX = (hasAnchor ? offset.x - origin.x : flipX ? offset.x - source.w : offset.x) * scale;
-    context.drawImage(sheet.image, frame.x, frame.y, frame.w, frame.h, drawX, (offset.y - origin.y) * scale, frame.w * scale, frame.h * scale);
+    context.drawImage(sheet.image, frame.x, frame.y, frame.w, frame.h, (offset.x - origin.x) * scale, (offset.y - origin.y) * scale, frame.w * scale, frame.h * scale);
     context.restore();
     return;
   }

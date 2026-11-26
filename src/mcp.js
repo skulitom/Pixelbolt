@@ -16,6 +16,7 @@ import { compilePoses, draftViews, fields } from './authoring.js';
 import { sceneImage } from './scene.js';
 import { createSceneBundle, sceneGIF } from './scene-export.js';
 import { resolveReferences, assertInside } from './resolve.js';
+import { PNG_BYTES } from './import.js';
 import { listPresets, briefListing, findListing, findPreset, loadPreset, presetNext, COMPILERS } from './presets.js';
 import { TOPICS, SECTIONED, helpText, jsonTopic, isSchema, resolveTopic } from './help.js';
 import { skillCommand } from './skill.js';
@@ -615,7 +616,7 @@ export function createToolRunner({ directory, root, version }) {
           await assertInside(file, root, 'path');
           const info = await stat(file).catch(error => { throw new PixelError('path', `could not read ${args.path} (${error.code ?? error.message})`); });
           if (!info.isFile()) throw new PixelError('path', `${args.path} is not a regular file`);
-          if (info.size > MAX_REQUEST_BYTES) throw new PixelError('path', `${args.path} exceeds ${MAX_REQUEST_BYTES} bytes`);
+          if (info.size > PNG_BYTES) throw new PixelError('path', `${args.path} exceeds ${PNG_BYTES} bytes`);
           bytes = await readFile(file);
         }
         const imported = importAction(bytes, { name: args.name, file, atlas: args.atlas, frame: args.frame, padding: args.padding, frames: args.frames, cutout: args.cutout });

@@ -208,6 +208,35 @@ test('lighting.dither softens band transitions without inventing new colours', a
   assert.throws(() => make({ dither: 0.5, pattern: 'ordered' }), error => error.path === 'scene.lighting.pattern');
 });
 
+test('lighting.dither stays on the scene under a moving camera and works in a scaled placement\'s own pixels', () => {
+  const floor = (w, h) => ({ version: 1, name: 'floor', width: w, height: h, palette: { a: '#808080' }, frames: [{ name: 'f', ops: [{ op: 'rect', x: 0, y: 0, w, h, color: 'a' }] }] });
+  const lighting = (dither, at) => ({ ambient: 0.25, bands: 4, scope: 'all', dither, lights: [{ at, height: 10, radius: 30, color: '#ffb060' }] });
+  const base = { format: 'pixelforge-scene', version: 1, name: 'dithered', width: 64, height: 64, background: '#101018' };
+  // A camera pan moves the picture and nothing else: every scene pixel seen from both places keeps its colour. The
+  // pattern was read at screen positions, so a one-pixel pan changed hundreds of pixels at the edges of the bands.
+  const panned = x => renderScene(prepareScene({ ...base, duration: 1000, camera: [x, 0], assets: { floor: floor(96, 64) }, instances: [{ asset: 'floor', at: [0, 0] }], lighting: lighting(0.5, [40, 32]) }));
+  const still = panned(0);
+  for (const pan of [1, 2, 3, 5]) {
+    const moved = panned(pan);
+    let changed = 0;
+    for (let y = 0; y < 64; y++) for (let x = 0; x < 64 - pan; x++) for (let c = 0; c < 3; c++) if (still.data[(y * 64 + x + pan) * 4 + c] !== moved.data[(y * 64 + x) * 4 + c]) changed++;
+    assert.equal(changed, 0, `camera at x = ${pan}`);
+  }
+  assert.notDeepEqual(still.data, renderScene(prepareScene({ ...base, assets: { floor: floor(96, 64) }, instances: [{ asset: 'floor', at: [0, 0] }], lighting: lighting(0, [40, 32]) })).data, 'the pan test looks at a dithered floor');
+  // A floor at scale 4 dithers by its own 4×4 blocks. Read at screen positions, every block of a bayer4 had the same
+  // rank, so the light fell away from the lamp in hard bands: along a row, never brighter further out.
+  const scaled = dither => renderScene(prepareScene({ ...base, assets: { floor: floor(16, 16) }, instances: [{ asset: 'floor', at: [0, 0], scale: 4 }], lighting: lighting(dither, [32, 32]) }));
+  const rises = view => {
+    let count = 0;
+    for (let y = 0; y < 64; y += 4) for (let x = 36; x < 64; x += 4) if (view.data[(y * 64 + x) * 4] > view.data[(y * 64 + x - 4) * 4]) count++;
+    return count;
+  };
+  assert.equal(rises(scaled(0)), 0, 'undithered light only falls away from the lamp');
+  assert.ok(rises(scaled(1)) > 0, 'dithered blocks mix two bands');
+  const view = scaled(1);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) assert.equal(view.data[(y * 64 + x) * 4], view.data[((y - y % 4) * 64 + x - x % 4) * 4], 'each block is one colour');
+});
+
 test('resolveReferences compiles source-format scene assets (fluid, poses) and enforces root sandboxing', async t => {
   const { mkdtemp, rm, writeFile, mkdir } = await import('node:fs/promises');
   const os = await import('node:os');

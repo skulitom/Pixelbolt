@@ -668,7 +668,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
   const hazed = sceneHaze(scene);
   // Shadows (below): per light, the rank of the last-drawn caster shadowing each pixel, or nothing when none does.
   let shadowMasks = [];
-  const drawFrame = (id, index, left, top, s, label, shade = null, unlit, entry, fade = 0, rank, within = null, only = null) => {
+  const drawFrame = (id, index, left, top, s, label, shade = null, unlit, entry, fade = 0, rank, within = null, only = null, moved = [0, 0]) => {
     const asset = assets[id], shift = shifts[id], project = asset.recipe, frame = project.frames[index];
     const normal = asset.normal?.frames[index].data, emission = asset.emissive?.frames[index].data;
     const light = !shade && !unlit && lit && lighting && (normal || emission || lighting.scope === 'all') && (lighting.mode === 'multiply' || shift);
@@ -698,14 +698,17 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           }
           // Band the light's brightness once, then tint it: banding each channel separately made a coloured light
           // change band at different distances per channel, painting rainbow rings. With dither > 0, each transition
-          // feathers between adjacent integer bands via the canvas-anchored threshold pattern without adding colours.
+          // feathers between adjacent integer bands via the threshold pattern without adding colours. The pattern is
+          // read where the pixel is in the scene (the screen position plus the camera's shift of this placement), so a
+          // pan does not make it crawl, and in the placement's own pixels: a placement at scale 4 has one rank per
+          // 4×4 block, where screen pixels would give every block of a bayer4 the same rank and so no dither at all.
           // Strength scales the banded light, so above 1 a flash can lift ramp-lit colours past their authored shade.
           const scaled = Math.min(1, diffuse) * (lighting.bands - 1);
           let step;
           if (lighting.dither > 0) {
             const low = Math.floor(scaled), frac = scaled - low, half = lighting.dither / 2;
             const t = Math.min(1, Math.max(0, (frac - (0.5 - half)) / lighting.dither));
-            step = Math.min(lighting.bands - 1, low + (t > lighting.threshold(px, py) ? 1 : 0));
+            step = Math.min(lighting.bands - 1, low + (t > lighting.threshold(Math.floor((px + moved[0]) / s), Math.floor((py + moved[1]) / s)) ? 1 : 0));
           } else step = Math.round(scaled);
           const band = step / (lighting.bands - 1);
           for (let c = 0; c < 3; c++) intensity[c] += band * source.strength * source.color[c] / 255;
@@ -978,14 +981,14 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
           entry = entries.length - 1;
         }
         record(i, item.cell, frameIndex(project, cell, 0), x, y);
-        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, tilemap.corner ? box : null);
+        drawFrame(instance.asset, frameIndex(project, cell, 0), x, y, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, tilemap.corner ? box : null, null, shift);
         continue;
       }
       if (!item.record) {
         const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted: false, covers: false }) - 1 : -1;
         for (const [k, cell] of tilemap.cells.entries()) {
           record(i, k, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s);
-          drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, tilemap.corner ? box : null);
+          drawFrame(instance.asset, frameIndex(project, cell, 0), left + cell.x * s, top + cell.y * s, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, tilemap.corner ? box : null, null, shift);
         }
       }
       placements.push({ name: label, tilemap: true, ...box, tiles: tilemap.cells.length, scale: s, ...(instance.haze && { haze: instance.haze }) });
@@ -996,7 +999,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const shift = shiftOf(i), left = state.left + rx * instance.step[0] - shift[0], top = state.top + ry * instance.step[1] - shift[1];
     if (item.later) {
       record(i, null, state.index, left, top, item.only);
-      drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, begun.get(`${i} ${rx} ${ry}`), instance.haze, item.rank, null, item.only);
+      drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, begun.get(`${i} ${rx} ${ry}`), instance.haze, item.rank, null, item.only, shift);
       continue;
     }
     placements.push({ name: instance.name ?? instance.asset, frame: state.frame.name, x: left, y: top, w: project.width * s, h: project.height * s, scale: s, ...(state.lift && { lift: state.lift }), ...(instance.haze && { haze: instance.haze }), ...(instance.shade && { shade: instance.shade }) });
@@ -1005,7 +1008,7 @@ export function renderScene(scene, { time = 0, lit = true, density = false, dept
     const entry = owner && !instance.shade ? entries.push({ instance: i, label, sorted, ...(sorted && { at }), ...(sorted && state.lift && { lift: state.lift }), ...(sorted && instance.raise && { raise: instance.raise }), box: { x: left, y: top, w: project.width * s, h: project.height * s }, shift, covers: false }) - 1 : -1;
     if (item.only) begun.set(`${i} ${rx} ${ry}`, entry);
     record(i, null, state.index, left, top, item.only);
-    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, null, item.only);
+    drawFrame(instance.asset, state.index, left, top, s, label, instance.shade, instance.lit === false, entry, instance.haze, item.rank, null, item.only, shift);
   }
   if (density) for (const box of placements) {
     const color = box.scale === 1 ? [65, 201, 240, 180] : [255, 70, 100, 255];

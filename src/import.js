@@ -7,6 +7,9 @@ import { crc32 } from './png.js';
 import { PixelError, renderProject, isObject, FRAME_LIMIT, CANVAS_SIDE, FRAME_PIXELS, STILL_SIDE, FRAME_AREA, frameFits, frameAreaProblem, frameTotalProblem } from './core.js';
 
 const fail = message => { throw new PixelError('import', message); };
+// The largest PNG file decodePNG takes. What reads a PNG from disk for it (the MCP server) checks the file against this
+// before reading, not against the smaller limit on a request.
+export const PNG_BYTES = 33554432;
 // An imported frame is an animation frame (one grid op holds it whole): core's frameFits, said by frameAreaProblem. A
 // PNG imported whole, with no frame or atlas, may instead be a still, up to a still's limits (STILL_SIDE a side and
 // FRAME_AREA), as a recipe may: its grid is cut into tiles a grid op holds.
@@ -18,7 +21,7 @@ const COLOR_TYPES = { 0: ['greyscale', 1, [1, 2, 4, 8, 16]], 2: ['RGB', 3, [8, 1
 // greyscale below 8 bits becomes the 8-bit value the PNG specification gives it (4-bit 0x7 is 0x77).
 export function decodePNG(bytes) {
   const buffer = Buffer.from(bytes);
-  if (buffer.length > 33554432 || !buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) fail('expected a PNG no larger than 32 MiB');
+  if (buffer.length > PNG_BYTES || !buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) fail('expected a PNG no larger than 32 MiB');
   let header, palette, trns, ended = false, idatEnded = false; const chunks = [];
   for (let at = 8; at < buffer.length;) {
     if (at + 12 > buffer.length) fail('truncated PNG chunk');

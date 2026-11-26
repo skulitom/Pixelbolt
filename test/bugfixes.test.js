@@ -7,7 +7,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
-import { renderProject, compareProjects, PixelError } from '../src/core.js';
+import { renderProject, compareProjects, PixelError, MAX_REQUEST_BYTES } from '../src/core.js';
+import { encodePNG, crc32 } from '../src/png.js';
+import { PNG_BYTES } from '../src/import.js';
 import { renderAction } from '../src/actions.js';
 import { startMCP } from '../src/mcp.js';
 import { startStudio } from '../src/server.js';
@@ -261,7 +263,7 @@ test('bodies: valid thin convex polygon with subpixels > 1 does not crash paintB
   assert.equal(result.recipe.frames.length, 3);
 });
 
-test('runtime drawFrame: flipX mirrors unanchored sprites in place instead of shifting left', () => {
+test('runtime drawFrame: flipX mirrors about (x, y), with or without an anchor', () => {
   const calls = [];
   const ctx = {
     imageSmoothingEnabled: true,
@@ -272,28 +274,72 @@ test('runtime drawFrame: flipX mirrors unanchored sprites in place instead of sh
     scale(sx, sy) { calls.push(['scale', sx, sy]); },
     drawImage(_img, sx, sy, sw, sh, dx, dy, dw, dh) { calls.push(['draw', sx, sy, sw, sh, dx, dy, dw, dh]); }
   };
+  const plain = { frame: { x: 0, y: 0, w: 4, h: 4 }, sourceSize: { w: 4, h: 4 }, spriteSourceSize: { x: 0, y: 0, w: 4, h: 4 } };
   const sheet = {
     image: {},
     atlas: {
       frames: {
-        plain: { frame: { x: 0, y: 0, w: 4, h: 4 }, sourceSize: { w: 4, h: 4 }, spriteSourceSize: { x: 0, y: 0, w: 4, h: 4 } },
+        plain, corner: { ...plain, anchorPx: { x: 0, y: 0 } },
         anchored: { frame: { x: 0, y: 0, w: 4, h: 4 }, sourceSize: { w: 8, h: 8 }, spriteSourceSize: { x: 2, y: 2, w: 4, h: 4 }, anchorPx: { x: 3, y: 4 } }
       }
     }
   };
-  // Unanchored frame at (10, 10) with flipX: true draws inside [10, 14] (translate to 14, scale -1, draw 0..4).
-  drawFrame(ctx, sheet, 'plain', 10, 10, { flipX: true });
-  assert.deepEqual(calls.find(c => c[0] === 'translate'), ['translate', 14, 10]);
+  // The columns of the canvas a flipped draw covers: the context is moved to its right edge and mirrored there.
+  const span = (name, options) => {
+    calls.length = 0;
+    drawFrame(ctx, sheet, name, 10, 10, { flipX: true, ...options });
+    const [, x] = calls.find(c => c[0] === 'translate'), draw = calls.find(c => c[0] === 'draw');
+    return options?.rotate ? [x - draw[5] - draw[7], x - draw[5]] : [x - draw[7], x];
+  };
+  // A frame with no anchor has it at its top-left corner, so mirrored about x = 10 it covers 6 to 10, where the same
+  // frame anchored at [0, 0] is drawn. It was drawn at 10 to 14 for a while, four pixels from the anchored one.
+  assert.deepEqual(span('plain'), [6, 10]);
+  assert.deepEqual(span('corner'), span('plain'));
+  assert.deepEqual(span('corner', { anchor: false }), span('plain'));
+  // Turned, the same: the turn and the mirror are both about (x, y).
+  assert.deepEqual(span('plain', { rotate: Math.PI * 2 }), [6, 10]);
+  assert.deepEqual(span('corner', { rotate: Math.PI * 2 }), [6, 10]);
+  // An 8-wide source anchored at x = 3 runs from 7 to 15 unflipped, so from 5 to 13 mirrored; its 4 trimmed columns
+  // (2 to 6 of the source) land on 7 to 11. With the anchor ignored the source mirrors to 2 to 10, the columns to 4 to 8.
+  assert.deepEqual(span('anchored'), [7, 11]);
+  assert.deepEqual(span('anchored', { anchor: false }), [4, 8]);
+});
 
-  // Anchored frame with anchor: false mirrors inside [10, 18] (offset.x=2 -> dx=2, translate to 10+(2+4)=16, draws [12, 16]).
-  calls.length = 0;
-  drawFrame(ctx, sheet, 'anchored', 10, 10, { flipX: true, anchor: false });
-  assert.deepEqual(calls.find(c => c[0] === 'translate'), ['translate', 16, 12]);
+// A valid PNG of `size` bytes: a 4×4 picture with a private ancillary chunk of zeros after its header, which a decoder skips.
+function paddedPNG(size) {
+  const png = encodePNG(new Uint8ClampedArray(64).fill(255), 4, 4), chunk = Buffer.alloc(size - png.length);
+  chunk.writeUInt32BE(chunk.length - 12, 0);
+  chunk.write('paDd', 4, 'ascii');
+  chunk.writeUInt32BE(crc32(chunk.subarray(4, chunk.length - 4)), chunk.length - 4);
+  return Buffer.concat([png.subarray(0, 33), chunk, png.subarray(33)]);
+}
 
-  // Anchored frame with anchor: true preserves exact anchor mirroring: left = 10 - (8 - 3) = 5, translate = 5 + (2 + 4) = 11.
-  calls.length = 0;
-  drawFrame(ctx, sheet, 'anchored', 10, 10, { flipX: true, anchor: true });
-  assert.deepEqual(calls.find(c => c[0] === 'translate'), ['translate', 11, 8]);
+test('MCP pixel_import by path takes a PNG as large as the importer does, past the request limit', async t => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'pixelbolt-bugfix-import-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await writeFile(path.join(dir, 'big.png'), paddedPNG(MAX_REQUEST_BYTES + 4096));
+  await writeFile(path.join(dir, 'huge.png'), paddedPNG(PNG_BYTES + 1));
+  const mcp = startClient(path.join(dir, 'out'), dir);
+  t.after(() => mcp.close());
+  await mcp.send('initialize', { protocolVersion: '2025-11-25', capabilities: {} });
+  const big = await mcp.call('pixel_import', { path: 'big.png' });
+  assert.notEqual(big.result.isError, true, big.result.content[0].text);
+  assert.equal(JSON.parse(big.result.content[0].text).width, 4);
+  // Past the importer's own limit the file is refused before it is read.
+  const huge = await mcp.call('pixel_import', { path: 'huge.png' });
+  assert.equal(huge.result.isError, true);
+  assert.match(JSON.parse(huge.result.content[0].text).error, new RegExp(`huge\\.png exceeds ${PNG_BYTES} bytes`));
+});
+
+test('a referenced file past the request limit is read by the CLI and refused under the MCP root', async t => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'pixelbolt-bugfix-ref-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  // JSON may be padded with whitespace: the palette file is a little over 16 MiB and still two colours.
+  await writeFile(path.join(dir, 'palette.json'), JSON.stringify(tiny.palette) + ' '.repeat(MAX_REQUEST_BYTES));
+  const linked = { ...tiny, palette: { $ref: 'palette.json' } };
+  const { document } = await resolveReferences(linked, { baseDir: dir });
+  assert.deepEqual(document.palette, tiny.palette);
+  await assert.rejects(() => resolveReferences(linked, { baseDir: dir, root: dir }), error => error instanceof PixelError && error.path === 'project.palette.$ref' && /exceeds 16777216 bytes/.test(error.message));
 });
 
 test('stack: 1x2 and 2x1 iso stacks with cell compile cleanly and case-insensitive animation collisions fail', () => {

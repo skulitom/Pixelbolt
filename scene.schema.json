@@ -947,7 +947,7 @@
               "minItems": 1
             }
           ],
-          "description": "Dither pattern for lighting.dither: bayer4 (default), bayer2, bayer8, noise, value or a matrix of ranks. Anchored to scene coordinates."
+          "description": "Dither pattern for lighting.dither: bayer4 (default), bayer2, bayer8, noise, value or a matrix of ranks. Anchored to scene coordinates, in the pixels of each placement (one rank per block of a scaled one)."
         },
         "scope": {
           "enum": [
