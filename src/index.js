@@ -1,7 +1,7 @@
 export { PixelError, errorReply, MAX_REQUEST_BYTES, parseColor, renderProject, buildAtlas, scalePixels, inspectProject, stackViews, paletteUse, compareProjects, analyzeProject, briefDiagnostics, briefCells, briefComparison, reviewPixels, animationPosition, animationNeighbors, onionPixels, tileRepeat, tileReport, readGuides, drawGuides, pictureSheet } from './core.js';
 export { patchRecipe } from './patch.js';
 export { encodePNG, encodeAPNG } from './png.js';
-export { measureText, layoutText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';
+export { measureText, layoutText, hasGlyph, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from './font.js';
 export { encodeGIF, animationGIF, framesGIF, asGIFShows, gifBackground } from './gif.js';
 export { sceneGIF } from './scene-export.js';
 export { numberedFrames, folderGIF } from './frame-folder.js';

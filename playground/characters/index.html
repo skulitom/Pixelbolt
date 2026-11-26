@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Customize pixel-art 4-way characters and walk cycles right in your browser. Recolor outfits live, preview every direction, and export Sprite Sheets, GIFs, Godot 4 SpriteFrames and editable JSON.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Pixelbolt Character &amp; Walk-Cycle Studio</title>
+  <link rel="canonical" href="https://skulitom.github.io/Pixelbolt/playground/characters/">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../playground.css">
+  <link rel="stylesheet" href="./characters.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body data-state="loading">
+  <main class="toy">
+    <header>
+      <p class="eyebrow">Pixelbolt character studio <span id="active-engine" class="muted"></span></p>
+      <h1>Character &amp; Walk-Cycle Studio</h1>
+      <p class="lead">Pick an editable pixel-art character rig, recolor every palette slot live, preview pixel-exact 4-way walk cycles, then export a Sprite Sheet PNG, Animated GIF, Atlas JSON, Godot 4 <code>.tres</code> or editable JSON.</p>
+    </header>
+    <div id="presets" class="presets" role="group" aria-label="Choose a character"></div>
+    <div class="studio-grid">
+      <section class="stage-card" aria-label="Character preview">
+        <div id="stage" class="stage" data-bg="dark">
+          <div class="art">
+            <canvas id="character" width="1" height="1" tabindex="0" aria-label="Live pixel-art character preview" aria-describedby="hint keys">Your browser needs Canvas to show the character.</canvas>
+          </div>
+          <p id="stage-note" class="stage-note">Loading…</p>
+        </div>
+        <div class="bar">
+          <div class="playback-row">
+            <button id="step-back" type="button" aria-label="Previous frame" disabled>←</button>
+            <button id="pause" type="button" aria-pressed="false" disabled>Pause</button>
+            <button id="step-forward" type="button" aria-label="Next frame" disabled>→</button>
+            <span id="frame-counter" class="frame-readout">0 / 0</span>
+          </div>
+          <div id="backgrounds" class="bg-row" role="group" aria-label="Stage background"></div>
+        </div>
+        <p id="hint" class="hint"></p>
+      </section>
+
+      <section class="controls-card" aria-label="Character controls">
+        <div id="direction-group" class="panel-group">
+          <h2 class="panel-label">Direction &amp; Turntable</h2>
+          <div class="dpad-wrap">
+            <div class="dpad" role="group" aria-label="Facing direction">
+              <button id="dir-up" class="dpad-up" type="button" value="up" aria-pressed="false" disabled>↑</button>
+              <button id="dir-left" class="dpad-left" type="button" value="left" aria-pressed="false" disabled>←</button>
+              <button id="dir-all" class="dpad-all" type="button" value="all" aria-pressed="false" disabled>4-Way</button>
+              <button id="dir-right" class="dpad-right" type="button" value="right" aria-pressed="false" disabled>→</button>
+              <button id="dir-down" class="dpad-down" type="button" value="down" aria-pressed="false" disabled>↓</button>
+            </div>
+            <div class="panel-group">
+              <label for="animation" class="panel-label">Animation</label>
+              <select id="animation" disabled></select>
+              <label for="speed" class="panel-label">Speed</label>
+              <select id="speed" disabled></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-group">
+          <h2 class="panel-label">Palette Themes</h2>
+          <div id="themes" class="chip-row" role="group" aria-label="Palette themes"></div>
+        </div>
+
+        <div class="panel-group">
+          <div class="bar">
+            <h2 class="panel-label">Custom Colors</h2>
+            <button id="reset-colors" type="button" disabled>Reset</button>
+          </div>
+          <div id="swatches" class="swatches"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="export-row" role="group" aria-label="Export character files">
+      <button id="export-gif" class="primary" type="button" disabled>Save GIF</button>
+      <button id="export-sheet" type="button" disabled>Sprite Sheet PNG</button>
+      <button id="export-atlas" type="button" disabled>Atlas JSON</button>
+      <button id="export-godot" type="button" disabled>Godot 4 .tres</button>
+      <button id="export-recipe" type="button" disabled>Editable JSON</button>
+      <button id="copy-link" type="button" disabled>Copy Share Link</button>
+      <a id="remix" class="button" href="../">Edit in Playground</a>
+    </div>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <input id="share-link" type="text" readonly hidden aria-label="Link that reopens this character and palette">
+    <p id="keys" class="hint">Deterministic pixel-art rigs: every direction shares exact palette colors and left/right frames are pixel-exact mirrors. Focus the preview to steer with Arrow keys or press Space to pause.</p>
+
+    <section class="about" aria-labelledby="about-title">
+      <h2 id="about-title">Use in your game or with AI agents</h2>
+      <p>Every character is a plain JSON pose rig you can edit by hand or with an AI coding agent without breaking frame consistency: <code id="cli">pixelbolt compile four-way-knight.poses.json --out knight.json</code> on the CLI, or <code>pixel_compile</code> over MCP.</p>
+      <p id="about-links"><a href="../">Open the playground</a> · <a href="../fluids/">Live fluid toy</a> · <a href="https://github.com/skulitom/Pixelbolt">Pixelbolt on GitHub</a></p>
+    </section>
+    <footer><p>Everything runs locally in your browser; share links store your palette in the URL fragment and exported PNGs embed the editable recipe.</p></footer>
+    <noscript>This studio needs JavaScript and a browser with ES modules support.</noscript>
+  </main>
+</body>
+</html>
+

@@ -1,7 +1,7 @@
 // Browser-compatible contact sheets, palette-key grids, playback review, advisory diagnostics and revision comparison.
 // Built on src/recipe.js and re-exported by src/core.js; produces in-memory images and reports with no I/O.
 import { idsOf, cleanupIds } from './craft.js';
-import { layoutText, FONT_HEIGHT, FONT_CHARACTERS } from './font.js';
+import { layoutText, FONT_HEIGHT, hasGlyph } from './font.js';
 import {
   PixelError, fail, own, object, integer, boolean, list, name,
   parseColor, blend, BlendOrigins, frameColours, grouped, PNG_PIXELS,
@@ -278,7 +278,7 @@ function drawPartLegend(sheet, legend) {
 // character of a label or heading that the font cannot draw is drawn as ?.
 // `rows` are [{ label, cells: [{ rows, anchor, points } | null] }].
 const ANCHOR_MARK = [255, 64, 224, 255], POINT_MARK = [64, 224, 255, 255], LABEL_INK = [230, 234, 238, 255];
-const FONT_GLYPHS = new Set(FONT_CHARACTERS), inFont = text => [...String(text).normalize('NFC')].map(c => FONT_GLYPHS.has(c) ? c : '?').join('');
+const inFont = text => [...String(text).normalize('NFC')].map(c => hasGlyph(c) ? c : '?').join('');
 export function pictureSheet({ palette = {}, headings = [], rows: lines, scale = 6, background = null, exactScale = false }) {
   // How far a picture reaches from its anchor pixel, in its own pixels: left and up before it, right and down from it.
   const reach = c => {
@@ -320,8 +320,8 @@ export function pictureSheet({ palette = {}, headings = [], rows: lines, scale =
       const cellWidthPx = cell.width ?? cell.rows[0].length, cellHeightPx = cell.height ?? cell.rows.length;
       for (let y = 0; y < cellHeightPx; y++) for (let x = 0; x < cellWidthPx; x++) {
         const at = (y * cellWidthPx + x) * 4, key = cell.rows?.[y][x];
-        if (cell.data ? cell.data[at+3] === 0 : key === '.' || key === ' ') continue;
-        const color = cell.data ? cell.data.subarray(at, at+4) : colourOf(key), px = ax + (x - cell.anchor[0]) * s, py = ay + (y - cell.anchor[1]) * s;
+        if (cell.data ? cell.data[at + 3] === 0 : key === '.' || key === ' ') continue;
+        const color = cell.data ? cell.data.subarray(at, at + 4) : colourOf(key), px = ax + (x - cell.anchor[0]) * s, py = ay + (y - cell.anchor[1]) * s;
         if (color[3]) for (let yy = py; yy < py + s; yy++) for (let xx = px; xx < px + s; xx++) if (xx >= 0 && yy >= 0 && xx < width && yy < height) blend(data, (yy * width + xx) * 4, color);
       }
       if (cell.data) return;
@@ -674,8 +674,10 @@ export function inspectProject(project, options = {}, { sheets = 1, share, measu
   // it would be alone, and stackViews refits the tallest (`share`) only when the stack would pass STACK_SIDE.
   let room = NO_ROOM;
   if (options.scale === undefined && (mode === 'parts' || sheets > 1)) {
-    room = { pixels: PNG_PIXELS, height: sheets > 1 ? STACK_BAND : 0, maxHeight: sheets > 1 ? STACK_SIDE : Infinity, maxWidth: Infinity, sheets, stack: STACK_SIDE, why: `${grouped(STACK_SIDE)} pixels tall at most`,
-      legend: mode === 'parts' ? legendRoom(project.ownerNames) : null, ...(sheets > 1 && share) };
+    room = {
+      pixels: PNG_PIXELS, height: sheets > 1 ? STACK_BAND : 0, maxHeight: sheets > 1 ? STACK_SIDE : Infinity, maxWidth: Infinity, sheets, stack: STACK_SIDE, why: `${grouped(STACK_SIDE)} pixels tall at most`,
+      legend: mode === 'parts' ? legendRoom(project.ownerNames) : null, ...(sheets > 1 && share)
+    };
   }
   const inStack = `the height left to it in an image of ${sheets} sheets stacked (${room.why}) holds`;
   if (options.scale === undefined) {
@@ -726,29 +728,35 @@ export function inspectProject(project, options = {}, { sheets = 1, share, measu
       const again = inspectProject(source, redraw, { sheets, share, measure });
       delete again.timing;
       return Object.assign(again, view.diagnostics && { diagnostics: view.diagnostics }, view.timing && { timing: view.timing });
-    }, { narrow: one.width + legend.width, low: Math.max(one.height, legend.height), short,
+    }, {
+      narrow: one.width + legend.width, low: Math.max(one.height, legend.height), short,
       // The sheet inspected afresh at another every, for stackEvery.
-      ...(every !== undefined && { every: next => inspectProject(source, { ...redraw, every: next }, { sheets, measure: true }) }) });
+      ...(every !== undefined && { every: next => inspectProject(source, { ...redraw, every: next }, { sheets, measure: true }) })
+    });
   }
   if (every !== undefined) view.sampling = { total, shown: cells.length, every, positions, method: `${methods.join(', then ')}; a frame fills a cell for each ${every} ms it is held` };
   else if (total !== cells.length) view.sampling = { total, shown: cells.length, omitted: total - cells.length, positions, ...((step > 1 || offset > 0) && { step, offset }), method: `${methods.join(', then ')}; durations are original, not playback timing` };
   if (diagnostics) view.diagnostics = analyzeProject(project);
   if (options.animation !== undefined && !measure && (diagnostics || mode === 'onion' || every !== undefined)) {
     const a = project.animations[options.animation], fps = animationFps(project, options.animation); let start = 0;
-    view.timing = { animation: options.animation, duration: a.duration, loop: a.loop, ...(fps !== undefined && { fps }), entries: a.frames.map((index, position) => {
-      const entry = { position, frame: frames[index].name, start, duration: frames[index].duration, ...animationNeighbors(a, position) };
-      // How many pixels this step changes: 0 is a hold, and a step far above its neighbours is a jump.
-      if (entry.previous !== null) entry.changed = changedPixels(frames[a.frames[entry.previous]].data, frames[index].data);
-      start += entry.duration; return entry;
-    }) };
+    view.timing = {
+      animation: options.animation, duration: a.duration, loop: a.loop, ...(fps !== undefined && { fps }), entries: a.frames.map((index, position) => {
+        const entry = { position, frame: frames[index].name, start, duration: frames[index].duration, ...animationNeighbors(a, position) };
+        // How many pixels this step changes: 0 is a hold, and a step far above its neighbours is a jump.
+        if (entry.previous !== null) entry.changed = changedPixels(frames[a.frames[entry.previous]].data, frames[index].data);
+        start += entry.duration; return entry;
+      })
+    };
   }
   if (!grid) return view;
   if (mode === 'parts') {
     // One character per part: its legend symbol, "." where nothing drew.
     const symbols = new Map(view.parts.map((part, i) => [part.name, legendSymbols[i] ?? '?']));
     const key = id => id ? symbols.get(project.ownerNames[id - 1]) : '.';
-    view.grids = unique.map(index => ({ frame: frames[index].name, rows: Array.from({ length: region.h }, (_, y) =>
-      Array.from({ length: region.w }, (_, x) => key(frames[index].owners[(region.y + y) * width + region.x + x])).join('')) }));
+    view.grids = unique.map(index => ({
+      frame: frames[index].name, rows: Array.from({ length: region.h }, (_, y) =>
+        Array.from({ length: region.w }, (_, x) => key(frames[index].owners[(region.y + y) * width + region.x + x])).join(''))
+    }));
     view.legend = Object.fromEntries(view.parts.map((part, i) => [legendSymbols[i] ?? '?', { part: part.name, color: part.color }]));
     return view;
   }
@@ -981,11 +989,16 @@ export function briefComparison(full) {
   for (const entry of changed) { for (const { from, to, pixels } of entry.transitions ?? []) add(from, to, pixels); for (const { from, to } of entry.changes ?? []) add(from, to, 1); }
   const box = measured.reduce((all, { box: b }) => (all ? { x: Math.min(all.x, b.x), y: Math.min(all.y, b.y), x2: Math.max(all.x2, b.x + b.w), y2: Math.max(all.y2, b.y + b.h) } : { x: b.x, y: b.y, x2: b.x + b.w, y2: b.y + b.h }), null);
   const transitions = [...sums].sort((a, b) => b[1] - a[1]).slice(0, COMPARED).map(([key, pixels]) => ({ from: key.split('\n')[0], to: key.split('\n')[1], pixels }));
-  return { ...report, frames: {
-    changed: { count: changed.length, frames: unchanged.length ? nameRuns(changed.map(entry => entry.frame)).join(', ') : 'every frame', pixels: changed.reduce((sum, entry) => sum + (entry.pixels ?? 0), 0),
-      ...(box && { box: { x: box.x, y: box.y, w: box.x2 - box.x, h: box.y2 - box.y } }), ...(transitions.length && { transitions }),
-      ...(!alike && { most: [...measured].sort((a, b) => b.pixels - a.pixels).slice(0, 3).map(({ frame, pixels, box: b }) => ({ frame, pixels, box: b })) }) },
-    unchanged: brief(unchanged), ...rest } };
+  return {
+    ...report, frames: {
+      changed: {
+        count: changed.length, frames: unchanged.length ? nameRuns(changed.map(entry => entry.frame)).join(', ') : 'every frame', pixels: changed.reduce((sum, entry) => sum + (entry.pixels ?? 0), 0),
+        ...(box && { box: { x: box.x, y: box.y, w: box.x2 - box.x, h: box.y2 - box.y } }), ...(transitions.length && { transitions }),
+        ...(!alike && { most: [...measured].sort((a, b) => b.pixels - a.pixels).slice(0, 3).map(({ frame, pixels, box: b }) => ({ frame, pixels, box: b })) })
+      },
+      unchanged: brief(unchanged), ...rest
+    }
+  };
 }
 
 // Two names make one number: the first times NAME_PAIRS (2 to the 26th, more names than a frame has pixels) plus the second.
@@ -994,17 +1007,19 @@ const NAME_PAIRS = 67108864;
 // the legend) and returns the name's place in `chars`, the same place for colours that share a name.
 function nameIndex(namer) {
   const byColor = new Map(), byChar = new Map(), chars = [];
-  return { chars, index(data, at) {
-    const id = colorId(data, at);
-    let place = byColor.get(id);
-    if (place === undefined) {
-      const char = namer.char(data, at);
-      place = byChar.get(char);
-      if (place === undefined) { place = chars.length; chars.push(char); byChar.set(char, place); }
-      byColor.set(id, place);
+  return {
+    chars, index(data, at) {
+      const id = colorId(data, at);
+      let place = byColor.get(id);
+      if (place === undefined) {
+        const char = namer.char(data, at);
+        place = byChar.get(char);
+        if (place === undefined) { place = chars.length; chars.push(char); byChar.set(char, place); }
+        byColor.set(id, place);
+      }
+      return place;
     }
-    return place;
-  } };
+  };
 }
 
 // Compares two rendered revisions, matching frames by name, so a patch can report every visible effect.

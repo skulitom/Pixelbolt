@@ -33,6 +33,7 @@
     "check:tidewatch": "node showcase/tidewatch/tools/build-assets.mjs --check",
     "mcp": "node bin/pixelbolt.js mcp",
     "build:studio": "node scripts/build-studio.mjs",
+    "build:itch-characters": "node scripts/build-itch-characters.mjs",
     "check:studio": "node scripts/build-studio.mjs --check",
     "verify:studio": "node scripts/verify-studio.mjs",
     "qa:studio": "node scripts/qa-studio.mjs",

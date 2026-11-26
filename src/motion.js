@@ -3,7 +3,7 @@ import { PixelError, parseColor, stillsHaveNoAnimation } from './core.js';
 import { inspectCutoutWalk } from './cutout-review.js';
 import { angleDelta } from './pose-geometry.js';
 import { sinDeg, cosDeg, traceLine } from './craft.js';
-import { layoutText, FONT_CHARACTERS } from './font.js';
+import { layoutText, hasGlyph } from './font.js';
 
 const fail = (where, message) => { throw new PixelError(`motion.${where}`, message); };
 const rounded = n => Math.round(n * 1e6) / 1e6;
@@ -113,10 +113,12 @@ function gaitReview(entries, metadata, duration) {
   }
   const largest = list => list.reduce((best, item) => item.degrees > best.degrees ? item : best, list[0]);
   const worst = largest(bent), highest = largest(lifted);
-  return { legsTrade: true,
+  return {
+    legsTrade: true,
     arms: { degreesFromOpposite: fromOpposite, maximum: ARM_PHASE, pass: fromOpposite === null ? null : fromOpposite <= ARM_PHASE },
     contact: { ...(worst && { largest: worst }), maximum: CONTACT_BEND, pass: worst ? worst.degrees <= CONTACT_BEND : null },
-    lift: { ...(highest && { largest: highest }), maximum: WALK_LIFT, pass: highest ? highest.degrees <= WALK_LIFT : null } };
+    lift: { ...(highest && { largest: highest }), maximum: WALK_LIFT, pass: highest ? highest.degrees <= WALK_LIFT : null }
+  };
 }
 
 function jointDifference(a, b) {
@@ -133,11 +135,15 @@ function onCanvas(metadata) {
   if (!Array.isArray(offset) || offset.length !== 2 || offset.some(v => !Number.isInteger(v) || Math.abs(v) > 8192)) fail('metadata', 'resized.offset must be two integers within ±8192');
   const [dx, dy] = offset, shape = value => value && typeof value === 'object' && !Array.isArray(value);
   const move = at => Array.isArray(at) && at.length === 2 && at.every(Number.isInteger) ? [at[0] - dx, at[1] - dy] : at;
-  const part = p => !shape(p) ? p : { ...p, ...(p.anchor !== undefined && { anchor: move(p.anchor) }), ...(p.topLeft !== undefined && { topLeft: move(p.topLeft) }),
-    ...(shape(p.joints) && { joints: { ...p.joints, ...(p.joints.start !== undefined && { start: move(p.joints.start) }), ...(p.joints.end !== undefined && { end: move(p.joints.end) }) } }) };
-  const poses = Object.fromEntries(Object.entries(metadata.poses).map(([name, pose]) => [name, !shape(pose) ? pose : { ...pose,
+  const part = p => !shape(p) ? p : {
+    ...p, ...(p.anchor !== undefined && { anchor: move(p.anchor) }), ...(p.topLeft !== undefined && { topLeft: move(p.topLeft) }),
+    ...(shape(p.joints) && { joints: { ...p.joints, ...(p.joints.start !== undefined && { start: move(p.joints.start) }), ...(p.joints.end !== undefined && { end: move(p.joints.end) }) } })
+  };
+  const poses = Object.fromEntries(Object.entries(metadata.poses).map(([name, pose]) => [name, !shape(pose) ? pose : {
+    ...pose,
     ...(Array.isArray(pose.markers) && { markers: pose.markers.map(m => shape(m) ? { ...m, at: move(m.at) } : m) }),
-    ...(shape(pose.parts) && { parts: Object.fromEntries(Object.entries(pose.parts).map(([key, p]) => [key, part(p)])) }) }]));
+    ...(shape(pose.parts) && { parts: Object.fromEntries(Object.entries(pose.parts).map(([key, p]) => [key, part(p)])) })
+  }]));
   return { ...metadata, poses, ...(shape(metadata.rig) && Number.isInteger(metadata.rig.ground) && { rig: { ...metadata.rig, ground: metadata.rig.ground - dy } }) };
 }
 
@@ -204,8 +210,10 @@ export function inspectMotion(project, options = {}, recipe) {
     const legs = new Set(['legs', 'hind', 'fore'].flatMap(role => Array.isArray(metadata?.rig?.[role]) ? metadata.rig[role].flat() : []));
     const turns = jointDifference(a, b).joints.filter(j => !legs.size || legs.has(j.name)).map(j => j.degrees);
     const joints = turns.length ? Math.max(...turns) : null;
-    return { from: a.frame.name, to: b.frame.name, ...difference, minimum, ...(joints !== null && { jointDegrees: joints, jointMinimum: 20 }),
-      pass: difference.share >= minimum || (joints !== null && joints >= 20) };
+    return {
+      from: a.frame.name, to: b.frame.name, ...difference, minimum, ...(joints !== null && { jointDegrees: joints, jointMinimum: 20 }),
+      pass: difference.share >= minimum || (joints !== null && joints >= 20)
+    };
   });
   const seam = jointDifference(entries.at(-1), entries[0]);
   const internal = entries.slice(1).map((e, i) => jointDifference(entries[i], e));
@@ -226,8 +234,10 @@ export function inspectMotion(project, options = {}, recipe) {
     if (names.length > 1) joint.partner = names[1];
     joint.pass = !animation.loop || joint.largestInternal === null ? null : joint.degrees <= joint.largestInternal;
   }
-  const loopSeam = { ...pixelDifference(entries.at(-1).frame.data, entries[0].frame.data), ...seam, largestInternal,
-    pass: !animation.loop || seam.maximum === null || largestInternal === null ? null : seam.joints.every(j => j.pass !== false) };
+  const loopSeam = {
+    ...pixelDifference(entries.at(-1).frame.data, entries[0].frame.data), ...seam, largestInternal,
+    pass: !animation.loop || seam.maximum === null || largestInternal === null ? null : seam.joints.every(j => j.pass !== false)
+  };
   const gait = gaitReview(entries, metadata, time);
   const checks = {
     slide: !contactsAvailable || !names.size || speed === null ? null : slide.every(p => p.pixels <= 1),
@@ -236,9 +246,11 @@ export function inspectMotion(project, options = {}, recipe) {
     loopSeam: loopSeam.pass,
     armSwing: gait.arms.pass, contactLegs: gait.contact.pass, kneeLift: gait.lift.pass
   };
-  const motion = { animation: options.animation, speed, ground, duration: time, loop: animation.loop,
+  const motion = {
+    animation: options.animation, speed, ground, duration: time, loop: animation.loop,
     sampling: 'Displayed-frame onsets; held-frame travel is excluded. Slide is the farthest pair of world-space contact samples; positive ground error floats, negative sinks.',
-    contactsAvailable, slide, groundErrors, poseSpread, loopSeam, gait, checks };
+    contactsAvailable, slide, groundErrors, poseSpread, loopSeam, gait, checks
+  };
   return { mode: 'motion', motion, ...motionStrip(project, entries, motion, scale, options.background, metadata) };
 }
 
@@ -247,7 +259,7 @@ export function inspectMotion(project, options = {}, recipe) {
 // for the far foot.
 const ARC_COLORS = { foot: [[86, 214, 255, 255], [38, 128, 160, 255]], hand: [[255, 168, 64, 255], [170, 98, 36, 255]], head: [[240, 120, 255, 255]] };
 const MARKER_COLORS = [[150, 230, 120, 255], [86, 214, 255, 255], [255, 168, 64, 255], [240, 120, 255, 255], [255, 112, 112, 255], [255, 236, 96, 255],
-  [160, 160, 255, 255], [120, 232, 216, 255]];
+[160, 160, 255, 255], [120, 232, 216, 255]];
 const LANDS = { near: [255, 255, 255, 255], far: [255, 206, 83, 255] }, ARC_GROUND = [80, 100, 115, 255], ARC_PANEL = [30, 41, 52, 255];
 const ARC_TEXT = [200, 210, 220, 255], hex = color => '#' + color.slice(0, 3).map(v => v.toString(16).padStart(2, '0')).join('');
 // A traced point: whole pixels, near enough the canvas that a path stays a few thousand steps long.
@@ -266,18 +278,22 @@ function arcTracks(entries, metadata) {
       tracks.push({ kind, part: name, side, color: ARC_COLORS[kind][side === 'near' ? 0 : 1], at: entry => place(entry.parts[name]?.joints?.end) ?? place(entry.parts[name]?.anchor) });
     });
   }
-  if (typeof rig?.head === 'string') tracks.push({ kind: 'head', part: rig.head, side: 'near', color: ARC_COLORS.head[0], at: entry => {
-    const part = entry.parts[rig.head], anchor = place(part?.anchor), top = place(part?.topLeft);
-    return part?.joints ? place(part.joints.end) : anchor && top ? [anchor[0], top[1]] : null;
-  } });
-  if (!tracks.length) entries[0].markers.slice(0, 8).forEach((marker, i) => tracks.push({ kind: 'marker', part: marker.name, side: 'near', color: MARKER_COLORS[i],
-    at: entry => place(entry.markers.find(m => m.name === marker.name)?.at) }));
+  if (typeof rig?.head === 'string') tracks.push({
+    kind: 'head', part: rig.head, side: 'near', color: ARC_COLORS.head[0], at: entry => {
+      const part = entry.parts[rig.head], anchor = place(part?.anchor), top = place(part?.topLeft);
+      return part?.joints ? place(part.joints.end) : anchor && top ? [anchor[0], top[1]] : null;
+    }
+  });
+  if (!tracks.length) entries[0].markers.slice(0, 8).forEach((marker, i) => tracks.push({
+    kind: 'marker', part: marker.name, side: 'near', color: MARKER_COLORS[i],
+    at: entry => place(entry.markers.find(m => m.name === marker.name)?.at)
+  }));
   return tracks;
 }
 
 // The key under the arcs: a sample of each mark and its meaning in the built-in font, wrapped to the panel's width.
 // Marker names come from metadata, so a character the font has no glyph for is drawn as ?.
-const GLYPHS = new Set(FONT_CHARACTERS), inFont = text => [...text.normalize('NFC')].map(c => GLYPHS.has(c) ? c : '?').join('');
+const inFont = text => [...text.normalize('NFC')].map(c => hasGlyph(c) ? c : '?').join('');
 function arcKey(tracks, landings, width) {
   const names = { foot: 'feet', hand: 'hands', head: 'head' }, markers = tracks.filter(t => t.kind === 'marker');
   const items = markers.length ? markers.map(t => ({ mark: 'swatch', color: t.color, text: t.part }))
@@ -393,8 +409,10 @@ function motionStrip(project, entries, motion, requestedScale, background, metad
     const timingWidth = columns * (w + 4) + 4, timingHeight = Math.ceil(count / columns) * (h + 4) + 4, panel = lanes ? panelTried : 0;
     const arcsWidth = (w + 2) * magnification, key = magnification ? keyFor(Math.max(arcsWidth, timingWidth - 4)) : null;
     const arcsHeight = magnification ? (h + 2) * magnification + 3 + key.height + 2 : 0;
-    return { columns, timingHeight, magnification, arcsWidth, key, lanes, panel,
-      width: panel + Math.max(timingWidth, magnification ? Math.max(arcsWidth, key.width) + 4 : 0), height: Math.max(timingHeight + arcsHeight, lanes ? lanes * (h + 4) + 4 : 0) };
+    return {
+      columns, timingHeight, magnification, arcsWidth, key, lanes, panel,
+      width: panel + Math.max(timingWidth, magnification ? Math.max(arcsWidth, key.width) + 4 : 0), height: Math.max(timingHeight + arcsHeight, lanes ? lanes * (h + 4) + 4 : 0)
+    };
   };
   // Keep the most: the arcs and the trajectory, then the arcs alone, then the trajectory alone. Each tries the chosen
   // grid first, the arcs from their full magnification down and the lanes from 8 down to 2, then the other grids.
@@ -439,17 +457,27 @@ function motionStrip(project, entries, motion, requestedScale, background, metad
   let arcsReport;
   if (arcs) {
     const origin = [panelWidth + 2, timingHeight], skipped = drawArcs(pixel, origin, { entries, tracks, landings, key, magnification, loop: motion.loop, ground: motion.ground, w, h });
-    arcsReport = { shown: true, origin, width: arcsWidth, height: (h + 2) * magnification, magnification, figure: entries[0].frame.name,
+    arcsReport = {
+      shown: true, origin, width: arcsWidth, height: (h + 2) * magnification, magnification, figure: entries[0].frame.name,
       mapping: 'panel x = origin[0] + (x + 1) * magnification + floor(magnification / 2), and likewise y',
       tracks: tracks.map(t => ({ kind: t.kind, part: t.part, side: t.side, color: hex(t.color), ...(t.side === 'far' && { dashed: true }) })),
-      landings: landings.map(({ part, ...l }) => ({ ...l, ring: hex(LANDS[l.side]) })), ...(skipped && { skipped }) };
+      landings: landings.map(({ part, ...l }) => ({ ...l, ring: hex(LANDS[l.side]) })), ...(skipped && { skipped })
+    };
   } else arcsReport = { shown: false, reason: tracks.length ? 'The arcs, magnified at least 3 times, would take the image past 4,194,304 pixels or 8192 a side.' : 'Arcs need pose metadata with a rig (legs, arms, head) or markers.' };
   // Sampling is said as a contact sheet says it: only when cells were left out.
-  const sampling = count < entries.length ? { total: entries.length, shown: count, omitted: entries.length - count,
-    method: `evenly spaced, including endpoints: ${count < Math.min(32, entries.length) ? `as many ${w}×${h} frames as fit the 4,194,304-pixel image, 4096 a side` : 'at most 32'}` } : undefined;
-  return { cells, ...(sampling && { sampling }), trajectory: { shown: trajectory, ...(trajectory ? { origin: -left, width: panelWidth, lanes } : { reason: motion.speed === null ? 'Specify speed to draw the trajectory.' : !panelTried ? `Travel exceeds the 4096-pixel width: ${span} pixels of travel beside a ${w}-pixel frame.`
-      : `The trajectory panel (${panelTried} pixels wide, lanes of ${w}×${h} frames) does not fit beside the timing cells${arcs ? ' and arcs' : ''} within the 4,194,304-pixel image.` }) },
+  const sampling = count < entries.length ? {
+    total: entries.length, shown: count, omitted: entries.length - count,
+    method: `evenly spaced, including endpoints: ${count < Math.min(32, entries.length) ? `as many ${w}×${h} frames as fit the 4,194,304-pixel image, 4096 a side` : 'at most 32'}`
+  } : undefined;
+  return {
+    cells, ...(sampling && { sampling }), trajectory: {
+      shown: trajectory, ...(trajectory ? { origin: -left, width: panelWidth, lanes } : {
+        reason: motion.speed === null ? 'Specify speed to draw the trajectory.' : !panelTried ? `Travel exceeds the 4096-pixel width: ${span} pixels of travel beside a ${w}-pixel frame.`
+          : `The trajectory panel (${panelTried} pixels wide, lanes of ${w}×${h} frames) does not fit beside the timing cells${arcs ? ' and arcs' : ''} within the 4,194,304-pixel image.`
+      })
+    },
     arcs: arcsReport,
     nativeSheet: { width, height, scale: 1, data },
-    sheet: { width: width * actualScale, height: height * actualScale, scale: actualScale, data: enlarge(data, width, height, actualScale) } };
+    sheet: { width: width * actualScale, height: height * actualScale, scale: actualScale, data: enlarge(data, width, height, actualScale) }
+  };
 }

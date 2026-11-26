@@ -121,7 +121,7 @@ async function loadNormal(entry, baseDir, context, where) {
     dir = path.dirname(file);
   }
   if (isObject(source) && source.format === 'pixelforge-normals') {
-    return source.recipe !== undefined ? { ...source, recipe: await loadRecipe(source.recipe, dir, context, `${where}.recipe`) } : source;
+    return source.recipe !== undefined ? { ...source, recipe: await loadSceneAsset(source.recipe, dir, context, `${where}.recipe`) } : source;
   }
   return typeof entry === 'string' ? resolvePalette(source, dir, context, where) : loadRecipe(entry, baseDir, context, where);
 }
@@ -153,7 +153,7 @@ export const SIDECARS = { 'pixelforge-stack': 'stack', 'pixelforge-poses': 'pose
 export async function resolveReferences(document, { baseDir = process.cwd(), root, revisions, compilers } = {}) {
   const context = { root, revisions, compilers, sidecars: SIDECARS, files: new Set(), palettes: [] };
   const resolved = document?.format === 'pixelforge-scene' ? await resolveScene(document, baseDir, context)
-    : document?.format === 'pixelforge-normals' && document.recipe !== undefined ? { ...document, recipe: await loadRecipe(document.recipe, baseDir, context, 'normals.recipe') }
+    : document?.format === 'pixelforge-normals' && document.recipe !== undefined ? { ...document, recipe: await loadSceneAsset(document.recipe, baseDir, context, 'normals.recipe') }
       : document?.format === 'pixelforge-fx' ? await resolveEffects(document, baseDir, context)
         : await resolvePalette(document, baseDir, context, SIDECARS[document?.format] ?? 'project');
   return { document: resolved, files: [...context.files], palettes: context.palettes };

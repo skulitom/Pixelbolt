@@ -1,0 +1,81 @@
+{
+  "format": "pixelforge-scene",
+  "version": 1,
+  "name": "camp-clearing",
+  "width": 128,
+  "height": 80,
+  "duration": 880,
+  "background": "#121826",
+  "assets": {
+    "knight": {
+      "recipe": "four-way-knight.poses.json",
+      "normal": {
+        "format": "pixelforge-normals",
+        "version": 1,
+        "name": "knight-normals",
+        "recipe": "four-way-knight.poses.json",
+        "detail": { "amount": 0.35, "ignore": ["x"] }
+      }
+    },
+    "mage": {
+      "recipe": "four-way-mage.poses.json",
+      "normal": {
+        "format": "pixelforge-normals",
+        "version": 1,
+        "name": "mage-normals",
+        "recipe": "four-way-mage.poses.json",
+        "detail": { "amount": 0.35, "ignore": ["x"] }
+      }
+    },
+    "ranger": {
+      "recipe": "four-way-ranger.poses.json",
+      "normal": {
+        "format": "pixelforge-normals",
+        "version": 1,
+        "name": "ranger-normals",
+        "recipe": "four-way-ranger.poses.json",
+        "detail": { "amount": 0.35, "ignore": ["x"] }
+      }
+    },
+    "meadow": "meadow.autotile.json",
+    "fire": "campfire.fluid.json"
+  },
+  "instances": [
+    {
+      "name": "clearing",
+      "asset": "meadow",
+      "at": [0, 0],
+      "tilemap": {
+        "rows": [
+          "........",
+          ".######.",
+          ".######.",
+          ".######.",
+          ".######."
+        ],
+        "legend": {
+          "#": {
+            "frames": ["meadow-{mask}-a", "meadow-{mask}-b", "meadow-{mask}-c", "meadow-{mask}-flowers"],
+            "weights": [4, 4, 4, 1],
+            "autotile": "blob"
+          }
+        },
+        "seed": 3
+      }
+    },
+    { "name": "knight", "asset": "knight", "at": [24, 30], "animation": "walk-right" },
+    { "name": "fire", "asset": "fire", "at": [48, 6], "animation": "campfire", "lit": false },
+    { "name": "mage", "asset": "mage", "at": [80, 28], "animation": "cast-down" },
+    { "name": "ranger", "asset": "ranger", "at": [52, 52], "animation": "walk-up" }
+  ],
+  "lighting": {
+    "ambient": 0.3,
+    "bands": 4,
+    "dither": 0.5,
+    "lights": [
+      { "at": [64, 38], "height": 14, "radius": 68, "color": "#ffb85c", "flicker": { "amount": 0.14, "every": 110, "seed": 7 } },
+      { "at": [92, 32], "height": 12, "radius": 32, "color": "#6ceeff" },
+      { "at": [16, 8], "height": 28, "radius": 110, "color": "#8cb4ff", "strength": 0.45 }
+    ]
+  }
+}

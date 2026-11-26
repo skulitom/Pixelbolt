@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProject, PixelError } from '../src/core.js';
-import { layoutText, measureText, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from '../src/font.js';
+import { layoutText, measureText, hasGlyph, FONT_CHARACTERS, FONT_HEIGHT, FONT_CAP_HEIGHT } from '../src/font.js';
 import { STUDIO_PATHS } from '../src/server.js';
 import { createSceneBundle } from '../src/scene-export.js';
 
@@ -16,27 +16,60 @@ const draw = (w, h, ops, extra = {}) => {
   return { project, rows: Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => data[(y * w + x) * 4 + 3] ? '#' : '.').join('')) };
 };
 
-test('the built-in font covers printable ASCII, western European letters and common symbols, with tabular digits', () => {
+test('the built-in font covers ASCII, western European, Cyrillic, Japanese Kana, Korean Hangul and common CJK, with tabular digits', () => {
   const ascii = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join(''), more = '¡¢£¥©«®°±·»¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽž–—‘’‚“”„•…‹›€';
-  assert.equal(FONT_CHARACTERS, ascii + more);
+  const latin = ascii + more;
+  for (const ch of latin) assert.ok(FONT_CHARACTERS.includes(ch), `missing Latin char ${JSON.stringify(ch)}`);
   assert.deepEqual([FONT_HEIGHT, FONT_CAP_HEIGHT], [8, 7]);
   for (const character of FONT_CHARACTERS) {
     const { width, height, top, rows } = layoutText(character);
-    // A line is 8 rows; a capital with an accent starts 2 rows higher. Nothing is wider than 7 pixels.
-    assert.ok(height === 8 - top && (top === 0 || top === -2) && rows.length === height && width >= 1 && width <= 7 && rows.every(row => row.length === width), JSON.stringify(character));
-    // Every glyph but the space has ink, and is trimmed to it on both sides.
+    // A line is 8 rows; a capital with an accent starts 2 rows higher. Nothing is wider than 8 pixels.
+    assert.ok(height === 8 - top && (top === 0 || top === -2) && rows.length === height && width >= 1 && width <= 8 && rows.every(row => row.length === width), JSON.stringify(character));
+    // Every glyph but spaces has ink, and non-digits are trimmed to ink on both sides.
     if (character === ' ') { assert.equal(width, 3); continue; }
+    if (character === '\u3000') { assert.equal(width, 7); continue; }
     assert.ok(rows.some(row => row.includes('#')), `${character} is blank`);
     if (!/\d/.test(character)) assert.ok(rows.some(row => row[0] === '#') && rows.some(row => row.at(-1) === '#'), `${character} has an empty edge column`);
   }
   assert.deepEqual([...'0123456789'].map(digit => measureText(digit).width), Array(10).fill(5));
   // Capitals stand on the baseline (row 6); only descenders and the underscore use the row below it.
   for (const character of 'ABCXYZ0189') assert.equal(layoutText(character).rows[7].includes('#'), false, character);
-  assert.deepEqual([...FONT_CHARACTERS].filter(character => layoutText(character).rows.at(-1).includes('#')).join(''), ',;_gjpqyÇçýþÿ‚„');
-  // Accented capitals are the only glyphs that reach above the capitals; five glyphs are wider than a letter.
-  assert.deepEqual([[...FONT_CHARACTERS].filter(character => layoutText(character).top === -2).join(''), [...FONT_CHARACTERS].filter(character => layoutText(character).width > 5).join('')], ['ÀÁÂÃÄÅÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝŠŸŽ', '©®Œœ—']);
+  assert.deepEqual([...latin].filter(character => layoutText(character).rows.at(-1).includes('#')).join(''), ',;_gjpqyÇçýþÿ‚„');
+  // Within Latin, accented capitals are the only glyphs reaching above cap height and five glyphs are wider than 5 px.
+  assert.deepEqual([[...latin].filter(character => layoutText(character).top === -2).join(''), [...latin].filter(character => layoutText(character).width > 5).join('')], ['ÀÁÂÃÄÅÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝŠŸŽ', '©®Œœ—']);
   // An accented letter is its base letter with a mark: below the mark, é is e and É is E.
   assert.deepEqual([layoutText('é').rows.slice(2), layoutText('É').rows.slice(2), layoutText('é').rows.slice(0, 2), layoutText('É').rows.slice(0, 2)], [layoutText('e').rows.slice(2), layoutText('E').rows, ['..#..', '.#...'], ['..#..', '.#...']]);
+});
+test('Cyrillic, Japanese Kana, Korean Hangul and common CJK ideographs render deterministically', () => {
+  // Russian + Ukrainian Cyrillic
+  for (const sample of ['Привет мир!', 'Ёжик №1 — 500₽', 'Київ Є Ї Ґ']) {
+    const out = layoutText(sample);
+    assert.ok(out.width > 0 && out.rows.some(row => row.includes('#')), sample);
+  }
+  assert.equal(layoutText('Ё').top, -2);
+  assert.equal(layoutText('Й').top, -2);
+  // Japanese Hiragana, Katakana, voiced/semi-voiced and RPG kanji
+  for (const sample of ['あいうえお がぎぐげご ぱぴぷぺぽ', 'ピクセルボルト！', '「ようこそ勇者よ！」 魔法・回復・宝箱']) {
+    const out = layoutText(sample);
+    assert.ok(out.width > 0 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
+  }
+  assert.notDeepEqual(layoutText('か').rows, layoutText('が').rows);
+  assert.notDeepEqual(layoutText('は').rows, layoutText('ぱ').rows);
+  // Korean Hangul: algorithmic composition covers all 11,172 modern syllables (U+AC00..U+D7A3)
+  assert.equal(hasGlyph('가'), true);
+  assert.equal(hasGlyph('힣'), true);
+  assert.equal(hasGlyph('😀'), false);
+  for (const sample of ['안녕하세요! 픽셀볼트 게임 시작', '글자 값 없음 닭 읽기 삶 광원 의지', '가힣']) {
+    const out = layoutText(sample);
+    assert.ok(out.width > 0 && out.height === 8 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
+  }
+  // Combining Hangul Jamo normalizes via NFC into the same composed syllable.
+  assert.deepEqual(layoutText('\u1112\u1161\u11AB').rows, layoutText('한').rows);
+  // Common Chinese / Japanese CJK ideographs
+  for (const sample of ['一二三四五六七八九十', '開始 終了 勝利 保存 設定', '日本語']) {
+    const out = layoutText(sample);
+    assert.ok(out.width > 0 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
+  }
 });
 test('text is laid out with glyph spacing, line height and alignment', () => {
   assert.deepEqual(layoutText('i.').rows, ['.#...', '.....', '##...', '.#...', '.#...', '.#...', '###.#', '.....']);
@@ -53,7 +86,7 @@ test('text is laid out with glyph spacing, line height and alignment', () => {
   const first = align => layoutText('.\nAAA', { align }).rows[6];
   assert.deepEqual([first('left'), first('center'), first('right')], ['#................', '........#........', '................#']);
   assert.deepEqual(measureText('\n'), { width: 1, height: 18, top: 0, lines: [{ text: '', width: 0 }, { text: '', width: 0 }] });
-  assert.throws(() => layoutText('日本'), /no glyph for "日"/);
+  assert.throws(() => layoutText('😀'), /no glyph for "😀"/);
 });
 test('the text operation draws exact glyph pixels, placed by align and changed by the usual transforms', () => {
   // "i." at 1,1: a three-wide i, one pixel of spacing, and a full stop on the baseline.
@@ -92,7 +125,7 @@ test('an accent on the first line never moves the letters, however the text is r
 });
 test('text errors name the field and the character', () => {
   for (const [op, where, message] of [
-    [{ text: 'tofu 豆腐', color: 'w' }, 'text', /no glyph for "豆"; the built-in font draws printable ASCII, western European accented letters/], [{ text: '', color: 'w' }, 'text', /1–512 characters/], [{ text: 'x'.repeat(513), color: 'w' }, 'text', /1–512 characters/],
+    [{ text: 'hi 😀', color: 'w' }, 'text', /no glyph for "😀"; the built-in font draws printable ASCII, western European accented letters, Cyrillic, Japanese Kana, Korean Hangul/], [{ text: '', color: 'w' }, 'text', /1–512 characters/], [{ text: 'x'.repeat(513), color: 'w' }, 'text', /1–512 characters/],
     [{ text: 7, color: 'w' }, 'text', /1–512 characters/], [{ text: 'a\n'.repeat(64), color: 'w' }, 'text', /at most 64 lines/], [{ text: 'a', color: 'w', align: 'middle' }, 'align', /left, center or right/],
     [{ text: 'a', color: 'w', spacing: 17 }, 'spacing', /0 to 16/], [{ text: 'a', color: 'w', lineHeight: 0 }, 'lineHeight', /1 to 64/], [{ text: 'a', color: 'nope' }, 'color', /unknown color/],
     [{ text: 'a' }, 'color', /palette name or hex/], [{ text: 'a', color: 'w', font: 'tiny' }, 'font', /unknown field/], [{ text: 'a', color: 'w', scale: 17 }, 'scale', /1 to 16/]

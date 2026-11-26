@@ -34,8 +34,8 @@ if (!argument || process.argv.length !== 3) {
     const sitemapPath = path.join(out, 'sitemap.xml'), sitemap = (await read(sitemapPath))?.toString('utf8');
     if (sitemap !== undefined) {
       let next = sitemap;
-      // The playground and its live fluid toy, each listed once.
-      for (const url of ['https://skulitom.github.io/Pixelbolt/playground/', 'https://skulitom.github.io/Pixelbolt/playground/fluids/']) {
+      // The playground, its live fluid toy and the character studio, each listed once.
+      for (const url of ['https://skulitom.github.io/Pixelbolt/playground/', 'https://skulitom.github.io/Pixelbolt/playground/fluids/', 'https://skulitom.github.io/Pixelbolt/playground/characters/']) {
         if (next.includes(`<loc>${url}</loc>`)) continue;
         if (!next.includes('</urlset>')) throw new Error('sitemap.xml has no closing urlset tag.');
         const newline = next.includes('\r\n') ? '\r\n' : '\n';
@@ -60,6 +60,14 @@ if (!argument || process.argv.length !== 3) {
         if (!playgroundParagraph) throw new Error('index.html has no paragraph linking the playground.');
         const at = playgroundParagraph.index + playgroundParagraph[0].length, newline = next.includes('\r\n') ? '\r\n' : '\n';
         const paragraph = '<p>Poke live pixel fluids: <a href="playground/fluids/">blow on a campfire, pour honey and slime</a>, then save a GIF or share a link that replays what you did.</p>';
+        next = next.slice(0, at) + newline + paragraph + next.slice(at);
+      }
+      // The character & walk-cycle studio goes right after the fluid toy paragraph.
+      if (!/href\s*=\s*["'][^"']*\bplayground\/characters\/["'#?]/i.test(next)) {
+        const fluidsParagraph = [...next.matchAll(/<p\b[^>]*>[\s\S]*?<\/p>/gi)].find(match => /href\s*=\s*["'][^"']*\bplayground\/fluids\/["'#?]/i.test(match[0]));
+        if (!fluidsParagraph) throw new Error('index.html has no paragraph linking the fluid toy.');
+        const at = fluidsParagraph.index + fluidsParagraph[0].length, newline = next.includes('\r\n') ? '\r\n' : '\n';
+        const paragraph = '<p>Customize pixel-art characters: <a href="playground/characters/">recolor 4-way walk cycles live</a> and export Sprite Sheets, GIFs and Godot 4 SpriteFrames.</p>';
         next = next.slice(0, at) + newline + paragraph + next.slice(at);
       }
       // The site's footer promises pages without scripts; the playground is the one page that has them.

@@ -96,8 +96,10 @@ test('renderRecipe names the compiler an engine was loaded without', async () =>
 });
 
 test('worker preserves a new source compiler work-limit error and recovers after it', async () => {
-  const source = { format: 'pixelforge-powder', version: 1, name: 'too-much-work', base: 'sandbox', width: 256, height: 256,
-    clips: { long: { frames: 2, every: 60 }, longer: { start: 3000, frames: 2, every: 60 } } };
+  const source = {
+    format: 'pixelforge-powder', version: 1, name: 'too-much-work', base: 'sandbox', width: 256, height: 256,
+    clips: { long: { frames: 2, every: 60 }, longer: { start: 3000, frames: 2, every: 60 } }
+  };
   let expected;
   assert.throws(() => COMPILERS[source.format](source), error => { expected = error; return /million cell steps/.test(error.message); });
   await assert.rejects(handleRequest({ type: 'open', text: JSON.stringify(source), version: pin, override: engineURL.href }), {
@@ -248,7 +250,7 @@ test('a downloaded recipe always reopens, compact when indenting would pass the 
   const { files: [file] } = await handleRequest({ type: 'export', export: 'recipe', text, version: pin, override: engineURL.href });
   assert.ok(file.data.length <= RECIPE_LIMIT);
   const reopened = new TextDecoder().decode(file.data);
-  await handleRequest({ type: 'open', text: reopened, version: pin, override: engineURL.href }, () => {}).catch(error => assert.doesNotMatch(error.message, /larger than/));
+  await handleRequest({ type: 'open', text: reopened, version: pin, override: engineURL.href }, () => { }).catch(error => assert.doesNotMatch(error.message, /larger than/));
   assert.equal(JSON.stringify(JSON.parse(reopened)), text);
   const small = await handleRequest({ type: 'export', export: 'recipe', text: JSON.stringify(tiny), version: pin, override: engineURL.href });
   assert.equal(new TextDecoder().decode(small.files[0].data), JSON.stringify(tiny, null, 2) + '\n');
@@ -305,8 +307,10 @@ test('frame PNGs stop at the scale one PNG holds, and Fit goes below 1× only fo
   assert.equal(fitScale(320, 400, 640, 360), 0.5);
 });
 test('a big animation frame exports a frame PNG within the PNG limit and refuses a larger scale before enlarging it', async () => {
-  const recipe = { version: 1, name: 'screen', width: 640, height: 360, palette: { a: '#204060', b: '#f0e0a0' },
-    frames: ['one', 'two'].map((name, i) => ({ name, duration: 100, ops: [{ op: 'fill', color: 'a' }, { op: 'rect', x: 100 + i * 40, y: 50, w: 30, h: 20, color: 'b' }] })) };
+  const recipe = {
+    version: 1, name: 'screen', width: 640, height: 360, palette: { a: '#204060', b: '#f0e0a0' },
+    frames: ['one', 'two'].map((name, i) => ({ name, duration: 100, ops: [{ op: 'fill', color: 'a' }, { op: 'rect', x: 100 + i * 40, y: 50, w: 30, h: 20, color: 'b' }] }))
+  };
   const request = { type: 'export', export: 'frame', version: pin, override: engineURL.href, text: JSON.stringify(recipe), frame: 1 };
   const image = decodePNG((await handleRequest({ ...request, scale: 2 })).files[0].data);
   assert.deepEqual([image.width, image.height], [1280, 720]);
@@ -452,9 +456,11 @@ test('deploy copies only page files, inserts once, keeps second-run bytes and mt
     const sitemap = await readFile(path.join(out, 'sitemap.xml'), 'utf8');
     assert.match(sitemap, /<loc>https:\/\/skulitom.github.io\/Pixelbolt\/playground\/<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
     assert.equal((sitemap.match(/<loc>https:\/\/skulitom.github.io\/Pixelbolt\/playground\/fluids\/<\/loc>/g) ?? []).length, 1);
-    // The live fluid toy is linked once, right after the playground's paragraph.
+    // The live fluid toy and character studio are linked once, right after the playground's paragraph.
+    assert.equal((sitemap.match(/<loc>https:\/\/skulitom\.github\.io\/Pixelbolt\/playground\/characters\/<\/loc>/g) ?? []).length, 1);
     assert.equal((index.match(/href="playground\/fluids\/"/g) ?? []).length, 1);
-    assert.ok(index.indexOf('Try Pixelbolt') < index.indexOf('Poke live pixel fluids') && index.indexOf('Poke live pixel fluids') < index.indexOf('Next paragraph'));
+    assert.equal((index.match(/href="playground\/characters\/"/g) ?? []).length, 1);
+    assert.ok(index.indexOf('Try Pixelbolt') < index.indexOf('Poke live pixel fluids') && index.indexOf('Poke live pixel fluids') < index.indexOf('Customize pixel-art characters') && index.indexOf('Customize pixel-art characters') < index.indexOf('Next paragraph'));
     assert.ok(!before.has(path.join(out, 'playground/DEPLOY.md')));
     const pages = path.join(root, 'playground'), copied = [];
     for (const file of await walk(pages)) {
@@ -463,6 +469,7 @@ test('deploy copies only page files, inserts once, keeps second-run bytes and mt
       assert.deepEqual(await readFile(path.join(out, 'playground', relative)), await readFile(file), relative); copied.push(relative);
     }
     assert.ok(copied.includes(path.join('fluids', 'index.html')) && copied.includes(path.join('fluids', 'preview.png')));
+    assert.ok(copied.includes(path.join('characters', 'index.html')) && copied.includes(path.join('characters', 'lib.js')));
     assert.match(execFileSync(process.execPath, [script, out], { encoding: 'utf8', env: { ...process.env, PATH: '' } }), /No files changed/);
     assert.equal((await walk(out)).length, before.size);
     for (const [file, original] of before) { assert.deepEqual(await readFile(file), original.bytes); assert.equal((await stat(file)).mtimeMs, original.mtime); }
@@ -492,10 +499,10 @@ async function playgroundPage(tag, run, { box } = {}) {
     append(...children) { this.children.push(...children); if (this.tag === 'select' && !this.value) this.value = this.options[0]?.value ?? ''; }
     replaceChildren(...children) { this.children = []; this.value = ''; this.append(...children); }
     addEventListener(name, handler) { this.events.set(name, handler); }
-    emit(name, extra = {}) { return this.events.get(name)?.({ preventDefault() {}, ...extra }); }
+    emit(name, extra = {}) { return this.events.get(name)?.({ preventDefault() { }, ...extra }); }
     setAttribute(name, value) { this.attributes[name] = value; }
-    getContext() { return { putImageData() {} }; }
-    focus() {} select() {} remove() {} click() { return this.emit('click'); }
+    getContext() { return { putImageData() { } }; }
+    focus() { } select() { } remove() { } click() { return this.emit('click'); }
   }
   for (const match of (await read('playground/index.html')).matchAll(/<(\w+)\b[^>]*\bid="([^"]+)"/g)) elements.set(match[2], new Element(match[1]));
   const body = new Element('body');
@@ -508,12 +515,12 @@ async function playgroundPage(tag, run, { box } = {}) {
   }
   const location = { href: 'http://localhost/playground/?engine=../src/', origin: 'http://localhost', pathname: '/playground/', search: '?engine=../src/', hash: '' };
   const replacements = {
-    document: { body, hidden: false, getElementById: id => { assert.ok(elements.has(id), id); return elements.get(id); }, createElement: tag => new Element(tag), addEventListener() {} },
+    document: { body, hidden: false, getElementById: id => { assert.ok(elements.has(id), id); return elements.get(id); }, createElement: tag => new Element(tag), addEventListener() { } },
     location, Worker,
     history: { replaceState: (state, title, url) => { addresses.push(url); const at = String(url).indexOf('#'); location.hash = at < 0 ? '' : String(url).slice(at); } },
     navigator: { clipboard: { writeText: async text => { copied.push(text); } } },
-    matchMedia: () => ({ matches: true, addEventListener() {} }),
-    requestAnimationFrame: () => {},
+    matchMedia: () => ({ matches: true, addEventListener() { } }),
+    requestAnimationFrame: () => { },
     addEventListener: (name, callback) => events.set(name, callback),
     removeEventListener: (name, callback) => { if (events.get(name) === callback) events.delete(name); },
     confirm: message => { questions.push(message); return page.answer; },
@@ -575,7 +582,7 @@ test('main-thread lifecycle handles reduced motion, stale results, errors, cance
   elements.get('recipe').emit('input'); assert.equal(workers[0].terminated, true); fireTimer(300);
   assert.equal(workers.length, 2);
   workers[0].onmessage({ data: { id: staleId, result: { ...preview, digest: 'stale' } } });
-  workers[0].onerror({ preventDefault() {}, message: 'old worker error' });
+  workers[0].onerror({ preventDefault() { }, message: 'old worker error' });
   assert.ok(!workers[1].terminated); assert.equal(body.dataset.digest, 'abc123');
   fireTimer(20000); await flush();
   assert.equal(workers[1].terminated, true);
