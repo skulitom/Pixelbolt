@@ -3,33 +3,24 @@ import { randomUUID } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import os from 'node:os';
-import { PixelError, MAX_REQUEST_BYTES, CANVAS_SIDE, errorReply, isObject, renderProject, inspectProject, stackViews, paletteUse, compareProjects, briefDiagnostics, briefCells, briefComparison, stillsHaveNoAnimation, largestScale, columnsOfCall } from './core.js';
-import { patchRecipe } from './patch.js';
+import { PixelError, MAX_REQUEST_BYTES, CANVAS_SIDE, errorReply, isObject, renderProject, inspectProject, briefCells, briefComparison } from './core.js';
 import { createRevisionStore } from './revisions.js';
-import { inspectMotion } from './motion.js';
-import { inspectWalks } from './walk-scan.js';
-import { prepareStack, inspectPoseSheet, compileStackSlices } from './stack.js';
+import { prepareStack } from './stack.js';
 import { encodePNG } from './png.js';
-import { createBundle, writeBundle, embedBundleRecipe, outputSummary, describeAnimations, formatJSON } from './export.js';
+import { writeBundle, embedBundleRecipe, outputSummary, describeAnimations, formatJSON } from './export.js';
 import { spriteFrames, retexture, canvasTexture } from './godot.js';
 import { shareLink } from './share.js';
-import { animationGIF, STILLS_GIF_NOTE } from './gif.js';
-import { readExpect, checkDelivery, briefCheck } from './check.js';
-import { createSequence, createSceneSequence, createBodiesSequence, createPowderSequence, figuresSummary, frameGrid } from './sequence.js';
+import { briefCheck } from './check.js';
+import { createSequence, createSceneSequence, figuresSummary } from './sequence.js';
 import { compilePoses, draftViews, fields } from './authoring.js';
-import { testMapScale } from './terrain.js';
-import { prepareScene, renderScene, sceneImage, sceneColors } from './scene.js';
+import { sceneImage } from './scene.js';
 import { createSceneBundle, sceneGIF } from './scene-export.js';
-import { importPNG } from './import.js';
-import { importCutoutPNG } from './cutout-import.js';
-import { applyOverlay } from './overlays.js';
 import { resolveReferences, assertInside } from './resolve.js';
-import { readSize, resizeRecipe, resizeWarning, resizeMargins, keepFrames, keepAnimations } from './resize.js';
-import { tilemapOf } from './autotile.js';
-import { listPresets, briefListing, findListing, findPreset, loadPreset, compilePreset, presetNext, COMPILERS } from './presets.js';
+import { listPresets, briefListing, findListing, findPreset, loadPreset, presetNext, COMPILERS } from './presets.js';
 import { TOPICS, SECTIONED, helpText, jsonTopic, isSchema, resolveTopic } from './help.js';
 import { skillCommand } from './skill.js';
 import { discoverRequest, discoverResult, completeResult } from './mcp-discover.js';
+import { validateAction, compileAction, patchAction, inspectAction, renderAction, sceneViewAction, importAction, sequenceAction } from './actions.js';
 
 const versions = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 // The server's instructions, sent by initialize and by server/discover (the 2026-07-28 handshake).
@@ -393,17 +384,18 @@ export function createToolRunner({ directory, root, version }) {
         // A schema's outline is text; the schema, a part of it and the example are JSON, sent without indentation.
         return { content: [textContent(jsonTopic(args.topic) && /^\s*[{[]/.test(text) ? JSON.parse(text) : text)] };
       } else if (name === 'pixel_validate') {
-        const { recipe, resolved, sources } = await recipeFrom(spec, revision), project = renderProject(recipe);
-        return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), width: project.width, height: project.height, frames: project.frames.length, ...describeAnimations(project, recipe), timing: briefCells(project.frames.map(({ name, duration }) => ({ name, duration }))), warnings: project.warnings, ...(project.clipping && { clipping: project.clipping }), ...(project.clippingOmitted && { clippingOmitted: project.clippingOmitted }), ...(options.fps !== undefined && { frameGrid: frameGrid(project, options.fps) }) }, resolved))] };
+        const { recipe, resolved, sources } = await recipeFrom(spec, revision), { project, summary, frameGrid: grid } = validateAction(recipe, { fps: options.fps });
+        const { name: _name, ...rest } = summary;
+        return { content: [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), ...rest, timing: briefCells(project.frames.map(({ name, duration }) => ({ name, duration }))), ...(grid && { frameGrid: grid }) }, resolved))] };
       } else if (name === 'pixel_inspect') {
         const { layers, reference, beside, palette, source, rotate, poseSheet, metadata: suppliedMetadata, speed, ground, ...inspection } = options;
         let recipe, resolved, sources, inspectionSource, metadata = suppliedMetadata, poseWarnings = [];
         const walks = inspection.view === 'walks';
-        if (walks) for (const key of Object.keys(options)) if (!['view','source','metadata','scale','background'].includes(key))
+        if (walks) for (const key of Object.keys(options)) if (!['view', 'source', 'metadata', 'scale', 'background'].includes(key))
           throw new PixelError(key, 'walks reviews every phase of every walk and takes only scale and background alongside the source or compiled recipe with metadata');
         if (poseSheet !== undefined) {
-          for (const key of Object.keys(options)) if (!['poseSheet','source','scale','background'].includes(key))
-            throw new PixelError(key,'poseSheet takes scale and background alongside the source or its revision');
+          for (const key of Object.keys(options)) if (!['poseSheet', 'source', 'scale', 'background'].includes(key))
+            throw new PixelError(key, 'poseSheet takes scale and background alongside the source or its revision');
         }
         if (source !== undefined) {
           if (spec !== undefined || revision !== undefined || suppliedMetadata !== undefined) throw new PixelError('arguments', 'source replaces project, revision and metadata');
@@ -423,45 +415,39 @@ export function createToolRunner({ directory, root, version }) {
           }
         }
         if (poseSheet !== undefined) {
-          if (spec !== undefined || recipe?.format !== 'pixelforge-stack') throw new PixelError('poseSheet','send a sprite stack as source, or its sourceRevision as revision');
+          if (spec !== undefined || recipe?.format !== 'pixelforge-stack') throw new PixelError('poseSheet', 'send a sprite stack as source, or its sourceRevision as revision');
           inspectionSource = recipe;
           recipe = prepareStack(inspectionSource).poseStudy(poseSheet);
         } else if (rotate !== undefined) {
-          fields(rotate, ['socket','heading','degrees'], 'rotate');
+          fields(rotate, ['socket', 'heading', 'degrees'], 'rotate');
           if (spec !== undefined || recipe?.format !== 'pixelforge-stack') throw new PixelError('rotate', 'send a sprite stack as source, or its sourceRevision as revision');
           if (inspection.view === 'motion') throw new PixelError('rotate', 'motion review uses character poses; omit view: motion for a socket rotation');
           inspectionSource = recipe;
           recipe = prepareStack(inspectionSource).rotationStudy(rotate.heading, rotate.socket).recipe(rotate.degrees);
         }
-        const project = renderProject(recipe, { ...(layers !== undefined && { layers }), ...((walks || inspection.view === 'parts' || inspection.view === 'motion' || palette === true) && { owners: true }) });
-        let view;
-        if (walks) {
-          const { view: mode, ...walkOptions } = inspection;
-          view = inspectWalks(project, walkOptions, metadata, recipe);
-        } else if (poseSheet !== undefined) view = inspectPoseSheet(project,poseSheet,inspection);
-        else if (inspection.view === 'motion') {
-          if (layers !== undefined || reference !== undefined || beside !== undefined) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers, reference and beside');
-          const { view: mode, ...motionOptions } = inspection;
-          view = inspectMotion(project, { ...motionOptions, metadata, ...(speed !== undefined && { speed }), ...(ground !== undefined && { ground }) }, recipe);
-        } else {
-          if (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined || inspection.track !== undefined) throw new PixelError('arguments', 'speed, ground and track require view: motion; metadata needs motion or walks');
-          // beside: each sheet is fitted to its share of the one image.
-          const share = Array.isArray(beside) && beside.length ? { sheets: Math.min(9, beside.length + 1) } : undefined;
-          view = inspectProject(project, inspection, share);
-          if (view.diagnostics) view.diagnostics = briefDiagnostics(view.diagnostics);
-          // beside: the same view of more revisions under this one, in the one image.
-          if (beside !== undefined) {
-            if (inspection.native || inspection.grid) throw new PixelError('beside', 'beside draws several recipes in one sheet; native and grid read one recipe at a time');
-            const others = [];
-            for (const id of beside) {
-              const other = renderProject(await read(id), layers === undefined ? {} : { layers });
-              try { others.push({ ...inspectProject(other, inspection, share), name: `${other.name} ${id}` }); } catch (error) { throw new PixelError(error.path ?? 'beside', `revision ${id} (${other.name}): ${error.message}`); }
-            }
-            view = stackViews([{ ...view, name: project.name }, ...others]);
-          }
-        }
-        const comparison = reference === undefined ? null : compareProjects(renderProject(await read(reference), layers === undefined ? {} : { layers }), project);
-        const content = [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), ...(inspectionSource && { sourceRevision: revision ?? await keep(inspectionSource, sources) }), name: project.name, width: project.width, height: project.height, frames: project.frames.length, ...describeAnimations(project, recipe), ...viewSummary(view), ...(palette === true && { palette: paletteUse(project) }), warnings: [...poseWarnings, ...project.warnings] }, resolved)), imageContent(view.sheet)];
+        const isMotion = !walks && poseSheet === undefined && inspection.view === 'motion';
+        if (isMotion && (layers !== undefined || reference !== undefined || beside !== undefined)) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers, reference and beside');
+        if (!walks && poseSheet === undefined && !isMotion && (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined || inspection.track !== undefined)) throw new PixelError('arguments', 'speed, ground and track require view: motion; metadata needs motion or walks');
+        const { view: _mode, ...modeOptions } = inspection;
+        const besideItems = beside === undefined ? [] : await Promise.all(beside.map(async id => ({ id, recipe: await read(id) })));
+        if (beside !== undefined && !besideItems.length && (inspection.native || inspection.grid)) throw new PixelError('beside', 'beside draws several recipes in one sheet; native and grid read one recipe at a time');
+        const referenceDoc = reference === undefined ? undefined : await read(reference);
+        const inspected = inspectAction(recipe, {
+          layers,
+          walks,
+          poseSheet,
+          motion: isMotion ? { ...modeOptions, ...(speed !== undefined && { speed }), ...(ground !== undefined && { ground }) } : undefined,
+          inspection: walks ? modeOptions : inspection,
+          metadata,
+          reference: referenceDoc,
+          beside: besideItems,
+          palette: palette === true,
+          call: 'mcp',
+          formatBesideName: (item, other) => `${other.name} ${item.id}`,
+          formatBesideError: (item, other, error) => new PixelError(error.path ?? 'beside', `revision ${item.id} (${other.name}): ${error.message}`)
+        });
+        const { project, drawn: view, comparison } = inspected;
+        const content = [textContent(withResolved({ ok: true, revision: await keep(recipe, sources), ...(inspectionSource && { sourceRevision: revision ?? await keep(inspectionSource, sources) }), name: project.name, width: project.width, height: project.height, frames: project.frames.length, ...describeAnimations(project, recipe), ...viewSummary(view), ...(inspected.palette && { palette: inspected.palette }), warnings: [...poseWarnings, ...project.warnings] }, resolved)), imageContent(view.sheet)];
         if (view.nativeSheet) content.push(imageContent(view.nativeSheet));
         if (view.grids) content.push(textContent(gridText(view)));
         if (reference !== undefined) {
@@ -472,15 +458,16 @@ export function createToolRunner({ directory, root, version }) {
         // The player plays the project only when the inspection shows it as it plays (all frames or one animation, any
         // zoom or backdrop); a selection, region, review mode, grid, guide or comparison shows the inspection's own image.
         const playable = poseSheet === undefined && reference === undefined && Object.entries(inspection).every(([key, value]) => ['animation', 'scale', 'background', 'maxCells', 'native'].includes(key) || (key === 'view' && value === 'color'));
-        return { content, ...(preview && (playable ? preview(project, { animation: inspection.animation })
-          : preview({ width: view.sheet.width, height: view.sheet.height, frames: [{ name: 'inspection', duration: 100, data: view.sheet.data }], animations: {} }))) };
+        return {
+          content, ...(preview && (playable ? preview(project, { animation: inspection.animation })
+            : preview({ width: view.sheet.width, height: view.sheet.height, frames: [{ name: 'inspection', duration: 100, data: view.sheet.data }], animations: {} })))
+        };
       } else if (name === 'pixel_patch') {
         if ((changes === undefined) === (options.overlay === undefined)) throw new PixelError('arguments', 'send either changes or overlay');
-        const { recipe: base, resolved, sources } = await recipeFrom(spec, revision), before = renderProject(base);
-        const applied = options.overlay === undefined ? patchRecipe(base, changes) : applyOverlay(base, options.overlay);
-        const { recipe, edits } = applied, after = renderProject(recipe);
-        const { image, ...report } = compareProjects(before, after), baseId = await keep(base, sources);
-        const summary = { ok: true, revision: await keep(recipe, sources), base: baseId, edits, ...(applied.rebased && { rebased: true }), ...briefComparison(report), ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
+        const { recipe: base, resolved, sources } = await recipeFrom(spec, revision);
+        const { recipe, edits, rebased, after, image, comparison } = patchAction(base, options.overlay === undefined ? { changes } : { overlay: options.overlay });
+        const baseId = await keep(base, sources);
+        const summary = { ok: true, revision: await keep(recipe, sources), base: baseId, edits, ...(rebased && { rebased: true }), ...comparison, ...(image && { image: { region: image.region, frames: image.frames, ...(image.omitted && { omitted: image.omitted }), scale: image.sheet.scale } }), warnings: after.warnings };
         return { content: [textContent(withResolved(summary, resolved)), ...(image ? [imageContent(image.sheet)] : [])], ...(preview && preview(after)) };
       } else if (name === 'pixel_render') {
         const { animation, listFiles, sequence, share, embedRecipe, saveAs, overwrite } = options;
@@ -488,45 +475,31 @@ export function createToolRunner({ directory, root, version }) {
         if (options.scale !== undefined && (!Number.isInteger(options.scale) || options.scale < 1 || options.scale > 16)) throw new PixelError('scale', 'expected a whole number from 1 to 16: how many times to enlarge every exported pixel');
         // columns: sheet.columns for this export the same way (a one-row strip), from 1 to the frame count.
         if (options.columns !== undefined && (!Number.isInteger(options.columns) || options.columns < 1 || options.columns > 256)) throw new PixelError('columns', 'expected a whole number from 1 to the frame count: how many frames across the sheet');
-        const from = await recipeFrom(spec, revision), { resolved, sources } = from, expect = readExpect(options.expect, from.recipe);
-        if (options.columns !== undefined && from.recipe?.sheet?.trim === true) throw new PixelError('columns', 'columns lays the sheet out as a grid, and this recipe\'s sheet.trim packs each frame by its visible bounds, which ignores columns; pixel_patch {"set": "sheet.trim", "value": false} first');
-        const forExport = { ...(options.scale !== undefined && { scale: options.scale }), ...(options.columns !== undefined && { columns: options.columns }) };
-        // Only a sheet that is an object or missing takes them: any other is left for the renderer to refuse as project.sheet.
-        const recipe = Object.keys(forExport).length && isObject(from.recipe) && (from.recipe.sheet === undefined || isObject(from.recipe.sheet)) ? { ...from.recipe, sheet: { ...from.recipe.sheet, ...forExport } } : from.recipe;
+        const from = await recipeFrom(spec, revision), { resolved, sources } = from;
         // normal: a normal recipe (inline or a revision) or the source that derives one, exported beside the colour sheet.
         // Its files, and those behind any revision it names, are inputs too: saveAs never writes over them.
-        let normal, normalSources = [];
+        let normalDoc, normalSources = [];
         if (options.normal !== undefined) {
           if (!isObject(options.normal)) throw new PixelError('normal', 'expected a normal recipe, {"revision": id} or a pixelforge-normals source');
           const referenced = [], revision = id => { referenced.push(id); return read(id); };
           const { document: given, files = [] } = options.normal.revision !== undefined && options.normal.version === undefined ? { document: await revision(options.normal.revision) } : await resolveReferences(options.normal, { baseDir: root, root, revisions: revision });
-          normal = given?.format === 'pixelforge-normals' ? COMPILERS['pixelforge-normals'](given).recipe : given;
+          normalDoc = given;
           normalSources = [...relativeToRoot(files), ...(await Promise.all(referenced.map(sourcesOf))).flat()];
         }
-        const bundle = await createBundle(recipe, { normal }).catch(error => { throw options.columns === undefined ? error : columnsOfCall(error, 'columns'); });
-        // Stills keep their flipbook for viewing, but it is no animation to choose.
-        if (animation !== undefined && bundle.project.stills) throw new PixelError('animation', stillsHaveNoAnimation('choose'));
-        const view = inspectProject(bundle.project, { ...(animation !== undefined && { animation }), maxCells: 256 });
-        if (options.columns > bundle.project.frames.length) throw new PixelError('columns', `expected a whole number from 1 to the frame count, ${bundle.project.frames.length}: columns ${bundle.project.frames.length} is a one-row strip`);
         // A GIF named in saveAs needs GIFs: the frames' own size unless gif says otherwise. Stills have none, and saveAs
         // says so.
-        const gif = options.gif === undefined && !bundle.project.stills && saveAs !== null && typeof saveAs === 'object' && Object.keys(saveAs).some(key => key === 'gif' || key.startsWith('gifs/')) ? {} : options.gif;
-        // GIFs are encoded before anything is written, so a refused GIF leaves no folder behind.
-        if (gif !== undefined && (gif === null || typeof gif !== 'object' || Array.isArray(gif))) throw new PixelError('gif', 'expected an object such as {} or { "scale": 8 }');
-        // Stills have no animation to make a GIF of: none is written, with one note.
-        if (gif !== undefined && bundle.project.stills) bundle.project.warnings.push(STILLS_GIF_NOTE);
-        // One render's GIFs hold 67,108,864 pixels in all, a GIF frame per played frame: checked before any is encoded, as
-        // the CLI does, so the scale named fits them all. (One animation's own refusal knows only its GIF, and the scale
-        // it named was refused by the next call.) A scale that is no whole number from 1 to 16 is left to the encoder's own
-        // message: past 16 the search for a smaller one names a scale the encoder refuses, and at 1e20 it never ends.
-        if (gif !== undefined && !bundle.project.stills) {
-          const scale = gif.scale ?? 1, played = Object.values(bundle.project.animations).reduce((sum, item) => sum + item.frames.length, 0) * bundle.project.width * bundle.project.height;
-          if (Number.isInteger(scale) && scale >= 1 && scale <= 16 && played * scale * scale > 67108864) {
-            const fits = largestScale(played, 67108864, scale);
-            throw new PixelError('gif', `the GIFs of every animation at scale ${scale} pass the 67,108,864 pixels one render's GIFs hold; ${fits ? `gif.scale ${fits} is the largest that fits` : 'shorten the animations'}`);
-          }
-        }
-        const gifs = gif === undefined || bundle.project.stills ? [] : Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif));
+        const impliedGif = options.gif === undefined && saveAs !== null && typeof saveAs === 'object' && Object.keys(saveAs).some(key => key === 'gif' || key.startsWith('gifs/')) && !(isObject(from.recipe?.animations) && !Object.keys(from.recipe.animations).length);
+        const { recipe, bundle, view, gifs, gifNotes, check } = await renderAction(from.recipe, {
+          scale: options.scale,
+          columns: options.columns,
+          normal: normalDoc,
+          animation,
+          gif: impliedGif ? {} : options.gif,
+          expect: options.expect,
+          call: 'mcp',
+          checkStillsAnimation: true,
+          previewView: true
+        });
         const frames = sequence === undefined ? null : checkSequenceSize(createSequence(bundle.project, { ...(animation !== undefined && { animation }), ...(sequence !== null && typeof sequence === 'object' ? sequence : { fps: undefined }) }));
         let shared;
         if (share === true) {
@@ -556,15 +529,16 @@ export function createToolRunner({ directory, root, version }) {
           error.message += `. The export itself was written to ${out}: use its files, or send revision "${savedRevision}" with saveAs paths that can be written`;
           throw Object.assign(error, { made: { revision: savedRevision, directory: out } });
         }
-        const check = checkDelivery(bundle.project, { recipe, gifs: bundle.project.stills ? undefined : gifs, expect, animation, call: 'mcp', scale: options.scale, recipeScale: Number.isInteger(from.recipe?.sheet?.scale) ? from.recipe.sheet.scale : 1 });
-        return { content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), frames: bundle.project.frames.length, ...describeAnimations(bundle.project, recipe), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16) } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }), ...(item.note && { note: item.note }) })) }), check: briefCheck(check), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)], ...(preview && preview(bundle.project, {
-          animation, files: [...new Set([
-            ...files.filter(file => path.dirname(file) === out && /\.(?:png|atlas\.json|pixel\.json|tres|tsx)$/.test(file)),
-            ...saves.map(item => item.destination), ...gifs.map(item => path.join(out, 'gifs', item.animation + '.gif')),
-            ...files, ...(frames ? [...frames.files.keys()].map(file => path.join(out, 'sequence', file)) : [])
-          ])],
-          verdict: check.ok === true ? 'passed' : check.ok === false ? 'failed' : 'not-checked', ...(shared?.link && { shareLink: shared.link })
-        })) };
+        return {
+          content: [textContent(withResolved({ ok: true, revision: savedRevision, directory: out, ...outputSummary(out, files, listFiles === true), frames: bundle.project.frames.length, ...describeAnimations(bundle.project, recipe), playback: path.join(out, 'preview.html'), ...(gifs.length && { gifs: { directory: 'gifs', count: gifs.length, scale: gifs[0].scale, width: gifs[0].width, height: gifs[0].height, ...(gifs.length <= 16 && { files: gifs.map(item => `gifs/${item.animation}.gif`) }), notes: gifNotes } }), ...(frames && { sequence: sequenceSummary(frames.info) }), ...(saves.length && { saved: saves.map(item => ({ file: item.file, path: item.destination, ...(item.replaced && { replaced: true }), ...(item.note && { note: item.note }) })) }), check: briefCheck(check), preview: viewSummary(view), warnings: bundle.project.warnings, ...(shared && { share: shared }) }, resolved)), imageContent(view.sheet)], ...(preview && preview(bundle.project, {
+            animation, files: [...new Set([
+              ...files.filter(file => path.dirname(file) === out && /\.(?:png|atlas\.json|pixel\.json|tres|tsx)$/.test(file)),
+              ...saves.map(item => item.destination), ...gifs.map(item => path.join(out, 'gifs', item.animation + '.gif')),
+              ...files, ...(frames ? [...frames.files.keys()].map(file => path.join(out, 'sequence', file)) : [])
+            ])],
+            verdict: check.ok === true ? 'passed' : check.ok === false ? 'failed' : 'not-checked', ...(shared?.link && { shareLink: shared.link })
+          }))
+        };
       } else if (name === 'pixel_compile') {
         if ((args.source === undefined) === (args.preset === undefined)) throw new PixelError('arguments', 'send either source or preset');
         // A preset compiles exactly as its file does; its files are the package's, so none is recorded as a source.
@@ -585,35 +559,26 @@ export function createToolRunner({ directory, root, version }) {
         // run past 256 frames.
         if (args.sequence !== undefined) {
           if (format !== 'pixelforge-bodies' && format !== 'pixelforge-powder') throw new PixelError('sequence', 'pixel_compile writes video frames for a pixelforge-bodies match or a pixelforge-powder clip; for other sources compile, then pixel_render with sequence');
-          const frames = checkSequenceSize((format === 'pixelforge-powder' ? createPowderSequence : createBodiesSequence)(document, args.sequence, { budget: SEQUENCE_PIXELS, command: skillCommand(version) })), out = await newFolder(document.name);
+          const frames = checkSequenceSize(sequenceAction(document, args.sequence, { budget: SEQUENCE_PIXELS, command: skillCommand(version) })), out = await newFolder(document.name);
           await writeBundle(frames, path.join(out, 'sequence'));
           return { content: [textContent({ ok: true, name: document.name, directory: out, sequence: sequenceSummary(frames.info), figures: figuresSummary(frames.info.figures), ended: frames.info.ended })] };
         }
-        // slices: a stack's own slices, to stack at run time, in place of its baked headings.
-        if (args.slices !== undefined && typeof args.slices !== 'boolean') throw new PixelError('slices', 'expected true or false');
-        if (args.slices && format !== 'pixelforge-stack') throw new PixelError('slices', 'slices are a sprite stack\'s (a pixelforge-stack source), to stack at run time');
-        for (const key of ['frames', 'animation', 'size']) if (args.slices && args[key] !== undefined) throw new PixelError(key, `${key} shapes baked frames; a slice sheet is the stack's slices as they are, so leave it out with slices`);
-        const made = args.slices ? compileStackSlices(document) : args.preset !== undefined || format === 'pixelforge-fx' ? compilePreset(document, { frames: args.frames, animation: args.animation }) : COMPILERS[format](document), { warnings: compiled = [], preview: testMap } = made;
-        // frames: each animation down to that many evenly spaced frames, playing as long as before. size: the drawing
-        // on a canvas of another size (cut or given margins, never scaled).
-        if (args.size !== undefined && format === 'pixelforge-autotile') throw new PixelError('size', 'a tile set\'s size is its tile, set in the source');
-        if (args.frames !== undefined && format === 'pixelforge-autotile') throw new PixelError('frames', 'frames thins animations, and the frames of a tile set are its tiles');
-        if (args.animation !== undefined && format === 'pixelforge-autotile') throw new PixelError('animation', 'animation keeps animations, and a tile set has none to choose from');
-        if (args.animation !== undefined) made.recipe = keepAnimations(made.recipe, args.animation).recipe;
-        const thinned = args.frames !== undefined ? keepFrames(made.recipe, args.frames) : null, kept = thinned?.kept;
-        const moved = args.size !== undefined ? resizeRecipe((thinned ?? made).recipe, args.size) : null, recipe = (moved ?? thinned ?? made).recipe, resized = moved?.resized;
-        const cut = resized && resizeWarning(resized, [recipe.width, recipe.height]), metadata = made.metadata && (kept || resized) ? { ...made.metadata, ...(kept && { kept }), ...(resized && { resized }) } : made.metadata;
-        const project = renderProject(recipe), view = inspectProject(project, { maxCells: 256 });
-        // An autotile set also shows every tile over a test map, where seams and repetition show.
-        const map = testMap ? inspectProject(renderProject(testMap), { scale: testMapScale(testMap) }) : null;
+        const { recipe, project, made, metadata, testMap: map, tilemap, margins, kept, warnings: compiledWarnings, projectWarnings } = compileAction(document, {
+          preset: args.preset,
+          slices: args.slices,
+          frames: args.frames,
+          animation: args.animation,
+          size: args.size,
+          call: 'mcp',
+          withTestMap: true
+        });
+        const view = inspectProject(project, { maxCells: 256 });
         const inputs = [...relativeToRoot(sourceFiles), ...(await Promise.all(referenced.map(sourcesOf))).flat()];
-        return { content: [textContent({ ok: true, revision: await keep(recipe, inputs), ...(((format === 'pixelforge-stack' && (document.sockets || document.paths || document.poses)) || (format === 'pixelforge-poses' && (document.walkCycles || document.walkReview))) && { sourceRevision: await keep(document, inputs) }), name: project.name, width: project.width, height: project.height, frames: project.frames.length, ...describeAnimations(project, recipe), preview: viewSummary(view), ...(map && { testMap: 'the second image: every tile of the set over a test map', ...(tilemapOf(recipe, metadata) && { tilemap: tilemapOf(recipe, metadata) }) }), ...(resized && resizeMargins(resized, [recipe.width, recipe.height]) && { margins: resizeMargins(resized, [recipe.width, recipe.height]) }), ...(kept && { kept }), warnings: [...compiled, ...(thinned?.notes ?? []), ...(cut ? [cut] : []), ...project.warnings.filter(text => !(cut && text.startsWith('Some drawing falls outside the canvas')))], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet), ...(map ? [imageContent(map.sheet)] : [])], ...(preview && preview(project)) };
+        return { content: [textContent({ ok: true, revision: await keep(recipe, inputs), ...(((format === 'pixelforge-stack' && (document.sockets || document.paths || document.poses)) || (format === 'pixelforge-poses' && (document.walkCycles || document.walkReview))) && { sourceRevision: await keep(document, inputs) }), ...made, preview: viewSummary(view), ...(map && { testMap: 'the second image: every tile of the set over a test map', ...(tilemap && { tilemap }) }), ...(margins && { margins }), ...(kept && { kept }), warnings: [...compiledWarnings, ...projectWarnings], ...(args.metadata === true && { metadata }) }), imageContent(view.sheet), ...(map ? [imageContent(map.sheet)] : [])], ...(preview && preview(project)) };
       } else if (name === 'pixel_scene') {
         const { document, files: sources } = await resolveReferences(args.scene, { baseDir: root, root, revisions: read, compilers: COMPILERS });
-        const scene = prepareScene(document), frame = renderScene(scene, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false, depth: args.view === 'depth' });
-        const scale = args.scale ?? Math.max(1, Math.min(8, Math.floor(768 / Math.max(frame.width, frame.height))));
-        const image = sceneImage(frame, { mode: args.view ?? 'color', scale, guides: args.guides });
-        const summary = { ok: true, name: document.name, width: frame.width, height: frame.height, duration: scene.duration, time: args.time ?? 0, scale, colors: sceneColors(frame.data), placements: frame.placements.length, tilemaps: frame.placements.filter(p => p.tilemap).map(p => ({ name: p.name, tiles: p.tiles })), ...(frame.depth && { depth: frame.depth }), ...(frame.lights && { lights: frame.lights }), ...(frame.shadows && { shadows: frame.shadows }), ...(frame.camera && { camera: frame.camera }), ...(frame.haze && { haze: frame.haze }), warnings: frame.warnings, ...(sources.length && { resolved: sources.map(file => path.relative(root, file).split(path.sep).join('/')) }) };
+        const { scene, frame, image, summary: baseSummary } = sceneViewAction(document, { time: args.time ?? 0, lit: args.lit ?? true, density: args.density ?? false, view: args.view ?? 'color', scale: args.scale, guides: args.guides });
+        const summary = { ok: true, ...baseSummary, tilemaps: frame.placements.filter(p => p.tilemap).map(p => ({ name: p.name, tiles: p.tiles })), ...(sources.length && { resolved: sources.map(file => path.relative(root, file).split(path.sep).join('/')) }) };
         // The sequence is built before anything is written, so a refused one leaves no folder behind.
         const frames = args.sequence === undefined ? null : checkSequenceSize(createSceneSequence(scene, document.name, args.sequence));
         // One new folder holds whatever the call writes: the scene bundle, the sequence, or both.
@@ -631,17 +596,14 @@ export function createToolRunner({ directory, root, version }) {
         return { content: [textContent(summary), imageContent(image)], ...(preview && preview({ width: frame.width, height: frame.height, frames: [{ name: document.name, duration: 100, data: sceneImage(frame, { mode: args.view ?? 'color', guides: args.guides }).data }], animations: {} })) };
       } else if (name === 'pixel_import') {
         if ((args.data === undefined) === (args.path === undefined)) throw new PixelError('arguments', 'send either data (base64 PNG) or path');
-        let bytes, fileName;
+        let bytes, file;
         if (args.data !== undefined) bytes = Buffer.from(args.data, 'base64');
         else {
-          const file = path.resolve(root, args.path);
+          file = path.resolve(root, args.path);
           await assertInside(file, root, 'path');
           bytes = await readFile(file);
-          // As the command line does: coin.png becomes "coin" where that is a name a recipe can have.
-          fileName = path.basename(file).replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[^A-Za-z]+/, '').slice(0, 64) || undefined;
         }
-        const readPNG = args.cutout === undefined ? importPNG : importCutoutPNG;
-        const imported = readPNG(bytes, { ...(args.name !== undefined ? { name: args.name } : fileName && { name: fileName }), ...(args.atlas !== undefined && { atlas: args.atlas }), ...(args.frame !== undefined && { frame: readSize(args.frame, 'frame') }), ...(args.padding !== undefined && { padding: args.padding }), ...(args.frames !== undefined && { frames: args.frames }), ...(args.cutout !== undefined && { cutout: args.cutout }) });
+        const imported = importAction(bytes, { name: args.name, file, atlas: args.atlas, frame: args.frame, padding: args.padding, frames: args.frames, cutout: args.cutout });
         const project = renderProject(imported.recipe), view = inspectProject(project, { maxCells: 256 });
         const inputs = args.path === undefined ? [] : [args.path];
         let cutout;
@@ -675,7 +637,7 @@ function createToolHost({ directory, root, version, timeLimit, memoryLimit }) {
     // stdout is the protocol stream, so anything a tool prints goes to stderr instead.
     thread.stdout.pipe(process.stderr, { end: false });
     // Errors during a call are answered by run; one between calls only retires the worker.
-    thread.on('error', () => {}).on('exit', () => { if (worker?.thread === thread) worker = null; });
+    thread.on('error', () => { }).on('exit', () => { if (worker?.thread === thread) worker = null; });
     // The worker says when its modules are loaded, so the time limit counts a call's own work, not startup. `ready`
     // resolves with null then, or with the reason the worker could not start.
     const ready = new Promise(resolve => {
@@ -717,68 +679,92 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     revision: { type: 'string', pattern: '^[a-f0-9]{12}$', description: 'Revision id from an earlier response, sent instead of project.' }
   };
   const projectInput = { type: 'object', properties: source, additionalProperties: false };
-  const renderInput = { ...projectInput, properties: { ...source, animation: { type: 'string', description: 'Preview this animation in playback order; every animation is exported either way.' }, listFiles: { type: 'boolean', description: 'List every exported file, not only the key ones.' }, scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Enlarge every exported pixel this many times (a PNG at 4x): the recipe\'s sheet.scale, set for this export and kept in the revision returned.' }, columns: { type: 'integer', minimum: 1, maximum: 256, description: 'Frames across the sheet, 1 to the frame count (sheet.columns, for this export): a one-row strip is the frame count.' }, normal: { type: 'object', description: 'A normal recipe aligned with this one, {"revision": id} of one, or a pixelforge-normals source: exported beside the sheet with a Godot CanvasTexture that lights the sprite.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default 1, the frames\' own size; enlarge only for posting.' }, background: { type: 'string', description: 'Palette name or opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write each animation as a GIF in gifs/ ({} for defaults): exact colours, at most 256 per frame.' }, sequence: { type: 'object', required: ['fps'], additionalProperties: false, description: 'Also write numbered PNG frames with alpha for a video editor into sequence/, with the ffmpeg command for a .mov.', properties: {
-    fps: { type: ['number', 'string'], description: '24, 25, 30, 60, "23.976", "29.97", "59.94" or a fraction such as "30000/1001".' },
-    animation: { type: 'string', description: 'Default: the previewed animation, or the first.' }, step: { type: 'integer', minimum: 1, maximum: 60, description: 'Video frames per sampled frame; 2 animates on twos.' },
-    size: { type: 'string', description: '720p, 1080p, 1440p, 4k, vertical, square or WIDTHxHEIGHT. Default: the sprite at scale.' },
-    scale: { type: 'integer', minimum: 1, maximum: 256 }, fit: { enum: ['contain', 'cover'] },
-    align: { enum: ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'] },
-    offset: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2, description: '[x, y] added to the aligned position.' },
-    background: { type: 'string', description: 'Palette name or opaque hex. Default: transparent.' },
-    loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Clip length instead of loops.' }
-  } }, share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: ['integer', 'object'], minimum: 1, additionalProperties: { type: 'integer', minimum: 1 }, description: 'Frames each animation plays, or per animation: {"idle": 4, "walk": 8}.' }, colors: { type: 'integer', minimum: 1 }, transparent: { type: 'boolean' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 }, sheet: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, columns: { type: 'integer', minimum: 1 }, rows: { type: 'integer', minimum: 1 } }, additionalProperties: false, description: 'The sprite sheet the user named: its size, or its grid ({"rows": 1} for a one-row strip).' } }, additionalProperties: false, description: 'What the user asked for: frame size, frames per animation, at most colors, a transparent background, loop, GIF scale, the sheet. The reply\'s check lists each miss and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: {"sheet"|"atlas"|"godot"|"tileset"|"tiled"|"recipe"|"gif"|"apng" or a listed file such as "gifs/walk.gif": "assets/hero.png"}. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' } } };
+  const renderInput = {
+    ...projectInput, properties: {
+      ...source, animation: { type: 'string', description: 'Preview this animation in playback order; every animation is exported either way.' }, listFiles: { type: 'boolean', description: 'List every exported file, not only the key ones.' }, scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Enlarge every exported pixel this many times (a PNG at 4x): the recipe\'s sheet.scale, set for this export and kept in the revision returned.' }, columns: { type: 'integer', minimum: 1, maximum: 256, description: 'Frames across the sheet, 1 to the frame count (sheet.columns, for this export): a one-row strip is the frame count.' }, normal: { type: 'object', description: 'A normal recipe aligned with this one, {"revision": id} of one, or a pixelforge-normals source: exported beside the sheet with a Godot CanvasTexture that lights the sprite.' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Default 1, the frames\' own size; enlarge only for posting.' }, background: { type: 'string', description: 'Palette name or opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write each animation as a GIF in gifs/ ({} for defaults): exact colours, at most 256 per frame.' }, sequence: {
+        type: 'object', required: ['fps'], additionalProperties: false, description: 'Also write numbered PNG frames with alpha for a video editor into sequence/, with the ffmpeg command for a .mov.', properties: {
+          fps: { type: ['number', 'string'], description: '24, 25, 30, 60, "23.976", "29.97", "59.94" or a fraction such as "30000/1001".' },
+          animation: { type: 'string', description: 'Default: the previewed animation, or the first.' }, step: { type: 'integer', minimum: 1, maximum: 60, description: 'Video frames per sampled frame; 2 animates on twos.' },
+          size: { type: 'string', description: '720p, 1080p, 1440p, 4k, vertical, square or WIDTHxHEIGHT. Default: the sprite at scale.' },
+          scale: { type: 'integer', minimum: 1, maximum: 256 }, fit: { enum: ['contain', 'cover'] },
+          align: { enum: ['top-left', 'top', 'top-right', 'left', 'center', 'right', 'bottom-left', 'bottom', 'bottom-right'] },
+          offset: { type: 'array', items: { type: 'integer' }, minItems: 2, maxItems: 2, description: '[x, y] added to the aligned position.' },
+          background: { type: 'string', description: 'Palette name or opaque hex. Default: transparent.' },
+          loops: { type: 'integer', minimum: 1, maximum: 1000 }, seconds: { type: 'number', exclusiveMinimum: 0, maximum: 3600, description: 'Clip length instead of loops.' }
+        }
+      }, share: { type: 'boolean', description: 'Also return a playground link that reopens this recipe in a browser.' }, embedRecipe: { type: 'boolean', description: 'Embed the recipe in the exported PNGs so they reopen in the playground.' }, expect: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, frames: { type: ['integer', 'object'], minimum: 1, additionalProperties: { type: 'integer', minimum: 1 }, description: 'Frames each animation plays, or per animation: {"idle": 4, "walk": 8}.' }, colors: { type: 'integer', minimum: 1 }, transparent: { type: 'boolean' }, loop: { type: 'boolean' }, gifScale: { type: 'integer', minimum: 1, maximum: 16 }, sheet: { type: 'object', properties: { width: { type: 'integer', minimum: 1 }, height: { type: 'integer', minimum: 1 }, columns: { type: 'integer', minimum: 1 }, rows: { type: 'integer', minimum: 1 } }, additionalProperties: false, description: 'The sprite sheet the user named: its size, or its grid ({"rows": 1} for a one-row strip).' } }, additionalProperties: false, description: 'What the user asked for: frame size, frames per animation, at most colors, a transparent background, loop, GIF scale, the sheet. The reply\'s check lists each miss and the call that fixes it.' }, saveAs: { type: 'object', additionalProperties: { type: 'string' }, description: 'Also write files where the user asked, relative to the server root: {"sheet"|"atlas"|"godot"|"tileset"|"tiled"|"recipe"|"gif"|"apng" or a listed file such as "gifs/walk.gif": "assets/hero.png"}. A GIF here implies gif: {}.' }, overwrite: { type: 'boolean', description: 'Let saveAs replace existing files. Default: refuse.' }
+    }
+  };
   const validateInput = { ...projectInput, properties: { ...source, fps: { type: ['number', 'string'], description: 'Also check timing against a video frame rate (24, 25, "29.97", 30, 60 or a fraction): frameGrid lists durations off the grid.' } } };
   const coordinate = (minimum, maximum) => ({ type: 'integer', minimum, maximum });
   const guides = { type: 'object', description: 'Perspective guides: {horizon: row, vanish: [[x, y], …up to 3], iso: {tile: [32, 16], at: [x, y]}}.' };
-  const inspectInput = { ...projectInput, properties: {
-    guides,
-    ...source,
-    source: { type: 'object', description: 'Pose source for walks or motion, or stack for rotate or poseSheet. For walks, reuse sourceRevision as revision.' },
-    poseSheet: { type:'object', required:['poses','headings'], additionalProperties:false, description:'Named pose rows Ã— camera headings; optional focus path, crop size and fixed socket phase. Reuse sourceRevision.',
-      properties:{poses:{type:'array',items:{type:'string'},minItems:1,maxItems:16,uniqueItems:true},headings:{type:'array',items:{type:'integer',minimum:0,maximum:359},minItems:1,maxItems:16,uniqueItems:true},
-        focus:{type:'string'},size:{type:'integer',minimum:8,maximum:256},phase:{type:'integer',minimum:0,maximum:359}} },
-    rotate: { type:'object', required:['socket','heading','degrees'], additionalProperties:false,
-      description:'Lock the camera and turn one socket. Send source once, then reuse sourceRevision as revision.',
-      properties:{ socket:{type:'string'}, heading:{type:'integer',minimum:0,maximum:359}, degrees:{oneOf:[
-        {type:'number',minimum:0,maximum:360},{type:'array',minItems:1,maxItems:256,uniqueItems:true,items:{type:'number',minimum:0,maximum:360}}]} } },
-    metadata: { type: 'object', description: 'Pose metadata from pixel_compile (metadata: true), for walks or motion review of a compiled revision.' },
-    track: { type: 'object', description: 'Cutout motion: follow {part,rects,pivot?} from a stand, reporting wrong owners and normal foreground occlusions. Rects are [x,y,w,h].' },
-    speed: { type: 'number', minimum: -4096, maximum: 4096, description: 'Motion view: pixels per second.' },
-    ground: { type: 'integer', minimum: 0, maximum: CANVAS_SIDE - 1, description: 'Motion view: ground row.' },
-    layers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 64, description: 'Show only these named layers.' },
-    reference: { type: 'string', description: 'Revision to compare against: adds a before/after image and the changed pixels.' }, beside: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 8, description: 'Revisions drawn under this one in the same view and image, to compare variants.' },
-    frames: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1024, description: 'Frame names to show, in order; * and ? match, as in "flash-*". Default: every frame.' },
-    animation: { type: 'string', description: 'Show one animation in playback order instead of frames.' },
-    stack: { type: 'array', items: { type: 'array', items: { type: 'string' } }, description: 'Cells of frames laid over one another, bottom first, instead of frames: [["body", "plate"]].' },
-    region: { type: 'object', properties: { x: coordinate(0, 4095), y: coordinate(0, 4095), w: coordinate(1, 4096), h: coordinate(1, 4096) }, required: ['x', 'y', 'w', 'h'], additionalProperties: false, description: 'Crop every frame to this canvas rectangle.' },
-    grid: { type: 'boolean', description: 'Also return palette-key text grids with x/y rulers (at most 16,384 pixels).' },
-    scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024 px, at least 1.' },
-    background: { type: 'string', description: 'checker (default), transparent, a palette name or a hex color.' },
-    view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'parts', 'motion', 'walks'], description: 'walks reviews every rigid walk cycle in the pose source. onion and motion need animation; motion reports gait and loop joins. parts colours pixels by their owner. tile repeats each frame 3x3.' },
-    native: { type: 'boolean', description: 'Also return a 1x contact sheet.' },
-    palette: { type: 'boolean', description: 'Also list each palette key with its colour, pixels and the parts it colours.' },
-    diagnostics: { type: 'boolean', description: 'Advisory evidence: duplicate and empty frames, stray pixels, palette, loop joins, timing, cleanup counts.' },
-    maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Show at most this many evenly spaced cells; step and offset pick positions instead.' },
-    step: { type: 'integer', minimum: 1, maximum: 1024, description: 'Keep every step-th cell from offset; step 2 shows the A frames of an A/B strobe.' },
-    offset: { type: 'integer', minimum: 0, maximum: 2047 },
-    every: { type: 'integer', minimum: 10, maximum: 60000, description: 'With animation: a cell per this many ms of playback, so holds and pacing show.' }
-  } };
-  const patchInput = { ...projectInput, properties: {
-    ...source,
-    changes: { type: 'array', minItems: 1, maxItems: 1024, description: 'Edits applied in order. Paths match error paths, such as frames[3].duration; lists also accept [name] and [-] to append.', items: { type: 'object', properties: {
-      set: { type: 'string', description: 'Path to replace, or an object field to add.' },
-      insert: { type: 'string', description: 'List position to insert before; [-] appends.' },
-      remove: { type: 'string', description: 'Object field or list item to delete.' },
-      paint: { type: 'string', description: 'Frame path such as frames[blink]; value: [{x, y, color}] canvas pixels after all layers (transparent erases).' },
-      grid: { type: 'string', description: 'Frame path; value: {x, y, rows, erase?, mask?}, dots keep pixels.' },
-      move: { type: 'string', description: 'Frame path; value: {x, y, w, h, dx, dy, mask?}.' },
-      recolor: { type: 'string', description: 'Frame path; value: {x, y, w, h, from, to, mask?}.' },
-      cleanup: { type: 'string', description: 'Frame path; value: {corners?, strays?, x?, y?, w?, h?, mask?, colors?}. Proposes fixes for doubled corners and stray pixels; check the report.' },
-      scope: { enum: ['frame', 'inherited'], description: 'Canvas edits: inherited (default), or frame to leave frames that inherit it unchanged.' },
-      value: {}
-    }, additionalProperties: false } },
-    overlay: { type: 'object', description: 'A saved pixelforge-overlay to apply instead of changes.' }
-  } };
+  const inspectInput = {
+    ...projectInput, properties: {
+      guides,
+      ...source,
+      source: { type: 'object', description: 'Pose source for walks or motion, or stack for rotate or poseSheet. For walks, reuse sourceRevision as revision.' },
+      poseSheet: {
+        type: 'object', required: ['poses', 'headings'], additionalProperties: false, description: 'Named pose rows Ã— camera headings; optional focus path, crop size and fixed socket phase. Reuse sourceRevision.',
+        properties: {
+          poses: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 16, uniqueItems: true }, headings: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 359 }, minItems: 1, maxItems: 16, uniqueItems: true },
+          focus: { type: 'string' }, size: { type: 'integer', minimum: 8, maximum: 256 }, phase: { type: 'integer', minimum: 0, maximum: 359 }
+        }
+      },
+      rotate: {
+        type: 'object', required: ['socket', 'heading', 'degrees'], additionalProperties: false,
+        description: 'Lock the camera and turn one socket. Send source once, then reuse sourceRevision as revision.',
+        properties: {
+          socket: { type: 'string' }, heading: { type: 'integer', minimum: 0, maximum: 359 }, degrees: {
+            oneOf: [
+              { type: 'number', minimum: 0, maximum: 360 }, { type: 'array', minItems: 1, maxItems: 256, uniqueItems: true, items: { type: 'number', minimum: 0, maximum: 360 } }]
+          }
+        }
+      },
+      metadata: { type: 'object', description: 'Pose metadata from pixel_compile (metadata: true), for walks or motion review of a compiled revision.' },
+      track: { type: 'object', description: 'Cutout motion: follow {part,rects,pivot?} from a stand, reporting wrong owners and normal foreground occlusions. Rects are [x,y,w,h].' },
+      speed: { type: 'number', minimum: -4096, maximum: 4096, description: 'Motion view: pixels per second.' },
+      ground: { type: 'integer', minimum: 0, maximum: CANVAS_SIDE - 1, description: 'Motion view: ground row.' },
+      layers: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 64, description: 'Show only these named layers.' },
+      reference: { type: 'string', description: 'Revision to compare against: adds a before/after image and the changed pixels.' }, beside: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 8, description: 'Revisions drawn under this one in the same view and image, to compare variants.' },
+      frames: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 1024, description: 'Frame names to show, in order; * and ? match, as in "flash-*". Default: every frame.' },
+      animation: { type: 'string', description: 'Show one animation in playback order instead of frames.' },
+      stack: { type: 'array', items: { type: 'array', items: { type: 'string' } }, description: 'Cells of frames laid over one another, bottom first, instead of frames: [["body", "plate"]].' },
+      region: { type: 'object', properties: { x: coordinate(0, 4095), y: coordinate(0, 4095), w: coordinate(1, 4096), h: coordinate(1, 4096) }, required: ['x', 'y', 'w', 'h'], additionalProperties: false, description: 'Crop every frame to this canvas rectangle.' },
+      grid: { type: 'boolean', description: 'Also return palette-key text grids with x/y rulers (at most 16,384 pixels).' },
+      scale: { type: 'integer', minimum: 1, maximum: 16, description: 'Contact sheet scale. Default: the largest that fits about 1024 px, at least 1.' },
+      background: { type: 'string', description: 'checker (default), transparent, a palette name or a hex color.' },
+      view: { enum: ['color', 'silhouette', 'grayscale', 'onion', 'tile', 'parts', 'motion', 'walks'], description: 'walks reviews every rigid walk cycle in the pose source. onion and motion need animation; motion reports gait and loop joins. parts colours pixels by their owner. tile repeats each frame 3x3.' },
+      native: { type: 'boolean', description: 'Also return a 1x contact sheet.' },
+      palette: { type: 'boolean', description: 'Also list each palette key with its colour, pixels and the parts it colours.' },
+      diagnostics: { type: 'boolean', description: 'Advisory evidence: duplicate and empty frames, stray pixels, palette, loop joins, timing, cleanup counts.' },
+      maxCells: { type: 'integer', minimum: 1, maximum: 256, description: 'Show at most this many evenly spaced cells; step and offset pick positions instead.' },
+      step: { type: 'integer', minimum: 1, maximum: 1024, description: 'Keep every step-th cell from offset; step 2 shows the A frames of an A/B strobe.' },
+      offset: { type: 'integer', minimum: 0, maximum: 2047 },
+      every: { type: 'integer', minimum: 10, maximum: 60000, description: 'With animation: a cell per this many ms of playback, so holds and pacing show.' }
+    }
+  };
+  const patchInput = {
+    ...projectInput, properties: {
+      ...source,
+      changes: {
+        type: 'array', minItems: 1, maxItems: 1024, description: 'Edits applied in order. Paths match error paths, such as frames[3].duration; lists also accept [name] and [-] to append.', items: {
+          type: 'object', properties: {
+            set: { type: 'string', description: 'Path to replace, or an object field to add.' },
+            insert: { type: 'string', description: 'List position to insert before; [-] appends.' },
+            remove: { type: 'string', description: 'Object field or list item to delete.' },
+            paint: { type: 'string', description: 'Frame path such as frames[blink]; value: [{x, y, color}] canvas pixels after all layers (transparent erases).' },
+            grid: { type: 'string', description: 'Frame path; value: {x, y, rows, erase?, mask?}, dots keep pixels.' },
+            move: { type: 'string', description: 'Frame path; value: {x, y, w, h, dx, dy, mask?}.' },
+            recolor: { type: 'string', description: 'Frame path; value: {x, y, w, h, from, to, mask?}.' },
+            cleanup: { type: 'string', description: 'Frame path; value: {corners?, strays?, x?, y?, w?, h?, mask?, colors?}. Proposes fixes for doubled corners and stray pixels; check the report.' },
+            scope: { enum: ['frame', 'inherited'], description: 'Canvas edits: inherited (default), or frame to leave frames that inherit it unchanged.' },
+            value: {}
+          }, additionalProperties: false
+        }
+      },
+      overlay: { type: 'object', description: 'A saved pixelforge-overlay to apply instead of changes.' }
+    }
+  };
   const tools = [
     { name: 'pixel_help', description: 'Start here before drawing pixel art, sprites, tiles, icons, effects or animations. Returns a short quick start: the recipe format, the operations, the tools and the workflow. Pass a topic only when you need more: presets (ready-made fire, smoke, explosions, spells, characters and more to compile instead of drawing, a line each, or with find: "fire" only the ones those words match; full: true adds their animations), preset with name (one preset\'s source), guide (the full authoring reference and every tool option), workflow (art workflow: poses, scenes, particles, fluids, lighting), craft (short checklists: characters, effects, tiles and scenes, delivery, limits; all three list their sections, and name returns one or what mentions a word), schema (the recipe JSON Schema), example (a complete recipe), or stack, poses, scenes, autotile, fx, fluid, wave, crystal, powder, bodies or normals for those source formats\' schemas.', inputSchema: { type: 'object', properties: { topic: { enum: TOPICS }, name: { type: 'string', description: 'With topic preset: which one; with guide, workflow or craft: a section heading, or a word to find; with a schema: a path such as effects.bodies, or all.' }, full: { type: 'boolean', description: 'With topic presets: each preset\'s file and animations too.' }, find: { type: 'string', description: 'With topic presets: only the presets these words match.' } }, additionalProperties: false }, annotations: { title: 'Pixelbolt guide and schema', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_validate', description: 'Check a pixel art recipe for mistakes before inspecting or exporting it. Returns its revision id, size, frame timing, animations and clipping, without images or files.', inputSchema: validateInput, annotations: { title: 'Validate a pixel art recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
