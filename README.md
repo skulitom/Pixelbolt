@@ -31,6 +31,7 @@ English · [简体中文](https://github.com/skulitom/Pixelbolt/blob/main/README
 [![Tests](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml/badge.svg)](https://github.com/skulitom/Pixelbolt/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js: 20+](https://img.shields.io/badge/node.js-20%2B-43853d.svg)](package.json)
+[![skulitom/Pixelbolt MCP server](https://glama.ai/mcp/servers/skulitom/Pixelbolt/badges/score.svg)](https://glama.ai/mcp/servers/skulitom/Pixelbolt)
 
 ![A campfire simulated by Pixelbolt's fluid compiler: flames lick up from the logs, embers drift up and smoke curls away](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/campfire.gif) ![An explosion simulated by Pixelbolt: a white flash grows into an orange fireball that rises, cools and curls into smoke](https://raw.githubusercontent.com/skulitom/Pixelbolt/main/showcase/fluid/explosion.gif)
 
