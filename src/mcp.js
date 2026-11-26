@@ -140,7 +140,7 @@ export function createToolRunner({ directory, root, version }) {
   // twice, one path inside another, or an existing file without overwrite.
   // Windows and macOS file systems ignore case by default, so `hero.png` and `HERO.png` are one file there.
   const fold = name => (process.platform === 'win32' || process.platform === 'darwin' ? name.toLowerCase() : name);
-  const inside = (parent, child) => { const relative = path.relative(fold(parent), fold(child)); return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative)); };
+  const inside = (parent, child) => { const relative = path.relative(fold(parent), fold(child)); return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)); };
   // Only a missing file counts as missing: any other error (a null byte, no permission) stops the call.
   const entry = target => lstat(target).catch(error => { if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null; throw error; });
   const nearest = async target => {
@@ -220,6 +220,9 @@ export function createToolRunner({ directory, root, version }) {
       const destination = path.resolve(base, target);
       if (!inside(base, destination) || destination === base) throw new PixelError(where, `must stay inside ${base}`);
       if (process.platform === 'win32' && path.relative(base, destination).split(path.sep).some(windowsName)) throw new PixelError(where, `${target} is not a name Windows can create: no < > : " | ? *, no device names such as con or nul, and no dot or space at the end of a name`);
+      // Reject non-files (including dangling symlinks) before realpath so a broken link gives a clean PixelError.
+      const existing = await entry(destination);
+      if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
       // The nearest folder that exists must be a folder, and the real path inside the root and outside the store.
       const folder = await nearest(path.dirname(destination)), real = await canonical(destination);
       if (!(await stat(await realpath(folder))).isDirectory()) throw new PixelError(where, `${folder} is a file, not a folder`);
@@ -230,8 +233,6 @@ export function createToolRunner({ directory, root, version }) {
       if (guarded.some(folder => inside(folder, destination) || inside(folder, real))) throw new PixelError(where, `${target} is inside ${guarded[0]}, where apps keep their settings: saveAs writes only art`);
       // Like the CLI's exports, never over the files this render was made from, even with overwrite.
       if (own.some(input => fold(input) === fold(real))) throw new PixelError(where, `${target} is a palette or asset file this recipe references; choose another name`);
-      const existing = await entry(destination);
-      if (existing && !existing.isFile()) throw new PixelError(where, `${destination} exists and is not a file`);
       if (existing && overwrite !== true) throw new PixelError(where, `${destination} already exists: choose a new name, or pass "overwrite": true to replace it`);
       if (existing && type === '.json' && !(await spriteJSON(destination, existing.size))) throw new PixelError(where, `${destination} is not a recipe, atlas or sequence (a JSON object with frames), so overwrite won't replace it: choose a new name`);
       const resource = file.endsWith('.tileset.tres') ? 'TileSet' : file.endsWith('.canvas.tres') ? 'CanvasTexture' : 'SpriteFrames';
@@ -412,6 +413,8 @@ export function createToolRunner({ directory, root, version }) {
             if (suppliedMetadata !== undefined) throw new PixelError('metadata', 'this pose source revision supplies its own metadata');
             if (walks) inspectionSource = recipe;
             ({ recipe, metadata, warnings: poseWarnings = [] } = compilePoses(recipe));
+          } else if (motionRevision && Object.hasOwn(COMPILERS, recipe?.format ?? '')) {
+            throw new PixelError('revision', `this is a ${recipe.format} source revision; ${walks ? 'view: walks' : 'view: motion'} reviews character poses or compiled recipes`);
           }
         }
         if (poseSheet !== undefined) {
@@ -429,9 +432,14 @@ export function createToolRunner({ directory, root, version }) {
         if (isMotion && (layers !== undefined || reference !== undefined || beside !== undefined)) throw new PixelError('arguments', 'motion review uses the complete animation; omit layers, reference and beside');
         if (!walks && poseSheet === undefined && !isMotion && (speed !== undefined || ground !== undefined || suppliedMetadata !== undefined || inspection.track !== undefined)) throw new PixelError('arguments', 'speed, ground and track require view: motion; metadata needs motion or walks');
         const { view: _mode, ...modeOptions } = inspection;
-        const besideItems = beside === undefined ? [] : await Promise.all(beside.map(async id => ({ id, recipe: await read(id) })));
-        if (beside !== undefined && !besideItems.length && (inspection.native || inspection.grid)) throw new PixelError('beside', 'beside draws several recipes in one sheet; native and grid read one recipe at a time');
-        const referenceDoc = reference === undefined ? undefined : await read(reference);
+        if (beside !== undefined && (!Array.isArray(beside) || !beside.length || beside.length > 8)) throw new PixelError('beside', 'expected an array of 1 to 8 revision ids');
+        const readRecipeRevision = async (id, where) => {
+          const doc = await read(id);
+          if (Object.hasOwn(COMPILERS, doc?.format ?? '')) throw new PixelError(where, `revision ${id} is a ${doc.format} sourceRevision; pass the compiled recipe revision instead`);
+          return doc;
+        };
+        const besideItems = beside === undefined ? [] : await Promise.all(beside.map(async (id, i) => ({ id, recipe: await readRecipeRevision(id, `beside[${i}]`) })));
+        const referenceDoc = reference === undefined ? undefined : await readRecipeRevision(reference, 'reference');
         const inspected = inspectAction(recipe, {
           layers,
           walks,
@@ -457,7 +465,7 @@ export function createToolRunner({ directory, root, version }) {
         }
         // The player plays the project only when the inspection shows it as it plays (all frames or one animation, any
         // zoom or backdrop); a selection, region, review mode, grid, guide or comparison shows the inspection's own image.
-        const playable = poseSheet === undefined && reference === undefined && Object.entries(inspection).every(([key, value]) => ['animation', 'scale', 'background', 'maxCells', 'native'].includes(key) || (key === 'view' && value === 'color'));
+        const playable = poseSheet === undefined && reference === undefined && beside === undefined && Object.entries(inspection).every(([key, value]) => ['animation', 'scale', 'background', 'maxCells', 'native'].includes(key) || (key === 'view' && value === 'color'));
         return {
           content, ...(preview && (playable ? preview(project, { animation: inspection.animation })
             : preview({ width: view.sheet.width, height: view.sheet.height, frames: [{ name: 'inspection', duration: 100, data: view.sheet.data }], animations: {} })))
@@ -482,7 +490,7 @@ export function createToolRunner({ directory, root, version }) {
         if (options.normal !== undefined) {
           if (!isObject(options.normal)) throw new PixelError('normal', 'expected a normal recipe, {"revision": id} or a pixelforge-normals source');
           const referenced = [], revision = id => { referenced.push(id); return read(id); };
-          const { document: given, files = [] } = options.normal.revision !== undefined && options.normal.version === undefined ? { document: await revision(options.normal.revision) } : await resolveReferences(options.normal, { baseDir: root, root, revisions: revision });
+          const { document: given, files = [] } = options.normal.revision !== undefined && options.normal.version === undefined ? { document: await revision(options.normal.revision) } : await resolveReferences(options.normal, { baseDir: root, root, revisions: revision, compilers: COMPILERS });
           normalDoc = given;
           normalSources = [...relativeToRoot(files), ...(await Promise.all(referenced.map(sourcesOf))).flat()];
         }
@@ -543,10 +551,10 @@ export function createToolRunner({ directory, root, version }) {
         if ((args.source === undefined) === (args.preset === undefined)) throw new PixelError('arguments', 'send either source or preset');
         // A preset compiles exactly as its file does; its files are the package's, so none is recorded as a source.
         const referenced = [], { document, files: sourceFiles } = args.preset !== undefined ? { document: (await loadPreset(await findPreset(args.preset))).source, files: [] }
-          : await resolveReferences(args.source, { baseDir: root, root, revisions: id => { referenced.push(id); return read(id); } });
+          : await resolveReferences(args.source, { baseDir: root, root, revisions: id => { referenced.push(id); return read(id); }, compilers: COMPILERS });
         const format = document?.format;
         if (args.preset === undefined && !Object.hasOwn(COMPILERS, format ?? '')) throw new PixelError('source.format', 'expected pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid, pixelforge-wave, pixelforge-crystal, pixelforge-powder, pixelforge-bodies, pixelforge-stack or pixelforge-normals');
-        for (const key of ['size', 'frames', 'animation']) if (args[key] !== undefined && (args.draftViews !== undefined || args.sequence !== undefined)) throw new PixelError(key, `${key} goes with a compile that returns a recipe; leave out draftViews and sequence (a sequence has its own size and length)`);
+        for (const key of ['size', 'frames', 'animation', 'slices']) if (args[key] !== undefined && (args.draftViews !== undefined || args.sequence !== undefined)) throw new PixelError(key, `${key} goes with a compile that returns a recipe; leave out draftViews and sequence (a sequence has its own size and length)`);
         // Drafts of turned grid parts to correct and paste into the source's views; nothing is compiled or kept.
         if (args.draftViews !== undefined) {
           if (format !== 'pixelforge-poses') throw new PixelError('draftViews', 'draft views turn grid parts of a pixelforge-poses source');
@@ -559,6 +567,7 @@ export function createToolRunner({ directory, root, version }) {
         // run past 256 frames.
         if (args.sequence !== undefined) {
           if (format !== 'pixelforge-bodies' && format !== 'pixelforge-powder') throw new PixelError('sequence', 'pixel_compile writes video frames for a pixelforge-bodies match or a pixelforge-powder clip; for other sources compile, then pixel_render with sequence');
+          if (args.metadata !== undefined) throw new PixelError('metadata', 'sequence writes video frames, not a recipe; omit metadata');
           const frames = checkSequenceSize(sequenceAction(document, args.sequence, { budget: SEQUENCE_PIXELS, command: skillCommand(version) })), out = await newFolder(document.name);
           await writeBundle(frames, path.join(out, 'sequence'));
           return { content: [textContent({ ok: true, name: document.name, directory: out, sequence: sequenceSummary(frames.info), figures: figuresSummary(frames.info.figures), ended: frames.info.ended })] };
@@ -597,10 +606,16 @@ export function createToolRunner({ directory, root, version }) {
       } else if (name === 'pixel_import') {
         if ((args.data === undefined) === (args.path === undefined)) throw new PixelError('arguments', 'send either data (base64 PNG) or path');
         let bytes, file;
-        if (args.data !== undefined) bytes = Buffer.from(args.data, 'base64');
-        else {
+        if (args.data !== undefined) {
+          if (typeof args.data !== 'string' || !args.data.trim()) throw new PixelError('data', 'expected a base64-encoded PNG string');
+          bytes = Buffer.from(args.data, 'base64');
+        } else {
+          if (typeof args.path !== 'string' || !args.path.trim()) throw new PixelError('path', 'expected a PNG file path relative to the server root');
           file = path.resolve(root, args.path);
           await assertInside(file, root, 'path');
+          const info = await stat(file).catch(error => { throw new PixelError('path', `could not read ${args.path} (${error.code ?? error.message})`); });
+          if (!info.isFile()) throw new PixelError('path', `${args.path} is not a regular file`);
+          if (info.size > MAX_REQUEST_BYTES) throw new PixelError('path', `${args.path} exceeds ${MAX_REQUEST_BYTES} bytes`);
           bytes = await readFile(file);
         }
         const imported = importAction(bytes, { name: args.name, file, atlas: args.atlas, frame: args.frame, padding: args.padding, frames: args.frames, cutout: args.cutout });
@@ -704,7 +719,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
       ...source,
       source: { type: 'object', description: 'Pose source for walks or motion, or stack for rotate or poseSheet. For walks, reuse sourceRevision as revision.' },
       poseSheet: {
-        type: 'object', required: ['poses', 'headings'], additionalProperties: false, description: 'Named pose rows Ã— camera headings; optional focus path, crop size and fixed socket phase. Reuse sourceRevision.',
+        type: 'object', required: ['poses', 'headings'], additionalProperties: false, description: 'Named pose rows × camera headings; optional focus path, crop size and fixed socket phase. Reuse sourceRevision.',
         properties: {
           poses: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 16, uniqueItems: true }, headings: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 359 }, minItems: 1, maxItems: 16, uniqueItems: true },
           focus: { type: 'string' }, size: { type: 'integer', minimum: 8, maximum: 256 }, phase: { type: 'integer', minimum: 0, maximum: 359 }
@@ -772,7 +787,7 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     { name: 'pixel_patch', description: 'Fix or tweak pixel art (one pixel, a colour, a frame or its timing) without redrawing it. Pass revision or project plus changes applied in order, such as {"set": "frames[blink].duration", "value": 120} or {"paint": "frames[blink]", "value": [{"x": 9, "y": 7, "color": "k"}]}; other paths look like palette.k or frames[blink].layers[body].ops[2].x2, and [*] is every item of a list (frames[*].layers[cape].palette recolours one layer in every frame). The patch is atomic and must validate. Returns the new revision, every frame whose pixels changed and a before/after PNG.', inputSchema: patchInput, annotations: { title: 'Patch pixel art', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
     { name: 'pixel_render', description: 'Export pixel art as game-ready files: sprite sheet, sprites, animations, GIFs or frames for a video. Writes a PNG sheet, atlas JSON, Godot 4 SpriteFrames (and, for an autotile set, a Godot TileSet and a Tiled tileset), frame PNGs, APNGs, CSS and a Canvas player to a new folder in the export directory, and returns the key files, a check of what was delivered and a contact sheet. Pass expect with what the user asked for, then fix every problem the check lists before handing the files on. Pass saveAs to also write files where the user asked.', inputSchema: renderInput, annotations: { title: 'Export pixel art files', readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_compile', description: 'Bake a rotating sprite stack or build a character animation from parts (bipeds and four-legged animals, with idle, walk, trot, run, jump, attack and hurt templates, squash and tweens), a terrain tileset, particle effects (sparks, embers, dust, a sprite dissolving or teleporting away pixel by pixel) and spell shapes (slashes, shockwave rings, beams, lightning, magic circles, impact stars, fireballs, cel water streams and drops, auras hugging a sprite, smears trailing a sword tip), simulated smoke, fire, explosions, steam, magic swirls, water (splashes, waterfalls, drips, bubbling potions) and thick liquids (honey, slime, mud), rigid bodies (balls and blocks that bounce, stack, topple and rest, with joints, ropes and cloth), growing crystals (quartz clusters, geodes, cubes, snowflakes), falling-sand sandboxes (burning, collapse, lava meeting water, blasts), coherent interference and portal loops, or a lighting normal map. Compiles the source into an ordinary recipe revision and returns a contact sheet; metadata: true adds stack projection and ground pivot, pose joints, contacts and timing, the autotile mask table, particle counts, fluid figures, wave counts, crystal counts, body paths, joint breaks, cloth tears or normal directions.', inputSchema: { type: 'object', properties: { source: { type: 'object', description: 'A pixelforge-poses, pixelforge-autotile, pixelforge-fx, pixelforge-fluid, pixelforge-wave, pixelforge-crystal, pixelforge-powder, pixelforge-bodies, pixelforge-stack or pixelforge-normals document (see pixel_help topics). A normals source\'s recipe, or an fx symbol\'s {recipe, frame}, may be inline, a file under the server root or {"revision": id}.' }, preset: { type: 'string', description: 'Instead of source: a shipped preset by name, such as "smoke-puff" (pixel_help topic presets).' }, size: { type: 'string', description: 'A canvas size such as "32x32" for the compiled drawing: cut to the window holding the most of it, or given margins; never scaled.' }, frames: { type: 'integer', minimum: 1, maximum: 256, description: 'Keep this many evenly spaced frames of each animation that has more, playing as long as before; a count dividing a loop\'s frames keeps its step even. The way to fewer frames: lowering frames in a source cuts the effect short.' }, animation: { type: ['string', 'array'], items: { type: 'string' }, description: 'Keep only this animation (or these) of a source or preset that makes several.' }, metadata: { type: 'boolean' }, slices: { type: 'boolean', description: 'Stacks only: the slices as a sheet to stack at run time, in place of baked headings.' }, draftViews: { type: 'object', additionalProperties: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 359 }, maxItems: 16 }, description: 'Poses only, instead of compiling: draft grid parts turned to these angles, {"boot": [30, 330]}, as views to correct and paste into parts.<name>.views, with a comparison sheet.' }, sequence: { type: 'object', required: ['fps'], description: 'Bodies and falling sand only: write numbered PNG video frames (pixel_render\'s sequence options, animation naming the effect or clip) instead of a recipe; a match or clip may run past 256 frames.' } }, additionalProperties: false }, annotations: { title: 'Compile poses, tilesets, effects or fluids', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } },
-    { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Renders a pixelforge-scene manifest (placements, autotiled tilemaps, cues, motion, ground sorting, camera and parallax, haze, lights and shadows; pixel_help topic scenes) at a time in milliseconds and returns the image, placements, lights and warnings. Assets may be inline recipes, files under the server root or {"revision": id}. view: depth shows who covers whom; export: true writes a replayable scene bundle; gif: {} the whole scene as one looping GIF.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 8 }, export: { type: 'boolean' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16 }, fps: { type: ['number', 'string'], description: 'Default 25.' }, background: { type: 'string', description: 'Opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write the whole scene as one looping GIF, through its duration once ({} for defaults).' }, sequence: { type: 'object', required: ['fps'], description: 'Also write numbered PNG frames for a video editor: pixel_render\'s sequence options, without animation and step.' } }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
+    { name: 'pixel_scene', description: 'Compose a pixel art scene or room from sprites, tilemaps and lighting. Renders a pixelforge-scene manifest (placements, autotiled tilemaps, cues, motion, ground sorting, camera and parallax, haze, lights and shadows; pixel_help topic scenes) at a time in milliseconds and returns the image, placements, lights and warnings. Assets may be inline recipes, files under the server root or {"revision": id}. view: depth shows who covers whom; export: true writes a replayable scene bundle; gif: {} the whole scene as one looping GIF.', inputSchema: { type: 'object', properties: { scene: { type: 'object' }, time: { type: 'integer', minimum: 0, maximum: 60000 }, lit: { type: 'boolean' }, density: { type: 'boolean' }, view: { enum: ['color', 'grayscale', 'depth'] }, guides, scale: { type: 'integer', minimum: 1, maximum: 16 }, export: { type: 'boolean' }, gif: { type: 'object', properties: { scale: { type: 'integer', minimum: 1, maximum: 16 }, fps: { type: ['number', 'string'], description: 'Default 25.' }, background: { type: 'string', description: 'Opaque hex to blend onto. Default: 1-bit transparency.' } }, additionalProperties: false, description: 'Also write the whole scene as one looping GIF, through its duration once ({} for defaults).' }, sequence: { type: 'object', required: ['fps'], description: 'Also write numbered PNG frames for a video editor: pixel_render\'s sequence options, without animation and step.' } }, required: ['scene'], additionalProperties: false }, annotations: { title: 'Compose a pixel art scene', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
     { name: 'pixel_import', description: 'Turn existing pixel art or a sprite sheet PNG into an editable recipe. Import a native-resolution PNG (RGB, RGBA, greyscale or indexed, up to 8 bits per channel; a sprite sheet sliced by its unscaled atlas, an Aseprite or TexturePacker JSON array or hash, or by frame, the size of one frame) as an editable recipe without changing any pixel. Pass data (base64 PNG) or path (inside the server root). Returns a recipe revision. With cutout, also saves the pose source and returns its sourceRevision for pixel_inspect motion reviews.', inputSchema: { type: 'object', properties: { data: { type: 'string', description: 'Base64 PNG bytes.' }, path: { type: 'string', description: 'PNG file path relative to the server root.' }, name: { type: 'string' }, atlas: { type: 'object' }, frame: { type: 'string', description: 'A sheet with no atlas: the size of one frame, such as "24x24".' }, padding: { type: 'integer', minimum: 0, maximum: 64, description: 'With frame: the empty border round each frame; found when left out.' }, frames: { type: 'integer', minimum: 1, maximum: 256, description: 'With frame: keep the first N cells, including empty frames.' }, cutout: { type: 'object', description: 'Optional source-pixel pivot and margin, plus views keyed by direction. Each view selects two feet and optional arms as [x,y,w,h] rectangles. Name the frame on a sheet. Mirror a profile only with mirror: true. See pixel_help topic guide, name cutout.' } }, additionalProperties: false }, annotations: { title: 'Import a PNG as a recipe', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false } }
   ];
   const host = createToolHost({ directory: path.resolve(directory), root: path.resolve(root), version, timeLimit, memoryLimit });
@@ -864,9 +879,9 @@ export async function startMCP({ directory = 'output', root = process.cwd(), inp
     let newline;
     while ((newline = pending.indexOf('\n')) !== -1) {
       const line = pending.slice(0, newline).replace(/\r$/, ''), bytes = Buffer.byteLength(line); pending = pending.slice(newline + 1);
-      if (discarding !== null) { tooLarge(discarding); discarding = null; continue; }
-      if (bytes > MAX_REQUEST_BYTES) { tooLarge(line.slice(0, 4096)); continue; }
-      if (line.trim()) receive(line, bytes);
+      if (discarding !== null) { tooLarge(discarding); discarding = null; }
+      else if (bytes > MAX_REQUEST_BYTES) tooLarge(line.slice(0, 4096));
+      else if (line.trim()) receive(line, bytes);
       // Reading pauses while more than one request's worth waits, so a client can't queue without bound. ping and
       // cancellations sent meanwhile are read once the queue is short again.
       while (queuedBytes > MAX_REQUEST_BYTES || waiting.length > MAX_WAITING) await waiting[0].done;

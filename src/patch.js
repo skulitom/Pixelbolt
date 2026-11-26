@@ -130,7 +130,10 @@ function parsePath(text, where) {
     if (!match) fail(where, `cannot read ${JSON.stringify(source.slice(at))} in ${JSON.stringify(text)}; use .key, [index], [name] or [-]`);
     at = segmentPattern.lastIndex;
     if (match[1] !== undefined) segments.push({ key: match[1] });
-    else if (match[3] !== undefined) segments.push({ name: JSON.parse(match[3]) });
+    else if (match[3] !== undefined) {
+      try { segments.push({ name: JSON.parse(match[3]) }); }
+      catch { fail(where, `invalid quoted key ${match[3]} in ${JSON.stringify(text)}`); }
+    }
     else if (match[2] === '-') segments.push({ end: true });
     else if (match[2] === '*') segments.push({ any: true });
     else segments.push(/^\d+$/.test(match[2]) ? { index: Number(match[2]) } : { name: match[2] });

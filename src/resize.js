@@ -259,7 +259,12 @@ export function keepFrames(recipe, count, path = 'frames') {
     const lasts = wanted.get(i);
     if (!lasts || (lasts.size === 1 && lasts.has(project.frames[i].duration))) return frame;
     if (lasts.size > 1) { notes.push(`Frame "${frame.name}" is played more than once, so it keeps its ${project.frames[i].duration} ms and its animations no longer play exactly as long as before.`); return frame; }
-    return { ...frame, duration: [...lasts][0] };
+    const merged = [...lasts][0];
+    if (merged > 60000) {
+      notes.push(`Frame "${frame.name}" merged to ${merged} ms and was clamped to the 60000 ms frame limit.`);
+      return { ...frame, duration: 60000 };
+    }
+    return { ...frame, duration: merged };
   }).filter(remains);
   // Frames kept only to draw others from are no longer played, so the animation that played every frame is spelled out.
   const explicit = recipe.animations !== undefined || frames.length > next.default.frames.length;

@@ -1,5 +1,5 @@
 // Immutable recipe snapshots. Publish complete files atomically; never replace an existing revision.
-import { readFile, open, mkdir, link, unlink, readdir } from 'node:fs/promises';
+import { readFile, open, mkdir, link, copyFile, constants, unlink, readdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { PixelError } from './core.js';
@@ -28,7 +28,10 @@ export function createRevisionStore(directory) {
       finally { await handle.close(); }
       try { await link(temporary, file); }
       catch (error) {
-        if (error.code !== 'EEXIST') throw error;
+        if (error.code !== 'EEXIST') {
+          try { await copyFile(temporary, file, constants.COPYFILE_EXCL); }
+          catch (copyError) { if (copyError.code !== 'EEXIST') throw copyError; }
+        }
         if (await readText(file) !== text) fail(`stored revision ${id} differs from this recipe; refusing to overwrite it`);
       }
     } finally { await unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; }); }
@@ -49,7 +52,10 @@ export function createRevisionStore(directory) {
     for (const entry of entries) {
       if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
       const bundle = path.join(root, entry.name);
-      for (const file of await readdir(bundle, { withFileTypes: true })) {
+      let files;
+      try { files = await readdir(bundle, { withFileTypes: true }); }
+      catch { continue; }
+      for (const file of files) {
         if (!file.isFile() || !file.name.endsWith('.pixel.json')) continue;
         let recipe;
         try { recipe = JSON.parse(await readFile(path.join(bundle, file.name), 'utf8')); }

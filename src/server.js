@@ -114,7 +114,9 @@ export async function startStudio({ port = STUDIO_PORT, fallback = false, projec
     else renderProject(project.format === 'pixelforge-stack' ? compileStack(project).recipe : project.format === 'pixelforge-poses' ? compilePoses(project).recipe : project.format === 'pixelforge-wave' ? compileWaves(project).recipe : project);
   }
   const server = http.createServer(async (req, res) => {
-    const address = server.address(), hosts = [`127.0.0.1:${address.port}`, `localhost:${address.port}`];
+    const address = server.address();
+    if (!address) { res.destroy(); return; }
+    const hosts = [`127.0.0.1:${address.port}`, `localhost:${address.port}`];
     const reply = (status, type, body) => { res.writeHead(status, { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'" }); res.end(body); };
     if (!hosts.includes(req.headers.host) || (req.headers.origin && !hosts.some(h => req.headers.origin === `http://${h}`))) { reply(403, 'text/plain', 'Only same-origin local requests are accepted.'); return; }
     try {

@@ -55,8 +55,8 @@ async function sourceFor(base, file) {
     };
     sources.set(primary, load(primary).catch(async error => {
       if (!bundled) {
-        // Fall back to sibling examples or bundled presets when testing newly added kits before CDN publish.
-        for (const fallback of [new URL(`../../examples/${file}`, location.href).href, new URL(`./presets/${file}`, location.href).href]) {
+        // Fall back to local bundled presets (for GitHub Pages before npm publish) or sibling examples.
+        for (const fallback of [new URL(`./presets/${file}`, location.href).href, new URL(`../../examples/${file}`, location.href).href]) {
           try { return await load(fallback); } catch { /* try next */ }
         }
       }

@@ -295,10 +295,11 @@ const readGuidesOption = value => readJSONOption(value, 'guides', '{"horizon":40
 const INPUT_FILE = 'the input file';
 let stdinTaken = null;
 function takeStdin(input) {
-  if (stdinTaken !== null && stdinTaken !== input) throw new Error(`Only one input can use stdin: ${stdinTaken} and ${input} are both given as -. Put one of them in a file and name the file.`);
+  if (stdinTaken !== null) throw new Error(`Only one input can use stdin: ${stdinTaken} and ${input} are both given as -. Put one of them in a file and name the file.`);
   stdinTaken = input;
 }
-const STDIN_OPTIONS = { inspect: ['reference', 'metadata', 'guides'], patch: ['changes'], overlay: ['changes', 'selections'], render: ['expect'], scene: ['guides'], import: ['atlas', 'cutout'] };
+const STDIN_OPTIONS = { inspect: ['reference', 'metadata', 'guides', 'track', 'pose-sheet', 'under', 'beside'], patch: ['changes'], overlay: ['changes', 'selections'], render: ['expect', 'normal'], scene: ['guides'], import: ['atlas', 'cutout'] };
+const strictNumber = value => (typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN);
 async function readProject(file, input) {
   if (!file) throw new Error('Provide a project JSON filename or - for stdin');
   let source;
@@ -519,8 +520,18 @@ try {
     for (const key of Object.keys(options)) if (!OPTIONS[command].includes(key)) throw new Error(`--${key} is not supported by ${command}${optionMiss(key, command)}`);
     if (['schema', 'mcp'].includes(command) && positional.length) throw new Error(`${command} does not accept a filename`);
     // Two inputs named - are refused before anything is read or made (import's file is a PNG, never stdin).
-    if (positional[0] === '-' && command !== 'import') takeStdin(INPUT_FILE);
-    for (const key of STDIN_OPTIONS[command] ?? []) if (options[key] === '-') takeStdin(`--${key}`);
+    const stdinUses = [];
+    if (positional[0] === '-' && command !== 'import') stdinUses.push(INPUT_FILE);
+    for (const key of STDIN_OPTIONS[command] ?? []) {
+      const val = options[key];
+      if (val === undefined) continue;
+      if (key === 'beside') {
+        for (const item of val.split(',')) if (item === '-') stdinUses.push('--beside');
+      } else if (key === 'under' ? underOf(val).file === '-' : val === '-') {
+        stdinUses.push(`--${key}`);
+      }
+    }
+    if (stdinUses.length > 1) throw new Error(`Only one input can use stdin: ${stdinUses[0]} and ${stdinUses[1]} are both given as -. Put one of them in a file and name the file.`);
     // A preset compiles exactly as its file in examples/ does, so the compile command reads that file.
     if ((command === 'compile' || command === 'gif') && options.preset !== undefined) {
       if (positional.length) throw new Error(`${command} takes a ${command === 'gif' ? 'recipe' : 'source'} file or --preset <name>, not both`);
@@ -551,7 +562,7 @@ try {
       await startMCP({ directory: options.out, ...(options.root !== undefined && { root: path.resolve(options.root) }), ...(limit !== undefined && { timeLimit: limit * 1000 }) });
     } else if (command === 'preview') {
       const { startStudio, openBrowser, STUDIO_PORT } = await import('../src/server.js');
-      const port = options.port === undefined ? STUDIO_PORT : Number(options.port);
+      const port = options.port === undefined ? STUDIO_PORT : strictNumber(options.port);
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Port must be an integer from 0 to 65535');
       const input = positional[0] ? await readResolved(positional[0]) : undefined;
       // The studio shows and saves documents as written, so the files they name stay named: a scene's light settings are
@@ -570,6 +581,8 @@ try {
       if (options.open && !await openBrowser(`http://127.0.0.1:${server.address().port}/`)) console.log('No browser was opened. Copy the address above into your browser.');
     } else if (command === 'compile' && (options.size !== undefined || options.frames !== undefined) && (options['draft-views'] !== undefined || options.expand)) {
       throw new Error('--size and --frames go with a compile that writes a recipe; leave out --draft-views and --expand');
+    } else if (command === 'compile' && (options.animation !== undefined || options.slices) && (options['draft-views'] !== undefined || options.expand)) {
+      throw new Error('--animation and --slices go with a compile that writes a recipe; leave out --draft-views and --expand');
     } else if (command === 'compile' && options['draft-views'] !== undefined) {
       // Drafts are printed (or saved with --out) for the author to correct and paste; the source is never touched.
       for (const key of ['metadata', 'expand']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --draft-views`);
@@ -685,7 +698,7 @@ try {
       if (!options.motion && ['speed', 'ground', 'track'].some(key => options[key] !== undefined)) throw new Error('--speed, --ground and --track require --motion');
       if (options.metadata !== undefined && !options.motion && !walks) throw new Error('--metadata requires --motion or --view walks');
       if (options.full && !options.diagnostics) throw new Error('--full goes with --diagnostics: it lists the counts of every frame');
-      if (options.motion) for (const key of ['pin', 'rotate', 'frames', 'animation', 'region', 'grid', 'view', 'native', 'diagnostics', 'max-cells', 'step', 'offset', 'layers', 'reference', 'beside', 'palette', 'guides', 'stack', 'under']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --motion`);
+      if (options.motion) for (const key of ['pin', 'rotate', 'frames', 'animation', 'region', 'grid', 'view', 'native', 'diagnostics', 'full', 'max-cells', 'step', 'offset', 'every', 'layers', 'reference', 'beside', 'palette', 'guides', 'stack', 'under']) if (options[key] !== undefined) throw new Error(`--${key} cannot be combined with --motion`);
       const input = await readResolved(positional[0]);
       recipeOnly('inspect', input.document, positional[0], ['pixelforge-poses', 'pixelforge-wave', 'pixelforge-stack']);
       let compiled, poseSheet;
@@ -726,10 +739,11 @@ try {
       }
       const drawnWith = { ...(options.guides !== undefined && { guides: await readGuidesOption(options.guides) }), ...(options.under !== undefined && { under: await readUnder(options.under, layerOptions) }) };
       const metadata = compiled?.metadata ?? (options.metadata ? await readProject(options.metadata, '--metadata') : undefined);
-      const reference = options.reference ? (await readResolved(options.reference, '--reference')).document : undefined;
+      const referenceDoc = options.reference ? (await readResolved(options.reference, '--reference')).document : undefined;
+      const reference = referenceDoc === undefined ? undefined : Object.hasOwn(COMPILERS, referenceDoc?.format ?? '') ? COMPILERS[referenceDoc.format](referenceDoc).recipe : referenceDoc;
       const motion = options.motion ? {
         animation: options.motion,
-        ...Object.fromEntries(['speed', 'ground', 'scale'].filter(key => options[key] !== undefined).map(key => [key, Number(options[key])])),
+        ...Object.fromEntries(['speed', 'ground', 'scale'].filter(key => options[key] !== undefined).map(key => [key, strictNumber(options[key])])),
         ...(options.track !== undefined && { track: await readJSONOption(options.track, 'track', '{"part":"body","rects":[[4,5,2,1]]}') }),
         ...(options.background !== undefined && { background: options.background })
       } : undefined;
@@ -775,8 +789,8 @@ try {
       folderOut('sequence', options.out, 'name a new folder for the numbered frames; for one GIF use pixelbolt gif --out <new.gif>');
       if (options.fps === undefined) throw new Error('sequence requires --fps, for example 24, 25, 29.97, 30 or 60');
       const input = await readResolved(positional[0]);
-      const numeric = key => options[key] === undefined ? {} : { [key]: Number(options[key]) }, text = key => options[key] === undefined ? {} : { [key]: options[key] };
-      const settings = { ...text('fps'), ...text('animation'), ...text('size'), ...numeric('scale'), ...text('fit'), ...text('align'), ...(options.offset !== undefined && { offset: options.offset.split(',').map(Number) }), ...text('background'), ...numeric('loops'), ...numeric('seconds'), ...numeric('step') };
+      const numeric = key => options[key] === undefined ? {} : { [key]: strictNumber(options[key]) }, text = key => options[key] === undefined ? {} : { [key]: options[key] };
+      const settings = { ...text('fps'), ...text('animation'), ...text('size'), ...numeric('scale'), ...text('fit'), ...text('align'), ...(options.offset !== undefined && { offset: options.offset.split(',').map(strictNumber) }), ...text('background'), ...numeric('loops'), ...numeric('seconds'), ...numeric('step') };
       // A match or a clip is simulated, drawn and written a frame at a time, so its length isn't bounded by memory.
       const sequence = sequenceAction(input.document, settings, { stream: true, animationPath: '--animation' });
       const files = await writeBundle(sequence, options.out, { force: options.force, inputs: inputsOf(input) }), { timing, figures, ...info } = sequence.info;
@@ -810,6 +824,8 @@ try {
           compiled = compilePreset(input.document, { ...settings, animation: options.animation, animationPath: '--animation' });
         }
         warnings.push(...(compiled.warnings ?? []));
+      } else {
+        recipeOnly('gif', input.document, positional[0]);
       }
       let recipe = compiled ? compiled.recipe : input.document, resized, kept;
       // The recipe's animations, named in the reply even when --size keeps one of them. An empty list (stills) names none,
@@ -846,7 +862,7 @@ try {
       if (!options.out || !/\.gif$/i.test(options.out)) throw new Error('gif-frames requires --out <new.gif>');
       if (options.fps === undefined) throw new Error('gif-frames requires --fps, for example 12, 24, 25 or 30');
       const { folderGIF } = await import('../src/frame-folder.js');
-      const { data, ...gif } = folderGIF(positional[0], { fps: options.fps, ...(options.loops !== undefined && { loops: Number(options.loops) }), ...(options.background !== undefined && { background: options.background }), ...(options.prefix !== undefined && { prefix: options.prefix }) });
+      const { data, ...gif } = folderGIF(positional[0], { fps: options.fps, ...(options.loops !== undefined && { loops: strictNumber(options.loops) }), ...(options.background !== undefined && { background: options.background }), ...(options.prefix !== undefined && { prefix: options.prefix }) });
       const written = await writeOutputs({ file: [options.out, data, '--out'] }, options.force);
       print({ ok: true, ...gif, bytes: data.length, ...written });
     } else if (command === 'validate' && positional.length > 1) {

@@ -736,7 +736,14 @@ export function stepLiquid(state, effect, dt) {
     }
     if (geo) {
       velocity[0] = state.vx[k]; velocity[1] = state.vy[k];
-      if (slideSmooth(geo, W, H, x, y, nx, ny, velocity, landing)) { nx = landing[0]; ny = landing[1]; state.vx[k] = velocity[0]; state.vy[k] = velocity[1]; }
+      if (slideSmooth(geo, W, H, x, y, nx, ny, velocity, landing)) {
+        nx = landing[0]; ny = landing[1]; state.vx[k] = velocity[0]; state.vy[k] = velocity[1];
+        if (walls.left && nx < 0.01) { nx = 0.01; if (state.vx[k] < 0) state.vx[k] = 0; }
+        if (walls.right && nx > W - 0.01) { nx = W - 0.01; if (state.vx[k] > 0) state.vx[k] = 0; }
+        if (walls.top && ny < 0.01) { ny = 0.01; if (state.vy[k] < 0) state.vy[k] = 0; }
+        if (walls.bottom && ny > H - 0.01) { ny = H - 0.01; if (state.vy[k] > 0) state.vy[k] = 0; }
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) { removeParticle(state, k); continue; }
+      }
     }
     state.x[k] = nx; state.y[k] = ny;
   }

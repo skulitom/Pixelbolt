@@ -280,7 +280,9 @@ export function renderFields(effect, base, width, height, drawn = null, hold = n
   // strands, which are thinner than any outline. `by` notes which layer drew each pixel last, for halos.
   const by = effect.look.some(layer => layer.halo) ? new Uint8Array(N) : null;
   for (const [index, layer] of effect.look.entries()) {
-    const field = sources[layer.field], { thresholds, gaps, colors, dither } = layer, shading = layer.field === LIGHT || layer.field === SHADOW, strands = layer.field === STRAND;
+    const field = sources[layer.field];
+    if (!field) continue;
+    const { thresholds, gaps, colors, dither } = layer, shading = layer.field === LIGHT || layer.field === SHADOW, strands = layer.field === STRAND;
     const n = thresholds.length, held = before && layer.field !== DEPTH && !strands ? before.levels[index] : null, keep = after ? after.levels[index] : null;
     // Where a pixel's threshold k sits (its feather f below the layer's), and how far past it a field must go to be clear
     // of it: HOLD of the band below it, as wide as it is at this pixel (so a low, dithered threshold is held by as little).

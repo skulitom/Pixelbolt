@@ -446,7 +446,7 @@ export function prepareStack(source, { maxPixels = FRAME_AREA } = {}) {
   const spacing = integer(source.spacing ?? 1, 'stack.spacing', 1, 8);
   // On the grid a stack turns about the middle of its footprint, on a cell corner when a side is even, so a quarter
   // turn lays cells on cells; a pivot written out is the centre of its cell either way.
-  const middle = [w, h].map(side => Math.floor(side / 2) - (grid && (w % 2 === 0 || h % 2 === 0) ? .5 : 0));
+  const middle = [w, h].map(side => Math.max(0, Math.floor(side / 2) - (grid && (w % 2 === 0 || h % 2 === 0) ? .5 : 0)));
   const pivot = source.pivot === undefined ? middle : point(source.pivot, 'stack.pivot');
   if (pivot[0] < 0 || pivot[0] >= w || pivot[1] < 0 || pivot[1] >= h) fail('stack.pivot', 'ground pivot must be inside the slice');
   const headings = source.headings ?? Array.from({ length: 16 }, (_, i) => Math.round(i * 360 / 16));
@@ -503,8 +503,12 @@ export function prepareStack(source, { maxPixels = FRAME_AREA } = {}) {
   if (plan.length > 256) fail('stack.animations', `${headings.length} headings and ${plan.length - headings.length} frames of animations are ${plan.length} frames; a recipe holds 256, so give an animation fewer headings (its own headings) or frames`);
   const playing = clips.flatMap(clip => clip.headings.map(heading => `${clip.name}-${facing(heading)}`));
   for (const names of [plan.map(frame => frame.name), playing]) {
-    const twice = names.find((name, i) => names.indexOf(name) !== i);
-    if (twice) fail('stack.animations', `two animations make the name ${twice}; rename one of them or a direction`);
+    const seen = new Set();
+    for (const name of names) {
+      const key = name.toLowerCase();
+      if (seen.has(key)) fail('stack.animations', `two animations make the name ${name} (names must be unique ignoring case); rename one of them or a direction`);
+      seen.add(key);
+    }
   }
   let left = 0, right = 0, bottom = 0, roof = 0;
   const tall = (levels - 1) * spacing + 1;

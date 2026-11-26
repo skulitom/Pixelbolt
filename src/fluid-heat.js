@@ -284,7 +284,9 @@ export function heatStep(run, effect, dt, first) {
   const closedAt = (x, y) => (x < 0 ? walls.left : x >= W ? walls.right : y < 0 ? walls.top : walls.bottom);
   flux.fill(0);
   for (let k = 0; k < state.n; k++) {
-    const i = Math.floor(state.x[k]), j = Math.floor(state.y[k]), c = j * W + i, t = tempOf(h, energy[k], frozen[k]);
+    const i = Math.floor(state.x[k]), j = Math.floor(state.y[k]);
+    if (i < 0 || j < 0 || i >= W || j >= H) continue;
+    const c = j * W + i, t = tempOf(h, energy[k], frozen[k]);
     // `input` is heat another stage puts into the water and ice of a cell, per frame: the electric step's Joule heat
     // from an arc that reaches the water (physics-model.md section 10), and zero without one.
     let gain = h.conduct * (Tc[c] - t) + P.input[c];

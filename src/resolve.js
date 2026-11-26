@@ -1,9 +1,9 @@
 // Node-side reference resolution. The renderer only sees inline data; this module inlines shared palette files
 // (`palette: { "$ref": "palette.json", ...local entries }`) and scene asset files or saved revisions. Relative
 // paths resolve from `baseDir`; when `root` is set (the MCP server), every referenced file must stay inside it.
-import { readFile, realpath } from 'node:fs/promises';
+import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { inlineSharedPalette, fail, isObject } from './core.js';
+import { inlineSharedPalette, fail, isObject, MAX_REQUEST_BYTES } from './core.js';
 
 const within = (parent, child) => { const relative = path.relative(parent, child); return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative); };
 /**
@@ -18,7 +18,15 @@ export async function assertInside(file, root, where, message = `must stay insid
 }
 async function readJSON(file, where) {
   let text;
-  try { text = await readFile(file, 'utf8'); } catch (error) { fail(where, `could not read ${file} (${error.code ?? error.message})`); }
+  try {
+    const info = await stat(file);
+    if (!info.isFile()) fail(where, `${file} is not a regular file`);
+    if (info.size > MAX_REQUEST_BYTES) fail(where, `${file} exceeds ${MAX_REQUEST_BYTES} bytes`);
+    text = await readFile(file, 'utf8');
+  } catch (error) {
+    if (error.path === where) throw error;
+    fail(where, `could not read ${file} (${error.code ?? error.message})`);
+  }
   try { return JSON.parse(text.replace(/^﻿/, '')); } catch { fail(where, `${file} is not valid JSON`); }
 }
 async function locate(reference, baseDir, root, where) {

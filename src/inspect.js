@@ -1081,11 +1081,14 @@ export function compareProjects(before, after) {
       const x = Math.max(0, Math.min(...shown.map(row => row.box.x)) - 2), y = Math.max(0, Math.min(...shown.map(row => row.box.y)) - 2);
       region = { x, y, w: Math.min(width, Math.max(...shown.map(row => row.box.x + row.box.w)) + 2) - x, h: Math.min(height, Math.max(...shown.map(row => row.box.y + row.box.h)) + 2) - y };
     }
-    const stacked = 2 * region.w > SHEET_SIDE;
-    if (stacked && 2 * region.h > SHEET_SIDE) report.imageNote = `no before/after image: two ${region.w}×${region.h} frames pass the 4096-pixel sheet limit side by side and stacked; inspect each revision with a region instead`;
+    const stacked = 2 * region.w > SHEET_SIDE, cols = stacked ? 1 : 2, cellRows = count => count * (stacked ? 2 : 1);
+    const fits = count => withinSheet({ columns: cols, rows: cellRows(count), scale: 1, width: cols * region.w + (cols + 1) * 2, height: cellRows(count) * region.h + (cellRows(count) + 1) * 2 });
+    let limit = Math.min(16, shown.length);
+    while (limit > 0 && !fits(limit)) limit--;
+    if (!limit) report.imageNote = `no before/after image: two ${region.w}×${region.h} frames pass the 4096-pixel sheet limit side by side and stacked; inspect each revision with a region instead`;
     else {
-      const rows = shown.slice(0, Math.max(1, Math.min(16, Math.floor(4094 / ((stacked ? 2 : 1) * (region.h + 2))))));
-      report.image = { region, frames: rows.map(({ frame, status }) => ({ frame, status })), ...(rows.length < shown.length && { omitted: shown.length - rows.length }), sheet: drawSheet(rows.flatMap(row => [row.before, row.after]), width, region, { columns: stacked ? 1 : 2, where: 'image' }) };
+      const rows = shown.slice(0, limit);
+      report.image = { region, frames: rows.map(({ frame, status }) => ({ frame, status })), ...(rows.length < shown.length && { omitted: shown.length - rows.length }), sheet: drawSheet(rows.flatMap(row => [row.before, row.after]), width, region, { columns: cols, where: 'image' }) };
       if (stacked) report.imageNote = `before above after: side by side, two ${region.w}-pixel frames would pass the 4096-pixel sheet limit`;
     }
   }

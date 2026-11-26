@@ -182,7 +182,7 @@ export async function renderAction(sourceRecipe, { scale, columns, normal: norma
   }
   const gifs = wantsGif && !bundle.project.stills ? Object.keys(bundle.project.animations).map(name => animationGIF(bundle.project, name, gif)) : [];
   const gifNotes = gifs.flatMap(item => item.notes.map(text => `${item.animation}: ${text}`)).slice(0, 16);
-  const check = checkDelivery(bundle.project, { recipe, gifs: wantsGif && !bundle.project.stills ? gifs : undefined, expect, animation, call, scale, recipeScale });
+  const check = checkDelivery(bundle.project, { recipe, gifs: (call === 'mcp' || wantsGif) && !bundle.project.stills ? gifs : undefined, expect, animation, call, scale, recipeScale });
   return { recipe, bundle, view, gifs, gifNotes, check };
 }
 

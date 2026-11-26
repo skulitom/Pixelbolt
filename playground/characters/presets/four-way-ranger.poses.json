@@ -1,0 +1,287 @@
+{
+  "format": "pixelforge-poses",
+  "version": 1,
+  "name": "four-way-ranger",
+  "width": 24,
+  "height": 24,
+  "palette": {
+    "x": "#1f241e",
+    "c": "#42734b",
+    "d": "#294a32",
+    "l": "#8c593b",
+    "t": "#ce9b64",
+    "f": "#f2c49b",
+    "a": "#ece7d6"
+  },
+  "parts": {
+    "down-boot-a": {
+      "rows": [
+        "xxxx",
+        "xllx",
+        "xttx"
+      ]
+    },
+    "down-boot-b": {
+      "rows": [
+        "xxxx",
+        "xllx",
+        "xttx"
+      ]
+    },
+    "down-body": {
+      "rows": [
+        "...xxxxxx...",
+        "..xxccccxx..",
+        ".xxccccccxx.",
+        ".xxcddddcxx.",
+        "xxcddffddcxx",
+        "xxcdfxfxfdcx",
+        "xxcdfffffdcx",
+        ".xxcdffddxx.",
+        ".xxccaaacxx.",
+        ".xxccllccxx.",
+        ".xxcltttlcx.",
+        ".xxcllllcxx.",
+        ".xxddllldxx.",
+        "..xxddcdxx.."
+      ]
+    },
+    "down-arm-a": {
+      "rows": [
+        "..xx",
+        ".xcx",
+        "xcdx",
+        "xllx",
+        "xffx",
+        ".xx."
+      ]
+    },
+    "down-arm-b": {
+      "rows": [
+        "..xx",
+        ".xtx",
+        "xctx",
+        "xdtx",
+        "xftx",
+        ".xtx",
+        "..xx"
+      ]
+    },
+    "up-boot-a": {
+      "rows": [
+        "xllx",
+        "xllx",
+        "xxxx",
+        "xllx",
+        "xttx"
+      ]
+    },
+    "up-boot-b": {
+      "rows": [
+        "xllx",
+        "xllx",
+        "xxxx",
+        "xllx",
+        "xttx"
+      ]
+    },
+    "up-body": {
+      "rows": [
+        "...xxxxxx...",
+        "..xxccccxx..",
+        ".xxccccccxx.",
+        ".xxccccccxx.",
+        "xxccddddccxx",
+        "xxcddddddcxx",
+        "xxccddddccxx",
+        ".xxccaaacxx.",
+        ".xxccllacxx.",
+        ".xxccllccxx.",
+        ".xxcdllcdxx.",
+        ".xxcddccddx.",
+        ".xxddccddxx.",
+        "..xxddddxx.."
+      ]
+    },
+    "up-arm-a": {
+      "rows": [
+        "..xx",
+        ".xcx",
+        "xcdx",
+        "xllx",
+        "xllx",
+        ".xx."
+      ]
+    },
+    "up-arm-b": {
+      "rows": [
+        "..xx",
+        ".xtx",
+        "xctx",
+        "xdtx",
+        "xltx",
+        ".xtx",
+        "..xx"
+      ]
+    },
+    "right-boot-a": {
+      "rows": [
+        ".xxx.",
+        "xllx.",
+        ".xlx.",
+        ".xttx",
+        ".xxxx"
+      ]
+    },
+    "right-boot-b": {
+      "rows": [
+        ".xxx.",
+        "xllx.",
+        "xllx.",
+        "xttxx",
+        "..xxx"
+      ]
+    },
+    "right-body": {
+      "rows": [
+        "..xxxxxx....",
+        ".xxccccxx...",
+        "xxccccccxx..",
+        "xxcddddccx..",
+        "xxcddffffx..",
+        "xxcddfxffx..",
+        ".xxcdffffx..",
+        ".xxacddddx..",
+        ".xxlccaaax..",
+        ".xxdlclllx..",
+        "..xdcltttx..",
+        "..xddclllx..",
+        "..xxddcddx..",
+        "...xxddxx..."
+      ]
+    },
+    "right-arm-a": {
+      "rows": [
+        ".xxx.",
+        "xccdx",
+        "xlllx",
+        "xlllx",
+        ".xxx."
+      ]
+    },
+    "right-arm-b": {
+      "rows": [
+        "..xx.",
+        ".xtx.",
+        "xctax",
+        "xftax",
+        "xctax",
+        ".xtx.",
+        "..xx."
+      ]
+    },
+    "bow-draw": {
+      "rows": [
+        "...xx..",
+        "..xtx..",
+        "xcaatx.",
+        "xfaatax",
+        "xcaatx.",
+        "..xtx..",
+        "...xx.."
+      ]
+    }
+  },
+  "poses": [
+    {
+      "name": "stand-down",
+      "origin": [12, 20],
+      "parts": [
+        { "name": "boot-a", "part": "down-boot-a", "at": [-4, -3], "cleanup": false },
+        { "name": "boot-b", "part": "down-boot-b", "at": [0, -3], "cleanup": false },
+        { "name": "body", "part": "down-body", "at": [-6, -16], "cleanup": false },
+        { "name": "arm-a", "part": "down-arm-a", "at": [-8, -8], "cleanup": false },
+        { "name": "arm-b", "part": "down-arm-b", "at": [4, -9], "cleanup": false }
+      ]
+    },
+    {
+      "name": "stand-up",
+      "origin": [12, 20],
+      "parts": [
+        { "name": "boot-a", "part": "up-boot-a", "at": [-4, -5], "cleanup": false },
+        { "name": "boot-b", "part": "up-boot-b", "at": [0, -5], "cleanup": false },
+        { "name": "body", "part": "up-body", "at": [-6, -16], "cleanup": false },
+        { "name": "arm-a", "part": "up-arm-a", "at": [-8, -8], "cleanup": false },
+        { "name": "arm-b", "part": "up-arm-b", "at": [4, -9], "cleanup": false }
+      ]
+    },
+    {
+      "name": "stand-right",
+      "origin": [12, 20],
+      "parts": [
+        { "name": "arm-a", "part": "right-arm-a", "at": [0, -8], "cleanup": false },
+        { "name": "boot-a", "part": "right-boot-a", "at": [-2, -5], "cleanup": false },
+        { "name": "boot-b", "part": "right-boot-b", "at": [-2, -5], "cleanup": false },
+        { "name": "body", "part": "right-body", "at": [-5, -16], "cleanup": false },
+        { "name": "arm-b", "part": "right-arm-b", "at": [0, -9], "cleanup": false }
+      ]
+    },
+    { "name": "stand-left", "mirror": "stand-right" },
+    {
+      "name": "aim-right-1",
+      "duration": 140,
+      "origin": [12, 20],
+      "parts": [
+        { "name": "arm-a", "part": "right-arm-a", "at": [-1, -8], "cleanup": false },
+        { "name": "boot-a", "part": "right-boot-a", "at": [-3, -5], "cleanup": false },
+        { "name": "boot-b", "part": "right-boot-b", "at": [-1, -5], "cleanup": false },
+        { "name": "body", "part": "right-body", "at": [-5, -16], "cleanup": false },
+        { "name": "arm-b", "part": "bow-draw", "at": [1, -10], "cleanup": false }
+      ]
+    },
+    { "name": "aim-left-1", "mirror": "aim-right-1" }
+  ],
+  "walkCycles": {
+    "walk-down": {
+      "rest": "stand-down",
+      "direction": "down",
+      "feet": ["boot-a", "boot-b"],
+      "arms": ["arm-a", "arm-b"],
+      "stride": 1,
+      "lift": 1,
+      "bob": 1,
+      "duration": 110
+    },
+    "walk-up": {
+      "rest": "stand-up",
+      "direction": "up",
+      "feet": ["boot-a", "boot-b"],
+      "arms": ["arm-a", "arm-b"],
+      "stride": 1,
+      "lift": 1,
+      "bob": 1,
+      "duration": 110
+    },
+    "walk-right": {
+      "rest": "stand-right",
+      "direction": "right",
+      "feet": ["boot-a", "boot-b"],
+      "arms": ["arm-a", "arm-b"],
+      "stride": 3,
+      "lift": 2,
+      "bob": 1,
+      "duration": 110,
+      "mirrorAs": "walk-left"
+    }
+  },
+  "animations": {
+    "stand-down": { "frames": ["stand-down"] },
+    "stand-up": { "frames": ["stand-up"] },
+    "stand-right": { "frames": ["stand-right"] },
+    "stand-left": { "frames": ["stand-left"] },
+    "aim-right": { "frames": ["stand-right", "aim-right-1"], "loop": true },
+    "aim-left": { "frames": ["stand-left", "aim-left-1"], "loop": true }
+  },
+  "sheet": { "columns": 8 }
+}
+

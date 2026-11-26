@@ -91,8 +91,9 @@ export function drawFrame(context, sheet, name, x, y, { scale = 1, flipX = false
   if (!Object.hasOwn(sheet.atlas.frames, name)) throw new Error(`Unknown frame: ${name}`);
   const entry = sheet.atlas.frames[name], { frame } = entry;
   const source = entry.sourceSize ?? { w: frame.w, h: frame.h }, offset = entry.spriteSourceSize ?? { x: 0, y: 0, w: frame.w, h: frame.h };
-  const origin = anchor ? anchorPixels(entry) : { x: 0, y: 0 };
-  const left = Math.round(x) - (flipX ? source.w - origin.x : origin.x) * scale, top = Math.round(y) - origin.y * scale;
+  const hasAnchor = anchor && Boolean(entry.anchorPx ?? entry.anchor);
+  const origin = hasAnchor ? anchorPixels(entry) : { x: 0, y: 0 };
+  const left = Math.round(x) - (hasAnchor ? (flipX ? source.w - origin.x : origin.x) : 0) * scale, top = Math.round(y) - origin.y * scale;
   const dx = flipX ? source.w - offset.x - offset.w : offset.x;
   context.imageSmoothingEnabled = false;
   if (rotate) {
@@ -101,7 +102,8 @@ export function drawFrame(context, sheet, name, x, y, { scale = 1, flipX = false
     context.translate(Math.round(x), Math.round(y));
     context.rotate(rotate);
     if (flipX) context.scale(-1, 1);
-    context.drawImage(sheet.image, frame.x, frame.y, frame.w, frame.h, (offset.x - origin.x) * scale, (offset.y - origin.y) * scale, frame.w * scale, frame.h * scale);
+    const drawX = (hasAnchor ? offset.x - origin.x : flipX ? offset.x - source.w : offset.x) * scale;
+    context.drawImage(sheet.image, frame.x, frame.y, frame.w, frame.h, drawX, (offset.y - origin.y) * scale, frame.w * scale, frame.h * scale);
     context.restore();
     return;
   }

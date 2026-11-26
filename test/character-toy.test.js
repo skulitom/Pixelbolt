@@ -106,6 +106,10 @@ test('itch.io HTML5 packager builds a self-contained offline archive with zero e
   assert.match(html, /data-bundled="true"/);
   assert.doesNotMatch(html, /cdn\.jsdelivr\.net/, 'itch.io offline bundle must have zero CDN references');
   for (const preset of CHARACTERS) assert.ok(files.has(`presets/${preset.file}`), `missing bundled preset ${preset.file}`);
+  // Local fallback presets kept in playground/characters/presets/ stay byte-identical to examples/.
+  for (const name of ['four-way-mage.poses.json', 'four-way-ranger.poses.json']) {
+    assert.equal(await read(`playground/characters/presets/${name}`), await read(`examples/${name}`), name);
+  }
   // Every local relative JS import inside the archive must resolve to a file present in the archive.
   for (const [name, bytes] of files) {
     if (!name.endsWith('.js')) continue;

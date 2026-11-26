@@ -1863,7 +1863,9 @@ export function paintBodiesFine(bodies, grid, width, height, symbols, n, sampled
       for (const [x, y] of cover(b, b.x, b.y)) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) put(x * n + i, y * n + j, code);
       continue;
     }
-    const { rows, cx, cy } = pictureOf(b, symbols), w = rows[0].length, h = rows.length, turns = b.shape !== 'circle' || b.rolls;
+    const { rows, cx, cy } = pictureOf(b, symbols);
+    if (!rows.length) continue;
+    const w = rows[0].length, h = rows.length, turns = b.shape !== 'circle' || b.rolls;
     const rx = Math.max(cx, w - cx), ry = Math.max(cy, h - cy), reach = turns ? Math.sqrt(rx * rx + ry * ry) : Math.max(rx, ry);
     const degrees = turns ? heldTurn(b, reach, n) : 0, c = cosDeg(degrees), s = sinDeg(degrees);
     const q = ((Math.round(degrees / 90) % 4) + 4) % 4, x = heldFine(b, 0, [cx, -cy, -cx, cy][q], n, q), y = heldFine(b, 1, [cy, cx, -cy, -cx][q], n, q);
