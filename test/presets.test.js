@@ -108,8 +108,9 @@ test('the presets listing covers every source and looping recipe in examples/, m
   }
   await mcp.close();
   // 72 presets were 21 KB in full; a line each, they are under half that. A cap on the whole reply and on each line
-  // keeps a new preset from undoing it: 17 KB since the four moving isometric starters made 121.
-  assert.ok(Buffer.byteLength(JSON.stringify(brief)) < 17408, `${Buffer.byteLength(JSON.stringify(brief))} bytes of preset listing`);
+  // keeps a new preset from undoing it: 17 KB since the four moving isometric starters made 121, 17.5 KB since the
+  // bare torch and campfire say what they lack and name the finished preset (PIXELBOLT-BUGS P-224).
+  assert.ok(Buffer.byteLength(JSON.stringify(brief)) < 17920, `${Buffer.byteLength(JSON.stringify(brief))} bytes of preset listing`);
   assert.equal(brief.guide, `${guide} ${BRIEF_NOTE}`);
   assert.deepEqual(Object.keys(brief.presets), presets.map(entry => entry.name));
   for (const entry of presets) {
@@ -327,7 +328,7 @@ test('a bare torch or campfire found by its name says what it lacks and names th
     // Both words of the finished one's name still find it alone.
     assert.deepEqual(Object.keys(findListing(listing, finished.replace('-', ' ')).presets), [finished]);
   }
-  assert.match(findListing(listing, 'torch').presets.torch, /no bracket, smoke or light on a wall/);
+  assert.match(findListing(listing, 'torch').presets.torch, /no bracket, smoke or wall light/);
 });
 
 test('a search word that names a kind of preset has that kind\'s presets named beside the name matches', () => {
