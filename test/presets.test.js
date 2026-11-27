@@ -319,7 +319,7 @@ test('finding presets by words lists the names that hold the most of them, else 
 // names the one to use.
 test('a bare torch or campfire found by its name says what it lacks and names the finished preset', async () => {
   const shipped = ['torch', 'wall-torch', 'campfire', 'campfire-stones'];
-  const listing = await listPresets({ only: entry => shipped.includes(entry.name), concurrency: 1 });
+  const listing = await listPresets({ only: entry => shipped.includes(entry.name), concurrency: 1, budget: Infinity });
   for (const [bare, finished] of [['torch', 'wall-torch'], ['campfire', 'campfire-stones']]) {
     const found = findListing(listing, bare).presets;
     assert.deepEqual(Object.keys(found), [bare, finished]);
