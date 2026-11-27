@@ -1,16 +1,30 @@
-# 0.21.0
+# 0.22.0
 
-Walk cycles from drawings you already have: cut a PNG's feet and arms into moving parts, animate drawn front, back and side views in four directions, and review every step of a cutout walk for detached boots and gaps. A looping cloth keeps moving in video frames.
+Text in Cyrillic, Japanese kana, Korean Hangul and common CJK ideographs; scenes made straight from source files, with normal passes derived in place and dithered light; and two more four-direction characters, shown together in a lit camp scene.
 
-- **Four-direction walks from drawn parts:** a pose source's `walkCycles` pairs each facing's standing pose with two feet and optional arms, and compiles eight editable steps a direction through the CLI or MCP; a side cycle can generate its mirror. Start from `pixelbolt presets four-way-knight --out knight.poses.json`. The walks export as Godot SpriteFrames like any other animation.
-- **Cutout walks from a PNG:** `pixelbolt import sprite.png --cutout cuts.json --out hero.poses.json` (`pixel_import` with `cutout`) makes the rectangles you mark into feet and arms and keeps the standing pixels and the ground point. `extendFeet` draws short boot shafts under a coat, and the exported `anchorPx` locates the same point on the source drawing.
-- **Review a whole walk:** `inspect hero.poses.json --view walks` (`pixel_inspect` with `view: "walks"`) scans every phase of a character's walks and gives native coordinates for concealed joint gaps, exposed boot shafts and ink that moves with the wrong part. `inspect --motion <walk> --track mask.json` (`track` on `pixel_inspect`) follows chosen standing pixels through the steps, and `keepWith` in the cut manifest gives an outline shared by equipment and a limb to the right part.
-- **A looping cloth keeps cycling in video frames:** a `loop: true` cloth made straight into frames (`pixelbolt sequence`, or `sequence` on `pixel_compile`) plays for as long as `--seconds` or `--loops` asks, as its compiled recipe does. In 0.20.0 the shipped `flag` held its last picture for the second half of a two-pass clip, and `--loops 2` was refused.
-- **Tile set previews:** a recoloured variant's copy on the test map no longer replaces the template of a variant named `as-<that variant>`. The exported tiles were never affected.
+- **Text in more scripts:** `text` draws Cyrillic (Russian and Ukrainian), Hiragana and Katakana with voiced and small forms, all 11,172 modern Hangul syllables and 165 ideographs of game menus, and full-width punctuation. Hangul and ideographs are drawn in a 9×9 cell, so every syllable is a picture of its own. Latin text lays out as before, and a character the font lacks is still an error that names it.
+- **Two more four-direction characters:** the `four-way-mage` (with `cast-down`) and `four-way-ranger` (with `aim-right` and `aim-left`) presets walk in four directions, as `four-way-knight` does. Start from `pixelbolt presets four-way-mage --out mage.poses.json`.
+- **A lit camp scene:** `examples/camp-clearing.scene.json` puts the three characters, a meadow clearing and the campfire fluid under flickering firelight, every asset a source file named as it is.
+- **Scenes from sources:** a scene asset may be a poses, autotile, fx, fluid, wave, crystal, powder or bodies source, as a file, inline or a source revision; `pixel_scene`, `scene` and `gif <scene>` compile it first.
+- **Normal passes in place:** a scene asset's `normal` takes a `pixelforge-normals` source and, without `recipe`, derives it from the asset's own drawing. A normals source's `recipe` may be a source file (`pixel_compile`, `pixel_render` with `normal`), and `detail: {"amount", "ignore"}` keeps outlines and eyes flush on the rounded surface.
+- **Dithered scene light:** `lighting.dither` and `lighting.pattern` feather the bands of scene light into each other with no new colours; the pattern holds still under a camera pan.
+- **Colour counts for GIFs:** `pixel_scene` replies with `colors`, and a scene GIF refused for passing 256 colours in a frame says how many come from the drawing, from the lighting and from translucent placements, and what to change.
+- **Repeating fluid emitters:** an emitter's `repeat` fires its burst or window every `repeat` frames.
+- **Several files in one validate:** `pixelbolt validate a.json b.json …` replies with an entry for each file and exits 1 when any fails.
+- **Fixes:** `gif -` takes a scene on stdin; `gif` on a source file and `inspect --reference` with one no longer stop with `project.format: unknown field`; a liquid with `heat` and a `strand` layer, a thin polygon body with `subpixels` and a one-cell-wide iso stack with `cell` compile; a before and after image of two large frames fits one PNG; `frames` that merges past 60 seconds holds the frame at 60,000 ms with a warning.
+- **MCP fixes:** wrong `data`, `path` and `beside` arguments, and a source revision where a recipe revision belongs, get errors that name the argument; `pixel_inspect` with `beside` previews the comparison in MCP Apps; revisions save where the output folder cannot make hard links.
 
-Changed since 0.20.0, check before upgrading:
-- A `loop: true` cloth, such as the shipped `flag` and `banner`, gives different video frames from `sequence` after its first pass: it keeps moving where 0.20.0 held one picture. Its compiled recipe is unchanged.
-- The pose examples shipped in 0.20.0 compile to the same recipes as before.
+Changed since 0.21.0, check before upgrading:
+- The 122 presets shipped in 0.21.0 compile to the same recipes and draw the same pixels. A scene without `lighting.dither` and a normals source with a number for `detail` draw as before.
+- Refused now, where 0.21.0 ignored the extra option: `pixel_compile` with `slices` and `draftViews` or `sequence`, or with `metadata` and `sequence`; `compile --animation` or `--slices` with `--draft-views` or `--expand`; `inspect --motion` with `--every`.
+- `pixel_inspect`'s `beside` takes 1 to 8 revision ids; an empty list or more than 8 was taken by 0.21.0 and is refused now.
+- Under the server root, a referenced palette, scene asset, normal pass or normals recipe larger than 16,777,216 bytes is refused; 0.21.0 read it. The CLI still reads one of any size.
+- A stack whose animations make frame names that differ only in case (`Walk` and `walk`) is refused; 0.21.0 compiled it.
+- `--offset` with an empty item (`4,`) is refused; 0.21.0 read it as `4,0`.
+- `frames` (`compile --frames`) that merges frames past 60,000 ms now gives a recipe with that frame held at 60,000 ms and a warning, so the animation is shorter than its source; 0.21.0 refused it.
+- `pixel_inspect` with `beside`, in a client that shows MCP Apps, previews the stacked comparison instead of playing the first recipe.
+- Pose-sheet and draft-view labels and motion-strip keys draw Cyrillic, kana, Hangul and the listed ideographs where they drew `?`.
+- For code that imports the font: `FONT_CHARACTERS` lists 629 characters (191 in 0.21.0) and leaves out the Hangul syllables, which are built on demand; ask `hasGlyph(character)` instead.
 
 Known issues:
 - A slice sheet (`compile --slices`) leaves out moving parts, animations, facets and paths, and says so: those play from the baked frames.
