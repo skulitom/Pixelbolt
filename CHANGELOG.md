@@ -4,19 +4,65 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
-### Text in more scripts
-
-- The `text` operation draws Cyrillic (Russian and Ukrainian), Japanese hiragana and katakana, every modern Korean Hangul syllable and 165 ideographs of game menus (numbers, directions, elements, and words such as 開始, 終了, 設定, 魔法, 回復, 宝箱). Hangul syllables and ideographs are drawn in a 9×9 cell that starts one row above `y`, always 9 wide; every one of the 11,172 syllables is a picture of its own. An ideograph outside the set is an error that names it. `hasGlyph(character)` tests whether the font draws a character. [Guide](docs/agent-guide.md#operations).
-
-### Fixes
-
-- `pixelbolt gif - --out <new.gif>` takes a scene on stdin and writes the whole scene, as `gif <scene.json>` does. It read stdin as a recipe and stopped with `project.format: unknown field`.
-
 ### Poke the pixels: a live fluid toy
 
 - The playground gains **Poke the pixels** (`playground/fluids/`): a campfire, honey, slime, a waterfall, a potion, a magic swirl and steam run live in the browser with the released engine's `createLiveFluid`. Drag to push the fluid with the pointer's speed; hold to pour a liquid or add heat and smoke to a gas; arrow keys and Space do the same from the keyboard. **Save GIF** saves the last four seconds at about 320 pixels on the long side, blended onto the stage colour. **Copy link** makes a link (#v, p and i, all in the fragment) that replays what was done on the same frames, so the person who opens it sees the same pixels; a two-minute busy session fits in about 7,000 characters, and a longer one is cut at a poke to fit. Touching the effect during a replay takes over, and a new link carries both. **Edit the recipe** opens the preset in the playground. The page has a 1200 × 630 link card, drawn by `scripts/fluid-toy-preview.mjs`, and the deploy script lists it in the sitemap and links it from the home page.
 - The playground and the toy load 0.21.0 by default, and the playground lists 0.9.2's slash hit, fire explosion, lightning strike, healing circle and cel-shaded water effects. Links that name an earlier version still open on it.
 - The playground's Examples menu goes back to "Choose an example…" when a share link or an opened file replaces the recipe. It kept naming the example it had replaced, so the page showed two recipes as current (the explosion generator, built from the same page, did it after a preset link).
+
+### Character & Walk-Cycle Studio
+
+- The playground gains a **Character & Walk-Cycle Studio** (`playground/characters/`): pick the four-direction knight, mage or ranger, the sword hero, the fox or the slime, recolour it from a palette theme or one colour at a time, and watch it stand and walk in each direction, or in all four at once with **4-Way**, at four speeds over four backgrounds; arrow keys turn it and Space pauses. **Save GIF**, **Sprite Sheet PNG** (with the editable recipe inside it), **Atlas JSON**, **Godot 4 .tres** and **Editable JSON** download the recoloured character; **Copy Share Link** keeps the character, animation, speed and colours in the link's fragment, and **Edit in Playground** opens the recoloured source in the playground. The playground links to it, and the deploy script lists it in the sitemap and on the home page. `node scripts/build-itch-characters.mjs` packs it as an offline HTML5 ZIP for itch.io that makes no request to a CDN.
+
+## 0.22.0 (2026-11-27)
+
+### Text in more scripts
+
+- The `text` operation draws Cyrillic (Russian and Ukrainian), Japanese hiragana and katakana, every modern Korean Hangul syllable and 165 ideographs of game menus (numbers, directions, elements, and words such as 開始, 終了, 設定, 魔法, 回復, 宝箱). Hangul syllables and ideographs are drawn in a 9×9 cell that starts one row above `y`, always 9 wide; every one of the 11,172 syllables is a picture of its own. An ideograph outside the set is an error that names it. `hasGlyph(character)` tests whether the font draws a character. [Guide](docs/agent-guide.md#operations).
+
+### Four-direction characters and a lit camp
+
+- Two more four-direction presets beside `four-way-knight`, 24 × 24 each: `four-way-mage` stands and walks in four directions and has `cast-down`, and `four-way-ranger` adds `aim-right` and `aim-left`. Every pixel is a palette colour, and each left frame is its right frame mirrored pixel for pixel. Start from `pixelbolt presets four-way-mage --out mage.poses.json`; `presets --find four-way` lists all three.
+- `examples/camp-clearing.scene.json` is a lit night camp made straight from sources: the knight walking, the mage casting and the ranger walking, each with a normal pass derived in place, a clearing from `meadow.autotile.json` and the `campfire.fluid.json` fire under flickering firelight with `lighting.dither`. `pixelbolt scene examples/camp-clearing.scene.json --image <camp.png>` draws it.
+
+### Scenes from sources
+
+- A scene asset, or its `recipe`, may be a source: a `.poses.json`, `.autotile.json`, `.fx.json`, `.fluid.json`, `.wave.json`, `.crystal.json`, `.powder.json` or `.bodies.json` file beside the scene, the same source inline, or a saved source revision over MCP. `scene`, `gif <scene>` and `pixel_scene` compile it first, reading its palette files beside it (inside the root over MCP). 0.21.0 stopped with `scene.assets.<name>: its recipe pass has invalid dimensions`, so each had to be compiled to a recipe first. Stacks were already compiled in place.
+- A scene asset's `normal` takes a `pixelforge-normals` source, as a file or inline; without `recipe` it derives the pass from that asset's own colour recipe, so a changed sprite needs no separate normal compile: `"normal": {"format": "pixelforge-normals", "version": 1, "bevel": 2}`. Any normals source's `recipe` may name a source file, such as a `.poses.json`, which is compiled first (`compile hero.normals.json`, `render --normal hero.normals.json`, `pixel_compile`, `pixel_render` with `normal`). 0.21.0 refused it with `normals.recipe: expected a recipe, not a pixelforge-poses source`.
+- `lighting.dither` (0 to 1) feathers each band of scene light into the next through `lighting.pattern` (`bayer4` by default, or `bayer2`, `bayer8`, `noise`, `value` or a matrix of ranks), using only the colours the hard bands use. The pattern belongs to the scene, so it holds still while the camera pans, and a placement at `scale` 4 dithers in its own 4 × 4 blocks. A scene without `dither` is lit as before.
+- `scene --image` and `pixel_scene` give `colors`, how many colours the drawn frame has. A scene GIF with more than 256 colours in a frame is still refused, and the refusal now gives that frame's unlit count, what the lighting adds (its mode, bands and lights) and the translucent placements that blend there, with what to change: fewer `lighting.bands`, `lighting.dither` to soften the rings, fewer coloured lights or `lighting.mode: "ramp"`.
+
+### Normal passes
+
+- A normals source's `detail` takes `{"amount": 0.5, "ignore": ["k", "d"]}`: the listed palette keys (outlines, eyes, markings) lie flush on the rounded surface while lighter colours still stand out. A listed key that no frame draws gives a warning; a key the recipe lacks, a transparent key or a key listed twice is refused with its path. A number works as before.
+
+### Fluids
+
+- An emitter's `repeat` fires its `burst`, or its `start` to `end` window, every `repeat` frames, as copies of it at `start`, `start + repeat` and so on would. In a looping effect `repeat` must divide `frames`, and a repeating `rate` emitter needs `end`, with `end - start` less than `repeat`. A one-shot stays quiet before `start`. [Fluid emitters](docs/art-workflow.md#fluid-emitters-and-forces)
+
+### Command line
+
+- `pixelbolt validate a.json b.json …` checks several files in one call. The reply is `{"ok": …, "files": [...]}`, with an entry for each file that has its own `ok` and its summary or error, and the exit code is 1 when any file fails. `-` cannot be one of several files. One file is checked and replied to as before.
+
+### Refused now
+
+- `compile --animation` or `--slices` with `--draft-views` or `--expand` is refused; 0.21.0 ignored them (`compile --expand --slices` printed the expanded source). `inspect --motion` refuses `--every`, which 0.21.0 ignored. An `--offset` with an empty item, such as `4,`, is refused; 0.21.0 read it as `4,0`.
+- `pixel_compile` refuses `slices` with `draftViews` or `sequence`, and `metadata` with `sequence`, which 0.21.0 ignored. `pixel_inspect`'s `beside` takes 1 to 8 revision ids; 0.21.0 also took an empty list and more than 8.
+- A stack whose animations make frame names that differ only in case (`Walk` and `walk`) is refused. 0.21.0 compiled them.
+- Over MCP, a file that a document references (a palette, a scene asset, a normal pass or its recipe) is refused past 16,777,216 bytes, the request limit. The CLI reads one of any size, as before.
+
+### Fixes
+
+- `pixelbolt gif - --out <new.gif>` takes a scene on stdin and writes the whole scene, as `gif <scene.json>` does. It read stdin as a recipe and stopped with `project.format: unknown field`.
+- `gif` on a source file, such as a `.fluid.json`, says to compile it first and gives the command, and `inspect --reference` compiles a source file, such as a `.poses.json`, before comparing. Both stopped with `project.format: unknown field`.
+- `inspect --beside -,-` is refused with "Only one input can use stdin" before anything is read, as are two inputs on stdin among `--under`, `--track`, `--pose-sheet` and `render --normal`. `--beside -,-` read stdin twice and failed with `stdin is not JSON`.
+- A patch, or an `inspect --reference` comparison, of two large frames (2048 × 2045 with a renamed frame) draws as many before and after rows as fit one PNG and gives `omitted` for the rest. It failed with `image: the contact sheet would be 4102×4096 pixels`.
+- `compile --frames` (MCP `frames`) that merges frames past 60,000 ms holds the merged frame at 60,000 ms and warns. It made a recipe that was refused with `project.frames[0].duration: expected an integer from 1 to 60000`.
+- Three sources that stopped with `Cannot read properties of undefined` or a refusal now compile: a liquid with `heat` and a `strand` look layer, a thin polygon body drawn with `subpixels` above 1, and an iso stack with `cell` whose slices are one cell wide (1 × 2 or 2 × 1; it was refused with `stack.pivot: ground pivot must be inside the slice`).
+- A change path with a bad escape inside quotes, such as `frames["bad\x"]`, is refused with `changes[0].set: invalid quoted key`. It failed with a bare JSON syntax error.
+- MCP errors name the argument at fault where a Node error came back: `pixel_import` with a `data` or `path` that is not a string, and `pixel_inspect` with a `beside` that is not a list. `pixel_inspect` with `view: "motion"` or `"walks"` on a source revision that is not a pose source, or with a source revision as `reference` or in `beside`, says to pass the compiled recipe's revision; these stopped with `project.format: unknown field`.
+- With `beside`, `pixel_inspect`'s MCP Apps preview shows the stacked comparison; it played the first recipe alone. The `pixel_scene` listing gives `scale` up to 16 (it said 8, though the server took more), and the `poseSheet` description shows × where it showed `Ã—`.
+- The MCP server saves revisions where the output folder cannot make hard links, by copying the file. 0.21.0 failed the call with the link's error.
 
 ## 0.21.0 (2026-11-25)
 
