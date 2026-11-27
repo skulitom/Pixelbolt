@@ -2,7 +2,7 @@
 
 Text in Cyrillic, Japanese kana, Korean Hangul and common CJK ideographs; scenes made straight from source files, with normal passes derived in place and dithered light; and two more four-direction characters, shown together in a lit camp scene.
 
-- **Text in more scripts:** `text` draws Cyrillic (Russian and Ukrainian), Hiragana and Katakana with voiced and small forms, all 11,172 modern Hangul syllables and 165 ideographs of game menus, and full-width punctuation. Hangul and ideographs are drawn in a 9×9 cell, so every syllable is a picture of its own. Latin text lays out as before, and a character the font lacks is still an error that names it.
+- **Text in more scripts:** `text` draws Cyrillic (Russian and Ukrainian), Hiragana and Katakana with voiced and small forms, all 11,172 modern Hangul syllables and 165 ideographs of game menus, and common full-width punctuation (、。「」！？). Hangul and ideographs are drawn in a 9×9 cell, so every syllable is a picture of its own. Latin text lays out as before, and a character the font lacks is still an error that names it.
 - **Two more four-direction characters:** the `four-way-mage` (with `cast-down`) and `four-way-ranger` (with `aim-right` and `aim-left`) presets walk in four directions, as `four-way-knight` does. Start from `pixelbolt presets four-way-mage --out mage.poses.json`.
 - **A lit camp scene:** `examples/camp-clearing.scene.json` puts the three characters, a meadow clearing and the campfire fluid under flickering firelight, every asset a source file named as it is.
 - **Scenes from sources:** a scene asset may be a poses, autotile, fx, fluid, wave, crystal, powder or bodies source, as a file, inline or a source revision; `pixel_scene`, `scene` and `gif <scene>` compile it first.
