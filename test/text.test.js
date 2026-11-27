@@ -10,26 +10,30 @@ import { STUDIO_PATHS } from '../src/server.js';
 import { createSceneBundle } from '../src/scene-export.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+// The CJK unified ideographs' block, where the font's ideographs are.
+const isIdeograph = character => character.codePointAt(0) >= 0x4E00 && character.codePointAt(0) <= 0x9FFF;
 // Renders one frame of ops on a w × h canvas and returns it as rows of "#" (drawn) and "." (empty).
 const draw = (w, h, ops, extra = {}) => {
   const project = renderProject({ version: 1, name: 'probe', width: w, height: h, palette: { k: '#000000', w: '#ffffff' }, frames: [{ name: 'a', ops }], ...extra }), { data } = project.frames[0];
   return { project, rows: Array.from({ length: h }, (_, y) => Array.from({ length: w }, (_, x) => data[(y * w + x) * 4 + 3] ? '#' : '.').join('')) };
 };
 
-test('the built-in font covers ASCII, western European, Cyrillic, Japanese Kana, Korean Hangul and common CJK, with tabular digits', () => {
+test('the built-in font covers ASCII, western European, Cyrillic, Japanese Kana and ideographs, with tabular digits', () => {
   const ascii = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i)).join(''), more = '¡¢£¥©«®°±·»¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽž–—‘’‚“”„•…‹›€';
   const latin = ascii + more;
   for (const ch of latin) assert.ok(FONT_CHARACTERS.includes(ch), `missing Latin char ${JSON.stringify(ch)}`);
   assert.deepEqual([FONT_HEIGHT, FONT_CAP_HEIGHT], [8, 7]);
   for (const character of FONT_CHARACTERS) {
     const { width, height, top, rows } = layoutText(character);
-    // A line is 8 rows; a capital with an accent starts 2 rows higher. Nothing is wider than 8 pixels.
-    assert.ok(height === 8 - top && (top === 0 || top === -2) && rows.length === height && width >= 1 && width <= 8 && rows.every(row => row.length === width), JSON.stringify(character));
+    // A line is 8 rows; a capital with an accent starts 2 rows higher, and an ideograph, in its 9×9 cell, one row
+    // higher unless its top row is empty (一). Nothing else is wider than 8 pixels.
+    const ideograph = isIdeograph(character);
+    assert.ok(height === 8 - top && (top === 0 || top === (ideograph ? -1 : -2)) && rows.length === height && width >= 1 && width <= (ideograph ? 9 : 8) && rows.every(row => row.length === width), JSON.stringify(character));
     // Every glyph but spaces has ink, and non-digits are trimmed to ink on both sides.
     if (character === ' ') { assert.equal(width, 3); continue; }
     if (character === '\u3000') { assert.equal(width, 7); continue; }
     assert.ok(rows.some(row => row.includes('#')), `${character} is blank`);
-    if (!/\d/.test(character)) assert.ok(rows.some(row => row[0] === '#') && rows.some(row => row.at(-1) === '#'), `${character} has an empty edge column`);
+    if (!/\d/.test(character) && !ideograph) assert.ok(rows.some(row => row[0] === '#') && rows.some(row => row.at(-1) === '#'), `${character} has an empty edge column`);
   }
   assert.deepEqual([...'0123456789'].map(digit => measureText(digit).width), Array(10).fill(5));
   // Capitals stand on the baseline (row 6); only descenders and the underscore use the row below it.
@@ -40,7 +44,7 @@ test('the built-in font covers ASCII, western European, Cyrillic, Japanese Kana,
   // An accented letter is its base letter with a mark: below the mark, é is e and É is E.
   assert.deepEqual([layoutText('é').rows.slice(2), layoutText('É').rows.slice(2), layoutText('é').rows.slice(0, 2), layoutText('É').rows.slice(0, 2)], [layoutText('e').rows.slice(2), layoutText('E').rows, ['..#..', '.#...'], ['..#..', '.#...']]);
 });
-test('Cyrillic, Japanese Kana, Korean Hangul and common CJK ideographs render deterministically', () => {
+test('Cyrillic and Japanese Kana are drawn, and voiced kana differ from their base', () => {
   // Russian + Ukrainian Cyrillic
   for (const sample of ['Привет мир!', 'Ёжик №1 — 500₽', 'Київ Є Ї Ґ']) {
     const out = layoutText(sample);
@@ -48,28 +52,98 @@ test('Cyrillic, Japanese Kana, Korean Hangul and common CJK ideographs render de
   }
   assert.equal(layoutText('Ё').top, -2);
   assert.equal(layoutText('Й').top, -2);
-  // Japanese Hiragana, Katakana, voiced/semi-voiced and RPG kanji
-  for (const sample of ['あいうえお がぎぐげご ぱぴぷぺぽ', 'ピクセルボルト！', '「ようこそ勇者よ！」 魔法・回復・宝箱']) {
+  // Hiragana, Katakana and their voiced and half-voiced forms stay on the Latin rows.
+  for (const sample of ['あいうえお がぎぐげご ぱぴぷぺぽ', 'ピクセルボルト！', '「ようこそ！」']) {
     const out = layoutText(sample);
     assert.ok(out.width > 0 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
   }
   assert.notDeepEqual(layoutText('か').rows, layoutText('が').rows);
   assert.notDeepEqual(layoutText('は').rows, layoutText('ぱ').rows);
-  // Korean Hangul: algorithmic composition covers all 11,172 modern syllables (U+AC00..U+D7A3)
-  assert.equal(hasGlyph('가'), true);
-  assert.equal(hasGlyph('힣'), true);
   assert.equal(hasGlyph('😀'), false);
-  for (const sample of ['안녕하세요! 픽셀볼트 게임 시작', '글자 값 없음 닭 읽기 삶 광원 의지', '가힣']) {
-    const out = layoutText(sample);
-    assert.ok(out.width > 0 && out.height === 8 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
+});
+// The Hangul syllable of an initial, a vowel and a final (0 for none), by their places in the code chart.
+const syllable = (initial, vowel, final = 0) => String.fromCodePoint(0xAC00 + (initial * 21 + vowel) * 28 + final);
+const cells = character => layoutText(character).rows.join('');
+const apart = (a, b) => { let count = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) count++; return count; };
+test('every Hangul syllable is a picture of its own in a 9×9 cell', () => {
+  const seen = new Map();
+  for (let code = 0xAC00; code <= 0xD7A3; code++) {
+    const character = String.fromCodePoint(code), { width, height, top, rows } = layoutText(character), key = rows.join('|');
+    if (width !== 9 || height !== 9 || top !== -1) assert.fail(`${character} is ${width}×${height} from row ${top}`);
+    // 1,148 syllables were once drawn as another: two finals shared a shape, and ㄲ and ㅍ did over a compound vowel.
+    if (seen.has(key)) assert.fail(`${character} is drawn as ${seen.get(key)} is`);
+    seen.set(key, character);
   }
-  // Combining Hangul Jamo normalizes via NFC into the same composed syllable.
-  assert.deepEqual(layoutText('\u1112\u1161\u11AB').rows, layoutText('한').rows);
-  // Common Chinese / Japanese CJK ideographs
-  for (const sample of ['一二三四五六七八九十', '開始 終了 勝利 保存 設定', '日本語']) {
-    const out = layoutText(sample);
-    assert.ok(out.width > 0 && out.top === 0 && out.rows.some(row => row.includes('#')), sample);
+  assert.equal(seen.size, 11172);
+  assert.deepEqual([hasGlyph('가'), hasGlyph('힣'), hasGlyph('힤')], [true, true, false]);
+  // 꽝 and 퐝, and 갊 and 갎, were pairs drawn alike.
+  assert.ok(apart(cells('꽝'), cells('퐝')) >= 6 && apart(cells('갊'), cells('갎')) >= 2);
+  // What they look like: an upright vowel beside the initial (한), a flat one under it (를), both (왜), and ㅜ moved
+  // up against the initial where its tick would run into the final (국).
+  assert.deepEqual(layoutText('한').rows, ['#####.#..', '......#..', '.###..###', '#...#.#..', '.###..#..', '.........', '.#.......', '.#.......', '.#######.']);
+  assert.deepEqual(layoutText('를').rows, ['..######.', '....#....', '.######..', '.........', '#########', '.........', '..######.', '....#....', '.######..']);
+  assert.deepEqual(layoutText('왜').rows, ['.###..#.#', '#...#.#.#', '#...#.#.#', '#...#.#.#', '.###..###', '......#.#', '..#...#.#', '..#...#.#', '#####.#.#']);
+  assert.deepEqual(layoutText('국').rows, ['.#######.', '.......#.', '.......#.', '#########', '....#....', '.........', '.#######.', '.......#.', '.......#.']);
+  // Combining jamo compose to the same syllable.
+  assert.deepEqual(layoutText('한').rows, layoutText('한').rows);
+  // A line of Hangul starts one row above the capitals of a Latin line and ends on its descender row.
+  assert.deepEqual([measureText('한글'), measureText('Ab 한').top, measureText('a\n한').top], [{ width: 19, height: 9, top: -1, lines: [{ text: '한글', width: 19 }] }, -1, 0]);
+});
+test('Hangul syllables that differ in one part differ by more than a stray pixel', () => {
+  // The closest two of a row of syllables that differ only in the part being varied.
+  const closest = row => {
+    let least = Infinity, pair = '';
+    for (let i = 0; i < row.length; i++) for (let j = i + 1; j < row.length; j++) { const d = apart(cells(row[i]), cells(row[j])); if (d < least) [least, pair] = [d, row[i] + row[j]]; }
+    return { least, pair };
+  };
+  const initials = Array.from({ length: 19 }, (_, i) => i), vowels = Array.from({ length: 21 }, (_, i) => i), finals = Array.from({ length: 28 }, (_, i) => i);
+  // Initials, in each box an initial is drawn in: beside ㅏ, over ㅗ, over ㅘ, each with and without a final, and
+  // over ㅜ with a final under its tick.
+  for (const [vowel, final] of [[0, 0], [0, 4], [8, 0], [8, 4], [9, 0], [9, 4], [13, 1]]) {
+    const { least, pair } = closest(initials.map(initial => syllable(initial, vowel, final)));
+    assert.ok(least >= 2, `${pair} differ by ${least}`);
   }
+  // Finals, under each kind of vowel.
+  for (const vowel of [0, 8, 13, 14]) {
+    const { least, pair } = closest(finals.map(final => syllable(11, vowel, final)));
+    assert.ok(least >= 2, `${pair} differ by ${least}`);
+  }
+  // Vowels. With no final every pair is two pixels apart or more. With one, a flat vowel's tick is a single pixel
+  // (온 and 은), the least a 9-row cell leaves it; nothing else is that close.
+  assert.ok(closest(vowels.map(vowel => syllable(11, vowel))).least >= 2);
+  for (const final of [1, 4, 8, 16, 21]) for (const initial of [0, 6, 11]) {
+    const row = vowels.map(vowel => syllable(initial, vowel, final));
+    for (let i = 0; i < row.length; i++) for (let j = i + 1; j < row.length; j++) {
+      const flat = v => [8, 12, 13, 17, 18].includes(v) ? 'flat' : [9, 10, 11, 14, 15, 16, 19].includes(v) ? 'compound' : 'upright';
+      const d = apart(cells(row[i]), cells(row[j]));
+      assert.ok(d >= 2 || (d === 1 && flat(i) === flat(j) && flat(i) !== 'upright'), `${row[i]}${row[j]} differ by ${d}`);
+    }
+  }
+  // 운 is not 은 plus a pixel: where the final leaves room, the tick under the bar is two rows long.
+  assert.equal(apart(cells('운'), cells('은')), 2);
+});
+test('ideographs are 9×9 drawings of their own, with room left inside them', () => {
+  const ideographs = [...FONT_CHARACTERS].filter(isIdeograph), seen = new Map();
+  assert.ok(ideographs.length >= 150, `${ideographs.length} ideographs`);
+  for (const character of ideographs) {
+    const { width, height, top, rows } = layoutText(character), drawn = (top ? '' : '.........') + rows.join(''), ink = drawn.split('#').length - 1;
+    // The cell starts one row above the capitals; a drawing whose top row is empty (一, 三) starts with them.
+    assert.ok(width === 9 && height === 8 - top && (top === -1 || top === 0) && hasGlyph(character), character);
+    // A drawing with much over half its cell inked is a blob, not strokes: the densest is a box round something (国).
+    assert.ok(ink >= 9 && ink <= 50, `${character} has ${ink} of 81 pixels inked`);
+    for (const [other, cellsOf] of seen) if (apart(cellsOf, drawn) < 2) assert.fail(`${character} and ${other} differ by less than two pixels`);
+    seen.set(character, drawn);
+  }
+  // Two as drawn, and the dot that makes 氷 of 水.
+  assert.deepEqual(layoutText('日').rows, ['.#######.', '.#.....#.', '.#.....#.', '.#.....#.', '.#######.', '.#.....#.', '.#.....#.', '.#.....#.', '.#######.']);
+  assert.deepEqual(layoutText('木').rows, ['....#....', '....#....', '#########', '....#....', '...###...', '..#.#.#..', '.#..#..#.', '#...#...#', '....#....']);
+  assert.equal(apart(cells('水'), cells('氷')), 2);
+  // Kana stay 7 rows on the Latin rows, so a line of kana and ideographs is one row taller than a line of kana.
+  assert.deepEqual([measureText('ひ').top, measureText('日本のテキスト').top, measureText('火と水').height], [0, -1, 9]);
+  // An ideograph the font does not draw is an error that says how many it does.
+  assert.equal(hasGlyph('你'), false);
+  assert.throws(() => layoutText('你好'), new RegExp(`no glyph for "你".*${ideographs.length} ideographs of game menus`));
+  assert.throws(() => renderProject({ version: 1, name: 'probe', width: 32, height: 16, palette: { k: '#000000' }, frames: [{ name: 'a', ops: [{ op: 'text', x: 0, y: 2, text: '你好', color: 'k' }] }] }), error => error instanceof PixelError && /no glyph/.test(error.message));
 });
 test('text is laid out with glyph spacing, line height and alignment', () => {
   assert.deepEqual(layoutText('i.').rows, ['.#...', '.....', '##...', '.#...', '.#...', '.#...', '###.#', '.....']);

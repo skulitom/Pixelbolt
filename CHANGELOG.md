@@ -4,6 +4,10 @@ Releases before 0.9.0 are described on [GitHub Releases](https://github.com/skul
 
 ## Unreleased
 
+### Text in more scripts
+
+- The `text` operation draws Cyrillic (Russian and Ukrainian), Japanese hiragana and katakana, every modern Korean Hangul syllable and 165 ideographs of game menus (numbers, directions, elements, and words such as 開始, 終了, 設定, 魔法, 回復, 宝箱). Hangul syllables and ideographs are drawn in a 9×9 cell that starts one row above `y`, always 9 wide; every one of the 11,172 syllables is a picture of its own. An ideograph outside the set is an error that names it. `hasGlyph(character)` tests whether the font draws a character. [Guide](docs/agent-guide.md#operations).
+
 ### Fixes
 
 - `pixelbolt gif - --out <new.gif>` takes a scene on stdin and writes the whole scene, as `gif <scene.json>` does. It read stdin as a recipe and stopped with `project.format: unknown field`.

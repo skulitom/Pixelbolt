@@ -324,7 +324,7 @@ Files are read in number order (`prism_0001.png`, `prism_0002.png` …); gaps in
 
 ### Pixel text
 
-The `text` operation draws titles, captions, labels and counters in a built-in pixel font: printable ASCII, the accented letters of western European languages (À–ÿ, Œ œ Š š Ž ž Ÿ) and common symbols such as € £ © — … “ ” „ « », with capitals 7 pixels tall, proportional letters and tabular digits. The accent of a capital sits in the two rows above `y`.
+The `text` operation draws titles, captions, labels and counters in a built-in pixel font: printable ASCII, the accented letters of western European languages (À–ÿ, Œ œ Š š Ž ž Ÿ), Cyrillic, Japanese kana, every Korean Hangul syllable, 165 ideographs of game menus (開始, 設定, 魔法 …) and common symbols such as € £ © — … “ ” „ « », with capitals 7 pixels tall, proportional letters and tabular digits. Hangul and ideographs are drawn in a 9×9 cell. The accent of a capital sits in the two rows above `y`.
 
 ```json
 { "op": "text", "x": 120, "y": 8, "text": "GAME OVER\nscore 12480", "color": "ink", "align": "center" }
