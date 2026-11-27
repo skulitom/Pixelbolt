@@ -990,7 +990,7 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 512,
-              "description": "Printable ASCII, western European accented letters and common symbols; \\n starts a new line (at most 64)."
+              "description": "Printable ASCII, western European accented letters, Cyrillic, Japanese kana, Korean Hangul, the ideographs of game menus (about 165, no others) and common symbols; \\n starts a new line (at most 64)."
             },
             "color": {
               "type": "string",
@@ -1042,7 +1042,7 @@
             "color"
           ],
           "additionalProperties": false,
-          "description": "Draw text in the built-in pixel font. y is the top of the capitals; a line is 8 rows: capitals 7 tall, lowercase 5, descenders 1 below, and the accent of a capital reaches 2 rows above y. Glyphs are 1 to 5 pixels wide (© ® — Œ œ are 7), digits always 5, a space 3. One line of n average characters is about 6n pixels wide."
+          "description": "Draw text in the built-in pixel font. y is the top of the capitals; a line is 8 rows: capitals 7 tall, lowercase 5, descenders 1 below, and the accent of a capital reaches 2 rows above y. Glyphs are 1 to 5 pixels wide (© ® — Œ œ are 7, kana up to 8), digits always 5, a space 3. A Hangul syllable or an ideograph is a 9×9 cell from one row above y to the descender row. One line of n average Latin characters is about 6n pixels wide."
         },
         {
           "type": "object",

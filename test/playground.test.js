@@ -785,6 +785,23 @@ test('the address names a link only while the editor holds its recipe', () => pl
   page.source('chest'); assert.equal(location.hash, ''); assert.deepEqual(addresses, [bare, bare]);
   await page.render('chest');
 }));
+test('the examples menu names an example only while the editor holds it', () => playgroundReady('examples-menu', async page => {
+  const { $, events, location, flush, named } = page, link = `#v=${pin}&r=AAAA`;
+  const open = async hash => { location.hash = hash; events.get('hashchange')(); await flush(); };
+  const choose = async file => { $('examples').value = file; $('examples').emit('change'); page.source(file); await page.render(file); };
+  // A link that takes the editor puts the menu back to its placeholder: it kept naming the example it replaced.
+  await choose('coin.json'); assert.equal($('examples').value, 'coin.json');
+  await open(link); assert.equal($('examples').value, 'coin.json'); page.source('from-link');
+  assert.equal($('examples').value, ''); await page.render('from-link');
+  // So does a file. One that never arrives leaves the menu as it was.
+  await choose('coin.json');
+  $('open-file').files = [{ name: 'chest.json', type: 'application/json', size: 64, text: async () => named('chest') }];
+  $('open-file').emit('change'); await flush(); await page.refuse('Line 1, column 2: bad JSON');
+  assert.equal($('examples').value, 'coin.json');
+  $('open-file').emit('change'); await flush(); page.source('chest'); assert.equal($('examples').value, ''); await page.render('chest');
+  // Choosing the same example again opens it: the menu no longer holds it, so the change is a change.
+  $('examples').value = 'coin.json'; $('examples').emit('change'); assert.equal(page.asked().type, 'example');
+}));
 test('a link that does not decode is never the link the address goes back to', () => playgroundReady('address-broken', async page => {
   const { $, events, addresses, location, flush, fireTimer, named } = page;
   const bare = '/playground/?engine=../src/', link = `#v=${pin}&r=AAAA`, broken = `#v=${pin}&r=broken`;
