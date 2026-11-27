@@ -93,7 +93,13 @@ function ensureWorker() {
   const started = worker;
   worker.onmessage = ({ data }) => {
     if (!pending || data.id !== pending.id) return;
-    if (data.source) { sourceChanged(data.source.text, data.source.version); linked(pending.type === 'link' ? pending.hash : ''); return; }
+    if (data.source) {
+      sourceChanged(data.source.text, data.source.version); linked(pending.type === 'link' ? pending.hash : '');
+      // The examples menu names an example only while the editor holds it: a link or a file that takes the editor
+      // puts the menu back to its placeholder, as typing does.
+      if (pending.type !== 'example') { $('examples').value = ''; shownExample = ''; }
+      return;
+    }
     const item = pending; pending = null; clearTimeout(item.timer);
     if (data.error) item.reject(Object.assign(new Error(data.error.message), { name: data.error.name, path: data.error.path, line: data.error.line }));
     else item.resolve(data.result);
