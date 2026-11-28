@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { link, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises';
+import { link, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, symlink, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,8 +61,11 @@ test('every delivered byte matches the CLI for files, linked sources, presets an
   await f.put('art/colors.json', palette);
   const linked = { ...recipe, palette: { $ref: 'colors.json' } };
   await f.put('art/sprite.js', `export default ${JSON.stringify(linked)};`);
-  await f.put('art/sprite.mjs', `export default async ({ name, directory }) => {
-    if (directory !== ${JSON.stringify(f.at('.'))}) throw Error('wrong directory');
+  // The manifest's folder, however the path is spelled (macOS's /var is /private/var to a CLI run there).
+  await f.put('art/sprite.mjs', `import { existsSync } from 'node:fs';
+  import path from 'node:path';
+  export default async ({ name, directory }) => {
+    if (!existsSync(path.join(directory, 'pixelbolt.build.json')) || !existsSync(path.join(directory, 'art', 'sprite.mjs'))) throw Error('wrong directory');
     return { ...${JSON.stringify(poses)}, name };
   };`);
   const entries = [];
@@ -307,6 +310,11 @@ test('--only preserves unselected records and checks the names; --keep saves the
   const saved = (await f.json(lock)).entries.extra;
   entries[1].outputs = [{ bundle: 'different' }];
   await f.manifest(entries);
+  // Kept again with the same bytes, it is left as it is; a different file there is refused.
+  const again = await f.build({ only: 'hero', keep: 'kept' });
+  assert.equal(again.ok, true);
+  assert.ok(again.skipped.includes('kept/hero.json'));
+  await f.put('kept/hero.json', 'my notes');
   assert.equal((await f.build({ only: 'hero', keep: 'kept' })).refused[0].file, 'kept/hero.json');
   assert.deepEqual((await f.json(lock)).entries.extra, saved);
   assert.equal(f.exists('different'), false);
@@ -368,6 +376,9 @@ test('renamed frames are removed only while owned; dropped entries and outputs a
   assert.equal(f.exists('all/frames/next.png'), false);
   await f.put('all/frames/second.png', old);
   await f.manifest([entry([outputs[0]])]);
+  // --check names what the record still holds and the manifest dropped, since the build will change the record.
+  const checked = await f.build({ check: true });
+  assert.deepEqual(checked.problems.filter(p => p.reason === 'orphaned').map(p => [p.entry, p.output]), [['hero', 'still a.png'], ['another', 'gif b.gif']]);
   const rebuilt = await f.build();
   assert.deepEqual(rebuilt.removed, ['all/frames/second.png']);
   assert.equal(f.exists('all/frames/second.png'), false);
@@ -434,6 +445,49 @@ test('a recorded output is judged by its record: a file it never wrote is not mi
   // Before any record the names are all there is, so the same absent file is missing.
   await rm(f.at(lock));
   assert.ok((await f.build({ check: true })).problems.some(p => p.file === file && p.reason === 'missing'));
+});
+
+test('a recipe renamed only in letter case renames its files where the file system ignores case', async t => {
+  const f = await fixture(t);
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  await f.build();
+  if (!f.exists('out/SPRITE.png')) return t.skip('this folder keeps letter case apart');
+  // The pixels are the same, so the sheet's bytes are too; only its name and the atlas's image change.
+  await f.put('art.json', { ...recipe, name: 'Sprite' });
+  assert.equal((await f.build()).ok, true);
+  assert.deepEqual(await readdir(f.at('out')), ['Sprite.atlas.json', 'Sprite.png']);
+  assert.equal((await f.build({ check: true })).ok, true);
+  // A file given the old spelling again on disk is named by --check, and the next build renames it.
+  await rename(f.at('out/Sprite.png'), f.at('out/moved.png'));
+  await rename(f.at('out/moved.png'), f.at('out/sprite.png'));
+  assert.deepEqual((await f.build({ check: true })).problems.map(p => [p.file, p.reason]), [['out/Sprite.png', 'stale']]);
+  assert.equal((await f.build()).ok, true);
+  assert.deepEqual(await readdir(f.at('out')), ['Sprite.atlas.json', 'Sprite.png']);
+});
+
+test('an entry renamed with its recipe changed still owns its files, and its old record stays until a clean run', async t => {
+  const f = await fixture(t);
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  await f.build();
+  await f.put('art.json', { ...recipe, palette: { k: '#445566' } });
+  await f.manifest([entry([{ sheet: 'out' }], { name: 'player' })]);
+  assert.deepEqual((await f.build({ check: true })).problems.map(p => p.reason).sort(), ['orphaned', 'stale', 'stale']);
+  const renamed = await f.build();
+  assert.equal(renamed.ok, true, JSON.stringify(renamed.refused));
+  assert.deepEqual(renamed.written, ['out/sprite.png']);
+  assert.deepEqual(renamed.orphaned, [{ entry: 'hero', output: 'sheet out' }]);
+  assert.deepEqual(Object.keys((await f.json(lock)).entries), ['player']);
+  // Renamed again while a file is changed by hand: refused, and the old name's record stays so nothing is lost.
+  await f.put('art.json', { ...recipe, palette: { k: '#778899' } });
+  await f.manifest([entry([{ sheet: 'out' }], { name: 'hero' })]);
+  await f.put('out/sprite.atlas.json', 'edited');
+  const refused = await f.build();
+  assert.deepEqual(refused.refused.map(r => [r.file, r.reason]), [['out/sprite.atlas.json', 'edited']]);
+  assert.deepEqual(Object.keys((await f.json(lock)).entries), ['player']);
+  await rm(f.at('out/sprite.atlas.json'));
+  const clean = await f.build();
+  assert.equal(clean.ok, true);
+  assert.deepEqual(Object.keys((await f.json(lock)).entries), ['hero']);
 });
 
 test('a failed input retains its record, protects its references, and allows independent entries to finish', async t => {
