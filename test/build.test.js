@@ -316,6 +316,15 @@ test('--only preserves unselected records and checks the names; --keep saves the
   assert.ok(again.skipped.includes('kept/hero.json'));
   await f.put('kept/hero.json', 'my notes');
   assert.equal((await f.build({ only: 'hero', keep: 'kept' })).refused[0].file, 'kept/hero.json');
+  // A source whose outputs are current is compiled for --keep, and still renders nothing.
+  await f.put('actor.json', { ...poses, palette: palette.palette });
+  const actor = { name: 'actor', file: 'actor.json', outputs: [{ still: 'actor.png' }] };
+  await f.manifest([...entries, actor]);
+  await f.build({ only: 'actor' });
+  const kept = await f.build({ only: 'actor', keep: 'kept' });
+  assert.deepEqual([kept.written, kept.stats], [['kept/actor.json'], { compiled: 1, rendered: 0 }]);
+  f.command(0, 'compile', 'actor.json', '--out', 'cli-actor.json');
+  assert.deepEqual(await f.read('kept/actor.json'), await f.read('cli-actor.json'));
   assert.deepEqual((await f.json(lock)).entries.extra, saved);
   assert.equal(f.exists('different'), false);
 });

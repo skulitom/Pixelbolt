@@ -656,7 +656,11 @@ export async function build(target = '.', options = {}, version = options.versio
     if (needed) {
       try { await renderEntry(entry, directory, options, result); }
       catch (error) { result.failed.push({ entry: entry.name, ...errorReply(fieldError(error, entry.compile ? `${entry.where}.compile` : entry.field, entry.compile)) }); }
-    } else if (keep && !entry.loaded.source) entry.keepBytes = Buffer.from(formatJSON(entry.loaded.document));
+    } else if (keep) {
+      // --keep asks for every selected entry's recipe: a source whose outputs are current is compiled for it, not rendered.
+      try { entry.keepBytes = Buffer.from(formatJSON(entry.loaded.source ? await makeRecipe(entry, directory, result.stats) : entry.loaded.document)); }
+      catch (error) { result.failed.push({ entry: entry.name, ...errorReply(fieldError(error, entry.compile ? `${entry.where}.compile` : entry.field, entry.compile)) }); }
+    }
   }
   const orphaned = orphans(entries, oldEntries, options.only);
   if (options.check) {
