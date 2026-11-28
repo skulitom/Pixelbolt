@@ -2,6 +2,8 @@
 import { mkdir, readFile, rm, rmdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareStack } from '../src/stack.js';
+import { build } from '../src/build.js';
+import { linkPalette, LINKED_SOURCES } from '../src/resolve.js';
 import { expandPoses } from '../src/authoring.js';
 import { PixelError, isObject, meant, frameTotalProblem } from '../src/core.js';
 import { briefCheck } from '../src/check.js';
@@ -22,6 +24,10 @@ process.stdout.on('error', error => {
 const HELP = `Pixelbolt — text to pixels, without dependencies
 
   pixelbolt init [file.json]               Create an editable example
+  pixelbolt build [folder | pixelbolt.build.json] [--check] [--only a,b] [--force] [--keep folder]
+                                           Rebuild what changed among the outputs a project's manifest lists;
+                                           --check writes nothing and exits 1 when one is missing or out of date
+  pixelbolt build --init [folder]          Write a first manifest from the folder's recipes and sources
   pixelbolt help [topic] [section]         One reference, as MCP pixel_help gives it: quickstart, guide, workflow,
                                            craft, schema, example, presets, preset <name>, stack, poses, scenes, autotile,
                                            fx, fluid, wave, crystal, powder, bodies or normals. guide, workflow and craft list
@@ -167,6 +173,9 @@ GIF keeps exact colours (at most 256 per frame, never quantized), 1-bit transpar
 onto a colour, and 10 ms timing steps; the result's notes list what changed. Default scale: 1, the frames' own size.
 gif-frames reads the folder's numbered PNGs in number order, one GIF frame each, by the same rules; frames whose
 colours differ get colour tables of their own. --loops is the number of plays (0, the default, loops for ever).
+Build reads pixelbolt.build.json and records the files it wrote in pixelbolt.build.lock.json. Commit both files.
+Files changed by hand stay in place unless you pass --force. A module entry runs as Node runs it.
+Run pixelbolt build --check in CI to check the outputs without writing them.
 Sequence writes one PNG per video frame with alpha, plus sequence.json and a README with the ffmpeg command for a
 .mov. --size is 720p, 1080p, 1440p, 4k, vertical, square or WIDTHxHEIGHT; the sprite is enlarged by a whole number
 (the largest that fits, or --scale; --fit cover takes the smallest that covers the canvas and crops the rest) and
@@ -181,8 +190,9 @@ Checkout: node bin/pixelbolt.js <command>. Portable build folder: .\\pixelbolt (
 
 // The options each command takes: the one place an option is listed. One named in FLAGS takes no value; every other
 // takes the argument after it.
-const FLAGS = new Set(['force', 'grid', 'native', 'diagnostics', 'palette', 'open', 'expand', 'embed-recipe', 'embedded', 'project', 'list-files', 'full', 'gif', 'look', 'slices']);
+const FLAGS = new Set(['force', 'grid', 'native', 'diagnostics', 'palette', 'open', 'expand', 'embed-recipe', 'embedded', 'project', 'list-files', 'full', 'gif', 'look', 'slices', 'check', 'init']);
 const OPTIONS = {
+  build: ['check', 'force', 'only', 'keep', 'init'],
   init: ['force'],
   validate: ['fps'],
   inspect: ['pin', 'rotate', 'pose-sheet', 'frames', 'animation', 'region', 'grid', 'scale', 'background', 'out', 'force', 'view', 'native', 'diagnostics', 'full', 'max-cells', 'step', 'offset', 'every', 'layers', 'reference', 'beside', 'palette', 'guides', 'motion', 'speed', 'ground', 'metadata', 'track', 'stack', 'under'],
@@ -207,7 +217,7 @@ const KNOWN = new Set(Object.values(OPTIONS).flat());
 // The options whose one value is a list separated by commas, each with the commands that read it so (null: every
 // command that takes it). --frames names frames for inspect and is a count for compile, gif and import; --animation is
 // several names only for compile.
-const LIST_OPTIONS = { frames: ['inspect'], layers: null, 'draft-views': null, beside: null, stack: null, animation: ['compile'] };
+const LIST_OPTIONS = { frames: ['inspect'], layers: null, 'draft-views': null, beside: null, stack: null, animation: ['compile'], only: ['build'] };
 const takesList = (key, command) => Object.hasOwn(LIST_OPTIONS, key) && (LIST_OPTIONS[key]?.includes(command) ?? true);
 // Whether args[i] is an option that takes a value: one that is known and no flag.
 const takesValue = arg => arg.startsWith('--') && KNOWN.has(arg.slice(2)) && !FLAGS.has(arg.slice(2));
@@ -225,7 +235,7 @@ function asksForHelp(args) {
 // The notes under the usage list, by the words each starts with, and the commands each is about (null: every one).
 const NOTES = [['Options:', null], ['--embed-recipe on render', ['render', 'scene']], ['render and scene reply', ['render', 'scene', 'compile', 'autotile', 'import']],
 ['Palette references', null], ['Inspect:', ['inspect']], ['Patch accepts', ['patch']], ['GIF keeps', ['gif', 'render']], ['gif-frames reads', ['gif-frames']],
-['Sequence writes', ['sequence']], ['Command results', null], ['Patch: --changes', ['patch']]];
+['Sequence writes', ['sequence']], ['Command results', null], ['Patch: --changes', ['patch']], ['Build reads', ['build']]];
 // One command's help: its usage lines and the notes about it. The whole help is 11 KB, which every `<command> --help`
 // used to print; a name that is no command gets all of it.
 function commandHelp(command) {
@@ -321,17 +331,6 @@ const inputsOf = input => [...(input.file === '-' ? [] : [path.resolve(input.fil
 // 16, animations/<animation name>.png for each animation) unless --list-files: the reply counts them in frames and
 // animations.
 const bundleFiles = (directory, files, options) => { const { files: listed, removed, sheet, atlas } = outputSummary(directory, files, options['list-files'] === true); return { directory: shown(directory), ...(sheet && { sheet, atlas }), files: listed, ...(removed && { removed }) }; };
-// The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
-// and a scene's assets do not): every kind src/resolve.js resolves a palette for but powder, whose source has no
-// palette to link (its colours are its materials', and the compiler refuses a `palette` field).
-const LINKED_SOURCES = ['stack', 'poses', 'autotile', 'fx', 'fluid', 'wave', 'crystal', 'bodies', 'project'];
-// Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
-function linkPalette(recipe, input, outFile) {
-  const link = input.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where));
-  if (!link) return recipe;
-  const shared = path.resolve(input.baseDir, link.reference), reference = path.relative(path.dirname(path.resolve(outFile)), shared).split(path.sep).join('/');
-  return restorePaletteReference({ palette: { $ref: reference } }, recipe, { palettes: [{ ...link, where: 'project' }] });
-}
 function inspectOptions({ frames, animation, region, grid, scale, background, view, native, diagnostics, 'max-cells': maxCells, step, offset, every, stack }) {
   if (stack !== undefined && !stack.split(',').every(group => group.split('+').every(Boolean))) throw new Error('--stack expects groups of frame names: body+plate,body+fin (frames joined by +, cells by commas)');
   for (const [key, value] of [['step', step], ['offset', offset], ['every', every]]) if (value !== undefined && !/^\d+$/.test(value)) throw new Error(`--${key} expects a whole number`);
@@ -538,7 +537,12 @@ try {
       const entry = await findPreset(options.preset);
       positional[0] = path.join(PRESET_FOLDER, entry.file); options.preset = entry.name;
     }
-    if (command === 'init') {
+    if (command === 'build') {
+      // The counts of compiles and renders are for tests; `rendered` names the entries a reply needs.
+      const { stats, manifest, record, ...result } = await build(positional[0], options);
+      print({ ok: result.ok, ...(manifest && { manifest: shown(manifest) }), ...result, ...(record && { record: shown(record) }) });
+      if (!result.ok) process.exitCode = 1;
+    } else if (command === 'init') {
       const file = positional[0] ?? 'sprite.pixel.json';
       try {
         await writeFile(file, await readFile(new URL('../examples/forest-spirit.json', import.meta.url)), { flag: options.force ? 'w' : 'wx' });
