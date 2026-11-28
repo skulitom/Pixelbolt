@@ -239,6 +239,50 @@ player.destroy();
 
 Use an HTTP server for module imports/fetch. The separate `preview.html` and APNGs work directly from disk. APNGs follow the [PNG specification](https://www.w3.org/TR/png-3/) and use full-frame source replacement, preserving transparency without motion trails.
 
+## Build every asset from a manifest
+
+A project with more than one recipe lists them, and what each one makes, in one file beside them: `pixelbolt.build.json`. `pixelbolt build` then renders only what changed and writes only the files whose bytes differ, and `pixelbolt build --check` writes nothing and fails when an output is missing or out of date, so CI catches a recipe changed without its sprites. It takes the place of a script that runs `render` and `gif` for each recipe and copies the results into the game. Every file it writes holds the same bytes as the command it stands for: `render` for a sheet, a bundle or a frame, `gif` for a GIF, and `compile` first for a source or a preset.
+
+```json
+{
+  "pixelbolt": "0.22.0",
+  "entries": [
+    { "name": "hero", "file": "art/hero.pixel.json",
+      "outputs": [
+        { "sheet": "public/sprites" },
+        { "gif": "docs/hero.gif", "scale": 4, "background": "#17191d" }
+      ] },
+    { "name": "logo", "file": "art/logo.pixel.json",
+      "outputs": [
+        { "still": "public/icon-32.png", "frame": "on" },
+        { "still": "public/icon-192.png", "frame": "on", "scale": 6 }
+      ] },
+    { "name": "torch", "preset": "campfire", "compile": { "size": "32x32", "frames": 8 },
+      "outputs": [ { "sheet": "public/fx" } ] },
+    { "name": "smoke", "file": "art/smoke.fluid.json", "outputs": [ { "bundle": "build/smoke" } ] }
+  ]
+}
+```
+
+- **Entries.** Each has a `name` (for `--only` and the record) and one input: `file`, a recipe or any source `pixelbolt compile` reads (poses, autotile, effects, fluid, wave, crystal, powder, bodies, a sprite stack), told apart by its `format`; `preset`, a shipped preset by name; or `module`, a `.mjs` or `.js` file whose default export is a recipe, or a function (it may be async) that returns one, for recipes made in code. A module is run as `node` would run it, by `build` and by `--check` alike, so list only code you trust. `compile` holds `size`, `frames` and `animation` for a source or a preset, as `pixelbolt compile` takes them.
+- **Outputs.** `sheet` names a folder and writes `<recipe name>.png` and `<recipe name>.atlas.json` there, as `render` does (`scale`, `columns`); `bundle` writes render's whole folder (`scale`, `columns`); `gif` names a `.gif` file (`scale`, `background`, `animation`, the first animation when none is given); `still` names a `.png` file and writes one frame as `render` writes it to `frames/<frame>.png` (`frame`, the first when none is given, and `scale`). Every path is relative to the manifest's folder and stays inside it.
+- **What counts as a change.** The recipe, any palette or scene file it names with `$ref`, a module's result, the entry's and output's options, and the Pixelbolt version. With nothing changed, a second `pixelbolt build` renders nothing.
+- **Files changed by hand.** `pixelbolt build` never replaces a file it didn't write, or one changed since it wrote it, unless you pass `--force`; it names each file it refused and writes nothing of that output, so a sheet and its atlas never disagree. A file already there with exactly the bytes it would write is taken as it is. It never writes outside the paths the manifest names or over one of its inputs, and it never deletes the files of an entry or output you removed from the manifest: it lists that output once as `orphaned`.
+- **The record.** What it wrote, with each file's hash, the Pixelbolt version and a fingerprint of the inputs, is kept in `pixelbolt.build.lock.json` beside the manifest. Commit both with the outputs: the record is how a fresh clone and CI know which files are the build's. Text files (the atlas JSON) compare with CRLF and LF as equal, so a Windows checkout is neither stale nor changed by hand.
+- **Starting one.** `pixelbolt build --init` writes a first manifest from the recipes and sources in the folder, found by their contents rather than their names, each with a `sheet` beside it, pinned to the running version. It never replaces an existing manifest. Edit the outputs, then run `pixelbolt build`; pass `--force` once to take over files an earlier script made.
+- **One part of it.** `--only hero,torch` builds those entries, and `--keep <folder>` (inside the manifest's folder) also writes each recipe it builds there, compiled.
+- **The version.** The optional `pixelbolt` field pins the version the art was made with: another version refuses to build and `--check` fails with reason `version`. `--check` also fails when the record says another version built an output, since a new version may draw differently: run `pixelbolt build` with the new version, look at what changed and commit it.
+
+The CI step, with the version the manifest pins:
+
+```yaml
+- uses: actions/setup-node@v4
+  with: { node-version: 22 }
+- run: npx pixelbolt@<version> build --check
+```
+
+`--check` exits 0 when every output is present and as the build would leave it, and 1 otherwise, naming each file and its reason: `missing`, `stale`, `edited`, `unrecorded` (there, but not written by `pixelbolt build`) or `version`.
+
 ## Atlas contract
 
 The forest spirit's atlas, with the first of its six frames:
