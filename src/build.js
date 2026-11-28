@@ -336,16 +336,28 @@ function withLeftovers(current, old) {
   return files;
 }
 const recordedHashes = out => new Map(Object.entries(out.old?.files ?? {}).map(([name, hash]) => [fileKey(name), hash]));
-// Where the file system ignores letter case, writing Sprite.png over sprite.png keeps the old name, which a
-// case-sensitive checkout then misses: the name an existing file has on disk when it differs only in case, else null.
-// A folder that keeps case (Windows' per-folder setting) lists the exact name, so nothing is renamed there.
-async function respelling(disk, listings) {
+// Where the file system ignores letter case, writing Sprite.png over sprite.png keeps the old name, and writing
+// Out/a.png into out/ keeps the folder's, which a case-sensitive checkout then misses. Each part of `file` (relative
+// to the manifest's folder) is looked up in its folder's listing: null when every existing part is spelt as written,
+// else `{ spelt, folder }` with the path as far as the first part spelt otherwise, and whether that part is a folder.
+// A folder that keeps case (Windows' per-folder setting) lists the exact name, so nothing differs there.
+async function respelling(root, file, listings) {
   if (!folded) return null;
-  const folder = path.dirname(disk), base = path.basename(disk);
-  if (!listings.has(folder)) listings.set(folder, await readdir(folder).catch(() => []));
-  const names = listings.get(folder);
-  return names.includes(base) ? null : names.find(name => name.toLowerCase() === base.toLowerCase()) ?? null;
+  const parts = file.split('/');
+  let folder = root;
+  for (const [i, part] of parts.entries()) {
+    if (!listings.has(folder)) listings.set(folder, await readdir(folder).catch(() => []));
+    const names = listings.get(folder);
+    if (names.includes(part)) { folder = path.join(folder, part); continue; }
+    const spelt = names.find(name => name.toLowerCase() === part.toLowerCase());
+    return spelt === undefined ? null : { spelt: [...parts.slice(0, i), spelt].join('/'), folder: i < parts.length - 1 };
+  }
+  return null;
 }
+// Whether a file on disk with this hash is one the build wrote: this output's record, or any other record of it
+// (a renamed entry, an output whose kind changed, an orphaned record kept through a run that refused something).
+const ownedBy = (out, key, hash) => out.ownHashes.get(key) === hash || Boolean(out.owned.get(key)?.has(hash));
+const caseMessage = (file, spelt) => `${file} would go into ${path.posix.dirname(spelt)} on disk, a folder named in other letter case; rename that folder, or the path in the manifest, so a case-sensitive checkout finds it`;
 
 // Make ownership independent of entry order. Check both future paths (including junctions above a new folder)
 // and existing file identities. A recorded leftover is also a write target: removing it must pass the same checks.
@@ -391,15 +403,14 @@ async function examine(entry, out, version, locate) {
     const hash = bytes && fileHash(file, bytes), recorded = hashes.has(fileKey(file));
     // Once an output is recorded, its record says which files it makes: a predicted name it never wrote is no
     // missing file, or a wrong guess would keep the output stale for ever. Before any record, the names are a guess.
-    if (!bytes) { if (recorded || !old) report('missing', `${file} is missing; run pixelbolt build`, file); }
+    if (!bytes) { if (recorded || !old) report('missing', `${file} is missing; run pixelbolt build`, file); continue; }
+    const spelt = await respelling(out.root, file, listings);
+    if (spelt?.folder) report('case', caseMessage(file, spelt.spelt), file);
     // A renamed entry or an output whose kind changed finds its files recorded under the old name: still the build's.
-    else if (!recorded && out.owned.get(fileKey(file)) === hash) report('stale', `${file} is recorded under another entry or output; run pixelbolt build`, file);
+    else if (!recorded && out.owned.get(fileKey(file))?.has(hash)) report('stale', `${file} is recorded under another entry or output; run pixelbolt build`, file);
     else if (!recorded) report('unrecorded', `${file} has no build record`, file);
     else if (hashes.get(fileKey(file)) !== hash) report('edited', `${file} differs from the recorded file`, file);
-    else {
-      const spelt = await respelling(disk, listings);
-      if (spelt) report('stale', `${file} is named ${spelt} on disk; run pixelbolt build to rename it`, file);
-    }
+    else if (spelt) report('stale', `${file} is named ${spelt.spelt} on disk; run pixelbolt build to rename it`, file);
   }
   return { inputs, problems, files };
 }
@@ -475,17 +486,20 @@ async function deliver(out, locate, force, result, version) {
   for (const file of withLeftovers(out.bytes.keys(), out.old?.files)) {
     const disk = (await locate(file, out.where)).disk, before = await readBytes(disk);
     const previous = before && fileHash(file, before), after = out.bytes.get(file);
-    const respell = before !== null && after !== undefined && Boolean(await respelling(disk, listings));
+    const spelt = after === undefined ? null : await respelling(out.root, file, listings);
+    // A folder is never renamed for an output: other files may live in it. Say what to do instead.
+    if (spelt?.folder) { refused.push({ file, reason: 'case', message: caseMessage(file, spelt.spelt) }); continue; }
+    const respell = before !== null && Boolean(spelt);
     if (after === undefined) {
       if (before === null) continue;
       if (previous !== hashes.get(fileKey(file))) {
         refused.push({ file, reason: 'edited', message: `${file} is no longer generated and was edited; move it to keep it or remove it and rebuild` });
       } else { changes.push({ disk, before, after: null }); removed.push(file); }
     } else {
-      const hash = fileHash(file, after), key = fileKey(file), owned = hashes.get(key) ?? out.owned.get(key);
+      const hash = fileHash(file, after), key = fileKey(file), known = hashes.has(key) || out.owned.has(key);
       files[file] = hash;
       if (hash === previous && !respell) skipped.push(file);
-      else if (hash !== previous && before && !force && previous !== owned) refused.push(refusal(file, owned === undefined ? 'unrecorded' : 'edited'));
+      else if (hash !== previous && before && !force && !ownedBy(out, key, previous)) refused.push(refusal(file, known ? 'edited' : 'unrecorded'));
       else changes.push({ disk, before, after, file, respell });
     }
   }
@@ -564,7 +578,8 @@ export async function build(target = '.', options = {}, version = options.versio
   if (options.check && (options.force || options.keep !== undefined)) fail('--check', 'cannot be combined with --force or --keep');
   const absolute = path.resolve(target), info = await stat(absolute).catch(missing);
   let directory = absolute;
-  if (!info && (options.init || path.basename(absolute) !== MANIFEST)) fail('build', `${absolute} does not exist; give the folder that holds ${MANIFEST}, or that file`);
+  if (!info && (options.init || path.basename(absolute) !== MANIFEST || !(await stat(path.dirname(absolute)).catch(missing))?.isDirectory()))
+    fail('build', `${absolute} does not exist; give the folder that holds ${MANIFEST}, or that file`);
   if (!info?.isDirectory()) {
     if (options.init || path.basename(absolute) !== MANIFEST) fail('build', `expected a folder or ${MANIFEST}; that is the manifest name the build reads`);
     directory = path.dirname(absolute);
@@ -592,7 +607,10 @@ export async function build(target = '.', options = {}, version = options.versio
   const oldBytes = await readBytes(record), oldEntries = readRecord(oldBytes), nextEntries = new Map();
   // Every file any recorded output wrote, with its hash: what the build may replace, whichever entry made it.
   const owned = new Map();
-  for (const old of oldEntries.values()) for (const saved of Object.values(old.outputs)) for (const [file, hash] of Object.entries(saved.files)) owned.set(fileKey(file), hash);
+  for (const old of oldEntries.values()) for (const saved of Object.values(old.outputs)) for (const [file, hash] of Object.entries(saved.files)) {
+    const key = fileKey(file);
+    owned.set(key, (owned.get(key) ?? new Set()).add(hash));
+  }
   const inputs = new Set([manifest]);
   const keep = options.keep === undefined ? undefined : relative(options.keep, '--keep', true);
   // Resolve inputs for ownership even with --only: another entry's shared palette must never become an output.
@@ -609,6 +627,8 @@ export async function build(target = '.', options = {}, version = options.versio
     for (const out of entry.outputs) {
       out.old = Object.hasOwn(old, out.key) ? old[out.key] : undefined;
       out.owned = owned;
+      out.ownHashes = recordedHashes(out);
+      out.root = directory;
       out.known = knownFiles(out);
     }
     try {

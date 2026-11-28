@@ -490,6 +490,49 @@ test('an entry renamed with its recipe changed still owns its files, and its old
   assert.deepEqual(Object.keys((await f.json(lock)).entries), ['hero']);
 });
 
+test('a file two records name with different hashes is the build output if it matches either', async t => {
+  const f = await fixture(t), colour = k => ({ ...recipe, palette: { k } });
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  await f.build();
+  // Renamed with the recipe changed, in a run where another entry fails: the old record stays beside the new one.
+  await f.put('art.json', colour('#445566'));
+  await f.put('broken.json', { ...recipe, frames: [null] });
+  await f.manifest([entry([{ sheet: 'out' }], { name: 'player' }), entry([{ still: 'b.png' }], { name: 'broken', file: 'broken.json' })]);
+  const failed = await f.build();
+  assert.equal(failed.failed[0].entry, 'broken');
+  assert.deepEqual(Object.keys((await f.json(lock)).entries), ['player', 'hero']);
+  // Renamed back and changed again: hero's old record names other bytes, player's names these; either makes it ours.
+  await f.put('art.json', colour('#778899'));
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  const back = await f.build();
+  assert.equal(back.ok, true, JSON.stringify(back.refused));
+  assert.deepEqual(back.written, ['out/sprite.png']);
+  assert.deepEqual(Object.keys((await f.json(lock)).entries), ['hero']);
+});
+
+test('an output folder named in other letter case on disk is refused with what to do, never renamed', async t => {
+  const f = await fixture(t);
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  await f.build();
+  if (!f.exists('OUT/sprite.png')) return t.skip('this folder keeps letter case apart');
+  await f.manifest([entry([{ sheet: 'Out' }])]);
+  const checked = await f.build({ check: true });
+  assert.ok(checked.problems.some(p => p.reason === 'case' && /rename that folder/.test(p.message)), JSON.stringify(checked.problems));
+  const refused = await f.build();
+  assert.deepEqual([...new Set(refused.refused.map(r => r.reason))], ['case']);
+  assert.ok((await readdir(f.at('.'))).includes('out'));
+  await rename(f.at('out'), f.at('moved'));
+  await rename(f.at('moved'), f.at('Out'));
+  assert.equal((await f.build()).ok, true);
+  assert.equal((await f.build({ check: true })).ok, true);
+});
+
+test('a manifest named inside a folder that is not there says so', async t => {
+  const f = await fixture(t);
+  for (const target of [f.at('nowhere'), f.at('nowhere/pixelbolt.build.json')]) await assert.rejects(build(target), /does not exist/);
+  await assert.rejects(build(f.at('nowhere'), { init: true }), /does not exist/);
+});
+
 test('a failed input retains its record, protects its references, and allows independent entries to finish', async t => {
   const f = await fixture(t), bad = entry([{ bundle: 'out' }]);
   await f.manifest([bad]);
