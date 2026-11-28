@@ -357,7 +357,7 @@ async function respelling(root, file, listings) {
 // Whether a file on disk with this hash is one the build wrote: this output's record, or any other record of it
 // (a renamed entry, an output whose kind changed, an orphaned record kept through a run that refused something).
 const ownedBy = (out, key, hash) => out.ownHashes.get(key) === hash || Boolean(out.owned.get(key)?.has(hash));
-const caseMessage = (file, spelt) => `${file} would go into ${path.posix.dirname(spelt)} on disk, a folder named in other letter case; rename that folder, or the path in the manifest, so a case-sensitive checkout finds it`;
+const caseMessage = (file, spelt) => `${file} would go into ${spelt} on disk, a folder named in other letter case; rename that folder, or the path in the manifest, so a case-sensitive checkout finds it`;
 
 // Make ownership independent of entry order. Check both future paths (including junctions above a new folder)
 // and existing file identities. A recorded leftover is also a write target: removing it must pass the same checks.
@@ -409,7 +409,10 @@ async function examine(entry, out, version, locate) {
     // A renamed entry or an output whose kind changed finds its files recorded under the old name: still the build's.
     else if (!recorded && out.owned.get(fileKey(file))?.has(hash)) report('stale', `${file} is recorded under another entry or output; run pixelbolt build`, file);
     else if (!recorded) report('unrecorded', `${file} has no build record`, file);
-    else if (hashes.get(fileKey(file)) !== hash) report('edited', `${file} differs from the recorded file`, file);
+    else if (hashes.get(fileKey(file)) !== hash) {
+      if (out.owned.get(fileKey(file))?.has(hash)) report('stale', `${file} holds what another record of it names; run pixelbolt build`, file);
+      else report('edited', `${file} differs from the recorded file`, file);
+    }
     else if (spelt) report('stale', `${file} is named ${spelt.spelt} on disk; run pixelbolt build to rename it`, file);
   }
   return { inputs, problems, files };

@@ -510,6 +510,24 @@ test('a file two records name with different hashes is the build output if it ma
   assert.deepEqual(Object.keys((await f.json(lock)).entries), ['hero']);
 });
 
+test('a file that matches another record of it is stale, not changed by hand, even when its own record has current inputs', async t => {
+  const f = await fixture(t);
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  await f.build();
+  await f.put('art.json', { ...recipe, palette: { k: '#445566' } });
+  await f.put('broken.json', { ...recipe, frames: [null] });
+  await f.manifest([entry([{ sheet: 'out' }], { name: 'player' }), entry([{ still: 'b.png' }], { name: 'broken', file: 'broken.json' })]);
+  await f.build();
+  // Back to the first name and the first recipe: hero's own record is current again, but the sheet holds player's bytes.
+  await f.put('art.json', recipe);
+  await f.manifest([entry([{ sheet: 'out' }])]);
+  const reasons = (await f.build({ check: true })).problems.map(p => p.reason);
+  assert.ok(reasons.includes('stale') && !reasons.includes('edited'), reasons.join());
+  const back = await f.build();
+  assert.equal(back.ok, true, JSON.stringify(back.refused));
+  assert.deepEqual(back.written, ['out/sprite.png']);
+});
+
 test('an output folder named in other letter case on disk is refused with what to do, never renamed', async t => {
   const f = await fixture(t);
   await f.manifest([entry([{ sheet: 'out' }])]);
@@ -517,7 +535,7 @@ test('an output folder named in other letter case on disk is refused with what t
   if (!f.exists('OUT/sprite.png')) return t.skip('this folder keeps letter case apart');
   await f.manifest([entry([{ sheet: 'Out' }])]);
   const checked = await f.build({ check: true });
-  assert.ok(checked.problems.some(p => p.reason === 'case' && /rename that folder/.test(p.message)), JSON.stringify(checked.problems));
+  assert.ok(checked.problems.some(p => p.reason === 'case' && /would go into out on disk.*rename that folder/.test(p.message)), JSON.stringify(checked.problems));
   const refused = await f.build();
   assert.deepEqual([...new Set(refused.refused.map(r => r.reason))], ['case']);
   assert.ok((await readdir(f.at('.'))).includes('out'));
