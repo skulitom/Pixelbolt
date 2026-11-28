@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PixelError, renderProject, inspectProject, stackViews, briefCells, briefDiagnostics } from '../src/core.js';
+import { PixelError, renderProject as render, inspectProject, stackViews, briefCells, briefDiagnostics } from '../src/core.js';
 import { COMPILERS } from '../src/presets.js';
 import { inspectMotion } from '../src/motion.js';
 import { encodePNG } from '../src/png.js';
@@ -19,6 +19,10 @@ import { compileEffects } from '../src/fx.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PNG_PIXELS = 16777216;
+// Rendering is deterministic and nothing here changes a rendered project, so each recipe and options are rendered once
+// for the file and the project shared: 182 renders were 68 distinct ones. A test that changes a project renders its own.
+const rendered = new Map();
+const renderProject = (...args) => { const key = JSON.stringify(args); if (!rendered.has(key)) rendered.set(key, render(...args)); return rendered.get(key); };
 // A dark ground and a red square moving right, in two layers; `plays` repeats the frames in the animation.
 // `parts` above 1 draws that many squares, each its own layer named after `part`.
 const screen = (width, height, count, { plays = 1, part = 'square', parts = 1 } = {}) => ({
@@ -208,8 +212,9 @@ test('views stacked beside one another stay within 8,000 pixels tall, the talles
 });
 
 test('a beside stack is measured whole: within 8,000 pixels it is drawn as each sheet alone, past it only the tallest shrink', () => {
-  // The sheets of each recipe inspected alone, stacked: what beside drew before it measured the stack.
-  const alone = recipes => stackViews(recipes.map((recipe, i) => ({ ...inspectProject(renderProject(recipe)), name: `v${i}` })));
+  // The sheets of each recipe inspected alone, stacked: what beside drew before it measured the stack. Rendered afresh,
+  // so the byte comparisons below also hold two renders of each recipe to the same pixels.
+  const alone = recipes => stackViews(recipes.map((recipe, i) => ({ ...inspectProject(render(recipe)), name: `v${i}` })));
   const stacked = recipes => stackViews(recipes.map((recipe, i) => ({ ...inspectProject(renderProject(recipe), {}, { sheets: recipes.length }), name: `v${i}` })));
   // The pixels of one stacked sheet, `width` wide from the left: the whole image by default.
   const bytes = (s, entry = { y: 0, height: s.sheet.height }, width = s.sheet.width) => Buffer.concat(Array.from({ length: entry.height }, (_, row) =>
