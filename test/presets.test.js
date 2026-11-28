@@ -108,8 +108,9 @@ test('the presets listing covers every source and looping recipe in examples/, m
   }
   await mcp.close();
   // 72 presets were 21 KB in full; a line each, they are under half that. A cap on the whole reply and on each line
-  // keeps a new preset from undoing it: 17 KB since the four moving isometric starters made 121.
-  assert.ok(Buffer.byteLength(JSON.stringify(brief)) < 17408, `${Buffer.byteLength(JSON.stringify(brief))} bytes of preset listing`);
+  // keeps a new preset from undoing it: 17 KB since the four moving isometric starters made 121, 17.5 KB since the
+  // bare torch and campfire say what they lack and name the finished preset (PIXELBOLT-BUGS P-224).
+  assert.ok(Buffer.byteLength(JSON.stringify(brief)) < 17920, `${Buffer.byteLength(JSON.stringify(brief))} bytes of preset listing`);
   assert.equal(brief.guide, `${guide} ${BRIEF_NOTE}`);
   assert.deepEqual(Object.keys(brief.presets), presets.map(entry => entry.name));
   for (const entry of presets) {
@@ -311,6 +312,23 @@ test('finding presets by words lists the names that hold the most of them, else 
   assert.deepEqual(findListing(listing, 'knight'), { guide: 'No preset matches "knight". Presets are effects, simulations, tile sets and character rigs; an icon, a prop or a piece of UI is drawn by hand (the quick start says how). Every preset by name:', names: 'campfire, torch, water-wheel, splash' });
   assert.equal(findListing({ ...listing, note: 'n' }, 'torch').note, 'n');
   assert.throws(() => findListing(listing, '--'), /find: expected words/);
+});
+
+// A one-word search lists a bare preset beside the finished one whose name holds it. Asked for a wall torch, three of
+// four agent jobs compiled `torch` from "Torch: gas." (PIXELBOLT-BUGS P-224), so the bare one says what it lacks and
+// names the one to use.
+test('a bare torch or campfire found by its name says what it lacks and names the finished preset', async () => {
+  const shipped = ['torch', 'wall-torch', 'campfire', 'campfire-stones'];
+  const listing = await listPresets({ only: entry => shipped.includes(entry.name), concurrency: 1, budget: Infinity });
+  for (const [bare, finished] of [['torch', 'wall-torch'], ['campfire', 'campfire-stones']]) {
+    const found = findListing(listing, bare).presets;
+    assert.deepEqual(Object.keys(found), [bare, finished]);
+    assert.match(found[bare], new RegExp(`; for a .+, use ${finished}\\.$`));
+    assert.doesNotMatch(found[bare], /: gas\./);
+    // Both words of the finished one's name still find it alone.
+    assert.deepEqual(Object.keys(findListing(listing, finished.replace('-', ' ')).presets), [finished]);
+  }
+  assert.match(findListing(listing, 'torch').presets.torch, /no bracket, smoke or wall light/);
 });
 
 test('a search word that names a kind of preset has that kind\'s presets named beside the name matches', () => {
