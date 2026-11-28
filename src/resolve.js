@@ -182,3 +182,14 @@ export function restorePaletteReference(original, edited, resolution) {
   if (link.ramps && JSON.stringify(edited.ramps) === JSON.stringify(link.ramps)) delete restored.ramps;
   return restored;
 }
+// The documents whose shared-palette link carries over to the recipe they are or compile to (a normal source's recipe
+// and a scene's assets do not): every kind src/resolve.js resolves a palette for but powder, whose source has no
+// palette to link (its colours are its materials', and the compiler refuses a `palette` field).
+export const LINKED_SOURCES = ['stack', 'poses', 'autotile', 'fx', 'fluid', 'wave', 'crystal', 'bodies', 'project'];
+// Compiled output keeps a shared-palette link, rewritten relative to where the output is written.
+export function linkPalette(recipe, input, outFile) {
+  const link = input.resolution.palettes.find(entry => LINKED_SOURCES.includes(entry.where));
+  if (!link) return recipe;
+  const shared = path.resolve(input.baseDir, link.reference), reference = path.relative(path.dirname(path.resolve(outFile)), shared).split(path.sep).join('/');
+  return restorePaletteReference({ palette: { $ref: reference } }, recipe, { palettes: [{ ...link, where: 'project' }] });
+}
